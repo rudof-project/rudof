@@ -1,8 +1,10 @@
 [package]
-name = "shex"
-version = "0.1.0"
+name = "shex_antlr"
+version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+shex_ast = { path = "../shex_ast" }
+antlr-rust = { version = "0.3.0-beta" }

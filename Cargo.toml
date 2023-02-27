@@ -1,8 +1,26 @@
+[workspace]
+members = [
+    "srdf",
+    "shex_ast",
+    "shex_antlr"
+]
+
+[workspace.package]
+version = "0.0.1"
+authors = ["Jose Emilio Labra Gayo <labra@uniovi.es>"]
+edition = "2021"
+repository = "https://github.com/weso/shex_rs"
+readme = "./README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["rdf", "linked-data", "semantic-web", "shex"] # no more than 5
+
+[workspace.dependencies]
+srdf = { path = "./srdf" }
+shex_ast = { path = "./shex/shex_ast" }
+shex_antlr = { path = "./shex/shex_antlr" }
+
 [package]
 name = "shex-rs"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
