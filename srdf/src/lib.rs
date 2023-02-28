@@ -6,17 +6,14 @@ pub use iri::*;
 pub use alias::*;
 pub use prefix_map::*;
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn check_2_iris() {
+        let iri1: MyIRI = iri::IRI::from(String::from("http://example.org/iri"));
+        let iri2 = IRI::from(String::from("http://example.org/iri"));
+        assert_eq!(iri1, iri2);
     }
 }

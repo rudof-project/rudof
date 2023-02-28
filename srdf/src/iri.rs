@@ -1,11 +1,17 @@
-#[derive(Debug, PartialEq)]
-pub struct IRI {
-    str: String
+
+pub trait IRI {
+    fn from(str: String) -> Self
+     where Self: Sized ;
 }
 
+#[derive(Debug, PartialEq)]
+pub struct MyIRI {
+    txt: String 
+}
 
-impl IRI {
-    pub fn from(txt: String) -> IRI {
-        IRI { str: txt }
+impl IRI for MyIRI {
+    fn from(txt: String) -> MyIRI {
+        MyIRI { txt: txt }
     }
 }
+

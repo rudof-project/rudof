@@ -7,11 +7,12 @@ pub struct ParseVisitor {
     pub schema: Schema
 }
 
-impl <'node> ParseTreeVisitor<'node, ShExDocParserContextType> for ParseVisitor {}
+impl <'a> ParseTreeVisitor<'a, ShExDocParserContextType> for ParseVisitor {}
 
-impl <'node> ShExDocVisitor<'node> for ParseVisitor {
-    fn visit_shExDoc(&mut self, ctx: &ShExDocContext<'node>) { 
+impl <'a> ShExDocVisitor<'a> for ParseVisitor {
+    fn visit_shExDoc(&mut self, ctx: &ShExDocContext<'a>) { 
         println!("Visiting shExDoc");
         self.visit_children(ctx) 
     }
 }
+
