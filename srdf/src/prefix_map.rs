@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use crate::iri::*;
 use crate::alias::*;
 
-pub struct PrefixMap {
-    map: HashMap<Alias, Box<dyn IRI>>
+pub struct PrefixMap<'a> {
+    map: HashMap<Alias, Box<dyn IRI<'a>>>
 } 
 
-impl PrefixMap {
-    pub fn new() -> PrefixMap {
+impl <'a> PrefixMap<'a> {
+    pub fn new() -> PrefixMap<'a> {
         PrefixMap { map: HashMap::new() }
     }
 
-    pub fn insert<I: IRI + 'static>(&mut self, alias: Alias, iri: I) -> &mut Self {
+    pub fn insert<I: IRI<'a> + 'static>(&mut self, alias: Alias, iri: I) -> &mut Self {
        self.map.insert(alias, Box::new(iri));
        self
     }

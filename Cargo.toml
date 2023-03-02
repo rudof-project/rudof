@@ -2,7 +2,8 @@
 members = [
     "srdf",
     "shex_ast",
-    "shex_antlr"
+    "shex_antlr",
+    "srdf_rio"
 ]
 
 [workspace.package]

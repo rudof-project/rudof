@@ -1,8 +1,10 @@
 pub mod iri;
+pub mod bnode;
 mod alias;
-mod prefix_map;
+pub mod prefix_map;
 
 pub use iri::*;
+pub use bnode::*;
 pub use alias::*;
 pub use prefix_map::*;
 
@@ -12,8 +14,8 @@ mod tests {
 
     #[test]
     fn check_2_iris() {
-        let iri1: MyIRI = iri::IRI::from(String::from("http://example.org/iri"));
-        let iri2 = IRI::from(String::from("http://example.org/iri"));
+        let iri1: SIRI = SIRI::from("http://example.org/iri");
+        let iri2 = SIRI::from("http://example.org/iri");
         assert_eq!(iri1, iri2);
     }
 }
