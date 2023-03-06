@@ -1,7 +1,10 @@
 [package]
 name = "prefix_map"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true 
 
 [dependencies]
 indexmap = "1.9.2"

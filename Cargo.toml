@@ -7,20 +7,33 @@ members = [
     "shex_antlr",
     "srdf_rio"
 ]
+default-members = [
+    "iri_s",
+    "prefix_map",
+    "srdf",
+    "shex_ast",
+    "shex_antlr",
+    "srdf_rio"
+]
 
 [workspace.package]
 version = "0.0.1"
 authors = ["Jose Emilio Labra Gayo <labra@uniovi.es>"]
+description = "Rust implementation of ShEx"
 edition = "2021"
 repository = "https://github.com/weso/shex_rs"
 readme = "./README.md"
 license = "MIT OR Apache-2.0"
-keywords = ["rdf", "linked-data", "semantic-web", "shex"] # no more than 5
+keywords = ["rdf", "linked-data", "semantic-web", "shex"] 
+documentation = "https://weso.es/shex_rs"
 
 [workspace.dependencies]
+iri_s = { path = "./iri_s" }
+prefix_map = { path = "./prefix_map" }
 srdf = { path = "./srdf" }
-shex_ast = { path = "./shex/shex_ast" }
-shex_antlr = { path = "./shex/shex_antlr" }
+srdf_rio = { path = "./srdf_rio" }
+shex_ast = { path = "./shex_ast" }
+shex_antlr = { path = "./shex_antlr" }
 
 [package]
 name = "shex-rs"

@@ -1,9 +1,10 @@
 [package]
 name = "shex_antlr"
-version = "0.0.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
 
 [dependencies]
 shex_ast = { path = "../shex_ast" }

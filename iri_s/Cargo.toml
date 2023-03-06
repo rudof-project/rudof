@@ -1,6 +1,9 @@
 [package]
 name = "iri_s"
-version = "0.0.1"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true 
 
 [dependencies]
