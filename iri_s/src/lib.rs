@@ -1,17 +1,13 @@
-pub mod bnode;
-pub mod lang;
-pub mod literal;
+pub mod iri;
 
-
-pub use iri_s::*;
-pub use bnode::*;
+pub use iri::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn check_2_iris() {
+    fn iri_s_test() {
         let iri1: IriS = IriS::from_str("http://example.org/iri");
         let iri2 = IriS::from_str("http://example.org/iri");
         assert_eq!(iri1, iri2);

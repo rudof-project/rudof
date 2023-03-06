@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "iri_s",
+    "prefix_map",
     "srdf",
     "shex_ast",
     "shex_antlr",

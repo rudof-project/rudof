@@ -1,8 +1,9 @@
 [package]
-name = "srdf"
+name = "prefix_map"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+indexmap = "1.9.2"
 iri_s = { path = "../iri_s" }
 

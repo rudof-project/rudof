@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 srdf = { path = "../srdf" }
+iri_s = { path = "../iri_s" }
+prefix_map = { path = "../prefix_map" }
