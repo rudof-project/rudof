@@ -1,3 +1,7 @@
+[package]
+name = "shex-rs"
+version = "0.0.1"
+
 [workspace]
 members = [
     "iri_s",
@@ -18,14 +22,15 @@ default-members = [
 
 [workspace.package]
 version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 authors = ["Jose Emilio Labra Gayo <labra@uniovi.es>"]
 description = "Rust implementation of ShEx"
-edition = "2021"
 repository = "https://github.com/weso/shex_rs"
 readme = "./README.md"
-license = "MIT OR Apache-2.0"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"] 
 documentation = "https://weso.es/shex_rs"
+categories = ["rdf"]
 
 [workspace.dependencies]
 iri_s = { path = "./iri_s" }
@@ -35,8 +40,4 @@ srdf_rio = { path = "./srdf_rio" }
 shex_ast = { path = "./shex_ast" }
 shex_antlr = { path = "./shex_antlr" }
 
-[package]
-name = "shex-rs"
-version = "0.0.1"
-edition = "2021"
 

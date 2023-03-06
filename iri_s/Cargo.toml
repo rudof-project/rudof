@@ -4,6 +4,7 @@ version.workspace = true
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
-edition.workspace = true 
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
