@@ -33,11 +33,11 @@ documentation = "https://weso.es/shex_rs"
 categories = ["rdf"]
 
 [workspace.dependencies]
-iri_s = { path = "./iri_s" }
-prefix_map = { path = "./prefix_map" }
-srdf = { path = "./srdf" }
-srdf_rio = { path = "./srdf_rio" }
-shex_ast = { path = "./shex_ast" }
-shex_antlr = { path = "./shex_antlr" }
+iri_s = { version = "0.0.1", path = "./iri_s" }
+prefix_map = { version = "0.0.1", path = "./prefix_map" }
+srdf = { version = "0.0.1", path = "./srdf" }
+srdf_rio = { version = "0.0.1", path = "./srdf_rio" }
+shex_ast = { version = "0.0.1", path = "./shex_ast" }
+shex_antlr = { version = "0.0.1", path = "./shex_antlr" }
 
 
