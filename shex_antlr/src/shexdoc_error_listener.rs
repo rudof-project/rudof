@@ -2,24 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use antlr_rust::{tree::{ParseTreeVisitor}, recognizer::Recognizer, token_factory::TokenFactory, errors::ANTLRError};
-use crate::grammar::{ShExDocVisitor, ShExDocParserContextType, ShExDocContext};
-use shex_ast::{SchemaBuilder};
 use antlr_rust::error_listener::ErrorListener;
-
-
-pub struct ParseVisitor<'a> {
-    pub schema: SchemaBuilder<'a>,
-    pub errors: Rc<RefCell<u32>>
-}
-
-impl <'a> ParseTreeVisitor<'a, ShExDocParserContextType> for ParseVisitor<'a> {}
-
-impl <'a> ShExDocVisitor<'a> for ParseVisitor<'a> {
-    fn visit_shExDoc(&mut self, ctx: &ShExDocContext<'a>) { 
-        println!("Visiting shExDoc");
-        self.visit_children(ctx);
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct ShExDocErrorListener {
@@ -46,13 +29,15 @@ impl <'a, T: Recognizer<'a>> ErrorListener<'a, T> for ShExDocErrorListener {
         msg: &str,
         _e: Option<&ANTLRError>,
     ) {
-        let mut ne = *self.num_errors.borrow_mut();
-        ne += 1;
+        println!("Error found...{:?}", self.num_errors.borrow());
+        // let mut ne = self.num_errors.borrow_mut();
+        *self.num_errors.borrow_mut() += 1;
+        println!("Errors updated...{:?}", self.num_errors.borrow());
         eprintln!(
             "line {}:{} Syntax error {} near '{}'",
             line,
             column,
-            ne,
+            self.num_errors.borrow(),
             msg
         );
     }

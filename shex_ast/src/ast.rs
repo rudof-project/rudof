@@ -1,6 +1,7 @@
 use prefix_map::{Alias, PrefixMap};
 use srdf::iri::IriS;
 
+#[derive(Debug)]
 pub struct Schema<'a> {
   pub id: Option<Box<IriS>>,
   pub base: Option<Box<IriS>>,

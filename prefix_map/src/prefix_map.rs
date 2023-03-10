@@ -2,6 +2,7 @@ use std::fmt;
 use indexmap::IndexMap;
 use iri_s::*;
 
+#[derive(Debug)]
 pub struct PrefixMap<'a> {
     map: IndexMap<&'a str, &'a IriS>
 } 
