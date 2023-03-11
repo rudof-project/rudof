@@ -8,7 +8,8 @@ members = [
     "prefix_map",
     "srdf",
     "shex_ast",
-    "shex_antlr",
+    # "shex_antlr",
+    "shex_pest",
     "srdf_rio"
 ]
 default-members = [
@@ -16,7 +17,7 @@ default-members = [
     "prefix_map",
     "srdf",
     "shex_ast",
-    "shex_antlr",
+    "shex_pest",
     "srdf_rio"
 ]
 

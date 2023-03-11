@@ -1,21 +1,20 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::parse_error::*;
+
 
 use antlr_rust::{tree::{ParseTreeVisitor}, recognizer::Recognizer, token_factory::TokenFactory, errors::ANTLRError};
 use antlr_rust::error_listener::ErrorListener;
 
 #[derive(Debug, Clone)]
 pub struct ShExDocErrorListener {
-    num_errors: Rc<RefCell<u32>>
+    errors: Rc<RefCell<Vec<Box<ParseError>>>>
 }
 
-impl ShExDocErrorListener {
-    pub fn new(counter: Rc<RefCell<u32>>) -> ShExDocErrorListener {
-        ShExDocErrorListener { num_errors: counter }
-    }
 
-    pub fn num_errors(&self) -> u32 {
-        *self.num_errors.borrow()
+impl ShExDocErrorListener {
+    pub fn new(errors: Rc<RefCell<Vec<Box<ParseError>>>>) -> ShExDocErrorListener {
+        ShExDocErrorListener { errors: errors }
     }
 }
 
@@ -29,15 +28,17 @@ impl <'a, T: Recognizer<'a>> ErrorListener<'a, T> for ShExDocErrorListener {
         msg: &str,
         _e: Option<&ANTLRError>,
     ) {
-        println!("Error found...{:?}", self.num_errors.borrow());
+        println!("Error found...{:?}", self.errors.borrow());
+        let pe = ParseError::new(line, column, msg);
         // let mut ne = self.num_errors.borrow_mut();
-        *self.num_errors.borrow_mut() += 1;
-        println!("Errors updated...{:?}", self.num_errors.borrow());
+        // let mut x = *self.errors.borrow_mut();
+        // x.push(pe);
+        // println!("Errors updated...{:?}", x);
         eprintln!(
             "line {}:{} Syntax error {} near '{}'",
             line,
             column,
-            self.num_errors.borrow(),
+            self.errors.borrow().len(),
             msg
         );
     }

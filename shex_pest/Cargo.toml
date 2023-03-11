@@ -1,0 +1,12 @@
+[package]
+name = "shex_pest"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
+
+[dependencies]
+shex_ast = { path = "../shex_ast" }
+pest = { version = "2.5.6" }
+pest_derive = { version = "2.5.6" }
