@@ -1,28 +1,48 @@
 use shex_ast::SchemaBuilder;
-use pest::error::Error;
+use pest::iterators::{Pair, Pairs};
 use crate::pest::Parser;
-use pest::iterators::Pair;
+use crate::parser_error::ParserErrorFactory;
+use crate::shexc_error::ShExCError;
+use iri_s::IriS;
 
 #[derive(Parser)]
 #[grammar = "shex.pest"]
 struct ShExParser;
 
 
-
-
-pub(super) fn parse_text(input: &str) -> Result<SchemaBuilder, Error<Rule>> {
+pub fn parse_text(input: &str) -> Result<SchemaBuilder, ShExCError> {
     let mut parsed = ShExParser::parse(Rule::shexDoc, input)?;
     let top_node = parsed.next().unwrap();
     cnv_pairs(top_node)
 }
 
-fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, Error<Rule>> {
- let sb = SchemaBuilder::new();
+
+
+fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, ShExCError> {
+ let mut sb = SchemaBuilder::new();
  match input_pair.as_rule() {
-   Rule::shexDoc => Ok(sb),
-   _ => todo!()
+   Rule::shexDoc => {
+    let mut directive = input_pair.into_inner();
+    // parse_directive(directive, &sb)
+    Ok(sb)
+   },
+   _ => Err(unexpected(&input_pair))
  }
 }
+
+fn parse_directive<'a>(directive: Pairs<Rule>, sb: &mut SchemaBuilder<'a>) -> Result<SchemaBuilder<'a>, ShExCError> {
+  todo!()
+}
+
+
+
+fn unexpected(pair: &Pair<Rule>) -> ShExCError {
+ let e = ParserErrorFactory::new("ShExC")
+    .error("parse").unexpected(&pair).clone();
+ ShExCError::Unexpected(e)
+}
+
+
 
 
 #[cfg(test)]
@@ -31,7 +51,7 @@ mod tests {
 
     #[test]
     fn parse_simple() {
-        let result: Result<SchemaBuilder, Error<Rule>> = parse_text(
+        let result: Result<SchemaBuilder, ShExCError> = parse_text(
             r###"base <http://example.org/> 
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -39,4 +59,16 @@ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         );
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn parse_simple_error() {
+        let result: Result<SchemaBuilder, ShExCError> = parse_text(
+            r###"bse <http://example.org/> 
+prefix rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+"###,
+        );
+        assert!(result.is_err());
+    }
+
 }
