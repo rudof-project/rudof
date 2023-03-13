@@ -20,18 +20,21 @@ pub fn parse_text(input: &str) -> Result<SchemaBuilder, ShExCError> {
 
 fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, ShExCError> {
  let mut sb = SchemaBuilder::new();
+ sb.set_base(IriS::from_str("http://example.org/"));
  match input_pair.as_rule() {
    Rule::shexDoc => {
     let mut directive = input_pair.into_inner();
-    // parse_directive(directive, &sb)
+    parse_directive(directive, &mut sb);
     Ok(sb)
    },
    _ => Err(unexpected(&input_pair))
  }
 }
 
-fn parse_directive<'a>(directive: Pairs<Rule>, sb: &mut SchemaBuilder<'a>) -> Result<SchemaBuilder<'a>, ShExCError> {
-  todo!()
+fn parse_directive<'a>(
+    directive: Pairs<Rule>, 
+    sb: &mut SchemaBuilder<'a>) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
+  Ok(sb)
 }
 
 
