@@ -12,6 +12,10 @@ Cargo.lock
 *.log
 .antlr
 
+# vscode
+.metals/
+.vscode/
+
 # Added by cargo
 target/
 

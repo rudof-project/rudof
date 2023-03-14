@@ -10,33 +10,32 @@ use iri_s::IriS;
 struct ShExParser;
 
 
-pub fn parse_text(input: &str) -> Result<SchemaBuilder, ShExCError> {
-    let mut parsed = ShExParser::parse(Rule::shexDoc, input)?;
-    let top_node = parsed.next().unwrap();
-    cnv_pairs(top_node)
+pub fn parse_text<'a>(input: &'a str) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
+  let mut sb = SchemaBuilder::new();
+  let mut parsed = ShExParser::parse(Rule::shexDoc, input)?;
+  let top_node = parsed.next().unwrap();
+  // cnv_pairs(top_node, &mut sb)
+  todo!()
 }
 
 
 
-fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, ShExCError> {
- let mut sb = SchemaBuilder::new();
- sb.set_base(IriS::from_str("http://example.org/"));
+fn cnv_pairs<'a>(input_pair: Pair<'a, Rule>, 
+                 sb: &'a mut SchemaBuilder<'a>) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
+ let mut sb = sb.set_base(IriS::from_str("http://example.org/"));
  match input_pair.as_rule() {
    Rule::shexDoc => {
     let mut directive = input_pair.into_inner().next().unwrap();
-    parse_directive(directive, &mut sb);
-    Ok(sb)
+    parse_directive(directive, sb)
    },
    _ => Err(unexpected(&input_pair))
  }
 }
 
 fn parse_directive<'a>(
-    pairs: Pairs<Rule>, 
-    sb: &mut SchemaBuilder<'a>) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
-  match pairs. {
-    _ => Ok(sb)
-  }      
+    pairs: Pair<Rule>, 
+    sb: &'a mut SchemaBuilder<'a>) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
+  Ok(sb)      
 }
 
 
@@ -56,7 +55,7 @@ mod tests {
 
     #[test]
     fn parse_simple() {
-        let result: Result<SchemaBuilder, ShExCError> = parse_text(
+        let result: Result<&mut SchemaBuilder, ShExCError> = parse_text(
             r###"base <http://example.org/> 
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -67,7 +66,7 @@ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
     #[test]
     fn parse_simple_error() {
-        let result: Result<SchemaBuilder, ShExCError> = parse_text(
+        let result: Result<&mut SchemaBuilder, ShExCError> = parse_text(
             r###"bse <http://example.org/> 
 prefix rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>

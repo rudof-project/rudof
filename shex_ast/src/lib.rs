@@ -1,6 +1,8 @@
-pub mod ast;
-pub use ast::*;
+pub mod schema;
+pub mod schema_builder;
 
+pub use schema::*;
+pub use schema_builder::*;
 
 
 #[cfg(test)]
