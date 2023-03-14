@@ -23,7 +23,7 @@ fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, ShExCError> {
  sb.set_base(IriS::from_str("http://example.org/"));
  match input_pair.as_rule() {
    Rule::shexDoc => {
-    let mut directive = input_pair.into_inner();
+    let mut directive = input_pair.into_inner().next().unwrap();
     parse_directive(directive, &mut sb);
     Ok(sb)
    },
@@ -32,9 +32,11 @@ fn cnv_pairs(input_pair: Pair<'_, Rule>) -> Result<SchemaBuilder, ShExCError> {
 }
 
 fn parse_directive<'a>(
-    directive: Pairs<Rule>, 
+    pairs: Pairs<Rule>, 
     sb: &mut SchemaBuilder<'a>) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
-  Ok(sb)
+  match pairs. {
+    _ => Ok(sb)
+  }      
 }
 
 
