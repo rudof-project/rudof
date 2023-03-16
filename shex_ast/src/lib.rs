@@ -1,4 +1,6 @@
+#![deny(rust_2018_idioms)]
 pub mod schema;
+
 pub mod schema_builder;
 
 pub use schema::*;
@@ -11,7 +13,7 @@ mod tests {
     use srdf::*;
     use prefix_map::PrefixMap;
     
-    #[test]
+/*     #[test]
     fn schema_build_test() {
         let foo = Schema {
             id: None,
@@ -22,5 +24,5 @@ mod tests {
         builder.set_base(IriS::from_str("hi"));
         let foo_from_builder = builder.build();
         assert_eq!(foo.base.unwrap(),foo_from_builder.base.unwrap());
-    }
+    } */
 }

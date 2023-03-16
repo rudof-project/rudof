@@ -14,12 +14,11 @@ fn split(str: &str) -> Option<(&str, &str)> {
 
 impl <'a> PrefixMap<'a> {
     pub fn new() -> PrefixMap<'a> {
-        PrefixMap { map: IndexMap::new() }
+        PrefixMap::default()
     }
 
-    pub fn insert(&mut self, alias: &'a str, iri: &'a IriS) -> &mut Self {
+    pub fn insert(&mut self, alias: &'a str, iri: &'a IriS) {
        self.map.insert(alias, iri);
-       self
     }
 
     pub fn find(&self, str: &str) -> Option<&IriS> {
@@ -57,6 +56,12 @@ impl <'a> fmt::Display for PrefixMap<'a> {
     }
     Ok(())
   }
+}
+
+impl <'a> Default for PrefixMap<'a> {
+    fn default() -> PrefixMap<'a> {
+        PrefixMap { map: IndexMap::new() }
+    }
 }
 
 #[cfg(test)]
