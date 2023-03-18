@@ -49,12 +49,19 @@ impl <'a> SchemaBuilder<'a> {
         })
     }
 
+    pub fn add_shape(self) -> SchemaBuilder<'a> {
+      self.and_then(move |mut schema_parts| {
+        schema_parts.shapes_counter += 1;
+        Ok(schema_parts)
+      })
+    }
+
     pub fn build(self) -> Result<Schema<'a>, ErrorBuildingSchema> {
-        self.inner.and_then(|schemaParts| {
+        self.inner.and_then(|schema_parts| {
             Ok(Schema {
-                id: schemaParts.id,
-                base: schemaParts.base,
-                prefixes: Some(schemaParts.prefixes)
+                id: schema_parts.id,
+                base: schema_parts.base,
+                prefixes: Some(schema_parts.prefixes)
             })})
     }
     
@@ -89,22 +96,19 @@ impl <'a> Default for SchemaBuilder<'a> {
 mod tests {
   use super::*;  
 
-  #[derive(Debug)]
-  struct MyError {
-    details: String
-  }
 
 
-  fn update_base<'a>(sb: SchemaBuilder<'a>, iri: IriS) -> Result<SchemaBuilder<'a>, MyError> {
-    Ok(sb.set_base(iri))
+  fn update_base<'a>(sb: SchemaBuilder<'a>, iri: IriS) -> Result<SchemaBuilder<'a>, ErrorBuildingSchema> {
+     Ok(sb.set_base(iri))
   }
 
 
  #[test]
  fn test_update() {
-    let mut sb = SchemaBuilder::new();
-    let mut s = update_base(sb, IriS::from_str("http://example.org/")).unwrap().build();
-    assert_eq!(2+2,4);
+    let sb = SchemaBuilder::new();
+    let schema = 
+      update_base(sb, IriS::from_str("http://example.org/")).unwrap().build().unwrap();
+    assert_eq!(schema.base(), &Some(Box::new(IriS::from_str("http://example.org/"))));
     /*match update_base(&mut sb, IriS::from_str("http://example.org/")) {
       Ok(sb) => { 
         let s = sb.build();

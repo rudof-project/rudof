@@ -9,11 +9,11 @@ pub use schema_builder::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+/*     use super::*;
     use srdf::*;
     use prefix_map::PrefixMap;
     
-/*     #[test]
+     #[test]
     fn schema_build_test() {
         let foo = Schema {
             id: None,
