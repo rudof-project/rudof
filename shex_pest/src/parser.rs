@@ -10,12 +10,12 @@ use iri_s::IriS;
 struct ShExParser;
 
 
-pub fn parse_text<'a>(input: &'a str) -> Result<&'a mut SchemaBuilder<'a>, ShExCError> {
+pub fn parse_text<'a>(input: &'a str) -> Result<SchemaBuilder<'a>, ShExCError> {
   let mut sb = SchemaBuilder::new();
   let mut parsed = ShExParser::parse(Rule::shexDoc, input)?;
   let top_node = parsed.next().unwrap();
-  // cnv_pairs(top_node, &mut sb)
-  todo!()
+  cnv_pairs(top_node, sb)
+//  todo!()
 }
 
 
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn parse_simple() {
-        let result: Result<&mut SchemaBuilder, ShExCError> = parse_text(
+        let result: Result<SchemaBuilder, ShExCError> = parse_text(
             r###"base <http://example.org/> 
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -66,7 +66,7 @@ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
     #[test]
     fn parse_simple_error() {
-        let result: Result<&mut SchemaBuilder, ShExCError> = parse_text(
+        let result: Result<SchemaBuilder, ShExCError> = parse_text(
             r###"bse <http://example.org/> 
 prefix rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
