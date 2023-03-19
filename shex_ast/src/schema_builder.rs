@@ -2,6 +2,7 @@ use prefix_map::PrefixMap;
 use srdf::iri::IriS;
 use std::{error::Error, fmt};
 use crate::schema::Schema;
+use std::str::FromStr;
 
 pub struct SchemaBuilder<'a> {
        inner: Result<SchemaParts<'a>, ErrorBuildingSchema>
@@ -106,51 +107,10 @@ mod tests {
  #[test]
  fn test_update() {
     let sb = SchemaBuilder::new();
-    let schema = 
-      update_base(sb, IriS::from_str("http://example.org/")).unwrap().build().unwrap();
-    assert_eq!(schema.base(), &Some(Box::new(IriS::from_str("http://example.org/"))));
-    /*match update_base(&mut sb, IriS::from_str("http://example.org/")) {
-      Ok(sb) => { 
-        let s = sb.build();
-        assert_eq!(s.base.unwrap(), Box::new(IriS::from_str("http://example.org/")));      
-      }, 
-      Err(err) => {
-        assert_eq!(2+2,4);
-      }
-    }; */
-    // let s = r.build();
-    //let r = sb; 
-
+    let iri = IriS::from_str("http://example.org/").unwrap();
+    let schema = update_base(sb, iri).unwrap().build().unwrap();
+    assert_eq!(schema.base(), &Some(Box::new(IriS::from_str("http://example.org/").unwrap())));
  }
 
 }
 
-/*#[test]
-fn builder_test() {
-    use iri_s::IriS;
-    let foo = Schema {
-        id: None,
-        base: Some(Box::new(IriS::from_str("hi"))),
-        prefixes: Some(PrefixMap::new())
-    };
-    let mut builder = SchemaBuilder::new();
-    builder.set_base(IriS::from_str("hi"));
-    let foo_from_builder = builder.build();
-    let r1 = foo.base().map(|s| {Some(s)}).unwrap();
-    let r2 = foo_from_builder.unwrap().base();
-    assert_eq!(r1, *r2);
-} */
-
-/*#[test]
-fn fn_builder() {
-    use iri_s::IriS;
-    let ex = IriS::from_str("http://example.org");
-    let mut sb = SchemaBuilder::new();
-    sb.set_base(IriS::from_str("hi"))
-      .add_prefix("rdf", &ex);
-    let schema = sb.build();
-    let schema_base = schema.unwrap().base;
-    assert_eq!(
-        schema_base,
-        Some(Box::new(IriS::from_str("hi"))));
-}*/

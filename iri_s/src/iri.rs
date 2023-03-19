@@ -1,4 +1,6 @@
-use std::{ops::Add, fmt};
+use std::fmt;
+use std::str::FromStr;
+use oxiri::{IriRef, IriParseError};
 
 pub trait IRI {
 //    fn to_string(&self) -> String ;
@@ -6,7 +8,8 @@ pub trait IRI {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct IriS {
-    s: String
+    s: String,
+    iri: IriRef<String>
 }
 impl IriS {
 
@@ -14,38 +17,53 @@ impl IriS {
         self.s.as_str()
     }
 
-    pub fn from_str(str: &str) -> IriS {
-        IriS { s: str.to_owned() }
+    pub fn extend(&self, str: &str) -> Result<Self, IriError> {
+        let s = self.s.clone() + str;
+        let iri = IriRef::parse(s)?;
+        Ok(IriS { s: iri.to_string(), iri: iri })
     }
 
-    pub fn extend(&self, str: &str) -> Self {
-        let s = self.s.clone() + str;
-        IriS { s: s }
+    pub fn is_absolute(&self) -> bool {
+       self.iri.is_absolute()
     }
 
 }
+
 impl fmt::Display for IriS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f,"<{}>", self.s)
     }
 }
 
-impl Add for IriS {
-    type Output = Self;
+#[derive(Debug)]
+pub struct IriError {
+    msg: String
+}
 
-    fn add(self, other: Self) -> Self {
-        IriS {
-            s: self.s + other.s.as_str()
-        }
+
+impl FromStr for IriS {
+    type Err = IriError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_iri(s)
     }
 
 }
 
+impl From<IriParseError> for IriError {
+    fn from(e: IriParseError) -> Self {
+        IriError { msg: format!("IriParserError: {:?}",e.to_string())}
+    }
+}
+
+fn parse_iri(s:&str) -> Result<IriS, IriError> {
+    let iri = IriRef::parse(s.to_owned())?;
+    Ok(IriS { s: iri.to_string(), iri: iri })
+}
+
+
 impl IRI for IriS {
     
-    /* fn to_string(&self) -> String { 
-        self.s.clone()
-    }*/
 }
 
 
@@ -55,7 +73,7 @@ mod tests {
 
     #[test]
     fn creating_iris() {
-        let iri = IriS::from_str("http://example.org/")  ;
+        let iri = IriS::from_str("http://example.org/").unwrap()  ;
         assert_eq!(iri.to_string(), "<http://example.org/>");
     }
 

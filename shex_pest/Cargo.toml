@@ -11,8 +11,9 @@ iri_s = { path = "../iri_s" }
 shex_ast = { path = "../shex_ast" }
 pest = { version = "2.5.6" }
 pest_derive = { version = "2.5.6" }
-
+regex = "1.7"
 
 [dev-dependencies]
 env_logger = "0.10"
 pretty_env_logger = "0.4"
+lazy_static = "1.4"

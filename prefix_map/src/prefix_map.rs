@@ -1,6 +1,7 @@
 use std::fmt;
 use indexmap::IndexMap;
 use iri_s::*;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct PrefixMap<'a> {
@@ -32,17 +33,24 @@ impl <'a> PrefixMap<'a> {
        }
     } 
     
-    pub fn resolve(&self, str: &str) -> Option<IriS> { 
+    pub fn resolve(&self, str: &str) -> Result<Option<IriS>, IriError> { 
         match split(str) {
             Some((alias, local_name)) => {
               match self.find(alias) {
                 Some(iri) => {
-                    Some(iri.extend(local_name))
+                    let new_iri = iri.extend(local_name)?;
+                    Ok(Some(new_iri))
                 },
-                None => Some(IriS::from_str(str))
+                None => { 
+                    let iri = IriS::from_str(str)?;
+                    Ok(Some(iri))
+                }
               }
             },
-            None => Some(IriS::from_str(str))
+            None => {
+                let iri = IriS::from_str(str)?;
+                Ok(Some(iri))
+            }
         }
 
     }
@@ -76,18 +84,18 @@ mod tests {
     #[test]
     fn prefix_map1() {
         let mut pm = PrefixMap::new();
-        let binding = IriS::from_str("http://example.org/"); 
+        let binding = IriS::from_str("http://example.org/").unwrap(); 
         pm.insert("ex", &binding);
-        let resolved = IriS::from_str("http://example.org/name");
-        assert_eq!(pm.resolve("ex:name").unwrap(), resolved);
+        let resolved = IriS::from_str("http://example.org/name").unwrap();
+        assert_eq!(pm.resolve("ex:name").unwrap().unwrap(), resolved);
     }
 
     #[test]
     fn prefix_map_display() {
         let mut pm = PrefixMap::new();
-        let ex_iri = IriS::from_str("http://example.org/"); 
+        let ex_iri = IriS::from_str("http://example.org/").unwrap(); 
         pm.insert("ex", &ex_iri);
-        let ex_rdf = IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#"); 
+        let ex_rdf = IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap(); 
         pm.insert("rdf", &ex_rdf);
         assert_eq!(pm.to_string(), 
           "ex <http://example.org/>\nrdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");

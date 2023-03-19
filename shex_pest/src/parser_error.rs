@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use iri_s::IriError;
 use pest::{error::Error, RuleType};
 use pest::iterators::Pair;
 use crate::parser::Rule;
@@ -28,11 +29,27 @@ impl ParserErrorFactory {
 
 }
 
+#[derive(Debug, Clone)]
+pub struct ParserError {
+    repr: String,
+    fn_name: String,
+    rule: Option<String>,
+    expecting: Option<String>,
+    unreachable: bool,
+    context: Option<String>,
+}
+
+
 impl ParserError {
      pub(crate) fn unexpected<T: RuleType>(&mut self, pair: &Pair<'_, T>) -> &mut Self {
         self.context = Some(format!("{:?}: {:?}", pair.as_rule(), pair.as_str()));
         self
-    } 
+    }
+
+    pub(crate) fn absoluteIRIExpected(&mut self, str: String) -> &mut Self {
+        self.context = Some(format!("Absolute IRI expected. Found {:?}", str));
+        self
+    }
 }
 
 impl From<Error<Rule>> for ShExCError {
@@ -47,17 +64,10 @@ impl From<ParserError> for ShExCError {
     }
 }
 
-
-
-
-#[derive(Debug, Clone)]
-pub struct ParserError {
-    repr: String,
-    fn_name: String,
-    rule: Option<String>,
-    expecting: Option<String>,
-    unreachable: bool,
-    context: Option<String>,
+impl From<IriError> for ShExCError {
+    fn from(e: IriError) -> Self {
+        ShExCError::IRIError { msg: format!("IriError: {:?}",e)}
+    }
 }
 
 impl std::error::Error for ParserError {}
@@ -72,11 +82,11 @@ impl Display for ParserError {
                 &self.fn_name,
                 match &self.rule {
                     None => String::new(),
-                    Some(s) => format!(", rule: {}", s),
+                    Some(s) => format!(", rule: {s}"),
                 },
                 match &self.expecting {
                     None => String::new(),
-                    Some(s) => format!(", expecting: {}", s),
+                    Some(s) => format!(", expecting: {s}"),
                 },
                 if self.unreachable {
                     ", should have been unreachable".to_string()
@@ -86,7 +96,7 @@ impl Display for ParserError {
             ),
             match &self.context {
                 None => String::new(),
-                Some(s) => format!(", context: '{}'", s),
+                Some(s) => format!(", context: '{s}'"),
             }
         )
     }
