@@ -100,5 +100,15 @@ mod tests {
         assert_eq!(pm.to_string(), 
           "ex <http://example.org/>\nrdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
     }
+
+    #[test]
+    fn prefix_map_resolve() {
+        let mut pm = PrefixMap::new();
+        let ex_iri = IriS::from_str("http://example.org/").unwrap(); 
+        pm.insert("ex", &ex_iri);
+        assert_eq!(pm.resolve(&"ex:pepe").unwrap(), 
+          Some(IriS::from_str("http://example.org/pepe").unwrap()));
+    }
+
 }
 

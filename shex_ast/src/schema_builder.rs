@@ -25,8 +25,8 @@ impl Error for ErrorBuildingSchema {}
 // type Result<T> = Result<T,ErrorBuildingSchema>
 
 struct SchemaParts<'a> {
-    id: Option<Box<IriS>>,
-    base: Option<Box<IriS>>,
+    id: Option<IriS>,
+    base: Option<IriS>,
     prefixes: PrefixMap<'a>,
     shapes_counter: u32
 }
@@ -45,7 +45,7 @@ impl <'a> SchemaBuilder<'a> {
 
     pub fn set_base(self, base: IriS) -> SchemaBuilder<'a> {
         self.and_then(move |mut schema_parts| {
-            schema_parts.base = Some(Box::new(base));
+            schema_parts.base = Some(base);
             Ok(schema_parts)
         })
     }
@@ -103,14 +103,29 @@ mod tests {
      Ok(sb.set_base(iri))
   }
 
+  fn update_prefix_map<'a>(sb: SchemaBuilder<'a>, alias: &'a str, iri: &'a IriS) -> Result<SchemaBuilder<'a>, ErrorBuildingSchema> {
+    Ok(sb.add_prefix(alias,&iri))
+ }
 
  #[test]
- fn test_update() {
+ fn test_update_base() {
     let sb = SchemaBuilder::new();
     let iri = IriS::from_str("http://example.org/").unwrap();
     let schema = update_base(sb, iri).unwrap().build().unwrap();
-    assert_eq!(schema.base(), &Some(Box::new(IriS::from_str("http://example.org/").unwrap())));
+    assert_eq!(schema.base(), Some(IriS::from_str("http://example.org/").unwrap()));
  }
+
+ #[test]
+ fn test_update_prefix_map() {
+    let sb = SchemaBuilder::new();
+    let iri = IriS::from_str("http://example.org/").unwrap();
+    let schema = update_prefix_map(sb, &"ss", &iri).unwrap().build().unwrap();
+    assert_eq!(
+        schema.resolve(&"ss:foo").unwrap(), 
+        Some(IriS::from_str("http://example.org/foo").unwrap())
+    );
+ }
+
 
 }
 
