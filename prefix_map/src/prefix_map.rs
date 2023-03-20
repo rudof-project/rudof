@@ -33,6 +33,7 @@ impl <'a> PrefixMap<'a> {
        }
     } 
     
+    
     pub fn resolve(&self, str: &str) -> Result<Option<IriS>, IriError> { 
         match split(str) {
             Some((alias, local_name)) => {
@@ -52,7 +53,6 @@ impl <'a> PrefixMap<'a> {
                 Ok(Some(iri))
             }
         }
-
     }
 
 }

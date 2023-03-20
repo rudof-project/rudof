@@ -1,3 +1,5 @@
+//! Simple Implementation of IRIs
+//! 
 use std::fmt;
 use std::str::FromStr;
 use oxiri::{IriRef, IriParseError};
@@ -8,19 +10,18 @@ pub trait IRI {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct IriS {
-    s: String,
     iri: IriRef<String>
 }
 impl IriS {
 
     pub fn as_str(&self) -> &str {
-        self.s.as_str()
+        self.iri.as_str()
     }
 
     pub fn extend(&self, str: &str) -> Result<Self, IriError> {
-        let s = self.s.clone() + str;
+        let s = self.iri.to_string() + str;
         let iri = IriRef::parse(s)?;
-        Ok(IriS { s: iri.to_string(), iri: iri })
+        Ok(IriS { iri: iri })
     }
 
     pub fn is_absolute(&self) -> bool {
@@ -31,7 +32,7 @@ impl IriS {
 
 impl fmt::Display for IriS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"<{}>", self.s)
+        write!(f,"<{}>", self.iri)
     }
 }
 
@@ -39,7 +40,6 @@ impl fmt::Display for IriS {
 pub struct IriError {
     msg: String
 }
-
 
 impl FromStr for IriS {
     type Err = IriError;
@@ -57,13 +57,16 @@ impl From<IriParseError> for IriError {
 }
 
 fn parse_iri(s:&str) -> Result<IriS, IriError> {
-    let iri = IriRef::parse(s.to_owned())?;
-    Ok(IriS { s: iri.to_string(), iri: iri })
+    match IriRef::parse(s.to_owned()) {
+        Err(e) => Err(IriError { msg: format!("Error parsing IRI: {e}")}),
+        Ok(iri) => Ok(IriS { iri: iri })
+    }
 }
 
 
+// TODO: I would like to replace the concrete struct IriS by a trait once I know more Rust
 impl IRI for IriS {
-    
+       
 }
 
 
