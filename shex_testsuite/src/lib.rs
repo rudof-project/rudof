@@ -1,14 +1,17 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::fs;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn list_all_files() {
+        const TESTS_FOLDER = "testsuite/tests"
+        let paths = fs::read_dir("./").unwrap();
+        
+        for path in paths {
+         println!("Name: {}", path.unwrap().path().display())
+        }
+
+        assert_eq!(2 + 2, 4);
     }
 }
