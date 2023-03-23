@@ -1,1 +1,4 @@
 
+[submodule "shex_testsuite/shexTest"]
+	path = shex_testsuite/shexTest
+	url = https://github.com/shexSpec/shexTest

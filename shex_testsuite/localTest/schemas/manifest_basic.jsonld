@@ -1,0 +1,30 @@
+{
+  "graph": [
+    {
+      "id": "",
+      "tipe": "mf:Manifest",
+      "comment": "ShEx representation tests",
+      "entries": [
+        {
+          "id": "#0",
+          "tipe": "sht:RepresentationTest",
+          "name": "0",
+          "status": "mf:Approved",
+          "shex": "0.shex",
+          "json": "0.json",
+          "ttl": "0.ttl"
+        },
+        {
+          "id": "#1dot",
+          "tipe": "sht:RepresentationTest",
+          "name": "1dot",
+          "status": "mf:Approved",
+          "shex": "1dot.shex",
+          "json": "1dot.json",
+          "ttl": "1dot.ttl"
+        }
+      ]
+    }
+  ]
+}
+
