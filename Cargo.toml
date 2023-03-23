@@ -10,8 +10,10 @@ members = [
     "shex_ast",
     # "shex_antlr",
     "shex_pest",
-    "srdf_rio"
+    "srdf_rio",
+    "shex_testsuite"
 ]
+
 default-members = [
     "iri_s",
     "prefix_map",
@@ -40,5 +42,6 @@ srdf = { version = "0.0.1", path = "./srdf" }
 srdf_rio = { version = "0.0.1", path = "./srdf_rio" }
 shex_ast = { version = "0.0.1", path = "./shex_ast" }
 shex_antlr = { version = "0.0.1", path = "./shex_antlr" }
+shex_testsuite = { version = "0.0.1", path = "./shex_testsuite" }
 
 

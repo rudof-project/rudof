@@ -1,12 +1,9 @@
 [package]
-name = "prefix_map"
+name = "shex_testsuite"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
-edition.workspace = true 
+edition.workspace = true
 
 [dependencies]
-indexmap = "1.9.2"
-iri_s = { version = "0.0.1", path = "../iri_s" }
-

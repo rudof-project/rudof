@@ -1,0 +1,3 @@
+[submodule "tests/json-ld-api"]
+	path = shex_testsuite/testsuite
+	url = https://github.com/shexspec/test-suite
