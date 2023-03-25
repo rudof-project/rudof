@@ -10,7 +10,7 @@ The repo is divided in the following modules:
 - [prefix_map](https://github.com/weso/shex-rs/tree/master/prefix_map) Prefix maps implementation.
 - [shex_ast](https://github.com/weso/shex-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
 - [shex_pest](https://github.com/weso/shex-rs/tree/master/shex_pest) defines a compact syntax parser using [PEST](https://pest.rs/)
-- [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained. 
+- [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained.
 - [shex_testsuite](https://github.com/weso/shex-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
 
 ## Publishing the crates
@@ -19,12 +19,20 @@ The repo is divided in the following modules:
 cargo workspaces publish 
 ```
 
+## Worskpaces
+
+The project is using cargo workspaces wihch can be installed with:
+
+```
+cargo install cargo-workspaces
+```
+
 ## How to run the test-suite
 
 The ShEx testsuite is included in a git submodule. In order to obtain it, it is necessary to do:
 
 ```sh
-git submodule update --init --remote
+git submodule update --init --recursive
 cargo test -p shex_testsuite
 ```
 
@@ -32,8 +40,8 @@ cargo test -p shex_testsuite
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
