@@ -1,13 +1,19 @@
 {
+  "@context": [
+    {
+      "@base": "https://raw.githubusercontent.com/shexSpec/shexTest/master/schemas/manifest"
+    },
+    "../context.jsonld"
+  ],
   "graph": [
     {
-      "id": "",
-      "tipe": "mf:Manifest",
-      "comment": "ShEx representation tests",
+      "@id": "",
+      "@type": "mf:Manifest",
+      "rdfs:comment": "ShEx representation tests",
       "entries": [
         {
-          "id": "#0",
-          "tipe": "sht:RepresentationTest",
+          "@id": "#0",
+          "@type": "sht:RepresentationTest",
           "name": "0",
           "status": "mf:Approved",
           "shex": "0.shex",
@@ -15,8 +21,8 @@
           "ttl": "0.ttl"
         },
         {
-          "id": "#1dot",
-          "tipe": "sht:RepresentationTest",
+          "@id": "#1dot",
+          "@type": "sht:RepresentationTest",
           "name": "1dot",
           "status": "mf:Approved",
           "shex": "1dot.shex",
