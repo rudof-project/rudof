@@ -1,6 +1,8 @@
-use std::fmt;
+use std::{fmt, fs};
+use std::path::Path;
 
 use crate::context_entry_value::ContextEntryValue;
+use crate::schema_json::SchemaJson;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
@@ -105,7 +107,20 @@ impl<'de> Deserialize<'de> for Focus {
 
 impl ManifestSchemas {
     pub fn run(&self) {
-        println!("Running {} entries", &self.graph[0].entries.len());
+        for entry in &self.graph[0].entries {
+            entry.run()
+        }
+    }
+}
+
+impl SchemasEntry {
+    pub fn run(&self) {
+        let json_path = Path::new(&self.json);
+        let shex_schema = {
+            let schema_str = fs::read_to_string(&json_path);
+            serde_json::from_str::<SchemaJson>(&schema_str).unwrap();
+        }
+        println!("Runnnig entry: {}", self.id);
     }
 }
 

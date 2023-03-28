@@ -13,6 +13,7 @@ impl <'a> Schema<'a> {
     pub fn base(&self) -> &Option<Box<IriS>> { &self.base }
 }
 
+/* 
 pub struct SchemaBuilder<'a> {
     id: Option<Box<IriS>>,
     base: Option<Box<IriS>>,
@@ -48,7 +49,7 @@ impl <'a> SchemaBuilder<'a> {
         }
     }
 }
-
+*/
 
 #[test]
 fn builder_test() {
