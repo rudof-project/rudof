@@ -1,5 +1,6 @@
-use std::{fmt, fs};
+use std::error::Error;
 use std::path::Path;
+use std::{fmt, fs};
 
 use crate::context_entry_value::ContextEntryValue;
 use crate::schema_json::SchemaJson;
@@ -106,21 +107,23 @@ impl<'de> Deserialize<'de> for Focus {
 }
 
 impl ManifestSchemas {
-    pub fn run(&self) {
+    pub fn run(&self) -> Result<(), Box<(dyn Error + 'static)>> {
         for entry in &self.graph[0].entries {
-            entry.run()
+            entry.run()?
         }
+        Ok(())
     }
 }
 
 impl SchemasEntry {
-    pub fn run(&self) {
+    pub fn run(&self) -> Result<(), Box<(dyn Error + 'static)>> {
         let json_path = Path::new(&self.json);
         let shex_schema = {
-            let schema_str = fs::read_to_string(&json_path);
-            serde_json::from_str::<SchemaJson>(&schema_str).unwrap();
-        }
+            let schema_str = fs::read_to_string(&json_path)?;
+            serde_json::from_str::<SchemaJson>(&schema_str)?;
+        };
         println!("Runnnig entry: {}", self.id);
+        Ok(())
     }
 }
 
