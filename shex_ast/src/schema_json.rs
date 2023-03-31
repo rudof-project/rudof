@@ -69,7 +69,10 @@ pub enum ShapeExpr {
         shapeExpr: Box<Box<ShapeExpr>>,
     },
     NodeConstraint {
-        nodeKind: NodeKind,
+        nodeKind: Option<NodeKind>,
+        datatype: Option<IriRef>,
+        xsFacet: Vec<XsFacet>,
+        values: Option<Vec<ValueSetValue>>,
     },
     Shape {
         closed: Option<bool>,
@@ -80,6 +83,24 @@ pub enum ShapeExpr {
     },
     ShapeExternal,
     Ref(Ref),
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+enum XsFacet {
+    StringFacet,
+    NumericFacet,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+enum ValueSetValue {
+    ObjectValue,
+    IriStem,
+    IriStemRange,
+    LiteralStem,
+    LiteralStemRange,
+    Language,
+    LanguageStem,
+    LanguageStemRange,
 }
 
 impl ShapeExpr {
@@ -204,7 +225,9 @@ pub enum TripleExprLabel {
 #[serde(rename_all = "lowercase")]
 pub enum NodeKind {
     Iri,
-    BlankNode,
+    BNode,
+    NonLiteral,
+    Literal,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -458,9 +481,9 @@ mod tests {
     #[test]
     fn test_triple_constraint2() {
         let str = r#"{
- "type": "TripleConstraint",
- "predicate": "http://a.example/p1"
-}"#;
+             "type": "TripleConstraint",
+             "predicate": "http://a.example/p1"
+        }"#;
         let te = serde_json::from_str::<TripleExpr>(&str).unwrap();
         let expected = TripleExpr::TripleConstraint {
             id: None,
