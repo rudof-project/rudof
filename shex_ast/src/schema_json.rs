@@ -1,9 +1,11 @@
-use std::fmt::{self, Display};
-use std::marker::PhantomData;
+// use std::fmt::{self, Display};
+// use std::marker::PhantomData;
+use std::result;
 use std::str::FromStr;
 
-use serde::de::{self, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use crate::serde_string_or_struct::*;
+// use serde::de::{self, MapAccess, Visitor};
+use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
@@ -13,17 +15,22 @@ pub struct SchemaJson {
     context: String,
 
     #[serde(rename = "type")]
-    type_: String,
+    pub type_: String,
 
     #[serde(rename = "startActs")]
-    start_acts: Vec<StartAction>,
+    pub start_acts: Vec<StartAction>,
 
-    #[serde(default, deserialize_with = "deserialize_opt_string_or_struct")]
-    start: Option<ShapeExpr>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_opt_string_or_struct",
+        deserialize_with = "deserialize_opt_string_or_struct"
+    )]
+    pub start: Option<ShapeExpr>,
 
-    imports: Option<Vec<Iri>>,
+    pub imports: Option<Vec<Iri>>,
 
-    shapes: Option<Vec<ShapeDecl>>,
+    pub shapes: Option<Vec<ShapeDecl>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -41,13 +48,17 @@ pub struct ShapeDecl {
 
     id: String,
 
-    #[serde(deserialize_with = "deserialize_string_or_struct")]
-    shapeExpr: ShapeExpr,
+    #[serde(
+        rename = "ShapeExpr",
+        serialize_with = "serialize_string_or_struct",
+        deserialize_with = "deserialize_string_or_struct"
+    )]
+    shape_expr: ShapeExpr,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(tag = "type")]
-enum ShapeExpr {
+pub enum ShapeExpr {
     ShapeOr {
         shapeExprs: Vec<Box<ShapeExpr>>,
     },
@@ -83,231 +94,6 @@ impl ShapeExpr {
     }
 }
 
-pub fn deserialize_opt_box_string_or_struct<'de, T, D>(d: D) -> Result<Option<Box<T>>, D::Error>
-where
-    T: Deserialize<'de> + FromStr,
-    <T as FromStr>::Err: Display,
-    D: Deserializer<'de>,
-{
-    /// Declare an internal visitor type to handle our input.
-    struct OptBoxStringOrStruct<T>(PhantomData<T>);
-
-    impl<'de, T> de::Visitor<'de> for OptBoxStringOrStruct<T>
-    where
-        T: Deserialize<'de> + FromStr,
-        <T as FromStr>::Err: Display,
-    {
-        type Value = Option<Box<T>>;
-
-        fn visit_none<E>(self) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(None)
-        }
-
-        fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            deserialize_string_or_struct(deserializer).map(|e| Some(Box::new(e)))
-        }
-
-        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(formatter, "a null, a string or a map")
-        }
-    }
-
-    d.deserialize_option(OptBoxStringOrStruct(PhantomData))
-}
-
-pub fn deserialize_opt_string_or_struct<'de, T, D>(d: D) -> Result<Option<T>, D::Error>
-where
-    T: Deserialize<'de> + FromStr,
-    <T as FromStr>::Err: Display,
-    D: Deserializer<'de>,
-{
-    /// Declare an internal visitor type to handle our input.
-    struct OptStringOrStruct<T>(PhantomData<T>);
-
-    impl<'de, T> de::Visitor<'de> for OptStringOrStruct<T>
-    where
-        T: Deserialize<'de> + FromStr,
-        <T as FromStr>::Err: Display,
-    {
-        type Value = Option<T>;
-
-        fn visit_none<E>(self) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(None)
-        }
-
-        fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            deserialize_string_or_struct(deserializer).map(Some)
-        }
-
-        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(formatter, "a null, a string or a map")
-        }
-    }
-
-    d.deserialize_option(OptStringOrStruct(PhantomData))
-}
-
-pub fn deserialize_string_or_struct<'de, T, D>(d: D) -> Result<T, D::Error>
-where
-    T: Deserialize<'de> + FromStr,
-    <T as FromStr>::Err: Display,
-    D: Deserializer<'de>,
-{
-    /// Declare an internal visitor type to handle our input.
-    struct StringOrStruct<T>(PhantomData<T>);
-
-    impl<'de, T> de::Visitor<'de> for StringOrStruct<T>
-    where
-        T: Deserialize<'de> + FromStr,
-        <T as FromStr>::Err: Display,
-    {
-        type Value = T;
-
-        fn visit_str<E>(self, value: &str) -> Result<T, E>
-        where
-            E: de::Error,
-        {
-            FromStr::from_str(value).map_err(|err| {
-                // Just convert the underlying error type into a string and
-                // pass it to serde as a custom error.
-                de::Error::custom(format!("{}", err))
-            })
-        }
-
-        fn visit_map<M>(self, visitor: M) -> Result<T, M::Error>
-        where
-            M: de::MapAccess<'de>,
-        {
-            let mvd = de::value::MapAccessDeserializer::new(visitor);
-            Deserialize::deserialize(mvd)
-        }
-
-        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(formatter, "a string or a map")
-        }
-    }
-
-    d.deserialize_any(StringOrStruct(PhantomData))
-}
-
-/*
-impl<'de> Deserialize<'de> for ShapeExpr {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct ShapeExprVisitor;
-
-        impl<'de> de::Visitor<'de> for ShapeExprVisitor {
-            type Value = ShapeExpr;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("expected ShapeExpr")
-            }
-
-            fn visit_str<E>(self, str: &str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(ShapeExpr::Ref(Ref::IriRef {
-                    value: str.to_string(),
-                }))
-                // ShapeExpr::from_str(value)
-            }
-
-            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
-            where
-                V: de::MapAccess<'de>,
-            {
-                if let Some("type") = map.next_key()? {
-                    let value = map.next_value()?;
-                    match value {
-                        "ShapeExternal" => Ok(ShapeExpr::ShapeExternal),
-                        "Shape" => {
-                            let closed = if let Some("closed") = map.next_key()? {
-                                let value = map.next_value()?;
-                                match value {
-                                    "true" => Ok(Some(true)),
-                                    "false" => Ok(Some(false)),
-                                    other => Err(de::Error::invalid_value(
-                                        de::Unexpected::Other(other),
-                                        &"true or false",
-                                    )),
-                                }
-                            } else {
-                                Ok(None)
-                            }?;
-                            let extra: Option<Vec<IriRef>> =
-                                if let Some("extra") = map.next_key()? {
-                                    let value = map.next_value()?;
-                                    // de::Deserialize::deserialize(value);
-                                    Ok(None)
-                                } else {
-                                    Ok(None)
-                                }?;
-                            let expression: Option<TripleExpr> =
-                                if let Some("expression") = map.next_key()? {
-                                    let value = map.next_value()?;
-                                    // de::Deserialize::deserialize(value);
-                                    Ok(None)
-                                } else {
-                                    Ok(None)
-                                }?;
-                            let expression: Option<TripleExpr> =
-                                if let Some("expression") = map.next_key()? {
-                                    let value = map.next_value()?;
-                                    // de::Deserialize::deserialize(value);
-                                    Ok(None)
-                                } else {
-                                    Ok(None)
-                                }?;
-                            let semActs: Option<Vec<SemAct>> =
-                                if let Some("semActs") = map.next_key()? {
-                                    let value = map.next_value()?;
-                                    // de::Deserialize::deserialize(value);
-                                    Ok(None)
-                                } else {
-                                    Ok(None)
-                                }?;
-                            let annotations: Option<Vec<Annotation>> =
-                                if let Some("annotations") = map.next_key()? {
-                                    let value = map.next_value()?;
-                                    // de::Deserialize::deserialize(value);
-                                    Ok(None)
-                                } else {
-                                    Ok(None)
-                                }?;
-                            Ok(ShapeExpr::Shape {
-                                closed: closed,
-                                extra: extra,
-                                expression: expression,
-                                semActs: semActs,
-                                annotations: annotations,
-                            })
-                        }
-                        _ => Ok(ShapeExpr::ShapeExternal),
-                    }
-                } else {
-                    Err(de::Error::missing_field("type"))
-                }
-            }
-        }
-        deserializer.deserialize_any(ShapeExprVisitor {})
-    }
-}
-*/
 impl FromStr for ShapeExpr {
     type Err = Void;
 
@@ -318,8 +104,20 @@ impl FromStr for ShapeExpr {
     }
 }
 
+impl SerializeStringOrStruct for ShapeExpr {
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self {
+            ShapeExpr::Ref(ref r) => r.serialize(serializer),
+            _ => self.serialize(serializer),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-enum Ref {
+pub enum Ref {
     IriRef { value: String },
     BNode { value: String },
 }
@@ -328,13 +126,12 @@ enum Ref {
 struct ClosedError;
 
 #[derive(Debug, Clone)]
-struct FromStrRefError;
+pub struct FromStrRefError;
 
 impl FromStr for Ref {
     type Err = FromStrRefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        println!("FromStr for Ref...{s}");
         Ok(Ref::IriRef {
             value: s.to_string(),
         })
@@ -342,25 +139,25 @@ impl FromStr for Ref {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-struct SemAct {
+pub struct SemAct {
     name: IriRef,
     code: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-struct Annotation {
+pub struct Annotation {
     predicate: IriRef,
     object: ObjectValue,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-enum ObjectValue {
+pub enum ObjectValue {
     IriRef { value: IriRef },
     ObjectLiteral { value: ObjectLiteral },
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-struct ObjectLiteral {
+pub struct ObjectLiteral {
     value: String,
     language: Option<String>,
 
@@ -370,13 +167,18 @@ struct ObjectLiteral {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(tag = "type")]
-enum TripleExpr {
+pub enum TripleExpr {
     TripleConstraint {
         id: Option<TripleExprLabel>,
         inverse: Option<bool>,
         predicate: IriRef,
 
-        #[serde(default, deserialize_with = "deserialize_opt_box_string_or_struct")]
+        #[serde(
+            default,
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "serialize_opt_box_string_or_struct",
+            deserialize_with = "deserialize_opt_box_string_or_struct"
+        )]
         valueExpr: Option<Box<ShapeExpr>>,
 
         min: Option<i32>,
@@ -393,21 +195,21 @@ enum TripleExpr {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-enum TripleExprLabel {
+pub enum TripleExprLabel {
     IriTripleExprLabel { value: IriRef },
     BNodeTripleExprLabel { value: BNode },
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
-enum NodeKind {
+pub enum NodeKind {
     Iri,
     BlankNode,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(try_from = "String")]
-struct Iri {
+pub struct Iri {
     value: String,
 }
 
@@ -420,7 +222,7 @@ impl TryFrom<String> for Iri {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(try_from = "String")]
-struct IriRef {
+pub struct IriRef {
     value: String,
 }
 
@@ -433,7 +235,7 @@ impl TryFrom<String> for IriRef {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(try_from = "String")]
-struct BNode {
+pub struct BNode {
     value: String,
 }
 
@@ -443,7 +245,7 @@ impl TryFrom<String> for BNode {
         Ok(BNode { value: s })
     }
 }
-
+/*
 fn string_deser<'de, T, D>(deserializer: D) -> Result<T, D::Error>
 where
     T: Deserialize<'de> + FromStr<Err = Void>,
@@ -558,7 +360,7 @@ where
     println!("opt_string_or_struct!");
     deserializer.deserialize_any(OptStringOrStruct(PhantomData))
 }
-
+*/
 #[cfg(test)]
 mod tests {
     use super::*;

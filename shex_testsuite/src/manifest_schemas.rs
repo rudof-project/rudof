@@ -3,10 +3,10 @@ use std::path::Path;
 use std::{fmt, fs};
 
 use crate::context_entry_value::ContextEntryValue;
-use crate::schema_json::SchemaJson;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
+use shex_ast::schema_json::SchemaJson;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ManifestSchemas {
@@ -118,11 +118,11 @@ impl ManifestSchemas {
 impl SchemasEntry {
     pub fn run(&self) -> Result<(), Box<(dyn Error + 'static)>> {
         let json_path = Path::new(&self.json);
-        let shex_schema = {
+        let schema = {
             let schema_str = fs::read_to_string(&json_path)?;
-            serde_json::from_str::<SchemaJson>(&schema_str)?;
+            serde_json::from_str::<SchemaJson>(&schema_str)?
         };
-        println!("Runnnig entry: {}", self.id);
+        println!("Runnnig entry: {} - {}", self.id, schema.type_);
         Ok(())
     }
 }

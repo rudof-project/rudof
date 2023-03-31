@@ -1,18 +1,20 @@
-#![deny(rust_2018_idioms)]
+// #![deny(rust_2018_idioms)]
 pub mod schema;
 
 pub mod schema_builder;
+pub mod schema_json;
+mod serde_string_or_struct;
 
 pub use schema::*;
 pub use schema_builder::*;
-
+pub use schema_json::*;
 
 #[cfg(test)]
 mod tests {
-/*     use super::*;
+    /*     use super::*;
     use srdf::*;
     use prefix_map::PrefixMap;
-    
+
      #[test]
     fn schema_build_test() {
         let foo = Schema {
