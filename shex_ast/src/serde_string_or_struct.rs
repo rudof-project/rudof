@@ -2,7 +2,7 @@
 //! contain a struct.
 //! This code is based on: https://github.com/emk/compose_yml/blob/7e8e0f47dcc41cf08e15fe082ef4c40b5f0475eb/src/v2/string_or_struct.rs
 
-use serde::de::{self, Deserialize, Deserializer};
+use serde::de::{self, Deserialize, DeserializeSeed, Deserializer, SeqAccess};
 use serde::ser::{Serialize, Serializer};
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
@@ -61,7 +61,7 @@ where
     d.deserialize_any(StringOrStruct(PhantomData))
 }
 
-/// Like `opt_string_or_struct`, but it also handles the case where the
+/// Like `string_or_struct`, but it also handles the case where the
 /// value is optional.
 ///
 /// We could probably make this more generic, supporting underlying
@@ -239,4 +239,103 @@ where
         None => serializer.serialize_none(),
         Some(ref v) => serializer.serialize_some(&Wrap(v.as_ref())),
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct SeqAccessError;
+
+// This is just an unfinished attempt...
+pub fn deserialize_vec_box_string_or_struct<'de, T, D>(d: D) -> Result<Vec<Box<T>>, D::Error>
+where
+    T: Deserialize<'de> + FromStr,
+    <T as FromStr>::Err: Display,
+    D: Deserializer<'de>,
+{
+    /// Declare an internal visitor type to handle our input.
+    struct VecBoxStringOrStruct<T>(PhantomData<T>);
+    struct SeqAccessStringOrStruct<T>(PhantomData<T>);
+
+    impl<'de, T> de::SeqAccess<'de> for SeqAccessStringOrStruct<T>
+    where
+        T: Deserialize<'de> + FromStr,
+        <T as FromStr>::Err: Display,
+    {
+        type Error = serde_json::Error;
+
+        fn next_element_seed<A>(
+            &mut self,
+            v: A,
+        ) -> Result<Option<<A as DeserializeSeed<'de>>::Value>, <Self as SeqAccess<'de>>::Error>
+        where
+            A: DeserializeSeed<'de>,
+        {
+            todo!()
+        }
+    }
+
+    impl<'de, T> de::Visitor<'de> for VecBoxStringOrStruct<T>
+    where
+        T: Deserialize<'de> + FromStr,
+        <T as FromStr>::Err: Display,
+    {
+        type Value = Vec<Box<T>>;
+
+        fn visit_seq<A>(self, mut visitor: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            println!("Visiting sequence");
+            let mut values = Vec::new();
+            while let Some(value) = visitor.next_element()? {
+                println!("Visiting element");
+                values.push(value);
+            }
+            Ok(values)
+        }
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(formatter, "an array of values")
+        }
+    }
+
+    d.deserialize_seq(VecBoxStringOrStruct(PhantomData))
+}
+
+/// Like `serialize_string_or_struct`, but can also handle missing values.
+pub fn serialize_vec_box_string_or_struct<T, S>(
+    value: &Vec<Box<T>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    T: SerializeStringOrStruct,
+    S: Serializer,
+{
+    /// A fun little trick: We need to pass `value` to to `serialize_some`,
+    /// but we don't want `serialize_some` to call the normal `serialize`
+    /// method on it.  So we define a local wrapper type that overrides the
+    /// serialization.  This is one of the more subtle tricks of generic
+    /// programming in Rust: using a "newtype" wrapper struct to override
+    /// how a trait is applied to a class.
+    struct Wrap<'a, T>(&'a T)
+    where
+        T: SerializeStringOrStruct;
+
+    impl<'a, T> Serialize for Wrap<'a, T>
+    where
+        T: 'a + SerializeStringOrStruct,
+    {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match *self {
+                Wrap(v) => serialize_string_or_struct(v, serializer),
+            }
+        }
+    }
+    /* match *value {
+        None => serializer.serialize_none(),
+        Some(ref v) => serializer.serialize_some(&Wrap(v.as_ref())),
+    }*/
+    serializer.serialize_none()
 }
