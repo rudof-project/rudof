@@ -7,6 +7,6 @@ documentation.workspace = true
 edition.workspace = true 
 
 [dependencies]
-indexmap = "1.9.2"
 iri_s = { version = "0.0.1", path = "../iri_s" }
+indexmap = "1.9.2"
 
