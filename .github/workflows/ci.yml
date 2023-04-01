@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -38,8 +40,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-
-      - run: git submodule update --init --recursive
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
