@@ -8,11 +8,6 @@ fn main() -> Result<(), Box<(dyn std::error::Error + 'static)>> {
     let manifest_path = Path::new("shex_testsuite/shexTest/schemas/manifest.jsonld");
     let mut base = PathBuf::from(manifest_path);
     base.pop();
-    println!(
-        "Reading: {} with base: {}",
-        &manifest_path.display(),
-        base.as_path().display()
-    );
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
         println!("path_buf: {}", &path_buf.display());

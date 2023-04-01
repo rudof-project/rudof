@@ -68,23 +68,26 @@ pub struct ShapeExprWrapper {
 #[serde(tag = "type")]
 pub enum ShapeExpr {
     ShapeOr {
-        shapeExprs: Vec<Box<ShapeExprWrapper>>,
+        #[serde(rename = "shapeExprs")]
+        shape_exprs: Vec<Box<ShapeExprWrapper>>,
     },
     ShapeAnd {
-        shapeExprs: Vec<Box<ShapeExprWrapper>>,
+        #[serde(rename = "shapeExprs")]
+        shape_exprs: Vec<Box<ShapeExprWrapper>>,
     },
     ShapeNot {
-        shapeExpr: Box<ShapeExprWrapper>,
+        #[serde(rename = "shapeExprs")]
+        shape_expr: Box<ShapeExprWrapper>,
     },
     NodeConstraint {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        nodeKind: Option<NodeKind>,
+        #[serde(default, rename = "nodeKind", skip_serializing_if = "Option::is_none")]
+        node_kind: Option<NodeKind>,
 
         #[serde(default, skip_serializing_if = "Option::is_none")]
         datatype: Option<IriRef>,
 
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        xsFacet: Option<Vec<XsFacet>>,
+        #[serde(default, rename = "xsFacet", skip_serializing_if = "Option::is_none")]
+        xs_facet: Option<Vec<XsFacet>>,
 
         #[serde(default, skip_serializing_if = "Option::is_none")]
         values: Option<Vec<ValueSetValueWrapper>>,
@@ -99,8 +102,8 @@ pub enum ShapeExpr {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expression: Option<TripleExprWrapper>,
 
-        #[serde(skip_serializing_if = "Option::is_none")]
-        semActs: Option<Vec<SemAct>>,
+        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
+        sem_acts: Option<Vec<SemAct>>,
 
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<Vec<Annotation>>,
@@ -158,14 +161,32 @@ pub enum ValueSetValue {
 
         #[serde(skip_serializing_if = "Option::is_none")]
         exclusions: Option<Vec<StringOrIriStemWrapper>>,
-    }, // Todo
-    LiteralStem,
-    LiteralStemRange,
+    },
+    LiteralStem {
+        #[serde(rename = "type")]
+        type_: String,
+
+        stem: String,
+    },
+    LiteralStemRange {
+        #[serde(rename = "type")]
+        type_: String,
+
+        #[serde(
+            serialize_with = "serialize_string_or_struct",
+            deserialize_with = "deserialize_string_or_struct"
+        )]
+        stem: StringOrWildcard,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
+    },
     Language {
         #[serde(rename = "type")]
         type_: String,
 
-        languageTag: String,
+        #[serde(rename = "languageTag")]
+        language_tag: String,
     },
     LanguageStem,
     LanguageStemRange,
@@ -192,13 +213,68 @@ impl FromStr for IriRefOrWildcard {
     }
 }
 
-impl FromStr for StringOrIriStemWrapper {
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(untagged)]
+pub enum StringOrWildcard {
+    String(String),
+    Wildcard {
+        #[serde(rename = "type")]
+        type_: String,
+    },
+}
+
+impl FromStr for StringOrWildcard {
     type Err = Void;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StringOrIriStemWrapper {
-            s: StringOrIriStem::String(s.to_string()),
+        Ok(StringOrWildcard::String(s.to_string()))
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(transparent)]
+pub struct StringOrLiteralStemWrapper {
+    #[serde(
+        serialize_with = "serialize_string_or_struct",
+        deserialize_with = "deserialize_string_or_struct"
+    )]
+    s: StringOrLiteralStem,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(untagged)]
+pub enum StringOrLiteralStem {
+    String(String),
+    LiteralStem { stem: String },
+}
+
+impl FromStr for StringOrLiteralStemWrapper {
+    type Err = Void;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StringOrLiteralStemWrapper {
+            s: StringOrLiteralStem::String(s.to_string()),
         })
+    }
+}
+
+impl FromStr for StringOrLiteralStem {
+    type Err = Void;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StringOrLiteralStem::String(s.to_string()))
+    }
+}
+
+impl SerializeStringOrStruct for StringOrWildcard {
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self {
+            StringOrWildcard::String(ref r) => r.serialize(serializer),
+            _ => self.serialize(serializer),
+        }
     }
 }
 
@@ -231,6 +307,18 @@ impl SerializeStringOrStruct for StringOrIriStem {
     {
         match &self {
             StringOrIriStem::String(ref r) => r.serialize(serializer),
+            _ => self.serialize(serializer),
+        }
+    }
+}
+
+impl SerializeStringOrStruct for StringOrLiteralStem {
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self {
+            StringOrLiteralStem::String(ref r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }
@@ -290,12 +378,24 @@ impl SerializeStringOrStruct for ValueSetValue {
 }
 
 impl ShapeExpr {
-    fn emptyShape() -> ShapeExpr {
+    pub fn empty_shape() -> ShapeExpr {
         ShapeExpr::Shape {
             closed: None,
             extra: None,
             expression: None,
-            semActs: None,
+            sem_acts: None,
+            annotations: None,
+        }
+    }
+}
+
+impl Default for ShapeExpr {
+    fn default() -> Self {
+        ShapeExpr::Shape {
+            closed: None,
+            extra: None,
+            expression: None,
+            sem_acts: None,
             annotations: None,
         }
     }
@@ -422,45 +522,54 @@ pub struct ObjectLiteral {
 #[serde(tag = "type")]
 pub enum TripleExpr {
     EachOf {
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<TripleExprLabel>,
         expressions: Vec<Box<TripleExprWrapper>>,
         min: Option<i32>,
         max: Option<i32>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        semActs: Option<Vec<SemAct>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
+        sem_acts: Option<Vec<SemAct>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         annotations: Option<Vec<Annotation>>,
     },
     OneOf {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<TripleExprLabel>,
         expressions: Vec<Box<TripleExprWrapper>>,
         min: Option<i32>,
         max: Option<i32>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        semActs: Option<Vec<SemAct>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+
+        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
+        sem_acts: Option<Vec<SemAct>>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         annotations: Option<Vec<Annotation>>,
     },
     TripleConstraint {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<TripleExprLabel>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         inverse: Option<bool>,
+
         predicate: IriRef,
 
         #[serde(
             default,
+            rename = "valueExpr",
             skip_serializing_if = "Option::is_none",
             serialize_with = "serialize_opt_box_string_or_struct",
             deserialize_with = "deserialize_opt_box_string_or_struct"
         )]
-        valueExpr: Option<Box<ShapeExpr>>,
+        value_expr: Option<Box<ShapeExpr>>,
 
         min: Option<i32>,
+
         max: Option<i32>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        semActs: Option<Vec<SemAct>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+
+        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
+        sem_acts: Option<Vec<SemAct>>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         annotations: Option<Vec<Annotation>>,
     },
 
@@ -552,126 +661,9 @@ impl TryFrom<String> for BNode {
         Ok(BNode { value: s })
     }
 }
-/*
-fn string_deser<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-where
-    T: Deserialize<'de> + FromStr<Err = Void>,
-    D: Deserializer<'de>,
-{
-    struct StringDeser<T>(PhantomData<fn() -> T>);
-
-    impl<'de, T> Visitor<'de> for StringDeser<T>
-    where
-        T: Deserialize<'de> + FromStr<Err = Void>,
-    {
-        type Value = T;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<T, E>
-        where
-            E: de::Error,
-        {
-            Ok(FromStr::from_str(value).unwrap())
-        }
-    }
-
-    deserializer.deserialize_any(StringDeser(PhantomData))
-}
-
-fn string_or_struct<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-where
-    T: Deserialize<'de> + FromStr<Err = Void>,
-    D: Deserializer<'de>,
-{
-    // This is a Visitor that forwards string types to T's `FromStr` impl and
-    // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
-    // keep the compiler from complaining about T being an unused generic type
-    // parameter. We need T in order to know the Value type for the Visitor
-    // impl.
-    struct StringOrStruct<T>(PhantomData<fn() -> T>);
-
-    impl<'de, T> Visitor<'de> for StringOrStruct<T>
-    where
-        T: Deserialize<'de> + FromStr<Err = Void>,
-    {
-        type Value = T;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string or map")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<T, E>
-        where
-            E: de::Error,
-        {
-            Ok(FromStr::from_str(value).unwrap())
-        }
-
-        fn visit_map<M>(self, map: M) -> Result<T, M::Error>
-        where
-            M: MapAccess<'de>,
-        {
-            // `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
-            // into a `Deserializer`, allowing it to be used as the input to T's
-            // `Deserialize` implementation. T then deserializes itself using
-            // the entries from the map visitor.
-            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
-        }
-    }
-
-    deserializer.deserialize_any(StringOrStruct(PhantomData))
-}
-
-fn opt_string_or_struct<'de, T, D>(deserializer: D) -> Result<Option<Box<T>>, D::Error>
-where
-    T: Deserialize<'de> + FromStr<Err = Void>,
-    D: Deserializer<'de>,
-{
-    // This is a Visitor that forwards string types to T's `FromStr` impl and
-    // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
-    // keep the compiler from complaining about T being an unused generic type
-    // parameter. We need T in order to know the Value type for the Visitor
-    // impl.
-    struct OptStringOrStruct<T>(PhantomData<fn() -> Option<Box<T>>>);
-
-    impl<'de, T> Visitor<'de> for OptStringOrStruct<T>
-    where
-        T: Deserialize<'de> + FromStr<Err = Void>,
-    {
-        type Value = Option<Box<T>>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string or map")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Option<Box<T>>, E>
-        where
-            E: de::Error,
-        {
-            println!("String!: {:?}", value);
-            Ok(Some(Box::new(FromStr::from_str(value).unwrap())))
-        }
-
-        fn visit_map<M>(self, map: M) -> Result<Option<Box<T>>, M::Error>
-        where
-            M: MapAccess<'de>,
-        {
-            println!("visit_map...");
-            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
-        }
-    }
-
-    println!("opt_string_or_struct!");
-    deserializer.deserialize_any(OptStringOrStruct(PhantomData))
-}
-*/
 
 #[cfg(test)]
 mod tests {
-    use crate::Schema;
 
     use super::*;
 
@@ -695,14 +687,14 @@ mod tests {
                     predicate: IriRef {
                         value: "http://a.example/p1".to_string(),
                     },
-                    valueExpr: None,
+                    value_expr: None,
                     min: None,
                     max: None,
-                    semActs: None,
+                    sem_acts: None,
                     annotations: None,
                 },
             }),
-            semActs: None,
+            sem_acts: None,
             annotations: None,
         };
         assert_eq!(se, expected);
@@ -729,16 +721,16 @@ mod tests {
                     predicate: IriRef {
                         value: "http://a.example/p1".to_string(),
                     },
-                    valueExpr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+                    value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
                         value: "http://all.example/S5".to_string(),
                     }))),
                     min: None,
                     max: None,
-                    semActs: None,
+                    sem_acts: None,
                     annotations: None,
                 },
             }),
-            semActs: None,
+            sem_acts: None,
             annotations: None,
         };
         assert_eq!(se, expected);
@@ -758,12 +750,12 @@ mod tests {
             predicate: IriRef {
                 value: "http://a.example/p1".to_string(),
             },
-            valueExpr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+            value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
                 value: "http://all.example/S5".to_string(),
             }))),
             max: None,
             min: None,
-            semActs: None,
+            sem_acts: None,
             annotations: None,
         };
         assert_eq!(te, expected);
@@ -793,11 +785,6 @@ mod tests {
 
     #[test]
     fn test_triple() {
-        let str = r#""http://example.org/s""#;
-        let str = r#"{
-            "type": "TripleConstraint",
-            "predicate": "http://a.example/p1"
-          }"#;
         let str = r#"{
             "type": "Shape",
             "expression": "http://all.example/S2e"
