@@ -1,6 +1,6 @@
 [package]
 name = "shex-rs"
-version = "0.0.3"
+version = "0.0.1"
 
 [workspace]
 members = [
@@ -20,7 +20,8 @@ default-members = [
     "srdf",
     "shex_ast",
     "shex_pest",
-    "srdf_rio"
+    "srdf_rio",
+    "shex_testsuite"
 ]
 
 [workspace.package]
