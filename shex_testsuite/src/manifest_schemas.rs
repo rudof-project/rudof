@@ -1,7 +1,6 @@
-use std::error::Error;
-use std::fmt::Display;
+use crate::manifest_error::ManifestError;
 use std::path::{Path, PathBuf};
-use std::{fmt, fs, io};
+use std::{fmt, fs};
 
 use crate::context_entry_value::ContextEntryValue;
 use serde::de::{self};
@@ -108,57 +107,39 @@ impl<'de> Deserialize<'de> for Focus {
 }
 
 impl ManifestSchemas {
-    pub fn run(&self, base: &Path) -> Result<(), Box<(dyn Error + 'static)>> {
+    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         for entry in &self.graph[0].entries {
-            entry.run(base)?
+            entry.run(base, debug)?
         }
         Ok(())
     }
 }
 
-#[derive(Debug)]
-pub struct IOError {
-    path: PathBuf,
-    error: io::Error,
-}
-
-impl IOError {
-    pub fn new(path_buf: PathBuf, error: io::Error) -> IOError {
-        IOError {
-            path: path_buf,
-            error: error,
-        }
-    }
-}
-
-impl std::error::Error for IOError {}
-
-impl fmt::Display for IOError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "IO error at path {}: {}",
-            self.path.display(),
-            self.error
-        )
-    }
-}
-
 impl SchemasEntry {
-    pub fn run(&self, base: &Path) -> Result<(), Box<(dyn Error + 'static)>> {
-        println!("Runnnig entry: {} with json: {}", self.id, self.json);
+    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        if debug > 0 {
+            println!("Runnnig entry: {} with json: {}", self.id, self.json);
+        }
         let json_path = Path::new(&self.json);
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
         let schema = {
-            println!("Attempt on: {}", attempt.display());
-            let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| IOError {
-                path: attempt,
-                error: e,
+            let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
+                ManifestError::ReadingPathError {
+                    path_name: attempt.display().to_string(),
+                    error: e,
+                }
             })?;
-            serde_json::from_str::<SchemaJson>(&schema_str)?
+            serde_json::from_str::<SchemaJson>(&schema_str).map_err(|e| {
+                ManifestError::JsonError {
+                    path_name: attempt.display().to_string(),
+                    error: e,
+                }
+            })?
         };
-        println!("Runnnig entry: {} - {}", self.id, schema.type_);
+        if debug > 0 {
+            println!("Entry run: {} - {}", self.id, schema.type_);
+        }
         Ok(())
     }
 }

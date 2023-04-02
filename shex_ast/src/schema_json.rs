@@ -76,7 +76,7 @@ pub enum ShapeExpr {
         shape_exprs: Vec<Box<ShapeExprWrapper>>,
     },
     ShapeNot {
-        #[serde(rename = "shapeExprs")]
+        #[serde(rename = "shapeExpr")]
         shape_expr: Box<ShapeExprWrapper>,
     },
     NodeConstraint {
