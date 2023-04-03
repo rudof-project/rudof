@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use shex_testsuite::manifest::Manifest;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
 use std::{
     fs,
@@ -42,7 +43,7 @@ fn main() -> Result<()> {
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
         serde_json::from_str::<ManifestSchemas>(&manifest_str)?
     };
-    let count = manifest.graph[0].entries.len();
+    let count = manifest.len();
     match manifest.run(&base, cli.debug) {
         Ok(()) => {
             println!("End of processing {count} entries");

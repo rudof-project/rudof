@@ -13,6 +13,9 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
+    #[error("not found entry: {name:?}")]
+    NotFoundEntry { name: String },
+
     #[error("Unknown error")]
     Unknown,
 }

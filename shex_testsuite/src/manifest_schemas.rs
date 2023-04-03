@@ -1,4 +1,6 @@
+use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs};
 
@@ -8,8 +10,30 @@ use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::schema_json::SchemaJson;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(from = "ManifestSchemasJson")]
 pub struct ManifestSchemas {
+    entry_names: Vec<String>,
+    map: HashMap<String, SchemasEntry>,
+}
+
+impl<'a> From<ManifestSchemasJson> for ManifestSchemas {
+    fn from(m: ManifestSchemasJson) -> Self {
+        let entries = &m.graph[0].entries;
+        let names = entries.iter().map(|e| e.name.clone()).collect();
+        let mut map = HashMap::new();
+        for entry in entries {
+            map.insert(entry.name.clone(), entry.clone());
+        }
+        ManifestSchemas {
+            entry_names: names,
+            map: map,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ManifestSchemasJson {
     #[serde(rename = "@context")]
     context: Vec<ContextEntryValue>,
 
@@ -30,7 +54,7 @@ pub struct ManifestSchemasGraph {
     pub entries: Vec<SchemasEntry>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SchemasEntry {
     #[serde(rename = "@id")]
     id: String,
@@ -108,7 +132,7 @@ impl<'de> Deserialize<'de> for Focus {
 
 impl ManifestSchemas {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        for entry in &self.graph[0].entries {
+        for entry in self.map.values() {
             entry.run(base, debug)?
         }
         Ok(())
@@ -144,6 +168,25 @@ impl SchemasEntry {
     }
 }
 
+impl Manifest for ManifestSchemas {
+    fn len(&self) -> usize {
+        self.entry_names.len()
+    }
+
+    fn entry_names(&self) -> Vec<String> {
+        self.entry_names.clone() // iter().map(|n| n.clone()).collect()
+    }
+
+    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        match self.map.get(name) {
+            None => Err(ManifestError::NotFoundEntry {
+                name: name.to_string(),
+            }),
+            Some(entry) => entry.run(base, debug),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,7 +200,7 @@ mod tests {
             let manifest_str = fs::read_to_string(&manifest_path).unwrap();
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
-        assert_eq!(manifest.graph[0].entries.len(), 2);
+        assert_eq!(manifest.len(), 2);
     }
 
     #[test]
@@ -167,6 +210,6 @@ mod tests {
             let manifest_str = fs::read_to_string(&manifest_path).unwrap();
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
-        assert_eq!(manifest.graph[0].entries.len(), 433);
+        assert_eq!(manifest.len(), 433);
     }
 }
