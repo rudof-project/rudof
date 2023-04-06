@@ -44,14 +44,14 @@ pub struct ManifestSchemasJson {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ManifestSchemasGraph {
     #[serde(rename = "@id")]
-    pub id: String,
+    id: String,
 
     #[serde(rename = "@type")]
-    pub type_: String,
+    type_: String,
 
     #[serde(rename = "rdfs:comment")]
-    pub comment: String,
-    pub entries: Vec<SchemasEntry>,
+    comment: String,
+    entries: Vec<SchemasEntry>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -213,3 +213,30 @@ mod tests {
         assert_eq!(manifest.len(), 433);
     }
 }
+
+/* This code is just for testing iterators...
+impl IntoIterator for ManifestSchemas {
+    type Item = SchemasEntry;
+    type IntoIter = ManifestSchemaIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ManifestSchemaIntoIterator {
+            manifest: self,
+            index: 0,
+        }
+    }
+}
+
+pub struct ManifestSchemaIntoIterator {
+    manifest: ManifestSchemas,
+    index: usize,
+}
+
+impl Iterator for ManifestSchemaIntoIterator {
+    type Item = SchemasEntry;
+    fn next(&mut self) -> Option<SchemasEntry> {
+        // self.manifest.map.into_iter().next() //
+        todo!()
+    }
+}
+*/

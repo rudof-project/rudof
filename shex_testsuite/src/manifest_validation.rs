@@ -1,16 +1,42 @@
 use crate::context_entry_value::ContextEntryValue;
+use crate::manifest::Manifest;
+use crate::manifest_error::ManifestError;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
+use std::path::Path;
+
+#[derive(Deserialize, Debug)]
+#[serde(from = "ManifestValidationJson")]
+pub struct ManifestValidation {
+    entry_names: Vec<String>,
+    map: HashMap<String, ValidationEntry>,
+}
 
 #[derive(Deserialize, Serialize, Debug)]
-struct ManifestValidation {
+struct ManifestValidationJson {
     #[serde(rename = "@context")]
     context: Vec<ContextEntryValue>,
 
     #[serde(rename = "@graph")]
     graph: Vec<ManifestValidationGraph>,
+}
+
+impl<'a> From<ManifestValidationJson> for ManifestValidation {
+    fn from(m: ManifestValidationJson) -> Self {
+        let entries = &m.graph[0].entries;
+        let names = entries.iter().map(|e| e.name.clone()).collect();
+        let mut map: HashMap<String, ValidationEntry> = HashMap::new();
+        for entry in entries {
+            map.insert(entry.name.clone(), entry.clone());
+        }
+        ManifestValidation {
+            entry_names: names,
+            map: map,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -27,7 +53,7 @@ struct ManifestValidationGraph {
     entries: Vec<ValidationEntry>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct ValidationEntry {
     #[serde(rename = "@id")]
     id: String,
@@ -44,7 +70,7 @@ struct ValidationEntry {
     status: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct Action {
     schema: String,
     shape: Option<String>,
@@ -52,13 +78,13 @@ struct Action {
     focus: Option<Focus>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct ExtensionResult {
     extension: String,
     prints: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 enum Focus {
     Single(String),
     Typed(String, String),
@@ -106,6 +132,36 @@ impl<'de> Deserialize<'de> for Focus {
     }
 }
 
+impl ValidationEntry {
+    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        if debug > 0 {
+            println!(
+                "Runnnig entry: {} with schema: {}",
+                self.id, self.action.schema
+            );
+        }
+        Ok(())
+    }
+}
+impl Manifest for ManifestValidation {
+    fn len(&self) -> usize {
+        self.entry_names.len()
+    }
+
+    fn entry_names(&self) -> Vec<String> {
+        self.entry_names.clone() // iter().map(|n| n.clone()).collect()
+    }
+
+    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        match self.map.get(name) {
+            None => Err(ManifestError::NotFoundEntry {
+                name: name.to_string(),
+            }),
+            Some(entry) => entry.run(base, debug),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,6 +175,6 @@ mod tests {
             let manifest_str = fs::read_to_string(&manifest_path).unwrap();
             serde_json::from_str::<ManifestValidation>(&manifest_str).unwrap()
         };
-        assert_eq!(manifest.graph[0].entries.len(), 1166);
+        assert_eq!(manifest.entry_names.len(), 1166);
     }
 }
