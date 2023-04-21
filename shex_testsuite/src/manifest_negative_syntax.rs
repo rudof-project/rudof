@@ -2,7 +2,7 @@ use crate::context_entry_value::ContextEntryValue;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
-struct ManifestNegativeSyntax {
+pub struct ManifestNegativeSyntax {
     #[serde(rename = "@context")]
     context: Vec<ContextEntryValue>,
 

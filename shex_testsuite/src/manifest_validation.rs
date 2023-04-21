@@ -143,6 +143,7 @@ impl ValidationEntry {
         Ok(())
     }
 }
+
 impl Manifest for ManifestValidation {
     fn len(&self) -> usize {
         self.entry_names.len()

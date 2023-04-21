@@ -1,7 +1,10 @@
 use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
 use shex_testsuite::manifest_schemas::ManifestSchemas;
-use shex_testsuite::{manifest::Manifest, manifest_validation::ManifestValidation};
+use shex_testsuite::{
+    manifest::Manifest, manifest_negative_structure::ManifestNegativeStructure,
+    manifest_negative_syntax::ManifestNegativeSyntax, manifest_validation::ManifestValidation,
+};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -54,8 +57,16 @@ fn parse_manifest(manifest_str: String, mode: Mode) -> Result<Box<dyn Manifest>>
             let manifest_validation = serde_json::from_str::<ManifestValidation>(&manifest_str)?;
             Ok(Box::new(manifest_validation))
         }
-        Mode::NegativeStructure => todo!(),
-        Mode::NegativeSyntax => todo!(),
+        Mode::NegativeStructure => {
+            let manifest_schemas =
+                serde_json::from_str::<ManifestNegativeStructure>(&manifest_str)?;
+            Ok(Box::new(manifest_schemas))
+        }
+        Mode::NegativeSyntax => {
+            todo!()
+            /* let manifest_schemas = serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str)?;
+            Ok(Box::new(manifest_schemas)) */
+        }
     }
 }
 
