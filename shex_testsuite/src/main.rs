@@ -63,9 +63,9 @@ fn parse_manifest(manifest_str: String, mode: Mode) -> Result<Box<dyn Manifest>>
             Ok(Box::new(manifest_schemas))
         }
         Mode::NegativeSyntax => {
-            todo!()
-            /* let manifest_schemas = serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str)?;
-            Ok(Box::new(manifest_schemas)) */
+            let manifest_negative_syntax =
+                serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str)?;
+            Ok(Box::new(manifest_negative_syntax))
         }
     }
 }

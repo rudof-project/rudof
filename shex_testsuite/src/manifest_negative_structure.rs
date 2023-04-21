@@ -96,6 +96,7 @@ impl Manifest for ManifestNegativeStructure {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
