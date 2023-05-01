@@ -1,10 +1,11 @@
 pub mod bnode;
 pub mod lang;
 pub mod literal;
+pub mod rdf;
 
-
-pub use iri_s::*;
 pub use bnode::*;
+pub use iri_s::*;
+pub use rdf::*;
 
 #[cfg(test)]
 mod tests {

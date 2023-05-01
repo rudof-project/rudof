@@ -1,12 +1,16 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use rio_api::parser::TriplesParser;
+use rio_turtle::{TurtleError, TurtleParser};
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use std::path::Path;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -134,10 +138,25 @@ impl<'de> Deserialize<'de> for Focus {
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        let mut attempt = PathBuf::from(base);
+        attempt.push(&self.action.data);
+        let data_path = &attempt;
+        let file = File::open(data_path).map_err(|e| ManifestError::ReadingPathError {
+            path_name: data_path.display().to_string(),
+            error: e,
+        })?;
+        let reader = BufReader::new(file);
+        let mut parser = TurtleParser::new(reader, None);
+        let mut count = 0;
+        parser.parse_all(&mut |_| {
+            count += 1;
+            Ok(()) as Result<(), TurtleError>
+        });
+
         if debug > 0 {
             println!(
-                "Runnnig entry: {} with schema: {}",
-                self.id, self.action.schema
+                "Runnnig entry: {} with schema: {}, data: {}, #triples: {}",
+                self.id, self.action.schema, self.action.data, count
             );
         }
         Ok(())

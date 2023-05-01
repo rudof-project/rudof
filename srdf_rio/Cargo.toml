@@ -10,5 +10,6 @@ edition.workspace = true
 [dependencies]
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
+oxrdf = "0.1.5"
 srdf = { path = "../srdf" }
 

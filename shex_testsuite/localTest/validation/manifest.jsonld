@@ -1,0 +1,87 @@
+{
+    "@context": [
+        {
+            "@base": "https://raw.githubusercontent.com/shexSpec/shexTest/master/validation/manifest"
+        },
+        "../context.jsonld"
+    ],
+    "@graph": [
+        {
+            "@id": "",
+            "@type": "mf:Manifest",
+            "rdfs:comment": "ShEx validation tests",
+            "entries": [
+                {
+                    "@id": "#0_empty",
+                    "@type": "sht:ValidationTest",
+                    "action": {
+                        "schema": "../schemas/0.shex",
+                        "shape": "http://a.example/S1",
+                        "data": "empty.ttl",
+                        "focus": "http://a.example/dummy"
+                    },
+                    "extensionResults": [],
+                    "name": "0_empty",
+                    "trait": [
+                        "Empty"
+                    ],
+                    "comment": "<S1> {  } on {  }",
+                    "status": "mf:Approved"
+                },
+                {
+                    "@id": "#0_other",
+                    "@type": "sht:ValidationTest",
+                    "action": {
+                        "schema": "../schemas/0.shex",
+                        "shape": "http://a.example/S1",
+                        "data": "Is1_Ip1_Io1.ttl",
+                        "focus": "http://a.example/s1"
+                    },
+                    "extensionResults": [],
+                    "name": "0_other",
+                    "trait": [
+                        "Empty"
+                    ],
+                    "comment": "<S1> {  } on { <s1> <p1> <o1> }",
+                    "status": "mf:Approved"
+                },
+                {
+                    "@id": "#0_otherbnode",
+                    "@type": "sht:ValidationTest",
+                    "action": {
+                        "schema": "../schemas/0.shex",
+                        "shape": "http://a.example/S1",
+                        "data": "Babcd_Ip1_Io1.ttl",
+                        "focus": "_:abcd"
+                    },
+                    "extensionResults": [],
+                    "name": "0_otherbnode",
+                    "trait": [
+                        "Empty",
+                        "ToldBNode"
+                    ],
+                    "comment": "<S1> {  } on { _:abcd <p1> <o1> }",
+                    "status": "mf:Approved"
+                },
+                {
+                    "@id": "#1dot_fail-empty",
+                    "@type": "sht:ValidationFailure",
+                    "action": {
+                        "schema": "../schemas/1dot.shex",
+                        "shape": "http://a.example/S1",
+                        "data": "empty.ttl",
+                        "focus": "http://a.example/s1"
+                    },
+                    "extensionResults": [],
+                    "name": "1dot_fail-empty",
+                    "trait": [
+                        "TriplePattern"
+                    ],
+                    "comment": "<S1> { <p1> . } on {  }",
+                    "status": "mf:Approved"
+                }
+            ]
+        }
+    ]   
+}         
+        
