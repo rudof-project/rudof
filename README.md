@@ -36,6 +36,12 @@ git submodule update --init --recursive
 cargo test -p shex_testsuite
 ```
 
+In order to run the validation tests in debug mode:
+
+```
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation --debug
+```
+
 ## License
 
 Licensed under either of

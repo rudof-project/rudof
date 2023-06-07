@@ -16,6 +16,12 @@ pub enum ManifestError {
     #[error("not found entry: {name:?}")]
     NotFoundEntry { name: String },
 
+    #[error("Turtle error: {path_name:?}. Error: {turtle_err:?}")]
+    ErrorReadingTurtle {
+        path_name: String,
+        turtle_err: String,
+    },
+
     #[error("Unknown error")]
     Unknown,
 }

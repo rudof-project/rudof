@@ -72,9 +72,7 @@ fn parse_manifest(manifest_str: String, mode: Mode) -> Result<Box<dyn Manifest>>
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-
-    // let manifest_path = Path::new("shex_testsuite/shexTest/schemas/manifest.jsonld");
-    let manifest_path = Path::new(&cli.manifest_filename);
+   let manifest_path = Path::new(&cli.manifest_filename);
     let base = get_base(manifest_path)?;
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
