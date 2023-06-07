@@ -159,7 +159,10 @@ impl ValidationEntry {
                 self.id, self.action.schema, self.action.data, count
             );
         }
-        result
+        result.map_err(|te| ManifestError::ErrorReadingTurtle {
+            path_name: data_path.display().to_string(),
+            turtle_err: te.to_string(),
+        })
     }
 }
 
