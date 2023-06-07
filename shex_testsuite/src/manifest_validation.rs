@@ -148,7 +148,7 @@ impl ValidationEntry {
         let reader = BufReader::new(file);
         let mut parser = TurtleParser::new(reader, None);
         let mut count = 0;
-        parser.parse_all(&mut |_| {
+        let result = parser.parse_all(&mut |_| {
             count += 1;
             Ok(()) as Result<(), TurtleError>
         });
@@ -159,7 +159,7 @@ impl ValidationEntry {
                 self.id, self.action.schema, self.action.data, count
             );
         }
-        Ok(())
+        result
     }
 }
 
