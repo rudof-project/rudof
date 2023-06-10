@@ -1,9 +1,11 @@
 use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
+use shex_testsuite::manifest_run_mode;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
 use shex_testsuite::{
     manifest::Manifest, manifest_negative_structure::ManifestNegativeStructure,
-    manifest_negative_syntax::ManifestNegativeSyntax, manifest_validation::ManifestValidation,
+    manifest_negative_syntax::ManifestNegativeSyntax, manifest_run_mode::ManifestRunMode,
+    manifest_validation::ManifestValidation,
 };
 use std::{
     fs,
@@ -21,6 +23,9 @@ struct Cli {
         default_value = "shex_testsuite/localTest/schemas/manifest.jsonld"
     )]
     manifest_filename: String,
+
+    #[arg(value_enum, long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
+    manifest_run_mode: ManifestRunMode,
 
     #[arg(value_enum, default_value_t = Mode::Schemas)]
     mode: Mode,
@@ -72,7 +77,7 @@ fn parse_manifest(manifest_str: String, mode: Mode) -> Result<Box<dyn Manifest>>
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-   let manifest_path = Path::new(&cli.manifest_filename);
+    let manifest_path = Path::new(&cli.manifest_filename);
     let base = get_base(manifest_path)?;
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
@@ -83,14 +88,18 @@ fn main() -> Result<()> {
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
         parse_manifest(manifest_str, cli.mode)?
     };
-    let count = manifest.len();
-    match manifest.run(&base, cli.debug) {
-        Ok(()) => {
-            println!("End of processing {count} entries");
+    match manifest.run(&base, cli.debug, cli.manifest_run_mode) {
+        Ok(n) => {
+            println!("End of processing {n} entries");
             Ok(())
         }
         Err(e) => {
-            bail!("Error: {}", e)
+            bail!(
+                "Total errors: {}/{} = {:?}",
+                e.len(),
+                manifest.entry_names().len(),
+                e
+            )
         }
     }
 }

@@ -18,4 +18,6 @@ clap = { version = "4.2.1", features = ["derive"] }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.5"
+oxiri = "0.2"
+
  

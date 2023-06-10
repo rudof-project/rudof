@@ -1,6 +1,7 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use oxiri::Iri;
 use rio_api::parser::TriplesParser;
 use rio_turtle::{TurtleError, TurtleParser};
 use serde::de::{self};
@@ -146,7 +147,8 @@ impl ValidationEntry {
             error: e,
         })?;
         let reader = BufReader::new(file);
-        let mut parser = TurtleParser::new(reader, None);
+        let base_iri = Iri::parse("internal:://".to_owned()).unwrap();
+        let mut parser = TurtleParser::new(reader, Some(base_iri));
         let mut count = 0;
         let result = parser.parse_all(&mut |_| {
             count += 1;
