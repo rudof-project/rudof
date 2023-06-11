@@ -147,10 +147,11 @@ impl ValidationEntry {
             error: e,
         })?;
         let reader = BufReader::new(file);
-        let base_iri = Iri::parse("internal:://".to_owned()).unwrap();
-        let mut parser = TurtleParser::new(reader, Some(base_iri));
+        let base_iri = Iri::parse("base:://".to_owned()).unwrap();
+        let mut turtle_parser = TurtleParser::new(reader, Some(base_iri));
+
         let mut count = 0;
-        let result = parser.parse_all(&mut |_| {
+        let result = turtle_parser.parse_all(&mut |triple| {
             count += 1;
             Ok(()) as Result<(), TurtleError>
         });
@@ -161,7 +162,9 @@ impl ValidationEntry {
                 self.id, self.action.schema, self.action.data, count
             );
         }
+
         result.map_err(|te| ManifestError::ErrorReadingTurtle {
+            entry_name: self.name.to_string(),
             path_name: data_path.display().to_string(),
             turtle_err: te.to_string(),
         })

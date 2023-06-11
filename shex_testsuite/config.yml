@@ -1,0 +1,16 @@
+---
+# Possible modes are: Validation, Schemas, NegativeSyntax, NegativeStructure
+manifest_mode: Validation
+
+# List of entries that are excluded from the manifest run
+excluded_entries:
+- 1val1emptylanguageStemMinuslanguage3_passLAtfr-be-fbcl
+- 1val1LANGTAG_LabLTen-fr-jura
+- 1val1emptylanguageStemMinuslanguageStem3_LAtfr-be-fbcl
+- 1val1languageStem_passLAtfr-be-fbcl
+- 1val1languageStemMinuslanguage3_passLAtfr-be-fbcl
+- 1val1languageStemMinuslanguageStem3_LAtfr-be-fbcl
+
+# If this entry appears, it will only run the entries in this list
+#single_entries:
+#- 0_empty

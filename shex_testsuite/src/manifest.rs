@@ -1,5 +1,6 @@
 use crate::manifest_error::ManifestError;
 use crate::manifest_run_mode::ManifestRunMode;
+use crate::manifest_run_result::ManifestRunResult;
 use std::path::Path;
 
 pub trait Manifest {
@@ -9,30 +10,44 @@ pub trait Manifest {
 
     fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError>;
 
+    fn should_run(&self, single_entries: &Option<Vec<String>>, entry_name: &String) -> bool {
+        match single_entries {
+            None => true,
+            Some(es) => es.contains(entry_name),
+        }
+    }
+
     fn run(
         &self,
         base: &Path,
         debug: u8,
         mode: ManifestRunMode,
-    ) -> Result<u32, Vec<ManifestError>> {
-        let mut count_passed = 0;
-        let mut failed: Vec<ManifestError> = Vec::new();
+        excluded_entries: Vec<String>,
+        single_entries: Option<Vec<String>>,
+    ) -> ManifestRunResult {
+        let mut result: ManifestRunResult = ManifestRunResult::new();
         for entry_name in &self.entry_names() {
-            match self.run_entry(entry_name, base, debug) {
-                Ok(_) => count_passed += 1,
-                Err(e) => {
-                    failed.push(e);
-                    match mode {
-                        ManifestRunMode::FailFirstError => return Err(failed),
-                        _ => (),
+            if excluded_entries.contains(entry_name) {
+                result.add_skipped(entry_name.to_string());
+                ()
+            } else if Self::should_run(&self, &single_entries, entry_name) {
+                match self.run_entry(entry_name, base, debug) {
+                    Ok(_) => {
+                        result.add_passed(entry_name.to_string());
+                        ()
+                    }
+                    Err(e) => {
+                        result.add_failed(e);
+                        match mode {
+                            ManifestRunMode::FailFirstError => return result,
+                            _ => (),
+                        }
                     }
                 }
+            } else {
+                ()
             }
         }
-        if failed.is_empty() {
-            Ok(count_passed)
-        } else {
-            Err(failed)
-        }
+        result
     }
 }
