@@ -2,6 +2,8 @@ use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use oxiri::Iri;
+use oxrdf::{Graph, TripleRef};
+use rio_api::model::Triple;
 use rio_api::parser::TriplesParser;
 use rio_turtle::{TurtleError, TurtleParser};
 use serde::de::{self};
@@ -137,6 +139,10 @@ impl<'de> Deserialize<'de> for Focus {
     }
 }
 
+fn triple2TripleRef<'a>(triple: Triple<'a>) -> TripleRef<'a> {
+    unimplemented!();
+}
+
 impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         let mut attempt = PathBuf::from(base);
@@ -151,8 +157,11 @@ impl ValidationEntry {
         let mut turtle_parser = TurtleParser::new(reader, Some(base_iri));
 
         let mut count = 0;
+        let mut graph = Graph::default();
         let result = turtle_parser.parse_all(&mut |triple| {
             count += 1;
+            let triple_ref: TripleRef = triple2TripleRef(triple);
+            graph.insert(triple_ref);
             Ok(()) as Result<(), TurtleError>
         });
 
