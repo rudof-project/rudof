@@ -72,7 +72,7 @@ fn parse_manifest(manifest_str: String, mode: Mode) -> Result<Box<dyn Manifest>>
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-   let manifest_path = Path::new(&cli.manifest_filename);
+    let manifest_path = Path::new(&cli.manifest_filename);
     let base = get_base(manifest_path)?;
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
@@ -83,7 +83,9 @@ fn main() -> Result<()> {
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
         parse_manifest(manifest_str, cli.mode)?
     };
+    let mut passed: usize = 0;
     let count = manifest.len();
+
     match manifest.run(&base, cli.debug) {
         Ok(()) => {
             println!("End of processing {count} entries");
