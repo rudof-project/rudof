@@ -141,16 +141,31 @@ impl<'de> Deserialize<'de> for Focus {
     }
 }
 
+fn change_extension(name: String, old_extension: String, new_extension: String) -> String {
+    if name.ends_with(&old_extension) {
+        let (first, _) = name.split_at(name.len() - old_extension.len());
+        format!("{}{}", first, new_extension)
+    } else {
+        name
+    }
+}
 
 fn parse_schema(schema: &String, base: &Path, entry_name: &String, debug: u8) -> Result<SchemaJson, ManifestError> {
-   todo!()
+   let new_schema_name = change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
+
+   if debug > 0 {
+    println!("schema: {}, new_schema_name: {}", schema, new_schema_name);
+   }
+   SchemaJson::parse_schema(&new_schema_name, base, debug).map_err(|e| {
+    ManifestError::SchemaJsonError { error: e, entry_name: entry_name.to_string()}
+   })
 }
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         let graph = parse_data(&self.action.data, base, &self.name, debug).map_err(|e| 
             ManifestError::SRDFError { error: e })?;
-        // let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
+        let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
         if debug > 0 {
             println!(
                 "Runnnig entry: {} with schema: {}, data: {}, #triples: {}",

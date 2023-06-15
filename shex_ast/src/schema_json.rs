@@ -50,9 +50,11 @@ pub enum SchemaJsonError {
 impl SchemaJson {
 
     pub fn parse_schema(schema_name: &String, base: &Path, debug:u8) -> Result<SchemaJson, SchemaJsonError> {
+        
         let json_path = Path::new(&schema_name);
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
+        
         let schema = {
             let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
@@ -67,7 +69,7 @@ impl SchemaJson {
                 }
             })?
         };
-        if debug > 2 {
+        if debug > 1 {
             println!("SchemaJson parsed: {:?}", schema)
         }
         Ok(schema)

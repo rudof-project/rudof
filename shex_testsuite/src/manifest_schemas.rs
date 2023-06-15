@@ -140,6 +140,7 @@ impl ManifestSchemas {
 }
 
 impl SchemasEntry {
+
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         
         if debug > 0 {
@@ -147,7 +148,7 @@ impl SchemasEntry {
         }
         let schema_json = 
            SchemaJson::parse_schema(&self.json, base, debug).map_err(|e| {
-            ManifestError::SchemaJsonError { error: e }
+            ManifestError::SchemaJsonError { error: e, entry_name: self.name.to_string() }
            })?;
 
         if debug > 0 {
