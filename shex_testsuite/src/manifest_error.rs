@@ -1,5 +1,6 @@
 use std::{ffi::OsStr, io, path::Path};
 
+use shex_ast::SchemaJsonError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,14 +14,16 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
+    #[error("Error parsing Schema as Json: errror {error:?}")]
+    SchemaJsonError {
+        error: SchemaJsonError
+    },
+
     #[error("not found entry: {name:?}")]
     NotFoundEntry { name: String },
 
-    #[error("Turtle error: {path_name:?}. Error: {turtle_err:?}")]
-    ErrorReadingTurtle {
-        path_name: String,
-        turtle_err: String,
-    },
+    #[error("SRDFError error: {error:?}")]
+    SRDFError { error: srdf_oxgraph::SRDFError },
 
     #[error("Unknown error")]
     Unknown,

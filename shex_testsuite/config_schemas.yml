@@ -1,0 +1,10 @@
+---
+# Possible modes are: Validation, Schemas, NegativeSyntax, NegativeStructure
+manifest_mode: Schemas
+
+# List of entries that are excluded from the manifest run
+excluded_entries:
+
+# If this entry appears, it will only run the entries in this list
+#single_entries:
+#- 0_empty

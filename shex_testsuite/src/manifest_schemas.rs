@@ -141,28 +141,17 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
+        
         if debug > 0 {
             println!("Runnnig entry: {} with json: {}", self.id, self.json);
         }
-        let json_path = Path::new(&self.json);
-        let mut attempt = PathBuf::from(base);
-        attempt.push(json_path);
-        let schema = {
-            let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
-                ManifestError::ReadingPathError {
-                    path_name: attempt.display().to_string(),
-                    error: e,
-                }
-            })?;
-            serde_json::from_str::<SchemaJson>(&schema_str).map_err(|e| {
-                ManifestError::JsonError {
-                    path_name: attempt.display().to_string(),
-                    error: e,
-                }
-            })?
-        };
+        let schema_json = 
+           SchemaJson::parse_schema(&self.json, base, debug).map_err(|e| {
+            ManifestError::SchemaJsonError { error: e }
+           })?;
+
         if debug > 0 {
-            println!("Entry run: {} - {}", self.id, schema.type_);
+            println!("Entry run: {} - {}", self.id, schema_json.type_);
         }
         Ok(())
     }

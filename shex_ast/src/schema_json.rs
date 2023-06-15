@@ -1,4 +1,6 @@
 use std::fmt::Formatter;
+use std::{fs, io};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fmt::Display, result};
 
@@ -6,6 +8,7 @@ use crate::serde_string_or_struct::*;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
+use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct SchemaJson {
@@ -29,6 +32,46 @@ pub struct SchemaJson {
     pub start_acts: Option<Vec<SemAct>>,
 
     pub shapes: Option<Vec<ShapeDecl>>,
+}
+
+#[derive(Error, Debug)]
+pub enum SchemaJsonError {
+    #[error("Reading path {path_name:?} error: {error:?}")]
+    ReadingPathError { path_name: String, error: io::Error },
+
+    #[error("Reading JSON from {path_name:?}. Error: {error:?}")]
+    JsonError {
+        path_name: String,
+        error: serde_json::Error,
+    },
+
+}
+
+impl SchemaJson {
+
+    pub fn parse_schema(schema_name: &String, base: &Path, debug:u8) -> Result<SchemaJson, SchemaJsonError> {
+        let json_path = Path::new(&schema_name);
+        let mut attempt = PathBuf::from(base);
+        attempt.push(json_path);
+        let schema = {
+            let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
+                SchemaJsonError::ReadingPathError {
+                    path_name: attempt.display().to_string(),
+                    error: e,
+                }
+            })?;
+            serde_json::from_str::<SchemaJson>(&schema_str).map_err(|e| {
+                SchemaJsonError::JsonError {
+                    path_name: attempt.display().to_string(),
+                    error: e,
+                }
+            })?
+        };
+        if debug > 2 {
+            println!("SchemaJson parsed: {:?}", schema)
+        }
+        Ok(schema)
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]

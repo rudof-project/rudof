@@ -1,5 +1,5 @@
 [package]
-name = "srdf_rio"
+name = "srdf_oxgraph"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -10,6 +10,9 @@ edition.workspace = true
 [dependencies]
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
-oxrdf = "0.1.5"
+oxrdf = "0.1.6"
+oxiri = "0.2"
 srdf = { path = "../srdf" }
+thiserror = "1.0"
+
 

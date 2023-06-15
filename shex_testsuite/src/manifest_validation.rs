@@ -1,16 +1,21 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use oxiri::Iri;
+use oxrdf::{Graph, TripleRef, Triple as OxTriple, Subject as OxSubject, NamedNode as OxNamedNode, BlankNode as OxBlankNode, Term as OxTerm, Literal as OxLiteral};
+use rio_api::model::{Triple, Subject, NamedNode, BlankNode, Term, Literal};
 use rio_api::parser::TriplesParser;
 use rio_turtle::{TurtleError, TurtleParser};
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
+use shex_ast::SchemaJson;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use srdf_oxgraph::parse_data;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -136,33 +141,23 @@ impl<'de> Deserialize<'de> for Focus {
     }
 }
 
+
+fn parse_schema(schema: &String, base: &Path, entry_name: &String, debug: u8) -> Result<SchemaJson, ManifestError> {
+   todo!()
+}
+
 impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        let mut attempt = PathBuf::from(base);
-        attempt.push(&self.action.data);
-        let data_path = &attempt;
-        let file = File::open(data_path).map_err(|e| ManifestError::ReadingPathError {
-            path_name: data_path.display().to_string(),
-            error: e,
-        })?;
-        let reader = BufReader::new(file);
-        let mut parser = TurtleParser::new(reader, None);
-        let mut count = 0;
-        let result = parser.parse_all(&mut |_| {
-            count += 1;
-            Ok(()) as Result<(), TurtleError>
-        });
-
+        let graph = parse_data(&self.action.data, base, &self.name, debug).map_err(|e| 
+            ManifestError::SRDFError { error: e })?;
+        // let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
         if debug > 0 {
             println!(
                 "Runnnig entry: {} with schema: {}, data: {}, #triples: {}",
-                self.id, self.action.schema, self.action.data, count
+                self.id, self.action.schema, self.action.data, graph.len()
             );
         }
-        result.map_err(|te| ManifestError::ErrorReadingTurtle {
-            path_name: data_path.display().to_string(),
-            turtle_err: te.to_string(),
-        })
+        Ok(())
     }
 }
 
