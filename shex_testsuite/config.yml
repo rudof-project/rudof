@@ -11,6 +11,29 @@ excluded_entries:
 - 1val1languageStemMinuslanguage3_passLAtfr-be-fbcl
 - 1val1languageStemMinuslanguageStem3_LAtfr-be-fbcl
 
+# Entries without JSON schema
+- extends-abstract-multi-empty_fail-Ref2ExtraP
+- extends-abstract-multi-empty_fail-Ref1ExtraP
+- extends-abstract-multi-empty_fail-ReferrerExtraP
+- extends-abstract-multi-empty_fail-missingRef2
+- extends-abstract-multi-empty_pass
+- extends-abstract-multi-empty_fail-Ref1ExtraOR
+- extends-abstract-multi-empty_pass-missingOptRef1
+
+# Entries with error parsing schema
+- 1dot-relative_pass-short-shape
+- 1dot-relative_pass-relative-shape
+- false-lead-excluding-value-shape
+- nPlus1-greedy-rewrite
+- nPlus1-greedy-rewrite
+- PTstar-greedy-rewrite
+- nPlus1
+- skipped
+- PstarT
+- PTstar
+- PstarTstar
+- P2T2
+
 # If this entry appears, it will only run the entries in this list
 #single_entries:
 #- 0_empty
