@@ -1,0 +1,14 @@
+[package]
+name = "shex_validation"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
+
+[dependencies]
+srdf = { path = "../srdf" }
+shex_ast = { path = "../shex_ast" }
+thiserror = "1.0"
+
+

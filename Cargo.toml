@@ -11,7 +11,8 @@ members = [
     # "shex_antlr",
     "shex_pest",
     "srdf_oxgraph",
-    "shex_testsuite"
+    "shex_testsuite",
+    "shex_validation"
 ]
 
 default-members = [
@@ -21,7 +22,8 @@ default-members = [
     "shex_ast",
     "shex_pest",
     "srdf_oxgraph",
-    "shex_testsuite"
+    "shex_testsuite",
+    "shex_validation"
 ]
 
 [workspace.package]
@@ -44,5 +46,6 @@ srdf_oxgraph = { version = "0.0.1", path = "./srdf_oxgraph" }
 shex_ast = { version = "0.0.1", path = "./shex_ast" }
 shex_antlr = { version = "0.0.1", path = "./shex_antlr" }
 shex_testsuite = { version = "0.0.1", path = "./shex_testsuite" }
+shex_validation = { version = "0.0.1", path = "./shex_validation" }
 
 

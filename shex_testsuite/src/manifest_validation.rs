@@ -166,6 +166,7 @@ impl ValidationEntry {
         let graph = parse_data(&self.action.data, base, &self.name, debug).map_err(|e| 
             ManifestError::SRDFError { error: e })?;
         let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
+        
         if debug > 0 {
             println!(
                 "Runnnig entry: {} with schema: {}, data: {}, #triples: {}",
