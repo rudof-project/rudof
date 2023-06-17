@@ -1,4 +1,6 @@
 use std::fs::File;
+use oxhttp::Client;
+use oxhttp::model::{Request, Method};
 use srdf::SRDF;
 use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
@@ -8,9 +10,6 @@ use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm, Triple as OxTriple, Graph, TripleRef,
 };
-use rio_api::model::{BlankNode, NamedNode, Subject, Term, Triple, Literal};
-use rio_api::parser::*;
-use rio_turtle::*;
 use srdf::bnode::BNode;
 use srdf::iri::IRI;
 use thiserror::Error;
@@ -31,6 +30,11 @@ impl SRDF for SRDFSPARQL {
     type Term = OxTerm;
 
     fn get_predicates_subject(&self, subject: &OxSubject) -> Vec<OxNamedNode> {
+        let client = Client::new();
+        let response = client.request(
+            Request::builder(Method::GET, self.endpoint_iri.parse().unwrap()).build()
+        ).unwrap();
+
         todo!();
     } 
     fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Vec<OxTerm> {
@@ -116,48 +120,6 @@ impl SRDF for SRDFSPARQL {
 
 }
 
-fn cnv_subject(s: Subject) -> OxSubject {
-    match s {
-        Subject::NamedNode(n) => {
-            OxSubject::NamedNode(OxNamedNode::new_unchecked(n.iri.to_string()))
-        }
-        Subject::BlankNode(b) => OxSubject::BlankNode(OxBlankNode::new_unchecked(b.id)),
-        Subject::Triple(_) => todo!(),
-    }
-}
-
-fn cnv_named_node(s: NamedNode) -> OxNamedNode {
-    OxNamedNode::new_unchecked(s.iri)
-}
-fn cnv_literal(l: Literal) -> OxLiteral {
-    match l {
-        Literal::Simple { value } => OxLiteral::new_simple_literal(value.to_string()),
-        Literal::LanguageTaggedString { value, language } => {
-            OxLiteral::new_language_tagged_literal_unchecked(value, language)
-        }
-        Literal::Typed { value, datatype } => {
-            OxLiteral::new_typed_literal(value, cnv_named_node(datatype))
-        }
-    }
-}
-fn cnv_object(s: Term) -> OxTerm {
-    match s {
-        Term::NamedNode(n) => {
-            OxTerm::NamedNode(OxNamedNode::new_unchecked(n.iri.to_string()))
-        }
-        Term::BlankNode(b) => OxTerm::BlankNode(OxBlankNode::new_unchecked(b.id)),
-        Term::Literal(l) => OxTerm::Literal(cnv_literal(l)),
-        Term::Triple(_) => todo!(),
-    }
-}
-
-fn cnv(t: Triple) -> OxTriple {
-    OxTriple::new(
-        cnv_subject(t.subject),
-        cnv_named_node(t.predicate),
-        cnv_object(t.object),
-    )
-}
 
 
 #[cfg(test)]
