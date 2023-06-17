@@ -1,0 +1,18 @@
+[package]
+name = "srdf_sparql"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+oxrdf = "0.1.6"
+oxiri = "0.2"
+oxhttp = "0.1.6"
+srdf = { path = "../srdf" }
+thiserror = "1.0"
+
+
+
