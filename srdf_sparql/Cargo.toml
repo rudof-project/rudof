@@ -10,7 +10,11 @@ edition.workspace = true
 [dependencies]
 oxrdf = "0.1.6"
 oxiri = "0.2"
-oxhttp = "0.1.6"
+async-trait = "0.1.68"
+# oxhttp = { version = "0.1.6", features = ["rustls"] }
+reqwest = { version = "0.11.18", features = ["blocking", "json"] }
+url = "2.2.2"
+tokio = { version = "1", features = ["full"] }
 srdf = { path = "../srdf" }
 thiserror = "1.0"
 

@@ -3,6 +3,7 @@ use srdf::SRDF;
 use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
 use oxiri::Iri;
+use async_trait::async_trait;
 
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
@@ -47,20 +48,22 @@ struct SRDFGraph {
     graph: Graph
 }
 
+#[async_trait]
 impl SRDF for SRDFGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Err = SRDFError;
 
-    fn get_predicates_subject(&self, subject: &OxSubject) -> Vec<OxNamedNode> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<Vec<OxNamedNode>, SRDFError> {
         todo!();
     } 
-    fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Vec<OxTerm> {
+    async fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Result<Vec<OxTerm>, SRDFError> {
         todo!();
     }
-    fn get_subjects_for_object_predicate(&self, object: &OxTerm, pred: &OxNamedNode) -> Vec<OxSubject> {
+    async fn get_subjects_for_object_predicate(&self, object: &OxTerm, pred: &OxNamedNode) -> Result<Vec<OxSubject>,SRDFError> {
         todo!();
     }
 

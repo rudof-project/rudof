@@ -8,4 +8,5 @@ edition.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s" }
+async-trait = "0.1.68"
 

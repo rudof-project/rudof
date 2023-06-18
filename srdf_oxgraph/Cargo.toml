@@ -14,5 +14,6 @@ oxrdf = "0.1.6"
 oxiri = "0.2"
 srdf = { path = "../srdf" }
 thiserror = "1.0"
+async-trait = "0.1.68"
 
 

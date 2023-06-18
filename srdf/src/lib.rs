@@ -6,17 +6,20 @@ pub mod rdf;
 pub use bnode::*;
 pub use iri_s::*;
 pub use rdf::*;
+use async_trait::async_trait;
 
+#[async_trait]
 pub trait SRDF {
     type Subject;
     type IRI ;
     type BNode;
     type Literal;
     type Term ;
+    type Err;
 
-    fn get_predicates_subject(&self, subject: &Self::Subject) -> Vec<Self::IRI> ; 
-    fn get_objects_for_subject_predicate(&self, subject: &Self::Subject, pred: &Self::IRI) -> Vec<Self::Term> ;
-    fn get_subjects_for_object_predicate(&self, object: &Self::Term, pred: &Self::IRI) -> Vec<Self::Subject> ;
+    async fn get_predicates_subject(&self, subject: &Self::Subject) -> Result<Vec<Self::IRI>,Self::Err> ; 
+    async fn get_objects_for_subject_predicate(&self, subject: &Self::Subject, pred: &Self::IRI) -> Result<Vec<Self::Term>,Self::Err> ;
+    async fn get_subjects_for_object_predicate(&self, object: &Self::Term, pred: &Self::IRI) -> Result<Vec<Self::Subject>,Self::Err> ;
 
     fn subject2iri(&self, subject:&Self::Subject) -> Option<Self::IRI>;
     fn subject2bnode(&self, subject:&Self::Subject) -> Option<Self::BNode>;
