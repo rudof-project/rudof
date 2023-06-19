@@ -1,5 +1,6 @@
 use std::fs::File;
 use srdf::SRDF;
+use bag::Bag;
 use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
 use oxiri::Iri;
@@ -57,13 +58,13 @@ impl SRDF for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFError;
 
-    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<Vec<OxNamedNode>, SRDFError> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<Bag<OxNamedNode>, SRDFError> {
         todo!();
     } 
-    async fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Result<Vec<OxTerm>, SRDFError> {
+    async fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Result<Bag<OxTerm>, SRDFError> {
         todo!();
     }
-    async fn get_subjects_for_object_predicate(&self, object: &OxTerm, pred: &OxNamedNode) -> Result<Vec<OxSubject>,SRDFError> {
+    async fn get_subjects_for_object_predicate(&self, object: &OxTerm, pred: &OxNamedNode) -> Result<Bag<OxSubject>,SRDFError> {
         todo!();
     }
 

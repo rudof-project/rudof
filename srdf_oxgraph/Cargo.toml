@@ -8,11 +8,12 @@ edition.workspace = true
 
 
 [dependencies]
+srdf = { path = "../srdf" }
+bag = { path = "../bag" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"
 oxiri = "0.2"
-srdf = { path = "../srdf" }
 thiserror = "1.0"
 async-trait = "0.1.68"
 

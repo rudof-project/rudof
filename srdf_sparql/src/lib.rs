@@ -1,8 +1,11 @@
+use bag::Bag;
 use reqwest::{header::{ACCEPT, self, USER_AGENT}, Url};
 use srdf::SRDF;
 use oxrdf::*;
 use thiserror::Error;
 use async_trait::async_trait;
+use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader};
+use oxrdf::{Literal, Variable};
 
 #[derive(Error, Debug)]
 pub enum SRDFSPARQLError {
@@ -11,8 +14,10 @@ pub enum SRDFSPARQLError {
     HTTPRequestError { e: reqwest::Error },
 
     #[error("URL parser error: {e:?}")]
-    URLParseError { e: url::ParseError }
+    URLParseError { e: url::ParseError },
 
+    #[error("SPARQL Results parser: {e:?}")]
+    SPAResults { e: sparesults::ParseError }
 }
 
 impl From<reqwest::Error> for SRDFSPARQLError {
@@ -27,6 +32,13 @@ impl From<url::ParseError> for SRDFSPARQLError {
     }
 }
 
+impl From<sparesults::ParseError> for SRDFSPARQLError {
+    fn from(e: sparesults::ParseError) -> SRDFSPARQLError {
+        SRDFSPARQLError::SPAResults { e: e } 
+    }
+}
+
+
 struct SRDFSPARQL {
     endpoint_iri: String
 }
@@ -40,8 +52,9 @@ impl SRDF for SRDFSPARQL {
     type Term = Term;
     type Err = SRDFSPARQLError;
 
-    async fn get_predicates_subject(&self, subject: &Subject) -> Result<Vec<NamedNode>, SRDFSPARQLError> {
-        let results = vec![];
+    async fn get_predicates_subject(&self, subject: &Subject) -> Result<Bag<NamedNode>, SRDFSPARQLError> {
+        let mut results = Bag::new();
+        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
         let mut headers = header::HeaderMap::new();
         headers.insert(ACCEPT, header::HeaderValue::from_static("application/sparql-results+json"));
         headers.insert(USER_AGENT, header::HeaderValue::from_static("Rust App"));
@@ -52,15 +65,31 @@ impl SRDF for SRDFSPARQL {
         let url = Url::parse_with_params(&self.endpoint_iri, &[("query", query)])?;
         println!("Url: {}", url);
         let body = client.get(url).send().await?.text().await?;
-        println!("response body: {:?}", body);
-        Ok(results)
+        
+        if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
+            for solution in solutions {
+                let sol = solution?;
+                match sol.get("pred") {
+                    Some(v) => match v {
+                        Term::NamedNode(n) => { results.add(n.clone()); },
+                        _ => todo!()
+                    }
+                    _ => todo!()
+                }
+                
+            }
+            Ok(results)
+        }  else {
+            todo!()
+        }
+
     } 
 
-    async fn get_objects_for_subject_predicate(&self, subject: &Subject, pred: &NamedNode) -> Result<Vec<Term>, SRDFSPARQLError> {
+    async fn get_objects_for_subject_predicate(&self, subject: &Subject, pred: &NamedNode) -> Result<Bag<Term>, SRDFSPARQLError> {
         todo!();
     }
 
-    async fn get_subjects_for_object_predicate(&self, object: &Term, pred: &NamedNode) -> Result<Vec<Subject>,SRDFSPARQLError> {
+    async fn get_subjects_for_object_predicate(&self, object: &Term, pred: &NamedNode) -> Result<Bag<Subject>,SRDFSPARQLError> {
         todo!();
     }
 
@@ -157,8 +186,11 @@ mod tests {
         };
         let q80 : Subject = Subject::NamedNode(NamedNode::new_unchecked("http://www.wikidata.org/entity/Q80".to_string()));
         let p31 : NamedNode = NamedNode::new_unchecked("http://www.wikidata.org/entity/P31");
-        let data = 
-           wikidata.get_predicates_subject(&q80).await;
+        let maybe_data = wikidata.get_predicates_subject(&q80).await;
+        let data = maybe_data.unwrap();
+        for (n,c) in data.iter() {
+            println!("Node: {n}/{c}");
+        }
         assert_eq!(22,22);
     }
 }
