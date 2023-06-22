@@ -3,41 +3,55 @@ pub mod lang;
 pub mod literal;
 pub mod rdf;
 
-pub use bnode::*;
+use std::collections::HashSet;
+
+use async_trait::async_trait;
 pub use bag::Bag;
+pub use bnode::*;
 pub use iri_s::*;
 pub use rdf::*;
-use async_trait::async_trait;
 
 #[async_trait]
 pub trait SRDF {
     type Subject;
-    type IRI ;
+    type IRI;
     type BNode;
     type Literal;
-    type Term ;
+    type Term;
     type Err;
 
-    async fn get_predicates_subject(&self, subject: &Self::Subject) -> Result<Bag<Self::IRI>,Self::Err> ; 
-    async fn get_objects_for_subject_predicate(&self, subject: &Self::Subject, pred: &Self::IRI) -> Result<Bag<Self::Term>,Self::Err> ;
-    async fn get_subjects_for_object_predicate(&self, object: &Self::Term, pred: &Self::IRI) -> Result<Bag<Self::Subject>,Self::Err> ;
+    async fn get_predicates_subject(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<Bag<Self::IRI>, Self::Err>;
 
-    fn subject2iri(&self, subject:&Self::Subject) -> Option<Self::IRI>;
-    fn subject2bnode(&self, subject:&Self::Subject) -> Option<Self::BNode>;
-    fn subject_is_iri(&self, subject:&Self::Subject) -> bool;
-    fn subject_is_bnode(&self, subject:&Self::Subject) -> bool;
+    async fn get_objects_for_subject_predicate(
+        &self,
+        subject: &Self::Subject,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Term>, Self::Err>;
 
-    fn object2iri(&self, object:&Self::Term) -> Option<Self::IRI>;
-    fn object2bnode(&self, object:&Self::Term) -> Option<Self::BNode>;
-    fn object2literal(&self, object:&Self::Term) -> Option<Self::Literal>;
-    fn object_is_iri(&self, object:&Self::Term) -> bool;
-    fn object_is_bnode(&self, object:&Self::Term) -> bool;
-    fn object_is_literal(&self, object:&Self::Term) -> bool;
+    async fn get_subjects_for_object_predicate(
+        &self,
+        object: &Self::Term,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Subject>, Self::Err>;
+
+    fn subject2iri(&self, subject: &Self::Subject) -> Option<Self::IRI>;
+    fn subject2bnode(&self, subject: &Self::Subject) -> Option<Self::BNode>;
+    fn subject_is_iri(&self, subject: &Self::Subject) -> bool;
+    fn subject_is_bnode(&self, subject: &Self::Subject) -> bool;
+
+    fn object2iri(&self, object: &Self::Term) -> Option<Self::IRI>;
+    fn object2bnode(&self, object: &Self::Term) -> Option<Self::BNode>;
+    fn object2literal(&self, object: &Self::Term) -> Option<Self::Literal>;
+    fn object_is_iri(&self, object: &Self::Term) -> bool;
+    fn object_is_bnode(&self, object: &Self::Term) -> bool;
+    fn object_is_literal(&self, object: &Self::Term) -> bool;
 
     fn lexical_form(&self, literal: &Self::Literal) -> String;
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
-
 }
 
 #[cfg(test)]

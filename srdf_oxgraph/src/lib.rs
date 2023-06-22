@@ -1,16 +1,17 @@
-use std::fs::File;
-use srdf::SRDF;
+use async_trait::async_trait;
 use bag::Bag;
+use oxiri::Iri;
+use srdf::SRDF;
+use std::collections::HashSet;
+use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
-use oxiri::Iri;
-use async_trait::async_trait;
 
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm, Triple as OxTriple, Graph, TripleRef,
+    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
+    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use rio_api::model::{BlankNode, NamedNode, Subject, Term, Triple, Literal};
+use rio_api::model::{BlankNode, Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
 use srdf::bnode::BNode;
@@ -43,10 +44,21 @@ pub enum SRDFError {
         turtle_err: String,
     },
 
+    #[error("Turtle error: {turtle_error:?} str: {data:?}")]
+    TurtleError {
+        data: String,
+        turtle_error: TurtleError,
+    },
 }
 
-struct SRDFGraph {
-    graph: Graph
+pub struct SRDFGraph {
+    graph: Graph,
+}
+
+impl SRDFGraph {
+    fn new(graph: Graph) -> SRDFGraph {
+        SRDFGraph { graph: graph }
+    }
 }
 
 #[async_trait]
@@ -58,76 +70,110 @@ impl SRDF for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFError;
 
-    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<Bag<OxNamedNode>, SRDFError> {
-        todo!();
-    } 
-    async fn get_objects_for_subject_predicate(&self, subject: &OxSubject, pred: &OxNamedNode) -> Result<Bag<OxTerm>, SRDFError> {
-        todo!();
-    }
-    async fn get_subjects_for_object_predicate(&self, object: &OxTerm, pred: &OxNamedNode) -> Result<Bag<OxSubject>,SRDFError> {
-        todo!();
+    async fn get_predicates_subject(
+        &self,
+        subject: &OxSubject,
+    ) -> Result<Bag<OxNamedNode>, SRDFError> {
+        let mut results = Bag::new();
+        for triple in self.graph.triples_for_subject(subject) {
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
+            results.insert(predicate);
+        }
+        Ok(results)
     }
 
-    fn subject2iri(&self, subject:&OxSubject) -> Option<OxNamedNode> {
+    async fn get_objects_for_subject_predicate(
+        &self,
+        subject: &OxSubject,
+        pred: &OxNamedNode,
+    ) -> Result<HashSet<OxTerm>, SRDFError> {
+        let mut results = HashSet::new();
+        for triple in self.graph.triples_for_subject(subject) {
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
+            if predicate.eq(pred) {
+                let object: OxTerm = triple.object.to_owned().into();
+                results.insert(object);
+            }
+        }
+        Ok(results)
+    }
+
+    async fn get_subjects_for_object_predicate(
+        &self,
+        object: &OxTerm,
+        pred: &OxNamedNode,
+    ) -> Result<HashSet<OxSubject>, SRDFError> {
+        let mut results = HashSet::new();
+        for triple in self.graph.triples_for_object(object) {
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
+            if predicate.eq(pred) {
+                let subject: OxSubject = triple.subject.to_owned().into();
+                results.insert(subject);
+            }
+        }
+        Ok(results)
+    }
+
+    fn subject2iri(&self, subject: &OxSubject) -> Option<OxNamedNode> {
         match subject {
             OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None
+            _ => None,
         }
     }
-    fn subject2bnode(&self, subject:&OxSubject) -> Option<OxBlankNode> {
+    fn subject2bnode(&self, subject: &OxSubject) -> Option<OxBlankNode> {
         match subject {
             OxSubject::BlankNode(b) => Some(b.clone()),
-            _ => None
+            _ => None,
         }
     }
-    fn subject_is_iri(&self, subject:&OxSubject) -> bool {
+    fn subject_is_iri(&self, subject: &OxSubject) -> bool {
         match subject {
             OxSubject::NamedNode(_) => true,
-            _ => false
+            _ => false,
         }
     }
-    fn subject_is_bnode(&self, subject:&OxSubject) -> bool {
+    fn subject_is_bnode(&self, subject: &OxSubject) -> bool {
         match subject {
             OxSubject::BlankNode(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
-    fn object2iri(&self, object:&OxTerm) -> Option<OxNamedNode> {
+    fn object2iri(&self, object: &OxTerm) -> Option<OxNamedNode> {
         match object {
             OxTerm::NamedNode(n) => Some(n.clone()),
-            _ => None
+            _ => None,
         }
     }
-    fn object2bnode(&self, object:&OxTerm) -> Option<OxBlankNode> {
+    fn object2bnode(&self, object: &OxTerm) -> Option<OxBlankNode> {
         match object {
             OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None
+            _ => None,
         }
     }
-    fn object2literal(&self, object:&OxTerm) -> Option<OxLiteral> {
+    fn object2literal(&self, object: &OxTerm) -> Option<OxLiteral> {
         match object {
             OxTerm::Literal(l) => Some(l.clone()),
-            _ => None
+            _ => None,
         }
     }
     fn object_is_iri(&self, object: &OxTerm) -> bool {
         match object {
             OxTerm::NamedNode(_) => true,
-            _ => false
+            _ => false,
         }
     }
-    fn object_is_bnode(&self, object:&OxTerm) -> bool {
+    fn object_is_bnode(&self, object: &OxTerm) -> bool {
         match object {
             OxTerm::BlankNode(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
-    fn object_is_literal(&self, object:&OxTerm) -> bool {
+    fn object_is_literal(&self, object: &OxTerm) -> bool {
         match object {
             OxTerm::Literal(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -140,8 +186,6 @@ impl SRDF for SRDFGraph {
     fn datatype(&self, literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
     }
-
-
 }
 
 fn cnv_subject(s: Subject) -> OxSubject {
@@ -170,9 +214,7 @@ fn cnv_literal(l: Literal) -> OxLiteral {
 }
 fn cnv_object(s: Term) -> OxTerm {
     match s {
-        Term::NamedNode(n) => {
-            OxTerm::NamedNode(OxNamedNode::new_unchecked(n.iri.to_string()))
-        }
+        Term::NamedNode(n) => OxTerm::NamedNode(OxNamedNode::new_unchecked(n.iri.to_string())),
         Term::BlankNode(b) => OxTerm::BlankNode(OxBlankNode::new_unchecked(b.id)),
         Term::Literal(l) => OxTerm::Literal(cnv_literal(l)),
         Term::Triple(_) => todo!(),
@@ -187,7 +229,12 @@ fn cnv(t: Triple) -> OxTriple {
     )
 }
 
-pub fn parse_data(data: &String, base: &Path, entry_name: &String, debug: u8) -> Result<Graph, SRDFError> {
+pub fn parse_data(
+    data: &String,
+    base: &Path,
+    entry_name: &String,
+    debug: u8,
+) -> Result<Graph, SRDFError> {
     let mut attempt = PathBuf::from(base);
     attempt.push(data);
     let data_path = &attempt;
@@ -212,16 +259,35 @@ pub fn parse_data(data: &String, base: &Path, entry_name: &String, debug: u8) ->
             entry_name: entry_name.to_string(),
             path_name: data_path.display().to_string(),
             turtle_err: err.to_string(),
-        })
+        }),
+    }
+}
+
+pub fn parse_data_str(data: String, debug: u8) -> Result<SRDFGraph, SRDFError> {
+    let base_iri = Iri::parse("base:://".to_owned()).unwrap();
+    let mut turtle_parser = TurtleParser::new(std::io::Cursor::new(&data), Some(base_iri));
+    let mut graph = Graph::default();
+    let parse_result = turtle_parser.parse_all(&mut |triple| {
+        let ox_triple = cnv(triple);
+        let triple_ref: TripleRef = ox_triple.as_ref();
+        graph.insert(triple_ref);
+        Ok(()) as Result<(), TurtleError>
+    });
+    match parse_result {
+        Ok(_) => Ok(SRDFGraph::new(graph)),
+        Err(err) => Err(SRDFError::TurtleError {
+            data: data,
+            turtle_error: err,
+        }),
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use oxrdf::{Graph, SubjectRef};
     use rio_api::model::{Literal, Subject};
-
-    use super::*;
+    use srdf::SRDF;
 
     #[test]
     fn check_iri() {
@@ -258,5 +324,27 @@ mod tests {
         let alice = OxNamedNode::new_unchecked("http://example.org/alice");
         assert_eq!(graph.triples_for_subject(alice.as_ref()).count(), 3);
         assert_eq!(count, 5)
+    }
+
+    #[tokio::test]
+    async fn parse_get_predicates() {
+        let s = r#"PREFIX : <http://example.org/>
+            PREFIX schema: <https://schema.org/>
+
+            :alice schema:name "Alice" ;
+                   schema:knows :bob, :carol ;
+                   :age  23 .
+         "#;
+        let parsed_graph = parse_data_str(s.to_string(), 0).unwrap();
+        let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
+        let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
+        let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
+        assert_eq!(bag_preds.contains(&knows), 2);
+        let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
+        let alice_knows = parsed_graph
+            .get_objects_for_subject_predicate(&alice, &knows)
+            .await
+            .unwrap();
+        assert_eq!(alice_knows.contains(&bob), true);
     }
 }

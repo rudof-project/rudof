@@ -1,5 +1,5 @@
 [package]
-name = "srdf_oxgraph"
+name = "shapemap_oxgraph"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -8,15 +8,9 @@ edition.workspace = true
 
 
 [dependencies]
-srdf = { path = "../srdf" }
-bag = { path = "../bag" }
-rio_api = "0.8.2"
-rio_turtle = "0.8.2"
+shapemap = { path = "../shapemap" }
 oxrdf = "0.1.6"
-oxiri = "0.2"
 thiserror = "1.0"
-async-trait = "0.1.68"
-tokio = { version = "1", features = ["full"] }
 
 
 

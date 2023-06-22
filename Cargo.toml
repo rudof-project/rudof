@@ -14,7 +14,9 @@ members = [
     "srdf_oxgraph",
     "srdf_sparql",
     "shex_testsuite",
-    "shex_validation"
+    "shex_validation",
+    "shapemap",
+    "shapemap_oxgraph"
 ]
 
 default-members = [
@@ -27,7 +29,9 @@ default-members = [
     "srdf_oxgraph",
     "srdf_sparql",
     "shex_testsuite",
-    "shex_validation"
+    "shex_validation",
+    "shapemap",
+    "shapemap_oxgraph"
 ]
 
 [workspace.package]
@@ -53,5 +57,5 @@ shex_ast = { version = "0.0.1", path = "./shex_ast" }
 shex_antlr = { version = "0.0.1", path = "./shex_antlr" }
 shex_testsuite = { version = "0.0.1", path = "./shex_testsuite" }
 shex_validation = { version = "0.0.1", path = "./shex_validation" }
-
-
+shapemap = { version = "0.0.1", path = "./shapemap" }
+shapemap_oxgraph = { version = "0.0.1", path = "./shapemap_oxgraph" }

@@ -1,0 +1,12 @@
+[package]
+name = "shapemap"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror = "1.0"
+
+
