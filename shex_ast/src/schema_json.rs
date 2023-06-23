@@ -1,14 +1,14 @@
 use std::fmt::Formatter;
-use std::{fs, io};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fmt::Display, result};
+use std::{fs, io};
 
 use crate::serde_string_or_struct::*;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
 use thiserror::Error;
+use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct SchemaJson {
@@ -44,17 +44,18 @@ pub enum SchemaJsonError {
         path_name: String,
         error: serde_json::Error,
     },
-
 }
 
 impl SchemaJson {
-
-    pub fn parse_schema(schema_name: &String, base: &Path, debug:u8) -> Result<SchemaJson, SchemaJsonError> {
-        
+    pub fn parse_schema(
+        schema_name: &String,
+        base: &Path,
+        debug: u8,
+    ) -> Result<SchemaJson, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
-        
+
         let schema = {
             let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
@@ -87,16 +88,16 @@ pub struct StartAction {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct ShapeDecl {
     #[serde(rename = "type")]
-    type_: String,
+    pub type_: String,
 
-    id: String,
+    pub id: String,
 
     #[serde(
         rename = "shapeExpr",
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    shape_expr: ShapeExpr,
+    pub shape_expr: ShapeExpr,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -106,7 +107,7 @@ pub struct ShapeExprWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    se: ShapeExpr,
+    pub se: ShapeExpr,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -628,7 +629,7 @@ pub struct TripleExprWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    te: TripleExpr,
+    pub te: TripleExpr,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -684,7 +685,7 @@ impl TryFrom<String> for Iri {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(try_from = "String")]
 pub struct IriRef {
-    value: String,
+    pub value: String,
 }
 
 impl TryFrom<String> for IriRef {

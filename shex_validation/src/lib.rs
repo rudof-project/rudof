@@ -1,30 +1,26 @@
+use shapemap::ShapeMap;
 use shex_ast::Schema;
 use srdf::SRDF;
 
-struct FixedShapeMap {}
-
-struct ResultShapeMap {}
-
 enum ValidationError {}
 
-fn validate<D>(
-    sm: FixedShapeMap,
-    schema: Schema,
-    data: D,
-) -> Result<ResultShapeMap, ValidationError>
+fn validate<'a, SM, D>(sm: SM, schema: Schema, data: D) -> Result<SM, ValidationError>
 where
     D: SRDF,
+    SM: ShapeMap<'a>,
 {
     todo!()
 }
 
-fn validate_node<D, I>(
+fn validate_node<'a, D, SM, I>(
     node: D::IRI,
     schema: Schema,
     data: D,
-) -> Result<ResultShapeMap, ValidationError>
+    shape_map: SM,
+) -> Result<SM, ValidationError>
 where
     D: SRDF,
+    SM: ShapeMap<'a>,
 {
     todo!()
 }

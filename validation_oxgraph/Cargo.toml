@@ -1,15 +1,18 @@
 [package]
-name = "shex_validation"
+name = "validation_oxgraph"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true
 
+
 [dependencies]
-srdf = { path = "../srdf" }
 shex_ast = { path = "../shex_ast" }
+shapemap_oxgraph = { path = "../shapemap_oxgraph" }
 shapemap = { path = "../shapemap" }
+oxrdf = "0.1.6"
 thiserror = "1.0"
+
 
 

@@ -16,7 +16,8 @@ members = [
     "shex_testsuite",
     "shex_validation",
     "shapemap",
-    "shapemap_oxgraph"
+    "shapemap_oxgraph",
+    "validation_oxgraph"
 ]
 
 default-members = [
@@ -31,7 +32,8 @@ default-members = [
     "shex_testsuite",
     "shex_validation",
     "shapemap",
-    "shapemap_oxgraph"
+    "shapemap_oxgraph",
+    "validation_oxgraph"
 ]
 
 [workspace.package]
@@ -59,3 +61,4 @@ shex_testsuite = { version = "0.0.1", path = "./shex_testsuite" }
 shex_validation = { version = "0.0.1", path = "./shex_validation" }
 shapemap = { version = "0.0.1", path = "./shapemap" }
 shapemap_oxgraph = { version = "0.0.1", path = "./shapemap_oxgraph" }
+validation_oxgraph = { version = "0.0.1", path = "./validation_oxgraph" }
