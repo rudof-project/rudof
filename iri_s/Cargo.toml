@@ -9,3 +9,4 @@ license.workspace = true
 
 [dependencies]
 oxiri = "0.2.2"
+thiserror = "1.0.0"

@@ -1,10 +1,13 @@
 // #![deny(rust_2018_idioms)]
 pub mod schema;
 
+pub mod compiled_schema;
 pub mod schema_builder;
 pub mod schema_json;
+
 mod serde_string_or_struct;
 
+pub use compiled_schema::*;
 pub use schema::*;
 pub use schema_builder::*;
 pub use schema_json::*;
