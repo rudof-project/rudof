@@ -1,18 +1,23 @@
 use crate::{schema_json, IriRef, SchemaJson};
-use iri_s::{IriS, IriSError};
+use iri_s::{IriError, IriS, IriSError};
 use std::collections::HashMap;
+use std::hash::Hash;
+use std::str::FromStr;
 
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CompiledSchemaError {
-    #[error("Parsing String as IRI: {error:?}")]
-    IriParseError { error: IriSError },
+    #[error("Parsing {str:?} as IRI")]
+    Str2IriError { str: String },
+
+    #[error("Parsing as IRI: {err:?}")]
+    IriParseError { err: IriSError },
 }
 
 impl From<IriSError> for CompiledSchemaError {
     fn from(e: IriSError) -> CompiledSchemaError {
-        CompiledSchemaError::IriParseError { error: e }
+        CompiledSchemaError::IriParseError { err: e }
     }
 }
 
@@ -20,6 +25,13 @@ impl From<IriSError> for CompiledSchemaError {
 pub enum ShapeLabel {
     Iri(IriS),
     BNode(String),
+}
+
+impl FromStr for ShapeLabel {
+    type Err = IriError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(ShapeLabel::Iri(IriS::from_str(s)?))
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -37,8 +49,8 @@ pub enum NodeKind {
 }
 
 #[derive(Debug)]
-pub struct CompiledSchema {
-    shapes: HashMap<ShapeLabel, ShapeExpr>,
+pub struct CompiledSchema<SL> {
+    shapes: HashMap<SL, ShapeExpr>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -183,9 +195,14 @@ pub struct Annotation {
     object: ObjectValue,
 }
 
-impl CompiledSchema {
-    pub fn from_schema_json<'a>(schema: SchemaJson) -> Result<CompiledSchema, CompiledSchemaError> {
-        let mut shapes = HashMap::new();
+impl<SL> CompiledSchema<SL>
+where
+    SL: Eq + Hash + FromStr,
+{
+    pub fn from_schema_json<'a>(
+        schema: SchemaJson,
+    ) -> Result<CompiledSchema<SL>, CompiledSchemaError> {
+        let mut shapes: HashMap<SL, ShapeExpr> = HashMap::new();
         if let Some(shape_decls) = schema.shapes {
             for sd in shape_decls {
                 let label = Self::id_to_shape_label(sd.id.clone())?;
@@ -196,10 +213,8 @@ impl CompiledSchema {
         Ok(CompiledSchema { shapes: shapes })
     }
 
-    fn id_to_shape_label<'a>(id: String) -> Result<ShapeLabel, CompiledSchemaError> {
-        // TODO: It doesn't check anything...
-        let iri = IriS::new(id.as_str())?;
-        Ok(ShapeLabel::Iri(iri))
+    fn id_to_shape_label<'a>(id: String) -> Result<SL, CompiledSchemaError> {
+        SL::from_str(&id).map_err(|err| CompiledSchemaError::Str2IriError { str: id })
     }
 
     fn shape_decl_to_shape_expr<'a>(
@@ -254,8 +269,12 @@ impl CompiledSchema {
         }
     }
 
-    fn find_label(&self, label: &ShapeLabel) -> Option<&ShapeExpr> {
+    pub fn find_label(&self, label: &SL) -> Option<&ShapeExpr> {
         self.shapes.get(label)
+    }
+
+    pub fn existing_labels(&self) -> Vec<&SL> {
+        self.shapes.keys().collect()
     }
 
     fn cnv_closed(closed: Option<bool>) -> bool {
@@ -371,7 +390,6 @@ impl CompiledSchema {
             Vec::new()
         }
     }
-
 }
 
 #[cfg(test)]

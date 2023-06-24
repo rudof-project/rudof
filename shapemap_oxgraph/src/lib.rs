@@ -3,23 +3,33 @@ use shapemap::ShapeMap;
 use shapemap::ShapeMapState;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::str::FromStr;
+use thiserror::Error;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub enum NodeIndex {
-    NamedNode(NamedNode),
+pub enum ShapeLabelOxGraph {
+    Iri(NamedNode),
     BNode(BlankNode),
-    Literal(Literal),
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
-pub enum ShapeLabel {
-    NamedNode(NamedNode),
-    BNode(BlankNode),
+#[derive(Error, Debug)]
+pub enum ShapeLabelError {
+    #[error("Parsing ShapeLabel: {err:?}")]
+    Str2ShapeLabelError { err: String },
+}
+
+impl FromStr for ShapeLabelOxGraph {
+    type Err = ShapeLabelError;
+    fn from_str(str: &str) -> Result<ShapeLabelOxGraph, Self::Err> {
+        Ok(ShapeLabelOxGraph::Iri(NamedNode::new_unchecked(str)))
+    }
 }
 
 pub struct ShapeMapOxGraph<'a> {
-    node_shape_map:
-        HashMap<&'a NodeIndex, HashMap<&'a ShapeLabel, ShapeMapState<'a, NodeIndex, ShapeLabel>>>,
+    node_shape_map: HashMap<
+        &'a oxrdf::Term,
+        HashMap<&'a ShapeLabelOxGraph, ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>>,
+    >,
 }
 
 impl<'a> ShapeMapOxGraph<'a> {
@@ -31,8 +41,8 @@ impl<'a> ShapeMapOxGraph<'a> {
 }
 
 impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
-    type NodeIdx = NodeIndex;
-    type ShapeIdx = ShapeLabel;
+    type NodeIdx = oxrdf::Term;
+    type ShapeIdx = ShapeLabelOxGraph;
 
     fn next_pending_pair(&self) -> Option<(&Self::NodeIdx, &Self::ShapeIdx)> {
         for (node, shape_map) in &self.node_shape_map {
@@ -47,7 +57,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
     }
 
     fn nodes_conform(&self, shape: &Self::ShapeIdx) -> HashSet<&Self::NodeIdx> {
-        let mut result: HashSet<&NodeIndex> = HashSet::new();
+        let mut result: HashSet<&Self::NodeIdx> = HashSet::new();
         for (node, shape_map) in &self.node_shape_map {
             for (shape, state) in shape_map {
                 match state {
@@ -78,7 +88,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
     }
 
     fn nodes(&self) -> HashSet<&Self::NodeIdx> {
-        let mut result: HashSet<&NodeIndex> = HashSet::new();
+        let mut result: HashSet<&Self::NodeIdx> = HashSet::new();
         for (node, _) in &self.node_shape_map {
             result.insert(node);
         }
@@ -86,7 +96,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
     }
 
     fn shapes(&self) -> HashSet<&Self::ShapeIdx> {
-        let mut result: HashSet<&ShapeLabel> = HashSet::new();
+        let mut result: HashSet<&Self::ShapeIdx> = HashSet::new();
         for (_, shape_map) in &self.node_shape_map {
             for (shape, _) in shape_map {
                 result.insert(shape);
@@ -97,13 +107,16 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
 
     fn add_pending(
         &mut self,
-        node: &'a NodeIndex,
-        shape: &'a ShapeLabel,
-        pairs: Vec<(&'a NodeIndex, &'a ShapeLabel)>,
+        node: &'a Self::NodeIdx,
+        shape: &'a Self::ShapeIdx,
+        pairs: Vec<(&'a Self::NodeIdx, &'a Self::ShapeIdx)>,
     ) {
         match self.node_shape_map.get(&node) {
             None => {
-                let mut shape_map = HashMap::new();
+                let mut shape_map: HashMap<
+                    &ShapeLabelOxGraph,
+                    ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>,
+                > = HashMap::new();
                 shape_map.insert(shape, ShapeMapState::Pending { pairs: pairs });
                 self.node_shape_map.insert(node, shape_map);
             }
@@ -111,10 +124,13 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         }
     }
 
-    fn add_conforms(&mut self, node: &'a NodeIndex, shape: &'a ShapeLabel) {
+    fn add_conforms(&mut self, node: &'a Self::NodeIdx, shape: &'a Self::ShapeIdx) {
         match self.node_shape_map.get_mut(node) {
             None => {
-                let mut sm = HashMap::new();
+                let mut sm: HashMap<
+                    &ShapeLabelOxGraph,
+                    ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>,
+                > = HashMap::new();
                 sm.insert(shape, ShapeMapState::Conforms);
                 self.node_shape_map.insert(node, sm);
             }
@@ -140,22 +156,22 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         }
     }
 
-    fn add_fails(&mut self, node: &'a NodeIndex, shape: &'a ShapeLabel) {
+    fn add_fails(&mut self, node: &'a Self::NodeIdx, shape: &'a Self::ShapeIdx) {
         todo!();
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{NodeIndex, ShapeLabel, ShapeMapOxGraph};
-    use oxrdf::NamedNode;
+    use crate::{ShapeLabelOxGraph, ShapeMapOxGraph};
+    use oxrdf::{NamedNode, Term};
     use shapemap::{ShapeMap, ShapeMapState};
 
     #[test]
     fn shapemap_test() {
         let mut sm = ShapeMapOxGraph::new();
-        let alice = NodeIndex::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
-        let s = ShapeLabel::NamedNode(NamedNode::new("http://example.org/S").unwrap());
+        let alice = Term::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
+        let s = ShapeLabelOxGraph::Iri(NamedNode::new("http://example.org/S").unwrap());
         sm.add_pending(&alice, &s, Vec::new());
         assert_eq!(sm.next_pending_pair(), Some((&alice, &s)));
     }
@@ -163,8 +179,8 @@ mod tests {
     #[test]
     fn shapemap_adding_conforms() {
         let mut sm = ShapeMapOxGraph::new();
-        let alice = NodeIndex::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
-        let s = ShapeLabel::NamedNode(NamedNode::new("http://example.org/S").unwrap());
+        let alice = Term::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
+        let s = ShapeLabelOxGraph::Iri(NamedNode::new("http://example.org/S").unwrap());
         sm.add_pending(&alice, &s, Vec::new());
         sm.add_conforms(&alice, &s);
         assert_eq!(sm.state(&alice, &s), &ShapeMapState::Conforms);

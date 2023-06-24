@@ -49,9 +49,13 @@ pub trait SRDF {
     fn object_is_bnode(&self, object: &Self::Term) -> bool;
     fn object_is_literal(&self, object: &Self::Term) -> bool;
 
+    fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject>;
+
     fn lexical_form(&self, literal: &Self::Literal) -> String;
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
+
+    fn iri_from_str(&self, str: String) -> Self::IRI;
 }
 
 #[cfg(test)]

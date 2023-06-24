@@ -180,6 +180,14 @@ impl SRDF for SRDFSPARQL {
         }
     }
 
+    fn term_as_subject(&self, object: &Self::Term) -> Option<Subject> {
+        match object {
+            Term::NamedNode(n) => Some(Subject::NamedNode(n.clone())),
+            Term::BlankNode(b) => Some(Subject::BlankNode(b.clone())),
+            _ => None,
+        }
+    }
+
     fn lexical_form(&self, literal: &Literal) -> String {
         literal.to_string()
     }
@@ -188,6 +196,10 @@ impl SRDF for SRDFSPARQL {
     }
     fn datatype(&self, literal: &Literal) -> NamedNode {
         literal.datatype().into_owned()
+    }
+
+    fn iri_from_str(&self, str: String) -> NamedNode {
+        NamedNode::new_unchecked(str)
     }
 }
 
