@@ -137,7 +137,7 @@ where
             } => {
                 if let Some(subject) = graph.term_as_subject(node) {
                     println!(
-                        "obtaining objects for subject {} and predicate {}",
+                        "Before obtaining objects for subject {} and predicate {}",
                         subject, predicate
                     );
                     let os = graph
@@ -152,6 +152,12 @@ where
                                 subject, predicate
                             ),
                         })?;
+                    let ps = graph.get_predicates_subject(&subject).await.map_err(|e| {
+                        ValidationError::SRDFError {
+                            error: format!("Obtaining predicates for {}", subject),
+                        }
+                    })?;
+                    println!("Result of predicates: {}", ps.len());
                     /*  if let Some(value_expr) = value_expr {
                         for object in os {
                             let result = self
@@ -203,7 +209,7 @@ mod tests {
     use srdf_oxgraph::SRDFGraph;
 
     #[tokio::test]
-    async fn test_not_found_label() {
+    async fn test_simple() {
         let str = r#"{
             "@context": "http://www.w3.org/ns/shex.jsonld",
             "type": "Schema",
@@ -230,12 +236,22 @@ mod tests {
         :x :p1 :y .
         "#;
         let graph = SRDFGraph::from_str(rdf_str.to_string()).unwrap();
-        let node = Term::NamedNode(NamedNode::new_unchecked("http://a.example/x"));
+        // Debug...
+        let x = NamedNode::new_unchecked("http://a.example/x".to_string());
+        let subject = Subject::NamedNode(x);
+        let pred = NamedNode::new_unchecked("http://a.example/p1".to_string());
+        let os = graph
+            .get_objects_for_subject_predicate(&subject, &pred)
+            .await
+            .unwrap();
+        println!("Result of objects for subject predicate: {:?}", os);
+        // end debug
         let shape_label: shapemap_oxgraph::ShapeLabelOxGraph =
             shapemap_oxgraph::ShapeLabelOxGraph::Iri(NamedNode::new_unchecked(
                 "http://a.example/S1",
             ));
         let mut shape_map = ShapeMapOxGraph::new();
+        let node = Term::NamedNode(NamedNode::new_unchecked("http://a.example/x".to_string()));
         let result: &ShapeMapOxGraph = validator
             .check_node_shape_label(&node, &shape_label, &mut shape_map, &graph)
             .await
