@@ -56,9 +56,9 @@ where
         &'a self,
         node: &'a SM::NodeIdx,
         shape_label: &'a SL,
-        shape_map: SM,
-        graph: G,
-    ) -> Result<SM, ValidationError<'a, SL>>
+        shape_map: &'a mut SM,
+        graph: &G,
+    ) -> Result<&SM, ValidationError<'a, SL>>
     where
         G: SRDF,
         SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a,
@@ -94,9 +94,9 @@ where
         &'a self,
         node: &SM::NodeIdx,
         shape_expr: &ShapeExpr,
-        shape_map: SM,
-        graph: G,
-    ) -> Result<SM, ValidationError<'a, SL>>
+        shape_map: &'a mut SM,
+        graph: &G,
+    ) -> Result<&SM, ValidationError<'a, SL>>
     where
         G: SRDF,
         SM: ShapeMap<'a, ShapeIdx = SL, NodeIdx = G::Term> + 'a,
@@ -117,16 +117,16 @@ where
         &'a self,
         node: &SM::NodeIdx,
         triple_expr: &TripleExpr,
-        shape_map: SM,
-        graph: G,
-    ) -> Result<SM, ValidationError<'a, SL>>
+        shape_map: &'a mut SM,
+        graph: &G,
+    ) -> Result<&SM, ValidationError<'a, SL>>
     where
         G: SRDF,
         SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a,
     {
         match triple_expr {
             TripleExpr::TripleConstraint {
-                id,
+                id: _,
                 inverse,
                 predicate,
                 value_expr,
@@ -136,19 +136,61 @@ where
                 annotations,
             } => {
                 if let Some(subject) = graph.term_as_subject(node) {
+                    println!(
+                        "obtaining objects for subject {} and predicate {}",
+                        subject, predicate
+                    );
                     let os = graph
                         .get_objects_for_subject_predicate(
                             &subject,
                             &graph.iri_from_str(predicate.to_string()),
                         )
-                        .await;
-                    todo!();
+                        .await
+                        .map_err(|e| ValidationError::SRDFError {
+                            error: format!(
+                                "Obtaining objects for {} and predicate {}",
+                                subject, predicate
+                            ),
+                        })?;
+                    /*  if let Some(value_expr) = value_expr {
+                        for object in os {
+                            let result = self
+                                .check_node_shape_expr(&object, value_expr, shape_map, graph)
+                                .await?;
+                        }
+                    } */
+                    if self.check_cardinality(os.len(), min, max) {
+                        Ok(shape_map)
+                    } else {
+                        println!(
+                            "Cardinality failed: {} min {:?} max {:?}",
+                            os.len(),
+                            min,
+                            max
+                        );
+                        todo!()
+                    }
                 } else {
                     todo!()
                 }
             }
             _ => todo!(),
         }
+    }
+
+    fn check_cardinality(&self, c: usize, min: &Option<i32>, max: &Option<i32>) -> bool {
+        let min = min.unwrap_or(1);
+        if c < min.try_into().unwrap() {
+            return false;
+        }
+        let max = max.unwrap_or(1);
+        if max == -1 {
+            return true;
+        }
+        if c > max.try_into().unwrap() {
+            return false;
+        }
+        true
     }
 }
 
@@ -193,9 +235,9 @@ mod tests {
             shapemap_oxgraph::ShapeLabelOxGraph::Iri(NamedNode::new_unchecked(
                 "http://a.example/S1",
             ));
-        let shape_map = ShapeMapOxGraph::new();
-        let result: ShapeMapOxGraph = validator
-            .check_node_shape_label(&node, &shape_label, shape_map, graph)
+        let mut shape_map = ShapeMapOxGraph::new();
+        let result: &ShapeMapOxGraph = validator
+            .check_node_shape_label(&node, &shape_label, &mut shape_map, &graph)
             .await
             .unwrap();
         let conforms: ShapeMapState<'_, oxrdf::Term, ShapeLabelOxGraph> = ShapeMapState::Conforms;

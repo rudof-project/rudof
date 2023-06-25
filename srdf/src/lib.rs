@@ -3,7 +3,7 @@ pub mod lang;
 pub mod literal;
 pub mod rdf;
 
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use async_trait::async_trait;
 pub use bag::Bag;
@@ -13,12 +13,12 @@ pub use rdf::*;
 
 #[async_trait]
 pub trait SRDF {
-    type Subject;
-    type IRI;
-    type BNode;
-    type Literal;
-    type Term;
-    type Err;
+    type Subject: Display;
+    type IRI: Display;
+    type BNode: Display;
+    type Literal: Display;
+    type Term: Display;
+    type Err: Display;
 
     async fn get_predicates_subject(
         &self,
