@@ -6,30 +6,11 @@ use std::collections::HashSet;
 use std::str::FromStr;
 use thiserror::Error;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
-pub enum ShapeLabelOxGraph {
-    Iri(NamedNode),
-    BNode(BlankNode),
-}
-
-#[derive(Error, Debug)]
-pub enum ShapeLabelError {
-    #[error("Parsing ShapeLabel: {err:?}")]
-    Str2ShapeLabelError { err: String },
-}
-
-impl FromStr for ShapeLabelOxGraph {
-    type Err = ShapeLabelError;
-    fn from_str(str: &str) -> Result<ShapeLabelOxGraph, Self::Err> {
-        Ok(ShapeLabelOxGraph::Iri(NamedNode::new_unchecked(str)))
-    }
-}
+pub mod shapelabel_oxgraph;
+use crate::shapelabel_oxgraph::*;
 
 pub struct ShapeMapOxGraph<'a> {
-    node_shape_map: HashMap<
-        &'a oxrdf::Term,
-        HashMap<&'a ShapeLabelOxGraph, ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>>,
-    >,
+    node_shape_map: HashMap<&'a oxrdf::Term, HashMap<&'a ShapeLabelOxGraph, ShapeMapState>>,
 }
 
 impl<'a> ShapeMapOxGraph<'a> {
@@ -48,7 +29,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         for (node, shape_map) in &self.node_shape_map {
             for (shape, state) in shape_map {
                 match state {
-                    ShapeMapState::Pending { pairs: _ } => return Some((&node, &shape)),
+                    ShapeMapState::Pending => return Some((&node, &shape)),
                     _ => (),
                 }
             }
@@ -71,11 +52,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         result
     }
 
-    fn state(
-        &self,
-        node: &Self::NodeIdx,
-        shape: &Self::ShapeIdx,
-    ) -> &ShapeMapState<'a, Self::NodeIdx, Self::ShapeIdx> {
+    fn state(&self, node: &Self::NodeIdx, shape: &Self::ShapeIdx) -> &ShapeMapState {
         if let Some(shape_map) = self.node_shape_map.get(node) {
             if let Some(state) = shape_map.get(shape) {
                 state
@@ -113,11 +90,8 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
     ) {
         match self.node_shape_map.get(&node) {
             None => {
-                let mut shape_map: HashMap<
-                    &ShapeLabelOxGraph,
-                    ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>,
-                > = HashMap::new();
-                shape_map.insert(shape, ShapeMapState::Pending { pairs: pairs });
+                let mut shape_map: HashMap<&ShapeLabelOxGraph, ShapeMapState> = HashMap::new();
+                shape_map.insert(shape, ShapeMapState::Pending);
                 self.node_shape_map.insert(node, shape_map);
             }
             Some(shape_map) => todo!(),
@@ -127,10 +101,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
     fn add_conforms(&mut self, node: &'a Self::NodeIdx, shape: &'a Self::ShapeIdx) {
         match self.node_shape_map.get_mut(node) {
             None => {
-                let mut sm: HashMap<
-                    &ShapeLabelOxGraph,
-                    ShapeMapState<'a, oxrdf::Term, ShapeLabelOxGraph>,
-                > = HashMap::new();
+                let mut sm: HashMap<&ShapeLabelOxGraph, ShapeMapState> = HashMap::new();
                 sm.insert(shape, ShapeMapState::Conforms);
                 self.node_shape_map.insert(node, sm);
             }
@@ -143,7 +114,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
                     ShapeMapState::Fails => {
                         sm.insert(shape, ShapeMapState::Inconsistent);
                     }
-                    ShapeMapState::Pending { pairs: _ } => {
+                    ShapeMapState::Pending => {
                         // TODO: Notify the pending pairs!
                         sm.insert(shape, ShapeMapState::Conforms);
                     }

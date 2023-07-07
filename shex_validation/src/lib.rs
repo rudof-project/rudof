@@ -1,3 +1,5 @@
+use async_recursion::async_recursion;
+use iri_s::IriSError;
 use shapemap::{ShapeMap, ShapeMapState};
 use shex_ast::compiled_schema::{ShapeExpr, TripleExpr};
 use shex_ast::{CompiledSchema, CompiledSchemaError, SchemaJson, ShapeLabel};
@@ -5,7 +7,9 @@ use srdf::{IriS, SRDF};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use thiserror::Error;
+use tokio::sync::RwLock;
 
 #[derive(Error, Debug)]
 pub enum ValidationError<'a, SL>
@@ -25,6 +29,9 @@ where
 
     #[error("SRDF Error {error:?}")]
     SRDFError { error: String },
+
+    #[error("Cardinality error: {ce:?}")]
+    CardinalityError { ce: CardinalityError },
 }
 
 struct Validator<SL> {
@@ -33,7 +40,7 @@ struct Validator<SL> {
 
 impl<SL> Validator<SL>
 where
-    SL: Eq + Hash + Debug + FromStr,
+    SL: Eq + Hash + Debug + FromStr + Sync + Send,
 {
     fn new(schema: CompiledSchema<SL>) -> Validator<SL> {
         Validator { schema: schema }
@@ -52,21 +59,23 @@ where
         }
     }
 
+    #[async_recursion]
     async fn check_node_shape_label<'a, SM, G>(
         &'a self,
         node: &'a SM::NodeIdx,
         shape_label: &'a SL,
-        shape_map: &'a mut SM,
+        shape_map: &'a Arc<RwLock<SM>>,
         graph: &G,
-    ) -> Result<&SM, ValidationError<'a, SL>>
+    ) -> Result<(), ValidationError<'a, SL>>
     where
-        G: SRDF,
-        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a,
+        G: SRDF + Sync + Send,
+        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a + Sync + Send,
     {
-        match shape_map.state(&node, shape_label) {
-            ShapeMapState::Conforms => Ok(shape_map),
-            ShapeMapState::Fails => Ok(shape_map),
-            ShapeMapState::Inconsistent => Ok(shape_map),
+        let sm = shape_map.blocking_read();
+        match *sm.state(&node, shape_label) {
+            ShapeMapState::Conforms => Ok(()),
+            ShapeMapState::Fails => Ok(()),
+            ShapeMapState::Inconsistent => Ok(()),
             ShapeMapState::Unknown => match self.schema.find_label(shape_label) {
                 None => Err(ValidationError::LabelNotFoundError {
                     shape_label,
@@ -77,7 +86,7 @@ where
                         .await
                 }
             },
-            ShapeMapState::Pending { pairs } => match self.schema.find_label(shape_label) {
+            ShapeMapState::Pending => match self.schema.find_label(shape_label) {
                 None => Err(ValidationError::LabelNotFoundError {
                     shape_label,
                     existing_labels: self.schema.existing_labels(),
@@ -90,16 +99,17 @@ where
         }
     }
 
+    #[async_recursion]
     async fn check_node_shape_expr<'a, SM, G>(
         &'a self,
         node: &SM::NodeIdx,
         shape_expr: &ShapeExpr,
-        shape_map: &'a mut SM,
+        shape_map: &'a Arc<RwLock<SM>>,
         graph: &G,
-    ) -> Result<&SM, ValidationError<'a, SL>>
+    ) -> Result<(), ValidationError<'a, SL>>
     where
-        G: SRDF,
-        SM: ShapeMap<'a, ShapeIdx = SL, NodeIdx = G::Term> + 'a,
+        G: SRDF + Sync + Send,
+        SM: ShapeMap<'a, ShapeIdx = SL, NodeIdx = G::Term> + 'a + Sync + Send,
     {
         match shape_expr {
             ShapeExpr::Shape {
@@ -113,16 +123,17 @@ where
         }
     }
 
+    #[async_recursion]
     async fn check_node_triple_expr<'a, SM, G>(
         &'a self,
         node: &SM::NodeIdx,
         triple_expr: &TripleExpr,
-        shape_map: &'a mut SM,
+        shape_map: &'a Arc<RwLock<SM>>,
         graph: &G,
-    ) -> Result<&SM, ValidationError<'a, SL>>
+    ) -> Result<(), ValidationError<'a, SL>>
     where
-        G: SRDF,
-        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a,
+        G: SRDF + Sync + Send,
+        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a + Sync + Sync + Send,
     {
         match triple_expr {
             TripleExpr::TripleConstraint {
@@ -140,41 +151,44 @@ where
                         "Before obtaining objects for subject {} and predicate {}",
                         subject, predicate
                     );
+                    let pred = cnv_iri(predicate, graph);
                     let os = graph
                         .get_objects_for_subject_predicate(
-                            &subject,
-                            &graph.iri_from_str(predicate.to_string()),
+                            &subject, // &graph.iri_from_str(predicate.to_string()),
+                            &pred,
                         )
                         .await
                         .map_err(|e| ValidationError::SRDFError {
                             error: format!(
-                                "Obtaining objects for {} and predicate {}",
-                                subject, predicate
+                                "Obtaining objects for {subject} and predicate {predicate}: {e}",
                             ),
                         })?;
-                    let ps = graph.get_predicates_subject(&subject).await.map_err(|e| {
-                        ValidationError::SRDFError {
-                            error: format!("Obtaining predicates for {}", subject),
-                        }
-                    })?;
-                    println!("Result of predicates: {}", ps.len());
-                    /*  if let Some(value_expr) = value_expr {
-                        for object in os {
+                    let ps: srdf::Bag<<G as SRDF>::IRI> = graph
+                        .get_predicates_subject(&subject)
+                        .await
+                        .map_err(|e| ValidationError::SRDFError {
+                            error: format!("Obtaining predicates for {subject}: {e}"),
+                        })?;
+                    println!("Result of predicates: {}", ps);
+                    println!("Result of objects: {}", os.len());
+                    if let Some(value_expr) = value_expr {
+                        for object in &os {
                             let result = self
-                                .check_node_shape_expr(&object, value_expr, shape_map, graph)
+                                .check_node_shape_expr(object, value_expr, shape_map, graph)
                                 .await?;
                         }
-                    } */
-                    if self.check_cardinality(os.len(), min, max) {
-                        Ok(shape_map)
-                    } else {
-                        println!(
-                            "Cardinality failed: {} min {:?} max {:?}",
-                            os.len(),
-                            min,
-                            max
-                        );
-                        todo!()
+                    }
+                    match check_cardinality(os.len(), min, max) {
+                        Ok(_) => Ok(()),
+                        Err(ce) => {
+                            println!(
+                                "Cardinality failed: {} min {:?} max {:?}",
+                                os.len(),
+                                min,
+                                max
+                            );
+                            todo!()
+                        }
                     }
                 } else {
                     todo!()
@@ -183,30 +197,71 @@ where
             _ => todo!(),
         }
     }
+}
 
-    fn check_cardinality(&self, c: usize, min: &Option<i32>, max: &Option<i32>) -> bool {
-        let min = min.unwrap_or(1);
-        if c < min.try_into().unwrap() {
-            return false;
-        }
-        let max = max.unwrap_or(1);
-        if max == -1 {
-            return true;
-        }
-        if c > max.try_into().unwrap() {
-            return false;
-        }
-        true
+fn cnv_iri<'a, G>(iris: &'a IriS, graph: &'a G) -> G::IRI
+where
+    G: SRDF,
+{
+    graph.iri_from_str(iris.as_str().to_string().clone())
+}
+
+#[derive(Error, Debug)]
+pub enum CardinalityError {
+    #[error("Cardinality {c:?} less than min {min:?}")]
+    CardinalityLessThanMin { c: usize, min: i32 },
+
+    #[error("Cardinality {c:?} greater than max {max:?}")]
+    CardinalityGreaterThanMax { c: usize, max: i32 },
+}
+
+fn check_cardinality(
+    c: usize,
+    min: &Option<i32>,
+    max: &Option<i32>,
+) -> Result<(), CardinalityError> {
+    let min = min.unwrap_or(1);
+    if c < min.try_into().unwrap() {
+        return Err(CardinalityError::CardinalityLessThanMin { c: c, min: min });
     }
+    let max = max.unwrap_or(1);
+    if max == -1 {
+        // max = -1 means unbounded
+        return Ok(());
+    }
+    if c > max.try_into().unwrap() {
+        return Err(CardinalityError::CardinalityGreaterThanMax { c: c, max: max });
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Mutex;
+
     use crate::*;
     use iri_s::*;
+    use oxrdf::NamedNode;
     use oxrdf::*;
-    use shapemap_oxgraph::*;
+    use shapemap_oxgraph::ShapeMapOxGraph;
+    use shapemap_oxgraph::shapelabel_oxgraph::ShapeLabelOxGraph;
     use srdf_oxgraph::SRDFGraph;
+
+    #[test]
+    fn check_cnv_iri() -> Result<(), IriSError> {
+        let iri: IriS = IriS::new("http://a.example/p1").unwrap();
+        let graph = SRDFGraph::new();
+        let expected = NamedNode::new("http://a.example/p1".to_string()).unwrap();
+        assert_eq!(cnv_iri(&iri, &graph), expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cardinality() -> Result<(), CardinalityError> {
+        let ce = check_cardinality(1, &None, &None)?;
+        assert_eq!(ce, ());
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_simple() {
@@ -246,19 +301,19 @@ mod tests {
             .unwrap();
         println!("Result of objects for subject predicate: {:?}", os);
         // end debug
-        let shape_label: shapemap_oxgraph::ShapeLabelOxGraph =
-            shapemap_oxgraph::ShapeLabelOxGraph::Iri(NamedNode::new_unchecked(
-                "http://a.example/S1",
-            ));
-        let mut shape_map = ShapeMapOxGraph::new();
+        let shape_label: ShapeLabelOxGraph =
+            ShapeLabelOxGraph::Iri(NamedNode::new_unchecked("http://a.example/S1"));
+        let shape_map = Arc::new(RwLock::new(ShapeMapOxGraph::new()));
         let node = Term::NamedNode(NamedNode::new_unchecked("http://a.example/x".to_string()));
-        let result: &ShapeMapOxGraph = validator
-            .check_node_shape_label(&node, &shape_label, &mut shape_map, &graph)
+        let result = validator
+            .check_node_shape_label(&node, &shape_label, &shape_map, &graph)
             .await
             .unwrap();
-        let conforms: ShapeMapState<'_, oxrdf::Term, ShapeLabelOxGraph> = ShapeMapState::Conforms;
-        let r: &ShapeMapState<'_, oxrdf::Term, ShapeLabelOxGraph> =
-            result.state(&node, &shape_label);
+        let conforms: ShapeMapState = ShapeMapState::Conforms;
+        let v = shape_map.blocking_read();
+        let r = v.state(&node, &shape_label);
+        // let r: &ShapeMapState<'_, oxrdf::Term, ShapeLabelOxGraph> =
+        //    shape_map.state(&node, &shape_label);
         assert_eq!(r, &conforms);
     }
 }

@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum ShapeMapState<'a, N, S> {
+pub enum ShapeMapState {
     Conforms,
     Fails,
-    Pending { pairs: Vec<(&'a N, &'a S)> },
+    Pending,
     Unknown,
     Inconsistent,
 }
@@ -17,11 +17,7 @@ pub trait ShapeMap<'a> {
 
     fn nodes_conform(&self, shape: &Self::ShapeIdx) -> HashSet<&Self::NodeIdx>;
 
-    fn state(
-        &self,
-        node: &Self::NodeIdx,
-        shape: &Self::ShapeIdx,
-    ) -> &ShapeMapState<'a, Self::NodeIdx, Self::ShapeIdx>;
+    fn state(&self, node: &Self::NodeIdx, shape: &Self::ShapeIdx) -> &ShapeMapState;
 
     fn nodes(&self) -> HashSet<&Self::NodeIdx>;
 

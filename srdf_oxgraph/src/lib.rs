@@ -57,8 +57,10 @@ pub struct SRDFGraph {
 }
 
 impl SRDFGraph {
-    pub fn new(graph: Graph) -> SRDFGraph {
-        SRDFGraph { graph: graph }
+    pub fn new() -> SRDFGraph {
+        SRDFGraph {
+            graph: Graph::new(),
+        }
     }
 
     pub fn from_str(data: String) -> Result<SRDFGraph, SRDFError> {
@@ -72,7 +74,7 @@ impl SRDFGraph {
             Ok(()) as Result<(), TurtleError>
         });
         match parse_result {
-            Ok(_) => Ok(SRDFGraph::new(graph)),
+            Ok(_) => Ok(SRDFGraph { graph: graph }),
             Err(err) => Err(SRDFError::TurtleError {
                 data: data,
                 turtle_error: err,
@@ -183,6 +185,7 @@ impl SRDF for SRDFGraph {
         subject: &OxSubject,
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxTerm>, SRDFError> {
+        println!("get_objects_for_subject_predicate: subject={subject:?}, pred= {pred:?}");
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
