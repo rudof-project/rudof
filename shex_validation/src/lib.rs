@@ -1,8 +1,10 @@
+pub mod validation_error;
+pub use crate::validation_error::*;
+
 use async_recursion::async_recursion;
-use iri_s::IriSError;
 use shapemap::{ShapeMap, ShapeMapState};
 use shex_ast::compiled_schema::{ShapeExpr, TripleExpr};
-use shex_ast::{CompiledSchema, CompiledSchemaError, SchemaJson, ShapeLabel};
+use shex_ast::{CompiledSchema, SchemaJson, ShapeLabel};
 use srdf::{IriS, SRDF};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -10,33 +12,13 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
 use tokio::sync::RwLock;
-
-#[derive(Error, Debug)]
-pub enum ValidationError<'a, SL>
-where
-    SL: Debug,
-{
-    #[error("ShapeLabel not found {shape_label:?} Labels: {existing_labels:?}")]
-    LabelNotFoundError {
-        shape_label: &'a SL,
-        existing_labels: Vec<&'a SL>,
-    },
-    #[error("Converting Json String: {str:?}")]
-    FromJsonStr { str: String, err: String },
-
-    #[error("Compiling schema: {error:?}")]
-    CompilingSchema { error: CompiledSchemaError },
-
-    #[error("SRDF Error {error:?}")]
-    SRDFError { error: String },
-
-    #[error("Cardinality error: {ce:?}")]
-    CardinalityError { ce: CardinalityError },
-}
+use tokio::task;
 
 struct Validator<SL> {
     schema: CompiledSchema<SL>,
 }
+
+// type Typing = Arc<RwLock<ShapeMap>>;
 
 impl<SL> Validator<SL>
 where
@@ -49,7 +31,7 @@ where
     fn from_json_str(json_str: String) -> Result<Validator<SL>, ValidationError<'static, SL>> {
         match serde_json::from_str::<SchemaJson>(json_str.as_str()) {
             Ok(schema_json) => {
-                let schema = CompiledSchema::from_schema_json(schema_json).map_err(|e| todo!())?;
+                let schema = CompiledSchema::from_schema_json(schema_json)?;
                 Ok(Validator::new(schema))
             }
             Err(e) => Err(ValidationError::FromJsonStr {
@@ -69,7 +51,7 @@ where
     ) -> Result<(), ValidationError<'a, SL>>
     where
         G: SRDF + Sync + Send,
-        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a + Sync + Send,
+        SM: ShapeMap<NodeIdx = G::Term, ShapeIdx = SL> + Sync + Send,
     {
         let sm = shape_map.blocking_read();
         match *sm.state(&node, shape_label) {
@@ -109,7 +91,7 @@ where
     ) -> Result<(), ValidationError<'a, SL>>
     where
         G: SRDF + Sync + Send,
-        SM: ShapeMap<'a, ShapeIdx = SL, NodeIdx = G::Term> + 'a + Sync + Send,
+        SM: ShapeMap<ShapeIdx = SL, NodeIdx = G::Term> + Sync + Send,
     {
         match shape_expr {
             ShapeExpr::Shape {
@@ -133,7 +115,7 @@ where
     ) -> Result<(), ValidationError<'a, SL>>
     where
         G: SRDF + Sync + Send,
-        SM: ShapeMap<'a, NodeIdx = G::Term, ShapeIdx = SL> + 'a + Sync + Sync + Send,
+        SM: ShapeMap<NodeIdx = G::Term, ShapeIdx = SL> + Sync + Sync + Send,
     {
         match triple_expr {
             TripleExpr::TripleConstraint {
@@ -243,8 +225,8 @@ mod tests {
     use iri_s::*;
     use oxrdf::NamedNode;
     use oxrdf::*;
-    use shapemap_oxgraph::ShapeMapOxGraph;
     use shapemap_oxgraph::shapelabel_oxgraph::ShapeLabelOxGraph;
+    use shapemap_oxgraph::ShapeMapOxGraph;
     use srdf_oxgraph::SRDFGraph;
 
     #[test]

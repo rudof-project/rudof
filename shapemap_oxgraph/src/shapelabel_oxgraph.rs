@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use oxrdf::{NamedNode, BlankNode};
+use oxrdf::{BlankNode, NamedNode};
 use thiserror::Error;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum ShapeLabelOxGraph {
     Iri(NamedNode),
     BNode(BlankNode),

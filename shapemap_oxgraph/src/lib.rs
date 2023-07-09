@@ -9,23 +9,28 @@ use thiserror::Error;
 pub mod shapelabel_oxgraph;
 use crate::shapelabel_oxgraph::*;
 
+type NodeLabelPair = (oxrdf::Term, ShapeLabelOxGraph);
 pub struct ShapeMapOxGraph<'a> {
-    node_shape_map: HashMap<&'a oxrdf::Term, HashMap<&'a ShapeLabelOxGraph, ShapeMapState>>,
+    node_shape_map: HashMap<oxrdf::Term, HashMap<ShapeLabelOxGraph, &'a ShapeMapState>>,
+    pending: Vec<NodeLabelPair>,
+    associated_pendings: HashMap<NodeLabelPair, Vec<NodeLabelPair>>,
 }
 
 impl<'a> ShapeMapOxGraph<'a> {
     pub fn new() -> ShapeMapOxGraph<'a> {
         ShapeMapOxGraph {
             node_shape_map: HashMap::new(),
+            pending: Vec::new(),
+            associated_pendings: HashMap::new(),
         }
     }
 }
 
-impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
+impl<'a> ShapeMap for ShapeMapOxGraph<'a> {
     type NodeIdx = oxrdf::Term;
     type ShapeIdx = ShapeLabelOxGraph;
 
-    fn next_pending_pair(&self) -> Option<(&Self::NodeIdx, &Self::ShapeIdx)> {
+    /*     fn next_pending_pair(&self) -> Option<(&Self::NodeIdx, &Self::ShapeIdx)> {
         for (node, shape_map) in &self.node_shape_map {
             for (shape, state) in shape_map {
                 match state {
@@ -35,7 +40,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
             }
         }
         None
-    }
+    } */
 
     fn nodes_conform(&self, shape: &Self::ShapeIdx) -> HashSet<&Self::NodeIdx> {
         let mut result: HashSet<&Self::NodeIdx> = HashSet::new();
@@ -82,44 +87,39 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         result
     }
 
-    fn add_pending(
-        &mut self,
-        node: &'a Self::NodeIdx,
-        shape: &'a Self::ShapeIdx,
-        pairs: Vec<(&'a Self::NodeIdx, &'a Self::ShapeIdx)>,
-    ) {
+    fn add_pending(&mut self, node: &Self::NodeIdx, shape: &Self::ShapeIdx) {
         match self.node_shape_map.get(&node) {
             None => {
-                let mut shape_map: HashMap<&ShapeLabelOxGraph, ShapeMapState> = HashMap::new();
-                shape_map.insert(shape, ShapeMapState::Pending);
-                self.node_shape_map.insert(node, shape_map);
+                let mut shape_map = HashMap::new();
+                shape_map.insert((*shape).clone(), &ShapeMapState::Pending);
+                self.node_shape_map.insert((*node).clone(), shape_map);
             }
             Some(shape_map) => todo!(),
         }
     }
 
-    fn add_conforms(&mut self, node: &'a Self::NodeIdx, shape: &'a Self::ShapeIdx) {
-        match self.node_shape_map.get_mut(node) {
+    fn add_conforms(&mut self, node: &Self::NodeIdx, shape: &Self::ShapeIdx) {
+        match self.node_shape_map.get_mut(&node) {
             None => {
-                let mut sm: HashMap<&ShapeLabelOxGraph, ShapeMapState> = HashMap::new();
-                sm.insert(shape, ShapeMapState::Conforms);
-                self.node_shape_map.insert(node, sm);
+                let mut sm: HashMap<ShapeLabelOxGraph, &'a ShapeMapState> = HashMap::new();
+                sm.insert((*shape).clone(), &ShapeMapState::Conforms);
+                self.node_shape_map.insert(node.clone(), sm);
             }
-            Some(sm) => match sm.get_mut(shape) {
+            Some(sm) => match sm.get_mut(&shape) {
                 None => {
-                    sm.insert(shape, ShapeMapState::Conforms);
+                    sm.insert((*shape).clone(), &ShapeMapState::Conforms);
                 }
                 Some(state) => match state {
                     ShapeMapState::Conforms => (),
                     ShapeMapState::Fails => {
-                        sm.insert(shape, ShapeMapState::Inconsistent);
+                        sm.insert((*shape).clone(), &ShapeMapState::Inconsistent);
                     }
                     ShapeMapState::Pending => {
                         // TODO: Notify the pending pairs!
-                        sm.insert(shape, ShapeMapState::Conforms);
+                        sm.insert((*shape).clone(), &ShapeMapState::Conforms);
                     }
                     ShapeMapState::Unknown => {
-                        sm.insert(shape, ShapeMapState::Conforms);
+                        sm.insert((*shape).clone(), &ShapeMapState::Conforms);
                     }
                     ShapeMapState::Inconsistent => (),
                 },
@@ -127,7 +127,7 @@ impl<'a> ShapeMap<'a> for ShapeMapOxGraph<'a> {
         }
     }
 
-    fn add_fails(&mut self, node: &'a Self::NodeIdx, shape: &'a Self::ShapeIdx) {
+    fn add_fails(&mut self, node: &Self::NodeIdx, shape: &Self::ShapeIdx) {
         todo!();
     }
 }
@@ -143,8 +143,8 @@ mod tests {
         let mut sm = ShapeMapOxGraph::new();
         let alice = Term::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
         let s = ShapeLabelOxGraph::Iri(NamedNode::new("http://example.org/S").unwrap());
-        sm.add_pending(&alice, &s, Vec::new());
-        assert_eq!(sm.next_pending_pair(), Some((&alice, &s)));
+        sm.add_pending(&alice, &s);
+        // assert_eq!(sm.next_pending_pair(), Some((&alice, &s)));
     }
 
     #[test]
@@ -152,7 +152,7 @@ mod tests {
         let mut sm = ShapeMapOxGraph::new();
         let alice = Term::NamedNode(NamedNode::new("http://example.org/alice").unwrap());
         let s = ShapeLabelOxGraph::Iri(NamedNode::new("http://example.org/S").unwrap());
-        sm.add_pending(&alice, &s, Vec::new());
+        sm.add_pending(&alice, &s);
         sm.add_conforms(&alice, &s);
         assert_eq!(sm.state(&alice, &s), &ShapeMapState::Conforms);
     }
