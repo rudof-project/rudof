@@ -10,14 +10,15 @@ pub use bag::Bag;
 pub use bnode::*;
 pub use iri_s::*;
 pub use rdf::*;
+use std::hash::Hash;
 
 #[async_trait]
 pub trait SRDF {
-    type Subject: Display;
-    type IRI: Display;
-    type BNode: Display;
-    type Literal: Display;
-    type Term: Display;
+    type Subject: Display + Sync + Send;
+    type IRI: Display + Hash + Eq + Sync + Send;
+    type BNode: Display + Sync + Send;
+    type Literal: Display + Sync + Send;
+    type Term: Display + Sync + Send;
     type Err: Display;
 
     async fn get_predicates_subject(

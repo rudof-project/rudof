@@ -197,7 +197,7 @@ pub struct Annotation {
 
 impl<SL> CompiledSchema<SL>
 where
-    SL: Eq + Hash + FromStr,
+    SL: Eq + Hash + FromStr + Sync,
 {
     pub fn from_schema_json<'a>(
         schema: SchemaJson,

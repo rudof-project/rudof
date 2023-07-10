@@ -25,6 +25,7 @@ pub trait IRI {
 pub struct IriS {
     iri: IriRef<String>,
 }
+
 impl IriS {
     pub fn new(str: &str) -> Result<IriS, IriSError> {
         let iri = IriRef::from_str(str)?;
@@ -94,4 +95,11 @@ mod tests {
         let iri = IriS::from_str("http://example.org/").unwrap();
         assert_eq!(iri.to_string(), "<http://example.org/>");
     }
+
+    #[test]
+    fn obtaining_iri_as_str() {
+        let iri = IriS::from_str("http://example.org/p1").unwrap();
+        assert_eq!(iri.as_str(), "http://example.org/p1");
+    }
+
 }

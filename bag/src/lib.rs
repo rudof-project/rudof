@@ -1,7 +1,7 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use hashbag::{HashBag, SetIter};
-use std::hash::Hash;
+use std::{fmt::Display, hash::Hash};
 
 pub struct Bag<T> {
     bag: HashBag<T>,
@@ -30,6 +30,20 @@ impl<T: Hash + Eq> Bag<T> {
 
     pub fn iter(&self) -> SetIter<'_, T> {
         self.bag.set_iter()
+    }
+}
+
+impl<T> Display for Bag<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let v: Vec<String> = self
+            .bag
+            .set_iter()
+            .map(|(t, n)| format!("{}/{}", t, n))
+            .collect();
+        write!(f, "Bag [{}]", v.join(", "))
     }
 }
 
