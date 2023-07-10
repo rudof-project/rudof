@@ -157,7 +157,7 @@ where
                             error: format!("Obtaining predicates for {}", subject),
                         }
                     })?;
-                    println!("Result of predicates: {}", ps.len());
+                    println!("Result of predicates: {:?}", ps.len());
                     /*  if let Some(value_expr) = value_expr {
                         for object in os {
                             let result = self
