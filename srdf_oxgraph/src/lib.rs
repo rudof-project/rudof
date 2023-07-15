@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bag::Bag;
 use iri_s::IriS;
 use oxiri::Iri;
-use srdf::SRDF;
+use srdf::async_srdf::AsyncSRDF;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -160,7 +160,7 @@ impl SRDFGraph {
 }
 
 #[async_trait]
-impl SRDF for SRDFGraph {
+impl AsyncSRDF for SRDFGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
