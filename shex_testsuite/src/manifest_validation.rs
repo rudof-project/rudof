@@ -14,6 +14,7 @@ use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::SchemaJson;
 use srdf_oxgraph::*;
+use srdf_oxgraph::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;

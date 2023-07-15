@@ -1,6 +1,7 @@
 use std::{ffi::OsStr, io, path::Path};
 
 use shex_ast::SchemaJsonError;
+use srdf_oxgraph::srdf_error::SRDFError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -24,7 +25,7 @@ pub enum ManifestError {
     NotFoundEntry { name: String },
 
     #[error("SRDFError error: {error:?}")]
-    SRDFError { error: srdf_oxgraph::SRDFError },
+    SRDFError { error: SRDFError },
 
     #[error("Unknown error")]
     Unknown,
