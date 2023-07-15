@@ -2,7 +2,7 @@ use std::{collections::HashSet, fmt::Display};
 pub use bag::Bag;
 use std::hash::Hash;
 
-pub trait SRDF {
+pub trait SRDFComparisons {
     type Subject: Display ;
     type IRI: Display + Hash + Eq ;
     type BNode: Display ;
@@ -10,7 +10,30 @@ pub trait SRDF {
     type Term: Display ;
     type Err: Display;
 
-    fn get_predicates_subject(
+    fn subject2iri(&self, subject: &Self::Subject) -> Option<Self::IRI>;
+    fn subject2bnode(&self, subject: &Self::Subject) -> Option<Self::BNode>;
+    fn subject_is_iri(&self, subject: &Self::Subject) -> bool;
+    fn subject_is_bnode(&self, subject: &Self::Subject) -> bool;
+
+    fn object2iri(&self, object: &Self::Term) -> Option<Self::IRI>;
+    fn object2bnode(&self, object: &Self::Term) -> Option<Self::BNode>;
+    fn object2literal(&self, object: &Self::Term) -> Option<Self::Literal>;
+    fn object_is_iri(&self, object: &Self::Term) -> bool;
+    fn object_is_bnode(&self, object: &Self::Term) -> bool;
+    fn object_is_literal(&self, object: &Self::Term) -> bool;
+
+    fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject>;
+
+    fn lexical_form(&self, literal: &Self::Literal) -> String;
+    fn lang(&self, literal: &Self::Literal) -> Option<String>;
+    fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
+
+    fn iri_from_str(&self, str: String) -> Self::IRI;
+}
+
+pub trait SRDF : SRDFComparisons {
+
+    fn get_predicates_for_subject(
         &self,
         subject: &Self::Subject,
     ) -> Result<Bag<Self::IRI>, Self::Err>;
