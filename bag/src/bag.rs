@@ -8,6 +8,7 @@ pub struct Bag<T> {
 }
 
 impl<T: Hash + Eq> Bag<T> {
+
     #[inline]
     pub fn new() -> Bag<T> {
         Bag {
@@ -44,6 +45,19 @@ where
             .map(|(t, n)| format!("{}/{}", t, n))
             .collect();
         write!(f, "Bag [{}]", v.join(", "))
+    }
+}
+
+impl<T, const N: usize> From<[T; N]> for Bag<T>
+where
+    T: Eq + Hash,
+{
+    fn from(arr: [T; N]) -> Self {
+        let mut bag = Bag::new();
+        for x in arr {
+          bag.insert(x);
+        }
+        bag
     }
 }
 

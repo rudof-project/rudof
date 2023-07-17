@@ -3,8 +3,8 @@ use core::hash::Hash;
 use std::cmp;
 use std::collections::HashSet;
 
-#[derive(PartialEq, Eq, Clone)]
-enum Rbe<A> {
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum Rbe<A> {
     Fail {
         error: RbeError<A>,
     },
@@ -40,15 +40,66 @@ impl<A> Rbe<A>
 where
     A: Eq + Hash + Clone,
 {
-    fn deriv_bag(&self, bag: Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
+
+  fn match_bag(&self, bag: Bag<A>, open: bool) -> Result<(), RbeError<A>> {
+     match &self.deriv_bag(bag, open, &self.symbols()) {
+      f@Rbe::Fail{ error } => Err(error.clone()),
+      d => if d.nullable() {
+        Ok(())
+      } else {
+        Err(RbeError::NonNullable{ rest: Box::new(d.clone()) })
+      }
+     }
+  }
+  fn empty() -> Rbe<A> {
+    Rbe::Empty
+  }
+
+  fn symbol(x: A, min: usize, max: Max) -> Rbe<A> {
+    Rbe::Symbol{ value: x, card: Cardinality { min, max } }
+  }
+
+  fn symbols(&self) -> HashSet<A> {
+    let mut set = HashSet::new();
+    self.symbols_aux(&mut set);
+    set
+  }
+
+  fn symbols_aux(&self, set: &mut HashSet<A>) {
+    match &self {
+      Rbe::Fail{..} => (),
+      Rbe::Empty => (),
+      Rbe::Symbol { value, card: _} => { set.insert(value.clone());
+      },
+      Rbe::And{ v1, v2} => {
+        v1.symbols_aux(set);
+        v2.symbols_aux(set);
+      },
+      Rbe::Or{ v1, v2} => {
+        v1.symbols_aux(set);
+        v2.symbols_aux(set);
+      },
+      Rbe::Plus { v } => {
+        v.symbols_aux(set);
+      },
+      Rbe::Star { v } => {
+        v.symbols_aux(set);
+      },
+      Rbe::Repeat { v, min, max } => {
+        v.symbols_aux(set);
+      }
+    }
+  }
+
+  fn deriv_bag(&self, bag: Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
             current = self.deriv(&x, card, open, controlled);
         }
         current
-    }
+  }
 
-    fn nullable(&self) -> NullableResult {
+  fn nullable(&self) -> NullableResult {
         match &self {
             Rbe::Fail { .. } => false,
             Rbe::Empty => true,
@@ -87,7 +138,7 @@ where
         }
     }
 
-    fn deriv(&self, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A>
+    pub fn deriv(&self, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A>
     where
         A: Eq + Hash + Clone,
     {
@@ -105,7 +156,7 @@ where
                     }
                 }
             }
-            Rbe::Symbol { value, card: card } => {
+            Rbe::Symbol { value, card } => {
                 if *x == *value {
                     if (*card).max == Max::IntMax(0) {
                         Rbe::Fail {
@@ -184,20 +235,16 @@ where
     where
         A: Clone,
     {
-        if (*card).min < 0 {
-            Rbe::Fail {
-                error: RbeError::RangeNegativeLowerBound { min: (*card).min },
-            }
-        } else if Self::bigger((*card).min, &(*card).max) {
+      if Self::bigger((*card).min, &(*card).max) {
             Rbe::Fail {
                 error: RbeError::RangeLowerBoundBiggerMax { card: card.clone() },
             }
-        } else {
+      } else {
             Rbe::Symbol {
                 value: (*x).clone(),
                 card: card.clone(),
             }
-        }
+      }
     }
 
     fn mkAnd(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A>
@@ -218,8 +265,8 @@ where
 
     fn mkOr(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
         match (&v1, &v2) {
-            (f @ Rbe::Fail { .. }, _) => v2,
-            (_, f @ Rbe::Fail { .. }) => v1,
+            (Rbe::Fail { .. }, _) => v2,
+            (_, Rbe::Fail { .. }) => v1,
             (e1, e2) => {
                 if e1 == e2 {
                     v1
@@ -240,3 +287,47 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deriv_symbol() {
+        let rbe = Rbe::symbol('x', 1, Max::IntMax(1));
+        let d = rbe.deriv(&'x', 1, true, &HashSet::new());
+        assert_eq!(d, Rbe::symbol('x', 0, Max::IntMax(0)));
+    }
+
+    #[test]
+    fn symbols() {
+        let rbe = Rbe::And { 
+          v1: Box::new(Rbe::symbol('x', 1, Max::IntMax(1))),
+          v2: Box::new(Rbe::symbol('y', 1, Max::IntMax(1)))
+        };
+        let expected = HashSet::from(['x','y']);
+        assert_eq!(rbe.symbols(), expected);
+    }
+
+    #[test]
+    fn symbols2() {
+        let rbe = Rbe::And { 
+          v1: Box::new(Rbe::Or { 
+                v1: Box::new(Rbe::symbol('x', 1, Max::IntMax(1))), 
+                v2: Box::new(Rbe::symbol('y',2,Max::Unbounded))
+              }),
+          v2: Box::new(Rbe::symbol('y', 1, Max::IntMax(1)))
+        };
+        let expected = HashSet::from(['x','y']);
+        assert_eq!(rbe.symbols(), expected);
+    }
+
+    #[test]
+    fn match_bag1() {
+
+      // (x{1,1}|y{2,*});y{1,1}
+      let rbe = Box::new(Rbe::symbol('y', 1, Max::IntMax(4)));
+        let bag = Bag::from(['y','y']);
+        assert_eq!(rbe.match_bag(bag, false), Ok(()));
+    }
+  }

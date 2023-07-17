@@ -4,7 +4,7 @@ use crate::Max;
 
 pub type Min = usize;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Cardinality {
     pub min: Min,
     pub max: Max,
@@ -21,8 +21,13 @@ impl Cardinality {
 
     pub fn minus(&self, n: usize) -> Option<Cardinality> {
         if self.contains(n) {
+            let min = if self.min > n {
+                self.min - n 
+            } else {
+                0
+            };
             Some(Cardinality {
-                min: cmp::max(self.min - n, 0),
+                min: cmp::max(min, 0),
                 max: self.max.minus(n),
             })
         } else {
