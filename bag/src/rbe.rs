@@ -20,11 +20,15 @@ enum Rbe<A> {
 
 type NullableResult = bool;
 
-impl <A> Rbe<A> where A: Eq {
+impl <A> Rbe<A> 
+where A: Eq + Hash + Clone {
     
-    
-   fn derivBag(&self, bag: Bag<A>, open: bool) -> Rbe<A> {
-    todo!()
+   fn deriv_bag(&self, bag: Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
+    let mut current = (*self).clone();
+    for (x, card) in bag.iter() {
+       current = self.deriv(&x, card, open, controlled);
+    }
+    current
    }
 
    fn nullable(&self) -> NullableResult {
@@ -60,7 +64,7 @@ impl <A> Rbe<A> where A: Eq {
     }
    }
 
-   fn deriv(&self, x: &A, open: bool, controlled: &HashSet<A>) -> Rbe<A> 
+   fn deriv(&self, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A> 
       where A: Eq + Hash + Clone {
      match &self {
         fail@ Rbe::Fail { error: _ }  => { (*fail).clone() },
