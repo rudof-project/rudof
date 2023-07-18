@@ -3,12 +3,15 @@
 use hashbag::{HashBag, SetIter};
 use std::{fmt::Display, hash::Hash};
 
-pub struct Bag<T> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bag<T>
+where
+    T: Hash + Eq + PartialEq,
+{
     bag: HashBag<T>,
 }
 
 impl<T: Hash + Eq> Bag<T> {
-
     #[inline]
     pub fn new() -> Bag<T> {
         Bag {
@@ -34,7 +37,7 @@ impl<T: Hash + Eq> Bag<T> {
     }
 }
 
-impl<T> Display for Bag<T>
+impl<T: Hash + Eq + PartialEq> Display for Bag<T>
 where
     T: Display,
 {
@@ -55,7 +58,7 @@ where
     fn from(arr: [T; N]) -> Self {
         let mut bag = Bag::new();
         for x in arr {
-          bag.insert(x);
+            bag.insert(x);
         }
         bag
     }

@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, fmt};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Max {
@@ -19,6 +19,21 @@ impl Max {
         match self {
             Max::IntMax(max) => *max >= n,
             Max::Unbounded => true,
+        }
+    }
+}
+
+impl From<usize> for Max {
+    fn from(m: usize) -> Self {
+        Max::IntMax(m)
+    }
+}
+
+impl fmt::Display for Max {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Max::Unbounded => write!(dest, "*"),
+            Max::IntMax(max) => write!(dest, "{max}"),
         }
     }
 }
