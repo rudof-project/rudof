@@ -24,13 +24,21 @@ impl<A> Rbe<A>
 where
     A: PartialEq + Eq + Hash + Clone + fmt::Debug,
 {
-    fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
+    pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
         match &self.deriv_bag(bag, open, &self.symbols()) {
             f @ Rbe::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
+                    println!(
+                        "Finished symbols: resulting rbe = {:?} which is nullable",
+                        d
+                    );
                     Ok(())
                 } else {
+                    println!(
+                        "Finished symbols: resulting rbe = {:?} which is non-nullable",
+                        d
+                    );
                     Err(RbeError::NonNullable {
                         non_nullable_rbe: Box::new(d.clone()),
                         bag: (*bag).clone(),
@@ -39,47 +47,48 @@ where
             }
         }
     }
-    fn empty() -> Rbe<A> {
+
+    pub fn empty() -> Rbe<A> {
         Rbe::Empty
     }
 
-    fn symbol(x: A, min: usize, max: Max) -> Rbe<A> {
+    pub fn symbol(x: A, min: usize, max: Max) -> Rbe<A> {
         Rbe::Symbol {
             value: x,
             card: Cardinality { min, max },
         }
     }
 
-    fn or(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
+    pub fn or(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
         Rbe::Or {
             v1: Box::new(v1),
             v2: Box::new(v2),
         }
     }
 
-    fn and(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
+    pub fn and(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
         Rbe::And {
             v1: Box::new(v1),
             v2: Box::new(v2),
         }
     }
 
-    fn opt(v: Rbe<A>) -> Rbe<A> {
+    pub fn opt(v: Rbe<A>) -> Rbe<A> {
         Rbe::Or {
             v1: Box::new(v),
             v2: Box::new(Rbe::Empty),
         }
     }
 
-    fn plus(v: Rbe<A>) -> Rbe<A> {
+    pub fn plus(v: Rbe<A>) -> Rbe<A> {
         Rbe::Plus { v: Box::new(v) }
     }
 
-    fn star(v: Rbe<A>) -> Rbe<A> {
+    pub fn star(v: Rbe<A>) -> Rbe<A> {
         Rbe::Star { v: Box::new(v) }
     }
 
-    fn repeat(v: Rbe<A>, min: usize, max: Max) -> Rbe<A> {
+    pub fn repeat(v: Rbe<A>, min: usize, max: Max) -> Rbe<A> {
         Rbe::Repeat {
             v: Box::new(v),
             card: Cardinality::from(min, max),
@@ -119,7 +128,7 @@ where
         }
     }
 
-    fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
+    pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
             current = self.deriv(&x, card, open, controlled);
@@ -132,24 +141,18 @@ where
         match &self {
             Rbe::Fail { .. } => false,
             Rbe::Empty => true,
-            Rbe::Symbol {
-                value: _,
-                card: card,
-            } if card.nullable() => true,
-            Rbe::Symbol {
-                value: x,
-                card: card,
-            } => false,
-            Rbe::And { v1, v2 } => Self::combineAnd(v1.nullable(), v2.nullable()),
-            Rbe::Or { v1, v2 } => Self::combineOr(v1.nullable(), v2.nullable()),
+            Rbe::Symbol { value: _, card } if card.nullable() => true,
+            Rbe::Symbol { .. } => false,
+            Rbe::And { v1, v2 } => Self::combine_and(v1.nullable(), v2.nullable()),
+            Rbe::Or { v1, v2 } => Self::combine_or(v1.nullable(), v2.nullable()),
             Rbe::Star { .. } => true,
             Rbe::Plus { v } => v.nullable(),
-            Rbe::Repeat { v, card } if card.min == 0 => true,
+            Rbe::Repeat { v: _, card } if card.min == 0 => true,
             Rbe::Repeat { v, card: __ } => v.nullable(),
         }
     }
 
-    fn combineAnd(v1: NullableResult, v2: NullableResult) -> NullableResult {
+    fn combine_and(v1: NullableResult, v2: NullableResult) -> NullableResult {
         match (v1, v2) {
             (true, true) => true,
             (true, false) => false,
@@ -158,7 +161,7 @@ where
         }
     }
 
-    fn combineOr(v1: NullableResult, v2: NullableResult) -> NullableResult {
+    fn combine_or(v1: NullableResult, v2: NullableResult) -> NullableResult {
         match (v1, v2) {
             (true, true) => true,
             (true, false) => true,
@@ -193,7 +196,7 @@ where
                         }
                     } else {
                         if let Some(card) = (*card).minus(n) {
-                            Self::mkRangeSymbol(x, &card)
+                            Self::mk_range_symbol(x, &card)
                         } else {
                             Rbe::Fail {
                                 error: RbeError::CardinalityFail {
@@ -223,19 +226,19 @@ where
             Rbe::And { v1, v2 } => {
                 let d1 = v1.deriv(x, n, open, controlled);
                 let d2 = v2.deriv(x, n, open, controlled);
-                Self::mkOr(
-                    Self::mkAnd(d1, (**v2).clone()),
-                    Self::mkAnd(d2, (**v1).clone()),
+                Self::mk_or(
+                    Self::mk_and(d1, (**v2).clone()),
+                    Self::mk_and(d2, (**v1).clone()),
                 )
             }
             Rbe::Or { v1, v2 } => {
                 let d1 = v1.deriv(x, n, open, controlled);
                 let d2 = v2.deriv(x, n, open, controlled);
-                Self::mkOr(d1, d2)
+                Self::mk_or(d1, d2)
             }
             Rbe::Plus { v } => {
                 let d = v.deriv(x, n, open, controlled);
-                Self::mkAnd(d, Rbe::Star { v: v.clone() })
+                Self::mk_and(d, Rbe::Star { v: v.clone() })
             }
             /*             Rbe::Repeat { v, card }
               if card.min == 0 && card.max == Max::IntMax(0) => {
@@ -256,12 +259,12 @@ where
             }
             Rbe::Star { v } => {
                 let d = v.deriv(x, n, open, controlled);
-                Self::mkAnd(d, (**v).clone())
+                Self::mk_and(d, (**v).clone())
             }
         }
     }
 
-    fn mkRangeSymbol(x: &A, card: &Cardinality) -> Rbe<A>
+    fn mk_range_symbol(x: &A, card: &Cardinality) -> Rbe<A>
     where
         A: Clone,
     {
@@ -277,7 +280,7 @@ where
         }
     }
 
-    fn mkAnd(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A>
+    fn mk_and(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A>
     where
         A: Clone,
     {
@@ -293,7 +296,7 @@ where
         }
     }
 
-    fn mkOr(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
+    fn mk_or(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
         match (&v1, &v2) {
             (Rbe::Fail { .. }, _) => v2,
             (_, Rbe::Fail { .. }) => v1,
@@ -396,6 +399,7 @@ mod tests {
             Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         );
+        println!("Before assert!");
         assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
