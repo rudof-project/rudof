@@ -1,9 +1,10 @@
 use crate::{Bag, Cardinality, Max, RbeError};
 use core::hash::Hash;
 use std::collections::HashSet;
+use std::fmt::{Debug, Display};
 use std::{cmp, fmt};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Rbe<A>
 where
     A: Hash + Eq,
@@ -26,16 +27,16 @@ where
 {
     pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
         match &self.deriv_bag(bag, open, &self.symbols()) {
-            f @ Rbe::Fail { error } => Err(error.clone()),
+            Rbe::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
-                    println!(
+                    dbg!(
                         "Finished symbols: resulting rbe = {:?} which is nullable",
                         d
                     );
                     Ok(())
                 } else {
-                    println!(
+                    dbg!(
                         "Finished symbols: resulting rbe = {:?} which is non-nullable",
                         d
                     );
@@ -132,7 +133,7 @@ where
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
             current = self.deriv(&x, card, open, controlled);
-            println!("Checking: {:?}, deriv: {:?}", x, current);
+            dbg!("Checking: {:?}, deriv: {:?}", x, &current);
         }
         current
     }
@@ -230,7 +231,7 @@ where
                     &Self::mk_and(&d1, v2),
                     &Self::mk_and(&d2, v2),
                 );
-                println!("Case And\nv1={v1:?}\nd_{x:?}(v1)={d2:?}\nv2={v2:?}\nd_{x:?}(v2)={d2:?}");
+                dbg!("Case And\nv1={v1:?}\nd_{x:?}(v1)={d2:?}\nv2={v2:?}\nd_{x:?}(v2)={d2:?}");
                 result
             }
             Rbe::Or { v1, v2 } => {
@@ -338,7 +339,7 @@ mod tests {
             Rbe::symbol('a', 0, Max::IntMax(0)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         );
-        println!("Before assert!");
+        dbg!("Before assert!");
         assert_eq!(rbe.deriv(&'a',1,false, &HashSet::from(['a','b'])), expected);
     }
 
@@ -416,7 +417,7 @@ mod tests {
             Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         );
-        println!("Before assert!");
+        dbg!("Before assert!");
         assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
@@ -438,5 +439,37 @@ mod tests {
             Rbe::symbol('b', 1, Max::IntMax(1)),
         );
         assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
+    }
+}
+
+impl <A> Debug for Rbe<A> 
+where A: Debug + Hash + Eq {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Rbe::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
+            Rbe::Empty => write!(dest,"Empty"),
+            Rbe::Symbol { value, card } => write!(dest,"{value:?}{card:?}"),
+            Rbe::And { v1, v2 } => write!(dest,"{v1:?};{v2:?}"),
+            Rbe::Or { v1, v2 } => write!(dest,"{v1:?}|{v2:?}"),
+            Rbe::Star { v } => write!(dest,"{v:?}*"),
+            Rbe::Plus { v } => write!(dest,"{v:?}+"),
+            Rbe::Repeat { v, card } => write!(dest,"({v:?}){card:?}"),
+        }
+    }
+}
+
+impl <A> Display for Rbe<A> 
+where A: Display + Hash + Eq {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Rbe::Fail { error } => write!(dest,"Fail {{{error}}}"),
+            Rbe::Empty => write!(dest,"Empty"),
+            Rbe::Symbol { value, card } => write!(dest,"{value}{card}"),
+            Rbe::And { v1, v2 } => write!(dest,"{v1};{v2}"),
+            Rbe::Or { v1, v2 } => write!(dest,"{v1}|{v2}"),
+            Rbe::Star { v } => write!(dest,"{v}*"),
+            Rbe::Plus { v } => write!(dest,"{v}+"),
+            Rbe::Repeat { v, card } => write!(dest,"({v}){card}"),
+        }
     }
 }
