@@ -226,19 +226,21 @@ where
             Rbe::And { v1, v2 } => {
                 let d1 = v1.deriv(x, n, open, controlled);
                 let d2 = v2.deriv(x, n, open, controlled);
-                Self::mk_or(
-                    Self::mk_and(d1, (**v2).clone()),
-                    Self::mk_and(d2, (**v1).clone()),
-                )
+                let result = Self::mk_or(
+                    &Self::mk_and(&d1, v2),
+                    &Self::mk_and(&d2, v2),
+                );
+                println!("Case And\nv1={v1:?}\nd_{x:?}(v1)={d2:?}\nv2={v2:?}\nd_{x:?}(v2)={d2:?}");
+                result
             }
             Rbe::Or { v1, v2 } => {
                 let d1 = v1.deriv(x, n, open, controlled);
                 let d2 = v2.deriv(x, n, open, controlled);
-                Self::mk_or(d1, d2)
+                Self::mk_or(&d1, &d2)
             }
             Rbe::Plus { v } => {
                 let d = v.deriv(x, n, open, controlled);
-                Self::mk_and(d, Rbe::Star { v: v.clone() })
+                Self::mk_and(&d, &Rbe::Star { v: v.clone() })
             }
             /*             Rbe::Repeat { v, card }
               if card.min == 0 && card.max == Max::IntMax(0) => {
@@ -259,7 +261,7 @@ where
             }
             Rbe::Star { v } => {
                 let d = v.deriv(x, n, open, controlled);
-                Self::mk_and(d, (**v).clone())
+                Self::mk_and(&d, v)
             }
         }
     }
@@ -280,33 +282,33 @@ where
         }
     }
 
-    fn mk_and(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A>
+    fn mk_and(v1: &Rbe<A>, v2: &Rbe<A>) -> Rbe<A>
     where
         A: Clone,
     {
-        match (&v1, &v2) {
-            (Rbe::Empty, _) => v2,
-            (_, Rbe::Empty) => v1,
+        match (v1, v2) {
+            (Rbe::Empty, _) => (*v2).clone(),
+            (_, Rbe::Empty) => (*v1).clone(),
             (f @ Rbe::Fail { .. }, _) => f.clone(),
             (_, f @ Rbe::Fail { .. }) => f.clone(),
             (_, _) => Rbe::And {
-                v1: Box::new(v1),
-                v2: Box::new(v2),
+                v1: Box::new((*v1).clone()),
+                v2: Box::new((*v2).clone()),
             },
         }
     }
 
-    fn mk_or(v1: Rbe<A>, v2: Rbe<A>) -> Rbe<A> {
-        match (&v1, &v2) {
-            (Rbe::Fail { .. }, _) => v2,
-            (_, Rbe::Fail { .. }) => v1,
+    fn mk_or(v1: &Rbe<A>, v2: &Rbe<A>) -> Rbe<A> {
+        match (v1, v2) {
+            (Rbe::Fail { .. }, _) => (*v2).clone(),
+            (_, Rbe::Fail { .. }) => (*v1).clone(),
             (e1, e2) => {
                 if e1 == e2 {
-                    v1
+                    (*v1).clone()
                 } else {
                     Rbe::Or {
-                        v1: Box::new(v1),
-                        v2: Box::new(v2),
+                        v1: Box::new((*v1).clone()),
+                        v2: Box::new((*v2).clone()),
                     }
                 }
             }
@@ -324,6 +326,21 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deriv_a_1_1_and_b_opt_with_a() {
+        // a?|b? #= b/2
+        let rbe = Rbe::and(
+            Rbe::symbol('a', 1, Max::IntMax(1)),
+            Rbe::symbol('b', 0, Max::IntMax(1)),
+        );
+        let expected = Rbe::and(
+            Rbe::symbol('a', 0, Max::IntMax(0)),
+            Rbe::symbol('b', 0, Max::IntMax(1)),
+        );
+        println!("Before assert!");
+        assert_eq!(rbe.deriv(&'a',1,false, &HashSet::from(['a','b'])), expected);
+    }
 
     #[test]
     fn deriv_symbol() {
