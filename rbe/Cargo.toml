@@ -1,5 +1,5 @@
 [package]
-name = "bag"
+name = "rbe"
 version.workspace = true
 authors.workspace = true
 description.workspace = true

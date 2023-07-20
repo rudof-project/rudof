@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
-use bag::Bag;
+use rbe::Bag;
 use oxrdf::*;
 use oxrdf::{Literal, Variable};
 use reqwest::{

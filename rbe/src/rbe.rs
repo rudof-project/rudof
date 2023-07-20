@@ -5,6 +5,7 @@ use std::fmt::{Debug, Display};
 use std::{cmp, fmt};
 use serde_derive::{Deserialize, Serialize};
 
+/// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<A>
 where
@@ -474,8 +475,22 @@ mod tests {
         assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
     }
 
-    #[test]
+/*     #[test]
     fn test_serialize_rbe() {
+        
+        let rbe = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
+        let expected = r#"{ 
+            "Symbol": { 
+                "value": "foo", 
+                "card": {"min": 1, "max": { "IntMax": 2}} 
+            }
+        }"#;
+        let rbe: String = serde_json::to_string(&rbe).unwrap();
+        assert_eq!(rbe, expected);
+    } */
+
+    #[test]
+    fn test_deserialize_rbe() {
         let str = r#"{ 
             "Symbol": { 
                 "value": "foo", 

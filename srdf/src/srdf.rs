@@ -1,5 +1,5 @@
 use std::{collections::HashSet, fmt::Display};
-pub use bag::Bag;
+pub use rbe::Bag;
 use std::hash::Hash;
 
 pub trait SRDFComparisons {

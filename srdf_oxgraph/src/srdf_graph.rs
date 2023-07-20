@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bag::Bag;
+use rbe::Bag;
 use iri_s::IriS;
 use oxiri::Iri;
 use srdf::SRDFComparisons;

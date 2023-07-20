@@ -10,7 +10,7 @@ edition.workspace = true
 [dependencies]
 iri_s = { path = "../iri_s" }
 srdf = { path = "../srdf" }
-bag = { path = "../bag" }
+rbe = { path = "../rbe" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"

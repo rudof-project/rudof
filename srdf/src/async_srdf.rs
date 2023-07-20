@@ -2,7 +2,7 @@
 use std::{collections::HashSet, fmt::Display};
 
 use async_trait::async_trait;
-pub use bag::Bag;
+pub use rbe::Bag;
 use std::hash::Hash;
 
 #[async_trait]
