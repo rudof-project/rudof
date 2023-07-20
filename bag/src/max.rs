@@ -1,6 +1,8 @@
 use std::{cmp, fmt};
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub enum Max {
     Unbounded,
     IntMax(usize),

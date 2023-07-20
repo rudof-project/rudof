@@ -1,10 +1,13 @@
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+
 use crate::Max;
 use std::cmp;
 use std::fmt;
 
 pub type Min = usize;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Cardinality {
     pub min: Min,
     pub max: Max,

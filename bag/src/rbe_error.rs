@@ -1,11 +1,12 @@
 use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
-use std::fmt::Display;
 use std::hash::Hash;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 use thiserror::Error;
 
-#[derive(Clone, Debug, Error, Eq, PartialEq)]
+#[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<A>
 where
     A: Hash + PartialEq + Eq ,

@@ -3,8 +3,9 @@ use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::{cmp, fmt};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<A>
 where
     A: Hash + Eq,
@@ -324,6 +325,38 @@ where
     }
 }
 
+impl <A> Debug for Rbe<A> 
+where A: Debug + Hash + Eq {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Rbe::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
+            Rbe::Empty => write!(dest,"Empty"),
+            Rbe::Symbol { value, card } => write!(dest,"{value:?}{card:?}"),
+            Rbe::And { v1, v2 } => write!(dest,"{v1:?};{v2:?}"),
+            Rbe::Or { v1, v2 } => write!(dest,"{v1:?}|{v2:?}"),
+            Rbe::Star { v } => write!(dest,"{v:?}*"),
+            Rbe::Plus { v } => write!(dest,"{v:?}+"),
+            Rbe::Repeat { v, card } => write!(dest,"({v:?}){card:?}"),
+        }
+    }
+}
+
+impl <A> Display for Rbe<A> 
+where A: Display + Hash + Eq {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Rbe::Fail { error } => write!(dest,"Fail {{{error}}}"),
+            Rbe::Empty => write!(dest,"Empty"),
+            Rbe::Symbol { value, card } => write!(dest,"{value}{card}"),
+            Rbe::And { v1, v2 } => write!(dest,"{v1};{v2}"),
+            Rbe::Or { v1, v2 } => write!(dest,"{v1}|{v2}"),
+            Rbe::Star { v } => write!(dest,"{v}*"),
+            Rbe::Plus { v } => write!(dest,"{v}+"),
+            Rbe::Repeat { v, card } => write!(dest,"({v}){card}"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -440,36 +473,20 @@ mod tests {
         );
         assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
     }
+
+    #[test]
+    fn test_serialize_rbe() {
+        let str = r#"{ 
+            "Symbol": { 
+                "value": "foo", 
+                "card": {"min": 1, "max": { "IntMax": 2}} 
+            }
+        }"#;
+        let expected = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
+        let rbe: Rbe<String> = serde_json::from_str(str).unwrap();
+        assert_eq!(rbe, expected);
+    }
+
+
 }
 
-impl <A> Debug for Rbe<A> 
-where A: Debug + Hash + Eq {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            Rbe::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
-            Rbe::Empty => write!(dest,"Empty"),
-            Rbe::Symbol { value, card } => write!(dest,"{value:?}{card:?}"),
-            Rbe::And { v1, v2 } => write!(dest,"{v1:?};{v2:?}"),
-            Rbe::Or { v1, v2 } => write!(dest,"{v1:?}|{v2:?}"),
-            Rbe::Star { v } => write!(dest,"{v:?}*"),
-            Rbe::Plus { v } => write!(dest,"{v:?}+"),
-            Rbe::Repeat { v, card } => write!(dest,"({v:?}){card:?}"),
-        }
-    }
-}
-
-impl <A> Display for Rbe<A> 
-where A: Display + Hash + Eq {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            Rbe::Fail { error } => write!(dest,"Fail {{{error}}}"),
-            Rbe::Empty => write!(dest,"Empty"),
-            Rbe::Symbol { value, card } => write!(dest,"{value}{card}"),
-            Rbe::And { v1, v2 } => write!(dest,"{v1};{v2}"),
-            Rbe::Or { v1, v2 } => write!(dest,"{v1}|{v2}"),
-            Rbe::Star { v } => write!(dest,"{v}*"),
-            Rbe::Plus { v } => write!(dest,"{v}+"),
-            Rbe::Repeat { v, card } => write!(dest,"({v}){card}"),
-        }
-    }
-}
