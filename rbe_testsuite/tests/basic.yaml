@@ -1,0 +1,24 @@
+---
+tests:
+  - name: basic
+    rbe: !Symbol
+      value: 22
+      card:
+        min: 1
+        max: !IntMax 1
+    bag:
+      - - 22
+        - 1
+    open: false
+    match_result: !BooleanResult true
+  - name: basic2
+    rbe: !Symbol
+      value: 22
+      card:
+        min: 1
+        max: !IntMax 1
+    bag:
+      - - 22
+        - 2
+    open: false
+    match_result: !BooleanResult false    

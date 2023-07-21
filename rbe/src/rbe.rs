@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::{cmp, fmt};
 use serde_derive::{Deserialize, Serialize};
+use log::debug;
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,13 +33,13 @@ where
             Rbe::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
-                    dbg!(
+                    debug!(
                         "Finished symbols: resulting rbe = {:?} which is nullable",
                         d
                     );
                     Ok(())
                 } else {
-                    dbg!(
+                    debug!(
                         "Finished symbols: resulting rbe = {:?} which is non-nullable",
                         d
                     );
@@ -135,7 +136,7 @@ where
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
             current = self.deriv(&x, card, open, controlled);
-            dbg!("Checking: {:?}, deriv: {:?}", x, &current);
+            debug!("Checking: {:?}, deriv: {:?}", x, &current);
         }
         current
     }
@@ -233,7 +234,7 @@ where
                     &Self::mk_and(&d1, v2),
                     &Self::mk_and(&d2, v2),
                 );
-                dbg!("Case And\nv1={v1:?}\nd_{x:?}(v1)={d2:?}\nv2={v2:?}\nd_{x:?}(v2)={d2:?}");
+                debug!("Case And\nv1={v1:?}\nd_{x:?}(v1)={d2:?}\nv2={v2:?}\nd_{x:?}(v2)={d2:?}");
                 result
             }
             Rbe::Or { v1, v2 } => {
@@ -373,7 +374,7 @@ mod tests {
             Rbe::symbol('a', 0, Max::IntMax(0)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         );
-        dbg!("Before assert!");
+        debug!("Before assert!");
         assert_eq!(rbe.deriv(&'a',1,false, &HashSet::from(['a','b'])), expected);
     }
 
@@ -451,7 +452,7 @@ mod tests {
             Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         );
-        dbg!("Before assert!");
+        debug!("Before assert!");
         assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
@@ -475,19 +476,20 @@ mod tests {
         assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
     }
 
-/*     #[test]
+    #[test]
     fn test_serialize_rbe() {
         
         let rbe = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
-        let expected = r#"{ 
-            "Symbol": { 
-                "value": "foo", 
-                "card": {"min": 1, "max": { "IntMax": 2}} 
-            }
-        }"#;
-        let rbe: String = serde_json::to_string(&rbe).unwrap();
+        let expected = 
+r#"!Symbol
+value: foo
+card:
+  min: 1
+  max: !IntMax 2
+"#;
+        let rbe: String = serde_yaml::to_string(&rbe).unwrap();
         assert_eq!(rbe, expected);
-    } */
+    } 
 
     #[test]
     fn test_deserialize_rbe() {
