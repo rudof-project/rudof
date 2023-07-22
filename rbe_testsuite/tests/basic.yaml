@@ -44,7 +44,7 @@ tests:
         - 1
     open: false
     match_result: !BooleanResult false
-  - name: a_1_1_with_a_1_b_1_pass
+  - name: a_1_u_with_a_1_b_1_pass
     rbe: !Symbol
       value: a
       card:
