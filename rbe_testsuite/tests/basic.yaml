@@ -1,24 +1,57 @@
 ---
 tests:
-  - name: basic
+  - name: a_1_1_with_a_1_pass
     rbe: !Symbol
-      value: 22
+      value: a
       card:
         min: 1
         max: !IntMax 1
     bag:
-      - - 22
+      - - a
         - 1
     open: false
     match_result: !BooleanResult true
-  - name: basic2
+  - name: a_1_1_with_a_2_fail
     rbe: !Symbol
-      value: 22
+      value: a
       card:
         min: 1
         max: !IntMax 1
     bag:
-      - - 22
+      - - a
         - 2
     open: false
-    match_result: !BooleanResult false    
+    match_result: !BooleanResult false
+  - name: a_1_3_with_a_2_pass
+    rbe: !Symbol
+      value: a
+      card:
+        min: 1
+        max: !IntMax 3
+    bag:
+      - - a
+        - 2
+    open: false
+    match_result: !BooleanResult true
+  - name: a_1_1_with_b_1_fail
+    rbe: !Symbol
+      value: a
+      card:
+        min: 1
+        max: !IntMax 1
+    bag:
+      - - b
+        - 1
+    open: false
+    match_result: !BooleanResult false
+  - name: a_1_1_with_a_1_b_1_pass
+    rbe: !Symbol
+      value: a
+      card:
+        min: 1
+        max: !Unbounded
+    bag:
+      - - a
+        - 1
+    open: true
+    match_result: !BooleanResult true

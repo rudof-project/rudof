@@ -46,4 +46,9 @@ where
         expected_cardinality: Cardinality,
         current_number: usize,
     },
+
+    #[error("Should fail but passed: {name}")]
+    ShouldFailButPassed {
+        name: String
+    }
 }

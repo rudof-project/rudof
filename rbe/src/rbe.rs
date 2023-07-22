@@ -30,7 +30,10 @@ where
 {
     pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
         match &self.deriv_bag(bag, open, &self.symbols()) {
-            Rbe::Fail { error } => Err(error.clone()),
+            Rbe::Fail { error } => {
+                debug!("deriv_bag failed with error {error:?}");
+                Err(error.clone())
+            },
             d => {
                 if d.nullable() {
                     debug!(
@@ -99,6 +102,13 @@ where
         }
     }
 
+    fn is_fail(&self) -> bool {
+        match &self {
+            Rbe::Fail {..} => true,
+            _ => false
+        }
+    }
+
     fn symbols(&self) -> HashSet<A> {
         let mut set = HashSet::new();
         self.symbols_aux(&mut set);
@@ -136,6 +146,10 @@ where
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
             current = self.deriv(&x, card, open, controlled);
+            if current.is_fail() {
+                debug!("Found failed in deriv {current:?}");
+                break;
+            }
             debug!("Checking: {:?}, deriv: {:?}", x, &current);
         }
         current
