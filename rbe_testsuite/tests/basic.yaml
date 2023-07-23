@@ -1,5 +1,7 @@
 ---
 tests:
+
+  # /a/ = a
   - name: a_1_1_with_a_1_pass
     rbe: !Symbol
       value: a
@@ -11,6 +13,8 @@ tests:
         - 1
     open: false
     match_result: !BooleanResult true
+
+  # /a/ != aa    
   - name: a_1_1_with_a_2_fail
     rbe: !Symbol
       value: a
@@ -22,6 +26,8 @@ tests:
         - 2
     open: false
     match_result: !BooleanResult false
+
+  # /a{1,3}/ = aa  
   - name: a_1_3_with_a_2_pass
     rbe: !Symbol
       value: a
@@ -33,6 +39,8 @@ tests:
         - 2
     open: false
     match_result: !BooleanResult true
+  
+  # /a/ != b  
   - name: a_1_1_with_b_1_fail
     rbe: !Symbol
       value: a
@@ -44,7 +52,9 @@ tests:
         - 1
     open: false
     match_result: !BooleanResult false
-  - name: a_1_u_with_a_1_b_1_pass
+
+    # /a{1,u}/ = a     
+  - name: a_1_u_with_a_1_pass
     rbe: !Symbol
       value: a
       card:
@@ -55,3 +65,33 @@ tests:
         - 1
     open: true
     match_result: !BooleanResult true
+
+    # /a{1,u}/(open) = ab 
+  - name: a_1_u_with_a_1_b_1_pass
+    rbe: !Symbol
+      value: a
+      card:
+        min: 1
+        max: !Unbounded
+    bag:
+      - - a
+        - 1
+      - - b
+        - 1
+    open: true
+    match_result: !BooleanResult true    
+
+    # /a{1,u}/(closed) != ab 
+  - name: a_1_u_with_a_1_b_1_closed_fail
+    rbe: !Symbol
+      value: a
+      card:
+        min: 1
+        max: !Unbounded
+    bag:
+      - - a
+        - 1
+      - - b
+        - 1
+    open: false
+    match_result: !BooleanResult false

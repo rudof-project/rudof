@@ -44,6 +44,18 @@ impl RbeTests
        results
     }
 
+    pub fn run_by_name(&self, name: String) -> RbeTestsResults {
+        let mut results = RbeTestsResults::new();
+        for test in &self.tests {
+            if test.name() == name {
+                let result = test.run();
+                results.add_result(&result);
+            }
+       }
+       results
+    }
+
+
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         let path = path.as_ref();
         let data = fs::read(path)

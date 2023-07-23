@@ -107,4 +107,18 @@ match_result: !BooleanResult true
         assert_eq!(results.count_failed(), 0);
     }
 
+    #[test]
+    fn run_single() {
+        let name = "a_1_u_with_a_1_b_1_pass".to_string();
+        let data = include_bytes!("../tests/basic.yaml");
+        let mut rbe_tests = RbeTests::new();
+        rbe_tests.load_slice("basic", data).unwrap();
+        let results = rbe_tests.run_by_name(name);
+        for t in results.failed() {
+           info!("Failed: {}: error: {}", t.name(), t.err());
+        }
+        assert_eq!(results.count_passed(), 1);
+        assert_eq!(results.count_failed(), 0);
+    }    
+
 }

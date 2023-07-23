@@ -145,7 +145,7 @@ where
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         for (x, card) in bag.iter() {
-            current = self.deriv(&x, card, open, controlled);
+            current = current.deriv(&x, card, open, controlled);
             if current.is_fail() {
                 debug!("Found failed in deriv {current:?}");
                 break;
@@ -192,6 +192,8 @@ where
     where
         A: Eq + Hash + Clone,
     {
+        dbg!(&self);
+        dbg!(x);
         match &self {
             fail @ Rbe::Fail { error: _ } => (*fail).clone(),
             Rbe::Empty => {
@@ -228,7 +230,12 @@ where
                 } else {
                     // Symbol is different from symbols defined in rbe
                     // if the rbe is open, we allow extra symbols
+                    dbg!(value);
+                    dbg!(x);
+                    dbg!(controlled);
+                    dbg!(open);
                     if open && !(controlled.contains(&x)) {
+                        debug!("Open condition satisfied!");
                         self.clone()
                     } else {
                         Rbe::Fail {
