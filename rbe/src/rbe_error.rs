@@ -50,5 +50,13 @@ where
     #[error("Should fail but passed: {name}")]
     ShouldFailButPassed {
         name: String
-    }
+    },
+
+
+    #[error("Or values failed")]
+    OrValuesFail ,
+
+    #[error("MkOr values failed")]
+    MkOrValuesFail 
+
 }

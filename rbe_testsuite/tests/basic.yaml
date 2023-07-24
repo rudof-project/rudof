@@ -95,3 +95,19 @@ tests:
         - 1
     open: false
     match_result: !BooleanResult false
+
+    # /a{1,u}/(closed) != ab 
+  - name: b_plus_with_a_1_b_1_open_pass
+    rbe: !Symbol
+      value: b
+      card:
+        min: 1
+        max: !Unbounded
+    bag:
+      - - a
+        - 1
+      - - b
+        - 1
+    open: true
+    match_result: !BooleanResult true
+    
