@@ -47,6 +47,17 @@ where
         current_number: usize,
     },
 
+    #[error("Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
+    CardinalityFailRepeat {
+        expected_cardinality: Cardinality,
+        current_number: usize,
+    },
+
+    #[error("Cardinality(0,0) but found symbol after derivative")]
+    CardinalityZeroZeroDeriv {
+        symbol: A
+    },
+
     #[error("Should fail but passed: {name}")]
     ShouldFailButPassed {
         name: String

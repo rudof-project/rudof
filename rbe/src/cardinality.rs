@@ -22,6 +22,16 @@ impl Cardinality {
         self.min == 0
     }
 
+    pub fn is_0_0(&self) -> bool {
+        self.min == 0 && 
+        self.max == Max::IntMax(0)
+    }
+
+    pub fn is_1_1(&self) -> bool {
+        self.min == 1 && 
+        self.max == Max::IntMax(1)
+    }
+
     pub fn contains(&self, n: usize) -> bool {
         n >= self.min && self.max.greater_or_equal(n)
     }

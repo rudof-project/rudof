@@ -166,7 +166,6 @@ mod tests {
     fn deser_test() {
         let str = r#"[ ["a",2],["b",2],["a",1]]"#;
         let bag: Bag<char> = serde_json::from_str(str).unwrap();
-        dbg!(&bag);
         assert_eq!(bag, Bag::from(['a','a','a', 'b', 'b']));
     }
 

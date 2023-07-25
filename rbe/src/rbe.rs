@@ -2,12 +2,10 @@ use crate::{Bag, Cardinality, Max, RbeError};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
-use std::{cmp, fmt};
+use std::fmt;
 use serde_derive::{Deserialize, Serialize};
-use log::debug;
+//use log::debug;
 use itertools::cloned;
-use core::slice::Iter;
 
 
 pub struct DerivN<T, F> {
@@ -78,21 +76,12 @@ where
     pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
         match &self.deriv_bag(bag, open, &self.symbols()) {
             Rbe::Fail { error } => {
-                debug!("deriv_bag failed with error {error:?}");
                 Err(error.clone())
             },
             d => {
                 if d.nullable() {
-                    debug!(
-                        "Finished symbols: resulting rbe = {:?} which is nullable",
-                        d
-                    );
                     Ok(())
                 } else {
-                    debug!(
-                        "Finished symbols: resulting rbe = {:?} which is non-nullable",
-                        d
-                    );
                     Err(RbeError::NonNullable {
                         non_nullable_rbe: Box::new(d.clone()),
                         bag: (*bag).clone(),
@@ -189,10 +178,8 @@ where
         for (x, card) in bag.iter() {
             current = current.deriv(&x, card, open, controlled);
             if current.is_fail() {
-                debug!("Found failed in deriv {current:?}");
                 break;
             }
-            debug!("Checking: {:?}, deriv: {:?}", x, &current);
         }
         current
     }
@@ -224,8 +211,6 @@ where
     where
         A: Eq + Hash + Clone,
     {
-        dbg!(&self);
-        dbg!(x);
         match *self {
             ref fail @ Rbe::Fail { .. } => fail.clone(),
             Rbe::Empty => {
@@ -262,12 +247,7 @@ where
                 } else {
                     // Symbol is different from symbols defined in rbe
                     // if the rbe is open, we allow extra symbols
-                    dbg!(value);
-                    dbg!(x);
-                    dbg!(controlled);
-                    dbg!(open);
                     if open && !(controlled.contains(&x)) {
-                        debug!("Open condition satisfied!");
                         self.clone()
                     } else {
                         Rbe::Fail {
@@ -281,14 +261,9 @@ where
                 }
             }
             Rbe::And { ref values } => {
-                debug!("And {{ values: {values:?} }}");
-                let result = Self::deriv_and(values, x, n, open, controlled);
-                debug!("Result: {result:?}");
-                result
+                Self::deriv_and(values, x, n, open, controlled)
             }
-
             Rbe::Or { ref values } => {
-                // todo!()
                 Self::mk_or_values(values.into_iter().map(|rbe| { 
                     *(*rbe).clone()
                 } ))
@@ -297,8 +272,30 @@ where
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             }
+            Rbe::Repeat { ref value, ref card } 
+            if card.is_0_0() => {
+                let d = value.deriv(x, n, open, controlled);
+                if d.nullable() {
+                  Rbe::Fail { error: RbeError::CardinalityZeroZeroDeriv { 
+                    symbol: x.clone()
+                   }}
+                } else { 
+                  Rbe::Empty
+                }
+            }
             Rbe::Repeat { ref value, ref card } => {
-                todo!()
+                let d = value.deriv(x, n, open, controlled);
+                if let Some(card) = card.minus(n) {
+                    let rest = Self::mk_range(&value, &card);
+                    Self::mk_and(&d, &rest)
+                } else {
+                    Rbe::Fail {
+                        error: RbeError::CardinalityFailRepeat {
+                            expected_cardinality: card.clone(),
+                            current_number: n,
+                        },
+                    }
+                }
             }
             Rbe::Star { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
@@ -307,15 +304,12 @@ where
         }
     }
 
-    fn mk_first(v: &Rbe<A>) -> Rbe<A> {
-        (*v).clone()
-    }
-
-    fn deriv_fn(v: &Box<Rbe<A>>) -> Option<Box<Rbe<A>>> {
-        todo!()
-    }
-
-    fn deriv_and(values: &Vec<Box<Rbe<A>>>, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
+    fn deriv_and(
+        values: &Vec<Box<Rbe<A>>>, 
+        x: &A, 
+        n: usize, 
+        open: bool, 
+        controlled: &HashSet<A>) -> Rbe<A> {
 
         let mut or_values: Vec<Box<Rbe<A>>> = Vec::new();
         
@@ -342,6 +336,28 @@ where
             }
             _ => Rbe::Or {
                 values: or_values
+            }
+        }
+    }
+
+    fn mk_range(e: &Rbe<A>, card: &Cardinality) -> Rbe<A>
+    where
+        A: Clone,
+    {
+        if Self::bigger((*card).min, &(*card).max) {
+            Rbe::Fail {
+                error: RbeError::RangeLowerBoundBiggerMax { card: card.clone() },
+            }
+        } else {
+            match (e, card) {
+                (_, c) if c.is_0_0() => Rbe::Empty,
+                (e, c) if c.is_1_1() => e.clone(),
+                (fail@Rbe::Fail { ..}, _) => fail.clone(),
+                (Rbe::Empty, _) => Rbe::Empty,
+                (e, c) => Rbe::Repeat { 
+                    value: Box::new(e.clone()), 
+                    card: c.clone()
+                }
             }
         }
     }
@@ -478,7 +494,6 @@ mod tests {
                 Rbe::symbol('a', 0, Max::IntMax(0)),
                 Rbe::symbol('b', 0, Max::IntMax(1))]
             );
-        debug!("Before assert!");
         assert_eq!(rbe.deriv(&'a',1,false, &HashSet::from(['a','b'])), expected);
     }
 
@@ -561,7 +576,6 @@ mod tests {
             vec![Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1))]
         );
-        debug!("Before assert!");
         assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
@@ -634,15 +648,6 @@ card:
         }
 
         let vs: Vec<R> = vec![R::A(1),R::B(2),R::C(4), R::A(3)];
-/*         for (index, value) in vs.iter().enumerate() {
-            let mut cloned: Vec<R> = cloned(vs.iter()).collect();
-            let d = R::deriv(value);
-            let mut rest = cloned.split_off(index);
-            rest.pop();
-            cloned.push(d);
-            cloned.append(&mut rest);
-            println!("{cloned:?}");
-        } */
         let mut results = deriv_n(vs, R::deriv);
         assert_eq!(vec![R::D(Box::new(R::A(1))),R::B(2),R::C(4), R::A(3)], results.next().unwrap());
         assert_eq!(vec![R::A(1),R::D(Box::new(R::B(2))),R::C(4), R::A(3)], results.next().unwrap());
