@@ -2,9 +2,56 @@ use crate::{Bag, Cardinality, Max, RbeError};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
+use std::marker::PhantomData;
 use std::{cmp, fmt};
 use serde_derive::{Deserialize, Serialize};
 use log::debug;
+use itertools::cloned;
+use core::slice::Iter;
+
+
+pub struct DerivN<T, F> {
+    source: Vec<T>,
+    pos: usize,
+    deriv: F
+}
+
+pub fn deriv_n<T, F>(v: Vec<T>, d: F) -> DerivN<T, F> {
+    DerivN {
+        source: v,
+        pos: 0, 
+        deriv: d
+    }
+}
+
+impl <T, F: Fn(&T) -> Option<T>> Iterator for DerivN<T, F> 
+where T : Clone + Debug,
+{
+ type Item = Vec<T>;
+
+ fn next(&mut self) -> Option<Self::Item> { 
+    if self.pos < self.source.len() {
+        let mut cloned: Vec<T> = cloned(self.source.iter()).collect();
+        let current = &cloned[self.pos];
+        match (self.deriv)(current) {
+            None => {
+                // If it returns None we continue with the next position
+                self.pos += 1;
+                Self::next(self)
+            },
+            Some(d) => {
+                cloned[self.pos] = d;
+                self.pos += 1;
+                Some(cloned)
+            }
+        }
+    } else { 
+        None 
+    }
+ }
+
+}
+
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -235,79 +282,21 @@ where
             }
             Rbe::And { ref values } => {
                 debug!("And {{ values: {values:?} }}");
-                /*let mut it = values.iter();
-                let rs = it.reduce(|current,v| {
-                   let d1 = v.deriv(x, n, open, controlled);
-                   let d2 = current.deriv(x, n, open, controlled);
-                   let result = Self::mk_or(
-                    &Self::mk_and(&d1, &current),
-                    &Self::mk_and(&d2, &v),
-                   ); 
-                   Box::new(result) 
-                   Self::deriv_and(current,v)
-                });
-                let x = rs.unwrap();
-                let v = *x;
-                let w = *v;
-                w */
-                // let init = Rbe::Empty;
-                let mut it = values.iter();
-                let next = it.next().unwrap();
-                let init = Self::mk_first(next);
-                let result = values.iter().fold(init, |current,v| {
-                    let d1 = v.deriv(x,n,open,controlled);
-                    debug!("d_{x:?}(v = {v:?}) = {d1:?}");
-                    let d2 = current.deriv(x,n,open,controlled);
-                    debug!("d_{x:?}(current = {current:?}) = {d2:?}");
-                    let result = Self::mk_or(
-                        &Self::mk_and(&d1, &current),
-                        &Self::mk_and(&d2, &v),
-                    ); 
-                    debug!("Result of mk_or = {result:?}");
-                    result
-                });
-                debug!("Case And\nvalues={values:?}\nx:{x:?}\nResult: {result:?}");
+                let result = Self::deriv_and(values, x, n, open, controlled);
+                debug!("Result: {result:?}");
                 result
-                /*let init = Rbe::Empty;
-                let result = values.iter().fold(init, |current,v| {
-                    let d1 = v.deriv(x,n,open,controlled);
-                    debug!("d_{x:?}(v = {v:?}) = {d1:?}");
-                    let d2 = current.deriv(x,n,open,controlled);
-                    debug!("d_{x:?}(current = {current:?}) = {d2:?}");
-                    let result = Self::mk_or(
-                        &Self::mk_and(&d1, &current),
-                        &Self::mk_and(&d2, &v),
-                    ); 
-                    debug!("Result of mk_or = {result:?}");
-                    result
-                });
-                debug!("Case And\nvalues={values:?}\nx:{x:?}\nResult: {result:?}");
-                result */
-                // todo!()
             }
 
             Rbe::Or { ref values } => {
-                todo!()
-                // Self::mk_or_values(values.into_iter().map(|rbe| { (*rbe).clone() } ))
+                // todo!()
+                Self::mk_or_values(values.into_iter().map(|rbe| { 
+                    *(*rbe).clone()
+                } ))
             },
             Rbe::Plus { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             }
-            /*             Rbe::Repeat { v, card }
-              if card.min == 0 && card.max == Max::IntMax(0) => {
-                let d = v.deriv(x, n, open, controlled);
-                if d.nullable() {
-                    Rbe::Fail {
-                        error: RbeError::CardinalityZeroZeroDeriv {
-                            x: (*x).clone(),
-                            card: (*card).clone()
-                        },
-                    }
-                } else {
-                    Rbe::Empty
-                }
-            } */
             Rbe::Repeat { ref value, ref card } => {
                 todo!()
             }
@@ -322,8 +311,39 @@ where
         (*v).clone()
     }
 
-    fn deriv_and<'a>(v1: &'a Box<Rbe<A>>, v2: &'a Box<Rbe<A>>) -> &'a Box<Rbe<A>> {
+    fn deriv_fn(v: &Box<Rbe<A>>) -> Option<Box<Rbe<A>>> {
         todo!()
+    }
+
+    fn deriv_and(values: &Vec<Box<Rbe<A>>>, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
+
+        let mut or_values: Vec<Box<Rbe<A>>> = Vec::new();
+        
+        for vs in deriv_n(
+            cloned((*values).iter()).collect(), 
+            |bv: &Box<Rbe<A>>| {
+                let d = bv.deriv(x,n,open,controlled);
+                match d { 
+                    Rbe::Fail { .. } => {
+                        None
+                    },
+                    _ => {
+                        Some(Box::new(d))
+                    }
+                }
+            }
+        ) {
+            or_values.push(Box::new(Rbe::And { values: vs }));
+        }
+        match or_values.len() {
+            0 => Rbe::Fail { error: RbeError::OrValuesFail },
+            1 => {
+                (*or_values[0]).clone()
+            }
+            _ => Rbe::Or {
+                values: or_values
+            }
+        }
     }
 
     fn mk_range_symbol(x: &A, card: &Cardinality) -> Rbe<A>
@@ -591,6 +611,43 @@ card:
         let expected = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
         let rbe: Rbe<String> = serde_json::from_str(str).unwrap();
         assert_eq!(rbe, expected);
+    }
+
+    #[test]
+    fn test_deriv_n() {
+
+        #[derive(Debug, Clone, PartialEq)]
+        enum R {
+            A(i32),
+            B(i32),
+            C(i32),
+            D(Box<R>)
+        }
+
+        impl R {
+            fn deriv(&self) -> Option<R> {
+                match *self {
+                  R::C(_) => None,
+                  _ => Some(R::D(Box::new(self.clone())))
+                }
+            }
+        }
+
+        let vs: Vec<R> = vec![R::A(1),R::B(2),R::C(4), R::A(3)];
+/*         for (index, value) in vs.iter().enumerate() {
+            let mut cloned: Vec<R> = cloned(vs.iter()).collect();
+            let d = R::deriv(value);
+            let mut rest = cloned.split_off(index);
+            rest.pop();
+            cloned.push(d);
+            cloned.append(&mut rest);
+            println!("{cloned:?}");
+        } */
+        let mut results = deriv_n(vs, R::deriv);
+        assert_eq!(vec![R::D(Box::new(R::A(1))),R::B(2),R::C(4), R::A(3)], results.next().unwrap());
+        assert_eq!(vec![R::A(1),R::D(Box::new(R::B(2))),R::C(4), R::A(3)], results.next().unwrap());
+        assert_eq!(vec![R::A(1),R::B(2),R::C(4), R::D(Box::new(R::A(3)))], results.next().unwrap());
+        assert_eq!(None, results.next());
     }
 
 
