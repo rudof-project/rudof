@@ -6,7 +6,7 @@ use serde_derive::{Serialize, Deserialize};
 use crate::{RbeTest, RbeTestsResults};
 
 /// A collection of rbe tests.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTests
 // where T: Hash + Eq + Clone + fmt::Debug
 {
@@ -21,10 +21,12 @@ impl RbeTests
 // where T: Hash + Eq + Clone + fmt::Debug 
 {
     pub fn new() -> RbeTests {
-        RbeTests {
-            tests: Vec::new(),
-            visited: HashSet::new()
-        }
+        RbeTests::default()
+    }
+
+    pub fn with_tests(&mut self, tests:Vec<RbeTest>) {
+        // TODO: Add visited
+        self.tests = tests;
     }
 
     pub fn tests(&self) -> std::slice::Iter<'_, RbeTest> {

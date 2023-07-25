@@ -8,7 +8,7 @@ use anyhow::{bail, Context, Result};
 
 use crate::{TestType, MatchResult, RbeTestResult, PassedTestResult, FailedTestResult};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {
     
     #[serde(skip)]
@@ -31,6 +31,10 @@ pub struct RbeTest {
 
 impl RbeTest {
 
+    pub fn new() -> RbeTest {
+        RbeTest::default()
+    }
+
     /// The group name of this test
     pub fn group(&self) -> &str {
         &self.group
@@ -51,6 +55,21 @@ impl RbeTest {
 
     pub fn set_full_name(&mut self, full_name: String) {
         self.full_name = full_name;
+    }
+
+    pub fn set_rbe(&mut self, rbe: Rbe<TestType>) 
+    {
+        self.rbe = rbe;
+    }
+
+    pub fn set_bag(&mut self, bag: Bag<TestType>) 
+    {
+        self.bag = bag;
+    }
+
+    pub fn set_match_result(&mut self, match_result: MatchResult) 
+    {
+        self.match_result = match_result;
     }
 
     /// Runs this test

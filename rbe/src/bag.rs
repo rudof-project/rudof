@@ -5,10 +5,9 @@ use serde::{Deserialize, Deserializer, de::{SeqAccess, Error, Unexpected}, Seria
 use std::{fmt::{Display, Debug, self}, hash::Hash, marker::PhantomData};
 
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct Bag<T>
-where
-    T: Hash + Eq + PartialEq,
+where T: Hash + Eq + PartialEq,
 {
     bag: HashBag<T>,
 }

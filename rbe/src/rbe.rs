@@ -54,8 +54,7 @@ where T : Clone + Debug,
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<A>
-where
-    A: Hash + Eq,
+where A: Hash + Eq,
 {
     Fail { error: RbeError<A> },
     Empty,
@@ -425,6 +424,14 @@ where
             Max::Unbounded => false,
             Max::IntMax(max) => min > *max,
         }
+    }
+}
+
+impl <A> Default for Rbe<A> 
+where A: Hash + Eq
+{
+    fn default() -> Self { 
+        Rbe::Empty 
     }
 }
 

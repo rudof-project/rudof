@@ -8,8 +8,7 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<A>
-where
-    A: Hash + PartialEq + Eq ,
+where A: Hash + PartialEq + Eq ,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: A, open: bool },

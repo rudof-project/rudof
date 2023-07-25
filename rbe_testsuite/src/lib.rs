@@ -17,14 +17,23 @@ type TestType = String;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-enum MatchResult {
-    BooleanResult(bool)
+pub enum MatchResult {
+  BooleanResult(bool)
+}
+
+impl Default for MatchResult {
+  fn default() -> Self { 
+    MatchResult::BooleanResult(true)
+  }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use indoc::indoc;
     use log::*;
+    use rbe::{Rbe, Max, Bag};
     use test_log::test;
     use super::*;
 
@@ -47,30 +56,28 @@ match_result: !BooleanResult true
       assert_eq!(rbe_test.run(), RbeTestResult::passed("basic".to_string()))
    }
 
-   /*
-   #[test]
+  /* #[test]
    fn check_serialization() {
-    let rbe_test: RbeTest<i32> = RbeTest {
-        group: "test".to_string(),
-        name: "basic".to_string(),
-        full_name: "test/basic".to_string(),
-        rbe: Rbe::symbol(22, 1, Max::IntMax(1)),
-        bag: Bag::from([22]),
-        open: false,
-        match_result: MatchResult::BooleanResult(true),
-    };
+    let values = vec![
+      Rbe::symbol("a".to_string(), 1, Max::IntMax(1)),
+      Rbe::symbol("b".to_string(), 2, Max::IntMax(3))
+      ];
+    let mut rbe_test = RbeTest::default();
+    rbe_test.set_group("test".to_string());
+    rbe_test.set_name("basic".to_string());
+    rbe_test.set_full_name("test/basic".to_string());
+    rbe_test.set_rbe(Rbe::and(values.into_iter()));
+    rbe_test.set_bag(Bag::from(["a".to_string(),"b".to_string()]));
     let mut ts = Vec::new();
     ts.push(rbe_test);
-    let rbe_tests = RbeTests {
-        tests: ts,
-        visited: HashSet::new()
-    };
+    let mut rbe_tests = RbeTests::default();
+    rbe_tests.with_tests(ts);
     let serialized = serde_yaml::to_string(&rbe_tests).unwrap();
     println!("---\n{serialized}");
     assert_eq!(serialized, "".to_string());
   } */
 
-    #[test_log::test]
+    #[test]
     fn load_slice_1() {
 
         let str = indoc! {r#"
@@ -109,7 +116,7 @@ match_result: !BooleanResult true
 
     #[test]
     fn run_single() {
-        let name = "a_1_u_with_a_1_b_1_pass".to_string();
+        let name = "a_1_1_b_2_3_with_a_1_b_1_open_fail".to_string();
         let data = include_bytes!("../tests/basic.yaml");
         let mut rbe_tests = RbeTests::new();
         rbe_tests.load_slice("basic", data).unwrap();

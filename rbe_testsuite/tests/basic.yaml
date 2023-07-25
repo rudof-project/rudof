@@ -111,3 +111,46 @@ tests:
     open: true
     match_result: !BooleanResult true
     
+    # /a{1,1};b{2,3}/ != ab 
+  - name: a_1_1_b_2_3_with_a_1_b_1_open_fail
+    rbe: !And
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 2
+            max: !IntMax 3
+    bag:
+      - - a
+        - 1
+      - - b
+        - 1
+    open: true
+    match_result: !BooleanResult false
+
+    # /a{1,1};b{2,3}/ = abb
+  - name: a_1_1_b_2_3_with_a_1_b_2_open_pass
+    rbe: !And
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 2
+            max: !IntMax 3
+    bag:
+      - - a
+        - 1
+      - - b
+        - 2
+    open: true
+    match_result: !BooleanResult true
