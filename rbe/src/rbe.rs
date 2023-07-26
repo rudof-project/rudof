@@ -1,4 +1,4 @@
-use crate::{Bag, Cardinality, Max, RbeError};
+use crate::{Bag, Cardinality, Max, RbeError, deriv_n};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
@@ -7,54 +7,10 @@ use serde_derive::{Deserialize, Serialize};
 //use log::debug;
 use itertools::cloned;
 
-
-pub struct DerivN<T, F> {
-    source: Vec<T>,
-    pos: usize,
-    deriv: F
-}
-
-pub fn deriv_n<T, F>(v: Vec<T>, d: F) -> DerivN<T, F> {
-    DerivN {
-        source: v,
-        pos: 0, 
-        deriv: d
-    }
-}
-
-impl <T, F: Fn(&T) -> Option<T>> Iterator for DerivN<T, F> 
-where T : Clone + Debug,
-{
- type Item = Vec<T>;
-
- fn next(&mut self) -> Option<Self::Item> { 
-    if self.pos < self.source.len() {
-        let mut cloned: Vec<T> = cloned(self.source.iter()).collect();
-        let current = &cloned[self.pos];
-        match (self.deriv)(current) {
-            None => {
-                // If it returns None we continue with the next position
-                self.pos += 1;
-                Self::next(self)
-            },
-            Some(d) => {
-                cloned[self.pos] = d;
-                self.pos += 1;
-                Some(cloned)
-            }
-        }
-    } else { 
-        None 
-    }
- }
-
-}
-
-
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<A>
-where A: Hash + Eq,
+where A: Hash + Eq + Display,
 {
     Fail { error: RbeError<A> },
     Empty,
@@ -70,7 +26,7 @@ type NullableResult = bool;
 
 impl<A> Rbe<A>
 where
-    A: PartialEq + Eq + Hash + Clone + fmt::Debug,
+    A: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display,
 {
     pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), RbeError<A>> {
         match &self.deriv_bag(bag, open, &self.symbols()) {
@@ -134,14 +90,14 @@ where
         }
     }
 
-    fn is_fail(&self) -> bool {
+    pub fn is_fail(&self) -> bool {
         match &self {
             Rbe::Fail {..} => true,
             _ => false
         }
     }
 
-    fn symbols(&self) -> HashSet<A> {
+    pub fn symbols(&self) -> HashSet<A> {
         let mut set = HashSet::new();
         self.symbols_aux(&mut set);
         set
@@ -174,10 +130,25 @@ where
 
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
+        let mut processed = Vec::new();
         for (x, card) in bag.iter() {
-            current = current.deriv(&x, card, open, controlled);
-            if current.is_fail() {
+            let deriv = current.deriv(&x, card, open, controlled);
+            match deriv {
+              Rbe::Fail { error } => {
+                current = Rbe::Fail { error: RbeError::DerivBagError {
+                    // error: Box::new(error),
+                    processed: processed,
+                    bag: (*bag).clone(),
+                    expr: Box::new((*self).clone()),
+                    current: Box::new(current.clone()),
+                    value: (*x).clone()
+                }};
                 break;
+              },
+              _ => {
+                processed.push((*x).clone());
+                current = deriv;
+              }
             }
         }
         current
@@ -311,13 +282,15 @@ where
         controlled: &HashSet<A>) -> Rbe<A> {
 
         let mut or_values: Vec<Box<Rbe<A>>> = Vec::new();
+        let mut failures = Vec::new();
         
         for vs in deriv_n(
             cloned((*values).iter()).collect(), 
-            |bv: &Box<Rbe<A>>| {
-                let d = bv.deriv(x,n,open,controlled);
+            |value: &Box<Rbe<A>>| {
+                let d = value.deriv(x,n,open,controlled);
                 match d { 
-                    Rbe::Fail { .. } => {
+                    Rbe::Fail { error } => {
+                        failures.push(((*value).clone(), error));
                         None
                     },
                     _ => {
@@ -329,7 +302,12 @@ where
             or_values.push(Box::new(Rbe::And { values: vs }));
         }
         match or_values.len() {
-            0 => Rbe::Fail { error: RbeError::OrValuesFail },
+            0 => Rbe::Fail { 
+                error: RbeError::OrValuesFail { 
+                  e: Box::new(Rbe::And { values: cloned(values.iter()).collect() }),
+                  // failures: failures
+                } 
+            },
             1 => {
                 (*or_values[0]).clone()
             }
@@ -345,7 +323,10 @@ where
     {
         if Self::bigger((*card).min, &(*card).max) {
             Rbe::Fail {
-                error: RbeError::RangeLowerBoundBiggerMax { card: card.clone() },
+                error: RbeError::RangeLowerBoundBiggerMaxExpr { 
+                    expr: Box::new((*e).clone()),
+                    card: card.clone() 
+                },
             }
         } else {
             match (e, card) {
@@ -367,7 +348,10 @@ where
     {
         if Self::bigger((*card).min, &(*card).max) {
             Rbe::Fail {
-                error: RbeError::RangeLowerBoundBiggerMax { card: card.clone() },
+                error: RbeError::RangeLowerBoundBiggerMax { 
+                    symbol: (*x).clone(),
+                    card: card.clone() 
+                },
             }
         } else {
             Rbe::Symbol {
@@ -394,7 +378,7 @@ where
 
     fn mk_or_values<I>(values: I) -> Rbe<A> 
     where I: IntoIterator<Item = Rbe<A>> {
-        let init = Rbe::Fail { error: RbeError::OrValuesFail };
+        let init = Rbe::Fail { error: RbeError::MkOrValuesFail };
         let result = values.into_iter().fold(init, |result, value| {
             Self::mk_or(&result, &value)
         });
@@ -428,7 +412,7 @@ where
 }
 
 impl <A> Default for Rbe<A> 
-where A: Hash + Eq
+where A: Hash + Eq + fmt::Display
 {
     fn default() -> Self { 
         Rbe::Empty 
@@ -436,7 +420,7 @@ where A: Hash + Eq
 }
 
 impl <A> Debug for Rbe<A> 
-where A: Debug + Hash + Eq {
+where A: Debug + Hash + Eq + fmt::Display {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
@@ -487,6 +471,7 @@ where A: Display + Hash + Eq {
 mod tests {
     use super::*;
     use test_log::test;
+    use indoc::indoc;
 
     #[test_log::test]
     fn deriv_a_1_1_and_b_opt_with_a() {
@@ -610,13 +595,13 @@ mod tests {
     fn test_serialize_rbe() {
         
         let rbe = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
-        let expected = 
-r#"!Symbol
-value: foo
-card:
-  min: 1
-  max: !IntMax 2
-"#;
+        let expected = indoc! {
+            r#"!Symbol
+                 value: foo
+                 card:
+                   min: 1
+                   max: !IntMax 2
+              "# };
         let rbe: String = serde_yaml::to_string(&rbe).unwrap();
         assert_eq!(rbe, expected);
     } 
@@ -633,35 +618,6 @@ card:
         let rbe: Rbe<String> = serde_json::from_str(str).unwrap();
         assert_eq!(rbe, expected);
     }
-
-    #[test]
-    fn test_deriv_n() {
-
-        #[derive(Debug, Clone, PartialEq)]
-        enum R {
-            A(i32),
-            B(i32),
-            C(i32),
-            D(Box<R>)
-        }
-
-        impl R {
-            fn deriv(&self) -> Option<R> {
-                match *self {
-                  R::C(_) => None,
-                  _ => Some(R::D(Box::new(self.clone())))
-                }
-            }
-        }
-
-        let vs: Vec<R> = vec![R::A(1),R::B(2),R::C(4), R::A(3)];
-        let mut results = deriv_n(vs, R::deriv);
-        assert_eq!(vec![R::D(Box::new(R::A(1))),R::B(2),R::C(4), R::A(3)], results.next().unwrap());
-        assert_eq!(vec![R::A(1),R::D(Box::new(R::B(2))),R::C(4), R::A(3)], results.next().unwrap());
-        assert_eq!(vec![R::A(1),R::B(2),R::C(4), R::D(Box::new(R::A(3)))], results.next().unwrap());
-        assert_eq!(None, results.next());
-    }
-
 
 }
 

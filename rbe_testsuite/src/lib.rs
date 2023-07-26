@@ -2,35 +2,21 @@ pub mod rbe_test;
 pub mod rbe_tests;
 pub mod rbe_test_result;
 pub mod rbe_test_results;
-
+pub mod match_result;
 
 pub use rbe_test::*;
 pub use rbe_tests::*;
 pub use rbe_test_result::*;
 pub use rbe_test_results::*;
-use serde_derive::{Serialize, Deserialize};
+pub use match_result::*;
+
 
 /// TODO: I would prefer this type to be a String or &str, but it must be Eq, Hash, Clone and with &str I have some lifetime issues...
 type TestType = String;
 
 
-
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum MatchResult {
-  BooleanResult(bool)
-}
-
-impl Default for MatchResult {
-  fn default() -> Self { 
-    MatchResult::BooleanResult(true)
-  }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use indoc::indoc;
     use log::*;
     use rbe::{Rbe, Max, Bag};
@@ -39,25 +25,27 @@ mod tests {
 
     #[test]
     fn basic_test() {
-        let str = 
-r#"name: basic
-rbe: !Symbol
-  value: foo
-  card:
-    min: 1
-    max: !IntMax 1
-bag:
-- - foo
-  - 1
-open: false
-match_result: !BooleanResult true
-"#;
+        let str = indoc!{
+          r#"name: basic
+             rbe: !Symbol
+              value: foo
+              card:
+                min: 1
+                max: !IntMax 1
+             bag:
+               - - foo
+                 - 1
+             open: false
+             match_result: !Pass
+            "#};
       let rbe_test: RbeTest = serde_yaml::from_str(str).unwrap();
       assert_eq!(rbe_test.run(), RbeTestResult::passed("basic".to_string()))
    }
 
-  /* #[test]
+   // The following test is useful to generate YAML serializations but is not a proper test
+   #[test]
    fn check_serialization() {
+
     let values = vec![
       Rbe::symbol("a".to_string(), 1, Max::IntMax(1)),
       Rbe::symbol("b".to_string(), 2, Max::IntMax(3))
@@ -74,12 +62,11 @@ match_result: !BooleanResult true
     rbe_tests.with_tests(ts);
     let serialized = serde_yaml::to_string(&rbe_tests).unwrap();
     println!("---\n{serialized}");
-    assert_eq!(serialized, "".to_string());
-  } */
+    assert_eq!(serialized.len() > 0, true);
+  } 
 
     #[test]
     fn load_slice_1() {
-
         let str = indoc! {r#"
         tests:
         - name: basic
@@ -92,8 +79,8 @@ match_result: !BooleanResult true
           - - foo
             - 1
           open: false
-          match_result: !BooleanResult true"#
-        };
+          match_result: !Pass
+        "#};
         let mut tests = RbeTests::new();
         tests.load_slice("test", str.as_bytes()).unwrap();
         let t0 = &tests.tests().next().unwrap();
@@ -101,6 +88,7 @@ match_result: !BooleanResult true
         assert_eq!(RbeTestResult::passed("basic".to_string()), t0.run());
     }
 
+    // Runs all the tests
     #[test]
     fn run_test_suite() {
         let data = include_bytes!("../tests/basic.yaml");
@@ -114,6 +102,7 @@ match_result: !BooleanResult true
         assert_eq!(results.count_failed(), 0);
     }
 
+    // The following test can be use to check a single test case
     #[test]
     fn run_single() {
         let name = "a_1_1_b_2_3_with_a_1_b_1_open_fail".to_string();

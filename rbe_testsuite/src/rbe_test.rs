@@ -1,12 +1,6 @@
 use rbe::{Rbe, Bag, RbeError};
 use serde_derive::{Deserialize, Serialize};
-use std::{collections::HashSet, fs};
-use std::hash::Hash;
-use std::fmt;
-use std::path::Path;
-use anyhow::{bail, Context, Result};
-
-use crate::{TestType, MatchResult, RbeTestResult, PassedTestResult, FailedTestResult};
+use crate::{TestType, MatchResult, RbeTestResult};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {
@@ -75,18 +69,18 @@ impl RbeTest {
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
         match (&self.match_result, self.rbe.match_bag(&self.bag, self.open)) {
-          (MatchResult::BooleanResult(true), Ok(())) => {
+          (MatchResult::Pass, Ok(())) => {
              RbeTestResult::passed(self.name().to_string())
            },
-           (MatchResult::BooleanResult(true), Err(err)) => {
+           (MatchResult::Pass, Err(err)) => {
              RbeTestResult::failed(self.name().to_string(),err) 
            }
-           (MatchResult::BooleanResult(false), Ok(())) => {
+           (MatchResult::Fail, Ok(())) => {
             RbeTestResult::failed(
                 self.name().to_string(), 
                 RbeError::ShouldFailButPassed { name: self.name.clone() }
             )},
-           (MatchResult::BooleanResult(false), Err(_)) => {
+           (MatchResult::Fail, Err(_)) => {
             RbeTestResult::passed(self.name().to_string())
            }
         } 

@@ -1,7 +1,7 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use hashbag::{HashBag, SetIter};
-use serde::{Deserialize, Deserializer, de::{SeqAccess, Error, Unexpected}, Serialize, Serializer, ser::SerializeSeq};
+use serde::{Deserialize, Deserializer, de::SeqAccess, Serialize, Serializer, ser::SerializeSeq};
 use std::{fmt::{Display, Debug, self}, hash::Hash, marker::PhantomData};
 
 
@@ -112,7 +112,7 @@ where
     }
 } 
 
-use serde::de::{self, Visitor};
+use serde::de::Visitor;
 struct BagVisitor<T> where T: Hash + Eq {
     marker: PhantomData<fn() -> Bag<T>>
 }

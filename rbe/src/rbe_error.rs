@@ -5,10 +5,11 @@ use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use thiserror::Error;
+use std::fmt::Display;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<A>
-where A: Hash + PartialEq + Eq ,
+where A: Hash + PartialEq + Eq + Display,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: A, open: bool },
@@ -23,16 +24,12 @@ where A: Hash + PartialEq + Eq ,
     #[error("Negative lower bound: {min}")]
     RangeNegativeLowerBound { min: usize },
 
-    #[error("Min > Max in cardinality {card}")]
-    RangeLowerBoundBiggerMax { card: Cardinality },
+    #[error("Min > Max in cardinality {card} for {symbol}")]
+    RangeLowerBoundBiggerMax { symbol: A, card: Cardinality },
 
-    /*  #[error("Max cardinality = 0 {x:?} doesn't match with empty. Open: {:open?}")]
-    CardinalityZeroZeroDeriv { x: A, card: Cardinality },
-    CardinalityFail {
-        symbol: A,
-        expected_cardinality: Cardinality,
-        current_number: usize,
-    }, */
+    #[error("Min > Max in cardinality {card} for {expr}")]
+    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<A>>, card: Cardinality },
+
     #[error("Expected {non_nullable_rbe} but all symbols in bag: {bag} have been processed")]
     NonNullable {
         non_nullable_rbe: Box<Rbe<A>>,
@@ -63,10 +60,22 @@ where A: Hash + PartialEq + Eq ,
     },
 
 
-    #[error("Or values failed")]
-    OrValuesFail ,
+    #[error("Or values failed {e}. ")]
+    OrValuesFail{ 
+        e: Box<Rbe<A>>,
+        // failures: Vec<(Box<Rbe<A>>, Box<RbeError<A>>)>
+    } ,
 
     #[error("MkOr values failed")]
-    MkOrValuesFail 
+    MkOrValuesFail,
 
+    #[error("Error matching bag:...\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}")]
+    DerivBagError { 
+        // error: Box<RbeError<A>>, 
+        processed: Vec<A>,
+        bag: Bag<A>,
+        expr: Box<Rbe<A>>,
+        current: Box<Rbe<A>>,
+        value: A
+    }
 }
