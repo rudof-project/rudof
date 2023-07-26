@@ -1,11 +1,44 @@
 use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
+use std::collections::HashSet;
+use std::fmt::Formatter;
 use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use thiserror::Error;
 use std::fmt::Display;
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct Failures<A> 
+where A: Hash + Eq + Display
+{
+   fs: Vec<(Box<Rbe<A>>, RbeError<A>)>
+}
+
+impl <A> Failures<A> 
+where A: Hash + Eq + Display
+{
+    pub fn new() -> Failures<A> {
+       Failures {
+        fs: Vec::new()
+       }
+    }
+
+    pub fn push(&mut self, expr: Rbe<A>, err: RbeError<A>) {
+        self.fs.push((Box::new(expr), err));
+    }
+}
+
+impl <A> Display for Failures<A> 
+where A: Hash + Eq + Display + Display {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        for (expr, err) in &self.fs {
+            write!(dest, "Error at {expr}: {err}\n")?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<A>
@@ -30,10 +63,11 @@ where A: Hash + PartialEq + Eq + Display,
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<A>>, card: Cardinality },
 
-    #[error("Expected {non_nullable_rbe} but all symbols in bag: {bag} have been processed")]
+    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}\nBag: {bag}")]
     NonNullable {
         non_nullable_rbe: Box<Rbe<A>>,
         bag: Bag<A>,
+        expr: Box<Rbe<A>>
     },
 
     #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
@@ -60,22 +94,23 @@ where A: Hash + PartialEq + Eq + Display,
     },
 
 
-    #[error("Or values failed {e}. ")]
+    #[error("Or values failed {e}\n {failures}")]
     OrValuesFail{ 
         e: Box<Rbe<A>>,
-        // failures: Vec<(Box<Rbe<A>>, Box<RbeError<A>>)>
+        failures: Failures<A>
     } ,
 
-    #[error("MkOr values failed")]
+    #[error("All values in or branch failed")]
     MkOrValuesFail,
 
-    #[error("Error matching bag:...\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}")]
+    #[error("Error matching bag: {error_msg}\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}\nopen: {open}")]
     DerivBagError { 
-        // error: Box<RbeError<A>>, 
-        processed: Vec<A>,
+        error_msg: String, 
+        processed: Bag<A>,
         bag: Bag<A>,
         expr: Box<Rbe<A>>,
         current: Box<Rbe<A>>,
-        value: A
+        value: A,
+        open: bool,
     }
 }

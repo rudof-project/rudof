@@ -1,4 +1,4 @@
-use crate::{Bag, Cardinality, Max, RbeError, deriv_n};
+use crate::{Bag, Cardinality, Max, RbeError, deriv_n, Failures};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
@@ -40,6 +40,7 @@ where
                     Err(RbeError::NonNullable {
                         non_nullable_rbe: Box::new(d.clone()),
                         bag: (*bag).clone(),
+                        expr: Box::new((*self).clone())
                     })
                 }
             }
@@ -130,23 +131,24 @@ where
 
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
-        let mut processed = Vec::new();
+        let mut processed = Bag::new();
         for (x, card) in bag.iter() {
             let deriv = current.deriv(&x, card, open, controlled);
             match deriv {
               Rbe::Fail { error } => {
                 current = Rbe::Fail { error: RbeError::DerivBagError {
-                    // error: Box::new(error),
+                    error_msg: format!("{error}"),
                     processed: processed,
                     bag: (*bag).clone(),
                     expr: Box::new((*self).clone()),
                     current: Box::new(current.clone()),
-                    value: (*x).clone()
+                    value: (*x).clone(),
+                    open: open, 
                 }};
                 break;
               },
               _ => {
-                processed.push((*x).clone());
+                processed.insert((*x).clone());
                 current = deriv;
               }
             }
@@ -235,8 +237,8 @@ where
             }
             Rbe::Or { ref values } => {
                 Self::mk_or_values(values.into_iter().map(|rbe| { 
-                    *(*rbe).clone()
-                } ))
+                    rbe.deriv(x, n, open, controlled)
+                }))
             },
             Rbe::Plus { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
@@ -282,7 +284,7 @@ where
         controlled: &HashSet<A>) -> Rbe<A> {
 
         let mut or_values: Vec<Box<Rbe<A>>> = Vec::new();
-        let mut failures = Vec::new();
+        let mut failures = Failures::new();
         
         for vs in deriv_n(
             cloned((*values).iter()).collect(), 
@@ -290,7 +292,7 @@ where
                 let d = value.deriv(x,n,open,controlled);
                 match d { 
                     Rbe::Fail { error } => {
-                        failures.push(((*value).clone(), error));
+                        failures.push(*value.clone(), error);
                         None
                     },
                     _ => {
@@ -305,7 +307,7 @@ where
             0 => Rbe::Fail { 
                 error: RbeError::OrValuesFail { 
                   e: Box::new(Rbe::And { values: cloned(values.iter()).collect() }),
-                  // failures: failures
+                  failures: failures
                 } 
             },
             1 => {

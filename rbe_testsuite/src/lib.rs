@@ -105,7 +105,7 @@ mod tests {
     // The following test can be use to check a single test case
     #[test]
     fn run_single() {
-        let name = "a_1_1_b_2_3_with_a_1_b_1_open_fail".to_string();
+        let name = "a_1_1_or_b_1_1_with_c_1_open_fail".to_string();
         let data = include_bytes!("../tests/basic.yaml");
         let mut rbe_tests = RbeTests::new();
         rbe_tests.load_slice("basic", data).unwrap();

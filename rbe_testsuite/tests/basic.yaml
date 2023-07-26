@@ -154,3 +154,158 @@ tests:
         - 2
     open: true
     match_result: !Pass
+
+    # /a{1,1}|b{1,1}/ = a
+  - name: a_1_1_or_b_1_1_with_a_1_open_pass
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - a
+        - 1
+    open: true
+    match_result: !Pass
+
+    # /a{1,1}|b{1,1}/ = b
+  - name: a_1_1_or_b_1_1_with_b_1_open_pass
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - b
+        - 1
+    open: true
+    match_result: !Pass
+
+    # /a{1,1}|b{1,1}/ != c
+  - name: a_1_1_or_b_1_1_with_c_1_open_fail
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - c
+        - 1
+    open: true
+    match_result: !Fail
+
+    # /a{1,1}|b{1,1}/ != ab
+  - name: a_1_1_or_b_1_1_with_a_1_b_1_open_fail
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - a
+        - 1
+      - - b
+        - 1
+    open: true
+    match_result: !Fail
+
+    # /a{1,1}|b{1,1}/(open) == ac
+  - name: a_1_1_or_b_1_1_with_a_1_c_1_open_pass
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - a
+        - 1
+      - - c
+        - 1
+    open: true
+    match_result: !Pass
+
+    # /a{1,1}|b{1,1}/(closed) != ac
+  - name: a_1_1_or_b_1_1_with_a_1_c_1_closed_fail
+    rbe: !Or
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+    bag:
+      - - a
+        - 1
+      - - c
+        - 1
+    open: false
+    match_result: !Fail
+
+    # /a{1,1}|b{1,1}/(closed) != ac
+  - name: a_1_1_and_b_1_1_and_c_0_1_with_a_1_c_1_b_1_closed_pass
+    rbe: !And
+      values: 
+        - !Symbol 
+          value: a
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: b
+          card:
+            min: 1
+            max: !IntMax 1
+        - !Symbol 
+          value: c
+          card:
+            min: 0
+            max: !IntMax 1
+    bag:
+      - - a
+        - 1
+      - - c
+        - 1
+      - - b
+        - 1
+    open: false
+    match_result: !Pass
