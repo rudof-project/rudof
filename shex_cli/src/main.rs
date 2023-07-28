@@ -24,16 +24,16 @@ fn main() -> Result<()> {
 
 fn run_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<()> {
     let schema = parse_schema(schema, schema_format, debug)?;
-    println!("Schema {schema:?}");
+    println!("Compiled Schema\n{schema}");
     Ok(())
 }
 
-fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<CompiledSchema<ShapeLabel>, CompiledSchemaError> {
+fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<CompiledSchema, CompiledSchemaError> {
     match schema_format {
       ShExFormat::ShExC => todo!(),
       ShExFormat::ShExJ => {
         let schema_json = SchemaJson::parse_schema_buf(schema, debug)?;
-        let schema: CompiledSchema<ShapeLabel> = CompiledSchema::from_schema_json(schema_json)?;
+        let schema: CompiledSchema = CompiledSchema::from_schema_json(schema_json)?;
         Ok(schema)
       }
     }

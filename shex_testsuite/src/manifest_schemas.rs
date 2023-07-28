@@ -147,7 +147,7 @@ impl SchemasEntry {
             println!("Runnnig entry: {} with json: {}", self.id, self.json);
         }
         let schema_json = 
-           SchemaJson::parse_schema(&self.json, base, debug).map_err(|e| {
+           SchemaJson::parse_schema_name(&self.json, base, debug).map_err(|e| {
             ManifestError::SchemaJsonError { error: e, entry_name: self.name.to_string() }
            })?;
 

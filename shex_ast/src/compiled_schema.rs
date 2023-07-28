@@ -1,28 +1,19 @@
-use crate::{schema_json, IriRef, SchemaJson};
+use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError};
 use iri_s::{IriError, IriS, IriSError};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
+use std::fmt::Display;
 
-use thiserror::Error;
+type ShapeLabelIdx = usize;
 
-#[derive(Error, Debug)]
-pub enum CompiledSchemaError {
-    #[error("Parsing {str:?} as IRI")]
-    Str2IriError { str: String },
-
-    #[error("Parsing as IRI: {err:?}")]
-    IriParseError { err: IriSError },
-
-    #[error("SchemaJson Error")]
-    SchemaJsonError(#[from] schema_json::SchemaJsonError)
+#[derive(Debug)]
+pub struct CompiledSchema {
+    shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
+    shape_label_counter: ShapeLabelIdx,
+    shapes: HashMap<ShapeLabelIdx, ShapeExpr>,
 }
 
-impl From<IriSError> for CompiledSchemaError {
-    fn from(e: IriSError) -> CompiledSchemaError {
-        CompiledSchemaError::IriParseError { err: e }
-    }
-}
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum ShapeLabel {
@@ -51,10 +42,6 @@ pub enum NodeKind {
     Literal,
 }
 
-#[derive(Debug)]
-pub struct CompiledSchema<SL> {
-    shapes: HashMap<SL, ShapeExpr>,
-}
 
 #[derive(Debug, PartialEq)]
 pub enum ShapeExpr {
@@ -198,26 +185,40 @@ pub struct Annotation {
     object: ObjectValue,
 }
 
-impl<SL> CompiledSchema<SL>
-where
-    SL: Eq + Hash + FromStr + Sync,
+impl CompiledSchema
 {
+    pub fn new() -> CompiledSchema {
+        CompiledSchema {
+           shape_labels_map: HashMap::new(),
+           shape_label_counter: 0,
+           shapes: HashMap::new()
+        }
+    }
+
+    pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
+        let idx = self.shape_label_counter;
+        self.shape_labels_map.insert(shape_label, idx);
+        self.shape_label_counter += 1;
+        self.shapes.insert(idx, se); 
+    }
+
     pub fn from_schema_json<'a>(
-        schema: SchemaJson,
-    ) -> Result<CompiledSchema<SL>, CompiledSchemaError> {
-        let mut shapes: HashMap<SL, ShapeExpr> = HashMap::new();
-        if let Some(shape_decls) = schema.shapes {
+        schema_json: SchemaJson,
+    ) -> Result<CompiledSchema, CompiledSchemaError> {
+        let mut schema = CompiledSchema::new();
+        if let Some(shape_decls) = schema_json.shapes {
             for sd in shape_decls {
                 let label = Self::id_to_shape_label(sd.id.clone())?;
                 let se = Self::shape_decl_to_shape_expr(sd)?;
-                shapes.insert(label, se);
+                schema.add_shape(label, se);
             }
         }
-        Ok(CompiledSchema { shapes: shapes })
+        Ok(schema)
     }
 
-    fn id_to_shape_label<'a>(id: String) -> Result<SL, CompiledSchemaError> {
-        SL::from_str(&id).map_err(|err| CompiledSchemaError::Str2IriError { str: id })
+    fn id_to_shape_label<'a>(id: String) -> Result<ShapeLabel, CompiledSchemaError> {
+        ShapeLabel::from_str(id.as_str()).map_err(|err| { todo!()})
+        // SL::from_str(&id).map_err(|err| CompiledSchemaError::Str2IriError { str: id })
     }
 
     fn shape_decl_to_shape_expr<'a>(
@@ -272,12 +273,21 @@ where
         }
     }
 
-    pub fn find_label(&self, label: &SL) -> Option<&ShapeExpr> {
-        self.shapes.get(label)
+    pub fn find_label(&self, label: &ShapeLabel) -> Option<&ShapeExpr> {
+        self.shape_labels_map.get(label).and_then(|idx| self.shapes.get(idx))
     }
 
-    pub fn existing_labels(&self) -> Vec<&SL> {
-        self.shapes.keys().collect()
+    pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
+        self.shape_labels_map.keys().collect()
+    }
+
+    pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &ShapeExpr)> {
+        self.shape_labels_map.iter().map(|(label,idx)| {
+            match self.shapes.get(idx) {
+                Some(se) => (label, se),
+                None => panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx}")
+            }
+        })
     }
 
     fn cnv_closed(closed: Option<bool>) -> bool {
@@ -393,6 +403,15 @@ where
             Vec::new()
         }
     }
+}
+
+impl Display for CompiledSchema {
+  fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+    for (label, se) in self.shapes() {
+        writeln!(dest, "{label:?} {se:?}")?;
+    }
+    Ok(())
+  }
 }
 
 #[cfg(test)]

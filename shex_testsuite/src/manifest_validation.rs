@@ -166,7 +166,7 @@ fn parse_schema(
     if debug > 0 {
         println!("schema: {}, new_schema_name: {}", schema, new_schema_name);
     }
-    SchemaJson::parse_schema(&new_schema_name, base, debug).map_err(|e| {
+    SchemaJson::parse_schema_name(&new_schema_name, base, debug).map_err(|e| {
         ManifestError::SchemaJsonError {
             error: e,
             entry_name: entry_name.to_string(),
