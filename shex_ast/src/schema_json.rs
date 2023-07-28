@@ -47,25 +47,22 @@ pub enum SchemaJsonError {
 }
 
 impl SchemaJson {
-    pub fn parse_schema(
-        schema_name: &String,
-        base: &Path,
+
+    pub fn parse_schema_buf(
+        path_buf: &PathBuf,
         debug: u8,
     ) -> Result<SchemaJson, SchemaJsonError> {
-        let json_path = Path::new(&schema_name);
-        let mut attempt = PathBuf::from(base);
-        attempt.push(json_path);
 
         let schema = {
-            let schema_str = fs::read_to_string(&attempt.as_path()).map_err(|e| {
+            let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
-                    path_name: attempt.display().to_string(),
+                    path_name: path_buf.display().to_string(),
                     error: e,
                 }
             })?;
             serde_json::from_str::<SchemaJson>(&schema_str).map_err(|e| {
                 SchemaJsonError::JsonError {
-                    path_name: attempt.display().to_string(),
+                    path_name: path_buf.display().to_string(),
                     error: e,
                 }
             })?
@@ -74,6 +71,18 @@ impl SchemaJson {
             println!("SchemaJson parsed: {:?}", schema)
         }
         Ok(schema)
+    }
+
+
+    pub fn parse_schema_name(
+        schema_name: &String,
+        base: &Path,
+        debug: u8,
+    ) -> Result<SchemaJson, SchemaJsonError> {
+        let json_path = Path::new(&schema_name);
+        let mut attempt = PathBuf::from(base);
+        attempt.push(json_path);
+        Self::parse_schema_buf(&attempt, debug)
     }
 }
 

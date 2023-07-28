@@ -1,5 +1,5 @@
 use anyhow::{bail, Context, Result};
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use shex_testsuite::manifest_mode::ManifestMode;
 use shex_testsuite::manifest_run_result::ManifestRunResult;
 // use shex_testsuite::manifest_run_mode;
@@ -39,7 +39,6 @@ struct Cli {
     #[arg(value_enum, long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
     manifest_run_mode: ManifestRunMode,
 
-    /// Turn debug on
     #[arg(short, long, action = clap::ArgAction::Count)]
     debug: u8,
 }

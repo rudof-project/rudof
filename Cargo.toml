@@ -2,6 +2,10 @@
 name = "shex-rs"
 version = "0.0.1"
 
+[[bin]]
+path = "shex_cli/src/main.rs"
+name = "shexrs"
+
 [workspace]
 members = [
     "rbe",
@@ -10,6 +14,7 @@ members = [
     "prefix_map",
     "srdf",
     "shex_ast",
+    "shex_cli",
     # "shex_antlr",
     "shex_pest",
     "srdf_oxgraph",
@@ -22,20 +27,7 @@ members = [
 ]
 
 default-members = [
-    "rbe",
-    "rbe_testsuite",
-    "iri_s",
-    "prefix_map",
-    "srdf",
-    "shex_ast",
-    "shex_pest",
-    "srdf_oxgraph",
-    "srdf_sparql",
-    "shex_testsuite",
-    "shex_validation",
-    "shapemap",
-    "shapemap_oxgraph",
-    "validation_oxgraph"
+    "shex_cli"
 ]
 
 [workspace.package]
@@ -65,3 +57,7 @@ shex_validation = { version = "0.0.1", path = "./shex_validation" }
 shapemap = { version = "0.0.1", path = "./shapemap" }
 shapemap_oxgraph = { version = "0.0.1", path = "./shapemap_oxgraph" }
 validation_oxgraph = { version = "0.0.1", path = "./validation_oxgraph" }
+
+[dependencies]
+clap = { version = "4.2.1", features = ["derive"] }
+shex_ast = { path = "shex_ast" }
