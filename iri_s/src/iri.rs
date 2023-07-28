@@ -53,9 +53,11 @@ impl fmt::Display for IriS {
     }
 }
 
-#[derive(Debug)]
-pub struct IriError {
-    msg: String,
+#[derive(Debug, Error)]
+pub enum IriError {
+
+    #[error("Iri error: {msg:?}")]
+    IriError{ msg: String }
 }
 
 impl FromStr for IriS {
@@ -68,7 +70,7 @@ impl FromStr for IriS {
 
 impl From<IriParseError> for IriError {
     fn from(e: IriParseError) -> Self {
-        IriError {
+        IriError::IriError {
             msg: format!("IriParserError: {:?}", e.to_string()),
         }
     }
@@ -76,7 +78,7 @@ impl From<IriParseError> for IriError {
 
 fn parse_iri(s: &str) -> Result<IriS, IriError> {
     match IriRef::parse(s.to_owned()) {
-        Err(e) => Err(IriError {
+        Err(e) => Err(IriError::IriError {
             msg: format!("Error parsing IRI: {e}"),
         }),
         Ok(iri) => Ok(IriS { iri: iri }),

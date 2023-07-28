@@ -10,7 +10,17 @@ pub enum CompiledSchemaError {
     Str2IriError { str: String },
 
     #[error("Parsing as IRI: {err:?}")]
-    IriParseError { #[from] err: IriSError },
+    IriParseError { 
+        #[from]
+        err: IriSError 
+    },
+
+    #[error("Obtaining IRI: {err:?}")]
+    IriError { 
+        #[from]
+        err: IriError 
+    },
+
 
     #[error("SchemaJson Error")]
     SchemaJsonError(#[from] schema_json::SchemaJsonError)

@@ -33,7 +33,8 @@ fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Resu
       ShExFormat::ShExC => todo!(),
       ShExFormat::ShExJ => {
         let schema_json = SchemaJson::parse_schema_buf(schema, debug)?;
-        let schema: CompiledSchema = CompiledSchema::from_schema_json(schema_json)?;
+        let mut schema: CompiledSchema = CompiledSchema::new();
+        schema.from_schema_json(schema_json)?;
         Ok(schema)
       }
     }

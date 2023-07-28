@@ -5,6 +5,7 @@ pub mod compiled_schema;
 pub mod compiled_schema_error;
 pub mod schema_builder;
 pub mod schema_json;
+pub mod shape_label;
 
 mod serde_string_or_struct;
 
@@ -13,6 +14,7 @@ pub use compiled_schema_error::*;
 pub use schema::*;
 pub use schema_builder::*;
 pub use schema_json::*;
+pub use shape_label::*;
 
 #[cfg(test)]
 mod tests {
