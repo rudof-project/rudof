@@ -1,7 +1,8 @@
 use iri_s::{IriSError, IriError};
 use thiserror::Error;
 
-use crate::schema_json;
+use crate::{schema_json};
+use crate::schema_json::TripleExprLabel;
 
 #[derive(Error, Debug)]
 pub enum CompiledSchemaError {
@@ -23,5 +24,10 @@ pub enum CompiledSchemaError {
 
 
     #[error("SchemaJson Error")]
-    SchemaJsonError(#[from] schema_json::SchemaJsonError)
+    SchemaJsonError(#[from] schema_json::SchemaJsonError),
+
+    #[error("Duplicated triple expression label in schema: {label:?}")]
+    DuplicatedTripleExprLabel {
+        label: TripleExprLabel
+    }
 }

@@ -1,4 +1,4 @@
-use crate::{Bag, Cardinality, Max, RbeError, deriv_n, Failures};
+use crate::{Bag, Cardinality, Max, RbeError, deriv_n, Failures, Min};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
@@ -54,7 +54,7 @@ where
     pub fn symbol(x: A, min: usize, max: Max) -> Rbe<A> {
         Rbe::Symbol {
             value: x,
-            card: Cardinality { min, max },
+            card: Cardinality { min: Min::from(min), max },
         }
     }
 
@@ -87,7 +87,7 @@ where
     pub fn repeat(v: Rbe<A>, min: usize, max: Max) -> Rbe<A> {
         Rbe::Repeat {
             value: Box::new(v),
-            card: Cardinality::from(min, max),
+            card: Cardinality::from(Min::from(min), max),
         }
     }
 
@@ -173,7 +173,7 @@ where
                 .any(|v| v == true)},
             Rbe::Star { .. } => true,
             Rbe::Plus { value } => value.nullable(),
-            Rbe::Repeat { value: _, card } if card.min == 0 => true,
+            Rbe::Repeat { value: _, card } if card.min.is_0() => true,
             Rbe::Repeat { value, card: __ } => value.nullable(),
         }
     }
@@ -405,10 +405,10 @@ where
         }
     }
 
-    fn bigger(min: usize, max: &Max) -> bool {
+    fn bigger(min: Min, max: &Max) -> bool {
         match max {
             Max::Unbounded => false,
-            Max::IntMax(max) => min > *max,
+            Max::IntMax(max) => min.value > *max,
         }
     }
 }

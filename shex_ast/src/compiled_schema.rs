@@ -1,25 +1,40 @@
-use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel};
+use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel, TripleExprLabel};
 use iri_s::{IriError, IriS, IriSError};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
 use std::fmt::Display;
+use rbe::{Min, Max};
 
-type ShapeLabelIdx = usize;
+
+type CResult<T> = Result<T, CompiledSchemaError>;
 
 #[derive(Debug)]
 pub struct CompiledSchema {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     shape_label_counter: ShapeLabelIdx,
     shapes: HashMap<ShapeLabelIdx, ShapeExpr>,
+
+    triple_expr_labels_map: HashMap<TripleExprLabel, TripleExprIdx>,
+    triple_exprs: HashMap<TripleExprIdx, TripleExpr>,
+    triple_expr_label_counter: TripleExprIdx
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
+pub struct ShapeLabelIdx(usize);
+impl ShapeLabelIdx {
+    pub fn incr(&mut self) {
+        self.0 += 1;
+    }
 }
 
 
-
-#[derive(PartialEq, Eq, Hash, Debug)]
-pub enum TripleExprLabel {
-    Iri(IriS),
-    BNode(String),
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
+pub struct TripleExprIdx(usize);
+impl TripleExprIdx {
+    pub fn incr(&mut self) {
+        self.0 += 1;
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -29,7 +44,6 @@ pub enum NodeKind {
     NonLiteral,
     Literal,
 }
-
 
 #[derive(Debug, PartialEq)]
 pub enum ShapeExpr {
@@ -56,13 +70,12 @@ pub enum ShapeExpr {
         annotations: Vec<Annotation>,
     },
     ShapeExternal {},
-    Ref(ShapeLabelIdx),
+    Ref{ idx: ShapeLabelIdx },
 }
 
 #[derive(Debug, PartialEq)]
 pub enum TripleExpr {
     EachOf {
-        id: Option<TripleExprLabel>,
         expressions: Vec<Box<TripleExpr>>,
         min: Option<i32>,
         max: Option<i32>,
@@ -82,8 +95,8 @@ pub enum TripleExpr {
         inverse: bool,
         predicate: IriS,
         value_expr: Option<Box<ShapeExpr>>,
-        min: Option<i32>,
-        max: Option<i32>,
+        min: Min,
+        max: Max,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },
@@ -176,15 +189,19 @@ impl CompiledSchema
     pub fn new() -> CompiledSchema {
         CompiledSchema {
            shape_labels_map: HashMap::new(),
-           shape_label_counter: 0,
-           shapes: HashMap::new()
+           shape_label_counter: ShapeLabelIdx::default(),
+           shapes: HashMap::new(),
+
+           triple_expr_labels_map: HashMap::new(),
+           triple_exprs: HashMap::new(),
+           triple_expr_label_counter: TripleExprIdx::default()
         }
     }
 
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
         let idx = self.shape_label_counter;
         self.shape_labels_map.insert(shape_label, idx);
-        self.shape_label_counter += 1;
+        self.shape_label_counter.incr();
         self.shapes.insert(idx, se); 
     }
 
@@ -202,19 +219,19 @@ impl CompiledSchema
         Ok(())
     }
 
-    fn id_to_shape_label<'a>(&self, id: String) -> Result<ShapeLabel, CompiledSchemaError> {
+    fn id_to_shape_label<'a>(&self, id: String) -> CResult<ShapeLabel> {
         let label = ShapeLabel::from_iri_str(id)?;
         Ok(label)
     }
 
     fn shape_decl_to_shape_expr<'a>(
-        &self,
+        &mut self,
         sd: schema_json::ShapeDecl,
-    ) -> Result<ShapeExpr, CompiledSchemaError> {
+    ) -> CResult<ShapeExpr> {
         self.cnv_shape_expr(sd.shape_expr)
     }
 
-    fn cnv_shape_expr<'a>(&self, se: schema_json::ShapeExpr) -> Result<ShapeExpr, CompiledSchemaError> {
+    fn cnv_shape_expr<'a>(&mut self, se: schema_json::ShapeExpr) -> CResult<ShapeExpr> {
         match se {
             schema_json::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
@@ -247,7 +264,13 @@ impl CompiledSchema
                 annotations,
             } => {
                 let new_extra = self.cnv_extra(extra)?;
-                let expression = self.cnv_triple_expr(expression)?;
+                let expression = match expression {
+                    Some(e) => {
+                      let te = self.cnv_triple_expr(e)?;
+                      Some(te)
+                    },
+                    None => None
+                };
                 Ok(ShapeExpr::Shape {
                     closed: Self::cnv_closed(closed),
                     extra: new_extra,
@@ -258,13 +281,13 @@ impl CompiledSchema
             }
             schema_json::ShapeExpr::Ref(se_ref) => {
                 let idx = self.find_ref(se_ref)?;
-                Ok(ShapeExpr::Ref(idx))
+                Ok(ShapeExpr::Ref{idx})
             }
             _ => todo!(),
         }
     }
 
-    pub fn find_ref(&self, se_ref: Ref) -> Result<ShapeLabelIdx, CompiledSchemaError> {
+    pub fn find_ref(&mut self, se_ref: Ref) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             Ref::IriRef { value } => { 
                 let label = ShapeLabel::from_iri_str(value)?;
@@ -295,7 +318,7 @@ impl CompiledSchema
         self.shape_labels_map.iter().map(|(label,idx)| {
             match self.shapes.get(idx) {
                 Some(se) => (label, se),
-                None => panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx}")
+                None => panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx:?}")
             }
         })
     }
@@ -308,7 +331,7 @@ impl CompiledSchema
         }
     }
 
-    fn cnv_extra<'a>(&self, extra: Option<Vec<IriRef>>) -> Result<Vec<IriS>, CompiledSchemaError> {
+    fn cnv_extra<'a>(&self, extra: Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
@@ -326,13 +349,47 @@ impl CompiledSchema
         Ok(iri)
     }
 
+    fn handle_triple_expr_id(&mut self, id: Option<TripleExprLabel>, te: TripleExpr) -> CResult<()> {
+        if let Some(label) = id {
+            if let Some(found) = self.triple_expr_labels_map.get(&label) {
+              return Err(CompiledSchemaError::DuplicatedTripleExprLabel {
+                label: label
+              })
+            } else {
+              let idx = self.triple_expr_label_counter;
+              self.triple_expr_labels_map.insert(label, idx);
+              self.triple_exprs.insert(idx, te);
+              self.triple_expr_label_counter.incr();
+              Ok(())
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    /*fn cnv_shape_exprs(&mut self, ses: Vec<Box<schema_json::ShapeExpr>>) -> CResult<Vec<Box<ShapeExpr>>> {
+        let rs: Vec<CResult<Box<ShapeExpr>>> = ses.iter().map(|se| {
+            let nse = self.cnv_shape_expr(**se)?;
+            Ok(Box::new(nse))
+        }).collect();
+        rs.into_iter().collect()
+    }
+
+    fn cnv_triple_exprs(&mut self, ses: Vec<Box<schema_json::TripleExprWrapper>>) -> CResult<Vec<Box<TripleExpr>>> {
+        let rs: Vec<CResult<Box<TripleExpr>>> = ses.iter().map(|te| {
+            let te = *te;
+            let te = self.cnv_triple_expr(&te)?;
+            Ok(Box::new(te))
+        }).collect();
+        rs.into_iter().collect()
+    } */
+
+
     fn cnv_triple_expr<'a>(
-        &self,
-        triple_expr_wrapper: Option<schema_json::TripleExprWrapper>,
-    ) -> Result<Option<TripleExpr>, CompiledSchemaError> {
-        if let Some(tew) = triple_expr_wrapper {
-            let te = tew.te;
-            match te {
+        &mut self,
+        triple_expr_wrapper: schema_json::TripleExprWrapper,
+    ) -> CResult<TripleExpr> {
+        match triple_expr_wrapper.te {
                 schema_json::TripleExpr::EachOf {
                     id,
                     expressions,
@@ -340,7 +397,12 @@ impl CompiledSchema
                     max,
                     sem_acts,
                     annotations,
-                } => todo!(),
+                } => {
+                    // let ses = self.cnv_triple_exprs(*expressions)?;
+                    // let min = self.cnv_min(*min)?;
+                    todo!()
+
+                },
                 schema_json::TripleExpr::OneOf {
                     id,
                     expressions,
@@ -348,7 +410,18 @@ impl CompiledSchema
                     max,
                     sem_acts,
                     annotations,
-                } => todo!(),
+                } => {
+                    todo!()
+/*                    let es = self.cnv_shape_exprs(expressions);
+                    let te = TripleExpr::EachOf { 
+                        expressions: (), 
+                        min: (), 
+                        max: (), 
+                        sem_acts: (), 
+                        annotations: () 
+                    }
+*/
+                },
                 schema_json::TripleExpr::TripleConstraint {
                     id,
                     inverse,
@@ -363,13 +436,16 @@ impl CompiledSchema
                     let sem_acts = Self::cnv_sem_acts(sem_acts);
                     let annotations = Self::cnv_annotations(annotations);
                     let predicate = self.cnv_iri_ref(predicate)?;
-                    let value_expr = if let Some(se) = value_expr {
-                        let se = self.cnv_shape_expr(*se)?;
-                        Some(Box::new(se))
-                    } else {
-                        None
-                    };
-                    Ok(Some(TripleExpr::TripleConstraint {
+                    let min = self.cnv_min(min)?;
+                    let max = self.cnv_max(max)?;
+                    let value_expr = match value_expr {
+                        Some(se) => {
+                            let se = self.cnv_shape_expr(*se)?;
+                            Some(Box::new(se))
+                        },
+                        None => None 
+                    } ;
+                    Ok(TripleExpr::TripleConstraint {
                         id: id,
                         inverse: inverse.unwrap_or(false),
                         predicate: predicate,
@@ -378,13 +454,18 @@ impl CompiledSchema
                         max: max,
                         sem_acts: sem_acts,
                         annotations: annotations,
-                    }))
-                }
+                    })
+                },
                 schema_json::TripleExpr::TripleExprRef(_) => todo!(),
-            }
-        } else {
-            Ok(None)
         }
+    }
+
+    fn cnv_min(&self, min: Option<i32>) -> CResult<Min> {
+        todo!()
+    }
+
+    fn cnv_max(&self, max: Option<i32>) -> CResult<Max> {
+        todo!()
     }
 
     fn cnv_id(id: Option<schema_json::TripleExprLabel>) -> Option<TripleExprLabel> {
@@ -450,8 +531,8 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut complied_schema = CompiledSchema::new();
-        let compiled_schema = compiled_schema.from_schema_json(schema_json).unwrap();
+        let mut compiled_schema = CompiledSchema::new();
+        compiled_schema.from_schema_json(schema_json).unwrap();
         let s1 = ShapeLabel::Iri(IriS::new("http://a.example/S1").unwrap());
         let p1 = IriS::new("http://a.example/p1").unwrap();
         let se1 = ShapeExpr::Shape {
@@ -462,8 +543,8 @@ mod tests {
                 inverse: false,
                 predicate: p1,
                 value_expr: None,
-                min: None,
-                max: None,
+                min: Min::from(1),
+                max: Max::from(1),
                 sem_acts: Vec::new(),
                 annotations: Vec::new(),
             }),

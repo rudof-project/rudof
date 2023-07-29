@@ -641,7 +641,7 @@ pub struct TripleExprWrapper {
     pub te: TripleExpr,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash)]
 #[serde(try_from = "&str")]
 pub enum TripleExprLabel {
     IriRef { value: IriRef },
@@ -691,7 +691,7 @@ impl TryFrom<String> for Iri {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq)]
 #[serde(try_from = "String")]
 pub struct IriRef {
     pub value: String,
@@ -704,7 +704,7 @@ impl TryFrom<String> for IriRef {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq)]
 #[serde(try_from = "String")]
 pub struct BNode {
     value: String,
