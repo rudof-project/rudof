@@ -16,5 +16,11 @@ impl From<usize> for Min {
     fn from(v: usize) -> Self {
        Min{value: v}
     }
-
 }
+
+impl From<i32> for Min {
+    fn from(v: i32) -> Self {
+       Min{value: v as usize}
+    }
+}
+

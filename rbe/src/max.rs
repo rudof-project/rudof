@@ -31,6 +31,12 @@ impl From<usize> for Max {
     }
 }
 
+impl From<i32> for Max {
+    fn from(m: i32) -> Self {
+        Max::IntMax(m as usize)
+    }
+}
+
 impl fmt::Display for Max {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
