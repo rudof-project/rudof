@@ -1,11 +1,10 @@
-use crate::{Bag, Cardinality, Max, Rbe1Error, deriv_n, Min, Bag1};
+use crate::{Cardinality, Max, Rbe1Error, deriv_n, Min, Bag1};
 use crate::rbe1_error::Failures;
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::fmt;
 use serde_derive::{Deserialize, Serialize};
-//use log::debug;
 use itertools::cloned;
 
 
@@ -47,7 +46,7 @@ R: Default + PartialEq + Clone {
             (None, None) => true,
             (None, Some(_)) => false,
             (Some(_), None) => false,
-            (Some(c1), Some(c2)) => {
+            (Some(_), Some(_)) => {
                 todo!()
             }
         } 
@@ -312,8 +311,8 @@ where
                 Self::deriv_and(exprs, &symbol, &value, n, open, controlled)
             }
             Rbe1::Or { ref exprs } => {
-                Self::mk_or_values(exprs.into_iter().map(|Rbe1| { 
-                    Rbe1.deriv(symbol, value, n, open, controlled)
+                Self::mk_or_values(exprs.into_iter().map(|rbe1| { 
+                    rbe1.deriv(symbol, value, n, open, controlled)
                 }))
             },
             Rbe1::Plus { ref expr } => {
@@ -512,7 +511,7 @@ where K: Debug + Hash + Eq + fmt::Display + Default,
         match &self {
             Rbe1::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
             Rbe1::Empty => write!(dest,"Empty"),
-            Rbe1::Symbol { key, cond, card } => write!(dest,"{key:?}{card:?}"),
+            Rbe1::Symbol { key, cond:_ , card } => write!(dest,"{key:?}{card:?}"),
             Rbe1::And { exprs} => {
                 exprs.iter().fold(Ok(()), |result,value| {
                     result.and_then(|_| write!(dest, "{value:?};"))
@@ -539,7 +538,7 @@ where K: Display + Hash + Eq + Default,
         match &self {
             Rbe1::Fail { error } => write!(dest,"Fail {{{error}}}"),
             Rbe1::Empty => write!(dest,"Empty"),
-            Rbe1::Symbol { key, cond, card } => write!(dest,"{key}{card}"),
+            Rbe1::Symbol { key, cond:_, card } => write!(dest,"{key}{card}"),
             Rbe1::And { exprs } => {
                 exprs.iter().fold(Ok(()), |result,value| {
                     result.and_then(|_| write!(dest, "{value};"))
@@ -566,7 +565,7 @@ mod tests {
     #[test_log::test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![
                 Rbe1::symbol('a', 1, Max::IntMax(1)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
@@ -576,30 +575,30 @@ mod tests {
                 Rbe1::symbol('a', 0, Max::IntMax(0)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
             );
-        assert_eq!(Rbe1.deriv(&'a',&23, 1, false, &HashSet::from(['a','b'])), expected);
+        assert_eq!(rbe1.deriv(&'a',&23, 1, false, &HashSet::from(['a','b'])), expected);
     }
 
     #[test]
     fn deriv_symbol() {
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::symbol('x', 1, Max::IntMax(1));
-        let d = Rbe1.deriv(&'x', &2, 1, true, &HashSet::new());
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::symbol('x', 1, Max::IntMax(1));
+        let d = rbe1.deriv(&'x', &2, 1, true, &HashSet::new());
         assert_eq!(d, Rbe1::symbol('x', 0, Max::IntMax(0)));
     }
 
     #[test]
     fn symbols() {
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![
                 Rbe1::symbol('x', 1, Max::IntMax(1)),
                 Rbe1::symbol('y', 1, Max::IntMax(1))]
         );
         let expected = HashSet::from(['x', 'y']);
-        assert_eq!(Rbe1.symbols(), expected);
+        assert_eq!(rbe1.symbols(), expected);
     }
 
     #[test]
     fn symbols2() {
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![Rbe1::or(
                 vec![
                     Rbe1::symbol('x', 1, Max::IntMax(1)),
@@ -608,105 +607,107 @@ mod tests {
             Rbe1::symbol('y', 1, Max::IntMax(1))
             ]);
         let expected = HashSet::from(['x', 'y']);
-        assert_eq!(Rbe1.symbols(), expected);
+        assert_eq!(rbe1.symbols(), expected);
     }
 
     #[test]
     fn match_bag_y1_4_y_2() {
         // y{1,4} #= y/2
-        let Rbe1: Rbe1<char,i32,i32> = Rbe1::symbol('y', 1, Max::IntMax(4));
-        assert_eq!(Rbe1.match_bag(&Bag1::from(vec![('y',1), ('y',2)]), false), Ok(()));
+        let rbe1: Rbe1<char,i32,i32> = Rbe1::symbol('y', 1, Max::IntMax(4));
+        assert_eq!(rbe1.match_bag(&Bag1::from(vec![('y',1), ('y',2)]), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_or_b_opt_with_a() {
         // a?|b? #= a
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::or(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::or(
             vec![
                 Rbe1::symbol('a', 0, Max::IntMax(1)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
-        assert_eq!(Rbe1.match_bag(&Bag1::from(vec![('a',1)]), false), Ok(()));
+        assert_eq!(rbe1.match_bag(&Bag1::from(vec![('a',1)]), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_or_b_opt_with_b() {
         // a?|b? #= a
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::or(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::or(
             vec![
                 Rbe1::symbol('a', 0, Max::IntMax(1)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
-        assert_eq!(Rbe1.match_bag(&Bag1::from(vec![('b',1)]), false), Ok(()));
+        assert_eq!(rbe1.match_bag(&Bag1::from(vec![('b',1)]), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_and_b_opt_with_ba() {
         // a?|b? #= a
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![
                 Rbe1::symbol('a', 0, Max::IntMax(1)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
-        assert_eq!(Rbe1.match_bag(&Bag1::from(vec![('b',1), ('a', 2)]), false), Ok(()));
+        assert_eq!(rbe1.match_bag(&Bag1::from(vec![('b',1), ('a', 2)]), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_and_b_opt_with_ab() {
         // a?|b? #= b/2
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![Rbe1::symbol('a', 1, Max::IntMax(1)),
             Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
-        assert_eq!(Rbe1.match_bag(&Bag1::from(vec![('a',1), ('b',1)]), false), Ok(()));
+        assert_eq!(rbe1.match_bag(&Bag1::from(vec![('a',1), ('b',1)]), false), Ok(()));
     }
 
     #[test]
     fn no_match_bag_a_and_b_opt_with_b_2() {
         // a?|b? #= b/2
-        let Rbe1: Rbe1<char, i32, i32> = Rbe1::and(
+        let rbe1: Rbe1<char, i32, i32> = Rbe1::and(
             vec![Rbe1::symbol('a', 1, Max::IntMax(1)),
             Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
-        assert!(Rbe1.match_bag(&Bag1::from(vec![('b', 2), ('b',3)]), false).is_err());
+        assert!(rbe1.match_bag(&Bag1::from(vec![('b', 2), ('b',3)]), false).is_err());
     }
 
     #[test]
     fn no_match_bag_a_and_b_opt_with_c() {
         // a?|b? #= a
-        let Rbe1: Rbe1<char, String, String> = Rbe1::and(
+        let rbe1: Rbe1<char, String, String> = Rbe1::and(
             vec![Rbe1::symbol('a', 1, Max::IntMax(1)),
             Rbe1::symbol('b', 1, Max::IntMax(1))]
         );
-        assert!(Rbe1.match_bag(&Bag1::from(vec![('c', "One".to_string())]), false).is_err());
+        assert!(rbe1.match_bag(&Bag1::from(vec![('c', "One".to_string())]), false).is_err());
     }
 
     #[test]
-    fn test_serialize_Rbe1() {
+    fn test_serialize_rbe1() {
         
-        let Rbe1: Rbe1<String, String, String> = Rbe1::symbol("foo".to_string(), 1, Max::IntMax(2));
+        let rbe1: Rbe1<String, String, String> = Rbe1::symbol("foo".to_string(), 1, Max::IntMax(2));
         let expected = indoc! {
             r#"!Symbol
-                 value: foo
+                 key: foo
+                 cond: {}
                  card:
                    min: 1
                    max: 2
               "# };
-        let Rbe1: String = serde_yaml::to_string(&Rbe1).unwrap();
-        assert_eq!(Rbe1, expected);
+        let rbe1: String = serde_yaml::to_string(&rbe1).unwrap();
+        assert_eq!(rbe1, expected);
     } 
 
     #[test]
-    fn test_deserialize_Rbe1() {
+    fn test_deserialize_rbe1() {
         let str = r#"{ 
             "Symbol": { 
-                "value": "foo", 
+                "key": "foo",
+                "cond": {}, 
                 "card": {"min": 1, "max": 2 } 
             }
         }"#;
         let expected = Rbe1::symbol("foo".to_string(), 1, Max::IntMax(2));
-        let Rbe1: Rbe1<String, String, String> = serde_json::from_str(str).unwrap();
-        assert_eq!(Rbe1, expected);
+        let rbe1: Rbe1<String, String, String> = serde_json::from_str(str).unwrap();
+        assert_eq!(rbe1, expected);
     }
 
 }
