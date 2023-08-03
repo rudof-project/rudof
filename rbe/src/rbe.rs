@@ -1,4 +1,4 @@
-use crate::{Bag, Cardinality, Max, RbeError, deriv_n, Failures, Min};
+use crate::{Bag, Cardinality, Max, RbeError, deriv_n, Min};
 use core::hash::Hash;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
@@ -6,6 +6,12 @@ use std::fmt;
 use serde_derive::{Deserialize, Serialize};
 //use log::debug;
 use itertools::cloned;
+
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct Pending<A> {
+    pending: A
+}
+
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,8 +21,8 @@ where A: Hash + Eq + Display,
     Fail { error: RbeError<A> },
     Empty,
     Symbol { value: A, card: Cardinality },
-    And { values: Vec<Box<Rbe<A>>> },
-    Or { values: Vec<Box<Rbe<A>>> },
+    And { values: Vec<Rbe<A>> },
+    Or { values: Vec<Rbe<A>> },
     Star { value: Box<Rbe<A>> },
     Plus { value: Box<Rbe<A>> },
     Repeat { value: Box<Rbe<A>>, card: Cardinality },
@@ -60,19 +66,19 @@ where
 
     pub fn or<I>(values: I) -> Rbe<A> 
     where I: IntoIterator<Item = Rbe<A>> {
-        let rs: Vec<Box<Rbe<A>>> = values.into_iter().map(|v| Box::new(v)).collect();
+        let rs: Vec<Rbe<A>> = values.into_iter().map(|v| v).collect();
         Rbe::Or{ values: rs}
     }
 
     pub fn and<I>(values: I) -> Rbe<A>
     where I: IntoIterator<Item = Rbe<A>> {
-        let rs: Vec<Box<Rbe<A>>> = values.into_iter().map(|v| Box::new(v)).collect();
+        let rs: Vec<Rbe<A>> = values.into_iter().map(|v| v).collect();
         Rbe::And{ values: rs}
     }
 
     pub fn opt(v: Rbe<A>) -> Rbe<A> {
         Rbe::Or {
-            values: vec![Box::new(v), Box::new(Rbe::Empty)]
+            values: vec![v, Rbe::Empty]
         }
     }
 
@@ -160,7 +166,7 @@ where
         match &self {
             Rbe::Fail { .. } => false,
             Rbe::Empty => true,
-            Rbe::Symbol { value: _, card } if card.nullable() => true,
+            Rbe::Symbol { card, .. } if card.nullable() => true,
             Rbe::Symbol { .. } => false,
             Rbe::And { values } => {
                values.iter()
@@ -231,10 +237,10 @@ where
                         }
                     }
                 }
-            }
+            },
             Rbe::And { ref values } => {
                 Self::deriv_and(values, x, n, open, controlled)
-            }
+            },
             Rbe::Or { ref values } => {
                 Self::mk_or_values(values.into_iter().map(|rbe| { 
                     rbe.deriv(x, n, open, controlled)
@@ -277,31 +283,31 @@ where
     }
 
     fn deriv_and(
-        values: &Vec<Box<Rbe<A>>>, 
+        values: &Vec<Rbe<A>>, 
         x: &A, 
         n: usize, 
         open: bool, 
         controlled: &HashSet<A>) -> Rbe<A> {
 
-        let mut or_values: Vec<Box<Rbe<A>>> = Vec::new();
-        let mut failures = Failures::new();
+        let mut or_values: Vec<Rbe<A>> = Vec::new();
+        let mut failures = crate::rbe_error::Failures::new();
         
         for vs in deriv_n(
             cloned((*values).iter()).collect(), 
-            |value: &Box<Rbe<A>>| {
+            |value: &Rbe<A>| {
                 let d = value.deriv(x,n,open,controlled);
                 match d { 
                     Rbe::Fail { error } => {
-                        failures.push(*value.clone(), error);
+                        failures.push(value.clone(), error);
                         None
                     },
                     _ => {
-                        Some(Box::new(d))
+                        Some(d)
                     }
                 }
             }
         ) {
-            or_values.push(Box::new(Rbe::And { values: vs }));
+            or_values.push(Rbe::And { values: vs });
         }
         match or_values.len() {
             0 => Rbe::Fail { 
@@ -311,7 +317,7 @@ where
                 } 
             },
             1 => {
-                (*or_values[0]).clone()
+                or_values[0].clone()
             }
             _ => Rbe::Or {
                 values: or_values
@@ -373,7 +379,7 @@ where
             (f @ Rbe::Fail { .. }, _) => f.clone(),
             (_, f @ Rbe::Fail { .. }) => f.clone(),
             (_, _) => Rbe::And {
-                values: vec![Box::new((*v1).clone()),Box::new((*v2).clone())] 
+                values: vec![(*v1).clone(),(*v2).clone()] 
              },
         }
     }
@@ -397,8 +403,8 @@ where
                 } else {
                     Rbe::Or {
                         values: vec![
-                            Box::new((*v1).clone()),
-                            Box::new((*v2).clone())]
+                            (*v1).clone(),
+                            (*v2).clone()]
                     }
                 }
             }
@@ -602,7 +608,7 @@ mod tests {
                  value: foo
                  card:
                    min: 1
-                   max: !IntMax 2
+                   max: 2
               "# };
         let rbe: String = serde_yaml::to_string(&rbe).unwrap();
         assert_eq!(rbe, expected);
@@ -613,7 +619,7 @@ mod tests {
         let str = r#"{ 
             "Symbol": { 
                 "value": "foo", 
-                "card": {"min": 1, "max": { "IntMax": 2}} 
+                "card": {"min": 1, "max": 2 } 
             }
         }"#;
         let expected = Rbe::symbol("foo".to_string(),1,Max::IntMax(2));
