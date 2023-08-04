@@ -1,4 +1,4 @@
-use crate::{Cardinality, Max, Rbe1Error, deriv_n, Min, Bag1};
+use crate::{Cardinality, Max, Rbe1Error, deriv_n, Min, Bag1, MatchCond, Pending};
 use crate::rbe1_error::Failures;
 use core::hash::Hash;
 use std::collections::HashSet;
@@ -7,72 +7,41 @@ use std::fmt;
 use serde_derive::{Deserialize, Serialize};
 use itertools::cloned;
 
-
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Pending<V,R> {
-    pending: (V,R)
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct MatchCond<K, V, R> 
- where K: Hash + PartialEq + Eq + Display + Default,
-       V: Default + PartialEq + Clone,
-       R: Default + PartialEq + Clone
+pub struct RbeMatcher<K, V,R> 
+where K: Hash + Eq + Display + Default,
+      V: Hash + Default + Eq + Clone, 
+      R: Default + PartialEq + Clone 
 {
-    #[serde(skip)]
-    cond: Option<fn(&K, &V) -> Result<Vec<Pending<V,R>>, Rbe1Error<K, V, R>>> 
+    rbe: Rbe1<K, V, R>,
+    
 }
 
 
-
-impl <K, V, R> MatchCond<K, V, R> 
-where K: Hash + PartialEq + Eq + Display + Default,
-      V: Default + PartialEq + Clone, 
-      R: Default + PartialEq + Clone {
-    fn matches(&self, key: &K, value: &V) -> Result<Vec<Pending<V,R>>, Rbe1Error<K, V, R>> {
-        match self.cond {
-            None => Ok(Vec::new()),
-            Some(f) => (f)(key, value)
+impl <K, V, R> RbeMatcher<K, V, R> 
+where K: Hash + Eq + Display + Default,
+      V: Hash + Default + Eq + Clone, 
+      R: Default + PartialEq + Clone 
+{
+    fn new(rbe: Rbe1<K,V,R>) -> RbeMatcher<K, V, R> {
+        RbeMatcher{
+            rbe
         }
     }
-}
 
-impl <K,V,R> PartialEq for MatchCond<K, V,R> 
-where K: Hash + PartialEq + Eq + Display + Default,
-V: Default + PartialEq + Clone, 
-R: Default + PartialEq + Clone {
-    fn eq(&self, other: &Self) -> bool { 
-        match (self.cond, other.cond) {
-            (None, None) => true,
-            (None, Some(_)) => false,
-            (Some(_), None) => false,
-            (Some(_), Some(_)) => {
-                todo!()
-            }
-        } 
+    fn matches<T: IntoIterator<Item=(K,V)>>(&self, iter: T) -> Result<Pending<V, R>, Rbe1Error<K, V, R>> {
+        let pending = Pending::new();
+        for (K, V) in iter {
+           todo!()
+        }
+        Ok(pending)
     }
-}
-
-impl <K,V,R> Eq for MatchCond<K, V,R> 
-where K: Hash + PartialEq + Eq + Display + Default,
-V: Default + PartialEq + Clone, 
-R: Default + PartialEq + Clone {
-}
-
-impl <K, V, R> Default for MatchCond<K, V, R> 
-where K: Hash + PartialEq + Eq + Display + Default,
-      V: Default + PartialEq + Clone,
-      R: Default + PartialEq + Clone {
-    fn default() -> Self { MatchCond {
-        cond: None
-    }}
 }
 
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 
 pub enum Rbe1<K, V, R>
 where K: Hash + Eq + Display + Default,
-      V: Default + PartialEq + Clone, 
+      V: Hash + Eq + Default + Clone, 
       R: Default + PartialEq + Clone 
 {
     Fail { error: Rbe1Error<K,V,R> },
@@ -92,7 +61,7 @@ type NullableResult = bool;
 impl <K, V, R> Rbe1<K, V, R>
 where
     K: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display + Default,
-    V: Default + Display + PartialEq + Debug + Clone,
+    V: Hash + Default + Display + Eq + Debug + Clone,
     R: Default + Display + PartialEq + Debug + Clone
 {
     pub fn match_bag(&self, bag: &Bag1<K,V>, open: bool) -> Result<(), Rbe1Error<K,V,R>> {
@@ -494,7 +463,7 @@ where
 
 impl <K, V, R> Default for Rbe1<K, V, R> 
 where K: Hash + Eq + fmt::Display + Default,
-      V: Default + PartialEq + Clone,
+      V: Hash + Default + Eq + Clone,
       R: Default + PartialEq + Clone
 {
     fn default() -> Self { 
@@ -504,7 +473,7 @@ where K: Hash + Eq + fmt::Display + Default,
 
 impl <K, V, R> Debug for Rbe1<K, V, R> 
 where K: Debug + Hash + Eq + fmt::Display + Default,
-      V: Debug + PartialEq + Default + Clone,
+      V: Hash + Debug + Eq + Default + Clone,
       R: Debug + PartialEq + Default + Clone
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
@@ -531,7 +500,7 @@ where K: Debug + Hash + Eq + fmt::Display + Default,
 
 impl <K, V, R> Display for Rbe1<K, V, R> 
 where K: Display + Hash + Eq + Default,
-      V: Display + PartialEq + Default + Clone,
+      V: Hash + Eq + Default + Display + Clone,
       R: Display + PartialEq + Default + Clone
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {

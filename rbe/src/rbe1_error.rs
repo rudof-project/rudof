@@ -11,7 +11,7 @@ use std::fmt::Display;
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Failures<K, V, R> 
 where K: Hash + Eq + Display + Default,
-      V: Default + PartialEq + Clone,
+      V: Hash + Default + Eq + Clone,
       R: Default + PartialEq + Clone
 {
    fs: Vec<(Box<Rbe1<K,V,R>>, Rbe1Error<K,V,R>)>
@@ -19,7 +19,7 @@ where K: Hash + Eq + Display + Default,
 
 impl <K, V, R> Failures<K, V, R> 
 where K: Hash + Eq + Display + Default,
-      V: Default + PartialEq + Clone,
+      V: Hash + Default + Eq + Clone,
       R: Default + PartialEq + Clone
 {
     pub fn new() -> Failures<K, V, R> {
@@ -35,7 +35,7 @@ where K: Hash + Eq + Display + Default,
 
 impl <K, V, R> Display for Failures<K, V, R> 
 where K: Hash + Eq + Display + Display + Default,
-      V: Default + Display + PartialEq + Clone,
+      V: Hash + Default + Display + Eq + Clone,
       R: Default + Display + PartialEq + Clone
       {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
@@ -49,7 +49,7 @@ where K: Hash + Eq + Display + Display + Default,
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Rbe1Error<K,V,R>
 where K: Hash + PartialEq + Eq + Display + Default,
-      V: Default + PartialEq + Clone,
+      V: Hash + Default + Eq + Clone,
       R: Default + PartialEq + Clone
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
