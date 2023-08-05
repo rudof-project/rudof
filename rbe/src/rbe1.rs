@@ -13,18 +13,21 @@ where K: Hash + Eq + Display + Default,
       R: Default + PartialEq + Clone 
 {
     rbe: Rbe1<K, V, R>,
-    
+    open: bool,
+    controlled: HashSet<K>
 }
 
 
 impl <K, V, R> RbeMatcher<K, V, R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone, 
-      R: Default + PartialEq + Clone 
+where K: Hash + Eq + Default + Display + Debug + Clone,
+      V: Hash + Default + Eq + Display + Debug + Clone, 
+      R: Default + PartialEq + Display + Debug + Clone 
 {
-    fn new(rbe: Rbe1<K,V,R>) -> RbeMatcher<K, V, R> {
+    fn new(rbe: Rbe1<K,V,R>, open: bool, controlled: HashSet<K>) -> RbeMatcher<K, V, R> {
         RbeMatcher{
-            rbe
+            rbe,
+            open,
+            controlled
         }
     }
 
@@ -34,6 +37,34 @@ where K: Hash + Eq + Display + Default,
            todo!()
         }
         Ok(pending)
+    }
+
+    fn matches_iter<T: IntoIterator<Item=(K,V)>>(&self, iter:T) -> Result<Pending<V, R>, Rbe1Error<K, V, R>> {
+        let mut current = (*self).rbe.clone();
+        let mut processed = Bag1::new();
+        let mut pending = Pending::new();
+        for (key, value) in iter {
+            let deriv = current.deriv(&key, &value, 1, self.open, &self.controlled, &mut pending);
+            match deriv {
+              Rbe1::Fail { error } => {
+                current = Rbe1::Fail { error: Rbe1Error::DerivIterError {
+                    error_msg: format!("{error}"),
+                    processed: processed,
+                    expr: Box::new((*self).rbe.clone()),
+                    current: Box::new(current.clone()),
+                    key: key.clone(),
+                    open: self.open, 
+                }};
+                break;
+              },
+              _ => {
+                processed.insert((key.clone(), value.clone()));
+                current = deriv;
+              }
+            }
+        }
+        // current
+        todo!()
     }
 }
 
@@ -169,8 +200,9 @@ where
     pub fn deriv_bag(&self, bag: &Bag1<K, V>, open: bool, controlled: &HashSet<K>) -> Rbe1<K, V, R> {
         let mut current = (*self).clone();
         let mut processed = Bag1::new();
+        let mut pending = Pending::new();
         for (key, value) in bag.iter() {
-            let deriv = current.deriv(key, value, 1, open, controlled);
+            let deriv = current.deriv(key, value, 1, open, controlled, &mut pending);
             match deriv {
               Rbe1::Fail { error } => {
                 current = Rbe1::Fail { error: Rbe1Error::DerivBagError {
@@ -216,7 +248,13 @@ where
     }
 
 
-    pub fn deriv(&self, symbol: &K, value: &V, n: usize, open: bool, controlled: &HashSet<K>) -> Rbe1<K, V, R>
+    pub fn deriv(&self, 
+        symbol: &K, 
+        value: &V, 
+        n: usize, 
+        open: bool, 
+        controlled: &HashSet<K>, 
+        pending: &mut Pending<V,R>) -> Rbe1<K, V, R>
     where
         K: Eq + Hash + Clone,
     {
@@ -240,13 +278,15 @@ where
                         Err(err) => {
                             todo!()
                         },
-                        Ok(pending) => {
+                        Ok(new_pending) => {
                             if card.max == Max::IntMax(0) {
                                 Rbe1::Fail {
                                     error: Rbe1Error::MaxCardinalityZeroFoundValue { x: (*symbol).clone() },
                                 }
                             } else {
                                 if let Some(card) = card.minus(n) {
+                                    // pending = pending.merge(new_pending);
+                                    // TODO!! Pending
                                     Self::mk_range_symbol(&symbol, cond, &card)
                                 } else {
                                     Rbe1::Fail {
@@ -277,20 +317,20 @@ where
                 }
             },
             Rbe1::And { ref exprs } => {
-                Self::deriv_and(exprs, &symbol, &value, n, open, controlled)
+                Self::deriv_and(exprs, &symbol, &value, n, open, controlled, pending)
             }
             Rbe1::Or { ref exprs } => {
                 Self::mk_or_values(exprs.into_iter().map(|rbe1| { 
-                    rbe1.deriv(symbol, value, n, open, controlled)
+                    rbe1.deriv(symbol, value, n, open, controlled, pending)
                 }))
             },
             Rbe1::Plus { ref expr } => {
-                let d = expr.deriv(symbol, value, n, open, controlled);
+                let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 Self::mk_and(&d, &Rbe1::Star { expr: expr.clone() })
             }
             Rbe1::Repeat { ref expr, ref card } 
             if card.is_0_0() => {
-                let d = expr.deriv(symbol, value, n, open, controlled);
+                let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 if d.nullable() {
                   Rbe1::Fail { error: Rbe1Error::CardinalityZeroZeroDeriv { 
                     symbol: symbol.clone()
@@ -300,7 +340,7 @@ where
                 }
             }
             Rbe1::Repeat { ref expr, ref card } => {
-                let d = expr.deriv(symbol, value, n, open, controlled);
+                let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 if let Some(card) = card.minus(n) {
                     let rest = Self::mk_range(&expr, &card);
                     Self::mk_and(&d, &rest)
@@ -314,7 +354,7 @@ where
                 }
             }
             Rbe1::Star { ref expr } => {
-                let d = expr.deriv(symbol, value, n, open, controlled);
+                let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 Self::mk_and(&d, &expr)
             }
         }
@@ -326,7 +366,9 @@ where
         value: &V, 
         n: usize, 
         open: bool, 
-        controlled: &HashSet<K>) -> Rbe1<K, V, R> {
+        controlled: &HashSet<K>,
+        pending: &mut Pending<V,R>
+    ) -> Rbe1<K, V, R> {
 
         let mut or_values: Vec<Rbe1<K, V, R>> = Vec::new();
         let mut failures = Failures::new();
@@ -334,7 +376,7 @@ where
         for vs in deriv_n(
             cloned((*values).iter()).collect(), 
             |expr: &Rbe1<K, V, R>| {
-                let d = expr.deriv(symbol, value, n, open, controlled);
+                let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 match d { 
                     Rbe1::Fail { error } => {
                         failures.push(expr.clone(), error);
@@ -539,18 +581,20 @@ mod tests {
                 Rbe1::symbol('a', 1, Max::IntMax(1)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
         );
+        let mut pending = Pending::new();
         let expected = Rbe1::and(
             vec![
                 Rbe1::symbol('a', 0, Max::IntMax(0)),
                 Rbe1::symbol('b', 0, Max::IntMax(1))]
             );
-        assert_eq!(rbe1.deriv(&'a',&23, 1, false, &HashSet::from(['a','b'])), expected);
+        assert_eq!(rbe1.deriv(&'a',&23, 1, false, &HashSet::from(['a','b']), &mut pending), expected);
     }
 
     #[test]
     fn deriv_symbol() {
         let rbe1: Rbe1<char, i32, i32> = Rbe1::symbol('x', 1, Max::IntMax(1));
-        let d = rbe1.deriv(&'x', &2, 1, true, &HashSet::new());
+        let mut pending = Pending::new();
+        let d = rbe1.deriv(&'x', &2, 1, true, &HashSet::new(), &mut pending);
         assert_eq!(d, Rbe1::symbol('x', 0, Max::IntMax(0)));
     }
 

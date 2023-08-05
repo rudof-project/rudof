@@ -120,5 +120,15 @@ where K: Hash + PartialEq + Eq + Display + Default,
         current: Box<Rbe1<K,V,R>>,
         value: K,
         open: bool,
+    },
+
+    #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
+    DerivIterError { 
+        error_msg: String, 
+        processed: Bag1<K,V>,
+        expr: Box<Rbe1<K,V,R>>,
+        current: Box<Rbe1<K,V,R>>,
+        key: K,
+        open: bool,
     }
 }

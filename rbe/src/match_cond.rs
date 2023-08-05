@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use crate::{Pending, Rbe1Error};
 use core::hash::Hash;
+use std::fmt::Debug;
 use serde_derive::{Serialize, Deserialize};
 
 
@@ -19,8 +20,8 @@ pub struct MatchCond<K, V, R>
 
 impl <K, V, R> MatchCond<K, V, R> 
 where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone, 
-      R: Default + PartialEq + Clone {
+      V: Hash + Default + Eq + Debug + Clone, 
+      R: Default + PartialEq + Debug + Clone {
     
     pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>> {
         match self.cond {
