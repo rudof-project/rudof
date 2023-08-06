@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use crate::{Pending, Rbe1Error};
+use crate::{Pending, rbe_error::RbeError};
 use core::hash::Hash;
 use std::fmt::Debug;
 use serde_derive::{Serialize, Deserialize};
@@ -11,6 +11,7 @@ pub struct MatchCond<K, V, R>
        V: Hash + Eq + Default + PartialEq + Clone,
        R: Default + PartialEq + Clone,
 {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>, 
 
     #[serde(skip)]
@@ -27,21 +28,21 @@ where K: Hash + Eq + Display + Default,
       R: Default + PartialEq + Clone
 {
     fn clone_box(&self) -> Box<dyn Cond<K,V,R>>;
-    fn call(&self, k: &K, v: &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>>;
+    fn call(&self, k: &K, v: &V) -> Result<Pending<V,R>, RbeError<K, V, R>>;
 }
 
 impl<K, V, R, F> Cond<K,V,R> for F 
 where  K: Hash + Eq + Display + Default,
        V: Hash + Eq + Default + PartialEq + Clone,
        R: Default + PartialEq + Clone,
-       F: 'static + Fn(&K, &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>> + Clone 
+       F: 'static + Fn(&K, &V) -> Result<Pending<V,R>, RbeError<K, V, R>> + Clone 
 {
 
   fn clone_box(&self) -> Box<dyn Cond<K, V, R>> {
     Box::new(self.clone())
   }
 
-  fn call(&self, k:&K, v: &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>> {
+  fn call(&self, k:&K, v: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> {
     self(k, v)
   }
 }
@@ -93,7 +94,7 @@ where K: Hash + PartialEq + Eq + Display + Default,
       R: Default + PartialEq + Debug + Clone, 
       {
     
-    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>> {
+    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> {
         match &self.cond {
             None => Ok(Pending::new()),
             Some(f) => {
@@ -114,7 +115,7 @@ where K: Hash + PartialEq + Eq + Display + Default,
         self
     }
 
-    pub fn with_cond(mut self, cond: impl Fn(&K, &V) -> Result<Pending<V,R>, Rbe1Error<K, V, R>> + Clone + 'static) -> Self {
+    pub fn with_cond(mut self, cond: impl Fn(&K, &V) -> Result<Pending<V,R>, RbeError<K, V, R>> + Clone + 'static) -> Self {
         self.cond = Some(Box::new(cond));
         self
     }
@@ -156,7 +157,7 @@ mod tests {
             if v % 2 == 0 {
                 Ok(Pending::new())
             } else {
-                Err(Rbe1Error::MsgError{ msg: format!("Value {v} for key {k} is not even") })
+                Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} is not even") })
             }
         });
 
@@ -169,7 +170,7 @@ mod tests {
             if v % 2 == 0 {
                 Ok(Pending::new())
             } else {
-                Err(Rbe1Error::MsgError{ msg: format!("Value {v} for key {k} is not even") })
+                Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} is not even") })
             }
         });
 
@@ -184,7 +185,7 @@ mod tests {
             if *v == name {
                 Ok(Pending::new())
             } else {
-                Err(Rbe1Error::MsgError{ msg: format!("Value {v} for key {k} is not equal to {name}") })
+                Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} is not equal to {name}") })
             }
           })
         }
@@ -200,7 +201,7 @@ mod tests {
             if *v == name {
                 Ok(Pending::new())
             } else {
-                Err(Rbe1Error::MsgError{ msg: 
+                Err(RbeError::MsgError{ msg: 
                     format!("Value {v} for key {k} failed condition is not equal to {name}", ) 
                 })
             }

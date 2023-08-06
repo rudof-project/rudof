@@ -1,6 +1,6 @@
-use rbe::{Rbe, Bag, RbeError};
+use rbe::{rbe::Rbe, Bag, rbe_error::RbeError};
 use serde_derive::{Deserialize, Serialize};
-use crate::{TestType, MatchResult, RbeTestResult};
+use crate::{TestType, MatchResult, RbeTestResult, KeyType, ValueType, RefType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {
@@ -14,9 +14,9 @@ pub struct RbeTest {
     #[serde(skip)]
     full_name: String,
     
-    rbe: Rbe<TestType>,
+    rbe: Rbe<KeyType, ValueType, RefType>,
     
-    bag: Bag<TestType>,
+    bag: Vec<(KeyType, ValueType)>,
 
     open: bool,
     
@@ -51,7 +51,7 @@ impl RbeTest {
         self.full_name = full_name;
     }
 
-    pub fn set_rbe(&mut self, rbe: Rbe<TestType>) 
+    pub fn set_rbe(&mut self, rbe: Rbe<KeyType, ValueType, RefType>) 
     {
         self.rbe = rbe;
     }

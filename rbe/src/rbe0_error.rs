@@ -1,5 +1,5 @@
-use crate::rbe1::Rbe1;
-use crate::bag1::Bag1;
+use crate::rbe0::Rbe;
+use crate::Bag;
 use crate::Cardinality;
 use std::fmt::Formatter;
 use std::hash::Hash;
@@ -9,35 +9,28 @@ use thiserror::Error;
 use std::fmt::Display;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub struct Failures<K, V, R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+pub struct Failures<A> 
+where A: Hash + Eq + Display
 {
-   fs: Vec<(Box<Rbe1<K,V,R>>, Rbe1Error<K,V,R>)>
+   fs: Vec<(Box<Rbe<A>>, RbeError<A>)>
 }
 
-impl <K, V, R> Failures<K, V, R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+impl <A> Failures<A> 
+where A: Hash + Eq + Display
 {
-    pub fn new() -> Failures<K, V, R> {
+    pub fn new() -> Failures<A> {
        Failures {
         fs: Vec::new()
        }
     }
 
-    pub fn push(&mut self, expr: Rbe1<K, V, R>, err: Rbe1Error<K, V, R>) {
+    pub fn push(&mut self, expr: Rbe<A>, err: RbeError<A>) {
         self.fs.push((Box::new(expr), err));
     }
 }
 
-impl <K, V, R> Display for Failures<K, V, R> 
-where K: Hash + Eq + Display + Display + Default,
-      V: Hash + Default + Display + Eq + Clone,
-      R: Default + Display + PartialEq + Clone
-      {
+impl <A> Display for Failures<A> 
+where A: Hash + Eq + Display + Display {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
         for (expr, err) in &self.fs {
             write!(dest, "Error at {expr}: {err}\n")?;
@@ -47,47 +40,38 @@ where K: Hash + Eq + Display + Display + Default,
 }
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
-pub enum Rbe1Error<K,V,R>
-where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+pub enum RbeError<A>
+where A: Hash + PartialEq + Eq + Display,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
-    UnexpectedEmpty { x: K, open: bool },
+    UnexpectedEmpty { x: A, open: bool },
 
     #[error("Symbol {x} doesn't match with expected symbol {expected}. Open: {open}")]
-    UnexpectedSymbol { x: K, expected: K, open: bool },
+    UnexpectedSymbol { x: A, expected: A, open: bool },
 
     #[error("Max cardinality 0, but found symbol {x}")]
-    MaxCardinalityZeroFoundValue { x: K },
+    MaxCardinalityZeroFoundValue { x: A },
 
     // TODO: Maybe this error is redundant?
     #[error("Negative lower bound: {min}")]
     RangeNegativeLowerBound { min: usize },
 
     #[error("Min > Max in cardinality {card} for {symbol}")]
-    RangeLowerBoundBiggerMax { symbol: K, card: Cardinality },
+    RangeLowerBoundBiggerMax { symbol: A, card: Cardinality },
 
     #[error("Min > Max in cardinality {card} for {expr}")]
-    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe1<K,V,R>>, card: Cardinality },
+    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<A>>, card: Cardinality },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}\nBag: {bag}")]
     NonNullable {
-        non_nullable_rbe: Box<Rbe1<K,V,R>>,
-        bag: Bag1<K,V>,
-        expr: Box<Rbe1<K,V,R>>
+        non_nullable_rbe: Box<Rbe<A>>,
+        bag: Bag<A>,
+        expr: Box<Rbe<A>>
     },
-
-    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
-    NonNullableMatch {
-        non_nullable_rbe: Box<Rbe1<K,V,R>>,
-        expr: Box<Rbe1<K,V,R>>
-    },
-
 
     #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
     CardinalityFail {
-        symbol: K,
+        symbol: A,
         expected_cardinality: Cardinality,
         current_number: usize,
     },
@@ -100,7 +84,7 @@ where K: Hash + PartialEq + Eq + Display + Default,
 
     #[error("Cardinality(0,0) but found symbol after derivative")]
     CardinalityZeroZeroDeriv {
-        symbol: K
+        symbol: A
     },
 
     #[error("Should fail but passed: {name}")]
@@ -111,8 +95,8 @@ where K: Hash + PartialEq + Eq + Display + Default,
 
     #[error("Or values failed {e}\n {failures}")]
     OrValuesFail{ 
-        e: Box<Rbe1<K,V,R>>,
-        failures: Failures<K, V, R>
+        e: Box<Rbe<A>>,
+        failures: Failures<A>
     } ,
 
     #[error("All values in or branch failed")]
@@ -121,26 +105,11 @@ where K: Hash + PartialEq + Eq + Display + Default,
     #[error("Error matching bag: {error_msg}\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}\nopen: {open}")]
     DerivBagError { 
         error_msg: String, 
-        processed: Bag1<K,V>,
-        bag: Bag1<K, V>,
-        expr: Box<Rbe1<K,V,R>>,
-        current: Box<Rbe1<K,V,R>>,
-        value: K,
+        processed: Bag<A>,
+        bag: Bag<A>,
+        expr: Box<Rbe<A>>,
+        current: Box<Rbe<A>>,
+        value: A,
         open: bool,
-    },
-
-    #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
-    DerivIterError { 
-        error_msg: String, 
-        processed: Bag1<K,V>,
-        expr: Box<Rbe1<K,V,R>>,
-        current: Box<Rbe1<K,V,R>>,
-        key: K,
-        open: bool,
-    },
-
-    #[error("{msg}")]
-    MsgError {
-        msg: String
     }
 }

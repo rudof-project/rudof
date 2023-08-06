@@ -11,15 +11,17 @@ pub use rbe_test_results::*;
 pub use match_result::*;
 
 
-/// TODO: I would prefer this type to be a String or &str, but it must be Eq, Hash, Clone and with &str I have some lifetime issues...
 type TestType = String;
+type KeyType = String;
+type ValueType = String;
+type RefType = String;
 
 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
     use log::*;
-    use rbe::{Rbe, Max, Bag};
+    use rbe::{rbe::Rbe, Max, Bag};
     use test_log::test;
     use super::*;
 
