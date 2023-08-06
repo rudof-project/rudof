@@ -78,6 +78,13 @@ where K: Hash + PartialEq + Eq + Display + Default,
         expr: Box<Rbe1<K,V,R>>
     },
 
+    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
+    NonNullableMatch {
+        non_nullable_rbe: Box<Rbe1<K,V,R>>,
+        expr: Box<Rbe1<K,V,R>>
+    },
+
+
     #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
     CardinalityFail {
         symbol: K,
@@ -130,5 +137,10 @@ where K: Hash + PartialEq + Eq + Display + Default,
         current: Box<Rbe1<K,V,R>>,
         key: K,
         open: bool,
+    },
+
+    #[error("{msg}")]
+    MsgError {
+        msg: String
     }
 }

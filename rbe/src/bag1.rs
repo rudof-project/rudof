@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn bag_from_vec_test() {
-        let mut bag = Bag1::from(vec![("a",1), ("b",23)]);
+        let bag = Bag1::from(vec![("a",1), ("b",23)]);
         assert_eq!(bag.contains(&"a"), true);
     }
 

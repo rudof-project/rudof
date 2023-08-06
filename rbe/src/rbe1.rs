@@ -7,69 +7,7 @@ use std::fmt;
 use serde_derive::{Deserialize, Serialize};
 use itertools::cloned;
 
-pub struct RbeMatcher<K, V,R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone, 
-      R: Default + PartialEq + Clone 
-{
-    rbe: Rbe1<K, V, R>,
-    open: bool,
-    controlled: HashSet<K>
-}
-
-
-impl <K, V, R> RbeMatcher<K, V, R> 
-where K: Hash + Eq + Default + Display + Debug + Clone,
-      V: Hash + Default + Eq + Display + Debug + Clone, 
-      R: Default + PartialEq + Display + Debug + Clone 
-{
-    fn new(rbe: Rbe1<K,V,R>, open: bool, controlled: HashSet<K>) -> RbeMatcher<K, V, R> {
-        RbeMatcher{
-            rbe,
-            open,
-            controlled
-        }
-    }
-
-    fn matches<T: IntoIterator<Item=(K,V)>>(&self, iter: T) -> Result<Pending<V, R>, Rbe1Error<K, V, R>> {
-        let pending = Pending::new();
-        for (K, V) in iter {
-           todo!()
-        }
-        Ok(pending)
-    }
-
-    fn matches_iter<T: IntoIterator<Item=(K,V)>>(&self, iter:T) -> Result<Pending<V, R>, Rbe1Error<K, V, R>> {
-        let mut current = (*self).rbe.clone();
-        let mut processed = Bag1::new();
-        let mut pending = Pending::new();
-        for (key, value) in iter {
-            let deriv = current.deriv(&key, &value, 1, self.open, &self.controlled, &mut pending);
-            match deriv {
-              Rbe1::Fail { error } => {
-                current = Rbe1::Fail { error: Rbe1Error::DerivIterError {
-                    error_msg: format!("{error}"),
-                    processed: processed,
-                    expr: Box::new((*self).rbe.clone()),
-                    current: Box::new(current.clone()),
-                    key: key.clone(),
-                    open: self.open, 
-                }};
-                break;
-              },
-              _ => {
-                processed.insert((key.clone(), value.clone()));
-                current = deriv;
-              }
-            }
-        }
-        // current
-        todo!()
-    }
-}
-
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-
 pub enum Rbe1<K, V, R>
 where K: Hash + Eq + Display + Default,
       V: Hash + Eq + Default + Clone, 
@@ -125,6 +63,15 @@ where
             card: Cardinality { min: Min::from(min), max },
         }
     }
+
+    pub fn symbol_cond(key:K, cond: MatchCond<K,V,R>, min: usize, max: Max) -> Rbe1<K, V, R> {
+        Rbe1::Symbol {
+            key,
+            cond: cond,
+            card: Cardinality { min: Min::from(min), max },
+        }
+    }
+
 
     pub fn or<I>(exprs: I) -> Rbe1<K, V, R> 
     where I: IntoIterator<Item = Rbe1<K, V, R>> {
@@ -225,7 +172,7 @@ where
         current
     }
 
-    fn nullable(&self) -> NullableResult {
+    pub fn nullable(&self) -> NullableResult {
         match &self {
             Rbe1::Fail { .. } => false,
             Rbe1::Empty => true,
@@ -276,7 +223,9 @@ where
                 if *key == *symbol {
                     match cond.matches(symbol, value) {
                         Err(err) => {
-                            todo!()
+                            Rbe1::Fail {
+                                error: err
+                            }
                         },
                         Ok(new_pending) => {
                             if card.max == Max::IntMax(0) {
@@ -285,8 +234,7 @@ where
                                 }
                             } else {
                                 if let Some(card) = card.minus(n) {
-                                    // pending = pending.merge(new_pending);
-                                    // TODO!! Pending
+                                    pending.merge(new_pending);
                                     Self::mk_range_symbol(&symbol, cond, &card)
                                 } else {
                                     Rbe1::Fail {
@@ -700,7 +648,8 @@ mod tests {
         let expected = indoc! {
             r#"!Symbol
                  key: foo
-                 cond: {}
+                 cond:
+                   name: null
                  card:
                    min: 1
                    max: 2
@@ -714,7 +663,7 @@ mod tests {
         let str = r#"{ 
             "Symbol": { 
                 "key": "foo",
-                "cond": {}, 
+                "cond": { "name": null },
                 "card": {"min": 1, "max": 2 } 
             }
         }"#;
