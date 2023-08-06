@@ -29,5 +29,11 @@ pub enum CompiledSchemaError {
     #[error("Duplicated triple expression label in schema: {label:?}")]
     DuplicatedTripleExprLabel {
         label: TripleExprLabel
-    }
+    },
+
+    #[error("Converting min value {min} must be positive")]
+    MinLessZero{ min: i32 },
+
+    #[error("Converting max value {max} must be > -1")]
+    MaxIncorrect{ max: i32 }
 }

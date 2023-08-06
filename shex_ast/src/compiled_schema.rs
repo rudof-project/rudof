@@ -48,10 +48,10 @@ pub enum NodeKind {
 #[derive(Debug, PartialEq)]
 pub enum ShapeExpr {
     ShapeOr {
-        exprs: Vec<Box<ShapeExpr>>,
+        exprs: Vec<ShapeExpr>,
     },
     ShapeAnd {
-        exprs: Vec<Box<ShapeExpr>>,
+        exprs: Vec<ShapeExpr>,
     },
     ShapeNot {
         expr: Box<ShapeExpr>,
@@ -76,7 +76,7 @@ pub enum ShapeExpr {
 #[derive(Debug, PartialEq)]
 pub enum TripleExpr {
     EachOf {
-        expressions: Vec<Box<TripleExpr>>,
+        expressions: Vec<TripleExpr>,
         min: Option<i32>,
         max: Option<i32>,
         sem_acts: Vec<SemAct>,
@@ -84,7 +84,7 @@ pub enum TripleExpr {
     },
     OneOf {
         id: Option<TripleExprLabel>,
-        expressions: Vec<Box<TripleExpr>>,
+        expressions: Vec<TripleExpr>,
         min: Option<i32>,
         max: Option<i32>,
         sem_acts: Vec<SemAct>,
@@ -238,7 +238,7 @@ impl CompiledSchema
                 for se in ses {
                     let unboxed = (*se).se;
                     let se = self.cnv_shape_expr(unboxed)?;
-                    cnv.push(Box::new(se));
+                    cnv.push(se);
                 }
                 Ok(ShapeExpr::ShapeOr { exprs: cnv })
             }
@@ -247,7 +247,7 @@ impl CompiledSchema
                 for se in ses {
                     let unboxed = (*se).se;
                     let se = self.cnv_shape_expr(unboxed)?;
-                    cnv.push(Box::new(se));
+                    cnv.push(se);
                 }
                 Ok(ShapeExpr::ShapeAnd { exprs: cnv })
             }
@@ -461,11 +461,20 @@ impl CompiledSchema
     }
 
     fn cnv_min(&self, min: Option<i32>) -> CResult<Min> {
-        todo!()
+        match min { 
+         Some(min) if min < 0 => Err(CompiledSchemaError::MinLessZero { min }),
+         Some(min) => Ok(Min::from(min)),
+         None => Ok(Min::from(1))
+        }
     }
 
     fn cnv_max(&self, max: Option<i32>) -> CResult<Max> {
-        todo!()
+        match max { 
+            Some(-1) => Ok(Max::Unbounded),
+            Some(max) if max < -1 => Err(CompiledSchemaError::MaxIncorrect { max }),
+            Some(max) => Ok(Max::from(max)),
+            None => Ok(Max::from(1))
+           }
     }
 
     fn cnv_id(id: Option<schema_json::TripleExprLabel>) -> Option<TripleExprLabel> {
@@ -510,6 +519,7 @@ impl Display for CompiledSchema {
 mod tests {
     use crate::*;
     use iri_s::*;
+    use rbe::{Min, Max};
 
     #[test]
     fn validation_convert() {

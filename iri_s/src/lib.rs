@@ -1,7 +1,6 @@
 pub mod iri;
 
 pub use iri::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {

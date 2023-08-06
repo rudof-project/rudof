@@ -1,6 +1,8 @@
-use rbe::{Rbe, Bag, RbeError};
+use std::vec::IntoIter;
+
+use rbe::{rbe::Rbe, rbe_error::RbeError, RbeMatcher};
 use serde_derive::{Deserialize, Serialize};
-use crate::{TestType, MatchResult, RbeTestResult};
+use crate::{MatchResult, RbeTestResult, KeyType, ValueType, RefType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {
@@ -14,9 +16,9 @@ pub struct RbeTest {
     #[serde(skip)]
     full_name: String,
     
-    rbe: Rbe<TestType>,
+    rbe: Rbe<KeyType, ValueType, RefType>,
     
-    bag: Bag<TestType>,
+    bag: Vec<(KeyType, ValueType)>,
 
     open: bool,
     
@@ -51,12 +53,12 @@ impl RbeTest {
         self.full_name = full_name;
     }
 
-    pub fn set_rbe(&mut self, rbe: Rbe<TestType>) 
+    pub fn set_rbe(&mut self, rbe: Rbe<KeyType, ValueType, RefType>) 
     {
         self.rbe = rbe;
     }
 
-    pub fn set_bag(&mut self, bag: Bag<TestType>) 
+    pub fn set_bag(&mut self, bag: Vec<(KeyType, ValueType)>) 
     {
         self.bag = bag;
     }
@@ -68,14 +70,19 @@ impl RbeTest {
 
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
-        match (&self.match_result, self.rbe.match_bag(&self.bag, self.open)) {
-          (MatchResult::Pass, Ok(())) => {
+        let rbe_matcher = RbeMatcher::new()
+            .with_rbe(self.rbe.clone())
+            .with_open(self.open);
+        let v: Vec<(KeyType, ValueType)> = self.bag.clone() ;
+        let iter: IntoIter<(KeyType,ValueType)> = v.into_iter();
+        match (&self.match_result, rbe_matcher.matches(iter)) {
+          (MatchResult::Pass, Ok(_)) => {
              RbeTestResult::passed(self.name().to_string())
            },
            (MatchResult::Pass, Err(err)) => {
              RbeTestResult::failed(self.name().to_string(),err) 
            }
-           (MatchResult::Fail, Ok(())) => {
+           (MatchResult::Fail, Ok(_)) => {
             RbeTestResult::failed(
                 self.name().to_string(), 
                 RbeError::ShouldFailButPassed { name: self.name.clone() }
