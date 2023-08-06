@@ -11,8 +11,8 @@ use std::fmt::Display;
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<K,V,R>
 where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+      V: Hash + Default + Eq + Display + Clone,
+      R: Default + PartialEq + Display + Clone
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: K, open: bool },
@@ -33,9 +33,10 @@ where K: Hash + PartialEq + Eq + Display + Default,
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<K,V,R>>, card: Cardinality },
 
-    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
+    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}\nProcessed: {processed}")]
     NonNullableMatch {
         non_nullable_rbe: Box<Rbe<K,V,R>>,
+        processed: Vec<(K,V)>,
         expr: Box<Rbe<K,V,R>>
     },
 

@@ -10,8 +10,8 @@ use itertools::cloned;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<K, V, R>
 where K: Hash + Eq + Display + Default,
-      V: Hash + Eq + Default + Clone, 
-      R: Default + PartialEq + Clone 
+      V: Hash + Eq + Default + Display + Clone, 
+      R: Default + PartialEq + Display + Clone 
 {
     Fail { error: RbeError<K,V,R> },
     Empty,
@@ -407,8 +407,8 @@ where
 
 impl <K, V, R> Default for Rbe<K, V, R> 
 where K: Hash + Eq + fmt::Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+      V: Hash + Default + Display + Eq + Clone,
+      R: Default + PartialEq + Display + Clone
 {
     fn default() -> Self { 
         Rbe::Empty 
@@ -417,8 +417,8 @@ where K: Hash + Eq + fmt::Display + Default,
 
 impl <K, V, R> Debug for Rbe<K, V, R> 
 where K: Debug + Hash + Eq + fmt::Display + Default,
-      V: Hash + Debug + Eq + Default + Clone,
-      R: Debug + PartialEq + Default + Clone
+      V: Hash + Debug + Eq + Display + Default + Clone,
+      R: Debug + PartialEq + Display + Default + Clone
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {

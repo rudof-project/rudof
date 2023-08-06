@@ -11,16 +11,16 @@ use std::fmt::Display;
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Failures<K, V, R> 
 where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+      V: Hash + Default + Eq + Display + Clone,
+      R: Default + PartialEq + Display + Clone
 {
    fs: Vec<(Box<Rbe<K,V,R>>, RbeError<K,V,R>)>
 }
 
 impl <K, V, R> Failures<K, V, R> 
 where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone,
-      R: Default + PartialEq + Clone
+      V: Hash + Default + Display + Eq + Clone,
+      R: Default + PartialEq + Display + Clone
 {
     pub fn new() -> Failures<K, V, R> {
        Failures {

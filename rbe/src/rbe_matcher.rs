@@ -5,8 +5,8 @@ use crate::rbe::Rbe;
 
 pub struct RbeMatcher<K, V,R> 
 where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Clone, 
-      R: Default + PartialEq + Clone 
+      V: Hash + Default + Eq + Display + Clone, 
+      R: Default + PartialEq + Display + Clone 
 {
     rbe: Rbe<K, V, R>,
     open: bool,
@@ -44,7 +44,8 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
 
     pub fn matches<T: IntoIterator<Item=(K,V)>>(&self, iter: T) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         let mut pending = Pending::new();
-        match self.matches_iter(iter, &mut pending) {
+        let mut processed: Vec<(K,V)> = Vec::new();  
+        match self.matches_iter(iter, &mut pending, &mut processed) {
             Rbe::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
@@ -52,6 +53,7 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
                 } else {
                     Err(RbeError::NonNullableMatch {
                         non_nullable_rbe: Box::new(d.clone()),
+                        processed: processed,
                         expr: Box::new((*self).rbe.clone())
                     })
                 }
@@ -59,16 +61,15 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
         }
     }
 
-    fn matches_iter<T: IntoIterator<Item=(K,V)>>(&self, iter:T, pending: &mut Pending<V,R>) -> Rbe<K,V,R> {
+    fn matches_iter<T: IntoIterator<Item=(K,V)>>(&self, iter:T, pending: &mut Pending<V,R>, processed: &mut Vec<(K,V)>) -> Rbe<K,V,R> {
         let mut current = (*self).rbe.clone();
-        let mut processed = Vec::new();
         for (key, value) in iter {
             let deriv = current.deriv(&key, &value, 1, self.open, &self.controlled, pending);
             match deriv {
               Rbe::Fail { error } => {
                 current = Rbe::Fail { error: RbeError::DerivIterError {
                     error_msg: format!("{error}"),
-                    processed: processed,
+                    processed: processed.clone(),
                     expr: Box::new((*self).rbe.clone()),
                     current: Box::new(current.clone()),
                     key: key.clone(),

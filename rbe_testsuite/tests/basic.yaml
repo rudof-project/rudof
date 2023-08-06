@@ -26,6 +26,8 @@ tests:
     bag:
       - - a
         - 2
+      - - a
+        - 3
     open: false
     match_result: !Fail
 
@@ -161,9 +163,11 @@ tests:
             max: 3
     bag:
       - - a
-        - 1
+        - va1
       - - b
-        - 2
+        - vb1
+      - - b
+        - vb2
     open: true
     match_result: !Pass
 

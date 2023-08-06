@@ -24,8 +24,8 @@ pub struct MatchCond<K, V, R>
 /// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
 trait Cond<K, V, R> 
 where K: Hash + Eq + Display + Default,
-      V: Hash + Eq + Default + PartialEq + Clone,
-      R: Default + PartialEq + Clone
+      V: Hash + Eq + Default + Display + PartialEq + Clone,
+      R: Default + PartialEq + Display + Clone
 {
     fn clone_box(&self) -> Box<dyn Cond<K,V,R>>;
     fn call(&self, k: &K, v: &V) -> Result<Pending<V,R>, RbeError<K, V, R>>;
@@ -33,8 +33,8 @@ where K: Hash + Eq + Display + Default,
 
 impl<K, V, R, F> Cond<K,V,R> for F 
 where  K: Hash + Eq + Display + Default,
-       V: Hash + Eq + Default + PartialEq + Clone,
-       R: Default + PartialEq + Clone,
+       V: Hash + Eq + Default + Display + PartialEq + Clone,
+       R: Default + PartialEq + Display + Clone,
        F: 'static + Fn(&K, &V) -> Result<Pending<V,R>, RbeError<K, V, R>> + Clone 
 {
 
@@ -49,8 +49,8 @@ where  K: Hash + Eq + Display + Default,
 
 impl <K, V, R> Clone for Box<dyn Cond<K, V, R>>
 where  K: Hash + Eq + Display + Default,
-       V: Hash + Eq + Default + PartialEq + Clone,
-       R: Default + PartialEq + Clone,
+       V: Hash + Eq + Default + Display + PartialEq + Clone,
+       R: Default + PartialEq + Display + Clone,
 {
     fn clone(&self) -> Self {
         self.clone_box()
@@ -69,8 +69,8 @@ where  K: Hash + Eq + Display + Default,
 
 impl <K, V, R> Clone for MatchCond<K,V,R> 
 where K: Hash + Eq + Display + Default,
-      V: Hash + Eq + Default + PartialEq + Clone,
-      R: Default + PartialEq + Clone, 
+      V: Hash + Eq + Default + Display + PartialEq + Clone,
+      R: Default + PartialEq + Display + Clone, 
 {
     fn clone(&self) -> Self {
         MatchCond {
@@ -90,8 +90,8 @@ where K: Hash + Eq + Display + Default,
 
 impl <K, V, R> MatchCond<K, V, R> 
 where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Debug + Clone, 
-      R: Default + PartialEq + Debug + Clone, 
+      V: Hash + Default + Eq + Debug + Display + Clone, 
+      R: Default + PartialEq + Debug + Display + Clone, 
       {
     
     pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> {
@@ -139,8 +139,8 @@ R: Default + PartialEq + Clone {
 
 impl <K, V, R> Default for MatchCond<K, V, R> 
 where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Debug + Clone,
-      R: Default + PartialEq + Debug + Clone {
+      V: Hash + Default + Eq + Debug + Display + Clone,
+      R: Default + PartialEq + Debug + Display + Clone {
     fn default() -> Self { 
         MatchCond::new()
     }
