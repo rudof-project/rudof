@@ -185,7 +185,8 @@ mod tests {
                 Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
         );
         let rbe_matcher = RbeMatcher::new().with_rbe(rbe);
-        assert!(rbe_matcher.matches(vec![('b', 42), ('a', 3)].into_iter()).is_err());
+        let iter = vec![('b', 42), ('a', 3)].into_iter();
+        assert!(rbe_matcher.matches(iter).is_err());
     }
 
 }

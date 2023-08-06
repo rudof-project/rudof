@@ -37,6 +37,8 @@ pub struct RbeTestsResults {
      pub fn failed(&self) -> std::slice::Iter<'_, FailedTestResult> {
         self.failed.iter()
      }
+
+     
  
   }
  
