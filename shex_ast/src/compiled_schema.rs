@@ -373,12 +373,12 @@ impl CompiledSchema
             Ok(Box::new(nse))
         }).collect();
         rs.into_iter().collect()
-    }
+    } */
 
-    fn cnv_triple_exprs(&mut self, ses: Vec<Box<schema_json::TripleExprWrapper>>) -> CResult<Vec<Box<TripleExpr>>> {
+    /* fn cnv_triple_exprs(&mut self, ses: Vec<Box<schema_json::TripleExprWrapper>>) -> CResult<Vec<Box<TripleExpr>>> {
         let rs: Vec<CResult<Box<TripleExpr>>> = ses.iter().map(|te| {
-            let te = *te;
-            let te = self.cnv_triple_expr(&te)?;
+            let te = te.as_ref();
+            let te = self.cnv_triple_expr(*te)?;
             Ok(Box::new(te))
         }).collect();
         rs.into_iter().collect()
