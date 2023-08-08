@@ -210,17 +210,8 @@ where
                             error: RbeError::MaxCardinalityZeroFoundValue { x: (*x).clone() },
                         }
                     } else {
-                        if let Some(card) = card.minus(n) {
-                            Self::mk_range_symbol(x, &card)
-                        } else {
-                            Rbe::Fail {
-                                error: RbeError::CardinalityFail {
-                                    symbol: value.clone(),
-                                    expected_cardinality: card.clone(),
-                                    current_number: n,
-                                },
-                            }
-                        }
+                        let card = card.minus(n);
+                        Self::mk_range_symbol(x, &card)
                     }
                 } else {
                     // Symbol is different from symbols defined in rbe
@@ -263,17 +254,9 @@ where
             }
             Rbe::Repeat { ref value, ref card } => {
                 let d = value.deriv(x, n, open, controlled);
-                if let Some(card) = card.minus(n) {
-                    let rest = Self::mk_range(&value, &card);
-                    Self::mk_and(&d, &rest)
-                } else {
-                    Rbe::Fail {
-                        error: RbeError::CardinalityFailRepeat {
-                            expected_cardinality: card.clone(),
-                            current_number: n,
-                        },
-                    }
-                }
+                let card = card.minus(n);
+                let rest = Self::mk_range(&value, &card);
+                Self::mk_and(&d, &rest)
             }
             Rbe::Star { ref value } => {
                 let d = value.deriv(x, n, open, controlled);

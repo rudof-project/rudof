@@ -255,9 +255,9 @@ tests:
             max: 1
     bag:
       - - a
-        - 1
+        - va1
       - - b
-        - 1
+        - vb1
     open: true
     match_result: !Fail
 

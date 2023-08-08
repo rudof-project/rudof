@@ -1,5 +1,7 @@
 use std::{fmt::{Debug, Display}, collections::HashSet};
 use core::hash::Hash;
+use log::debug;
+
 use crate::{Pending, rbe_error::RbeError};
 use crate::rbe::Rbe;
 
@@ -27,13 +29,14 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
         }
     }
 
-    pub fn with_rbe(mut self, rbe: Rbe<K,V,R>) -> Self {
-        self.rbe = rbe;
+    pub fn with_rbe(mut self, rbe: &Rbe<K,V,R>) -> Self {
+        self.rbe = (*rbe).clone();
+        self.controlled = rbe.symbols();
         self
     }
 
-    pub fn with_controlled(mut self, controlled: HashSet<K>) -> Self {
-        self.controlled = controlled;
+    pub fn extend_controlled(mut self, controlled: HashSet<K>) -> Self {
+        self.controlled.extend(controlled);
         self
     }
 
@@ -53,7 +56,6 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
                 } else {
                     Err(RbeError::NonNullableMatch {
                         non_nullable_rbe: Box::new(d.clone()),
-                        processed: processed,
                         expr: Box::new((*self).rbe.clone())
                     })
                 }
@@ -78,6 +80,7 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
                 break;
               },
               _ => {
+                debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
                 processed.push((key.clone(), value.clone()));
                 current = deriv;
               }
@@ -135,7 +138,7 @@ mod tests {
                 Rbe::symbol_cond('b', cond_name("foo".to_string()), 0, Max::IntMax(1))]
         );
         let expected = Pending::new();
-        let rbe_matcher = RbeMatcher::new().with_rbe(rbe);
+        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
         assert_eq!(rbe_matcher.matches(vec![('a', "baz".to_string())].into_iter()), Ok(expected));
     }
@@ -152,7 +155,7 @@ mod tests {
                 Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
         );
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
-        let rbe_matcher = RbeMatcher::new().with_rbe(rbe);
+        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
         assert_eq!(rbe_matcher.matches(vec![('a', 2), ('b', 42)].into_iter()), Ok(expected));
     }
@@ -169,7 +172,7 @@ mod tests {
                 Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
         );
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
-        let rbe_matcher = RbeMatcher::new().with_rbe(rbe);
+        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
         assert_eq!(rbe_matcher.matches(vec![('b', 42), ('a', 2)].into_iter()), Ok(expected));
     }
@@ -185,7 +188,7 @@ mod tests {
                 Rbe::symbol_cond('a', cond_even, 1, Max::IntMax(1)),
                 Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
         );
-        let rbe_matcher = RbeMatcher::new().with_rbe(rbe);
+        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
         let iter = vec![('b', 42), ('a', 3)].into_iter();
         assert!(rbe_matcher.matches(iter).is_err());
     }

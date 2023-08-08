@@ -124,11 +124,11 @@ pub struct ShapeExprWrapper {
 pub enum ShapeExpr {
     ShapeOr {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<Box<ShapeExprWrapper>>,
+        shape_exprs: Vec<ShapeExprWrapper>,
     },
     ShapeAnd {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<Box<ShapeExprWrapper>>,
+        shape_exprs: Vec<ShapeExprWrapper>,
     },
     ShapeNot {
         #[serde(rename = "shapeExpr")]
@@ -579,7 +579,7 @@ pub enum TripleExpr {
     EachOf {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<TripleExprLabel>,
-        expressions: Vec<Box<TripleExprWrapper>>,
+        expressions: Vec<TripleExprWrapper>,
         min: Option<i32>,
         max: Option<i32>,
         #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
@@ -590,7 +590,7 @@ pub enum TripleExpr {
     OneOf {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<TripleExprLabel>,
-        expressions: Vec<Box<TripleExprWrapper>>,
+        expressions: Vec<TripleExprWrapper>,
         min: Option<i32>,
         max: Option<i32>,
 

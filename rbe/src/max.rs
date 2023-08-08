@@ -1,4 +1,4 @@
-use std::{cmp, fmt};
+use std::fmt;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
@@ -17,7 +17,10 @@ impl Max {
         match self {
             Max::Unbounded => Max::Unbounded,
             Max::IntMax(0) => Max::IntMax(0),
-            Max::IntMax(m) => Max::IntMax(cmp::max(m - n, 0)),
+            Max::IntMax(m) => {
+                let max = if m > &n { m - n } else { 0 };
+                Max::IntMax(max)
+            }
         }
     }
 

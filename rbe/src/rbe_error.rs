@@ -1,7 +1,6 @@
 use crate::failures::Failures;
 use crate::rbe::Rbe;
 use crate::Cardinality;
-use std::fmt::Formatter;
 use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
@@ -33,10 +32,9 @@ where K: Hash + PartialEq + Eq + Display + Default,
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<K,V,R>>, card: Cardinality },
 
-    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}\nProcessed: {processed}")]
+    #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
         non_nullable_rbe: Box<Rbe<K,V,R>>,
-        processed: Vec<(K,V)>,
         expr: Box<Rbe<K,V,R>>
     },
 

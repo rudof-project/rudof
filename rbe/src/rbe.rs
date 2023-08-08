@@ -149,6 +149,10 @@ where
     }
 
 
+    /// Calculates the derivative of a `rbe` for a `symbol` with `value` 
+    /// open indicates if we allow extra symbols
+    /// `controlled` contains the list of symbols controlled by the `rbe` that should not be assumed as extra symbols
+    /// `pending`
     pub fn deriv(&self, 
         symbol: &K, 
         value: &V, 
@@ -187,24 +191,16 @@ where
                                     error: RbeError::MaxCardinalityZeroFoundValue { x: (*symbol).clone() },
                                 }
                             } else {
-                                if let Some(card) = card.minus(n) {
-                                    pending.merge(new_pending);
-                                    Self::mk_range_symbol(&symbol, cond, &card)
-                                } else {
-                                    Rbe::Fail {
-                                        error: RbeError::CardinalityFail {
-                                            symbol: key.clone(),
-                                            expected_cardinality: card.clone(),
-                                            current_number: n,
-                                        },
-                                    }
-                                }
+                                let new_card = card.minus(n);
+                                pending.merge(new_pending);
+                                Self::mk_range_symbol(&symbol, cond, &new_card)
                             }
                         }
                     }
                 } else {
                     // Symbol is different from symbols defined in Rbe
                     // if the Rbe is open, we allow extra symbols
+                    // unless the controlled symbols 
                     if open && !(controlled.contains(&symbol)) {
                         self.clone()
                     } else {
@@ -222,8 +218,8 @@ where
                 Self::deriv_and(exprs, &symbol, &value, n, open, controlled, pending)
             }
             Rbe::Or { ref exprs } => {
-                Self::mk_or_values(exprs.into_iter().map(|rbe1| { 
-                    rbe1.deriv(symbol, value, n, open, controlled, pending)
+                Self::mk_or_values(exprs.into_iter().map(|rbe| { 
+                    rbe.deriv(symbol, value, n, open, controlled, pending)
                 }))
             },
             Rbe::Plus { ref expr } => {
@@ -243,17 +239,9 @@ where
             }
             Rbe::Repeat { ref expr, ref card } => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
-                if let Some(card) = card.minus(n) {
-                    let rest = Self::mk_range(&expr, &card);
-                    Self::mk_and(&d, &rest)
-                } else {
-                    Rbe::Fail {
-                        error: RbeError::CardinalityFailRepeat {
-                            expected_cardinality: card.clone(),
-                            current_number: n,
-                        },
-                    }
-                }
+                let card = card.minus(n);
+                let rest = Self::mk_range(&expr, &card);
+                Self::mk_and(&d, &rest)
             }
             Rbe::Star { ref expr } => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
@@ -478,7 +466,7 @@ mod tests {
     #[test_log::test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
-        let rbe1: Rbe<char, i32, i32> = Rbe::and(
+        let rbe: Rbe<char, i32, i32> = Rbe::and(
             vec![
                 Rbe::symbol('a', 1, Max::IntMax(1)),
                 Rbe::symbol('b', 0, Max::IntMax(1))]
@@ -489,31 +477,39 @@ mod tests {
                 Rbe::symbol('a', 0, Max::IntMax(0)),
                 Rbe::symbol('b', 0, Max::IntMax(1))]
             );
-        assert_eq!(rbe1.deriv(&'a',&23, 1, false, &HashSet::from(['a','b']), &mut pending), expected);
+        assert_eq!(rbe.deriv(&'a',&23, 1, false, &HashSet::from(['a','b']), &mut pending), expected);
     }
 
     #[test]
     fn deriv_symbol() {
-        let rbe1: Rbe<char, i32, i32> = Rbe::symbol('x', 1, Max::IntMax(1));
+        let rbe: Rbe<char, i32, i32> = Rbe::symbol('x', 1, Max::IntMax(1));
         let mut pending = Pending::new();
-        let d = rbe1.deriv(&'x', &2, 1, true, &HashSet::new(), &mut pending);
+        let d = rbe.deriv(&'x', &2, 1, true, &HashSet::new(), &mut pending);
         assert_eq!(d, Rbe::symbol('x', 0, Max::IntMax(0)));
     }
 
     #[test]
+    fn deriv_symbol_b_2_3() {
+        let rbe: Rbe<String, String, String> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
+        let mut pending = Pending::new();
+        let d = rbe.deriv(&"b".to_string(), &"vb2".to_string(), 1, true, &HashSet::new(), &mut pending);
+        assert_eq!(Rbe::symbol("b".to_string(), 1, Max::IntMax(2)), d);
+    }
+
+    #[test]
     fn symbols() {
-        let rbe1: Rbe<char, i32, i32> = Rbe::and(
+        let rbe: Rbe<char, i32, i32> = Rbe::and(
             vec![
                 Rbe::symbol('x', 1, Max::IntMax(1)),
                 Rbe::symbol('y', 1, Max::IntMax(1))]
         );
         let expected = HashSet::from(['x', 'y']);
-        assert_eq!(rbe1.symbols(), expected);
+        assert_eq!(rbe.symbols(), expected);
     }
 
     #[test]
     fn symbols2() {
-        let rbe1: Rbe<char, i32, i32> = Rbe::and(
+        let rbe: Rbe<char, i32, i32> = Rbe::and(
             vec![Rbe::or(
                 vec![
                     Rbe::symbol('x', 1, Max::IntMax(1)),
@@ -522,13 +518,13 @@ mod tests {
             Rbe::symbol('y', 1, Max::IntMax(1))
             ]);
         let expected = HashSet::from(['x', 'y']);
-        assert_eq!(rbe1.symbols(), expected);
+        assert_eq!(rbe.symbols(), expected);
     }
 
     #[test]
-    fn test_serialize_rbe1() {
+    fn test_serialize_rbe() {
         
-        let rbe1: Rbe<String, String, String> = 
+        let rbe: Rbe<String, String, String> = 
                Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));
         let expected = indoc! {
             r#"!Symbol
@@ -538,12 +534,12 @@ mod tests {
                    min: 1
                    max: 2
               "# };
-        let rbe1: String = serde_yaml::to_string(&rbe1).unwrap();
-        assert_eq!(rbe1, expected);
+        let rbe: String = serde_yaml::to_string(&rbe).unwrap();
+        assert_eq!(rbe, expected);
     } 
 
     #[test]
-    fn test_deserialize_rbe1() {
+    fn test_deserialize_rbe() {
         let str = r#"{ 
             "Symbol": { 
                 "key": "foo",
@@ -552,8 +548,8 @@ mod tests {
             }
         }"#;
         let expected = Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));
-        let rbe1: Rbe<String, String, String> = serde_json::from_str(str).unwrap();
-        assert_eq!(rbe1, expected);
+        let rbe: Rbe<String, String, String> = serde_json::from_str(str).unwrap();
+        assert_eq!(rbe, expected);
     }
 
 }

@@ -36,15 +36,11 @@ impl Cardinality {
         n >= self.min.value && self.max.greater_or_equal(n)
     }
 
-    pub fn minus(&self, n: usize) -> Option<Cardinality> {
-        if self.contains(n) {
-            let min = if self.min.value > n { self.min.value - n } else { 0 };
-            Some(Cardinality {
-                min: Min{ value: cmp::max(min, 0) },
-                max: self.max.minus(n),
-            })
-        } else {
-            None
+    pub fn minus(&self, n: usize) -> Cardinality {
+        let min = if self.min.value > n { self.min.value - n } else { 0 };
+        Cardinality {
+           min: Min{ value: cmp::max(min, 0) },
+           max: self.max.minus(n),
         }
     }
 }

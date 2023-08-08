@@ -71,15 +71,11 @@ impl RbeTest {
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
         let rbe_matcher = RbeMatcher::new()
-            .with_rbe(self.rbe.clone())
+            .with_rbe(&self.rbe)
             .with_open(self.open);
         let v: Vec<(KeyType, ValueType)> = self.bag.clone() ;
         let iter: IntoIter<(KeyType,ValueType)> = v.into_iter();
-        dbg!(&self.bag);
-        dbg!(&self.rbe);
         let result = rbe_matcher.matches(iter); 
-        dbg!(&result);
-        dbg!(&self.match_result);
         match (&self.match_result, result) {
           (MatchResult::Pass, Ok(_)) => {
              RbeTestResult::passed(self.name().to_string())

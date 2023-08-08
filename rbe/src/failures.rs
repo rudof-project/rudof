@@ -1,11 +1,9 @@
 use crate::rbe::Rbe;
 use crate::rbe_error::RbeError;
-use crate::Cardinality;
 use std::fmt::Formatter;
 use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-use thiserror::Error;
 use std::fmt::Display;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, fmt::Display};
 use iri_s::{IriS, IriError};
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -18,5 +18,15 @@ impl ShapeLabel {
         Ok(ShapeLabel::Iri(iri))
     }
 
+}
+
+impl Display for ShapeLabel {
+    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        match self {
+            ShapeLabel::Iri(iri) => write!(dest,"{iri}"),
+            ShapeLabel::BNode(bnode) => write!(dest,"{bnode}")
+        }
+    }
+      
 }
 
