@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate shex_ast;
 extern crate anyhow;
-
+use log::debug;
 use std::path::PathBuf;
 use clap::Parser;
 use anyhow::Result;
@@ -11,8 +11,9 @@ pub use cli::*;
 use shex_ast::{SchemaJson, CompiledSchema, ShapeLabel, CompiledSchemaError};
 
 fn main() -> Result<()> {
+    env_logger::init();
     let cli = Cli::parse();
-
+    
     match &cli.command {
         Some(Command::Schema{ schema, schema_format}) =>    run_schema(schema, schema_format, cli.debug),
         None => {
@@ -34,6 +35,7 @@ fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Resu
       ShExFormat::ShExJ => {
         let schema_json = SchemaJson::parse_schema_buf(schema, debug)?;
         let mut schema: CompiledSchema = CompiledSchema::new();
+        debug!("Parsing schema...");
         schema.from_schema_json(schema_json)?;
         Ok(schema)
       }

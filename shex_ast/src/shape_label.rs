@@ -13,8 +13,8 @@ impl ShapeLabel {
         ShapeLabel::BNode(s)
     }
 
-    pub fn from_iri_str(s: String) -> Result<ShapeLabel, IriError> {
-        let iri = IriS::from_str(s.as_str())?;
+    pub fn from_iri_str(s: &str) -> Result<ShapeLabel, IriError> {
+        let iri = IriS::from_str(s)?;
         Ok(ShapeLabel::Iri(iri))
     }
 

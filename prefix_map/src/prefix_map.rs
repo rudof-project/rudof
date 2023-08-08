@@ -23,11 +23,9 @@ impl <'a> PrefixMap<'a> {
     }
 
     pub fn find(&self, str: &str) -> Option<&IriS> {
-       let x = self.map.get(&str);
-       match x {
+       match self.map.get(&str) {
         Some(&b) => { 
-            let x = Some(b);
-            x
+            Some(b)
         }
         None => None
        }

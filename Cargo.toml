@@ -61,3 +61,5 @@ validation_oxgraph = { version = "0.0.1", path = "./validation_oxgraph" }
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
 shex_ast = { path = "shex_ast" }
+log = "0.4"
+env_logger = "0.10"

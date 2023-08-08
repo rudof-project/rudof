@@ -1,4 +1,4 @@
-use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel, TripleExprLabel, SchemaJsonCompiler, ShapeLabelIdx};
+use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel, TripleExprLabel, SchemaJsonCompiler, ShapeLabelIdx, shape_label_idx};
 use iri_s::{IriError, IriS, IriSError};
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::fmt::Display;
 use rbe::{Min, Max, rbe::Rbe};
 use srdf::Object;
+use log::debug;
 
 
 type CResult<T> = Result<T, CompiledSchemaError>;
@@ -16,8 +17,6 @@ pub struct CompiledSchema {
     shapes: HashMap<ShapeLabelIdx, ShapeExpr>,
     shape_label_counter: ShapeLabelIdx,
 }
- 
-
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
 pub struct TripleExprIdx(usize);
@@ -195,16 +194,9 @@ impl CompiledSchema
         &mut self, 
         schema_json: SchemaJson,
     ) -> Result<(), CompiledSchemaError> {
-        /*if let Some(shape_decls) = schema_json.shapes {
-            for sd in shape_decls {
-                let label = self.id_to_shape_label(sd.id.clone())?;
-                let se = self.shape_decl_to_shape_expr(&sd)?;
-                self.add_shape(label, se);
-            }
-        }
-        Ok(()) */
         let mut schema_json_compiler = SchemaJsonCompiler::new();
-        schema_json_compiler.compile(&schema_json, self);
+        debug!("from_schema_json: {schema_json_compiler:?}");
+        schema_json_compiler.compile(&schema_json, self)?;
         Ok(())
     }
 
@@ -214,6 +206,15 @@ impl CompiledSchema
         sd: &schema_json::ShapeDecl,
     ) -> CResult<ShapeExpr> {
         self.cnv_shape_expr(&sd.shape_expr)
+    }
+
+    pub fn get_shape_expr(&self, idx: &ShapeLabelIdx) -> Result<&ShapeExpr, CompiledSchemaError> {
+        match self.shapes.get(idx) {
+            Some(&ref se) => Ok(se),
+            None => {
+                todo!()
+            }
+        }
     }
 
     fn cnv_shape_expr<'a>(&mut self, se: &schema_json::ShapeExpr) -> CResult<ShapeExpr> {
@@ -272,7 +273,7 @@ impl CompiledSchema
     pub fn find_ref(&mut self, se_ref: &Ref) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             Ref::IriRef { value } => { 
-                let label = ShapeLabel::from_iri_str((*value).clone())?;
+                let label = ShapeLabel::from_iri_str(value)?;
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             },
             Ref::BNode { value } => {
@@ -289,7 +290,9 @@ impl CompiledSchema
     }
 
     pub fn find_label(&self, label: &ShapeLabel) -> Option<&ShapeExpr> {
-        self.shape_labels_map.get(label).and_then(|idx| self.shapes.get(idx))
+        self
+        .shape_labels_map
+        .get(label).and_then(|idx| self.shapes.get(idx))
     }
 
     pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
@@ -328,6 +331,15 @@ impl CompiledSchema
     fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS, CompiledSchemaError> {
         let iri = IriS::new(&iri.value.as_str())?;
         Ok(iri)
+    }
+
+    pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx, CompiledSchemaError> {
+        match self.shape_labels_map.get(shape_label) {
+            Some(shape_label_idx) => Ok(*shape_label_idx),
+            None => {
+                todo!()
+            }
+        }
     }
 
 /*     fn handle_triple_expr_id(&mut self, id: Option<TripleExprLabel>, te: TripleExpr) -> CResult<()> {
@@ -488,6 +500,11 @@ impl CompiledSchema
             Vec::new()
         }
     }
+
+    pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
+        self.shapes.entry(*idx).and_modify(|s| { *s = se });
+    }
+
 }
 
 impl Display for CompiledSchema {
