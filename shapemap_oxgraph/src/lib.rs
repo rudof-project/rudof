@@ -1,10 +1,7 @@
-use oxrdf::*;
 use shapemap::ShapeMap;
 use shapemap::ShapeMapState;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::str::FromStr;
-use thiserror::Error;
 
 pub mod shapelabel_oxgraph;
 use crate::shapelabel_oxgraph::*;

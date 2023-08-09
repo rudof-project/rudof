@@ -2,7 +2,6 @@
 use std::{collections::HashSet, fmt::Display};
 
 use async_trait::async_trait;
-pub use rbe::Bag;
 use std::hash::Hash;
 
 #[async_trait]
@@ -17,7 +16,7 @@ pub trait AsyncSRDF {
     async fn get_predicates_subject(
         &self,
         subject: &Self::Subject,
-    ) -> Result<Bag<Self::IRI>, Self::Err>;
+    ) -> Result<HashSet<Self::IRI>, Self::Err>;
 
     async fn get_objects_for_subject_predicate(
         &self,

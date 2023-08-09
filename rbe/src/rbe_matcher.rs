@@ -92,7 +92,7 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
 
 #[cfg(test)]
 mod tests {
-    use crate::{Max, MatchCond};
+    use crate::{Max, MatchCond, Min};
     use super::*;
 
     fn is_even(k: &char, v: &i32) -> Result<Pending<i32,String>, RbeError<char, i32, String>> {
@@ -134,8 +134,8 @@ mod tests {
 
         let rbe: Rbe<char, String, String> = Rbe::and(
             vec![
-                Rbe::symbol_cond('a', cond_len(3), 1, Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_name("foo".to_string()), 0, Max::IntMax(1))]
+                Rbe::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
+                Rbe::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1))]
         );
         let expected = Pending::new();
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
@@ -151,8 +151,8 @@ mod tests {
 
         let rbe: Rbe<char, i32, String> = Rbe::and(
             vec![
-                Rbe::symbol_cond('a', cond_even, 1, Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
+                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
         );
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
@@ -168,8 +168,8 @@ mod tests {
 
         let rbe: Rbe<char, i32, String> = Rbe::and(
             vec![
-                Rbe::symbol_cond('a', cond_even, 1, Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
+                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
         );
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
@@ -185,8 +185,8 @@ mod tests {
 
         let rbe: Rbe<char, i32, String> = Rbe::and(
             vec![
-                Rbe::symbol_cond('a', cond_even, 1, Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, 0, Max::IntMax(1))]
+                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
         );
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
         let iter = vec![('b', 42), ('a', 3)].into_iter();

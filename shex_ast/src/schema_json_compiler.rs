@@ -1,6 +1,11 @@
 use log::debug;
 use iri_s::IriS;
+use rbe::{MatchCond, Min, Max};
+use rbe::rbe::Rbe;
+use srdf::Object;
 
+use crate::ValueSetValueWrapper;
+use crate::schema_json::{TripleExpr, NodeKind, XsFacet};
 use crate::{ShapeLabel, ShapeLabelIdx, CompiledSchema, SchemaJson, CompiledSchemaError, schema_json, schema, IriRef, compiled_schema::SemAct, compiled_schema::Annotation};
 use crate::compiled_schema::ShapeExpr;
 
@@ -51,7 +56,6 @@ impl SchemaJsonCompiler {
               for sd in sds {
                 let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
                 let se = self.compile_shape_decl(sd, &idx, compiled_schema)?;
-                debug!("shape_dcl {idx:?} {se:?}");
                 compiled_schema.replace_shape(&idx, se)
               }
               Ok(())
@@ -69,22 +73,30 @@ impl SchemaJsonCompiler {
         compiled_schema.get_shape_label_idx(&label)
     }
 
-    fn compile_shape_decl(&self, sd: &schema_json::ShapeDecl, idx: &ShapeLabelIdx, compiled_schema: &mut CompiledSchema) -> CResult<ShapeExpr> {
+    fn compile_shape_decl(&self, 
+        sd: &schema_json::ShapeDecl, 
+        idx: &ShapeLabelIdx, 
+        compiled_schema: &mut CompiledSchema) -> CResult<ShapeExpr> {
         self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)
+    }
+
+    fn ref2idx(&self, sref: &schema_json::Ref, compiled_schema: &mut CompiledSchema) -> CResult<ShapeLabelIdx> {
+        match sref {
+            schema_json::Ref::IriRef { value} => {
+              let idx = self.get_shape_label_idx(&value, compiled_schema)?;
+              Ok(idx)
+            },
+            schema_json::Ref::BNode { value} => {
+               todo!()
+            }
+         }
     }
 
     fn compile_shape_expr(&self, se: &schema_json::ShapeExpr, idx: &ShapeLabelIdx, compiled_schema: &mut CompiledSchema) -> CResult<ShapeExpr> {
         match se {
             schema_json::ShapeExpr::Ref(se_ref) => {
-               match se_ref {
-                  schema_json::Ref::IriRef { value} => {
-                    let idx = self.get_shape_label_idx(&value, compiled_schema)?;
-                    Ok(ShapeExpr::Ref{ idx })
-                  },
-                  schema_json::Ref::BNode { value} => {
-                     todo!()
-                  }
-               }
+               let idx = self.ref2idx(se_ref, compiled_schema)?;
+               Ok(ShapeExpr::Ref { idx })
             },
             schema_json::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
@@ -114,17 +126,16 @@ impl SchemaJsonCompiler {
                 annotations,
             } => {
                 let new_extra = self.cnv_extra(extra)?;
-                /*let expression = match expression {
-                    Some(ref e) => {
-                      let te = self.cnv_triple_expr(e)?;
-                      Some(te)
-                    },
-                    None => None
-                };*/
+                let rbe = match expression {
+                    None => Rbe::Empty,
+                    Some(tew) => {
+                        self.triple_expr2rbe(&tew.te, compiled_schema)?
+                    }
+                };
                 Ok(ShapeExpr::Shape {
                     closed: Self::cnv_closed(closed),
                     extra: new_extra,
-                    // expression: expression,
+                    rbe, 
                     sem_acts: Self::cnv_sem_acts(&sem_acts),
                     annotations: Self::cnv_annotations(&annotations),
                 })
@@ -182,6 +193,71 @@ impl SchemaJsonCompiler {
         }
     }
 
+    fn triple_expr2rbe(&self, triple_expr: &schema_json::TripleExpr, compiled_schema: &mut CompiledSchema) -> CResult<Rbe<IriS, Object, ShapeLabelIdx>> {
+        match triple_expr {
+            TripleExpr::EachOf { id, expressions, min, max, sem_acts, annotations } => { 
+                let mut rbes = Vec::new();
+                for e in expressions {
+                    let rbe = self.triple_expr2rbe(&e.te, compiled_schema)?;
+                    rbes.push(rbe)
+                }
+                Ok(Rbe::And { exprs: rbes }) 
+            }
+            TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations } => {
+                let min = self.cnv_min(&min)?;
+                let max = self.cnv_max(&max)?;
+                let iri = IriS::new(predicate.value.as_str())?;
+                let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
+                Ok(Rbe::symbol_cond(iri, cond, min, max))
+            }
+            _ => { todo!() }
+        }
+    }
+
+    fn cnv_min(&self, min: &Option<i32>) -> CResult<Min> {
+        match min { 
+         Some(min) if *min < 0 => Err(CompiledSchemaError::MinLessZero { min: *min }),
+         Some(min) => Ok(Min::from(*min)),
+         None => Ok(Min::from(1))
+        }
+    }
+
+    fn cnv_max(&self, max: &Option<i32>) -> CResult<Max> {
+        match *max { 
+            Some(-1) => Ok(Max::Unbounded),
+            Some(max) if max < -1 => Err(CompiledSchemaError::MaxIncorrect { max }),
+            Some(max) => Ok(Max::from(max)),
+            None => Ok(Max::from(1))
+           }
+    }
+
+    fn value_expr2match_cond(&self, ve: &Option<Box<schema_json::ShapeExpr>>, compiled_schema: &mut CompiledSchema) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+       if let Some(se) = ve.as_deref() {
+        match se {
+            schema_json::ShapeExpr::NodeConstraint { node_kind, datatype, xs_facet, values } => {
+                self.node_constraint2match_cond(node_kind, datatype, xs_facet, values)
+            },
+            schema_json::ShapeExpr::Ref(sref) => {
+                let idx = self.ref2idx(sref, compiled_schema)?;
+                Ok(MatchCond::new().with_name(format!("Ref{idx}")))
+               },   
+            _ => { 
+                todo!() 
+            }   
+        }
+       } else {
+        Ok(MatchCond::new())
+       }
+    }
+
+
+    fn shape_expr2match_cond(&self, se: schema_json::ShapeExpr, compiled_schema: &mut CompiledSchema) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+        todo!()
+    }
+
+    fn node_constraint2match_cond(&self, node_kind: &Option<NodeKind>, datatype: &Option<IriRef>, xs_facet: &Option<Vec<XsFacet>>, values: &Option<Vec<ValueSetValueWrapper>>) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+        Ok(MatchCond::new().with_name("node_constraint".to_string()))
+    }
 
 
 }

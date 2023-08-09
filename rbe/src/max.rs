@@ -70,7 +70,8 @@ impl fmt::Display for Max {
 }
 
 impl Serialize for Max {
-    fn serialize<S>(&self, serializer:S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer:S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> 
+    where S: Serializer {
         let value: i64 = match *self {
            Max::Unbounded => -1,
            Max::IntMax(n) => n as i64  

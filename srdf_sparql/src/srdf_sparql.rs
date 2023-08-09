@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
-use rbe::Bag;
 use oxrdf::*;
-use oxrdf::{Literal, Variable};
+use oxrdf::Literal;
 use reqwest::{
     header::{self, ACCEPT, USER_AGENT},
     Url,
@@ -153,8 +152,8 @@ impl AsyncSRDF for SRDFSPARQL {
     async fn get_predicates_subject(
         &self,
         subject: &Subject,
-    ) -> Result<Bag<NamedNode>, SRDFSPARQLError> {
-        let mut results = Bag::new();
+    ) -> Result<HashSet<NamedNode>, SRDFSPARQLError> {
+        let mut results = HashSet::new();
         let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
         let mut headers = header::HeaderMap::new();
         headers.insert(
@@ -226,8 +225,8 @@ impl SRDF for SRDFSPARQL {
     fn get_predicates_for_subject(
         &self,
         subject: &Subject,
-    ) -> Result<Bag<NamedNode>, SRDFSPARQLError> {
-        let mut results = Bag::new();
+    ) -> Result<HashSet<NamedNode>, SRDFSPARQLError> {
+        let mut results = HashSet::new();
         let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
         let mut headers = header::HeaderMap::new();
         headers.insert(
@@ -303,12 +302,12 @@ mod tests {
         let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
             "http://www.wikidata.org/entity/Q80".to_string(),
         ));
-        let p31: NamedNode = NamedNode::new_unchecked("http://www.wikidata.org/entity/P31");
         let maybe_data = wikidata.get_predicates_for_subject(&q80);
         let data = maybe_data.unwrap();
-        for (n, c) in data.iter() {
-            println!("Node: {n}/{c}");
-        }
-        assert_eq!(22, 22);
+        let p19: NamedNode = NamedNode::new_unchecked(
+            "http://www.wikidata.org/prop/P19".to_string(),
+        );
+
+        assert_eq!(data.contains(&p19), true);
     }
 }

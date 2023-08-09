@@ -54,7 +54,7 @@ pub enum ShapeExpr {
     Shape {
         closed: bool,
         extra: Vec<IriS>,
-        // rbe: Rbe<IriS, Object, ShapeLabelIdx>,
+        rbe: Rbe<IriS, Object, ShapeLabelIdx>,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },

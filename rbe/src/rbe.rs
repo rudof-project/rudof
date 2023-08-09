@@ -46,11 +46,11 @@ where
         }
     }
 
-    pub fn symbol_cond(key:K, cond: MatchCond<K,V,R>, min: usize, max: Max) -> Rbe<K, V, R> {
+    pub fn symbol_cond(key:K, cond: MatchCond<K,V,R>, min: Min, max: Max) -> Rbe<K, V, R> {
         Rbe::Symbol {
             key,
             cond: cond,
-            card: Cardinality { min: Min::from(min), max },
+            card: Cardinality { min, max },
         }
     }
 
@@ -412,7 +412,7 @@ where K: Debug + Hash + Eq + fmt::Display + Default,
         match &self {
             Rbe::Fail { error } => write!(dest,"Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest,"Empty"),
-            Rbe::Symbol { key, cond:_ , card } => write!(dest,"{key:?}{card:?}"),
+            Rbe::Symbol { key, cond , card } => write!(dest,"{key:?}|{}{card:?}", cond.name()),
             Rbe::And { exprs} => {
                 exprs.iter().fold(Ok(()), |result,value| {
                     result.and_then(|_| write!(dest, "{value:?};"))
@@ -432,14 +432,14 @@ where K: Debug + Hash + Eq + fmt::Display + Default,
 
 impl <K, V, R> Display for Rbe<K, V, R> 
 where K: Display + Hash + Eq + Default,
-      V: Hash + Eq + Default + Display + Clone,
-      R: Display + PartialEq + Default + Clone
+      V: Hash + Eq + Default + Display + Debug + Clone,
+      R: Display + PartialEq + Default + Debug + Clone
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest,"Fail {{{error}}}"),
             Rbe::Empty => write!(dest,"Empty"),
-            Rbe::Symbol { key, cond:_, card } => write!(dest,"{key}{card}"),
+            Rbe::Symbol { key, cond, card } => write!(dest,"{key}|{}{card}", cond.name()),
             Rbe::And { exprs } => {
                 exprs.iter().fold(Ok(()), |result,value| {
                     result.and_then(|_| write!(dest, "{value};"))

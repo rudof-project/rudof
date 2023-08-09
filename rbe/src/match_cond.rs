@@ -94,7 +94,8 @@ where K: Hash + PartialEq + Eq + Display + Default,
       R: Default + PartialEq + Debug + Display + Clone, 
       {
     
-    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> {
+    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> 
+    where {
         match &self.cond {
             None => Ok(Pending::new()),
             Some(f) => {
@@ -119,6 +120,11 @@ where K: Hash + PartialEq + Eq + Display + Default,
         self.cond = Some(Box::new(cond));
         self
     }
+
+    pub fn name(&self) -> String {
+        self.name.clone().unwrap_or_default()
+    }
+
 } 
 
 

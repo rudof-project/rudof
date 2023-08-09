@@ -1,3 +1,9 @@
+use std::fmt::{Debug, Display};
+
+use iri_s::IriS;
+use serde_derive::{Deserialize, Serialize};
+use crate::literal::Literal;
+
 trait RDF {
     fn parse(format: RDFFormat) -> Self;
 }
@@ -9,21 +15,48 @@ pub enum RDFFormat {
 }
 
 pub enum Subject {
-    Iri(Iri),
-    BlankNode(BNode),
+    Iri { iri: IriS },
+    BlankNode(String),
 }
 
 pub struct Triple {
     pub subject: Subject,
-    pub predicate: Iri,
+    pub predicate: IriS,
     pub object: Object,
 }
 
+#[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
-    Iri(Iri),
-    BlankNode(BNode),
+    Iri{ iri: IriS },
+    BlankNode(String),
+    Literal(Literal)
 }
 
-pub struct Iri(String);
+impl Default for Object {
+    
+    fn default() -> Self {
+        Object::Iri { iri: IriS::default() }
+    }
+}
 
-pub struct BNode(String);
+impl Display for Object {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Iri { iri } => write!(f, "{iri}"),
+            Object::BlankNode(bnode) => write!(f, "_{bnode}"),
+            Object::Literal(lit) => write!(f, "{lit}")
+        }
+    }
+}
+
+impl Debug for Object {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Iri { iri } => write!(f, "Iri {{{iri:?}}}"),
+            Object::BlankNode(bnode) => write!(f, "Bnode{{{bnode:?}}}"),
+            Object::Literal(lit) => write!(f, "Literal{{{lit:?}}}")
+        }
+    }
+}

@@ -5,6 +5,7 @@ use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::fmt::Display;
+use std::fmt::Debug;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Failures<K, V, R> 
@@ -33,8 +34,8 @@ where K: Hash + Eq + Display + Default,
 
 impl <K, V, R> Display for Failures<K, V, R> 
 where K: Hash + Eq + Display + Display + Default,
-      V: Hash + Default + Display + Eq + Clone,
-      R: Default + Display + PartialEq + Clone
+      V: Hash + Default + Display + Debug + Eq + Clone,
+      R: Default + Display + PartialEq + Debug + Clone
       {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
         for (expr, err) in &self.fs {

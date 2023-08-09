@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use rbe::Bag;
 use iri_s::IriS;
 use oxiri::Iri;
 use srdf::SRDFComparisons;
@@ -17,7 +16,6 @@ use rio_api::model::{BlankNode, Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
 use srdf::bnode::BNode;
-use srdf::iri::IRI;
 
 use crate::srdf_error::SRDFError;
 
@@ -247,8 +245,8 @@ impl AsyncSRDF for SRDFGraph {
     async fn get_predicates_subject(
         &self,
         subject: &OxSubject,
-    ) -> Result<Bag<OxNamedNode>, SRDFError> {
-        let mut results = Bag::new();
+    ) -> Result<HashSet<OxNamedNode>, SRDFError> {
+        let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
             results.insert(predicate);
@@ -349,7 +347,7 @@ mod tests {
         let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
         let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
         let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
-        assert_eq!(bag_preds.contains(&knows), 2);
+        assert_eq!(bag_preds.contains(&knows), true);
         let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
         let alice_knows = parsed_graph
             .get_objects_for_subject_predicate(&alice, &knows)
