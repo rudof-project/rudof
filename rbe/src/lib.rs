@@ -18,6 +18,8 @@ pub mod match_cond;
 pub mod pending;
 pub mod deriv_n;
 pub mod failures;
+pub mod component;
+pub mod rbe_table;
 
 pub use crate::cardinality::*;
 pub use crate::max::*;
@@ -29,6 +31,8 @@ pub use crate::match_cond::*;
 pub use crate::pending::*;
 pub use crate::deriv_n::*;
 pub use crate::failures::*;
+pub use crate::component::*;
+pub use crate::rbe_table::*;
 
 // We may remove the following
 pub mod bag;

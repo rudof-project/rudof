@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use crate::{Pending, rbe_error::RbeError};
 use core::hash::Hash;
 use std::fmt::Debug;
@@ -149,6 +149,16 @@ where K: Hash + PartialEq + Eq + Display + Default,
       R: Default + PartialEq + Debug + Display + Clone {
     fn default() -> Self { 
         MatchCond::new()
+    }
+}
+
+impl <K, V, R> Display for MatchCond<K, V, R> 
+where K: Hash + PartialEq + Eq + Display + Default,
+      V: Hash + Default + Eq + Debug + Display + Clone,
+      R: Default + PartialEq + Debug + Display + Clone {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "{}", self.name.clone().unwrap_or_else(|| "".to_string()))?;
+        Ok(())
     }
 }
 
