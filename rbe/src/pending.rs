@@ -34,6 +34,17 @@ where V: Hash + Eq + Debug,
        }
     }
 
+    pub fn insert(&mut self, v: V, r: R) {
+        let mut vv = vec![r];
+        self
+        .pending_map
+        .entry(v)
+        .and_modify(|vs| {
+            vs.append(&mut vv)
+        })
+        .or_insert(vv); 
+    }
+
     pub fn from<T: IntoIterator<Item=(V,Vec<R>)>> (iter: T) -> Pending<V,R> {
         let mut pm = HashMap::new();
         for (v,mut r) in iter {

@@ -1,36 +1,26 @@
 use core::hash::Hash;
 use std::fmt::Debug;
 use std::fmt::Display;
-use crate::MatchCond;
 use serde_derive::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
-pub struct Component<K, V, R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Eq + Default + PartialEq + Clone,
-      R: Default + PartialEq + Clone,
+#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, Clone, Copy)]
+pub struct Component(usize);
+
+impl Component
 {
-    key: K, 
-    cond: MatchCond<K, V, R>
+    pub fn new() -> Component {
+      Component(0)
+    }
+
+    pub fn from(n: usize) -> Component {
+      Component(n)
+    }
 }
 
-impl <K,V,R> Component<K,V,R> 
-where K: Hash + Eq + Display + Default + Clone,
-      V: Hash + Eq + Default + Display + Debug + PartialEq + Clone,
-      R: Default + PartialEq + Display + Debug + Clone,
-{
-
-    pub fn new() -> Component<K,V,R> {
-      Component {key: K::default(),
-        cond: MatchCond::new()
-      }
+impl Display for Component {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"C{}", self.0)
     }
-
-    pub fn key(&self) -> K {
-       self.key.clone()
-    }
-
-
 }
 
 #[cfg(test)]
@@ -39,8 +29,7 @@ mod tests {
 
   #[test]
   fn test_component_creation() {
-     let c1: Component<char, i32, String> = Component::new();
-     assert_eq!(c1.key(), '\0')
-
-  }
+     let c1: Component = Component::new();
+     assert_eq!(c1.0, 0)
+ }
 }

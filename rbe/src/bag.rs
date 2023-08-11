@@ -57,6 +57,12 @@ where
     }
 }
 
+/*impl<T> Default for Bag<T> {
+    fn default() -> Self { 
+        Bag::new() 
+    }
+}*/
+
 impl<T> Debug for Bag<T>
 where
     T: Hash + Eq + Debug,
@@ -70,6 +76,20 @@ where
         write!(f, "Bag [{}]", v.join(", "))
     }
 }
+
+impl <T> std::iter::FromIterator<T> for Bag<T>
+where
+    T: Eq + Hash,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut bag = Bag::new();
+        for t in iter {
+            bag.insert(t);
+        }
+        bag
+    }
+}
+
 
 impl<T, const N: usize> From<[T; N]> for Bag<T>
 where
@@ -100,6 +120,7 @@ where T: Hash + Eq + Serialize
         bag.end()
     }
 }
+
 impl<'de, T> Deserialize<'de> for Bag<T>
 where
     T: Deserialize<'de> + Eq + Hash,
@@ -166,6 +187,14 @@ mod tests {
         let str = r#"[ ["a",2],["b",2],["a",1]]"#;
         let bag: Bag<char> = serde_json::from_str(str).unwrap();
         assert_eq!(bag, Bag::from(['a','a','a', 'b', 'b']));
+    }
+
+    #[test]
+    fn bag_from_iter() {
+        let bag = Bag::from_iter(vec!['a','b','a'].into_iter());
+        assert_eq!(bag.contains(&'a'), 2);
+        assert_eq!(bag.contains(&'b'), 1);
+        assert_eq!(bag.contains(&'c'), 0);
     }
 
 }
