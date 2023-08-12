@@ -1,7 +1,7 @@
 use log::debug;
 use iri_s::IriS;
 use rbe::{MatchCond, Min, Max};
-use rbe::rbe::Rbe;
+use rbe::rbe1::Rbe;
 use srdf::Object;
 
 use crate::ValueSetValueWrapper;

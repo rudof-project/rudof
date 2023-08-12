@@ -1,5 +1,5 @@
-use rbe::rbe_error::RbeError;
-use crate::{KeyType, ValueType, RefType};
+use rbe::DerivError;
+use crate::TestType;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum RbeTestResult {
@@ -14,7 +14,7 @@ impl RbeTestResult {
         )
     }
 
-    pub fn failed(name: String, err: RbeError<KeyType, ValueType, RefType>) -> RbeTestResult {
+    pub fn failed(name: String, err: DerivError<TestType>) -> RbeTestResult {
         RbeTestResult::Failed(
             FailedTestResult { 
                 name: name,
@@ -38,7 +38,7 @@ impl PassedTestResult {
 #[derive(PartialEq, Debug, Clone)]
 pub struct FailedTestResult {
     name: String,
-    error: RbeError<KeyType, ValueType, RefType>
+    error: DerivError<TestType>
 }
 
 impl FailedTestResult {
@@ -46,7 +46,7 @@ impl FailedTestResult {
         self.name.clone()
      }
 
-     pub fn err(&self) -> RbeError<KeyType, ValueType, RefType> {
+     pub fn err(&self) -> DerivError<TestType> {
         self.error.clone()
      }
 }

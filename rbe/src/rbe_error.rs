@@ -1,5 +1,5 @@
 use crate::failures::Failures;
-use crate::rbe::Rbe;
+use crate::rbe1::Rbe;
 use crate::Cardinality;
 use std::hash::Hash;
 use serde_derive::Deserialize;

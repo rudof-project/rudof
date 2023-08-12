@@ -7,12 +7,13 @@
 //! [Complexity and Expressiveness of ShEx for RDF](https://labra.weso.es/publication/2015_complexityexpressivenessshexrdf/)
 //! S. Staworko, I. Boneva, J. Labra, S. Hym, E. Prud'hommeaux, H. Solbrig
 //! 
+pub mod bag;
+pub mod rbe;
+pub mod deriv_error;
 pub mod cardinality;
 pub mod min;
 pub mod max;
 
-pub mod rbe_matcher;
-pub mod rbe;
 pub mod rbe_error;
 pub mod match_cond;
 pub mod pending;
@@ -24,9 +25,9 @@ pub mod rbe_table;
 pub use crate::cardinality::*;
 pub use crate::max::*;
 pub use crate::min::*;
-pub use crate::rbe::*;
+pub use crate::rbe1::*;
 pub use crate::rbe_error::*;
-pub use crate::rbe_matcher::*;
+pub use crate::rbe1_matcher::*;
 pub use crate::match_cond::*;
 pub use crate::pending::*;
 pub use crate::deriv_n::*;
@@ -35,11 +36,10 @@ pub use crate::component::*;
 pub use crate::rbe_table::*;
 
 // We may remove the following
-pub mod bag;
-pub mod rbe0;
-pub mod rbe0_error;
-pub use crate::rbe0::*;
-pub use crate::rbe0_error::*;
+pub mod rbe1_matcher;
+pub mod rbe1;
+pub use crate::rbe::*;
+pub use crate::deriv_error::*;
 pub use crate::bag::*;
 
 

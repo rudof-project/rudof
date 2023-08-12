@@ -1,4 +1,4 @@
-use crate::rbe0::Rbe;
+use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
 use std::fmt::Formatter;
@@ -12,7 +12,7 @@ use std::fmt::Display;
 pub struct Failures<A> 
 where A: Hash + Eq + Display
 {
-   fs: Vec<(Box<Rbe<A>>, RbeError<A>)>
+   fs: Vec<(Box<Rbe<A>>, DerivError<A>)>
 }
 
 impl <A> Failures<A> 
@@ -24,7 +24,7 @@ where A: Hash + Eq + Display
        }
     }
 
-    pub fn push(&mut self, expr: Rbe<A>, err: RbeError<A>) {
+    pub fn push(&mut self, expr: Rbe<A>, err: DerivError<A>) {
         self.fs.push((Box::new(expr), err));
     }
 }
@@ -40,7 +40,7 @@ where A: Hash + Eq + Display + Display {
 }
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
-pub enum RbeError<A>
+pub enum DerivError<A>
 where A: Hash + PartialEq + Eq + Display,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]

@@ -1,4 +1,4 @@
-use crate::rbe::Rbe;
+use crate::rbe1::Rbe;
 use crate::rbe_error::RbeError;
 use std::fmt::Formatter;
 use std::hash::Hash;

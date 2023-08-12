@@ -3,7 +3,7 @@ use core::hash::Hash;
 use log::debug;
 
 use crate::{Pending, rbe_error::RbeError};
-use crate::rbe::Rbe;
+use crate::rbe1::Rbe;
 
 pub struct RbeMatcher<K, V,R> 
 where K: Hash + Eq + Display + Default,

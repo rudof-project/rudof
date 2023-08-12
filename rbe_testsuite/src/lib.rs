@@ -10,16 +10,16 @@ pub use rbe_test_result::*;
 pub use rbe_test_results::*;
 pub use match_result::*;
 
-type KeyType = String;
-type ValueType = String;
-type RefType = String;
+
+/// TODO: I would prefer this type to be a String or &str, but it must be Eq, Hash, Clone and with &str I have some lifetime issues...
+type TestType = String;
 
 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
     use log::*;
-    use rbe::{rbe::Rbe, Max};
+    use rbe::{rbe::Rbe, Max, Bag};
     use test_log::test;
     use super::*;
 
@@ -28,8 +28,7 @@ mod tests {
         let str = indoc!{
           r#"name: basic
              rbe: !Symbol
-              key: foo
-              cond: {}
+              value: foo
               card:
                 min: 1
                 max: !IntMax 1
@@ -56,9 +55,7 @@ mod tests {
     rbe_test.set_name("basic".to_string());
     rbe_test.set_full_name("test/basic".to_string());
     rbe_test.set_rbe(Rbe::and(values.into_iter()));
-    rbe_test.set_bag(vec![("a".to_string(), "23".to_string()),
-                          ("b".to_string(), "44".to_string())
-                          ]);
+    rbe_test.set_bag(Bag::from(["a".to_string(),"b".to_string()]));
     let mut ts = Vec::new();
     ts.push(rbe_test);
     let mut rbe_tests = RbeTests::default();
@@ -74,11 +71,10 @@ mod tests {
         tests:
         - name: basic
           rbe: !Symbol
-            key: foo
-            cond: {}
+            value: foo
             card:
               min: 1
-              max: 1
+              max: !IntMax 1
           bag:
           - - foo
             - 1
@@ -102,9 +98,6 @@ mod tests {
         for t in results.failed() {
            info!("Failed: {}: error: {}", t.name(), t.err());
         }
-        let failed: Vec<&FailedTestResult> = results.failed().collect();
-        let empty: Vec<&FailedTestResult> = Vec::new();
-        assert_eq!(failed, empty);
         assert_eq!(results.count_passed(), rbe_tests.total());
         assert_eq!(results.count_failed(), 0);
     }
@@ -112,13 +105,14 @@ mod tests {
     // The following test can be use to check a single test case
     #[test]
     fn run_single() {
-        let name = "a_1_1_or_b_1_1_with_a_1_b_1_open_fail".to_string();
+        let name = "a_1_1_with_a_2_fail".to_string();
+        println!("Running single test: {name}");
         let data = include_bytes!("../tests/basic.yaml");
         let mut rbe_tests = RbeTests::new();
         rbe_tests.load_slice("basic", data).unwrap();
         let results = rbe_tests.run_by_name(name);
         for t in results.failed() {
-           info!("Failed: {}: error: {}", t.name(), t.err());
+           println!("Failed: {}: error: {}", t.name(), t.err());
         }
         assert_eq!(results.count_passed(), 1);
         assert_eq!(results.count_failed(), 0);

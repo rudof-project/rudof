@@ -1,8 +1,6 @@
-use std::vec::IntoIter;
-
-use rbe::{rbe::Rbe, rbe_error::RbeError, RbeMatcher};
+use rbe::{rbe::Rbe, Bag, DerivError};
 use serde_derive::{Deserialize, Serialize};
-use crate::{MatchResult, RbeTestResult, KeyType, ValueType, RefType};
+use crate::{TestType, MatchResult, RbeTestResult};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {
@@ -16,9 +14,9 @@ pub struct RbeTest {
     #[serde(skip)]
     full_name: String,
     
-    rbe: Rbe<KeyType, ValueType, RefType>,
+    rbe: Rbe<TestType>,
     
-    bag: Vec<(KeyType, ValueType)>,
+    bag: Bag<TestType>,
 
     open: bool,
     
@@ -53,12 +51,12 @@ impl RbeTest {
         self.full_name = full_name;
     }
 
-    pub fn set_rbe(&mut self, rbe: Rbe<KeyType, ValueType, RefType>) 
+    pub fn set_rbe(&mut self, rbe: Rbe<TestType>) 
     {
         self.rbe = rbe;
     }
 
-    pub fn set_bag(&mut self, bag: Vec<(KeyType, ValueType)>) 
+    pub fn set_bag(&mut self, bag: Bag<TestType>) 
     {
         self.bag = bag;
     }
@@ -70,23 +68,17 @@ impl RbeTest {
 
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
-        let rbe_matcher = RbeMatcher::new()
-            .with_rbe(&self.rbe)
-            .with_open(self.open);
-        let v: Vec<(KeyType, ValueType)> = self.bag.clone() ;
-        let iter: IntoIter<(KeyType,ValueType)> = v.into_iter();
-        let result = rbe_matcher.matches(iter); 
-        match (&self.match_result, result) {
-          (MatchResult::Pass, Ok(_)) => {
+        match (&self.match_result, self.rbe.match_bag(&self.bag, self.open)) {
+          (MatchResult::Pass, Ok(())) => {
              RbeTestResult::passed(self.name().to_string())
            },
            (MatchResult::Pass, Err(err)) => {
              RbeTestResult::failed(self.name().to_string(),err) 
            }
-           (MatchResult::Fail, Ok(_)) => {
+           (MatchResult::Fail, Ok(())) => {
             RbeTestResult::failed(
                 self.name().to_string(), 
-                RbeError::ShouldFailButPassed { name: self.name.clone() }
+                DerivError::ShouldFailButPassed { name: self.name.clone() }
             )},
            (MatchResult::Fail, Err(_)) => {
             RbeTestResult::passed(self.name().to_string())

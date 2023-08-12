@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
 use std::fmt::Display;
-use rbe::{Min, Max, rbe::Rbe};
+use rbe::{Min, Max, rbe1::Rbe};
 use srdf::Object;
 use log::debug;
 
