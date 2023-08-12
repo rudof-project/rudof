@@ -1,9 +1,7 @@
 use log::debug;
 use iri_s::IriS;
-use rbe::{MatchCond, Min, Max};
-use rbe::rbe1::Rbe;
+use rbe::{MatchCond, Min, Max, RbeTable, rbe::Rbe, Component};
 use srdf::Object;
-
 use crate::ValueSetValueWrapper;
 use crate::schema_json::{TripleExpr, NodeKind, XsFacet};
 use crate::{ShapeLabel, ShapeLabelIdx, CompiledSchema, SchemaJson, CompiledSchemaError, schema_json, schema, IriRef, compiled_schema::SemAct, compiled_schema::Annotation};
@@ -126,16 +124,19 @@ impl SchemaJsonCompiler {
                 annotations,
             } => {
                 let new_extra = self.cnv_extra(extra)?;
-                let rbe = match expression {
-                    None => Rbe::Empty,
+                let rbe_table = match expression {
+                    None => RbeTable::new(),
                     Some(tew) => {
-                        self.triple_expr2rbe(&tew.te, compiled_schema)?
+                        let mut table = RbeTable::new();
+                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table)?;
+                        table.with_rbe(rbe);
+                        table
                     }
                 };
                 Ok(ShapeExpr::Shape {
                     closed: Self::cnv_closed(closed),
                     extra: new_extra,
-                    rbe, 
+                    rbe_table, 
                     sem_acts: Self::cnv_sem_acts(&sem_acts),
                     annotations: Self::cnv_annotations(&annotations),
                 })
@@ -193,22 +194,26 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn triple_expr2rbe(&self, triple_expr: &schema_json::TripleExpr, compiled_schema: &mut CompiledSchema) -> CResult<Rbe<IriS, Object, ShapeLabelIdx>> {
+    fn triple_expr2rbe(&self, 
+        triple_expr: &schema_json::TripleExpr, 
+        compiled_schema: &mut CompiledSchema, 
+        current_table: &mut RbeTable<IriS, Object, ShapeLabelIdx>) -> CResult<(Rbe<Component>)> {
         match triple_expr {
             TripleExpr::EachOf { id, expressions, min, max, sem_acts, annotations } => { 
-                let mut rbes = Vec::new();
+                let mut cs = Vec::new();
                 for e in expressions {
-                    let rbe = self.triple_expr2rbe(&e.te, compiled_schema)?;
-                    rbes.push(rbe)
+                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    cs.push(c)
                 }
-                Ok(Rbe::And { exprs: rbes }) 
+                Ok(Rbe::and(cs.into_iter()))
             }
             TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations } => {
                 let min = self.cnv_min(&min)?;
                 let max = self.cnv_max(&max)?;
                 let iri = IriS::new(predicate.value.as_str())?;
                 let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
-                Ok(Rbe::symbol_cond(iri, cond, min, max))
+                let c = current_table.add_component(iri, cond);
+                Ok(Rbe::symbol(c, min.value, max))
             }
             _ => { todo!() }
         }

@@ -152,6 +152,16 @@ where K: Hash + PartialEq + Eq + Display + Default,
     }
 }
 
+impl <K, V, R> Debug for MatchCond<K, V, R> 
+where K: Hash + PartialEq + Eq + Display + Default,
+      V: Hash + Default + Eq + Debug + Display + Clone,
+      R: Default + PartialEq + Debug + Display + Clone {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "{}", self.name.clone().unwrap_or_else(|| "".to_string()))?;
+        Ok(())
+    }
+}
+
 impl <K, V, R> Display for MatchCond<K, V, R> 
 where K: Hash + PartialEq + Eq + Display + Default,
       V: Hash + Default + Eq + Debug + Display + Clone,

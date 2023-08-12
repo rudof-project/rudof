@@ -9,17 +9,20 @@ use std::vec::IntoIter;
 use crate::Bag;
 use crate::MatchCond;
 use crate::Pending;
+use crate::RbeError;
 use crate::rbe::Rbe;
 use crate::{rbe_error, deriv_error};
 use crate::Component;
 
+
+#[derive(Debug, PartialEq)]
 pub struct RbeTable<K,V,R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Eq + Default + PartialEq + Clone,
-      R: Default + PartialEq + Clone,
+where K: Hash + Eq + Display + Default + Clone,
+      V: Hash + Eq + Default + Display + PartialEq + Clone,
+      R: Default + PartialEq + Display + Clone,
 {
     rbe: Rbe<Component>,
-    key_components: HashMap<K, Vec<Component>>,
+    key_components: HashMap<K, HashSet<Component>>,
     component_cond: HashMap<Component, MatchCond<K,V,R>>,
     open: bool, 
     component_counter: usize
@@ -40,14 +43,69 @@ where K: Hash + Eq + Debug + Display + Default + Clone,
         }
     }
 
-    pub fn add_component(&mut self, k: K, component_cond: MatchCond<K,V,R>) {
-        // self.key_components.entry(k)
-        todo!();
-        // self.component_counter += 1;
+    pub fn add_component(&mut self, k: K, cond: MatchCond<K,V,R>) -> Component {
+        let c = Component::from(self.component_counter);
+        self.key_components.entry(k).and_modify(|vs| {
+            (*vs).insert(c);
+        }).or_insert_with(|| { 
+            let mut hs = HashSet::new();
+            hs.insert(c);
+            hs
+        });
+        self.component_cond.insert(c,cond);
+        self.component_counter += 1;
+        c
     }
 
+    pub fn with_rbe(&mut self, rbe: Rbe<Component>) {
+        self.rbe = rbe;
+    }
+
+/*    pub fn from_rbe1(rbe1: rbe1::Rbe<K, V,R>) -> Result<RbeTable<K, V, R>, RbeError<K,V,R>> {
+        let mut rbe_table = RbeTable::new();    
+        Self::rbe1_to_table(&rbe1, &mut rbe_table)?;
+        Ok(rbe_table)
+    }
+
+    fn rbe1_to_table(rbe1: &rbe1::Rbe<K,V,R>, current: &mut RbeTable<K,V,R>) -> Result<Rbe<Component>, RbeError<K,V,R>> {
+       match *rbe1 {
+         rbe1::Rbe::Fail { error } => Err(error),
+         rbe1::Rbe::Empty => { 
+            *current = RbeTable::new(); 
+            Ok(Rbe::Empty) 
+        },
+         rbe1::Rbe::Symbol { key, cond, card } => { 
+            let comp = Component::from(current.component_counter);
+            current.key_components
+            .entry(key)
+            .and_modify(|vs| { vs.push(comp); })
+            .or_insert(vec![comp]);
+            current.component_cond.insert(comp, cond);
+            current.component_counter += 1;
+            let rbe = Rbe::symbol(comp, card.min.value, card.max);
+            current.rbe = rbe;
+            Ok(rbe)
+        },
+        rbe1::Rbe::And { exprs } => {
+            let mut es = Vec::new();
+            let new_table = exprs.into_iter()
+              .try_fold(&current, move |c, e| {
+                let new_rbe = Self::rbe1_to_table(&e, &mut c)?;
+                es.push(new_rbe);
+                Ok(c)
+            })?;
+            let new_rbe = Rbe::and(es);
+            current.rbe = new_rbe;
+            Ok(new_rbe)
+        },
+        _ => {
+            todo!()
+        }
+       }
+    }
+*/
     pub fn matches(&self, values: Vec<(K,V)>) -> MatchTableIter<K,V,R> {
-        let empty= Vec::new();
+        let empty= HashSet::new();
         let mut rs = Vec::new();
         for (key, value) in values {
             let conds = self.key_components.get(&key).unwrap_or_else(|| &empty);
@@ -68,6 +126,8 @@ where K: Hash + Eq + Debug + Display + Default + Clone,
             // controlled: self.controlled.clone()
         } 
     }
+
+    
 }
 
 pub struct MatchTableIter<K, V, R> 
@@ -152,23 +212,17 @@ mod tests {
             Ok(pending)
           });
 
-        let c1 = Component::from(1);  
-        let c2 = Component::from(2);  
-        let c3 = Component::from(3);  
     
         let vs = vec![('p', 'a'), ('q', 'y'), ('q', 'z')];
-        let rbe_table:RbeTable<char, char, char> = RbeTable {
-           rbe: Rbe::and(vec![
+        let mut rbe_table = RbeTable::new() ;
+        let c1 = rbe_table.add_component('p', is_a);
+        let c2 = rbe_table.add_component('q', ref_t);
+        let c3 = rbe_table.add_component('q', ref_u);
+        rbe_table.with_rbe(Rbe::and(vec![
             Rbe::symbol(c1,1,Max::IntMax(1)),
             Rbe::symbol(c2,1,Max::IntMax(1)),
             Rbe::symbol(c3,1,Max::Unbounded)
-           ]),
-           key_components: HashMap::from_iter(vec![('p', vec![c1]), ('q', vec![c2, c3])].into_iter()),
-           component_cond: HashMap::from_iter(vec![(c1, is_a), (c2, ref_t), (c3, ref_u)]),
-           open: false,
-           component_counter: 0
-           // controlled: HashSet::from_iter(vec!['p','q'])
-        };
+           ]));
 
         let mut iter = rbe_table.matches(vs);
 

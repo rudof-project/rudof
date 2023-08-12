@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
 use std::fmt::Display;
-use rbe::{Min, Max, rbe1::Rbe};
+use rbe::{Min, Max, rbe::Rbe, RbeTable};
 use srdf::Object;
 use log::debug;
 
@@ -54,7 +54,7 @@ pub enum ShapeExpr {
     Shape {
         closed: bool,
         extra: Vec<IriS>,
-        rbe: Rbe<IriS, Object, ShapeLabelIdx>,
+        rbe_table: RbeTable<IriS, Object, ShapeLabelIdx>,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },
