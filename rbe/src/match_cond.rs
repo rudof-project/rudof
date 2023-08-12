@@ -6,6 +6,23 @@ use serde_derive::{Serialize, Deserialize};
 
 /// Represents a matching condition
 #[derive(Serialize, Deserialize)]
+pub struct AndCond<K, V, R> 
+ where K: Hash + Eq + Display + Default,
+       V: Hash + Eq + Default + PartialEq + Clone,
+       R: Default + PartialEq + Clone,
+{
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>, 
+
+    #[serde(skip)]
+    cond1: Option<Box<dyn Cond<K, V, R>>>,
+
+    #[serde(skip)]
+    cond2: Option<Box<dyn Cond<K, V, R>>> 
+}
+
+/// Represents a matching condition
+#[derive(Serialize, Deserialize)]
 pub struct MatchCond<K, V, R> 
  where K: Hash + Eq + Display + Default,
        V: Hash + Eq + Default + PartialEq + Clone,

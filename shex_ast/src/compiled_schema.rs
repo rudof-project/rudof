@@ -63,7 +63,7 @@ pub enum ShapeExpr {
     Empty
 }
 
-#[derive(Debug, PartialEq)]
+/*#[derive(Debug, PartialEq)]
 pub enum TripleExpr {
     EachOf {
         expressions: Vec<TripleExpr>,
@@ -92,7 +92,7 @@ pub enum TripleExpr {
     },
     TripleExprRef(TripleExprLabel),
 }
-
+*/
 #[derive(Debug, PartialEq)]
 pub enum XsFacet {
     StringFacet,
@@ -368,7 +368,7 @@ impl CompiledSchema
         rs.into_iter().collect()
     } */
 
-    fn cnv_triple_exprs(&mut self, ses: &Vec<schema_json::TripleExprWrapper>) -> CResult<Vec<TripleExpr>> {
+/*    fn cnv_triple_exprs(&mut self, ses: &Vec<schema_json::TripleExprWrapper>) -> CResult<Vec<TripleExpr>> {
         let rs: Vec<CResult<TripleExpr>> = ses.iter().map(|tew| {
             // let te = te.as_ref();
             let te = self.cnv_triple_expr(tew)?;
@@ -408,7 +408,7 @@ impl CompiledSchema
                     annotations,
                 } => {
                     todo!()
-/*                    let es = self.cnv_shape_exprs(expressions);
+*//*                    let es = self.cnv_shape_exprs(expressions);
                     let te = TripleExpr::EachOf { 
                         expressions: (), 
                         min: (), 
@@ -416,7 +416,7 @@ impl CompiledSchema
                         sem_acts: (), 
                         annotations: () 
                     }
-*/
+*//* 
                 },
                 schema_json::TripleExpr::TripleConstraint {
                     id,
@@ -500,7 +500,7 @@ impl CompiledSchema
             Vec::new()
         }
     }
-
+*/
     pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
         self.shapes.entry(*idx).and_modify(|s| { *s = se });
     }

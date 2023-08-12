@@ -32,6 +32,16 @@ impl Cardinality {
         self.max == Max::IntMax(1)
     }
 
+    pub fn is_star(&self) -> bool {
+        self.min == Min{ value: 0 } && 
+        self.max == Max::Unbounded
+    }
+
+    pub fn is_plus(&self) -> bool {
+        self.min == Min{ value: 1 } && 
+        self.max == Max::Unbounded
+    }
+
     pub fn contains(&self, n: usize) -> bool {
         n >= self.min.value && self.max.greater_or_equal(n)
     }

@@ -1,5 +1,6 @@
 use log::debug;
 use iri_s::IriS;
+use rbe::Cardinality;
 use rbe::{MatchCond, Min, Max, RbeTable, rbe::Rbe, Component};
 use srdf::Object;
 use crate::ValueSetValueWrapper;
@@ -205,8 +206,18 @@ impl SchemaJsonCompiler {
                     let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
                     cs.push(c)
                 }
-                Ok(Rbe::and(cs.into_iter()))
-            }
+                let card = self.cnv_min_max(min, max)?;
+                Ok(Self::mk_card_group(Rbe::and(cs.into_iter()), card))
+            },
+            TripleExpr::OneOf { id, expressions, min, max, sem_acts, annotations } => { 
+                let mut cs = Vec::new();
+                for e in expressions {
+                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    cs.push(c)
+                }
+                let card = self.cnv_min_max(min, max)?;
+                Ok(Self::mk_card_group(Rbe::or(cs.into_iter()), card))
+            },
             TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations } => {
                 let min = self.cnv_min(&min)?;
                 let max = self.cnv_max(&max)?;
@@ -216,6 +227,28 @@ impl SchemaJsonCompiler {
                 Ok(Rbe::symbol(c, min.value, max))
             }
             _ => { todo!() }
+        }
+    }
+
+    fn cnv_min_max(&self, min: &Option<i32>, max: &Option<i32>) -> CResult<Cardinality> {
+        let min = self.cnv_min(&min)?;
+        let max = self.cnv_max(&max)?;
+        Ok(Cardinality::from(min, max))
+    }
+
+    fn mk_card_group(rbe: Rbe<Component>, card: Cardinality) -> Rbe<Component> {
+        match &card {
+            c if c.is_1_1() => rbe,
+            c if c.is_star() => Rbe::Star {
+                value: Box::new(rbe)
+            },
+            c if c.is_plus() => Rbe::Plus {
+                value: Box::new(rbe)
+            },
+            c  => Rbe::Repeat {
+                value: Box::new(rbe),
+                card
+            }
         }
     }
 
