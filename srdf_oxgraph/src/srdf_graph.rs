@@ -1,36 +1,20 @@
 use async_trait::async_trait;
-use iri_s::IriS;
 use oxiri::Iri;
-use srdf::SRDFComparisons;
+use srdf::{SRDFComparisons, SRDF};
 use srdf::async_srdf::AsyncSRDF;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{self, BufReader};
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use rio_api::model::{BlankNode, Literal, NamedNode, Subject, Term, Triple};
+use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
-use srdf::bnode::BNode;
-
-use crate::srdf_error::SRDFError;
-
-pub struct IRIRio<'a> {
-    iri: NamedNode<'a>,
-}
-
-pub struct BNodeRio<'a> {
-    bnode: BlankNode<'a>,
-}
-impl<'a> BNode<'a> for BNodeRio<'a> {
-    fn label(&self) -> &'a str {
-        self.bnode.id
-    }
-}
+use crate::srdf_graph_error::SRDFGraphError;
 
 
 pub struct SRDFGraph {
@@ -44,7 +28,7 @@ impl SRDFGraph {
         }
     }
 
-    pub fn from_str(data: String) -> Result<SRDFGraph, SRDFError> {
+    pub fn from_str(data: String) -> Result<SRDFGraph, SRDFGraphError> {
         let base_iri = Iri::parse("base:://".to_owned()).unwrap();
         let mut turtle_parser = TurtleParser::new(std::io::Cursor::new(&data), Some(base_iri));
         let mut graph = Graph::default();
@@ -56,7 +40,7 @@ impl SRDFGraph {
         });
         match parse_result {
             Ok(_) => Ok(SRDFGraph { graph: graph }),
-            Err(err) => Err(SRDFError::TurtleError {
+            Err(err) => Err(SRDFGraphError::TurtleError {
                 data: data,
                 turtle_error: err,
             }),
@@ -109,12 +93,12 @@ impl SRDFGraph {
         data: &String,
         base: &Path,
         entry_name: &String,
-        debug: u8,
-    ) -> Result<Graph, SRDFError> {
+        _debug: u8,
+    ) -> Result<Graph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
         let data_path = &attempt;
-        let file = File::open(data_path).map_err(|e| SRDFError::ReadingPathError {
+        let file = File::open(data_path).map_err(|e| SRDFGraphError::ReadingPathError {
             path_name: data_path.display().to_string(),
             error: e,
         })?;
@@ -131,7 +115,7 @@ impl SRDFGraph {
         });
         match parse_result {
             Ok(_) => Ok(graph),
-            Err(err) => Err(SRDFError::ErrorReadingTurtle {
+            Err(err) => Err(SRDFGraphError::ErrorReadingTurtle {
                 entry_name: entry_name.to_string(),
                 path_name: data_path.display().to_string(),
                 turtle_err: err.to_string(),
@@ -146,7 +130,7 @@ impl SRDFComparisons for SRDFGraph {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
-    type Err = SRDFError;
+    type Err = SRDFGraphError;
     fn subject2iri(&self, subject: &OxSubject) -> Option<OxNamedNode> {
         match subject {
             OxSubject::NamedNode(n) => Some(n.clone()),
@@ -228,11 +212,39 @@ impl SRDFComparisons for SRDFGraph {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(&self, str: String) -> OxNamedNode {
-        OxNamedNode::new_unchecked(str)
+    fn iri_from_str(&self, str: String) -> Result<OxNamedNode, SRDFGraphError> {
+        OxNamedNode::new(str).map_err(|err| 
+          SRDFGraphError::IriParseError{ err }
+        )
     }
 
 }
+
+impl SRDF for SRDFGraph {
+    fn get_predicates_for_subject(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<HashSet<Self::IRI>, Self::Err> {
+        todo!()
+    }
+
+    fn get_objects_for_subject_predicate(
+        &self,
+        subject: &Self::Subject,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Term>, Self::Err> {
+        todo!()
+    }
+
+    fn get_subjects_for_object_predicate(
+        &self,
+        object: &Self::Term,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Subject>, Self::Err> {
+        todo!()
+    }
+}
+
 #[async_trait]
 impl AsyncSRDF for SRDFGraph {
     type IRI = OxNamedNode;
@@ -240,12 +252,12 @@ impl AsyncSRDF for SRDFGraph {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
-    type Err = SRDFError;
+    type Err = SRDFGraphError;
 
     async fn get_predicates_subject(
         &self,
         subject: &OxSubject,
-    ) -> Result<HashSet<OxNamedNode>, SRDFError> {
+    ) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -258,7 +270,7 @@ impl AsyncSRDF for SRDFGraph {
         &self,
         subject: &OxSubject,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxTerm>, SRDFError> {
+    ) -> Result<HashSet<OxTerm>, SRDFGraphError> {
         println!("get_objects_for_subject_predicate: subject={subject:?}, pred= {pred:?}");
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
@@ -275,7 +287,7 @@ impl AsyncSRDF for SRDFGraph {
         &self,
         object: &OxTerm,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxSubject>, SRDFError> {
+    ) -> Result<HashSet<OxSubject>, SRDFGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_object(object) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -297,18 +309,6 @@ mod tests {
     use rio_api::model::{Literal, Subject};
     use srdf::SRDF;
 
-    #[test]
-    fn check_iri() {
-        let rdf_type = IRIRio {
-            iri: NamedNode {
-                iri: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-            },
-        };
-        assert_eq!(
-            rdf_type.iri.iri,
-            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-        );
-    }
 
     #[test]
     fn parse_turtle() {
@@ -336,6 +336,8 @@ mod tests {
 
     #[tokio::test]
     async fn parse_get_predicates() {
+        use crate::srdf_graph::AsyncSRDF;
+
         let s = r#"PREFIX : <http://example.org/>
             PREFIX schema: <https://schema.org/>
 
@@ -349,8 +351,8 @@ mod tests {
         let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
         assert_eq!(bag_preds.contains(&knows), true);
         let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
-        let alice_knows = parsed_graph
-            .get_objects_for_subject_predicate(&alice, &knows)
+        let alice_knows = 
+           AsyncSRDF::get_objects_for_subject_predicate(&parsed_graph, &alice, &knows)
             .await
             .unwrap();
         assert_eq!(alice_knows.contains(&bob), true);

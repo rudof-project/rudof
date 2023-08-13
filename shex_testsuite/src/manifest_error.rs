@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, io, path::Path};
 
 use shex_ast::SchemaJsonError;
-use srdf_oxgraph::srdf_error::SRDFError;
+use srdf_oxgraph::srdf_graph_error::SRDFError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

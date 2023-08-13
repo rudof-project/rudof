@@ -1,9 +1,10 @@
 use std::io;
+use oxiri::IriParseError;
 use rio_turtle::TurtleError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum SRDFError {
+pub enum SRDFGraphError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError { path_name: String, error: io::Error },
 
@@ -19,4 +20,10 @@ pub enum SRDFError {
         data: String,
         turtle_error: TurtleError,
     },
+
+    #[error(transparent)]
+    IriParseError{
+        #[from]
+        err: IriParseError
+    }
 }

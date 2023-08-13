@@ -21,6 +21,12 @@ pub enum SRDFSPARQLError {
 
     #[error("SPARQL Results parser: {e:?}")]
     SPAResults { e: sparesults::ParseError },
+
+    #[error(transparent)]
+    IriParseError {
+        #[from]
+        err: IriParseError
+    }
 }
 
 impl From<reqwest::Error> for SRDFSPARQLError {
@@ -134,8 +140,9 @@ impl SRDFComparisons for SRDFSPARQL {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(&self, str: String) -> NamedNode {
-        NamedNode::new_unchecked(str)
+    fn iri_from_str(&self, str: String) -> Result<NamedNode,SRDFSPARQLError>  {
+        NamedNode::new(str)
+        .map_err(|err| {SRDFSPARQLError::IriParseError { err }})
     }
 }
 
@@ -214,13 +221,6 @@ impl AsyncSRDF for SRDFSPARQL {
 }
 
 impl SRDF for SRDFSPARQL {
-    type IRI = NamedNode;
-    type BNode = BlankNode;
-    type Literal = Literal;
-    type Subject = Subject;
-    type Term = Term;
-    type Err = SRDFSPARQLError;
-    
 
     fn get_predicates_for_subject(
         &self,

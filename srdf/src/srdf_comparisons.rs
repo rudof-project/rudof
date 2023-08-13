@@ -27,5 +27,5 @@ pub trait SRDFComparisons {
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
 
-    fn iri_from_str(&self, str: String) -> Self::IRI;
+    fn iri_from_str(&self, str: String) -> Result<Self::IRI, Self::Err>;
 }

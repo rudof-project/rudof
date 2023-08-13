@@ -160,7 +160,7 @@ where K: Hash + Eq + Display + Default + Clone,
                 for (k,v,_,cond) in &vs {
                     match cond.matches(k, v) {
                         Ok(new_pending) => { 
-                            pending.merge(new_pending)
+                            pending = pending.merge(new_pending);
                         },
                         Err(err) => { 
                             return Some(Err(err));

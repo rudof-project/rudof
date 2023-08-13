@@ -25,13 +25,14 @@ where V: Hash + Eq + Debug,
         self.pending_map.get(k)
     }
 
-    pub fn merge(&mut self, other: Pending<V,R>) {
+    pub fn merge(mut self, other: Pending<V,R>) -> Self {
        for (k, mut vs) in other.pending_map.into_iter() {
              self
              .pending_map.entry(k)
              .and_modify(|v| { v.append(&mut vs); })
              .or_insert(vs);
-       }
+       };
+       self
     }
 
     pub fn insert(&mut self, v: V, r: R) {
@@ -75,7 +76,7 @@ mod tests {
         let pending2 = Pending::from(vec![('a', vec![3,4]), ('c', vec![4])]);
         let expected = Pending::from(vec![('a', vec![1,2,3,4]), ('c', vec![4]), ('b', vec![3])]);
 
-        pending1.merge(pending2);
+        pending1 = pending1.merge(pending2);
         assert_eq!(pending1, expected);
     }
 }

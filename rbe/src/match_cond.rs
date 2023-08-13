@@ -6,23 +6,6 @@ use serde_derive::{Serialize, Deserialize};
 
 /// Represents a matching condition
 #[derive(Serialize, Deserialize)]
-pub struct AndCond<K, V, R> 
- where K: Hash + Eq + Display + Default,
-       V: Hash + Eq + Default + PartialEq + Clone,
-       R: Default + PartialEq + Clone,
-{
-    #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>, 
-
-    #[serde(skip)]
-    cond1: Option<Box<dyn Cond<K, V, R>>>,
-
-    #[serde(skip)]
-    cond2: Option<Box<dyn Cond<K, V, R>>> 
-}
-
-/// Represents a matching condition
-#[derive(Serialize, Deserialize)]
 pub struct MatchCond<K, V, R> 
  where K: Hash + Eq + Display + Default,
        V: Hash + Eq + Default + PartialEq + Clone,
@@ -32,7 +15,7 @@ pub struct MatchCond<K, V, R>
     name: Option<String>, 
 
     #[serde(skip)]
-    cond: Option<Box<dyn Cond<K, V,R>>> 
+    cond: Vec<Box<dyn Cond<K, V,R>>> 
 }
 
 /// We use trait objects instead of function pointers because we need to
@@ -92,14 +75,22 @@ where K: Hash + Eq + Display + Default,
     fn clone(&self) -> Self {
         MatchCond {
             name: self.name.clone(),
-            cond: match &self.cond {
+            cond: {
+                let mut r = Vec::new();
+                for c in self.cond.iter() {
+                  r.push(c.clone())
+                }
+                r
+                // self.cond.into_iter().map(|c| (*c).clone_box()).collect()
+            }
+/*            match &self.cond {
                 Option::None => {
                     None
                 },
                 Option::Some(f) => {
                     Some((*f).clone())
                 }
-            } 
+            } */
         }
     }
 }
@@ -111,20 +102,22 @@ where K: Hash + PartialEq + Eq + Display + Default,
       R: Default + PartialEq + Debug + Display + Clone, 
       {
     
-    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> 
-    where {
-        match &self.cond {
+    pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V,R>, RbeError<K, V, R>> {
+        self.cond.iter().fold(Ok(Pending::new()), |current, f| {
+            current.and_then(|r| Ok(r.merge(f.call(key,value)?)))
+        })
+/*        match &self.cond {
             None => Ok(Pending::new()),
             Some(f) => {
                 f.call(key, value)
             }
-        }
+        }*/
     }
 
     pub fn new() -> MatchCond<K, V, R> {
        MatchCond {
         name: None,
-        cond: None
+        cond: Vec::new()
        }
     }
 
@@ -134,7 +127,7 @@ where K: Hash + PartialEq + Eq + Display + Default,
     }
 
     pub fn with_cond(mut self, cond: impl Fn(&K, &V) -> Result<Pending<V,R>, RbeError<K, V, R>> + Clone + 'static) -> Self {
-        self.cond = Some(Box::new(cond));
+        self.cond.push(Box::new(cond));
         self
     }
 

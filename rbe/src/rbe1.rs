@@ -192,7 +192,7 @@ where
                                 }
                             } else {
                                 let new_card = card.minus(n);
-                                pending.merge(new_pending);
+                                *pending = pending.clone().merge(new_pending);
                                 Self::mk_range_symbol(&symbol, cond, &new_card)
                             }
                         }
