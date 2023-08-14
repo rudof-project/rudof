@@ -140,10 +140,15 @@ impl SRDFComparisons for SRDFSPARQL {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(&self, str: String) -> Result<NamedNode,SRDFSPARQLError>  {
+    fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSPARQLError>  {
         NamedNode::new(str)
         .map_err(|err| {SRDFSPARQLError::IriParseError { err }})
     }
+
+    fn iri_as_term(iri: NamedNode) -> Term { 
+        Term::NamedNode(iri) 
+    }
+
 }
 
 #[async_trait]

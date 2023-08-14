@@ -1,0 +1,14 @@
+prefix : <http://example.org/>
+
+:a :name  "Alice" ;
+   :knows :a, :b  .
+
+:b :name  "Bob"   ;
+   :knows :c      .
+
+:c :name  "Carol" .
+
+:d :name  23      .  # Should fail
+
+:e :name  "Emily" ;  # Should fail
+   :knows :d      .

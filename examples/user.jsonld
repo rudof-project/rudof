@@ -3,7 +3,7 @@
     "shapes": [
       {
         "type": "ShapeDecl",
-        "id": "http://shex.io/webapps/shex.js/doc/User",
+        "id": "http://example.org/User",
         "shapeExpr": {
           "type": "Shape",
           "expression": {
@@ -20,7 +20,7 @@
               {
                 "type": "TripleConstraint",
                 "predicate": "http://example.org/knows",
-                "valueExpr": "http://shex.io/webapps/shex.js/doc/User",
+                "valueExpr": "http://example.org/User",
                 "min": 0,
                 "max": -1
               }

@@ -8,11 +8,10 @@ pub enum SRDFGraphError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError { path_name: String, error: io::Error },
 
-    #[error("{entry_name}: error reading turtle at {path_name:?}. Error: {turtle_err:?}")]
+    #[error(transparent)]
     ErrorReadingTurtle {
-        entry_name: String,
-        path_name: String,
-        turtle_err: String,
+        #[from]
+        err: TurtleError
     },
 
     #[error("Turtle error: {turtle_error:?} str: {data:?}")]

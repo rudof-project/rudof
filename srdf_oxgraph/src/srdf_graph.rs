@@ -17,6 +17,7 @@ use rio_turtle::*;
 use crate::srdf_graph_error::SRDFGraphError;
 
 
+#[derive(Debug)]
 pub struct SRDFGraph {
     graph: Graph,
 }
@@ -89,38 +90,36 @@ impl SRDFGraph {
         )
     }
 
-    pub fn parse_data(
-        data: &String,
-        base: &Path,
-        entry_name: &String,
-        _debug: u8,
-    ) -> Result<Graph, SRDFGraphError> {
-        let mut attempt = PathBuf::from(base);
-        attempt.push(data);
-        let data_path = &attempt;
-        let file = File::open(data_path).map_err(|e| SRDFGraphError::ReadingPathError {
-            path_name: data_path.display().to_string(),
+    pub fn parse_turtle(path: &PathBuf, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
+        let file = File::open(path).map_err(|e| SRDFGraphError::ReadingPathError {
+            path_name: path.display().to_string(),
             error: e,
         })?;
         let reader = BufReader::new(file);
-        let base_iri = Iri::parse("base:://".to_owned()).unwrap();
-        let mut turtle_parser = TurtleParser::new(reader, Some(base_iri));
-
         let mut graph = Graph::default();
-        let parse_result = turtle_parser.parse_all(&mut |triple| {
+        let mut turtle_parser = TurtleParser::new(reader, base);
+        turtle_parser.parse_all(&mut |triple| {
             let ox_triple = Self::cnv(triple);
             let triple_ref: TripleRef = ox_triple.as_ref();
             graph.insert(triple_ref);
             Ok(()) as Result<(), TurtleError>
-        });
-        match parse_result {
-            Ok(_) => Ok(graph),
-            Err(err) => Err(SRDFGraphError::ErrorReadingTurtle {
-                entry_name: entry_name.to_string(),
-                path_name: data_path.display().to_string(),
-                turtle_err: err.to_string(),
-            }),
-        }
+        })?;
+        Ok(SRDFGraph {
+            graph
+        })
+    }
+
+    pub fn parse_data(
+        data: &String,
+        base: &Path,
+        _debug: u8,
+    ) -> Result<SRDFGraph, SRDFGraphError> {
+        let mut attempt = PathBuf::from(base);
+        attempt.push(data);
+        let base = Some(Iri::parse("base:://".to_owned()).unwrap());
+        let data_path = &attempt;
+        let graph = Self::parse_turtle(data_path, base)?;
+        Ok(graph)
     }
 }
 
@@ -212,10 +211,14 @@ impl SRDFComparisons for SRDFGraph {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(&self, str: String) -> Result<OxNamedNode, SRDFGraphError> {
+    fn iri_from_str(str: &str) -> Result<OxNamedNode, SRDFGraphError> {
         OxNamedNode::new(str).map_err(|err| 
           SRDFGraphError::IriParseError{ err }
         )
+    }
+
+    fn iri_as_term(iri: OxNamedNode) -> OxTerm { 
+        OxTerm::NamedNode(iri) 
     }
 
 }
@@ -225,7 +228,11 @@ impl SRDF for SRDFGraph {
         &self,
         subject: &Self::Subject,
     ) -> Result<HashSet<Self::IRI>, Self::Err> {
-        todo!()
+        let mut ps = HashSet::new();
+        for triple in self.graph.triples_for_subject(subject) {
+           ps.insert(triple.predicate.into_owned());
+        }
+        Ok(ps)
     }
 
     fn get_objects_for_subject_predicate(
@@ -233,7 +240,12 @@ impl SRDF for SRDFGraph {
         subject: &Self::Subject,
         pred: &Self::IRI,
     ) -> Result<HashSet<Self::Term>, Self::Err> {
-        todo!()
+        let predicate = pred.as_ref();
+        let mut result = HashSet::new();
+        for o in self.graph.objects_for_subject_predicate(subject, predicate) {
+            result.insert(o.into_owned());
+        }
+        Ok(result)
     }
 
     fn get_subjects_for_object_predicate(
