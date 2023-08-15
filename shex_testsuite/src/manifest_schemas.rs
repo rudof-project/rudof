@@ -1,8 +1,8 @@
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::{fmt, fs};
+use std::path::Path;
+use std::fmt;
 
 use crate::context_entry_value::ContextEntryValue;
 use serde::de::{self};

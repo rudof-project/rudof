@@ -35,6 +35,10 @@ impl SRDFGraph {
         }
     }
 
+    pub fn len(&self) -> usize{
+        self.graph.len()
+    }
+
     pub fn from_reader<R: BufRead>(reader:R, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
         let mut turtle_parser = TurtleParser::new(reader, base);
         let mut graph = Graph::default();

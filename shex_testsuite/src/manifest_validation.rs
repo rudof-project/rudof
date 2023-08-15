@@ -1,25 +1,14 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
-use oxiri::Iri;
-use oxrdf::{
-    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
-};
-use rio_api::model::{BlankNode, Literal, NamedNode, Subject, Term, Triple};
-use rio_api::parser::TriplesParser;
-use rio_turtle::{TurtleError, TurtleParser};
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::SchemaJson;
-use srdf_oxgraph::*;
-use srdf_oxgraph::srdf_graph::SRDFGraph;
+use srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -176,8 +165,7 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(&self.action.data, base, &self.name, debug)
-            .map_err(|e| ManifestError::SRDFError { error: e })?;
+        let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
         let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
 
         if debug > 0 {
