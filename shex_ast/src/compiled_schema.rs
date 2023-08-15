@@ -1,10 +1,10 @@
-use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel, TripleExprLabel, SchemaJsonCompiler, ShapeLabelIdx, shape_label_idx};
-use iri_s::{IriError, IriS, IriSError};
+use crate::{schema_json, IriRef, SchemaJson, CompiledSchemaError, Ref, ShapeLabel, SchemaJsonCompiler, ShapeLabelIdx};
+use iri_s::IriS;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::str::FromStr;
+// use std::str::FromStr;
 use std::fmt::Display;
-use rbe::{Min, Max, rbe::Rbe, RbeTable};
+use rbe::RbeTable;
 use srdf::Object;
 use log::debug;
 
@@ -201,6 +201,7 @@ impl CompiledSchema
     }
 
 
+    #[allow(dead_code)]
     fn shape_decl_to_shape_expr<'a>(
         &mut self,
         sd: &schema_json::ShapeDecl,
@@ -308,6 +309,7 @@ impl CompiledSchema
         })
     }
 
+    #[allow(dead_code)]
     fn cnv_closed(closed: &Option<bool>) -> bool {
         match closed {
             None => false,
@@ -315,6 +317,7 @@ impl CompiledSchema
         }
     }
 
+    #[allow(dead_code)]
     fn cnv_extra<'a>(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
@@ -520,10 +523,7 @@ impl Display for CompiledSchema {
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
-    use iri_s::*;
-    use rbe::{Min, Max};
-
+    
     /*#[test]
     fn validation_convert() {
         let str = r#"{

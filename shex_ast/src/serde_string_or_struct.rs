@@ -245,6 +245,7 @@ where
 pub struct SeqAccessError;
 
 // This is just an unfinished attempt...
+#[allow(dead_code)]
 pub fn deserialize_vec_box_string_or_struct<'de, T, D>(d: D) -> Result<Vec<Box<T>>, D::Error>
 where
     T: Deserialize<'de> + FromStr,
@@ -264,7 +265,7 @@ where
 
         fn next_element_seed<A>(
             &mut self,
-            v: A,
+            _v: A,
         ) -> Result<Option<<A as DeserializeSeed<'de>>::Value>, <Self as SeqAccess<'de>>::Error>
         where
             A: DeserializeSeed<'de>,
@@ -302,8 +303,9 @@ where
 }
 
 /// Like `serialize_string_or_struct`, but can also handle missing values.
+#[allow(dead_code)]
 pub fn serialize_vec_box_string_or_struct<T, S>(
-    value: &Vec<Box<T>>,
+    _value: &Vec<Box<T>>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where

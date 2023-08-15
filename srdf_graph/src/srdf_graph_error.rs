@@ -1,4 +1,5 @@
 use std::io;
+use iri_s::IriError;
 use oxiri::IriParseError;
 use rio_turtle::TurtleError;
 use thiserror::Error;
@@ -24,5 +25,11 @@ pub enum SRDFGraphError {
     IriParseError{
         #[from]
         err: IriParseError
+    },
+
+    #[error(transparent)]
+    IriError{
+        #[from]
+        err: IriError
     }
 }

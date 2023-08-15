@@ -19,7 +19,7 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 
 [dev-dependencies]
-srdf_oxgraph = { path = "../srdf_oxgraph" }
+srdf_graph = { path = "../srdf_graph" }
 shapemap_oxgraph = { path = "../shapemap_oxgraph" }
 oxrdf = "0.1.6"
 

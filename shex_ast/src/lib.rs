@@ -11,7 +11,6 @@ pub mod shape_label_idx;
 
 mod serde_string_or_struct;
 
-pub use compiled_schema::*;
 pub use compiled_schema_error::*;
 pub use schema::*;
 pub use schema_builder::*;

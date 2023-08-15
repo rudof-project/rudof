@@ -9,9 +9,9 @@ use std::vec::IntoIter;
 use crate::Bag;
 use crate::MatchCond;
 use crate::Pending;
-use crate::RbeError;
+// use crate::RbeError;
 use crate::rbe::Rbe;
-use crate::{rbe_error, deriv_error};
+use crate::rbe_error;
 use crate::Component;
 
 
@@ -191,7 +191,7 @@ mod tests {
     fn test_rbe_table_1() {
         
         let is_a: MatchCond<char, char, char> = 
-          MatchCond::new().with_name("is_a".to_string()).with_cond(move |k,v| {
+          MatchCond::new().with_name("is_a".to_string()).with_cond(move |_k,v| {
             if *v == 'a' { Ok(Pending::new()) } else { 
                 Err(rbe_error::RbeError::MsgError {
                   msg: format!("Value {v}!='a'")
@@ -199,14 +199,14 @@ mod tests {
           });
         
         let ref_t: MatchCond<char, char, char> = 
-          MatchCond::new().with_name("ref_t".to_string()).with_cond(move |k, v| {
+          MatchCond::new().with_name("ref_t".to_string()).with_cond(move |_k, v| {
             let mut pending = Pending::new();
             pending.insert(*v, 't');
             Ok(pending)
           });
 
         let ref_u: MatchCond<char, char, char> = 
-          MatchCond::new().with_name("ref_u".to_string()).with_cond(move |k, v| {
+          MatchCond::new().with_name("ref_u".to_string()).with_cond(move |_k, v| {
             let mut pending = Pending::new();
             pending.insert(*v, 'u');
             Ok(pending)

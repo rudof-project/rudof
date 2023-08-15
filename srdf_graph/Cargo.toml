@@ -1,5 +1,5 @@
 [package]
-name = "srdf_oxgraph"
+name = "srdf_graph"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -10,6 +10,7 @@ edition.workspace = true
 [dependencies]
 iri_s = { path = "../iri_s" }
 srdf = { path = "../srdf" }
+prefix_map = { path = "../prefix_map" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"
@@ -17,6 +18,6 @@ oxiri = "0.2"
 thiserror = "1.0"
 async-trait = "0.1.68"
 tokio = { version = "1", features = ["full"] }
-
+colored = "2"
 
 

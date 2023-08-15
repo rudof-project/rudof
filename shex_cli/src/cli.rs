@@ -89,7 +89,49 @@ pub enum Command {
 
     },
 
+    Data {
+        
+        #[arg(
+            short = 'd',
+            long = "data",
+            value_name = "RDF data path",
+        )]
+        data: PathBuf,
 
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+    },
+
+    Node {
+        
+        #[arg(
+            short = 'n',
+            long = "node",
+        )]
+        node: String,
+
+        #[arg(
+            short = 'd',
+            long = "data",
+            value_name = "RDF data path",
+        )]
+        data: PathBuf,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]

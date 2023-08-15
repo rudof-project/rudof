@@ -2,10 +2,9 @@ use prefix_map::PrefixMap;
 use srdf::iri::IriS;
 use std::{error::Error, fmt};
 use crate::schema::Schema;
-use std::str::FromStr;
 
-pub struct SchemaBuilder<'a> {
-       inner: Result<SchemaParts<'a>, ErrorBuildingSchema>
+pub struct SchemaBuilder {
+       inner: Result<SchemaParts, ErrorBuildingSchema>
 }
 
 
@@ -24,40 +23,40 @@ impl Error for ErrorBuildingSchema {}
 
 // type Result<T> = Result<T,ErrorBuildingSchema>
 
-struct SchemaParts<'a> {
+struct SchemaParts {
     id: Option<IriS>,
     base: Option<IriS>,
-    prefixes: PrefixMap<'a>,
+    prefixes: PrefixMap,
     shapes_counter: u32
 }
 
-impl <'a> SchemaBuilder<'a> {
-    pub fn new() -> SchemaBuilder<'a> { 
+impl SchemaBuilder {
+    pub fn new() -> SchemaBuilder { 
         SchemaBuilder::default()
     }
 
-    pub fn add_prefix(self, alias: &'a str, iri: &'a IriS) -> SchemaBuilder<'a> {
+    pub fn add_prefix(self, alias: &str, iri: IriS) -> SchemaBuilder {
         self.and_then(move |mut schema_parts| {
-            schema_parts.prefixes.insert(alias, &iri);
+            schema_parts.prefixes.insert(alias, iri);
             Ok(schema_parts)
         })
     }
 
-    pub fn set_base(self, base: IriS) -> SchemaBuilder<'a> {
+    pub fn set_base(self, base: IriS) -> SchemaBuilder {
         self.and_then(move |mut schema_parts| {
             schema_parts.base = Some(base);
             Ok(schema_parts)
         })
     }
 
-    pub fn add_shape(self) -> SchemaBuilder<'a> {
+    pub fn add_shape(self) -> SchemaBuilder {
       self.and_then(move |mut schema_parts| {
         schema_parts.shapes_counter += 1;
         Ok(schema_parts)
       })
     }
 
-    pub fn build(self) -> Result<Schema<'a>, ErrorBuildingSchema> {
+    pub fn build(self) -> Result<Schema, ErrorBuildingSchema> {
         self.inner.and_then(|schema_parts| {
             Ok(Schema {
                 id: schema_parts.id,
@@ -69,7 +68,7 @@ impl <'a> SchemaBuilder<'a> {
     // private
     fn and_then<F>(self, func: F) -> Self
     where
-        F: FnOnce(SchemaParts<'a>) -> Result<SchemaParts<'a>, ErrorBuildingSchema>
+        F: FnOnce(SchemaParts) -> Result<SchemaParts, ErrorBuildingSchema>
     {
         SchemaBuilder {
             inner: self.inner.and_then(func),
@@ -78,8 +77,8 @@ impl <'a> SchemaBuilder<'a> {
 
 }
 
-impl <'a> Default for SchemaBuilder<'a> {
-    fn default() -> SchemaBuilder<'a> {
+impl <'a> Default for SchemaBuilder {
+    fn default() -> SchemaBuilder {
         SchemaBuilder {
             inner: Ok(
               SchemaParts { 
@@ -96,15 +95,16 @@ impl <'a> Default for SchemaBuilder<'a> {
 #[cfg(test)]
 mod tests {
   use super::*;  
+  use std::str::FromStr;
 
 
 
-  fn update_base<'a>(sb: SchemaBuilder<'a>, iri: IriS) -> Result<SchemaBuilder<'a>, ErrorBuildingSchema> {
+  fn update_base(sb: SchemaBuilder, iri: IriS) -> Result<SchemaBuilder, ErrorBuildingSchema> {
      Ok(sb.set_base(iri))
   }
 
-  fn update_prefix_map<'a>(sb: SchemaBuilder<'a>, alias: &'a str, iri: &'a IriS) -> Result<SchemaBuilder<'a>, ErrorBuildingSchema> {
-    Ok(sb.add_prefix(alias,&iri))
+  fn update_prefix_map(sb: SchemaBuilder, alias: &str, iri: &IriS) -> Result<SchemaBuilder, ErrorBuildingSchema> {
+    Ok(sb.add_prefix(alias,iri.to_owned()))
  }
 
  #[test]

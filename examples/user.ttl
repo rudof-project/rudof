@@ -1,14 +1,15 @@
 prefix : <http://example.org/>
+prefix schema: <http://schema.org>
 
-:a :name  "Alice" ;
-   :knows :a, :b  .
+:a schema:name  "Alice" ;
+   schema:knows :a, :b  .
 
-:b :name  "Bob"   ;
-   :knows :c      .
+:b schema:name  "Bob"   ;
+   schema:knows :c      .
 
-:c :name  "Carol" .
+:c schema:name  "Carol" .
 
-:d :name  23      .  # Should fail
+:d schema:name  23      .  # Should fail
 
-:e :name  "Emily" ;  # Should fail
-   :knows :d      .
+:e schema:name  "Emily" ;  # Should fail
+   schema:knows :d      .

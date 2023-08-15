@@ -3,13 +3,13 @@ use prefix_map::PrefixMap;
 use srdf::iri::IriS;
 
 #[derive(Debug)]
-pub struct Schema<'a> {
+pub struct Schema {
     pub(crate) id: Option<IriS>,
     pub(crate) base: Option<IriS>,
-    pub(crate) prefixes: Option<PrefixMap<'a>>,
+    pub(crate) prefixes: Option<PrefixMap>,
 }
 
-impl<'a> Schema<'a> {
+impl<'a> Schema {
     pub fn id(&self) -> Option<IriS> {
         self.id.clone()
     }

@@ -17,7 +17,7 @@ members = [
     "shex_cli",
     # "shex_antlr",
     "shex_pest",
-    "srdf_oxgraph",
+    "srdf_graph",
     "srdf_sparql",
     "shex_testsuite",
     "shex_validation",
@@ -48,7 +48,7 @@ rbe_testsuite = { version = "0.0.1", path = "./rbe_testsuite" }
 iri_s = { version = "0.0.1", path = "./iri_s" }
 prefix_map = { version = "0.0.1", path = "./prefix_map" }
 srdf = { version = "0.0.1", path = "./srdf" }
-srdf_oxgraph = { version = "0.0.1", path = "./srdf_oxgraph" }
+srdf_graph = { version = "0.0.1", path = "./srdf_graph" }
 srdf_sparql = { version = "0.0.1", path = "./srdf_sparql" }
 shex_ast = { version = "0.0.1", path = "./shex_ast" }
 shex_antlr = { version = "0.0.1", path = "./shex_antlr" }

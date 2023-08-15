@@ -1,5 +1,5 @@
-use std::{collections::HashSet, fmt::Display};
-use std::hash::Hash;
+use std::collections::HashSet;
+//use std::hash::Hash;
 
 use crate::SRDFComparisons;
 
