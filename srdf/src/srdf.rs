@@ -5,12 +5,6 @@ use crate::SRDFComparisons;
 
 
 pub trait SRDF: SRDFComparisons {
-/*    type Subject: Display ;
-    type IRI: Display + Hash + Eq ;
-    type BNode: Display ;
-    type Literal: Display ;
-    type Term: Display ;
-    type Err: Display; */
 
     fn get_predicates_for_subject(
         &self,

@@ -290,11 +290,19 @@ impl CompiledSchema
         }
     }
 
-    pub fn find_label(&self, label: &ShapeLabel) -> Option<&ShapeExpr> {
+    pub fn find_label(&self, label: &ShapeLabel) -> Option<(&ShapeLabelIdx, &ShapeExpr)> {
+        self
+        .find_shape_label_idx(label)
+        .and_then(|idx| self.shapes.get(idx)
+        .and_then(|se| Some((idx,se))))
+    }
+
+    pub fn find_shape_label_idx(&self, label: &ShapeLabel) -> Option<&ShapeLabelIdx> {
         self
         .shape_labels_map
-        .get(label).and_then(|idx| self.shapes.get(idx))
+        .get(label)
     }
+
 
     pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
         self.shape_labels_map.keys().collect()
