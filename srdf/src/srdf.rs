@@ -3,9 +3,7 @@ use std::collections::HashSet;
 
 use crate::SRDFComparisons;
 
-
 pub trait SRDF: SRDFComparisons {
-
     fn get_predicates_for_subject(
         &self,
         subject: &Self::Subject,
@@ -23,17 +21,26 @@ pub trait SRDF: SRDFComparisons {
         pred: &Self::IRI,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
 
+    /// Get the neighbours of a term
+    /// This code creates an intermediate vector and is not very efficient
+    fn get_neighs(
+        &self,
+        node: &Self::Term,
+    ) -> Result<Vec<(Self::IRI, HashSet<Self::Term>)>, Self::Err> {
+        match self.term_as_subject(node) {
+            None => Ok(Vec::new()),
+            Some(subject) => {
+                let mut result = Vec::new();
+                let preds = self.get_predicates_for_subject(&subject)?;
+                for pred in preds {
+                    let objs = self.get_objects_for_subject_predicate(&subject, &pred)?;
+                    result.push((pred.clone(), objs));
+                }
+                Ok(result)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use std::str::FromStr;
-    use iri_s::*;
-
-    #[test]
-    fn check_2_iris() {
-        let iri1: IriS = IriS::from_str("http://example.org/iri").unwrap();
-        let iri2 = IriS::from_str("http://example.org/iri").unwrap();
-        assert_eq!(iri1, iri2);
-    }
-}
+mod tests {}

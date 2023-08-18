@@ -2,11 +2,11 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 pub trait SRDFComparisons {
-    type Subject: Display ;
-    type IRI: Display + Hash + Eq ;
-    type BNode: Display ;
-    type Literal: Display ;
-    type Term: Display ;
+    type Subject: Display;
+    type IRI: Display + Hash + Eq + Clone;
+    type BNode: Display;
+    type Literal: Display;
+    type Term: Display;
     type Err: Display;
 
     fn subject2iri(&self, subject: &Self::Subject) -> Option<Self::IRI>;
@@ -28,5 +28,5 @@ pub trait SRDFComparisons {
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
 
     fn iri_from_str(str: &str) -> Result<Self::IRI, Self::Err>;
-    fn iri_as_term(iri: Self::IRI) -> Self::Term ;
+    fn iri_as_term(iri: Self::IRI) -> Self::Term;
 }
