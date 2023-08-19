@@ -1,7 +1,7 @@
-use std::io;
-use iri_s::IriError;
+use iri_s::IriSError;
 use oxiri::IriParseError;
 use rio_turtle::TurtleError;
+use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,7 +12,7 @@ pub enum SRDFGraphError {
     #[error(transparent)]
     ErrorReadingTurtle {
         #[from]
-        err: TurtleError
+        err: TurtleError,
     },
 
     #[error("Turtle error: {turtle_error:?} str: {data:?}")]
@@ -22,14 +22,14 @@ pub enum SRDFGraphError {
     },
 
     #[error(transparent)]
-    IriParseError{
+    IriParseError {
         #[from]
-        err: IriParseError
+        err: IriParseError,
     },
 
     #[error(transparent)]
-    IriError{
+    IriError {
         #[from]
-        err: IriError
-    }
+        err: IriSError,
+    },
 }

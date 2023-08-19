@@ -1,6 +1,10 @@
 use std::fmt::Display;
 use std::hash::Hash;
 
+use iri_s::IriS;
+
+use crate::Object;
+
 pub trait SRDFComparisons {
     type Subject: Display;
     type IRI: Display + Hash + Eq + Clone;
@@ -29,4 +33,7 @@ pub trait SRDFComparisons {
 
     fn iri_from_str(str: &str) -> Result<Self::IRI, Self::Err>;
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
+
+    fn term2object(term: Self::Term) -> Object;
+    fn iri2iri_s(iri: Self::IRI) -> IriS;
 }

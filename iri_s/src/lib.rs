@@ -1,6 +1,10 @@
 pub mod iri;
+pub mod iris;
+pub mod iris_error;
 
 pub use iri::*;
+pub use iris::*;
+pub use iris_error::*;
 
 #[cfg(test)]
 mod tests {

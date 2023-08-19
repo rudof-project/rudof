@@ -8,6 +8,12 @@ pub struct Lang {
     lang: String
 }
 
+impl Lang {
+    pub fn new(str: String) -> Lang {
+        Lang { lang: str }
+    }
+}
+
 impl Display for Lang {
     
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -8,7 +8,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-oxiri = "0.2.2"
+oxrdf = "0.1.6"
 thiserror = "1.0.0"
 serde = "1.0"
 serde_derive = "1.0"

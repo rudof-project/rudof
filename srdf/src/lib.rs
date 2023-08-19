@@ -12,5 +12,4 @@ pub use crate::neighs::*;
 pub use crate::srdf::*;
 pub use crate::srdf_comparisons::*;
 pub use bnode::*;
-pub use iri_s::*;
 pub use rdf::*;

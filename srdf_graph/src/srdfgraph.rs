@@ -1,25 +1,24 @@
 use async_trait::async_trait;
+use colored::*;
 use iri_s::IriS;
 use oxiri::Iri;
-use srdf::{SRDFComparisons, SRDF};
 use srdf::async_srdf::AsyncSRDF;
+use srdf::{SRDFComparisons, SRDF};
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use colored::*;
 
+use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
+use prefix_map::prefix_map::*;
 use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
-use crate::srdf_graph_error::SRDFGraphError;
-use prefix_map::prefix_map::*;
-
 
 #[derive(Debug)]
 pub struct SRDFGraph {
@@ -31,15 +30,18 @@ impl SRDFGraph {
     pub fn new() -> SRDFGraph {
         SRDFGraph {
             graph: Graph::new(),
-            pm: PrefixMap::new()
+            pm: PrefixMap::new(),
         }
     }
 
-    pub fn len(&self) -> usize{
+    pub fn len(&self) -> usize {
         self.graph.len()
     }
 
-    pub fn from_reader<R: BufRead>(reader:R, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
+    pub fn from_reader<R: BufRead>(
+        reader: R,
+        base: Option<Iri<String>>,
+    ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut turtle_parser = TurtleParser::new(reader, base);
         let mut graph = Graph::default();
         turtle_parser.parse_all(&mut |triple| {
@@ -49,14 +51,11 @@ impl SRDFGraph {
             Ok(()) as Result<(), TurtleError>
         })?;
         let pm = PrefixMap::from_hashmap(turtle_parser.prefixes())?;
-        Ok(SRDFGraph { 
-            graph: graph,
-            pm 
-        })
+        Ok(SRDFGraph { graph: graph, pm })
     }
 
     pub fn resolve(&self, str: &str) -> Result<Option<OxNamedNode>, SRDFGraphError> {
-        let r = self.pm.resolve(str).map(|opt| { opt.map(Self::cnv_iri) } )?;
+        let r = self.pm.resolve(str).map(|opt| opt.map(Self::cnv_iri))?;
         Ok(r)
     }
 
@@ -69,14 +68,14 @@ impl SRDFGraph {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_named_node(n),
-          }
-      }
+        }
+    }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
         let str: String = format!("{}", bn);
         format!("{}", str.green())
-    }  
-    
+    }
+
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
@@ -84,9 +83,9 @@ impl SRDFGraph {
 
     pub fn qualify_term(&self, term: &OxTerm) -> String {
         match term {
-          OxTerm::BlankNode(bn) => self.show_blanknode(bn),
-          OxTerm::Literal(lit) => self.show_literal(&lit),
-          OxTerm::NamedNode(n) => self.qualify_named_node(n),
+            OxTerm::BlankNode(bn) => self.show_blanknode(bn),
+            OxTerm::Literal(lit) => self.show_literal(&lit),
+            OxTerm::NamedNode(n) => self.qualify_named_node(n),
         }
     }
 
@@ -140,7 +139,10 @@ impl SRDFGraph {
         )
     }
 
-    pub fn from_path(path: &PathBuf, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
+    pub fn from_path(
+        path: &PathBuf,
+        base: Option<Iri<String>>,
+    ) -> Result<SRDFGraph, SRDFGraphError> {
         let file = File::open(path).map_err(|e| SRDFGraphError::ReadingPathError {
             path_name: path.display().to_string(),
             error: e,
@@ -149,11 +151,7 @@ impl SRDFGraph {
         Self::from_reader(reader, base)
     }
 
-    pub fn parse_data(
-        data: &String,
-        base: &Path,
-        _debug: u8,
-    ) -> Result<SRDFGraph, SRDFGraphError> {
+    pub fn parse_data(data: &String, base: &Path, _debug: u8) -> Result<SRDFGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
         let base = Some(Iri::parse("base:://".to_owned()).unwrap());
@@ -252,15 +250,43 @@ impl SRDFComparisons for SRDFGraph {
     }
 
     fn iri_from_str(str: &str) -> Result<OxNamedNode, SRDFGraphError> {
-        OxNamedNode::new(str).map_err(|err| 
-          SRDFGraphError::IriParseError{ err }
-        )
+        OxNamedNode::new(str).map_err(|err| SRDFGraphError::IriParseError { err })
     }
 
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm { 
-        OxTerm::NamedNode(iri) 
+    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
+        OxTerm::NamedNode(iri)
     }
 
+    fn iri2iri_s(iri: OxNamedNode) -> IriS {
+        IriS::new_unchecked(iri.as_str())
+    }
+
+    fn term2object(term: OxTerm) -> srdf::Object {
+        match term {
+            OxTerm::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
+            OxTerm::Literal(lit) => match lit.destruct() {
+                (s, None, None) => srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                    lexical_form: s,
+                    lang: None,
+                }),
+                (s, None, Some(lang)) => {
+                    srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                        lexical_form: s,
+                        lang: Some(srdf::lang::Lang::new(lang)),
+                    })
+                }
+                (s, Some(datatype), _) => {
+                    srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
+                        lexical_form: s,
+                        datatype: Self::iri2iri_s(datatype),
+                    })
+                }
+            },
+            OxTerm::NamedNode(iri) => srdf::Object::Iri {
+                iri: Self::iri2iri_s(iri),
+            },
+        }
+    }
 }
 
 impl SRDF for SRDFGraph {
@@ -270,7 +296,7 @@ impl SRDF for SRDFGraph {
     ) -> Result<HashSet<Self::IRI>, Self::Err> {
         let mut ps = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
-           ps.insert(triple.predicate.into_owned());
+            ps.insert(triple.predicate.into_owned());
         }
         Ok(ps)
     }
@@ -350,7 +376,6 @@ impl AsyncSRDF for SRDFGraph {
         }
         Ok(results)
     }
-
 }
 
 #[cfg(test)]
@@ -360,7 +385,6 @@ mod tests {
     use oxrdf::{Graph, SubjectRef};
     use rio_api::model::{Literal, Subject};
     use srdf::SRDF;
-
 
     #[test]
     fn parse_turtle() {
@@ -388,7 +412,7 @@ mod tests {
 
     #[tokio::test]
     async fn parse_get_predicates() {
-        use crate::srdf_graph::AsyncSRDF;
+        use crate::srdfgraph::AsyncSRDF;
 
         let s = r#"PREFIX : <http://example.org/>
             PREFIX schema: <https://schema.org/>
@@ -403,10 +427,10 @@ mod tests {
         let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
         assert_eq!(bag_preds.contains(&knows), true);
         let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
-        let alice_knows = 
-           AsyncSRDF::get_objects_for_subject_predicate(&parsed_graph, &alice, &knows)
-            .await
-            .unwrap();
+        let alice_knows =
+            AsyncSRDF::get_objects_for_subject_predicate(&parsed_graph, &alice, &knows)
+                .await
+                .unwrap();
         assert_eq!(alice_knows.contains(&bob), true);
     }
 }

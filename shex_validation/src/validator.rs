@@ -87,11 +87,11 @@ impl Validator {
         }
     }
 
-    fn cnv_iri<S>(&self, iri: &S::IRI) -> IriS
+    fn cnv_iri<S>(&self, iri: &S::IRI) -> Result<IriS>
     where
         S: SRDF,
     {
-        todo!()
+        IriS::new(iri.as_str()).map_err(|e| todo!())
     }
 
     fn cnv_object<S>(&self, term: &S::Term) -> Object
