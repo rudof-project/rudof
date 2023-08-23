@@ -1,17 +1,18 @@
 use crate::failures::Failures;
 use crate::rbe1::Rbe;
 use crate::Cardinality;
-use std::hash::Hash;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-use thiserror::Error;
 use std::fmt::Display;
+use std::hash::Hash;
+use thiserror::Error;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
-pub enum RbeError<K,V,R>
-where K: Hash + PartialEq + Eq + Display + Default,
-      V: Hash + Default + Eq + Display + Clone,
-      R: Default + PartialEq + Display + Clone
+pub enum RbeError<K, V, R>
+where
+    K: Hash + Eq + Display + Default,
+    V: Hash + Default + Eq + Display + Clone,
+    R: Hash + Default + Eq + Display + Clone,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: K, open: bool },
@@ -30,14 +31,16 @@ where K: Hash + PartialEq + Eq + Display + Default,
     RangeLowerBoundBiggerMax { symbol: K, card: Cardinality },
 
     #[error("Min > Max in cardinality {card} for {expr}")]
-    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<K,V,R>>, card: Cardinality },
+    RangeLowerBoundBiggerMaxExpr {
+        expr: Box<Rbe<K, V, R>>,
+        card: Cardinality,
+    },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
-        non_nullable_rbe: Box<Rbe<K,V,R>>,
-        expr: Box<Rbe<K,V,R>>
+        non_nullable_rbe: Box<Rbe<K, V, R>>,
+        expr: Box<Rbe<K, V, R>>,
     },
-
 
     #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
     CardinalityFail {
@@ -53,38 +56,30 @@ where K: Hash + PartialEq + Eq + Display + Default,
     },
 
     #[error("Cardinality(0,0) but found symbol after derivative")]
-    CardinalityZeroZeroDeriv {
-        symbol: K
-    },
+    CardinalityZeroZeroDeriv { symbol: K },
 
     #[error("Should fail but passed: {name}")]
-    ShouldFailButPassed {
-        name: String
-    },
-
+    ShouldFailButPassed { name: String },
 
     #[error("Or values failed {e}\n {failures}")]
-    OrValuesFail{ 
-        e: Box<Rbe<K,V,R>>,
-        failures: Failures<K, V, R>
-    } ,
+    OrValuesFail {
+        e: Box<Rbe<K, V, R>>,
+        failures: Failures<K, V, R>,
+    },
 
     #[error("All values in or branch failed")]
     MkOrValuesFail,
 
-
     #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
-    DerivIterError { 
-        error_msg: String, 
-        processed: Vec<(K,V)>,
-        expr: Box<Rbe<K,V,R>>,
-        current: Box<Rbe<K,V,R>>,
+    DerivIterError {
+        error_msg: String,
+        processed: Vec<(K, V)>,
+        expr: Box<Rbe<K, V, R>>,
+        current: Box<Rbe<K, V, R>>,
         key: K,
         open: bool,
     },
 
     #[error("{msg}")]
-    MsgError {
-        msg: String
-    }
+    MsgError { msg: String },
 }

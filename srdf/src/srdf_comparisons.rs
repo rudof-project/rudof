@@ -31,7 +31,7 @@ pub trait SRDFComparisons {
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
 
-    fn iri_from_str(str: &str) -> Result<Self::IRI, Self::Err>;
+    fn iri_s2iri(iri_s: IriS) -> Self::IRI;
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
 
     fn term2object(term: Self::Term) -> Object;

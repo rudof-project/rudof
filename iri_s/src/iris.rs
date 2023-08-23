@@ -28,6 +28,14 @@ impl IriS {
         self.0.as_str()
     }
 
+    pub fn from_named_node(iri: NamedNode) -> IriS {
+        IriS(iri)
+    }
+
+    pub fn as_named_node(self) -> NamedNode {
+        self.0
+    }
+
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let s = format!("{}{}", self.0.as_str(), str);
         let iri = NamedNode::new(s)?;

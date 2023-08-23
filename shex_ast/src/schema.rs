@@ -1,6 +1,6 @@
-use iri_s::IriError;
+use iri_s::IriS;
+use iri_s::IriSError;
 use prefix_map::PrefixMap;
-use srdf::iri::IriS;
 
 #[derive(Debug)]
 pub struct Schema {
@@ -18,7 +18,7 @@ impl<'a> Schema {
         self.base.clone()
     }
 
-    pub fn resolve(&self, alias: &str) -> Result<Option<IriS>, IriError> {
+    pub fn resolve(&self, alias: &str) -> Result<Option<IriS>, IriSError> {
         match &self.prefixes {
             Some(pm) => pm.resolve(alias),
             None => Ok(None),

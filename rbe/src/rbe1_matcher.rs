@@ -1,35 +1,39 @@
-use std::{fmt::{Debug, Display}, collections::HashSet};
 use core::hash::Hash;
 use log::debug;
+use std::{
+    collections::HashSet,
+    fmt::{Debug, Display},
+};
 
-use crate::{Pending, rbe_error::RbeError};
 use crate::rbe1::Rbe;
+use crate::{rbe_error::RbeError, Pending};
 
-pub struct RbeMatcher<K, V,R> 
-where K: Hash + Eq + Display + Default,
-      V: Hash + Default + Eq + Display + Clone, 
-      R: Default + PartialEq + Display + Clone 
+pub struct RbeMatcher<K, V, R>
+where
+    K: Hash + Eq + Display + Default,
+    V: Hash + Default + Eq + Display + Clone,
+    R: Hash + Default + Eq + Display + Clone,
 {
     rbe: Rbe<K, V, R>,
     open: bool,
-    controlled: HashSet<K>
+    controlled: HashSet<K>,
 }
 
-
-impl <K, V, R> RbeMatcher<K, V, R> 
-where K: Hash + Eq + Default + Display + Debug + Clone,
-      V: Hash + Default + Eq + Display + Debug + Clone, 
-      R: Default + PartialEq + Display + Debug + Clone 
+impl<K, V, R> RbeMatcher<K, V, R>
+where
+    K: Hash + Eq + Default + Display + Debug + Clone,
+    V: Hash + Default + Eq + Display + Debug + Clone,
+    R: Hash + Eq + Default + Display + Debug + Clone,
 {
     pub fn new() -> RbeMatcher<K, V, R> {
-        RbeMatcher{
+        RbeMatcher {
             rbe: Rbe::empty(),
             open: false,
-            controlled: HashSet::new()
+            controlled: HashSet::new(),
         }
     }
 
-    pub fn with_rbe(mut self, rbe: &Rbe<K,V,R>) -> Self {
+    pub fn with_rbe(mut self, rbe: &Rbe<K, V, R>) -> Self {
         self.rbe = (*rbe).clone();
         self.controlled = rbe.symbols();
         self
@@ -41,13 +45,16 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
     }
 
     pub fn with_open(mut self, open: bool) -> Self {
-        self.open = open ;
+        self.open = open;
         self
     }
 
-    pub fn matches<T: IntoIterator<Item=(K,V)>>(&self, iter: T) -> Result<Pending<V, R>, RbeError<K, V, R>> {
+    pub fn matches<T: IntoIterator<Item = (K, V)>>(
+        &self,
+        iter: T,
+    ) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         let mut pending = Pending::new();
-        let mut processed: Vec<(K,V)> = Vec::new();  
+        let mut processed: Vec<(K, V)> = Vec::new();
         match self.matches_iter(iter, &mut pending, &mut processed) {
             Rbe::Fail { error } => Err(error.clone()),
             d => {
@@ -56,34 +63,41 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
                 } else {
                     Err(RbeError::NonNullableMatch {
                         non_nullable_rbe: Box::new(d.clone()),
-                        expr: Box::new((*self).rbe.clone())
+                        expr: Box::new((*self).rbe.clone()),
                     })
                 }
             }
         }
     }
 
-    fn matches_iter<T: IntoIterator<Item=(K,V)>>(&self, iter:T, pending: &mut Pending<V,R>, processed: &mut Vec<(K,V)>) -> Rbe<K,V,R> {
+    fn matches_iter<T: IntoIterator<Item = (K, V)>>(
+        &self,
+        iter: T,
+        pending: &mut Pending<V, R>,
+        processed: &mut Vec<(K, V)>,
+    ) -> Rbe<K, V, R> {
         let mut current = (*self).rbe.clone();
         for (key, value) in iter {
             let deriv = current.deriv(&key, &value, 1, self.open, &self.controlled, pending);
             match deriv {
-              Rbe::Fail { error } => {
-                current = Rbe::Fail { error: RbeError::DerivIterError {
-                    error_msg: format!("{error}"),
-                    processed: processed.clone(),
-                    expr: Box::new((*self).rbe.clone()),
-                    current: Box::new(current.clone()),
-                    key: key.clone(),
-                    open: self.open, 
-                }};
-                break;
-              },
-              _ => {
-                debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
-                processed.push((key.clone(), value.clone()));
-                current = deriv;
-              }
+                Rbe::Fail { error } => {
+                    current = Rbe::Fail {
+                        error: RbeError::DerivIterError {
+                            error_msg: format!("{error}"),
+                            processed: processed.clone(),
+                            expr: Box::new((*self).rbe.clone()),
+                            current: Box::new(current.clone()),
+                            key: key.clone(),
+                            open: self.open,
+                        },
+                    };
+                    break;
+                }
+                _ => {
+                    debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
+                    processed.push((key.clone(), value.clone()));
+                    current = deriv;
+                }
             }
         }
         current
@@ -92,105 +106,115 @@ where K: Hash + Eq + Default + Display + Debug + Clone,
 
 #[cfg(test)]
 mod tests {
-    use crate::{Max, MatchCond, Min};
     use super::*;
+    use crate::{MatchCond, Max, Min};
 
-    fn is_even(k: &char, v: &i32) -> Result<Pending<i32,String>, RbeError<char, i32, String>> {
+    fn is_even(k: &char, v: &i32) -> Result<Pending<i32, String>, RbeError<char, i32, String>> {
         if v % 2 == 0 {
             Ok(Pending::new())
         } else {
-            Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} is not even") })
+            Err(RbeError::MsgError {
+                msg: format!("Value {v} for key {k} is not even"),
+            })
         }
     }
 
-    fn ref_x(_: &char, v: &i32) -> Result<Pending<i32,String>, RbeError<char, i32, String>> {
-        let ps = vec![(*v,vec!["X".to_string()])].into_iter();
+    fn ref_x(_: &char, v: &i32) -> Result<Pending<i32, String>, RbeError<char, i32, String>> {
+        let ps = vec![(*v, vec!["X".to_string()])].into_iter();
         Ok(Pending::from(ps))
     }
 
     fn cond_name(name: String) -> MatchCond<char, String, String> {
         MatchCond::new().with_cond(move |k: &char, v: &String| {
-        if *v == name {
-            Ok(Pending::new())
-        } else {
-            Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} is not equal to {name}") })
-        }
-      })
+            if *v == name {
+                Ok(Pending::new())
+            } else {
+                Err(RbeError::MsgError {
+                    msg: format!("Value {v} for key {k} is not equal to {name}"),
+                })
+            }
+        })
     }
 
     fn cond_len(len: usize) -> MatchCond<char, String, String> {
         MatchCond::new().with_cond(move |k: &char, v: &String| {
-        if v.len() == len {
-            Ok(Pending::new())
-        } else {
-            Err(RbeError::MsgError{ msg: format!("Value {v} for key {k} has no length {len}") })
-        }
-      })
+            if v.len() == len {
+                Ok(Pending::new())
+            } else {
+                Err(RbeError::MsgError {
+                    msg: format!("Value {v} for key {k} has no length {len}"),
+                })
+            }
+        })
     }
-
 
     #[test]
     fn test_rbe_matcher_len_name() {
-
-        let rbe: Rbe<char, String, String> = Rbe::and(
-            vec![
-                Rbe::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1))]
-        );
+        let rbe: Rbe<char, String, String> = Rbe::and(vec![
+            Rbe::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
+            Rbe::symbol_cond(
+                'b',
+                cond_name("foo".to_string()),
+                Min::from(0),
+                Max::IntMax(1),
+            ),
+        ]);
         let expected = Pending::new();
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
-        assert_eq!(rbe_matcher.matches(vec![('a', "baz".to_string())].into_iter()), Ok(expected));
+        assert_eq!(
+            rbe_matcher.matches(vec![('a', "baz".to_string())].into_iter()),
+            Ok(expected)
+        );
     }
 
     #[test]
     fn test_rbe_matcher_even_ref() {
-
         let cond_even = MatchCond::new().with_cond(is_even);
         let cond_ref_x = MatchCond::new().with_cond(ref_x);
 
-        let rbe: Rbe<char, i32, String> = Rbe::and(
-            vec![
-                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
-        );
+        let rbe: Rbe<char, i32, String> = Rbe::and(vec![
+            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        ]);
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
-        assert_eq!(rbe_matcher.matches(vec![('a', 2), ('b', 42)].into_iter()), Ok(expected));
+        assert_eq!(
+            rbe_matcher.matches(vec![('a', 2), ('b', 42)].into_iter()),
+            Ok(expected)
+        );
     }
 
     #[test]
     fn test_rbe_matcher_even_ref_unordered() {
-
         let cond_even = MatchCond::new().with_cond(is_even);
         let cond_ref_x = MatchCond::new().with_cond(ref_x);
 
-        let rbe: Rbe<char, i32, String> = Rbe::and(
-            vec![
-                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
-        );
+        let rbe: Rbe<char, i32, String> = Rbe::and(vec![
+            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        ]);
         let expected = Pending::from(vec![(42, vec!["X".to_string()])].into_iter());
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
-        assert_eq!(rbe_matcher.matches(vec![('b', 42), ('a', 2)].into_iter()), Ok(expected));
+        assert_eq!(
+            rbe_matcher.matches(vec![('b', 42), ('a', 2)].into_iter()),
+            Ok(expected)
+        );
     }
 
     #[test]
     fn test_rbe_matcher_even_fails_odd() {
-
         let cond_even = MatchCond::new().with_cond(is_even);
         let cond_ref_x = MatchCond::new().with_cond(ref_x);
 
-        let rbe: Rbe<char, i32, String> = Rbe::and(
-            vec![
-                Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-                Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1))]
-        );
+        let rbe: Rbe<char, i32, String> = Rbe::and(vec![
+            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        ]);
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
         let iter = vec![('b', 42), ('a', 3)].into_iter();
         assert!(rbe_matcher.matches(iter).is_err());
     }
-
 }

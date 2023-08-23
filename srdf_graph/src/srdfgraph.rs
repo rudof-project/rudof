@@ -242,15 +242,17 @@ impl SRDFComparisons for SRDFGraph {
     fn lexical_form(&self, literal: &OxLiteral) -> String {
         literal.to_string()
     }
+
     fn lang(&self, literal: &OxLiteral) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }
+
     fn datatype(&self, literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(str: &str) -> Result<OxNamedNode, SRDFGraphError> {
-        OxNamedNode::new(str).map_err(|err| SRDFGraphError::IriParseError { err })
+    fn iri_s2iri(iri_s: IriS) -> OxNamedNode {
+        iri_s.as_named_node()
     }
 
     fn iri_as_term(iri: OxNamedNode) -> OxTerm {
@@ -258,7 +260,7 @@ impl SRDFComparisons for SRDFGraph {
     }
 
     fn iri2iri_s(iri: OxNamedNode) -> IriS {
-        IriS::new_unchecked(iri.as_str())
+        IriS::from_named_node(iri)
     }
 
     fn term2object(term: OxTerm) -> srdf::Object {

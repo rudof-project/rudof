@@ -1,7 +1,9 @@
 use crate::result_map::*;
+use crate::validation_state::*;
 use crate::validator_error::*;
 use iri_s::IriS;
 use shex_ast::compiled_schema::*;
+use shex_ast::ShapeLabelIdx;
 use shex_ast::{compiled_schema::CompiledSchema, ShapeLabel};
 use srdf::NeighsIterator;
 use srdf::{Object, SRDFComparisons, SRDF};
@@ -16,15 +18,19 @@ type Result<T> = std::result::Result<T, ValidatorError>;
 
 pub struct Validator {
     schema: CompiledSchema,
-    result_map: ResultMap,
+    validation_state: ValidationState<Object, ShapeLabelIdx>,
 }
 
 impl Validator {
     pub fn new(schema: CompiledSchema) -> Validator {
         Validator {
             schema,
-            result_map: ResultMap::new(),
+            validation_state: ValidationState::new(),
         }
+    }
+
+    pub fn add_current(&mut self, node: Object, shape: ShapeLabelIdx) {
+        todo!()
     }
 
     pub fn validate_node_shape<S>(&mut self, node: Object, shape: ShapeLabel, rdf: S) -> Result<()>
@@ -32,7 +38,7 @@ impl Validator {
         S: SRDF,
     {
         if let Some((idx, se)) = self.schema.find_label(&shape) {
-            self.result_map.insert(node, *idx);
+            self.add_current(node, *idx);
             Ok(())
         } else {
             Err(ValidatorError::NotFoundShapeLabel { shape })
@@ -76,7 +82,7 @@ impl Validator {
                 sem_acts,
                 annotations,
             } => {
-                let values = self.neighs(&node, &rdf)?;
+                let values = self.neighs(node, &rdf)?;
                 let rs = rbe_table.matches(values);
                 Ok(())
             }
@@ -87,25 +93,25 @@ impl Validator {
         }
     }
 
-    fn cnv_iri<S>(&self, iri: &S::IRI) -> Result<IriS>
+    fn cnv_iri<S>(&self, iri: S::IRI) -> IriS
     where
         S: SRDF,
     {
-        IriS::new(iri.as_str()).map_err(|e| todo!())
+        S::iri2iri_s(iri)
     }
 
-    fn cnv_object<S>(&self, term: &S::Term) -> Object
+    fn cnv_object<S>(&self, term: S::Term) -> Object
     where
         S: SRDF,
     {
-        todo!()
+        S::term2object(term)
     }
 
-    fn neighs<S>(&self, node: &Object, rdf: &S) -> Result<Vec<(IriS, Object)>>
+    fn neighs<S>(&self, node: Object, rdf: &S) -> Result<Vec<(IriS, Object)>>
     where
         S: SRDF,
     {
-        let node = self.get_rdf_node(node, rdf)?;
+        let node = self.get_rdf_node(node, rdf);
         if let Some(subject) = rdf.term_as_subject(&node) {
             let preds = rdf
                 .get_predicates_for_subject(&subject)
@@ -116,8 +122,8 @@ impl Validator {
                     .get_objects_for_subject_predicate(&subject, &p)
                     .map_err(|e| todo!())?;
                 for o in objects {
-                    let object = self.cnv_object::<S>(&o);
-                    let iri = self.cnv_iri::<S>(&p);
+                    let object = self.cnv_object::<S>(o);
+                    let iri = self.cnv_iri::<S>(p.clone());
                     result.push((iri, object));
                 }
             }
@@ -127,16 +133,14 @@ impl Validator {
         }
     }
 
-    fn get_rdf_node<S>(&self, node: &Object, rdf: &S) -> Result<S::Term>
+    fn get_rdf_node<S>(&self, node: Object, rdf: &S) -> S::Term
     where
         S: SRDF,
     {
         match node {
             Object::Iri { iri } => {
-                let iri = S::iri_from_str(iri.as_str()).map_err(|e| ValidatorError::SRDFError {
-                    error: format!("{e}"),
-                })?;
-                Ok(S::iri_as_term(iri))
+                let i = S::iri_s2iri(iri);
+                S::iri_as_term(i)
             }
             Object::BlankNode(id) => {
                 todo!()
@@ -147,7 +151,7 @@ impl Validator {
         }
     }
 
-    pub fn result_map(&self) -> ResultMap {
-        self.result_map.clone()
-    }
+    /*pub fn result_map(&self) -> ResultMap<Object, ShapeLabelIdx> {
+        self.validation_state.result_map.clone()
+    }*/
 }
