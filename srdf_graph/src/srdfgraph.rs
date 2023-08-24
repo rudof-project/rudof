@@ -251,7 +251,7 @@ impl SRDFComparisons for SRDFGraph {
         literal.datatype().into_owned()
     }
 
-    fn iri_s2iri(iri_s: IriS) -> OxNamedNode {
+    fn iri_s2iri(iri_s: &IriS) -> &OxNamedNode {
         iri_s.as_named_node()
     }
 

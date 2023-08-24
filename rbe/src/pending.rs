@@ -71,6 +71,16 @@ where
         }
     }
 
+    pub fn insert_from_iter<T: IntoIterator<Item = (V, R)>>(&mut self, iter: T) {
+        for (v, r) in iter {
+            self.insert(v, r)
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.pending_map.is_empty()
+    }
+
     pub fn from<T: IntoIterator<Item = (V, RS)>, RS: IntoIterator<Item = R>>(
         iter: T,
     ) -> Pending<V, R> {

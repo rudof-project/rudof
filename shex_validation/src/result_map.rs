@@ -1,9 +1,11 @@
 use rbe::Pending;
+use std::collections::hash_map::Entry;
 use std::hash::Hash;
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Debug, Display, Formatter},
 };
+
 #[derive(Debug, Clone)]
 pub struct ResultMap<N, S>
 where
@@ -26,6 +28,44 @@ where
             fail_map: HashMap::new(),
             pending: Pending::new(),
         }
+    }
+
+    pub fn add_ok(&mut self, n: N, s: S) {
+        match self.ok_map.entry(n) {
+            Entry::Occupied(mut v) => {
+                v.get_mut().insert(s);
+            }
+            Entry::Vacant(vacant) => {
+                vacant.insert(HashSet::from([s]));
+            }
+        }
+    }
+
+    pub fn add_fail(&mut self, n: N, s: S) {
+        match self.fail_map.entry(n) {
+            Entry::Occupied(mut v) => {
+                v.get_mut().insert(s);
+            }
+            Entry::Vacant(vacant) => {
+                vacant.insert(HashSet::from([s]));
+            }
+        }
+    }
+
+    pub fn add_pending(&mut self, n: N, s: S) {
+        self.pending.insert(n, s)
+    }
+
+    pub fn add_pending_from_iter<T: IntoIterator<Item = (N, S)>>(&mut self, iter: T) {
+        self.pending.insert_from_iter(iter);
+    }
+
+    pub fn more_pending(&self) -> bool {
+        !self.pending.is_empty()
+    }
+
+    pub fn pop_pending(&mut self) -> Option<(N, S)> {
+        self.pending.pop()
     }
 
     /*pub fn iter(&self) -> ResultMapIterator {

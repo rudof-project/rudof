@@ -1,4 +1,4 @@
-use shex_ast::ShapeLabel;
+use shex_ast::{CompiledSchemaError, ShapeLabel};
 use srdf::Object;
 use thiserror::Error;
 
@@ -12,4 +12,7 @@ pub enum ValidatorError {
 
     #[error("Error converting object to iri: {object}")]
     ConversionObjectIri { object: Object },
+
+    #[error(transparent)]
+    CompiledSchemaError(#[from] CompiledSchemaError),
 }

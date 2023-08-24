@@ -14,3 +14,5 @@ pub use crate::validator_error::*;
 // pub use crate::cardinality_error::*;
 // pub use crate::cardinality::*;
 // pub use crate::validation_error::*;
+
+const MAX_STEPS: usize = 20;

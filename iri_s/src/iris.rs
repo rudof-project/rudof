@@ -32,8 +32,8 @@ impl IriS {
         IriS(iri)
     }
 
-    pub fn as_named_node(self) -> NamedNode {
-        self.0
+    pub fn as_named_node(&self) -> &NamedNode {
+        &self.0
     }
 
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
