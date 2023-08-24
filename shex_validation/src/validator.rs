@@ -1,3 +1,4 @@
+use crate::MAX_STEPS;
 use crate::result_map::*;
 use crate::validation_state::*;
 use crate::validator_error::*;
@@ -18,41 +19,64 @@ type Result<T> = std::result::Result<T, ValidatorError>;
 
 pub struct Validator {
     schema: CompiledSchema,
-    state: ValidationState<Object, ShapeLabelIdx>,
+    current_goal: Option<(Object, ShapeLabelIdx)>,
+    result_map: ResultMap<Object, ShapeLabelIdx>,
+    alternatives: Vec<ResultMap<Object, ShapeLabelIdx>>,
+    max_steps: usize,
+    step_counter: usize,
 }
 
 impl Validator {
     pub fn new(schema: CompiledSchema) -> Validator {
         Validator {
             schema,
-            state: ValidationState::new(),
+            current_goal: None,
+            result_map: ResultMap::new(),
+            alternatives: Vec::new(),
+            max_steps: MAX_STEPS,
+            step_counter: 0,
         }
     }
 
     fn add_current(&mut self, node: &Object, shape: &ShapeLabelIdx) {
-        self.state.set_current_goal(&node, &shape);
+        self.set_current_goal(&node, &shape);
     }
 
-    fn add_pending(&mut self, node: Object, shape: ShapeLabelIdx) {
-        self.state.add_pending(node, shape)
+    pub fn with_max_steps(mut self, max_steps: usize) -> Self {
+        self.max_steps = max_steps;
+        self
     }
 
-    fn more_pending(&self) -> bool {
-        self.state.more_pending()
+    pub fn set_current_goal(&mut self, n: &Object, s: &ShapeLabelIdx) {
+        self.current_goal = Some(((*n).clone(), (*s).clone()));
+    }
+
+    pub fn add_ok(&mut self, n: Object, s: ShapeLabelIdx) {
+        self.result_map.add_ok(n, s);
+    }
+
+    pub fn more_pending(&self) -> bool {
+        self.result_map.more_pending()
+    }
+
+    pub fn add_pending(&mut self, n: Object, s: ShapeLabelIdx) {
+        self.result_map.add_pending(n, s);
+    }
+
+    pub fn pop_pending(&mut self) -> Option<(Object, ShapeLabelIdx)> {
+        self.result_map.pop_pending()
+    }
+
+    pub fn steps(&self) -> usize {
+        self.step_counter
+    }
+
+    pub fn max_steps(&self) -> usize {
+        self.max_steps
     }
 
     fn no_end_steps(&self) -> bool {
-        self.state.steps() < self.state.max_steps()
-    }
-
-    fn pop_pending(&mut self) -> Result<(Object, ShapeLabelIdx)> {
-        match self.state.pop_pending() {
-            Some((n, s)) => Ok((n, s)),
-            None => {
-                // Raise internal error
-                todo!()
-            }
-        }
+        self.steps() < self.max_steps()
     }
 
     pub fn validate_node_shape<S>(&mut self, node: Object, shape: ShapeLabel, rdf: &S) -> Result<()>
@@ -62,7 +86,7 @@ impl Validator {
         if let Some((idx, _se)) = self.schema.find_label(&shape) {
             self.add_pending(node, *idx);
             while self.no_end_steps() && self.more_pending() {
-                let (n, s) = self.pop_pending()?;
+                let (n, s) = self.pop_pending().unwrap();
                 self.add_current(&n, &s);
                 self.check_node_shape(&n, &s, rdf)?;
             }
