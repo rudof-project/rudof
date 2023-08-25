@@ -44,7 +44,7 @@ where
         }
     }
 
-    pub fn add_component(&mut self, k: K, cond: MatchCond<K, V, R>) -> Component {
+    pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
         let c = Component::from(self.component_counter);
         self.key_components
             .entry(k)
@@ -56,7 +56,7 @@ where
                 hs.insert(c);
                 hs
             });
-        self.component_cond.insert(c, cond);
+        self.component_cond.insert(c, cond.clone());
         self.component_counter += 1;
         c
     }
@@ -165,7 +165,7 @@ where
                 for (k, v, _, cond) in &vs {
                     match cond.matches(k, v) {
                         Ok(new_pending) => {
-                            pending = pending.merge(new_pending);
+                            pending.merge(new_pending);
                         }
                         Err(err) => {
                             return Some(Err(err));
@@ -194,6 +194,8 @@ mod tests {
 
     #[test]
     fn test_rbe_table_1() {
+        // { p a; q y; q z } == { p is_a; q @t ; q @u }
+        //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> = MatchCond::new()
             .with_name("is_a".to_string())
             .with_cond(move |_k, v| {
@@ -223,10 +225,12 @@ mod tests {
             });
 
         let vs = vec![('p', 'a'), ('q', 'y'), ('q', 'z')];
+
+        // rbe_table = { p is_a ; q @t ; q @u+ }
         let mut rbe_table = RbeTable::new();
-        let c1 = rbe_table.add_component('p', is_a);
-        let c2 = rbe_table.add_component('q', ref_t);
-        let c3 = rbe_table.add_component('q', ref_u);
+        let c1 = rbe_table.add_component('p', &is_a);
+        let c2 = rbe_table.add_component('q', &ref_t);
+        let c3 = rbe_table.add_component('q', &ref_u);
         rbe_table.with_rbe(Rbe::and(vec![
             Rbe::symbol(c1, 1, Max::IntMax(1)),
             Rbe::symbol(c2, 1, Max::IntMax(1)),
@@ -247,6 +251,89 @@ mod tests {
                 vec![('y', vec!['u']), ('z', vec!['t'])].into_iter()
             )))
         );
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_rbe_table_2_fail() {
+        // { p a; q y } != { p is_a; q @t ; q @u }
+        //     Pending y/@t, z/@u | y@u, z@t
+        let is_a: MatchCond<char, char, char> = MatchCond::new()
+            .with_name("is_a".to_string())
+            .with_cond(move |_k, v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            });
+
+        let ref_t: MatchCond<char, char, char> = MatchCond::new()
+            .with_name("ref_t".to_string())
+            .with_cond(move |_k, v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 't');
+                Ok(pending)
+            });
+
+        let ref_u: MatchCond<char, char, char> = MatchCond::new()
+            .with_name("ref_u".to_string())
+            .with_cond(move |_k, v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 'u');
+                Ok(pending)
+            });
+
+        let vs = vec![('p', 'a'), ('q', 'y')];
+
+        // rbe_table = { p is_a ; q @t ; q @u+ }
+        let mut rbe_table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_a);
+        let c2 = rbe_table.add_component('q', &ref_t);
+        let c3 = rbe_table.add_component('q', &ref_u);
+        rbe_table.with_rbe(Rbe::and(vec![
+            Rbe::symbol(c1, 1, Max::IntMax(1)),
+            Rbe::symbol(c2, 1, Max::IntMax(1)),
+            Rbe::symbol(c3, 1, Max::Unbounded),
+        ]));
+
+        let mut iter = rbe_table.matches(vs);
+
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_rbe_table_3_basic() {
+        // { p a; q a } == { p is_a; q is_a }
+        //     Ok
+        let is_a: MatchCond<char, char, char> = MatchCond::new()
+            .with_name("is_a".to_string())
+            .with_cond(move |_k, v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            });
+
+        let vs = vec![('p', 'a'), ('q', 'a')];
+
+        // rbe_table = { p is_a ; q is_a }
+        let mut rbe_table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_a);
+        let c2 = rbe_table.add_component('q', &is_a);
+        rbe_table.with_rbe(Rbe::and(vec![
+            Rbe::symbol(c1, 1, Max::IntMax(1)),
+            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+
+        let mut iter = rbe_table.matches(vs);
+
+        assert_eq!(iter.next(), Some(Ok(Pending::new())));
         assert_eq!(iter.next(), None);
     }
 }

@@ -106,7 +106,11 @@ where
 {
     pub fn matches(&self, key: &K, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         self.cond.iter().fold(Ok(Pending::new()), |current, f| {
-            current.and_then(|r| Ok(r.merge(f.call(key, value)?)))
+            current.and_then(|mut r| {
+                let pending = f.call(key, value)?;
+                r.merge(pending);
+                Ok(r)
+            })
         })
         /*        match &self.cond {
             None => Ok(Pending::new()),

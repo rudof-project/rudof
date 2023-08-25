@@ -56,6 +56,10 @@ where
         self.pending.insert(n, s)
     }
 
+    pub fn merge_pending(&mut self, pending: Pending<N, S>) {
+        self.pending.merge(pending);
+    }
+
     pub fn add_pending_from_iter<T: IntoIterator<Item = (N, S)>>(&mut self, iter: T) {
         self.pending.insert_from_iter(iter);
     }

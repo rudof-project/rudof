@@ -37,7 +37,7 @@ where
         counter
     }
 
-    pub fn merge(mut self, other: Pending<V, R>) -> Self {
+    pub fn merge(&mut self, other: Pending<V, R>) {
         for (k, vs) in other.pending_map.into_iter() {
             match self.pending_map.entry(k) {
                 Entry::Occupied(mut v) => v.get_mut().extend(vs),
@@ -46,7 +46,6 @@ where
                 }
             }
         }
-        self
     }
 
     pub fn insert(&mut self, v: V, r: R) {
@@ -211,7 +210,7 @@ mod tests {
             ('b', vec![3]),
         ]);
 
-        pending1 = pending1.merge(pending2);
+        pending1.merge(pending2);
         assert_eq!(pending1, expected);
     }
 
