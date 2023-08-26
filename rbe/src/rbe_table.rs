@@ -1,7 +1,7 @@
 use core::hash::Hash;
+use indexmap::IndexMap;
+use indexmap::IndexSet;
 use itertools::*;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::vec::IntoIter;
@@ -22,8 +22,8 @@ where
     R: Hash + Default + Eq + Display + Clone,
 {
     rbe: Rbe<Component>,
-    key_components: HashMap<K, HashSet<Component>>,
-    component_cond: HashMap<Component, MatchCond<K, V, R>>,
+    key_components: IndexMap<K, IndexSet<Component>>,
+    component_cond: IndexMap<Component, MatchCond<K, V, R>>,
     open: bool,
     component_counter: usize,
 }
@@ -37,8 +37,8 @@ where
     pub fn new() -> RbeTable<K, V, R> {
         RbeTable {
             rbe: Rbe::Empty,
-            key_components: HashMap::new(),
-            component_cond: HashMap::new(),
+            key_components: IndexMap::new(),
+            component_cond: IndexMap::new(),
             open: false,
             component_counter: 0,
         }
@@ -52,7 +52,7 @@ where
                 (*vs).insert(c);
             })
             .or_insert_with(|| {
-                let mut hs = HashSet::new();
+                let mut hs = IndexSet::new();
                 hs.insert(c);
                 hs
             });
@@ -109,7 +109,7 @@ where
         }
     */
     pub fn matches(&self, values: Vec<(K, V)>) -> MatchTableIter<K, V, R> {
-        let empty = HashSet::new();
+        let empty = IndexSet::new();
         let mut rs = Vec::new();
         for (key, value) in values {
             let conds = self.key_components.get(&key).unwrap_or_else(|| &empty);
@@ -117,13 +117,12 @@ where
             for c in conds {
                 // TODO: Add some better error control (this should mark an internal error anyway)
                 let cond = self.component_cond.get(c).unwrap();
-                pairs.push((key.clone(), value.clone(), (*c).clone(), (*cond).clone()));
+                pairs.push((key.clone(), value.clone(), c.clone(), cond.clone()));
             }
             rs.push(pairs);
         }
 
-        let mp: MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>> =
-            rs.into_iter().multi_cartesian_product();
+        let mp = rs.into_iter().multi_cartesian_product();
         MatchTableIter {
             state: mp,
             rbe: self.rbe.clone(),
@@ -335,5 +334,42 @@ mod tests {
 
         assert_eq!(iter.next(), Some(Ok(Pending::new())));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_rbe_table_4_basic_fail() {
+        // { p a; q b } == { p is_a; q is_a }
+        //     Ok
+        let is_a: MatchCond<char, char, char> = MatchCond::new()
+            .with_name("is_a".to_string())
+            .with_cond(move |_k, v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            });
+
+        let vs = vec![('p', 'a'), ('q', 'b')];
+
+        // rbe_table = { p is_a ; q is_a }
+        let mut rbe_table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_a);
+        let c2 = rbe_table.add_component('q', &is_a);
+        rbe_table.with_rbe(Rbe::and(vec![
+            Rbe::symbol(c1, 1, Max::IntMax(1)),
+            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+
+        let mut iter = rbe_table.matches(vs);
+
+        assert_eq!(
+            iter.next(),
+            Some(Err(rbe_error::RbeError::MsgError {
+                msg: "Value b!='a'".to_string()
+            }))
+        );
     }
 }

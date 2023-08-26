@@ -177,6 +177,7 @@ impl ValidatorRunner {
                     // TODO: Add alternatives...
                     Ok(())
                 } else {
+                    debug!("Failed Rbe: {rbe_table:?}");
                     Err(ValidatorError::RbeFailed())
                 }
             }

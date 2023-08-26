@@ -1,17 +1,14 @@
-use serde_derive::{Deserialize, Serialize};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::collections::HashSet;
+use indexmap::{map::Entry, IndexMap, IndexSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Pending<V, R>
 where
     V: Hash + Eq,
     R: Hash + Eq,
 {
-    pending_map: HashMap<V, HashSet<R>>,
+    pending_map: IndexMap<V, IndexSet<R>>,
 }
 
 impl<V, R> Pending<V, R>
@@ -21,11 +18,11 @@ where
 {
     pub fn new() -> Pending<V, R> {
         Pending {
-            pending_map: HashMap::new(),
+            pending_map: IndexMap::new(),
         }
     }
 
-    pub fn get(&self, k: &V) -> Option<&HashSet<R>> {
+    pub fn get(&self, k: &V) -> Option<&IndexSet<R>> {
         self.pending_map.get(k)
     }
 
@@ -54,7 +51,7 @@ where
                 v.get_mut().insert(r);
             }
             Entry::Vacant(vacant) => {
-                vacant.insert(HashSet::from([r]));
+                vacant.insert(IndexSet::from([r]));
             }
         }
     }
@@ -65,7 +62,7 @@ where
                 v.get_mut().extend(iter);
             }
             Entry::Vacant(vacant) => {
-                vacant.insert(HashSet::from_iter(iter));
+                vacant.insert(IndexSet::from_iter(iter));
             }
         }
     }
@@ -98,51 +95,27 @@ where
     }
 
     fn select_v(&self) -> Option<V> {
-        if let Some(v) = self.pending_map.keys().next() {
-            Some((*v).clone())
-        } else {
-            None
-        }
-    }
-
-    fn select_r(rs: &HashSet<R>) -> Option<R> {
-        if let Some(r) = rs.iter().next() {
-            Some((*r).clone())
-        } else {
-            None
-        }
-    }
-
-    fn pop_hash_set(rs: &mut HashSet<R>) -> Option<R> {
-        if let Some(r) = Self::select_r(&rs) {
-            rs.remove(&r);
-            Some(r)
-        } else {
-            None
-        }
+        self.pending_map.first().map(|(v, _)| v.clone())
     }
 
     pub fn pop(&mut self) -> Option<(V, R)> {
         match self.select_v() {
-            Some(v) => {
-                let cloned_v = v.clone();
-                match self.pending_map.entry(v) {
-                    Entry::Occupied(mut occupied) => {
-                        let rs = occupied.get_mut();
-                        if let Some(r) = Self::pop_hash_set(rs) {
-                            if rs.is_empty() {
-                                self.pending_map.remove(&cloned_v);
-                            }
-                            Some((cloned_v, r))
-                        } else {
-                            panic!("Internal error: Couldn't pop r from hash_set: {rs:?} ")
+            Some(v) => match self.pending_map.get_mut(&v) {
+                Some(rs) => match rs.pop() {
+                    Some(r) => {
+                        if rs.is_empty() {
+                            self.pending_map.remove(&v);
                         }
+                        Some((v.clone(), r.clone()))
                     }
-                    Entry::Vacant(vac) => {
-                        panic!("Internal error. HashMap Should contain a value for key. {vac:?}")
+                    None => {
+                        panic!("Internal error in penidng map: Cannot pop from value {v:?}");
                     }
+                },
+                None => {
+                    panic!("Internal error in pending map: Key {v:?} without value?");
                 }
-            }
+            },
             None => None,
         }
     }
@@ -152,8 +125,8 @@ pub struct PendingIterator<'a, V, R>
 where
     V: Hash + Eq,
 {
-    pending_iter: std::collections::hash_map::Iter<'a, V, HashSet<R>>,
-    current_state: Option<(&'a V, std::collections::hash_set::Iter<'a, R>)>,
+    pending_iter: indexmap::map::Iter<'a, V, IndexSet<R>>,
+    current_state: Option<(&'a V, indexmap::set::Iter<'a, R>)>,
 }
 
 impl<'a, V, R> Iterator for PendingIterator<'a, V, R>
@@ -191,12 +164,12 @@ where
 #[cfg(test)]
 mod tests {
     use crate::Pending;
-    use std::collections::HashSet;
+    use indexmap::IndexSet;
 
     #[test]
     fn test_from() {
         let pending = Pending::from(vec![('a', vec![1, 2]), ('b', vec![3])]);
-        let expected = HashSet::from_iter([1, 2].into_iter());
+        let expected = IndexSet::from_iter([1, 2].into_iter());
         assert_eq!(pending.get(&'a'), Some(&expected));
     }
 
@@ -217,8 +190,8 @@ mod tests {
     #[test]
     fn test_pending_iter() {
         let pending = Pending::from(vec![('a', vec![1, 2]), ('b', vec![3])]);
-        let hash_set: HashSet<(&char, &i32)> = pending.iter().collect();
-        let expected = HashSet::from([(&'a', &1), (&'b', &3), (&'a', &2)]);
+        let hash_set: IndexSet<(&char, &i32)> = pending.iter().collect();
+        let expected = IndexSet::from([(&'a', &1), (&'b', &3), (&'a', &2)]);
         assert_eq!(hash_set, expected);
     }
 
