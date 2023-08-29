@@ -1,5 +1,6 @@
 use crate::failures::Failures;
 use crate::{deriv_n, rbe_error::RbeError, Cardinality, MatchCond, Max, Min, Pending};
+use crate::{Key, Ref, Value};
 use core::hash::Hash;
 use itertools::cloned;
 use serde_derive::{Deserialize, Serialize};
@@ -10,9 +11,9 @@ use std::fmt::{Debug, Display};
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Rbe<K, V, R>
 where
-    K: Hash + Eq + Display + Default,
-    V: Hash + Eq + Default + Display + Clone,
-    R: Hash + Default + Eq + Display + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     Fail {
         error: RbeError<K, V, R>,
@@ -47,9 +48,9 @@ type NullableResult = bool;
 
 impl<K, V, R> Rbe<K, V, R>
 where
-    K: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display + Default,
-    V: Hash + Default + Display + Eq + Debug + Clone,
-    R: Hash + Default + Display + Eq + Debug + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     pub fn empty() -> Rbe<K, V, R> {
         Rbe::Empty
@@ -204,7 +205,7 @@ where
                 ref card,
             } => {
                 if *key == *symbol {
-                    match cond.matches(symbol, value) {
+                    match cond.matches(value) {
                         Err(err) => Rbe::Fail { error: err },
                         Ok(new_pending) => {
                             if card.max == Max::IntMax(0) {
@@ -411,9 +412,9 @@ where
 
 impl<K, V, R> Default for Rbe<K, V, R>
 where
-    K: Hash + Eq + fmt::Display + Default,
-    V: Hash + Default + Display + Eq + Clone,
-    R: Hash + Default + Eq + Display + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     fn default() -> Self {
         Rbe::Empty
@@ -422,15 +423,15 @@ where
 
 impl<K, V, R> Debug for Rbe<K, V, R>
 where
-    K: Debug + Hash + Eq + fmt::Display + Default,
-    V: Hash + Debug + Eq + Display + Default + Clone,
-    R: Hash + Debug + Eq + Display + Default + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest, "Empty"),
-            Rbe::Symbol { key, cond, card } => write!(dest, "{key:?}|{}{card:?}", cond.name()),
+            Rbe::Symbol { key, cond, card } => write!(dest, "{key:?}|{cond:?}{card:?}"),
             Rbe::And { exprs } => exprs.iter().fold(Ok(()), |result, value| {
                 result.and_then(|_| write!(dest, "{value:?};"))
             }),
@@ -446,15 +447,15 @@ where
 
 impl<K, V, R> Display for Rbe<K, V, R>
 where
-    K: Display + Hash + Eq + Default,
-    V: Hash + Eq + Default + Display + Debug + Clone,
-    R: Hash + Eq + Display + PartialEq + Default + Debug + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest, "Fail {{{error}}}"),
             Rbe::Empty => write!(dest, "Empty"),
-            Rbe::Symbol { key, cond, card } => write!(dest, "{key}|{}{card}", cond.name()),
+            Rbe::Symbol { key, cond, card } => write!(dest, "{key}|{cond}{card}"),
             Rbe::And { exprs } => exprs.iter().fold(Ok(()), |result, value| {
                 result.and_then(|_| write!(dest, "{value};"))
             }),
@@ -477,6 +478,9 @@ mod tests {
     #[test_log::test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
+
+        impl Ref for i32 {}
+
         let rbe: Rbe<char, i32, i32> = Rbe::and(vec![
             Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
@@ -509,6 +513,7 @@ mod tests {
 
     #[test]
     fn deriv_symbol_b_2_3() {
+        impl Key for String {}
         let rbe: Rbe<String, String, String> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
         let mut pending = Pending::new();
         let d = rbe.deriv(

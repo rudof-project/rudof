@@ -1,5 +1,5 @@
 prefix : <http://example.org/>
-prefix schema: <http://schema.org>
+prefix schema: <http://schema.org/>
 
 :a schema:name  "Alice" ;
    schema:knows :a, :b  .

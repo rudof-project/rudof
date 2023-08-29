@@ -3,6 +3,7 @@ use crate::validator_error::*;
 use crate::MAX_STEPS;
 use iri_s::IriS;
 use log::debug;
+use rbe::Pending;
 use shex_ast::compiled_schema::*;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::{compiled_schema::CompiledSchema, ShapeLabel};
@@ -38,10 +39,11 @@ impl Validator {
         if let Some((idx, _se)) = self.schema.find_label(&shape) {
             self.runner.add_pending(node, *idx);
             while self.runner.no_end_steps() && self.runner.more_pending() {
-                debug!("runner: {:?}", self.runner);
-                let (n, s) = self.runner.pop_pending().unwrap();
-                self.runner.add_current(&n, &s);
-                self.check_node_shape(&n, &s, rdf)?;
+                self.runner.new_step();
+                println!("In validate_node_shape loop: step {}", self.runner.steps());
+                let (n, idx) = self.runner.pop_pending().unwrap();
+                self.runner.add_current(&n, &idx);
+                self.check_node_idx(&n, &idx, rdf)?;
             }
             Ok(())
         } else {
@@ -49,16 +51,11 @@ impl Validator {
         }
     }
 
-    pub fn check_node_shape<S>(
-        &mut self,
-        node: &Object,
-        shape: &ShapeLabelIdx,
-        rdf: &S,
-    ) -> Result<()>
+    pub fn check_node_idx<S>(&mut self, node: &Object, idx: &ShapeLabelIdx, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
-        let se = find_shape_expr(shape, &self.schema); // self.schema.get_shape_expr(shape).unwrap(); // Self::find_shape_expr(shape, &self.schema);
+        let se = find_shape_idx(idx, &self.schema); // self.schema.get_shape_expr(shape).unwrap(); // Self::find_shape_expr(shape, &self.schema);
         self.runner.check_node_shape_expr(node, se, rdf)
     }
 
@@ -104,6 +101,18 @@ impl ValidatorRunner {
         self.current_goal = Some(((*n).clone(), (*s).clone()));
     }
 
+    pub fn is_current_goal(&self, n: &Object, s: &ShapeLabelIdx) -> bool {
+        if let Some((cn, cs)) = &self.current_goal {
+            *cn == *n && *cs == *s
+        } else {
+            false
+        }
+    }
+
+    pub fn new_step(&mut self) {
+        self.step_counter += 1;
+    }
+
     pub fn add_ok(&mut self, n: Object, s: ShapeLabelIdx) {
         self.result_map.add_ok(n, s);
     }
@@ -136,18 +145,19 @@ impl ValidatorRunner {
     where
         S: SRDF,
     {
-        debug!("Checking node {node:?} with shape_expr: {se:?}");
+        debug!(
+            "Step {}. Checking node {node:?} with shape_expr: {se:?}",
+            self.step_counter
+        );
         match se {
             ShapeExpr::NodeConstraint {
                 node_kind,
                 datatype,
                 xs_facet,
                 values,
+                cond,
             } => {
-                check_node_node_kind(node, node_kind)?;
-                check_node_datatype(node, datatype)?;
-                check_node_values(node, values)?;
-                check_node_xs_facets(node, xs_facet)?;
+                cond.matches(node)?;
                 Ok(())
             }
             ShapeExpr::Ref { idx } => {
@@ -170,14 +180,22 @@ impl ValidatorRunner {
                 annotations,
             } => {
                 let values = self.neighs(node, rdf)?;
-                let mut rs = rbe_table.matches(values);
+                let mut rs = rbe_table.matches(values)?;
                 if let Some(pending_result) = rs.next() {
+                    println!("### obtained pending result, step {}", self.step_counter);
                     let pending = pending_result?;
-                    self.result_map.merge_pending(pending);
+                    let mut effective_pending = Pending::new();
+                    for (p, v) in pending.iter() {
+                        if self.is_current_goal(p, v) {
+                            self.add_ok(p.clone(), *v);
+                        } else {
+                            effective_pending.insert(p.clone(), v.clone());
+                        }
+                    }
+                    self.result_map.merge_pending(effective_pending);
                     // TODO: Add alternatives...
                     Ok(())
                 } else {
-                    debug!("Failed Rbe: {rbe_table:?}");
                     Err(ValidatorError::RbeFailed())
                 }
             }
@@ -212,14 +230,15 @@ impl ValidatorRunner {
                 .get_predicates_for_subject(&subject)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
-            for p in preds {
+            for p in &preds {
                 let objects = rdf
                     .get_objects_for_subject_predicate(&subject, &p)
                     .map_err(|e| self.cnv_err::<S>(e))?;
+                let iri = self.cnv_iri::<S>(p.clone());
+                debug!("neighs...iri: {iri:?} p: {:?}", p.to_string());
                 for o in objects {
                     let object = self.cnv_object::<S>(o);
-                    let iri = self.cnv_iri::<S>(p.clone());
-                    result.push((iri, object));
+                    result.push((iri.clone(), object));
                 }
             }
             Ok(result)
@@ -258,78 +277,9 @@ impl ValidatorRunner {
     }*/
 }
 
-fn find_shape_expr<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a ShapeExpr {
-    let se = schema.get_shape_expr(idx).unwrap();
+fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a ShapeExpr {
+    let se = schema.find_shape_idx(idx).unwrap();
     se
-}
-
-fn check_node_node_kind(node: &Object, node_kind: &Option<NodeKind>) -> Result<()> {
-    match node_kind {
-        None => Ok(()),
-        Some(nk) => match (nk, node) {
-            (NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-            (NodeKind::Iri, other) => Err(ValidatorError::NodeKindIri {
-                object: (*other).clone(),
-            }),
-            (NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-            (NodeKind::BNode, other) => Err(ValidatorError::NodeKindBNode {
-                object: (*other).clone(),
-            }),
-            (NodeKind::Literal, Object::Literal(_)) => Ok(()),
-            (NodeKind::Literal, other) => Err(ValidatorError::NodeKindLiteral {
-                object: (*other).clone(),
-            }),
-            (NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
-            (NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-            (NodeKind::NonLiteral, other) => Err(ValidatorError::NodeKindNonLiteral {
-                object: (*other).clone(),
-            }),
-        },
-    }
-}
-
-fn check_node_datatype(node: &Object, datatype: &Option<IriS>) -> Result<()> {
-    match datatype {
-        None => Ok(()),
-
-        // TODO: String literals
-        Some(dt) => match node {
-            Object::Literal(Literal::DatatypeLiteral {
-                datatype,
-                lexical_form,
-            }) => {
-                if dt == datatype {
-                    Ok(())
-                } else {
-                    Err(ValidatorError::DatatypeDontMatch {
-                        expected: dt.clone(),
-                        found: datatype.clone(),
-                        lexical_form: lexical_form.clone(),
-                    })
-                }
-            }
-            _ => Err(ValidatorError::DatatypeNoLiteral {
-                expected: dt.clone(),
-                object: node.clone(),
-            }),
-        },
-    }
-}
-
-fn check_node_values(node: &Object, values: &Vec<ValueSetValue>) -> Result<()> {
-    let r = values.iter().any(|value| check_node_value(node, &value));
-    if r {
-        Ok(())
-    } else {
-        todo!()
-    }
-}
-
-fn check_node_value(node: &Object, value: &ValueSetValue) -> bool {
-    true // todo!()
-}
-fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> Result<()> {
-    Ok(()) // todo!()
 }
 
 #[cfg(test)]

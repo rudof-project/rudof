@@ -6,7 +6,7 @@ use crate::Min;
 use std::cmp;
 use std::fmt;
 
-#[derive(PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct Cardinality {
     pub min: Min,
     pub max: Max,

@@ -1,6 +1,11 @@
 use crate::failures::Failures;
 use crate::rbe1::Rbe;
 use crate::Cardinality;
+use crate::Key;
+use crate::Keys;
+use crate::Ref;
+use crate::Value;
+use crate::Values;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::fmt::Display;
@@ -10,9 +15,9 @@ use thiserror::Error;
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<K, V, R>
 where
-    K: Hash + Eq + Display + Default,
-    V: Hash + Default + Eq + Display + Clone,
-    R: Hash + Default + Eq + Display + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: K, open: bool },
@@ -82,4 +87,13 @@ where
 
     #[error("{msg}")]
     MsgError { msg: String },
+
+    #[error("Empty candidates for: \nRegular expression: {rbe}\nValues:{values}")]
+    EmptyCandidates {
+        rbe: Box<Rbe<K, V, R>>,
+        values: Values<K, V>,
+    },
+
+    #[error("RbeTable: Key {key} has no component associated. Available keys: {available_keys}")]
+    RbeTableKeyWithoutComponent { key: K, available_keys: Keys<K> },
 }

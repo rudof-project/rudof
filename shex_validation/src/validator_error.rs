@@ -1,5 +1,7 @@
+use std::fmt::Display;
+
 use iri_s::IriS;
-use rbe::RbeError;
+use rbe::{rbe::Rbe, Component, RbeError};
 use shex_ast::{CompiledSchemaError, ShapeLabel, ShapeLabelIdx};
 use srdf::Object;
 use thiserror::Error;
@@ -18,31 +20,12 @@ pub enum ValidatorError {
     #[error(transparent)]
     CompiledSchemaError(#[from] CompiledSchemaError),
 
-    #[error("NodeKind IRI but found {object}")]
-    NodeKindIri { object: Object },
-
-    #[error("NodeKind BNode but found {object}")]
-    NodeKindBNode { object: Object },
-
-    #[error("NodeKind Literal but found {object}")]
-    NodeKindLiteral { object: Object },
-
-    #[error("NodeKind NonLiteral but found {object}")]
-    NodeKindNonLiteral { object: Object },
-
-    #[error("Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}")]
-    DatatypeDontMatch {
-        found: IriS,
-        expected: IriS,
-        lexical_form: String,
-    },
-
-    #[error("Datatype expected {expected} but found no literal {object}")]
-    DatatypeNoLiteral { expected: IriS, object: Object },
 
     #[error("Failed regular expression")]
     RbeFailed(),
 
     #[error(transparent)]
     RbeError(#[from] RbeError<IriS, Object, ShapeLabelIdx>),
+
 }
+

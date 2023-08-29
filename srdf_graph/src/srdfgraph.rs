@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
+// use log::debug;
 use oxiri::Iri;
 use srdf::async_srdf::AsyncSRDF;
 use srdf::{SRDFComparisons, SRDF};
@@ -298,7 +299,8 @@ impl SRDF for SRDFGraph {
     ) -> Result<HashSet<Self::IRI>, Self::Err> {
         let mut ps = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
-            ps.insert(triple.predicate.into_owned());
+            let pred = triple.predicate.into_owned();
+            ps.insert(pred);
         }
         Ok(ps)
     }
@@ -351,7 +353,6 @@ impl AsyncSRDF for SRDFGraph {
         subject: &OxSubject,
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxTerm>, SRDFGraphError> {
-        println!("get_objects_for_subject_predicate: subject={subject:?}, pred= {pred:?}");
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();

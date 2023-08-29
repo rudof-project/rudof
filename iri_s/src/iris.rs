@@ -1,3 +1,4 @@
+use oxiri::Iri;
 use oxrdf::NamedNode;
 use serde::de;
 use serde::de::Visitor;
@@ -10,36 +11,39 @@ use std::str::FromStr;
 
 use crate::IriSError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IriS(NamedNode);
+#[derive(Debug, Clone, Eq, Hash)]
+pub struct IriS {
+    iri: NamedNode,
+}
 
 impl IriS {
     pub fn new(str: &str) -> Result<IriS, IriSError> {
         let iri = NamedNode::new(str)?;
-        Ok(IriS(iri))
+        Ok(IriS { iri })
     }
 
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
-        IriS(iri)
+        IriS { iri }
     }
 
     pub fn as_str(&self) -> &str {
-        self.0.as_str()
+        self.iri.as_str()
     }
 
     pub fn from_named_node(iri: NamedNode) -> IriS {
-        IriS(iri)
+        IriS { iri }
     }
 
     pub fn as_named_node(&self) -> &NamedNode {
-        &self.0
+        &self.iri
     }
 
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
-        let s = format!("{}{}", self.0.as_str(), str);
-        let iri = NamedNode::new(s)?;
-        Ok(IriS(iri))
+        let base = Iri::parse(self.iri.as_str())?;
+        let extended = base.resolve(str)?;
+        let iri = NamedNode::new(extended.as_str())?;
+        Ok(IriS { iri })
     }
 
     /*    pub fn is_absolute(&self) -> bool {
@@ -49,7 +53,7 @@ impl IriS {
 
 impl fmt::Display for IriS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.iri)
     }
 }
 
@@ -58,7 +62,7 @@ impl Serialize for IriS {
     where
         S: Serializer,
     {
-        serializer.serialize_str(self.0.as_str())
+        serializer.serialize_str(self.iri.as_str())
     }
 }
 
@@ -106,6 +110,12 @@ impl<'de> Deserialize<'de> for IriS {
     }
 }
 
+impl PartialEq for IriS {
+    fn eq(&self, other: &Self) -> bool {
+        self.iri.as_str() == other.iri.as_str()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,5 +130,20 @@ mod tests {
     fn obtaining_iri_as_str() {
         let iri = IriS::from_str("http://example.org/p1").unwrap();
         assert_eq!(iri.as_str(), "http://example.org/p1");
+    }
+
+    #[test]
+    fn extending_iri() {
+        let base = NamedNode::new("http://example.org/").unwrap();
+        let base_iri = IriS::from_named_node(base);
+        let extended = base_iri.extend("knows").unwrap();
+        assert_eq!(extended.as_str(), "http://example.org/knows");
+    }
+
+    #[test]
+    fn comparing_iris() {
+        let iri1 = IriS::from_named_node(NamedNode::new_unchecked("http://example.org/name"));
+        let iri2 = IriS::from_named_node(NamedNode::new_unchecked("http://example.org/name"));
+        assert_eq!(iri1, iri2);
     }
 }

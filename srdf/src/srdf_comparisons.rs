@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
@@ -6,11 +6,11 @@ use iri_s::IriS;
 use crate::Object;
 
 pub trait SRDFComparisons {
-    type Subject: Display;
-    type IRI: Display + Hash + Eq + Clone;
-    type BNode: Display;
-    type Literal: Display;
-    type Term: Display;
+    type Subject: Debug + Display;
+    type IRI: Debug + Display + Hash + Eq + Clone;
+    type BNode: Debug + Display;
+    type Literal: Debug + Display;
+    type Term: Debug + Display;
     type Err: Display;
 
     fn subject2iri(&self, subject: &Self::Subject) -> Option<Self::IRI>;

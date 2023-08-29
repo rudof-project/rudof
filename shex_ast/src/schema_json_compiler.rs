@@ -1,17 +1,31 @@
+use std::fmt::Display;
+
 use crate::compiled_schema::ShapeExpr;
 use crate::schema_json::{NodeKind, TripleExpr, XsFacet};
-use crate::ValueSetValueWrapper;
 use crate::{
     compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
     schema_json, CompiledSchemaError, IriRef, SchemaJson, ShapeLabel, ShapeLabelIdx,
 };
+use crate::{ValueSetValue, ValueSetValueWrapper};
 use iri_s::IriS;
 use log::debug;
-use rbe::Cardinality;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
+use rbe::{Cardinality, Key, Pending, RbeError, Value};
+use srdf::literal::Literal;
 use srdf::Object;
 
 type CResult<T> = Result<T, CompiledSchemaError>;
+type Cond = MatchCond<IriS, Object, ShapeLabelIdx>;
+
+impl Key for Pred {}
+impl Value for Object {}
+
+#[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
+struct Pred {
+    iri: IriS,
+}
+
+impl Display for Pred {}
 
 #[derive(Debug)]
 pub struct SchemaJsonCompiler {
@@ -32,11 +46,7 @@ impl SchemaJsonCompiler {
     ) -> CResult<()> {
         debug!("Compiling schema_json: {compiled_schema:?}");
         self.collect_shape_labels(schema_json, compiled_schema)?;
-        // dbg!(compiled_schema);
-        debug!("Shape labels collected {compiled_schema:?}");
         self.collect_shape_exprs(schema_json, compiled_schema)?;
-        debug!("Shape exprs collected {compiled_schema:?}");
-        // dbg!(compiled_schema);
         Ok(())
     }
 
@@ -171,13 +181,13 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            _ => {
-                let se = compiled_schema.get_shape_expr(idx)?;
-                match *se {
-                    // ShapeExpr::Empty => Ok(ShapeExpr::Empty),
-                    _ => panic!("Internal...should not come here for se={se:?}"),
-                }
-            }
+            schema_json::ShapeExpr::NodeConstraint {
+                node_kind,
+                datatype,
+                xs_facet,
+                values,
+            } => todo!(),
+            schema_json::ShapeExpr::ShapeExternal => todo!(),
         }
     }
 
@@ -228,7 +238,7 @@ impl SchemaJsonCompiler {
         &self,
         triple_expr: &schema_json::TripleExpr,
         compiled_schema: &mut CompiledSchema,
-        current_table: &mut RbeTable<IriS, Object, ShapeLabelIdx>,
+        current_table: &mut RbeTable<Pred, Object, ShapeLabelIdx>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
             TripleExpr::EachOf {
@@ -329,7 +339,7 @@ impl SchemaJsonCompiler {
         &self,
         ve: &Option<Box<schema_json::ShapeExpr>>,
         compiled_schema: &mut CompiledSchema,
-    ) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+    ) -> CResult<Cond> {
         if let Some(se) = ve.as_deref() {
             match se {
                 schema_json::ShapeExpr::NodeConstraint {
@@ -338,9 +348,10 @@ impl SchemaJsonCompiler {
                     xs_facet,
                     values,
                 } => self.node_constraint2match_cond(node_kind, datatype, xs_facet, values),
+
                 schema_json::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
-                    Ok(MatchCond::new().with_name(format!("Ref{idx}")))
+                    Ok(mk_cond_ref(idx))
                 }
                 _ => {
                     todo!()
@@ -356,7 +367,7 @@ impl SchemaJsonCompiler {
         &self,
         _se: schema_json::ShapeExpr,
         _compiled_schema: &mut CompiledSchema,
-    ) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+    ) -> CResult<Cond> {
         todo!()
     }
 
@@ -366,7 +377,101 @@ impl SchemaJsonCompiler {
         _datatype: &Option<IriRef>,
         _xs_facet: &Option<Vec<XsFacet>>,
         _values: &Option<Vec<ValueSetValueWrapper>>,
-    ) -> CResult<MatchCond<IriS, Object, ShapeLabelIdx>> {
+    ) -> CResult<Cond> {
         Ok(MatchCond::new().with_name("node_constraint".to_string()))
     }
+}
+
+fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
+    MatchCond::new()
+        .with_name(format!("@{idx}"))
+        .with_cond(move |value: &Object| {
+            let result = Pending::from_pair(value.clone(), idx);
+            Ok(result)
+        })
+}
+
+fn mk_cond_datatype(datatype: IriS) -> Cond {
+    MatchCond::new()
+        .with_name(format!("datatype{datatype}"))
+        .with_cond(
+            move |value: &Object| match check_node_datatype(value, &datatype) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("Datatype error: {err}"),
+                }),
+            },
+        )
+}
+
+fn check_node_node_kind(node: &Object, node_kind: &Option<NodeKind>) -> CResult<()> {
+    match node_kind {
+        None => Ok(()),
+        Some(nk) => match (nk, node) {
+            (NodeKind::Iri, Object::Iri { .. }) => Ok(()),
+            (NodeKind::Iri, other) => Err(CompiledSchemaError::NodeKindIri {
+                object: (*other).clone(),
+            }),
+            (NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
+            (NodeKind::BNode, other) => Err(CompiledSchemaError::NodeKindBNode {
+                object: (*other).clone(),
+            }),
+            (NodeKind::Literal, Object::Literal(_)) => Ok(()),
+            (NodeKind::Literal, other) => Err(CompiledSchemaError::NodeKindLiteral {
+                object: (*other).clone(),
+            }),
+            (NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
+            (NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
+            (NodeKind::NonLiteral, other) => Err(CompiledSchemaError::NodeKindNonLiteral {
+                object: (*other).clone(),
+            }),
+        },
+    }
+}
+
+fn check_node_maybe_datatype(node: &Object, datatype: &Option<IriS>) -> CResult<()> {
+    match datatype {
+        None => Ok(()),
+        Some(dt) => check_node_datatype(node, dt),
+    }
+}
+
+fn check_node_datatype(node: &Object, dt: &IriS) -> CResult<()> {
+    // TODO: String literals
+    match node {
+        Object::Literal(Literal::DatatypeLiteral {
+            datatype,
+            lexical_form,
+        }) => {
+            if dt == datatype {
+                Ok(())
+            } else {
+                Err(CompiledSchemaError::DatatypeDontMatch {
+                    expected: dt.clone(),
+                    found: datatype.clone(),
+                    lexical_form: lexical_form.clone(),
+                })
+            }
+        }
+        _ => Err(CompiledSchemaError::DatatypeNoLiteral {
+            expected: dt.clone(),
+            object: node.clone(),
+        }),
+    }
+}
+
+fn check_node_values(node: &Object, values: &Vec<ValueSetValue>) -> CResult<()> {
+    let r = values.iter().any(|value| check_node_value(node, &value));
+    if r {
+        Ok(())
+    } else {
+        todo!()
+    }
+}
+
+fn check_node_value(node: &Object, value: &ValueSetValue) -> bool {
+    true // todo!()
+}
+fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
+    Ok(()) // todo!()
 }

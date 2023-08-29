@@ -80,7 +80,7 @@ fn run_validate(
             Ok(())
         }
         Result::Err(err) => {
-            bail!("Error: {err}");
+            bail!("{err}");
         }
     }
 }
@@ -93,7 +93,7 @@ fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: 
     println!("Information about node");
     println!("{}", data.qualify_subject(&subject));
     for pred in preds {
-        println!("  {}", data.qualify_named_node(&pred));
+        println!("  {} {}", data.qualify_named_node(&pred), &pred);
         let objs = data.get_objects_for_subject_predicate(&subject, &pred)?;
         for o in objs {
             println!("     {}", data.qualify_term(&o));
@@ -101,16 +101,6 @@ fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: 
     }
     Ok(())
 }
-
-/*fn term_to_subject(term: Term) -> Result<Subject> {
-  match term {
-    Term::BlankNode(bn) => Ok(Subject::BlankNode(bn)),
-    Term::NamedNode(n) => Ok(Subject::NamedNode(n)),
-    Term::Literal(lit) => {
-      Err(anyhow!("Node must be an IRI or a blank node"))
-    }
-  }
-}*/
 
 fn node_to_subject(node: Object) -> Result<Subject> {
     match node {

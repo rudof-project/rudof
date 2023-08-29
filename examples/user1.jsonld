@@ -1,0 +1,26 @@
+{
+    "type": "Schema",
+    "shapes": [
+        {
+            "type": "ShapeDecl",
+            "id": "http://example.org/User",
+            "shapeExpr": {
+                "type": "Shape",
+                "expression": {
+                    "type": "EachOf",
+                    "expressions": [
+                        {
+                            "type": "TripleConstraint",
+                            "predicate": "http://schema.org/name",
+                            "valueExpr": {
+                                "type": "NodeConstraint",
+                                "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "@context": "http://www.w3.org/ns/shex.jsonld"
+}

@@ -22,6 +22,14 @@ where
         }
     }
 
+    pub fn from_pair(v: V, r: R) -> Pending<V, R> {
+        let mut pending_map = IndexMap::new();
+        pending_map.insert(v, IndexSet::from([r]));
+        Pending {
+            pending_map
+        }
+    }
+
     pub fn get(&self, k: &V) -> Option<&IndexSet<R>> {
         self.pending_map.get(k)
     }

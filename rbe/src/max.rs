@@ -1,12 +1,12 @@
-use std::fmt;
+use serde::de;
+use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
-use serde::de;
-use serde::de::Visitor;
+use std::fmt;
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum Max {
     Unbounded,
     IntMax(usize),
@@ -49,7 +49,7 @@ impl From<i64> for Max {
         match m {
             -1 => Max::Unbounded,
             n if n > 0 => Max::IntMax(n as usize),
-            _ => panic!("Error converting i64 to Max, value {m} < -1")
+            _ => panic!("Error converting i64 to Max, value {m} < -1"),
         }
     }
 }
@@ -70,17 +70,19 @@ impl fmt::Display for Max {
 }
 
 impl Serialize for Max {
-    fn serialize<S>(&self, serializer:S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> 
-    where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
         let value: i64 = match *self {
-           Max::Unbounded => -1,
-           Max::IntMax(n) => n as i64  
+            Max::Unbounded => -1,
+            Max::IntMax(n) => n as i64,
         };
         serializer.serialize_i64(value)
     }
 }
 
-struct MaxVisitor ;
+struct MaxVisitor;
 
 impl<'de> Visitor<'de> for MaxVisitor {
     type Value = Max;
@@ -94,49 +96,53 @@ impl<'de> Visitor<'de> for MaxVisitor {
         E: de::Error,
     {
         if value < -1 {
-            Err(E::custom(format!("value of type i64 {} should be -1 or positive", value)))
-        } else {match value {
-            -1 => Ok(Max::Unbounded),
-            n => Ok(Max::from(n))
-        }}
+            Err(E::custom(format!(
+                "value of type i64 {} should be -1 or positive",
+                value
+            )))
+        } else {
+            match value {
+                -1 => Ok(Max::Unbounded),
+                n => Ok(Max::from(n)),
+            }
+        }
     }
 
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-            Ok(Max::from(value))
+        Ok(Max::from(value))
     }
-
 }
 
-impl <'de> Deserialize<'de> for Max {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> 
-    where D: Deserializer<'de> { 
+impl<'de> Deserialize<'de> for Max {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_i64(MaxVisitor)
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-// use serde_json::*;
-// use serde::Serialize;
+    // use serde_json::*;
+    // use serde::Serialize;
 
-use crate::Min;
- 
+    use crate::Min;
+
     #[test]
     fn test_serialize_min() {
         let min = Min::from(23);
-        let str = serde_json::to_string(&min).unwrap(); 
+        let str = serde_json::to_string(&min).unwrap();
         assert_eq!(str, "23");
     }
 
     #[test]
     fn test_deserialize_min() {
         let min = Min::from(23);
-        let min_deser = serde_json::from_str("23").unwrap(); 
+        let min_deser = serde_json::from_str("23").unwrap();
         assert_eq!(min, min_deser);
     }
-
 }

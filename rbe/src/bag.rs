@@ -1,13 +1,17 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use hashbag::{HashBag, SetIter};
-use serde::{Deserialize, Deserializer, de::SeqAccess, Serialize, Serializer, ser::SerializeSeq};
-use std::{fmt::{Display, Debug, self}, hash::Hash, marker::PhantomData};
-
+use serde::{de::SeqAccess, ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    fmt::{self, Debug, Display},
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+};
 
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct Bag<T>
-where T: Hash + Eq + PartialEq,
+where
+    T: Hash + Eq + PartialEq,
 {
     bag: HashBag<T>,
 }
@@ -58,8 +62,8 @@ where
 }
 
 /*impl<T> Default for Bag<T> {
-    fn default() -> Self { 
-        Bag::new() 
+    fn default() -> Self {
+        Bag::new()
     }
 }*/
 
@@ -77,7 +81,7 @@ where
     }
 }
 
-impl <T> std::iter::FromIterator<T> for Bag<T>
+impl<T> std::iter::FromIterator<T> for Bag<T>
 where
     T: Eq + Hash,
 {
@@ -89,7 +93,6 @@ where
         bag
     }
 }
-
 
 impl<T, const N: usize> From<[T; N]> for Bag<T>
 where
@@ -104,8 +107,9 @@ where
     }
 }
 
-impl <T> Serialize for Bag<T> 
-where T: Hash + Eq + Serialize
+impl<T> Serialize for Bag<T>
+where
+    T: Hash + Eq + Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -131,24 +135,31 @@ where
     {
         deserializer.deserialize_seq(BagVisitor::new())
     }
-} 
-
-use serde::de::Visitor;
-struct BagVisitor<T> where T: Hash + Eq {
-    marker: PhantomData<fn() -> Bag<T>>
 }
 
-impl<T> BagVisitor<T> where T: Hash + Eq {
+use serde::de::Visitor;
+struct BagVisitor<T>
+where
+    T: Hash + Eq,
+{
+    marker: PhantomData<fn() -> Bag<T>>,
+}
+
+impl<T> BagVisitor<T>
+where
+    T: Hash + Eq,
+{
     fn new() -> Self {
         BagVisitor {
-            marker: PhantomData
+            marker: PhantomData,
         }
     }
 }
 
-impl <'de, T> Visitor<'de> for BagVisitor<T> 
-where 
-  T: Hash + Eq + Deserialize<'de> {
+impl<'de, T> Visitor<'de> for BagVisitor<T>
+where
+    T: Hash + Eq + Deserialize<'de>,
+{
     type Value = Bag<T>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -166,7 +177,14 @@ where
         }
         Ok(bag)
     }
-    
+}
+
+// Todo: I am not sure if this is idiomatic or performant (probably neither...)
+impl<T: Hash + Eq> Hash for Bag<T> {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        let vec = Vec::from_iter(self.bag.iter());
+        vec.hash(hasher)
+    }
 }
 
 #[cfg(test)]
@@ -186,15 +204,14 @@ mod tests {
     fn deser_test() {
         let str = r#"[ ["a",2],["b",2],["a",1]]"#;
         let bag: Bag<char> = serde_json::from_str(str).unwrap();
-        assert_eq!(bag, Bag::from(['a','a','a', 'b', 'b']));
+        assert_eq!(bag, Bag::from(['a', 'a', 'a', 'b', 'b']));
     }
 
     #[test]
     fn bag_from_iter() {
-        let bag = Bag::from_iter(vec!['a','b','a'].into_iter());
+        let bag = Bag::from_iter(vec!['a', 'b', 'a'].into_iter());
         assert_eq!(bag.contains(&'a'), 2);
         assert_eq!(bag.contains(&'b'), 1);
         assert_eq!(bag.contains(&'c'), 0);
     }
-
 }

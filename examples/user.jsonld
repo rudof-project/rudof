@@ -1,33 +1,33 @@
 {
-    "type": "Schema",
-    "shapes": [
-      {
-        "type": "ShapeDecl",
-        "id": "http://example.org/User",
-        "shapeExpr": {
-          "type": "Shape",
-          "expression": {
-            "type": "EachOf",
-            "expressions": [
-              {
-                "type": "TripleConstraint",
-                "predicate": "http://example.org/name",
-                "valueExpr": {
-                  "type": "NodeConstraint",
-                  "datatype": "http://www.w3.org/2001/XMLSchema#string"
-                }
-              },
-              {
-                "type": "TripleConstraint",
-                "predicate": "http://example.org/knows",
-                "valueExpr": "http://example.org/User",
-                "min": 0,
-                "max": -1
+  "type": "Schema",
+  "shapes": [
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/User",
+      "shapeExpr": {
+        "type": "Shape",
+        "expression": {
+          "type": "EachOf",
+          "expressions": [
+            {
+              "type": "TripleConstraint",
+              "predicate": "http://schema.org/name",
+              "valueExpr": {
+                "type": "NodeConstraint",
+                "datatype": "http://www.w3.org/2001/XMLSchema#string"
               }
-            ]
-          }
+            },
+            {
+              "type": "TripleConstraint",
+              "predicate": "http://schema.org/knows",
+              "valueExpr": "http://example.org/User",
+              "min": 0,
+              "max": -1
+            }
+          ]
         }
       }
-    ],
-    "@context": "http://www.w3.org/ns/shex.jsonld"
-  }
+    }
+  ],
+  "@context": "http://www.w3.org/ns/shex.jsonld"
+}
