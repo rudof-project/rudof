@@ -7,8 +7,10 @@ documentation.workspace = true
 edition.workspace = true
 
 [dependencies]
+iri_s = { path = "../iri_s" }
 shex_ast = { path = "../shex_ast" }
 srdf_graph = { path = "../srdf_graph" }
+shex_validation = { path = "../shex_validation" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"

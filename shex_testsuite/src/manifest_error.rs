@@ -1,5 +1,7 @@
 use std::io;
-use shex_ast::SchemaJsonError;
+use iri_s::IriSError;
+use shex_ast::{SchemaJsonError, CompiledSchemaError};
+use shex_validation::ValidatorError;
 use srdf_graph::SRDFGraphError;
 use thiserror::Error;
 
@@ -23,9 +25,21 @@ pub enum ManifestError {
     #[error("not found entry: {name:?}")]
     NotFoundEntry { name: String },
 
+    #[error("No focus node in validation action: {entry}")]
+    NoFocusNode { entry: String },
+
     #[error("Unknown error")]
     Unknown,
 
     #[error(transparent)]
-    SRDFError(#[from] SRDFGraphError)
+    SRDFError(#[from] SRDFGraphError),
+
+    #[error(transparent)]
+    CompiledSchemaError(#[from] CompiledSchemaError),
+
+    #[error(transparent)]
+    IriError(#[from] IriSError),
+
+    #[error(transparent)]
+    ValidationError(#[from] ValidatorError),
 }

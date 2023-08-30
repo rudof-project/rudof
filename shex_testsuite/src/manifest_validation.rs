@@ -4,11 +4,14 @@ use crate::manifest_error::ManifestError;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::SchemaJson;
+use shex_ast::{SchemaJson, SchemaJsonCompiler, Node, ShapeLabel};
+use shex_ast::compiled_schema::CompiledSchema;
+use shex_validation::Validator;
 use srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
+use iri_s::IriS;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -167,6 +170,29 @@ impl ValidationEntry {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
         let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
+        let node = match &self.action.focus {
+            None => Err(ManifestError::NoFocusNode { entry: self.name.clone() }),
+            Some(focus) => parse_focus(focus)
+        }?;
+
+        let maybe_shape: Option<ShapeLabel> = match &self.action.shape {
+            None => {
+                None
+            },
+            Some(str) => {
+                let shape = parse_shape(&str)?;
+                Some(shape)
+            }
+        };
+        let mut compiler = SchemaJsonCompiler::new();
+        let mut compiled_schema = CompiledSchema::new(); 
+        compiler.compile(&schema, &mut compiled_schema)?;
+        let mut validator = Validator::new(compiled_schema);
+        match maybe_shape {
+            Some(shape_label) => validator.validate_node_shape(node, shape_label, &graph),
+            None => validator.validate_node_start(node, &graph)
+        }?;
+        
 
         if debug > 0 {
             println!(
@@ -179,6 +205,23 @@ impl ValidationEntry {
         }
         Ok(())
     }
+
+
+}
+
+fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
+   match focus {
+    Focus::Single(str) => {
+        let iri = IriS::new(str.as_str())?;
+        Ok(iri.into())
+    },
+    Focus::Typed(str, str_type) => todo!()
+   }
+}
+
+fn parse_shape(str: &String) -> Result<ShapeLabel, ManifestError> {
+    let shape_label = ShapeLabel::from_iri_str(str.as_str())?;
+    Ok(shape_label)
 }
 
 impl Manifest for ManifestValidation {

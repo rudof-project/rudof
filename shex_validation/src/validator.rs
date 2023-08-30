@@ -34,6 +34,11 @@ impl Validator {
         }
     }
 
+    pub fn validate_node_start<S>(&mut self, node: Node, rdf: &S) -> Result<()> 
+    where S: SRDF {
+        todo!()
+    }
+
     pub fn validate_node_shape<S>(&mut self, node: Node, shape: ShapeLabel, rdf: &S) -> Result<()>
     where
         S: SRDF,

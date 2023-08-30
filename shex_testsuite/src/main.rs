@@ -24,7 +24,7 @@ struct Cli {
         short,
         long,
         value_name = "Manifest FILE (.jsonld)",
-        default_value = "shex_testsuite/localTest/schemas/manifest.jsonld"
+        default_value = "shex_testsuite/shexTest/validation/manifest.jsonld"
     )]
     manifest_filename: String,
 
