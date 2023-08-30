@@ -1,8 +1,5 @@
-use std::fmt::Display;
-
-use iri_s::IriS;
-use rbe::{rbe::Rbe, Component, RbeError};
-use shex_ast::{CompiledSchemaError, ShapeLabel, ShapeLabelIdx};
+use rbe::RbeError;
+use shex_ast::{CompiledSchemaError, Node, Pred, ShapeLabel, ShapeLabelIdx};
 use srdf::Object;
 use thiserror::Error;
 
@@ -20,12 +17,9 @@ pub enum ValidatorError {
     #[error(transparent)]
     CompiledSchemaError(#[from] CompiledSchemaError),
 
-
     #[error("Failed regular expression")]
     RbeFailed(),
 
     #[error(transparent)]
-    RbeError(#[from] RbeError<IriS, Object, ShapeLabelIdx>),
-
+    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx>),
 }
-

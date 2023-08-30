@@ -29,16 +29,27 @@ where
         MatchCond::Single(SingleCond::new())
     }
 
+    pub fn empty() -> MatchCond<K, V, R> {
+        MatchCond::Single(SingleCond::new().with_name("empty".into()))
+    }
+
     pub fn matches(&self, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         match self {
             MatchCond::Single(single) => single.matches(value),
+            MatchCond::And(vs) => vs.iter().fold(Ok(Pending::new()), |result, c| {
+                result.and_then(|mut p| {
+                    let new_pending = c.matches(value)?;
+                    p.merge(new_pending);
+                    Ok(p)
+                })
+            }),
             _ => {
                 todo!()
             }
         }
     }
 
-    pub fn single(mut self, single: SingleCond<K, V, R>) -> Self {
+    pub fn single(single: SingleCond<K, V, R>) -> Self {
         MatchCond::Single(single)
     }
 }
@@ -50,7 +61,25 @@ where
     R: Ref,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            MatchCond::Single(sc) => {
+                write!(f, "{sc}")?;
+                Ok(())
+            }
+            MatchCond::And(cs) => {
+                write!(f, "And(")?;
+                cs.iter()
+                    .fold(Ok(()), |result, c| result.and_then(|_| write!(f, "|{c}")))?;
+                write!(f, ")")
+            }
+            MatchCond::Or(cs) => {
+                write!(f, "Or")?;
+                cs.iter()
+                    .fold(Ok(()), |result, c| result.and_then(|_| write!(f, "|{c}")))?;
+                write!(f, ")")
+            }
+            MatchCond::Not(c) => write!(f, "Not({c})"),
+        }
     }
 }
 

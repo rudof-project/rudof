@@ -1,18 +1,15 @@
 use crate::{
-    schema_json, CompiledSchemaError, IriRef, Ref, SchemaJson, SchemaJsonCompiler, ShapeLabel,
-    ShapeLabelIdx,
+    schema_json, CResult, CompiledSchemaError, Cond, IriRef, Node, Ref, SchemaJson,
+    SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
 use std::hash::Hash;
 // use std::str::FromStr;
+use crate::Pred;
 use log::debug;
 use rbe::{MatchCond, RbeTable};
-use srdf::Object;
 use std::fmt::Display;
-
-type CResult<T> = Result<T, CompiledSchemaError>;
-type Cond = MatchCond<IriS, Object, ShapeLabelIdx>;
 
 #[derive(Debug)]
 pub struct CompiledSchema {
@@ -58,7 +55,7 @@ pub enum ShapeExpr {
     Shape {
         closed: bool,
         extra: Vec<IriS>,
-        rbe_table: RbeTable<IriS, Object, ShapeLabelIdx>,
+        rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },

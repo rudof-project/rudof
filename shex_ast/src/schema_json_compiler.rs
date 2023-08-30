@@ -6,26 +6,22 @@ use crate::{
     compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
     schema_json, CompiledSchemaError, IriRef, SchemaJson, ShapeLabel, ShapeLabelIdx,
 };
-use crate::{ValueSetValue, ValueSetValueWrapper};
+use crate::{CResult, Cond, Node, Pred, ValueSetValue, ValueSetValueWrapper};
 use iri_s::IriS;
 use log::debug;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
-use rbe::{Cardinality, Key, Pending, RbeError, Value};
+use rbe::{Cardinality, Key, Pending, RbeError, SingleCond, Value};
 use srdf::literal::Literal;
 use srdf::Object;
 
-type CResult<T> = Result<T, CompiledSchemaError>;
-type Cond = MatchCond<IriS, Object, ShapeLabelIdx>;
+use lazy_static::lazy_static;
 
-impl Key for Pred {}
-impl Value for Object {}
-
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
-struct Pred {
-    iri: IriS,
+lazy_static! {
+    static ref MY_VAR: String = "some value".to_string();
+    static ref XSD_STRING: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string");
+    static ref RDF_LANG_STRING: IriS =
+        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
 }
-
-impl Display for Pred {}
 
 #[derive(Debug)]
 pub struct SchemaJsonCompiler {
@@ -238,7 +234,7 @@ impl SchemaJsonCompiler {
         &self,
         triple_expr: &schema_json::TripleExpr,
         compiled_schema: &mut CompiledSchema,
-        current_table: &mut RbeTable<Pred, Object, ShapeLabelIdx>,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
             TripleExpr::EachOf {
@@ -285,7 +281,7 @@ impl SchemaJsonCompiler {
             } => {
                 let min = self.cnv_min(&min)?;
                 let max = self.cnv_max(&max)?;
-                let iri = IriS::new(predicate.value.as_str())?;
+                let iri = Self::cnv_predicate(predicate)?;
                 let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
@@ -294,6 +290,11 @@ impl SchemaJsonCompiler {
                 todo!()
             }
         }
+    }
+
+    fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
+        let iri = IriS::new(predicate.value.as_str())?;
+        Ok(Pred::from(iri))
     }
 
     fn cnv_min_max(&self, min: &Option<i32>, max: &Option<i32>) -> CResult<Cardinality> {
@@ -373,74 +374,127 @@ impl SchemaJsonCompiler {
 
     fn node_constraint2match_cond(
         &self,
-        _node_kind: &Option<NodeKind>,
-        _datatype: &Option<IriRef>,
-        _xs_facet: &Option<Vec<XsFacet>>,
-        _values: &Option<Vec<ValueSetValueWrapper>>,
+        node_kind: &Option<NodeKind>,
+        datatype: &Option<IriRef>,
+        xs_facet: &Option<Vec<XsFacet>>,
+        values: &Option<Vec<ValueSetValueWrapper>>,
     ) -> CResult<Cond> {
-        Ok(MatchCond::new().with_name("node_constraint".to_string()))
+        let c1: Option<Cond> = node_kind.as_ref().map(|k| self.node_kind2match_cond(k));
+        let c2 = Self::invert(datatype.as_ref().map(|dt| {
+            let c = self.datatype2match_cond(&dt)?;
+            Ok(c)
+        }))?;
+        let c3 = xs_facet.as_ref().map(|xsf| self.xs_facet2match_cond(&xsf));
+        let c4 = values.as_ref().map(|vs| self.values2match_cond(&vs));
+        let os = vec![c1, c2, c3, c4];
+        Ok(self.options2match_cond(os))
+    }
+
+    fn invert<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
+        r.map_or(Ok(None), |v| v.map(Some))
+    }
+
+    fn node_kind2match_cond(&self, nodekind: &NodeKind) -> Cond {
+        mk_cond_nodekind(nodekind.clone())
+    }
+
+    fn datatype2match_cond(&self, datatype: &IriRef) -> CResult<Cond> {
+        let iri = self.cnv_iri_ref(datatype)?;
+        Ok(mk_cond_datatype(iri))
+    }
+
+    fn xs_facet2match_cond(&self, xs_facet: &Vec<XsFacet>) -> Cond {
+        todo!()
+    }
+
+    fn values2match_cond(&self, values: &Vec<ValueSetValueWrapper>) -> Cond {
+        todo!()
+    }
+
+    fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(&self, os: T) -> Cond {
+        let vec: Vec<Cond> = os.into_iter().flatten().collect();
+        match &vec[..] {
+            [] => MatchCond::empty(),
+            [c] => c.clone(),
+            _ => MatchCond::And(vec),
+        }
     }
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::new()
-        .with_name(format!("@{idx}"))
-        .with_cond(move |value: &Object| {
+    MatchCond::single(SingleCond::new().with_name(format!("@{idx}")).with_cond(
+        move |value: &Node| {
             let result = Pending::from_pair(value.clone(), idx);
             Ok(result)
-        })
+        },
+    ))
 }
 
 fn mk_cond_datatype(datatype: IriS) -> Cond {
-    MatchCond::new()
-        .with_name(format!("datatype{datatype}"))
-        .with_cond(
-            move |value: &Object| match check_node_datatype(value, &datatype) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("Datatype error: {err}"),
-                }),
-            },
-        )
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("datatype{datatype}"))
+            .with_cond(
+                move |value: &Node| match check_node_datatype(value, &datatype) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("Datatype error: {err}"),
+                    }),
+                },
+            ),
+    )
 }
 
-fn check_node_node_kind(node: &Object, node_kind: &Option<NodeKind>) -> CResult<()> {
-    match node_kind {
+fn mk_cond_nodekind(nodekind: NodeKind) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("nodekind{nodekind}"))
+            .with_cond(
+                move |value: &Node| match check_node_node_kind(value, &nodekind) {
+                    Ok(_) => Ok(Pending::empty()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("NodeKind Error: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<NodeKind>) -> CResult<()> {
+    match nodekind {
         None => Ok(()),
-        Some(nk) => match (nk, node) {
-            (NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-            (NodeKind::Iri, other) => Err(CompiledSchemaError::NodeKindIri {
-                object: (*other).clone(),
-            }),
-            (NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-            (NodeKind::BNode, other) => Err(CompiledSchemaError::NodeKindBNode {
-                object: (*other).clone(),
-            }),
-            (NodeKind::Literal, Object::Literal(_)) => Ok(()),
-            (NodeKind::Literal, other) => Err(CompiledSchemaError::NodeKindLiteral {
-                object: (*other).clone(),
-            }),
-            (NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
-            (NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-            (NodeKind::NonLiteral, other) => Err(CompiledSchemaError::NodeKindNonLiteral {
-                object: (*other).clone(),
-            }),
-        },
+        Some(nk) => check_node_node_kind(node, &nk),
     }
 }
 
-fn check_node_maybe_datatype(node: &Object, datatype: &Option<IriS>) -> CResult<()> {
+fn check_node_node_kind(node: &Node, nk: &NodeKind) -> CResult<()> {
+    match (nk, node.as_object()) {
+        (NodeKind::Iri, Object::Iri { .. }) => Ok(()),
+        (NodeKind::Iri, _) => Err(CompiledSchemaError::NodeKindIri { node: node.clone() }),
+        (NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
+        (NodeKind::BNode, _) => Err(CompiledSchemaError::NodeKindBNode { node: node.clone() }),
+        (NodeKind::Literal, Object::Literal(_)) => Ok(()),
+        (NodeKind::Literal, _) => Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() }),
+        (NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
+        (NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
+        (NodeKind::NonLiteral, _) => {
+            Err(CompiledSchemaError::NodeKindNonLiteral { node: node.clone() })
+        }
+    }
+}
+
+fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriS>) -> CResult<()> {
     match datatype {
         None => Ok(()),
         Some(dt) => check_node_datatype(node, dt),
     }
 }
 
-fn check_node_datatype(node: &Object, dt: &IriS) -> CResult<()> {
+fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
     // TODO: String literals
-    match node {
+    match node.as_object() {
         Object::Literal(Literal::DatatypeLiteral {
-            datatype,
+            ref datatype,
             lexical_form,
         }) => {
             if dt == datatype {
@@ -453,9 +507,36 @@ fn check_node_datatype(node: &Object, dt: &IriS) -> CResult<()> {
                 })
             }
         }
+        Object::Literal(Literal::StringLiteral {
+            lexical_form,
+            lang: None,
+        }) => {
+            if *dt == *XSD_STRING {
+                Ok(())
+            } else {
+                Err(CompiledSchemaError::DatatypeDontMatchString {
+                    expected: dt.clone(),
+                    lexical_form: lexical_form.clone(),
+                })
+            }
+        }
+        Object::Literal(Literal::StringLiteral {
+            lexical_form,
+            lang: Some(lang),
+        }) => {
+            if *dt == *RDF_LANG_STRING {
+                Ok(())
+            } else {
+                Err(CompiledSchemaError::DatatypeDontMatchLangString {
+                    expected: dt.clone(),
+                    lexical_form: lexical_form.clone(),
+                    lang: lang.clone(),
+                })
+            }
+        }
         _ => Err(CompiledSchemaError::DatatypeNoLiteral {
             expected: dt.clone(),
-            object: node.clone(),
+            node: node.clone(),
         }),
     }
 }

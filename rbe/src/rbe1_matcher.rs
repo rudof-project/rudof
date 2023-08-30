@@ -130,7 +130,7 @@ mod tests {
     impl Value for String {}
 
     fn cond_name(name: String) -> MatchCond<char, String, String> {
-        MatchCond::new().single(SingleCond::new().with_cond(move |v: &String| {
+        MatchCond::single(SingleCond::new().with_cond(move |v: &String| {
             if *v == name {
                 Ok(Pending::new())
             } else {
@@ -142,7 +142,7 @@ mod tests {
     }
 
     fn cond_len(len: usize) -> MatchCond<char, String, String> {
-        MatchCond::new().single(SingleCond::new().with_cond(move |v: &String| {
+        MatchCond::single(SingleCond::new().with_cond(move |v: &String| {
             if v.len() == len {
                 Ok(Pending::new())
             } else {
@@ -175,8 +175,8 @@ mod tests {
 
     #[test]
     fn test_rbe_matcher_even_ref() {
-        let cond_even = MatchCond::new().single(SingleCond::new().with_cond(is_even));
-        let cond_ref_x = MatchCond::new().single(SingleCond::new().with_cond(ref_x));
+        let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
+        let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
         let rbe: Rbe<char, i32, String> = Rbe::and(vec![
             Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
@@ -193,8 +193,8 @@ mod tests {
 
     #[test]
     fn test_rbe_matcher_even_ref_unordered() {
-        let cond_even = MatchCond::new().single(SingleCond::new().with_cond(is_even));
-        let cond_ref_x = MatchCond::new().single(SingleCond::new().with_cond(ref_x));
+        let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
+        let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
         let rbe: Rbe<char, i32, String> = Rbe::and(vec![
             Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
@@ -211,8 +211,8 @@ mod tests {
 
     #[test]
     fn test_rbe_matcher_even_fails_odd() {
-        let cond_even = MatchCond::new().single(SingleCond::new().with_cond(is_even));
-        let cond_ref_x = MatchCond::new().single(SingleCond::new().with_cond(ref_x));
+        let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
+        let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
         let rbe: Rbe<char, i32, String> = Rbe::and(vec![
             Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),

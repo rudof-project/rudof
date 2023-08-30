@@ -6,6 +6,7 @@ use anyhow::*;
 use clap::Parser;
 use iri_s::*;
 use oxrdf::{BlankNode, NamedNode, Subject, Term};
+use shex_ast::Node;
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::{SRDFGraph, SRDFGraphError};
@@ -32,6 +33,7 @@ fn main() -> Result<()> {
             data_format,
             node,
             shape,
+            max_steps,
         }) => run_validate(
             schema,
             schema_format,
@@ -39,6 +41,7 @@ fn main() -> Result<()> {
             data_format,
             node,
             shape,
+            max_steps,
             cli.debug,
         ),
         Some(Command::Data { data, data_format }) => run_data(data, data_format, cli.debug),
@@ -67,13 +70,14 @@ fn run_validate(
     data_format: &DataFormat,
     node_str: &String,
     shape_str: &String,
+    max_steps: &usize,
     debug: u8,
 ) -> Result<()> {
     let schema = parse_schema(schema, schema_format, debug)?;
     let data = parse_data(data, data_format, debug)?;
     let node = parse_node(node_str, &data)?;
     let shape = parse_shape_label(shape_str)?;
-    let mut validator = Validator::new(schema).with_max_steps(1);
+    let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     match validator.validate_node_shape(node, shape, &data) {
         Result::Ok(t) => {
             println!("Result: {:?}", validator.result_map());
@@ -88,7 +92,7 @@ fn run_validate(
 fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: u8) -> Result<()> {
     let data = parse_data(data, data_format, debug)?;
     let node = parse_node(node_str, &data)?;
-    let subject = node_to_subject(node)?;
+    let subject = node_to_subject(node.as_object())?;
     let preds = data.get_predicates_for_subject(&subject)?;
     println!("Information about node");
     println!("{}", data.qualify_subject(&subject));
@@ -102,7 +106,7 @@ fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: 
     Ok(())
 }
 
-fn node_to_subject(node: Object) -> Result<Subject> {
+fn node_to_subject(node: &Object) -> Result<Subject> {
     match node {
         Object::BlankNode(bn) => Ok(Subject::BlankNode(BlankNode::new_unchecked(bn.as_str()))),
         Object::Iri { iri } => Ok(Subject::NamedNode(NamedNode::new_unchecked(iri.as_str()))),
@@ -137,7 +141,7 @@ fn parse_data(data: &PathBuf, data_format: &DataFormat, _debug: u8) -> Result<SR
     }
 }
 
-fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Object> {
+fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     use regex::Regex;
     use std::result::Result::Ok;
     let iri_r = Regex::new("<(.*)>")?;
@@ -145,7 +149,7 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Object> {
         Some(captures) => match captures.get(1) {
             Some(cs) => {
                 let iri = IriS::new(cs.as_str())?;
-                Ok(Object::Iri { iri })
+                Ok(iri.into())
             }
             None => {
                 todo!()
@@ -154,7 +158,7 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Object> {
         None => match data.resolve(node_str) {
             Ok(Some(named_node)) => {
                 let iri = IriS::new(named_node.as_str())?;
-                Ok(Object::Iri { iri })
+                Ok(iri.into())
             }
             Ok(None) => {
                 todo!()

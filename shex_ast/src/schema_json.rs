@@ -47,12 +47,7 @@ pub enum SchemaJsonError {
 }
 
 impl SchemaJson {
-
-    pub fn parse_schema_buf(
-        path_buf: &PathBuf,
-        debug: u8,
-    ) -> Result<SchemaJson, SchemaJsonError> {
-
+    pub fn parse_schema_buf(path_buf: &PathBuf, debug: u8) -> Result<SchemaJson, SchemaJsonError> {
         let schema = {
             let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
@@ -72,7 +67,6 @@ impl SchemaJson {
         }
         Ok(schema)
     }
-
 
     pub fn parse_schema_name(
         schema_name: &String,
@@ -669,13 +663,24 @@ impl TryFrom<&str> for TripleExprLabel {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum NodeKind {
     Iri,
     BNode,
     NonLiteral,
     Literal,
+}
+
+impl Display for NodeKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NodeKind::Iri => write!(f, "IRI"),
+            NodeKind::BNode => write!(f, "BNode"),
+            NodeKind::NonLiteral => write!(f, "NonLiteral"),
+            NodeKind::Literal => write!(f, "Literal"),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]

@@ -324,7 +324,7 @@ mod tests {
         // { p a; q y; q z } == { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -337,7 +337,7 @@ mod tests {
             ));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
@@ -346,7 +346,7 @@ mod tests {
             ));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
@@ -389,7 +389,7 @@ mod tests {
         // { p a; q y } != { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -402,7 +402,7 @@ mod tests {
             ));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
@@ -411,7 +411,7 @@ mod tests {
             ));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
@@ -442,7 +442,7 @@ mod tests {
         // { p a; q a } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -476,7 +476,7 @@ mod tests {
         // { p a; q b } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::new().single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())

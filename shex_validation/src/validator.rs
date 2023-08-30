@@ -5,6 +5,8 @@ use iri_s::IriS;
 use log::debug;
 use rbe::Pending;
 use shex_ast::compiled_schema::*;
+use shex_ast::Node;
+use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::{compiled_schema::CompiledSchema, ShapeLabel};
 use srdf::literal::Literal;
@@ -32,7 +34,7 @@ impl Validator {
         }
     }
 
-    pub fn validate_node_shape<S>(&mut self, node: Object, shape: ShapeLabel, rdf: &S) -> Result<()>
+    pub fn validate_node_shape<S>(&mut self, node: Node, shape: ShapeLabel, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
@@ -51,7 +53,7 @@ impl Validator {
         }
     }
 
-    pub fn check_node_idx<S>(&mut self, node: &Object, idx: &ShapeLabelIdx, rdf: &S) -> Result<()>
+    pub fn check_node_idx<S>(&mut self, node: &Node, idx: &ShapeLabelIdx, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
@@ -59,7 +61,7 @@ impl Validator {
         self.runner.check_node_shape_expr(node, se, rdf)
     }
 
-    pub fn result_map(&self) -> ResultMap<Object, ShapeLabelIdx> {
+    pub fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
         self.runner.result_map()
     }
 
@@ -71,9 +73,9 @@ impl Validator {
 
 #[derive(Debug)]
 struct ValidatorRunner {
-    current_goal: Option<(Object, ShapeLabelIdx)>,
-    result_map: ResultMap<Object, ShapeLabelIdx>,
-    alternatives: Vec<ResultMap<Object, ShapeLabelIdx>>,
+    current_goal: Option<(Node, ShapeLabelIdx)>,
+    result_map: ResultMap<Node, ShapeLabelIdx>,
+    alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
     step_counter: usize,
 }
@@ -89,19 +91,19 @@ impl ValidatorRunner {
         }
     }
 
-    pub fn result_map(&self) -> ResultMap<Object, ShapeLabelIdx> {
+    pub fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
         self.result_map.clone()
     }
 
-    fn add_current(&mut self, node: &Object, shape: &ShapeLabelIdx) {
+    fn add_current(&mut self, node: &Node, shape: &ShapeLabelIdx) {
         self.set_current_goal(&node, &shape);
     }
 
-    pub fn set_current_goal(&mut self, n: &Object, s: &ShapeLabelIdx) {
+    pub fn set_current_goal(&mut self, n: &Node, s: &ShapeLabelIdx) {
         self.current_goal = Some(((*n).clone(), (*s).clone()));
     }
 
-    pub fn is_current_goal(&self, n: &Object, s: &ShapeLabelIdx) -> bool {
+    pub fn is_current_goal(&self, n: &Node, s: &ShapeLabelIdx) -> bool {
         if let Some((cn, cs)) = &self.current_goal {
             *cn == *n && *cs == *s
         } else {
@@ -113,7 +115,7 @@ impl ValidatorRunner {
         self.step_counter += 1;
     }
 
-    pub fn add_ok(&mut self, n: Object, s: ShapeLabelIdx) {
+    pub fn add_ok(&mut self, n: Node, s: ShapeLabelIdx) {
         self.result_map.add_ok(n, s);
     }
 
@@ -121,11 +123,11 @@ impl ValidatorRunner {
         self.result_map.more_pending()
     }
 
-    pub fn add_pending(&mut self, n: Object, s: ShapeLabelIdx) {
+    pub fn add_pending(&mut self, n: Node, s: ShapeLabelIdx) {
         self.result_map.add_pending(n, s);
     }
 
-    pub fn pop_pending(&mut self) -> Option<(Object, ShapeLabelIdx)> {
+    pub fn pop_pending(&mut self) -> Option<(Node, ShapeLabelIdx)> {
         self.result_map.pop_pending()
     }
 
@@ -141,7 +143,7 @@ impl ValidatorRunner {
         self.steps() < self.max_steps()
     }
 
-    fn check_node_shape_expr<S>(&mut self, node: &Object, se: &ShapeExpr, rdf: &S) -> Result<()>
+    fn check_node_shape_expr<S>(&mut self, node: &Node, se: &ShapeExpr, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
@@ -206,21 +208,23 @@ impl ValidatorRunner {
         }
     }
 
-    fn cnv_iri<S>(&self, iri: S::IRI) -> IriS
+    fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
     where
         S: SRDF,
     {
-        S::iri2iri_s(iri)
+        let iri = S::iri2iri_s(iri);
+        Pred::from(iri)
     }
 
-    fn cnv_object<S>(&self, term: S::Term) -> Object
+    fn cnv_object<S>(&self, term: S::Term) -> Node
     where
         S: SRDF,
     {
-        S::term2object(term)
+        let object = S::term2object(term);
+        Node::from(object)
     }
 
-    fn neighs<S>(&self, node: &Object, rdf: &S) -> Result<Vec<(IriS, Object)>>
+    fn neighs<S>(&self, node: &Node, rdf: &S) -> Result<Vec<(Pred, Node)>>
     where
         S: SRDF,
     {
@@ -254,11 +258,11 @@ impl ValidatorRunner {
         todo!()
     }
 
-    fn get_rdf_node<S>(&self, node: &Object, rdf: &S) -> S::Term
+    fn get_rdf_node<S>(&self, node: &Node, rdf: &S) -> S::Term
     where
         S: SRDF,
     {
-        match node {
+        match node.as_object() {
             Object::Iri { iri } => {
                 let i = S::iri_s2iri(iri);
                 S::iri_as_term((*i).clone())

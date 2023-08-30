@@ -1,0 +1,15 @@
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+
+:a schema:name  23 ;
+   schema:knows :a, :b  .
+
+:b schema:name  "Bob"   ;
+   schema:knows :c      .
+
+:c schema:name  "Carol" .
+
+:d schema:name  23      .  # Should fail
+
+:e schema:name  "Emily" ;  # Should fail
+   schema:knows :d      .
