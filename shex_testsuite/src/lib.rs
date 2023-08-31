@@ -9,3 +9,4 @@ pub mod manifest_run_mode;
 pub mod manifest_run_result;
 pub mod manifest_schemas;
 pub mod manifest_validation;
+pub mod print_result_mode;

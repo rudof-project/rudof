@@ -2,8 +2,8 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use shex_testsuite::manifest_mode::ManifestMode;
 use shex_testsuite::manifest_run_result::ManifestRunResult;
-// use shex_testsuite::manifest_run_mode;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
+use shex_testsuite::print_result_mode::PrintResultMode;
 use shex_testsuite::{
     config::Config, config::ConfigError, manifest::Manifest,
     manifest_negative_structure::ManifestNegativeStructure,
@@ -36,8 +36,11 @@ struct Cli {
     )]
     config: String,
 
-    #[arg(value_enum, long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
+    #[arg(value_enum, short = 'r', long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
     manifest_run_mode: ManifestRunMode,
+
+    #[arg(value_enum, short='p', long="print_result_mode", default_value_t = PrintResultMode::Basic)]
+    print_result_mode: PrintResultMode,
 
     #[arg(short, long, action = clap::ArgAction::Count)]
     debug: u8,
@@ -102,7 +105,7 @@ fn main() -> Result<()> {
         config.single_entries,
     );
 
-    print_result(result, cli.debug);
+    print_result(result, cli.print_result_mode);
     Ok(())
 }
 
@@ -110,25 +113,63 @@ fn parse_config(file_name: String) -> Result<Config, ConfigError> {
     Config::from_file(file_name)
 }
 
-fn print_result(result: ManifestRunResult, debug: u8) -> () {
-    let (npassed, nskipped, nfailed) = (
+fn print_basic(result: &ManifestRunResult) {
+    let (npassed, nskipped, nfailed, npanicked) = (
         result.passed.len(),
         result.skipped.len(),
         result.failed.len(),
+        result.panicked.len(),
     );
     let overview = format!(
-        "Passed: {}, Failed: {}, Skipped: {}",
-        npassed, nfailed, nskipped
+        "Passed: {}, Failed: {}, Skipped: {}, Not implemented: {}",
+        npassed, nfailed, nskipped, npanicked
     );
-    match debug {
-        0 => {
-            println!("{}", overview);
+    println!("{}", overview);
+}
+
+fn print_failed(result: &ManifestRunResult) {
+    println!("--- Failed ---");
+    for (name, err) in &result.failed {
+        println!("{name} {err}");
+    }
+}
+
+fn print_panicked(result: &ManifestRunResult) {
+    println!("--- Not implemented ---");
+    for (name, _err) in &result.panicked {
+        println!("{name}");
+    }
+}
+
+fn print_passed(result: &ManifestRunResult) {
+    println!("--- Passed ---");
+    for name in &result.passed {
+        println!("{name}");
+    }
+}
+
+fn print_result(result: ManifestRunResult, print_result_mode: PrintResultMode) {
+    match print_result_mode {
+        PrintResultMode::Basic => {
+            print_basic(&result);
         }
-        _ => {
-            for err in result.failed {
-                println!("{}", err);
-            }
-            println!("{}", overview);
+        PrintResultMode::All => {
+            print_passed(&result);
+            print_failed(&result);
+            print_panicked(&result);
+            print_basic(&result);
+        }
+        PrintResultMode::Failed => {
+            print_failed(&result);
+            print_basic(&result);
+        }
+        PrintResultMode::Passed => {
+            print_passed(&result);
+            print_basic(&result);
+        }
+        PrintResultMode::NotImplemented => {
+            print_panicked(&result);
+            print_basic(&result);
         }
     }
 }

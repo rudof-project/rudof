@@ -1,13 +1,14 @@
 use crate::manifest_error::ManifestError;
 use crate::manifest_run_mode::ManifestRunMode;
 use crate::manifest_run_result::ManifestRunResult;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
 
 pub trait Manifest {
     fn len(&self) -> usize;
 
     fn entry_names(&self) -> Vec<String>;
-    
+
     fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError>;
 
     fn should_run(&self, single_entries: &Option<Vec<String>>, entry_name: &String) -> bool {
@@ -31,13 +32,23 @@ pub trait Manifest {
                 result.add_skipped(entry_name.to_string());
                 ()
             } else if Self::should_run(&self, &single_entries, entry_name) {
-                match self.run_entry(entry_name, base, debug) {
-                    Ok(_) => {
+                let safe_result = catch_unwind(AssertUnwindSafe(move || {
+                    self.run_entry(entry_name, base, debug)
+                }));
+                match safe_result {
+                    Ok(Ok(())) => {
                         result.add_passed(entry_name.to_string());
                         ()
                     }
-                    Err(e) => {
-                        result.add_failed(e);
+                    Ok(Err(e)) => {
+                        result.add_failed(entry_name.to_string(), e);
+                        match mode {
+                            ManifestRunMode::FailFirstError => return result,
+                            _ => (),
+                        }
+                    }
+                    Err(err) => {
+                        result.add_panicked(entry_name.to_string(), err);
                         match mode {
                             ManifestRunMode::FailFirstError => return result,
                             _ => (),
