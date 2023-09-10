@@ -211,8 +211,8 @@ where
         }
     }
 
-    pub fn with_name(mut self, name: String) -> Self {
-        self.name = Some(name);
+    pub fn with_name(mut self, name: &str) -> Self {
+        self.name = Some(name.to_string());
         self
     }
 
@@ -351,7 +351,7 @@ mod tests {
     fn test_name_pass() {
         fn cond_name(name: String) -> SingleCond<char, String, String> {
             SingleCond::new()
-                .with_name("name".to_string())
+                .with_name("name")
                 .with_cond(move |v: &String| {
                     if *v == name {
                         Ok(Pending::new())

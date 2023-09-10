@@ -1,7 +1,7 @@
 use std::io;
 use iri_s::IriSError;
 use shex_ast::{SchemaJsonError, CompiledSchemaError};
-use shex_validation::ValidatorError;
+use shex_validation::{ValidatorError, ResultValue};
 use srdf_graph::SRDFGraphError;
 use thiserror::Error;
 
@@ -42,4 +42,14 @@ pub enum ManifestError {
 
     #[error(transparent)]
     ValidationError(#[from] ValidatorError),
+
+    #[error("Parsing validation type: Unknown value: {value}")]
+    ParsingValidationType{ value: String },
+
+    #[error("Expected faiure but obtained {value} for {entry}")]
+    ExpectedFailureButObtained { value: ResultValue, entry: String },
+
+    #[error("Expected OK but obtained {value} for {entry}")]
+    ExpectedOkButObtained { value: ResultValue, entry: String }
+
 }

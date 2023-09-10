@@ -44,6 +44,14 @@ where
         counter
     }
 
+    pub fn contains(&self, v: &V, r: &R) -> bool {
+        if let Some(rs) = self.pending_map.get(v) {
+           rs.contains(r) 
+        } else {
+            false
+        }
+    }
+
     pub fn merge(&mut self, other: Pending<V, R>) {
         for (k, vs) in other.pending_map.into_iter() {
             match self.pending_map.entry(k) {

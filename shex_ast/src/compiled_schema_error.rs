@@ -63,4 +63,7 @@ pub enum CompiledSchemaError {
         lexical_form: String,
         lang: Lang,
     },
+
+    #[error("Not implemented yet: {msg}")]
+    Todo { msg: String }
 }

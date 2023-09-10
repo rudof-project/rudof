@@ -19,19 +19,20 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+
     /// Name of Manifest file
     #[arg(
-        short,
-        long,
+        short = 'm',
+        long = "manifest",
         value_name = "Manifest FILE (.jsonld)",
         default_value = "shex_testsuite/shexTest/validation/manifest.jsonld"
     )]
     manifest_filename: String,
 
     #[arg(
-        short,
-        long,
-        value_name = "Config",
+        short = 'c',
+        long = "config",
+        value_name = "Config file",
         default_value = "shex_testsuite/config.yml"
     )]
     config: String,
@@ -44,6 +45,16 @@ struct Cli {
 
     #[arg(short, long, action = clap::ArgAction::Count)]
     debug: u8,
+
+
+    #[arg(
+        short = 'e',
+        long = "entry",
+        value_name = "Entry names",
+        default_value = None
+    )]
+    entry_name: Option<Vec<String>>
+
 }
 
 fn get_base(path: &Path) -> Result<PathBuf> {
@@ -79,7 +90,9 @@ fn parse_manifest(manifest_str: String, mode: ManifestMode) -> Result<Box<dyn Ma
 }
 
 fn main() -> Result<()> {
+    env_logger::init();
     let cli = Cli::parse();
+
 
     let manifest_path = Path::new(&cli.manifest_filename);
 
@@ -97,12 +110,19 @@ fn main() -> Result<()> {
         parse_manifest(manifest_str, config.manifest_mode)?
     };
 
+    let entries = match (cli.entry_name, config.single_entries) {
+        (None, None) => None,
+        (None, Some(es)) => Some(es),
+        (Some(es), None) => Some(es),
+        (Some(es), Some(_)) => Some(es)
+    };
+
     let result = manifest.run(
         &base,
         cli.debug,
         cli.manifest_run_mode,
         config.excluded_entries,
-        config.single_entries,
+        entries,
     );
 
     print_result(result, cli.print_result_mode);

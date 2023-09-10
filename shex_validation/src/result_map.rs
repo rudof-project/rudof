@@ -6,6 +6,8 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
+use crate::ResultValue;
+
 #[derive(Debug, Clone)]
 pub struct ResultMap<N, S>
 where
@@ -72,6 +74,38 @@ where
         self.pending.pop()
     }
 
+    pub fn get_result(&self, node: &N, shape: &S) -> ResultValue {
+       if self.is_ok(node, shape) {
+          ResultValue::Ok
+       } else if self.is_failed(node, shape) {
+          ResultValue::Failed
+       } else if self.is_pending(node, shape) {
+          ResultValue::Pending
+       } else {
+          ResultValue::Unknown 
+       }
+    }
+
+    pub fn is_ok(&self, node: &N, shape: &S) -> bool {
+        if let Some(hs) = self.ok_map.get(node) {
+           hs.contains(shape) 
+        } else { 
+            false 
+        }
+    }
+
+    pub fn is_failed(&self, node: &N, shape: &S) -> bool {
+        if let Some(hs) = self.fail_map.get(node) {
+           hs.contains(shape) 
+        } else { 
+            false 
+        }
+    }
+
+    pub fn is_pending(&self, node: &N, shape: &S) -> bool {
+        self.pending.contains(node, shape)
+    }
+
     /*pub fn iter(&self) -> ResultMapIterator {
         ResultMapIterator {
             ok_iter: self.ok_map.iter(),
@@ -93,14 +127,14 @@ where
                 write!(dest, "{s}|")?;
             }
         }
-        writeln!(dest);
+        writeln!(dest)?;
         for (n, hs) in &self.fail_map {
             write!(dest, "{n}->NOT |")?;
             for s in hs {
                 write!(dest, "{s}|")?;
             }
         }
-        writeln!(dest);
+        writeln!(dest)?;
         for (n, s) in self.pending.iter() {
             writeln!(dest, "{n}->?{s}")?;
         }
@@ -108,11 +142,8 @@ where
     }
 }
 
-enum ResultValue {
-    Pending,
-    Ok,
-    Failed,
-}
+
+
 
 /*struct ResultMapIterator<N, S> {
     ok_iter: Iterator<Item = (N, S)>,

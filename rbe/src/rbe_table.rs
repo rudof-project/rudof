@@ -2,6 +2,7 @@ use core::hash::Hash;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
+use log::debug;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -98,7 +99,7 @@ where
         }
 
         if candidates.is_empty() || pairs_found == 0 {
-            println!(
+            debug!(
                 "No candidates for rbe: {:?}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
             );
@@ -108,7 +109,7 @@ where
                 values: Values::from(&values),
             }))
         } else {
-            println!("Candidates not empty rbe: {:?}", self.rbe);
+            debug!("Candidates not empty rbe: {:?}", self.rbe);
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -191,16 +192,16 @@ where
         match next_state {
             None => {
                 if self.is_first {
-                    println!("Should be internal error? No more candidates");
+                    debug!("Should be internal error? No more candidates");
                     None
                 } else {
-                    println!("No more candidates");
+                    debug!("No more candidates");
                     None
                 }
             }
             Some(vs) => {
                 for (k, v, c, cond) in &vs {
-                    println!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
+                    debug!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
                 }
                 let mut pending: Pending<V, R> = Pending::new();
                 for (k, v, _, cond) in &vs {
@@ -213,15 +214,16 @@ where
                         }
                     }
                 }
-                println!("Pending after checking conditions: {pending:?}");
+                debug!("Pending after checking conditions: {pending:?}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
+                        debug!("Rbe matches");
                         self.is_first = false;
                         Some(Ok(pending))
                     }
                     Err(err) => {
-                        println!("### Skipped error: {err}!!!!\n");
+                        debug!("### Skipped error: {err}!!!!\n");
                         self.next()
                     }
                 }
@@ -324,7 +326,7 @@ mod tests {
         // { p a; q y; q z } == { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -337,7 +339,7 @@ mod tests {
             ));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
@@ -346,7 +348,7 @@ mod tests {
             ));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
@@ -389,7 +391,7 @@ mod tests {
         // { p a; q y } != { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -402,7 +404,7 @@ mod tests {
             ));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
@@ -411,7 +413,7 @@ mod tests {
             ));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(
                 move |v| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
@@ -442,7 +444,7 @@ mod tests {
         // { p a; q a } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())
@@ -476,7 +478,7 @@ mod tests {
         // { p a; q b } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a".to_string()).with_cond(
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
                 move |v| {
                     if *v == 'a' {
                         Ok(Pending::new())

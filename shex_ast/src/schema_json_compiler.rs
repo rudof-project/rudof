@@ -116,7 +116,7 @@ impl SchemaJsonCompiler {
                 Ok(idx)
             }
             schema_json::Ref::BNode { value: _ } => {
-                todo!()
+                todo("ref2idx: BNode")
             }
         }
     }
@@ -177,13 +177,8 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            schema_json::ShapeExpr::NodeConstraint {
-                node_kind,
-                datatype,
-                xs_facet,
-                values,
-            } => todo!(),
-            schema_json::ShapeExpr::ShapeExternal => todo!(),
+            schema_json::ShapeExpr::NodeConstraint {..} => todo("compile_shape_expr: NodeConstraint"),
+            schema_json::ShapeExpr::ShapeExternal => todo("compile_shape_expr: ShapeExternal"),
         }
     }
 
@@ -354,23 +349,35 @@ impl SchemaJsonCompiler {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok(mk_cond_ref(idx))
                 }
-                _ => {
-                    todo!()
+                schema_json::ShapeExpr::Shape { .. } => {
+                    todo("valueexpr2match_cond: Shape")
+                }
+                schema_json::ShapeExpr::ShapeAnd { .. } => {
+                    todo("value_expr2match_cond: ShapeOr")
+                }
+                schema_json::ShapeExpr::ShapeOr { .. } => {
+                    todo("value_expr2match_cond: ShapeOr")
+                }
+                schema_json::ShapeExpr::ShapeNot { .. } => {
+                    todo("value_expr2match_cond: ShapeNot")
+                }
+                schema_json::ShapeExpr::ShapeExternal => {
+                    todo("value_expr2match_cond: ShapeExternal")
                 }
             }
         } else {
-            Ok(MatchCond::new())
+            Ok(MatchCond::single(SingleCond::new().with_name(".")))
         }
     }
 
-    #[allow(dead_code)]
+    /* #[allow(dead_code)]
     fn shape_expr2match_cond(
         &self,
         _se: schema_json::ShapeExpr,
         _compiled_schema: &mut CompiledSchema,
     ) -> CResult<Cond> {
-        todo!()
-    }
+        todo("shape_expr2match_cond")
+    }*/
 
     fn node_constraint2match_cond(
         &self,
@@ -422,7 +429,7 @@ impl SchemaJsonCompiler {
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::single(SingleCond::new().with_name(format!("@{idx}")).with_cond(
+    MatchCond::single(SingleCond::new().with_name(format!("@{idx}").as_str()).with_cond(
         move |value: &Node| {
             let result = Pending::from_pair(value.clone(), idx);
             Ok(result)
@@ -433,7 +440,7 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
 fn mk_cond_datatype(datatype: IriS) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype{datatype}"))
+            .with_name(format!("datatype{datatype}").as_str())
             .with_cond(
                 move |value: &Node| match check_node_datatype(value, &datatype) {
                     Ok(_) => Ok(Pending::new()),
@@ -448,7 +455,7 @@ fn mk_cond_datatype(datatype: IriS) -> Cond {
 fn mk_cond_nodekind(nodekind: NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("nodekind{nodekind}"))
+            .with_name(format!("nodekind{nodekind}").as_str())
             .with_cond(
                 move |value: &Node| match check_node_node_kind(value, &nodekind) {
                     Ok(_) => Ok(Pending::empty()),
@@ -555,4 +562,8 @@ fn check_node_value(node: &Object, value: &ValueSetValue) -> bool {
 }
 fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
     Ok(()) // todo!()
+}
+
+fn todo<A>(str: &str) -> CResult<A> {
+    Err(CompiledSchemaError::Todo{ msg: str.to_string() })
 }

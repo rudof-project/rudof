@@ -1,3 +1,4 @@
+use crate::ResultValue;
 use crate::result_map::*;
 use crate::validator_error::*;
 use crate::MAX_STEPS;
@@ -34,28 +35,20 @@ impl Validator {
         }
     }
 
-    pub fn validate_node_start<S>(&mut self, node: Node, rdf: &S) -> Result<()> 
-    where S: SRDF {
-        todo!()
-    }
-
-    pub fn validate_node_shape<S>(&mut self, node: Node, shape: ShapeLabel, rdf: &S) -> Result<()>
+    /// validate a node against a shape label 
+    pub fn validate_node_shape<S>(&mut self, node: &Node, shape: &ShapeLabel, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
-        if let Some((idx, _se)) = self.schema.find_label(&shape) {
-            self.runner.add_pending(node, *idx);
-            while self.runner.no_end_steps() && self.runner.more_pending() {
-                self.runner.new_step();
-                println!("In validate_node_shape loop: step {}", self.runner.steps());
-                let (n, idx) = self.runner.pop_pending().unwrap();
-                self.runner.add_current(&n, &idx);
-                self.check_node_idx(&n, &idx, rdf)?;
-            }
-            Ok(())
-        } else {
-            Err(ValidatorError::NotFoundShapeLabel { shape })
+        let idx = self.get_idx(shape)?;
+        self.runner.add_pending(node.clone(), idx);
+        while self.runner.no_end_steps() && self.runner.more_pending() {
+            self.runner.new_step();
+            let (n, idx) = self.runner.pop_pending().unwrap();
+            self.runner.add_current(&n, &idx);
+            self.check_node_idx(&n, &idx, rdf)?;
         }
+        Ok(())
     }
 
     pub fn check_node_idx<S>(&mut self, node: &Node, idx: &ShapeLabelIdx, rdf: &S) -> Result<()>
@@ -66,13 +59,21 @@ impl Validator {
         self.runner.check_node_shape_expr(node, se, rdf)
     }
 
-    pub fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
-        self.runner.result_map()
+    pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {
+        let idx = self.get_idx(shape)?;
+        Ok(self.runner.result_map.get_result(&node, &idx))
     }
 
     pub fn with_max_steps(mut self, max_steps: usize) -> Self {
         self.runner.max_steps = max_steps;
         self
+    }
+
+    fn get_idx(&self, shape: &ShapeLabel) -> Result<ShapeLabelIdx> {
+        match self.schema.find_label(shape) {
+            Some((idx,_se)) => Ok(idx.clone()),
+            None => Err(ValidatorError::NotFoundShapeLabel { shape: (*shape).clone() })
+        }
     }
 }
 
@@ -189,12 +190,16 @@ impl ValidatorRunner {
                 let values = self.neighs(node, rdf)?;
                 let mut rs = rbe_table.matches(values)?;
                 if let Some(pending_result) = rs.next() {
-                    println!("### obtained pending result, step {}", self.step_counter);
+                    let counter = self.step_counter;
                     let pending = pending_result?;
+                    debug!("Step {counter}: Pending {pending:?}");
                     let mut effective_pending = Pending::new();
                     for (p, v) in pending.iter() {
+                        debug!("Step {counter}: Value in pending: {p}/{v}");
                         if self.is_current_goal(p, v) {
-                            self.add_ok(p.clone(), *v);
+                            let pred = p.clone();
+                            debug!("Step {counter} Adding ok: {}/{v}", &pred);
+                            self.add_ok(pred, *v);
                         } else {
                             effective_pending.insert(p.clone(), v.clone());
                         }

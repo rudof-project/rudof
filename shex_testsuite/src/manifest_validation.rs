@@ -12,6 +12,9 @@ use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use iri_s::IriS;
+use ValidationType::*;
+use shex_validation::ResultValue;
+use log::debug;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -167,46 +170,67 @@ fn parse_schema(
 }
 
 impl ValidationEntry {
+    
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
-        let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
-        let node = match &self.action.focus {
-            None => Err(ManifestError::NoFocusNode { entry: self.name.clone() }),
-            Some(focus) => parse_focus(focus)
-        }?;
 
-        let maybe_shape: Option<ShapeLabel> = match &self.action.shape {
-            None => {
-                None
-            },
-            Some(str) => {
-                let shape = parse_shape(&str)?;
-                Some(shape)
-            }
-        };
+        let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
+        debug!("Data obtained from: {}", self.action.data);
+
+        let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
+        debug!("Schema obtained from: {}", self.action.schema);
+
+        let node = parse_maybe_focus(&self.action.focus, &self.name)?;
+        debug!("Node: {}", node);
+
+        let shape = parse_maybe_shape(&self.action.shape)?;
+        debug!("Shape: {}", shape);
+
         let mut compiler = SchemaJsonCompiler::new();
         let mut compiled_schema = CompiledSchema::new(); 
         compiler.compile(&schema, &mut compiled_schema)?;
         let mut validator = Validator::new(compiled_schema);
-        match maybe_shape {
-            Some(shape_label) => validator.validate_node_shape(node, shape_label, &graph),
-            None => validator.validate_node_start(node, &graph)
-        }?;
-        
-
-        if debug > 0 {
-            println!(
-                "Runnnig entry: {} with schema: {}, data: {}, #triples: {}",
-                self.id,
-                self.action.schema,
-                self.action.data,
-                graph.len()
-            );
+        validator.validate_node_shape(&node, &shape, &graph)?;
+        let type_ = parse_type(&self.type_)?;
+        let result = validator.get_result(&node, &shape)?;
+        match (type_, &result) {
+            (Validation, ResultValue::Ok) => Ok(()),
+            (Validation, _) => {
+                if debug > 0 {
+                    println!("Expected OK but failed {}", &self.name)
+                }
+                Err(ManifestError::ExpectedOkButObtained { value: result.clone(), entry: self.name.clone() })
+            },
+            (Failure, ResultValue::Failed) => Ok(()),
+            (Failure, _) => { 
+                if debug > 0 {
+                    println!("Expected Failure but passed {}", &self.name)
+                }
+                Err(ManifestError::ExpectedFailureButObtained { value: result.clone(), entry: self.name.clone() })
+            },
         }
-        Ok(())
     }
+}
 
+fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError> {
+    match &shape {
+        None => {
+            Ok(ShapeLabel::Start)
+        },
+        Some(str) => {
+            let shape = parse_shape(&str)?;
+            Ok(shape)
+        }
+    }
+}
 
+fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, ManifestError> {
+    match maybe_focus {
+        None => Err(ManifestError::NoFocusNode { entry: entry.to_string() }),
+        Some(focus) => {
+            let node = parse_focus(focus)?;
+            Ok(node)
+        }
+    }
 }
 
 fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
@@ -219,9 +243,23 @@ fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
    }
 }
 
-fn parse_shape(str: &String) -> Result<ShapeLabel, ManifestError> {
-    let shape_label = ShapeLabel::from_iri_str(str.as_str())?;
+fn parse_shape(str: &str) -> Result<ShapeLabel, ManifestError> {
+    let shape_label = ShapeLabel::from_iri_str(str)?;
     Ok(shape_label)
+}
+
+fn parse_type(str: &str) -> Result<ValidationType, ManifestError> {
+    match str {
+        "sht:ValidationTest" => Ok(ValidationType::Validation),
+        "sht:ValidationFailure" => Ok(ValidationType::Failure),
+        _ => Err(ManifestError::ParsingValidationType { value: str.to_string() })
+
+    }
+}
+
+enum ValidationType {
+    Validation,
+    Failure
 }
 
 impl Manifest for ManifestValidation {

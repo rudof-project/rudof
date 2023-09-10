@@ -11,7 +11,7 @@ use std::str::FromStr;
 
 use crate::IriSError;
 
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IriS {
     iri: NamedNode,
 }
@@ -110,11 +110,11 @@ impl<'de> Deserialize<'de> for IriS {
     }
 }
 
-impl PartialEq for IriS {
+/*impl PartialEq for IriS {
     fn eq(&self, other: &Self) -> bool {
         self.iri.as_str() == other.iri.as_str()
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {
