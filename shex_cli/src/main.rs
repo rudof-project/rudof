@@ -78,7 +78,7 @@ fn run_validate(
     let node = parse_node(node_str, &data)?;
     let shape = parse_shape_label(shape_str)?;
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
-    match validator.validate_node_shape(node, shape, &data) {
+    match validator.validate_node_shape(&node, &shape, &data) {
         Result::Ok(t) => {
             println!("Result: {:?}", validator.result_map());
             Ok(())
