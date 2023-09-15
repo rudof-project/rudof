@@ -1,4 +1,5 @@
 use crate::result_map::*;
+use crate::solver;
 use crate::validator_error::*;
 use crate::validator_runner::ValidatorRunner;
 use crate::ResultValue;
@@ -22,6 +23,7 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, ValidatorError>;
+type Atom = solver::Atom<(Node, ShapeLabelIdx)>;
 
 pub struct Validator {
     schema: CompiledSchema,
@@ -43,21 +45,29 @@ impl Validator {
     {
         let idx = self.get_idx(shape)?;
         self.runner.add_pending(node.clone(), idx);
+        debug!("Before while loop: ${}@{}", node, idx);
         while self.runner.no_end_steps() && self.runner.more_pending() {
             self.runner.new_step();
-            let (n, idx) = self.runner.pop_pending().unwrap();
-            self.runner.add_current(&n, &idx);
-            self.check_node_idx(&n, &idx, rdf)?;
+            let atom = self.runner.pop_pending().unwrap();
+            debug!("Processing atom: ${atom:?}");
+            self.runner.add_processing(&atom);
+            self.check_node_atom(&atom, rdf)?;
         }
         Ok(())
     }
 
-    pub fn check_node_idx<S>(&mut self, node: &Node, idx: &ShapeLabelIdx, rdf: &S) -> Result<()>
+    pub fn check_node_atom<S>(&mut self, atom: &Atom, rdf: &S) -> Result<()>
     where
         S: SRDF,
     {
-        let se = find_shape_idx(idx, &self.schema); // self.schema.get_shape_expr(shape).unwrap(); // Self::find_shape_expr(shape, &self.schema);
-        self.runner.check_node_shape_expr(node, se, rdf)
+        let (node, idx) = atom.get_value();
+        let se = find_shape_idx(idx, &self.schema);
+        match atom {
+            Atom::Pos { .. } => self.runner.check_node_shape_expr(node, se, rdf),
+            Atom::Neg { .. } => {
+                todo!()
+            }
+        }
     }
 
     pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {

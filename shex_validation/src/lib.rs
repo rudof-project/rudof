@@ -1,12 +1,14 @@
 mod result_map;
 mod result_value;
 // mod validation_state;
+pub mod solver;
 pub mod validator;
 pub mod validator_error;
 pub mod validator_runner;
 
 pub use crate::result_map::*;
 pub use crate::result_value::*;
+pub use crate::solver::*;
 pub use crate::validator::*;
 pub use crate::validator_error::*;
 pub use crate::validator_runner::*;

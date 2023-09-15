@@ -20,6 +20,8 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
+indexmap = { version = "2", feature = "serde" }
+
 
 [dev-dependencies]
 srdf_graph = { path = "../srdf_graph" }

@@ -5,6 +5,7 @@ extern crate shex_ast;
 use anyhow::*;
 use clap::Parser;
 use iri_s::*;
+use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject, Term};
 use shex_ast::Node;
 use shex_validation::Validator;
@@ -78,6 +79,7 @@ fn run_validate(
     let node = parse_node(node_str, &data)?;
     let shape = parse_shape_label(shape_str)?;
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
+    debug!("Validating with max_steps: {}", max_steps);
     match validator.validate_node_shape(&node, &shape, &data) {
         Result::Ok(t) => {
             println!("Result: {:?}", validator.result_map());

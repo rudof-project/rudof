@@ -1,7 +1,9 @@
 use crate::result_map::*;
+use crate::solver;
 use crate::validator_error::*;
 use crate::ResultValue;
 use crate::MAX_STEPS;
+use indexmap::IndexSet;
 use iri_s::IriS;
 use log::debug;
 use rbe::Pending;
@@ -21,12 +23,16 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, ValidatorError>;
+type Atom = solver::Atom<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug)]
 pub struct ValidatorRunner {
-    current_goal: Option<(Node, ShapeLabelIdx)>,
-    result_map: ResultMap<Node, ShapeLabelIdx>,
-    alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
+    checked: IndexSet<Atom>,
+    processing: IndexSet<Atom>,
+    pending: IndexSet<Atom>,
+    rules: IndexSet<solver::Rule<Atom>>,
+    // result_map: ResultMap<Node, ShapeLabelIdx>,
+    // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
     step_counter: usize,
 }
@@ -34,36 +40,44 @@ pub struct ValidatorRunner {
 impl ValidatorRunner {
     pub fn new() -> ValidatorRunner {
         ValidatorRunner {
-            current_goal: None,
-            result_map: ResultMap::new(),
-            alternatives: Vec::new(),
+            checked: IndexSet::new(),
+            processing: IndexSet::new(),
+            pending: IndexSet::new(),
+            rules: IndexSet::new(),
+            // result_map: ResultMap::new(),
+            // alternatives: Vec::new(),
             max_steps: MAX_STEPS,
             step_counter: 0,
         }
     }
 
     pub(crate) fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
-        self.result_map.clone()
+        let mut result = ResultMap::new();
+        for atom in &self.checked {
+            let (node, idx) = atom.get_value();
+            match atom {
+                Atom::Pos { .. } => result.add_ok((*node).clone(), (*idx).clone()),
+                Atom::Neg { .. } => result.add_fail((*node).clone(), (*idx).clone()),
+            }
+        }
+        for atom in &self.pending {
+            let (node, idx) = atom.get_value();
+            result.add_pending((*node).clone(), (*idx).clone());
+        }
+        // TODO: Should I also add processing nodes as pending?
+        result
     }
 
-    pub(crate) fn add_current(&mut self, node: &Node, shape: &ShapeLabelIdx) {
-        self.set_current_goal(&node, &shape);
-    }
-
-    pub fn set_current_goal(&mut self, n: &Node, s: &ShapeLabelIdx) {
-        self.current_goal = Some(((*n).clone(), (*s).clone()));
+    pub(crate) fn add_processing(&mut self, atom: &Atom) {
+        self.processing.insert((*atom).clone());
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {
         self.max_steps = max_steps;
     }
 
-    pub(crate) fn is_current_goal(&self, n: &Node, s: &ShapeLabelIdx) -> bool {
-        if let Some((cn, cs)) = &self.current_goal {
-            *cn == *n && *cs == *s
-        } else {
-            false
-        }
+    pub(crate) fn is_processing(&self, atom: &Atom) -> bool {
+        self.processing.contains(atom)
     }
 
     pub fn new_step(&mut self) {
@@ -71,19 +85,21 @@ impl ValidatorRunner {
     }
 
     pub fn add_ok(&mut self, n: Node, s: ShapeLabelIdx) {
-        self.result_map.add_ok(n, s);
+        self.checked.insert(Atom::pos((n, s)));
     }
 
     pub fn more_pending(&self) -> bool {
-        self.result_map.more_pending()
+        !self.pending.is_empty()
     }
 
     pub fn add_pending(&mut self, n: Node, s: ShapeLabelIdx) {
-        self.result_map.add_pending(n, s);
+        // self.result_map.add_pending(n, s);
+        self.pending.insert(Atom::pos((n, s)));
     }
 
-    pub fn pop_pending(&mut self) -> Option<(Node, ShapeLabelIdx)> {
-        self.result_map.pop_pending()
+    pub fn pop_pending(&mut self) -> Option<Atom> {
+        // self.result_map.pop_pending()
+        self.pending.pop()
     }
 
     pub fn steps(&self) -> usize {
@@ -147,18 +163,20 @@ impl ValidatorRunner {
                     let counter = self.step_counter;
                     let pending = pending_result?;
                     debug!("Step {counter}: Pending {pending:?}");
-                    let mut effective_pending = Pending::new();
+                    // let mut effective_pending = Pending::new();
                     for (p, v) in pending.iter() {
                         debug!("Step {counter}: Value in pending: {p}/{v}");
-                        if self.is_current_goal(p, v) {
+                        let atom = Atom::pos(((*p).clone(), *v));
+                        if self.is_processing(&atom) {
                             let pred = p.clone();
                             debug!("Step {counter} Adding ok: {}/{v}", &pred);
                             self.add_ok(pred, *v);
                         } else {
-                            effective_pending.insert(p.clone(), v.clone());
+                            // effective_pending.insert(p.clone(), v.clone());
+                            self.insert_pending(&atom);
                         }
                     }
-                    self.result_map.merge_pending(effective_pending);
+                    // self.result_map.merge_pending(effective_pending);
                     // TODO: Add alternatives...
                     Ok(())
                 } else {
@@ -240,7 +258,7 @@ impl ValidatorRunner {
         }
     }
 
-    /*    pub fn result_map(&self) -> ResultMap<Object, ShapeLabelIdx> {
-        self.runner.result_map.clone()
-    } */
+    pub fn insert_pending(&mut self, atom: &Atom) {
+        self.pending.insert((*atom).clone());
+    }
 }
