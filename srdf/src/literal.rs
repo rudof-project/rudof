@@ -17,6 +17,29 @@ pub enum Literal {
     },
 }
 
+impl Literal {
+    pub fn datatype(lexical_form: &str, datatype: IriS) -> Literal {
+        Literal::DatatypeLiteral {
+            lexical_form: lexical_form.to_owned(),
+            datatype,
+        }
+    }
+
+    pub fn str(lexical_form: &str) -> Literal {
+        Literal::StringLiteral {
+            lexical_form: lexical_form.to_owned(),
+            lang: None,
+        }
+    }
+
+    pub fn lang_str(lexical_form: &str, lang: Lang) -> Literal {
+        Literal::StringLiteral {
+            lexical_form: lexical_form.to_owned(),
+            lang: Some(lang),
+        }
+    }
+}
+
 impl Default for Literal {
     fn default() -> Self {
         Literal::StringLiteral {

@@ -72,6 +72,14 @@ impl ValidatorRunner {
         self.processing.insert((*atom).clone());
     }
 
+    pub(crate) fn remove_processing(&mut self, atom: &Atom) {
+        self.processing.remove(atom);
+    }
+
+    pub(crate) fn add_checked(&mut self, atom: &Atom) {
+        self.checked.insert((*atom).clone());
+    }
+
     pub fn set_max_steps(&mut self, max_steps: usize) {
         self.max_steps = max_steps;
     }
@@ -119,7 +127,7 @@ impl ValidatorRunner {
         node: &Node,
         se: &ShapeExpr,
         rdf: &S,
-    ) -> Result<()>
+    ) -> Result<bool>
     where
         S: SRDF,
     {
@@ -134,21 +142,38 @@ impl ValidatorRunner {
                 xs_facet,
                 values,
                 cond,
-            } => {
-                cond.matches(node)?;
-                Ok(())
-            }
+            } => match cond.matches(node) {
+                Ok(_) => Ok(true),
+                Err(_) => Ok(false),
+            },
             ShapeExpr::Ref { idx } => {
                 todo!()
             }
             ShapeExpr::ShapeAnd { exprs } => {
-                todo!()
+                for e in exprs {
+                    let result = self.check_node_shape_expr(node, e, rdf)?;
+                    if !result {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
             }
             ShapeExpr::ShapeNot { expr } => {
-                todo!()
+                let result = self.check_node_shape_expr(node, expr, rdf)?;
+                if !result {
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
             }
             ShapeExpr::ShapeOr { exprs } => {
-                todo!()
+                for e in exprs {
+                    let result = self.check_node_shape_expr(node, e, rdf)?;
+                    if result {
+                        return Ok(true);
+                    }
+                }
+                Ok(false)
             }
             ShapeExpr::Shape {
                 closed,
@@ -162,31 +187,33 @@ impl ValidatorRunner {
                 if let Some(pending_result) = rs.next() {
                     let counter = self.step_counter;
                     let pending = pending_result?;
-                    debug!("Step {counter}: Pending {pending:?}");
-                    // let mut effective_pending = Pending::new();
+                    debug!(
+                        "Step {counter}: Pending {pending:?}, Processing: {:?}",
+                        &self.processing
+                    );
                     for (p, v) in pending.iter() {
                         debug!("Step {counter}: Value in pending: {p}/{v}");
                         let atom = Atom::pos(((*p).clone(), *v));
                         if self.is_processing(&atom) {
                             let pred = p.clone();
-                            debug!("Step {counter} Adding ok: {}/{v}", &pred);
+                            debug!(
+                                "Step {counter} Adding ok: {}/{v} because it was already processed",
+                                &pred
+                            );
                             self.add_ok(pred, *v);
                         } else {
-                            // effective_pending.insert(p.clone(), v.clone());
                             self.insert_pending(&atom);
                         }
                     }
                     // self.result_map.merge_pending(effective_pending);
                     // TODO: Add alternatives...
-                    Ok(())
+                    Ok(true)
                 } else {
                     Err(ValidatorError::RbeFailed())
                 }
             }
-            ShapeExpr::Empty => Ok(()),
-            ShapeExpr::ShapeExternal {} => {
-                todo!()
-            }
+            ShapeExpr::Empty => Ok(true),
+            ShapeExpr::ShapeExternal {} => Ok(true),
         }
     }
 

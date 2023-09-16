@@ -51,12 +51,18 @@ impl Validator {
             let atom = self.runner.pop_pending().unwrap();
             debug!("Processing atom: ${atom:?}");
             self.runner.add_processing(&atom);
-            self.check_node_atom(&atom, rdf)?;
+            let passed = self.check_node_atom(&atom, rdf)?;
+            self.runner.remove_processing(&atom);
+            if passed {
+                self.runner.add_checked(&atom);
+            } else {
+                self.runner.add_checked(&atom.negated());
+            }
         }
         Ok(())
     }
 
-    pub fn check_node_atom<S>(&mut self, atom: &Atom, rdf: &S) -> Result<()>
+    pub fn check_node_atom<S>(&mut self, atom: &Atom, rdf: &S) -> Result<bool>
     where
         S: SRDF,
     {

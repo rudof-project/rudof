@@ -4,7 +4,7 @@ use srdf::Object;
 use thiserror::Error;
 
 use crate::schema_json::TripleExprLabel;
-use crate::{schema_json, Node};
+use crate::{schema_json, Node, ShapeLabel};
 
 #[derive(Error, Debug)]
 pub enum CompiledSchemaError {
@@ -64,6 +64,9 @@ pub enum CompiledSchemaError {
         lang: Lang,
     },
 
+    #[error("Shape label not found {shape_label}")]
+    ShapeLabelNotFound { shape_label: ShapeLabel },
+
     #[error("Not implemented yet: {msg}")]
-    Todo { msg: String }
+    Todo { msg: String },
 }

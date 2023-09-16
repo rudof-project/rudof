@@ -9,6 +9,7 @@ edition.workspace = true
 [dependencies]
 iri_s = { path = "../iri_s" }
 shex_ast = { path = "../shex_ast" }
+srdf = { path = "../srdf" }
 srdf_graph = { path = "../srdf_graph" }
 shex_validation = { path = "../shex_validation" }
 serde = "1.0"

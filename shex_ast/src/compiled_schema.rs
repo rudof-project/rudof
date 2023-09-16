@@ -353,9 +353,9 @@ impl CompiledSchema {
     ) -> Result<ShapeLabelIdx, CompiledSchemaError> {
         match self.shape_labels_map.get(shape_label) {
             Some(shape_label_idx) => Ok(*shape_label_idx),
-            None => {
-                todo!()
-            }
+            None => Err(CompiledSchemaError::ShapeLabelNotFound {
+                shape_label: shape_label.clone(),
+            }),
         }
     }
 

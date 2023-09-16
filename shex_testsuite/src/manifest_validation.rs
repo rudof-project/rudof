@@ -1,20 +1,22 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use iri_s::IriS;
+use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::{SchemaJson, SchemaJsonCompiler, Node, ShapeLabel};
 use shex_ast::compiled_schema::CompiledSchema;
+use shex_ast::{Node, SchemaJson, SchemaJsonCompiler, ShapeLabel};
+use shex_validation::ResultValue;
 use shex_validation::Validator;
+use srdf::literal::Literal;
+use srdf::rdf::Object;
 use srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
-use iri_s::IriS;
 use ValidationType::*;
-use shex_validation::ResultValue;
-use log::debug;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -170,9 +172,7 @@ fn parse_schema(
 }
 
 impl ValidationEntry {
-    
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-
         let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
         debug!("Data obtained from: {}", self.action.data);
 
@@ -186,7 +186,7 @@ impl ValidationEntry {
         debug!("Shape: {}", shape);
 
         let mut compiler = SchemaJsonCompiler::new();
-        let mut compiled_schema = CompiledSchema::new(); 
+        let mut compiled_schema = CompiledSchema::new();
         compiler.compile(&schema, &mut compiled_schema)?;
         let mut validator = Validator::new(compiled_schema);
         validator.validate_node_shape(&node, &shape, &graph)?;
@@ -198,24 +198,28 @@ impl ValidationEntry {
                 if debug > 0 {
                     println!("Expected OK but failed {}", &self.name)
                 }
-                Err(ManifestError::ExpectedOkButObtained { value: result.clone(), entry: self.name.clone() })
-            },
+                Err(ManifestError::ExpectedOkButObtained {
+                    value: result.clone(),
+                    entry: self.name.clone(),
+                })
+            }
             (Failure, ResultValue::Failed) => Ok(()),
-            (Failure, _) => { 
+            (Failure, _) => {
                 if debug > 0 {
                     println!("Expected Failure but passed {}", &self.name)
                 }
-                Err(ManifestError::ExpectedFailureButObtained { value: result.clone(), entry: self.name.clone() })
-            },
+                Err(ManifestError::ExpectedFailureButObtained {
+                    value: result.clone(),
+                    entry: self.name.clone(),
+                })
+            }
         }
     }
 }
 
 fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError> {
     match &shape {
-        None => {
-            Ok(ShapeLabel::Start)
-        },
+        None => Ok(ShapeLabel::Start),
         Some(str) => {
             let shape = parse_shape(&str)?;
             Ok(shape)
@@ -225,7 +229,9 @@ fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError
 
 fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, ManifestError> {
     match maybe_focus {
-        None => Err(ManifestError::NoFocusNode { entry: entry.to_string() }),
+        None => Err(ManifestError::NoFocusNode {
+            entry: entry.to_string(),
+        }),
         Some(focus) => {
             let node = parse_focus(focus)?;
             Ok(node)
@@ -234,13 +240,16 @@ fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, M
 }
 
 fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
-   match focus {
-    Focus::Single(str) => {
-        let iri = IriS::new(str.as_str())?;
-        Ok(iri.into())
-    },
-    Focus::Typed(str, str_type) => todo!()
-   }
+    match focus {
+        Focus::Single(str) => {
+            let iri = IriS::new(str.as_str())?;
+            Ok(iri.into())
+        }
+        Focus::Typed(str, str_type) => {
+            let datatype = IriS::new(str_type.as_str())?;
+            Ok(Object::Literal(Literal::datatype(str, datatype)).into())
+        }
+    }
 }
 
 fn parse_shape(str: &str) -> Result<ShapeLabel, ManifestError> {
@@ -252,14 +261,15 @@ fn parse_type(str: &str) -> Result<ValidationType, ManifestError> {
     match str {
         "sht:ValidationTest" => Ok(ValidationType::Validation),
         "sht:ValidationFailure" => Ok(ValidationType::Failure),
-        _ => Err(ManifestError::ParsingValidationType { value: str.to_string() })
-
+        _ => Err(ManifestError::ParsingValidationType {
+            value: str.to_string(),
+        }),
     }
 }
 
 enum ValidationType {
     Validation,
-    Failure
+    Failure,
 }
 
 impl Manifest for ManifestValidation {

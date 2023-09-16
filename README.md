@@ -33,7 +33,7 @@ The ShEx testsuite is included in a git submodule. In order to obtain it, it is 
 
 ```sh
 git submodule update --init --recursive
-cargo test -p shex_testsuite
+cargo run -p shex_testsuite
 ```
 
 In order to run the validation tests in debug mode:

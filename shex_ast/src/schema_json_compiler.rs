@@ -115,9 +115,7 @@ impl SchemaJsonCompiler {
                 let idx = self.get_shape_label_idx(&value, compiled_schema)?;
                 Ok(idx)
             }
-            schema_json::Ref::BNode { value: _ } => {
-                todo("ref2idx: BNode")
-            }
+            schema_json::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
         }
     }
 
@@ -177,7 +175,9 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            schema_json::ShapeExpr::NodeConstraint {..} => todo("compile_shape_expr: NodeConstraint"),
+            schema_json::ShapeExpr::NodeConstraint { .. } => {
+                todo("compile_shape_expr: NodeConstraint")
+            }
             schema_json::ShapeExpr::ShapeExternal => todo("compile_shape_expr: ShapeExternal"),
         }
     }
@@ -281,9 +281,9 @@ impl SchemaJsonCompiler {
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            _ => {
-                todo!()
-            }
+            TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
+                msg: format!("TripleExprRef {r:?}"),
+            }),
         }
     }
 
@@ -349,18 +349,10 @@ impl SchemaJsonCompiler {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok(mk_cond_ref(idx))
                 }
-                schema_json::ShapeExpr::Shape { .. } => {
-                    todo("valueexpr2match_cond: Shape")
-                }
-                schema_json::ShapeExpr::ShapeAnd { .. } => {
-                    todo("value_expr2match_cond: ShapeOr")
-                }
-                schema_json::ShapeExpr::ShapeOr { .. } => {
-                    todo("value_expr2match_cond: ShapeOr")
-                }
-                schema_json::ShapeExpr::ShapeNot { .. } => {
-                    todo("value_expr2match_cond: ShapeNot")
-                }
+                schema_json::ShapeExpr::Shape { .. } => todo("valueexpr2match_cond: Shape"),
+                schema_json::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
+                schema_json::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
+                schema_json::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
                 schema_json::ShapeExpr::ShapeExternal => {
                     todo("value_expr2match_cond: ShapeExternal")
                 }
@@ -415,7 +407,15 @@ impl SchemaJsonCompiler {
     }
 
     fn values2match_cond(&self, values: &Vec<ValueSetValueWrapper>) -> Cond {
-        todo!()
+        MatchCond::single(
+            SingleCond::new()
+                .with_name(format!("values []").as_str())
+                .with_cond(move |value: &Node| {
+                    Err(RbeError::MsgError {
+                        msg: format!("Not implemented values for {value}"),
+                    })
+                }),
+        )
     }
 
     fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(&self, os: T) -> Cond {
@@ -429,12 +429,14 @@ impl SchemaJsonCompiler {
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::single(SingleCond::new().with_name(format!("@{idx}").as_str()).with_cond(
-        move |value: &Node| {
-            let result = Pending::from_pair(value.clone(), idx);
-            Ok(result)
-        },
-    ))
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("@{idx}").as_str())
+            .with_cond(move |value: &Node| {
+                let result = Pending::from_pair(value.clone(), idx);
+                Ok(result)
+            }),
+    )
 }
 
 fn mk_cond_datatype(datatype: IriS) -> Cond {
@@ -565,5 +567,7 @@ fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> 
 }
 
 fn todo<A>(str: &str) -> CResult<A> {
-    Err(CompiledSchemaError::Todo{ msg: str.to_string() })
+    Err(CompiledSchemaError::Todo {
+        msg: str.to_string(),
+    })
 }
