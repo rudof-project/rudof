@@ -4,7 +4,7 @@ use iri_s::*;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PrefixMap {
     map: IndexMap<String, IriS>,
 }
@@ -101,7 +101,7 @@ impl PrefixMap {
     /// assert_eq!(pm.qualify(other), "<http://other.org/foo>");
     /// # Ok::<(), IriSError>(())
     /// ```
-    pub fn qualify(&self, iri: IriS) -> String {
+    pub fn qualify(&self, iri: &IriS) -> String {
         for (alias, pm_iri) in &self.map {
             if let Some(rest) = iri.as_str().strip_prefix(pm_iri.as_str()) {
                 let result = format!("{}:{}", alias.blue(), rest);

@@ -62,7 +62,7 @@ impl SRDFGraph {
 
     pub fn qualify_named_node(&self, node: &OxNamedNode) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
-        self.pm.qualify(iri)
+        self.pm.qualify(&iri)
     }
 
     pub fn qualify_subject(&self, subj: &OxSubject) -> String {
@@ -159,6 +159,10 @@ impl SRDFGraph {
         let data_path = &attempt;
         let graph = Self::from_path(data_path, base)?;
         Ok(graph)
+    }
+
+    pub fn prefixmap(&self) -> PrefixMap {
+        self.pm.clone()
     }
 }
 

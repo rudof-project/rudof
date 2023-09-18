@@ -13,6 +13,7 @@ rbe = { path = "../rbe" }
 srdf = { path = "../srdf" }
 shex_ast = { path = "../shex_ast" }
 shapemap = { path = "../shapemap" }
+prefix_map = { path = "../prefix_map" }
 thiserror = "1.0"
 serde = "1.0"
 serde_derive = "1.0"

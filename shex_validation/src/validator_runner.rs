@@ -31,7 +31,6 @@ pub struct ValidatorRunner {
     processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
     rules: IndexSet<solver::Rule<Atom>>,
-    // result_map: ResultMap<Node, ShapeLabelIdx>,
     // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
     step_counter: usize,
@@ -44,28 +43,10 @@ impl ValidatorRunner {
             processing: IndexSet::new(),
             pending: IndexSet::new(),
             rules: IndexSet::new(),
-            // result_map: ResultMap::new(),
             // alternatives: Vec::new(),
             max_steps: MAX_STEPS,
             step_counter: 0,
         }
-    }
-
-    pub(crate) fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
-        let mut result = ResultMap::new();
-        for atom in &self.checked {
-            let (node, idx) = atom.get_value();
-            match atom {
-                Atom::Pos { .. } => result.add_ok((*node).clone(), (*idx).clone()),
-                Atom::Neg { .. } => result.add_fail((*node).clone(), (*idx).clone()),
-            }
-        }
-        for atom in &self.pending {
-            let (node, idx) = atom.get_value();
-            result.add_pending((*node).clone(), (*idx).clone());
-        }
-        // TODO: Should I also add processing nodes as pending?
-        result
     }
 
     pub(crate) fn add_processing(&mut self, atom: &Atom) {
@@ -78,6 +59,14 @@ impl ValidatorRunner {
 
     pub(crate) fn add_checked(&mut self, atom: &Atom) {
         self.checked.insert((*atom).clone());
+    }
+
+    pub(crate) fn checked(&self) -> IndexSet<Atom> {
+        self.checked.clone()
+    }
+
+    pub(crate) fn pending(&self) -> IndexSet<Atom> {
+        self.pending.clone()
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {

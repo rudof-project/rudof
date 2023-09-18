@@ -81,10 +81,16 @@ fn run_validate(
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     debug!("Validating with max_steps: {}", max_steps);
     match validator.validate_node_shape(&node, &shape, &data) {
-        Result::Ok(t) => {
-            println!("Result: {:?}", validator.result_map());
-            Ok(())
-        }
+        Result::Ok(t) => match validator.result_map(Some(data.prefixmap())) {
+            Result::Ok(result_map) => {
+                println!("Result:\n{}", result_map);
+                Ok(())
+            }
+            Err(err) => {
+                println!("Error generating result_map after validation: {err}");
+                bail!("{err}");
+            }
+        },
         Result::Err(err) => {
             bail!("{err}");
         }

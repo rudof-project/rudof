@@ -6,6 +6,7 @@ use crate::ResultValue;
 use crate::MAX_STEPS;
 use iri_s::IriS;
 use log::debug;
+use prefix_map::PrefixMap;
 use rbe::Pending;
 use shex_ast::compiled_schema::*;
 use shex_ast::Node;
@@ -76,9 +77,14 @@ impl Validator {
         }
     }
 
-    pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {
-        let idx = self.get_idx(shape)?;
-        Ok(self.runner.result_map().get_result(&node, &idx))
+    pub fn get_result(
+        &self,
+        node: &Node,
+        shape: &ShapeLabel,
+        maybe_nodes_prefixmap: Option<PrefixMap>,
+    ) -> Result<ResultValue> {
+        let result_map = self.result_map(maybe_nodes_prefixmap)?;
+        Ok(result_map.get_result(&node, &shape))
     }
 
     pub fn with_max_steps(mut self, max_steps: usize) -> Self {
@@ -95,13 +101,36 @@ impl Validator {
         }
     }
 
-    pub fn result_map(&self) -> ResultMap<Node, ShapeLabelIdx> {
-        self.runner.result_map()
+    fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
+        let (label, _se) = self.schema.find_shape_idx(idx).unwrap();
+        Ok(label)
+    }
+
+    pub fn result_map(&self, maybe_nodes_prefixmap: Option<PrefixMap>) -> Result<ResultMap> {
+        let mut result = match maybe_nodes_prefixmap {
+            None => ResultMap::new(),
+            Some(pm) => ResultMap::new().with_nodes_prefixmap(pm),
+        };
+        for atom in &self.runner.checked() {
+            let (node, idx) = atom.get_value();
+            let label = self.get_shape_label(idx)?;
+            match atom {
+                Atom::Pos { .. } => result.add_ok((*node).clone(), label.clone()),
+                Atom::Neg { .. } => result.add_fail((*node).clone(), label.clone()),
+            }
+        }
+        for atom in &self.runner.pending() {
+            let (node, idx) = atom.get_value();
+            let label = self.get_shape_label(idx)?;
+            result.add_pending((*node).clone(), label.clone());
+        }
+        // TODO: Should I also add processing nodes as pending?
+        Ok(result)
     }
 }
 
 fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a ShapeExpr {
-    let se = schema.find_shape_idx(idx).unwrap();
+    let (_label, se) = schema.find_shape_idx(idx).unwrap();
     se
 }
 

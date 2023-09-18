@@ -11,10 +11,12 @@ use log::debug;
 use rbe::{MatchCond, RbeTable};
 use std::fmt::Display;
 
+type Result<A> = std::result::Result<A, CompiledSchemaError>;
+
 #[derive(Debug)]
 pub struct CompiledSchema {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
-    shapes: HashMap<ShapeLabelIdx, ShapeExpr>,
+    shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
     shape_label_counter: ShapeLabelIdx,
 }
 
@@ -194,22 +196,19 @@ impl CompiledSchema {
 
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
         let idx = self.shape_label_counter;
-        self.shape_labels_map.insert(shape_label, idx);
-        self.shapes.insert(idx, se);
+        self.shape_labels_map.insert(shape_label.clone(), idx);
+        self.shapes.insert(idx, (shape_label.clone(), se));
     }
 
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
         if let Some(idx) = self.find_shape_label_idx(shape_label) {
-            self.shapes.get(idx)
+            self.shapes.get(idx).map(|(label, se)| se)
         } else {
             None
         }
     }
 
-    pub fn from_schema_json<'a>(
-        &mut self,
-        schema_json: SchemaJson,
-    ) -> Result<(), CompiledSchemaError> {
+    pub fn from_schema_json<'a>(&mut self, schema_json: SchemaJson) -> Result<()> {
         let mut schema_json_compiler = SchemaJsonCompiler::new();
         schema_json_compiler.compile(&schema_json, self)?;
         Ok(())
@@ -293,15 +292,18 @@ impl CompiledSchema {
     }
 
     pub fn find_label(&self, label: &ShapeLabel) -> Option<(&ShapeLabelIdx, &ShapeExpr)> {
-        self.find_shape_label_idx(label)
-            .and_then(|idx| self.shapes.get(idx).and_then(|se| Some((idx, se))))
+        self.find_shape_label_idx(label).and_then(|idx| {
+            self.shapes
+                .get(idx)
+                .and_then(|(_label, se)| Some((idx, se)))
+        })
     }
 
     pub fn find_shape_label_idx(&self, label: &ShapeLabel) -> Option<&ShapeLabelIdx> {
         self.shape_labels_map.get(label)
     }
 
-    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&ShapeExpr> {
+    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&(ShapeLabel, ShapeExpr)> {
         self.shapes.get(idx)
     }
 
@@ -309,15 +311,16 @@ impl CompiledSchema {
         self.shape_labels_map.keys().collect()
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &ShapeExpr)> {
-        self.shape_labels_map
-            .iter()
-            .map(|(label, idx)| match self.shapes.get(idx) {
-                Some(se) => (label, se),
-                None => {
-                    panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx:?}")
-                }
-            })
+    pub fn shapes(&self) -> impl Iterator<Item = &(ShapeLabel, ShapeExpr)> {
+        /*self.shape_labels_map
+        .iter()
+        .map(|(label, idx)| match self.shapes.get(idx) {
+            Some(se) => (label, se),
+            None => {
+                panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx:?}")
+            }
+        })*/
+        self.shapes.iter().map(|(idx, pair)| pair)
     }
 
     #[allow(dead_code)]
@@ -342,15 +345,12 @@ impl CompiledSchema {
         }
     }
 
-    fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS, CompiledSchemaError> {
+    fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS> {
         let iri = IriS::new(&iri.value.as_str())?;
         Ok(iri)
     }
 
-    pub fn get_shape_label_idx(
-        &self,
-        shape_label: &ShapeLabel,
-    ) -> Result<ShapeLabelIdx, CompiledSchemaError> {
+    pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {
         match self.shape_labels_map.get(shape_label) {
             Some(shape_label_idx) => Ok(*shape_label_idx),
             None => Err(CompiledSchemaError::ShapeLabelNotFound {
@@ -519,12 +519,12 @@ impl CompiledSchema {
         }
     */
     pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
-        self.shapes.entry(*idx).and_modify(|s| *s = se);
+        self.shapes.entry(*idx).and_modify(|(label, s)| *s = se);
     }
 }
 
 impl Display for CompiledSchema {
-    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         for (label, se) in self.shapes() {
             let error_idx = ShapeLabelIdx::error();
             let idx = self.shape_labels_map.get(label).unwrap_or(&error_idx);
