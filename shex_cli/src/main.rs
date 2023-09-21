@@ -6,17 +6,17 @@ use anyhow::*;
 use clap::Parser;
 use iri_s::*;
 use log::debug;
-use oxrdf::{BlankNode, NamedNode, Subject, Term};
+use oxrdf::{BlankNode, NamedNode, Subject};
 use shex_ast::Node;
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
-use srdf_graph::{SRDFGraph, SRDFGraphError};
+use srdf_graph::SRDFGraph;
 use std::path::PathBuf;
 
 pub mod cli;
 pub use cli::*;
 
-use shex_ast::{compiled_schema::CompiledSchema, CompiledSchemaError, SchemaJson, ShapeLabel};
+use shex_ast::{compiled_schema::CompiledSchema, SchemaJson, ShapeLabel};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -69,8 +69,8 @@ fn run_validate(
     schema_format: &ShExFormat,
     data: &PathBuf,
     data_format: &DataFormat,
-    node_str: &String,
-    shape_str: &String,
+    node_str: &str,
+    shape_str: &str,
     max_steps: &usize,
     debug: u8,
 ) -> Result<()> {
@@ -81,7 +81,7 @@ fn run_validate(
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     debug!("Validating with max_steps: {}", max_steps);
     match validator.validate_node_shape(&node, &shape, &data) {
-        Result::Ok(t) => match validator.result_map(Some(data.prefixmap())) {
+        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
             Result::Ok(result_map) => {
                 println!("Result:\n{}", result_map);
                 Ok(())
@@ -118,7 +118,7 @@ fn node_to_subject(node: &Object) -> Result<Subject> {
     match node {
         Object::BlankNode(bn) => Ok(Subject::BlankNode(BlankNode::new_unchecked(bn.as_str()))),
         Object::Iri { iri } => Ok(Subject::NamedNode(NamedNode::new_unchecked(iri.as_str()))),
-        Object::Literal(lit) => Err(anyhow!("Node must be an IRI or a blank node")),
+        Object::Literal(_lit) => Err(anyhow!("Node must be an IRI or a blank node")),
     }
 }
 

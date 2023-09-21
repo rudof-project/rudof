@@ -379,7 +379,7 @@ impl SchemaJsonCompiler {
         values: &Option<Vec<ValueSetValueWrapper>>,
     ) -> CResult<Cond> {
         let c1: Option<Cond> = node_kind.as_ref().map(|k| self.node_kind2match_cond(k));
-        let c2 = Self::invert(datatype.as_ref().map(|dt| {
+        let c2 = Self::invert_option(datatype.as_ref().map(|dt| {
             let c = self.datatype2match_cond(&dt)?;
             Ok(c)
         }))?;
@@ -389,7 +389,7 @@ impl SchemaJsonCompiler {
         Ok(self.options2match_cond(os))
     }
 
-    fn invert<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
+    fn invert_option<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
         r.map_or(Ok(None), |v| v.map(Some))
     }
 
@@ -407,15 +407,7 @@ impl SchemaJsonCompiler {
     }
 
     fn values2match_cond(&self, values: &Vec<ValueSetValueWrapper>) -> Cond {
-        MatchCond::single(
-            SingleCond::new()
-                .with_name(format!("values []").as_str())
-                .with_cond(move |value: &Node| {
-                    Err(RbeError::MsgError {
-                        msg: format!("Not implemented values for {value}"),
-                    })
-                }),
-        )
+        mk_cond_values(values)
     }
 
     fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(&self, os: T) -> Cond {
@@ -464,6 +456,21 @@ fn mk_cond_nodekind(nodekind: NodeKind) -> Cond {
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("NodeKind Error: {err}"),
                     }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_values(values: &Vec<ValueSetValueWrapper>) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("values []").as_str())
+            .with_cond(
+                move |node: &Node| match check_node_values(node.as_object(), values) {
+                    Ok(()) => Ok(Pending::new()),
+                    Err(err) => {
+                        todo!()
+                    }
                 },
             ),
     )
@@ -550,7 +557,7 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
     }
 }
 
-fn check_node_values(node: &Object, values: &Vec<ValueSetValue>) -> CResult<()> {
+fn check_node_values(node: &Object, values: &Vec<ValueSetValueWrapper>) -> CResult<()> {
     let r = values.iter().any(|value| check_node_value(node, &value));
     if r {
         Ok(())
@@ -559,8 +566,8 @@ fn check_node_values(node: &Object, values: &Vec<ValueSetValue>) -> CResult<()> 
     }
 }
 
-fn check_node_value(node: &Object, value: &ValueSetValue) -> bool {
-    true // todo!()
+fn check_node_value(node: &Object, value: &ValueSetValueWrapper) -> bool {
+    todo!()
 }
 fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
     Ok(()) // todo!()

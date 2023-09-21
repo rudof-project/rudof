@@ -77,14 +77,15 @@ impl Validator {
         }
     }
 
-    pub fn get_result(
-        &self,
-        node: &Node,
-        shape: &ShapeLabel,
-        maybe_nodes_prefixmap: Option<PrefixMap>,
-    ) -> Result<ResultValue> {
-        let result_map = self.result_map(maybe_nodes_prefixmap)?;
-        Ok(result_map.get_result(&node, &shape))
+    pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {
+        if let Some(idx) = self.schema.find_shape_label_idx(shape) {
+            let atom = Atom::pos((node.clone(), idx.clone()));
+            Ok(self.runner.get_result(&atom))
+        } else {
+            Err(ValidatorError::NotFoundShapeLabel {
+                shape: shape.clone(),
+            })
+        }
     }
 
     pub fn with_max_steps(mut self, max_steps: usize) -> Self {

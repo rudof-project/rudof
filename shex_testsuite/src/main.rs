@@ -19,7 +19,6 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-
     /// Name of Manifest file
     #[arg(
         short = 'm',
@@ -46,15 +45,21 @@ struct Cli {
     #[arg(short, long, action = clap::ArgAction::Count)]
     debug: u8,
 
-
     #[arg(
         short = 'e',
         long = "entry",
         value_name = "Entry names",
         default_value = None
     )]
-    entry_name: Option<Vec<String>>
+    entry_name: Option<Vec<String>>,
 
+    #[arg(
+        short = 't',
+        long = "trait",
+        value_name = "Trait names",
+        default_value = None
+    )]
+    trait_name: Option<Vec<String>>,
 }
 
 fn get_base(path: &Path) -> Result<PathBuf> {
@@ -93,7 +98,6 @@ fn main() -> Result<()> {
     env_logger::init();
     let cli = Cli::parse();
 
-
     let manifest_path = Path::new(&cli.manifest_filename);
 
     let base = get_base(manifest_path)?;
@@ -114,7 +118,7 @@ fn main() -> Result<()> {
         (None, None) => None,
         (None, Some(es)) => Some(es),
         (Some(es), None) => Some(es),
-        (Some(es), Some(_)) => Some(es)
+        (Some(es), Some(_)) => Some(es),
     };
 
     let result = manifest.run(
@@ -123,6 +127,7 @@ fn main() -> Result<()> {
         cli.manifest_run_mode,
         config.excluded_entries,
         entries,
+        cli.trait_name,
     );
 
     print_result(result, cli.print_result_mode);

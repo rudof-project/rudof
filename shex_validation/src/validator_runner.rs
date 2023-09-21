@@ -77,6 +77,20 @@ impl ValidatorRunner {
         self.processing.contains(atom)
     }
 
+    pub(crate) fn get_result(&self, atom: &Atom) -> ResultValue {
+        if self.checked.contains(atom) {
+            ResultValue::Ok
+        } else if self.checked.contains(&atom.negated()) {
+            ResultValue::Failed
+        } else if self.pending.contains(atom) {
+            ResultValue::Pending
+        } else if self.processing.contains(atom) {
+            ResultValue::Processing
+        } else {
+            ResultValue::Unknown
+        }
+    }
+
     pub fn new_step(&mut self) {
         self.step_counter += 1;
     }
