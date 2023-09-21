@@ -1,10 +1,12 @@
+mod serde_string_or_struct;
+
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fmt::Display, result};
 use std::{fs, io};
 
-use crate::serde_string_or_struct::*;
+use crate::schema_json::serde_string_or_struct::*;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
@@ -176,7 +178,7 @@ pub struct ValueSetValueWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    vs: ValueSetValue,
+    pub vs: ValueSetValue,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -186,7 +188,7 @@ pub struct ObjectValueWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    ov: ObjectValue,
+    pub ov: ObjectValue,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]

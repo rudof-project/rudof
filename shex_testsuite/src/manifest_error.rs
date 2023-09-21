@@ -1,6 +1,6 @@
 use std::io;
 use iri_s::IriSError;
-use shex_ast::{SchemaJsonError, CompiledSchemaError};
+use shex_ast::{schema_json::SchemaJsonError, CompiledSchemaError};
 use shex_validation::{ValidatorError, ResultValue};
 use srdf_graph::SRDFGraphError;
 use thiserror::Error;

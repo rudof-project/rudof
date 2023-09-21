@@ -2,7 +2,7 @@ use iri_s::IriS;
 use rbe::Key;
 use std::fmt::Display;
 
-use crate::IriRef;
+use crate::schema_json::IriRef;
 
 #[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
 pub struct Pred {

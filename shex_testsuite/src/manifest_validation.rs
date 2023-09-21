@@ -7,7 +7,7 @@ use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::compiled_schema::CompiledSchema;
-use shex_ast::{Node, SchemaJson, SchemaJsonCompiler, ShapeLabel};
+use shex_ast::{Node, schema_json::SchemaJson, SchemaJsonCompiler, ShapeLabel};
 use shex_validation::ResultValue;
 use shex_validation::Validator;
 use srdf::literal::Literal;

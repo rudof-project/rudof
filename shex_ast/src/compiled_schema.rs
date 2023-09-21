@@ -1,6 +1,6 @@
 use crate::{
-    schema_json, CResult, CompiledSchemaError, Cond, IriRef, Node, Ref, SchemaJson,
-    SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx,
+    schema_json, CResult, CompiledSchemaError, Cond, schema_json::IriRef, Node, schema_json::Ref, schema_json::SchemaJson,
+    SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx, ObjectValue, ValueSetValue,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
@@ -110,68 +110,6 @@ pub enum XsFacet {
     NumericFacet,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ValueSetValue {
-    IriStem {
-        type_: String,
-        stem: IriS,
-    },
-    IriStemRange {
-        type_: String,
-        stem: IriRefOrWildcard,
-        exclusions: Option<Vec<StringOrIriStem>>,
-    },
-    LiteralStem {
-        type_: String,
-        stem: String,
-    },
-    LiteralStemRange {
-        type_: String,
-        stem: StringOrWildcard,
-        exclusions: Option<Vec<StringOrLiteralStem>>,
-    },
-    Language {
-        type_: String,
-        language_tag: String,
-    },
-    LanguageStem,
-    LanguageStemRange,
-    ObjectValue(ObjectValue),
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum StringOrLiteralStem {
-    String(String),
-    LiteralStem { stem: String },
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum IriRefOrWildcard {
-    IriRef(IriS),
-    Wildcard { type_: String },
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum StringOrWildcard {
-    String(String),
-    Wildcard { type_: String },
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum StringOrIriStem {
-    String(String),
-    IriStem { stem: String },
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum ObjectValue {
-    IriRef(IriS),
-    ObjectLiteral {
-        value: String,
-        language: Option<String>,
-        type_: Option<String>,
-    },
-}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SemAct {
