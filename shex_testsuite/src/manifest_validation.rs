@@ -7,7 +7,7 @@ use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::compiled_schema::CompiledSchema;
-use shex_ast::{Node, schema_json::SchemaJson, SchemaJsonCompiler, ShapeLabel};
+use shex_ast::{schema_json::SchemaJson, Node, SchemaJsonCompiler, ShapeLabel};
 use shex_validation::ResultValue;
 use shex_validation::Validator;
 use srdf::literal::Literal;
@@ -155,15 +155,12 @@ fn parse_schema(
     schema: &String,
     base: &Path,
     entry_name: &String,
-    debug: u8,
 ) -> Result<SchemaJson, ManifestError> {
     let new_schema_name =
         change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
 
-    if debug > 0 {
-        println!("schema: {}, new_schema_name: {}", schema, new_schema_name);
-    }
-    SchemaJson::parse_schema_name(&new_schema_name, base, debug).map_err(|e| {
+    debug!("schema: {}, new_schema_name: {}", schema, new_schema_name);
+    SchemaJson::parse_schema_name(&new_schema_name, base).map_err(|e| {
         ManifestError::SchemaJsonError {
             error: e,
             entry_name: entry_name.to_string(),
@@ -172,11 +169,11 @@ fn parse_schema(
 }
 
 impl ValidationEntry {
-    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(&self.action.data, base, debug)?;
+    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+        let graph = SRDFGraph::parse_data(&self.action.data, base)?;
         debug!("Data obtained from: {}", self.action.data);
 
-        let schema = parse_schema(&self.action.schema, base, &self.name, debug)?;
+        let schema = parse_schema(&self.action.schema, base, &self.name)?;
         debug!("Schema obtained from: {}", self.action.schema);
 
         let node = parse_maybe_focus(&self.action.focus, &self.name)?;
@@ -195,9 +192,7 @@ impl ValidationEntry {
         match (type_, &result) {
             (Validation, ResultValue::Ok) => Ok(()),
             (Validation, _) => {
-                if debug > 0 {
-                    println!("Expected OK but failed {}", &self.name)
-                }
+                debug!("Expected OK but failed {}", &self.name);
                 Err(ManifestError::ExpectedOkButObtained {
                     value: result.clone(),
                     entry: self.name.clone(),
@@ -205,9 +200,7 @@ impl ValidationEntry {
             }
             (Failure, ResultValue::Failed) => Ok(()),
             (Failure, _) => {
-                if debug > 0 {
-                    println!("Expected Failure but passed {}", &self.name)
-                }
+                debug!("Expected Failure but passed {}", &self.name);
                 Err(ManifestError::ExpectedFailureButObtained {
                     value: result.clone(),
                     entry: self.name.clone(),
@@ -281,12 +274,12 @@ impl Manifest for ManifestValidation {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
         match self.map.get(name) {
             None => Err(ManifestError::NotFoundEntry {
                 name: name.to_string(),
             }),
-            Some(entry) => entry.run(base, debug),
+            Some(entry) => entry.run(base),
         }
     }
 }

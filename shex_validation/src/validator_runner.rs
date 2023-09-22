@@ -189,7 +189,13 @@ impl ValidatorRunner {
                 let mut rs = rbe_table.matches(values)?;
                 if let Some(pending_result) = rs.next() {
                     let counter = self.step_counter;
-                    let pending = pending_result?;
+                    let pending = match pending_result {
+                        Ok(pending) => pending,
+                        Err(err) => {
+                            debug!("Failed entry: {err}");
+                            todo!();
+                        }
+                    };
                     debug!(
                         "Step {counter}: Pending {pending:?}, Processing: {:?}",
                         &self.processing

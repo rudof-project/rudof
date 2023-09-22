@@ -23,6 +23,19 @@
               "valueExpr": "http://example.org/User",
               "min": 0,
               "max": -1
+            },
+            {
+              "type": "TripleConstraint",
+              "predicate": "http://example.org/status",
+              "valueExpr": {
+                "type": "NodeConstraint",
+                "values": [
+                  "http://example.org/Active",
+                  "http://example.org/Waiting"
+                ]
+              },
+              "min": 0,
+              "max": 1
             }
           ]
         }

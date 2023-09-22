@@ -1,3 +1,4 @@
+use log::debug;
 use std::{collections::HashMap, path::Path};
 
 use crate::{
@@ -59,12 +60,12 @@ impl Manifest for ManifestNegativeSyntax {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
         match self.map.get(name) {
             None => Err(ManifestError::NotFoundEntry {
                 name: name.to_string(),
             }),
-            Some(entry) => entry.run(base, debug),
+            Some(entry) => entry.run(base),
         }
     }
 }
@@ -89,10 +90,8 @@ struct NegativeSyntaxEntry {
 }
 
 impl NegativeSyntaxEntry {
-    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        if debug > 0 {
-            println!("Runnnig entry: {}...not implemented", self.id);
-        }
+    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+        debug!("Runnnig entry: {}...not implemented", self.id);
         Ok(())
     }
 }

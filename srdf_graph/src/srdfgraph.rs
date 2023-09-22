@@ -152,7 +152,7 @@ impl SRDFGraph {
         Self::from_reader(reader, base)
     }
 
-    pub fn parse_data(data: &String, base: &Path, _debug: u8) -> Result<SRDFGraph, SRDFGraphError> {
+    pub fn parse_data(data: &String, base: &Path) -> Result<SRDFGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
         let base = Some(Iri::parse("base:://".to_owned()).unwrap());
@@ -279,7 +279,7 @@ impl SRDFComparisons for SRDFGraph {
                 (s, None, Some(lang)) => {
                     srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
                         lexical_form: s,
-                        lang: Some(srdf::lang::Lang::new(lang)),
+                        lang: Some(srdf::lang::Lang::new(lang.as_str())),
                     })
                 }
                 (s, Some(datatype), _) => {

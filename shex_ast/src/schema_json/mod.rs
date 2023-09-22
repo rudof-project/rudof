@@ -7,6 +7,7 @@ use std::{fmt::Display, result};
 use std::{fs, io};
 
 use crate::schema_json::serde_string_or_struct::*;
+use log::debug;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
@@ -49,7 +50,7 @@ pub enum SchemaJsonError {
 }
 
 impl SchemaJson {
-    pub fn parse_schema_buf(path_buf: &PathBuf, debug: u8) -> Result<SchemaJson, SchemaJsonError> {
+    pub fn parse_schema_buf(path_buf: &PathBuf) -> Result<SchemaJson, SchemaJsonError> {
         let schema = {
             let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
@@ -64,21 +65,18 @@ impl SchemaJson {
                 }
             })?
         };
-        if debug > 1 {
-            println!("SchemaJson parsed: {:?}", schema)
-        }
+        debug!("SchemaJson parsed: {:?}", schema);
         Ok(schema)
     }
 
     pub fn parse_schema_name(
         schema_name: &String,
         base: &Path,
-        debug: u8,
     ) -> Result<SchemaJson, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
-        Self::parse_schema_buf(&attempt, debug)
+        Self::parse_schema_buf(&attempt)
     }
 }
 

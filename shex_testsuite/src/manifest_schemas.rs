@@ -1,10 +1,11 @@
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use std::collections::HashMap;
-use std::path::Path;
 use std::fmt;
+use std::path::Path;
 
 use crate::context_entry_value::ContextEntryValue;
+use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
@@ -133,27 +134,23 @@ impl<'de> Deserialize<'de> for Focus {
 impl ManifestSchemas {
     pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
         for entry in self.map.values() {
-            entry.run(base, debug)?
+            entry.run(base)?
         }
         Ok(())
     }
 }
 
 impl SchemasEntry {
+    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+        debug!("Runnnig entry: {} with json: {}", self.id, self.json);
+        let schema_json = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
+            ManifestError::SchemaJsonError {
+                error: e,
+                entry_name: self.name.to_string(),
+            }
+        })?;
 
-    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        
-        if debug > 0 {
-            println!("Runnnig entry: {} with json: {}", self.id, self.json);
-        }
-        let schema_json = 
-           SchemaJson::parse_schema_name(&self.json, base, debug).map_err(|e| {
-            ManifestError::SchemaJsonError { error: e, entry_name: self.name.to_string() }
-           })?;
-
-        if debug > 0 {
-            println!("Entry run: {} - {}", self.id, schema_json.type_);
-        }
+        debug!("Entry run: {} - {}", self.id, schema_json.type_);
         Ok(())
     }
 }
@@ -167,12 +164,12 @@ impl Manifest for ManifestSchemas {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
         match self.map.get(name) {
             None => Err(ManifestError::NotFoundEntry {
                 name: name.to_string(),
             }),
-            Some(entry) => entry.run(base, debug),
+            Some(entry) => entry.run(base),
         }
     }
 }

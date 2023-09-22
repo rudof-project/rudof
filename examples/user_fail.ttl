@@ -13,3 +13,6 @@ prefix schema: <http://schema.org/>
 
 :e schema:name  "Emily" ;  # Should fail
    schema:knows :d      .
+
+:f schema:name "Frank"  ;
+   :status     :Walking .

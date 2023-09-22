@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use log::debug;
 use shex_testsuite::manifest_mode::ManifestMode;
 use shex_testsuite::manifest_run_result::ManifestRunResult;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
@@ -41,9 +42,6 @@ struct Cli {
 
     #[arg(value_enum, short='p', long="print_result_mode", default_value_t = PrintResultMode::Basic)]
     print_result_mode: PrintResultMode,
-
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
 
     #[arg(
         short = 'e',
@@ -105,9 +103,7 @@ fn main() -> Result<()> {
 
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
-        if cli.debug > 0 {
-            println!("path_buf: {}", &path_buf.display());
-        }
+        debug!("path_buf: {}", &path_buf.display());
         let manifest_str = fs::read_to_string(&manifest_path)
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
 
@@ -123,7 +119,6 @@ fn main() -> Result<()> {
 
     let result = manifest.run(
         &base,
-        cli.debug,
         cli.manifest_run_mode,
         config.excluded_entries,
         entries,

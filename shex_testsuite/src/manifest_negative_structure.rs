@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::Path};
 use crate::{
     context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError,
 };
+use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
@@ -69,10 +70,8 @@ struct NegativeStructureEntry {
 }
 
 impl NegativeStructureEntry {
-    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
-        if debug > 0 {
-            println!("Runnnig entry: {}...not implemented", self.id);
-        }
+    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+        debug!("Runnnig entry: {}...not implemented", self.id);
         Ok(())
     }
 }
@@ -86,16 +85,15 @@ impl Manifest for ManifestNegativeStructure {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
         match self.map.get(name) {
             None => Err(ManifestError::NotFoundEntry {
                 name: name.to_string(),
             }),
-            Some(entry) => entry.run(base, debug),
+            Some(entry) => entry.run(base),
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

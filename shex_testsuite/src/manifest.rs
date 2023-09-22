@@ -9,7 +9,7 @@ pub trait Manifest {
 
     fn entry_names(&self) -> Vec<String>;
 
-    fn run_entry(&self, name: &str, base: &Path, debug: u8) -> Result<(), ManifestError>;
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError>;
 
     fn should_run_entry_name(
         &self,
@@ -25,7 +25,6 @@ pub trait Manifest {
     fn run(
         &self,
         base: &Path,
-        debug: u8,
         mode: ManifestRunMode,
         excluded_entries: Vec<String>,
         single_entries: Option<Vec<String>>,
@@ -37,9 +36,8 @@ pub trait Manifest {
                 result.add_skipped(entry_name.to_string());
                 ()
             } else if Self::should_run_entry_name(&self, &single_entries, entry_name) {
-                let safe_result = catch_unwind(AssertUnwindSafe(move || {
-                    self.run_entry(entry_name, base, debug)
-                }));
+                let safe_result =
+                    catch_unwind(AssertUnwindSafe(move || self.run_entry(entry_name, base)));
                 match safe_result {
                     Ok(Ok(())) => {
                         result.add_passed(entry_name.to_string());

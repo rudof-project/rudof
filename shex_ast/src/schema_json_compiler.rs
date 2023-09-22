@@ -3,19 +3,19 @@ use std::fmt::Display;
 use crate::compiled_schema::ShapeExpr;
 use crate::schema_json::{NodeKind, TripleExpr, XsFacet};
 use crate::{
-    compiled_schema::Annotation, 
-    compiled_schema::CompiledSchema, 
-    compiled_schema::SemAct,
-    ValueSetValue,
-    schema_json, CompiledSchemaError, 
-    schema_json::IriRef, 
-    schema_json::SchemaJson, ShapeLabel, ShapeLabelIdx,
+    compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
+    schema_json, schema_json::IriRef, schema_json::SchemaJson, CompiledSchemaError, ShapeLabel,
+    ShapeLabelIdx, ValueSetValue,
 };
-use crate::{CResult, Cond, Node, Pred, ValueSet, StringOrWildcard, StringOrIriStem, ObjectValue, StringOrLiteralStem};
+use crate::{
+    CResult, Cond, Node, ObjectValue, Pred, StringOrIriStem, StringOrLiteralStem, StringOrWildcard,
+    ValueSet,
+};
 use iri_s::IriS;
 use log::debug;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Key, Pending, RbeError, SingleCond, Value};
+use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::Object;
 
@@ -207,7 +207,6 @@ impl SchemaJsonCompiler {
         }
     }
 
-
     fn cnv_sem_acts(sem_acts: &Option<Vec<schema_json::SemAct>>) -> Vec<SemAct> {
         if let Some(_vs) = sem_acts {
             // TODO
@@ -350,10 +349,10 @@ impl SchemaJsonCompiler {
                             let value_set = create_value_set(vs)?;
                             Some(value_set)
                         }
-                        None => None
+                        None => None,
                     };
                     self.node_constraint2match_cond(node_kind, datatype, xs_facet, &maybe_value_set)
-                },
+                }
 
                 schema_json::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
@@ -394,7 +393,9 @@ impl SchemaJsonCompiler {
             Ok(c)
         }))?;
         let c3 = xs_facet.as_ref().map(|xsf| self.xs_facet2match_cond(&xsf));
-        let c4 = values.as_ref().map(|vs| self.valueset2match_cond(vs.clone()));
+        let c4 = values
+            .as_ref()
+            .map(|vs| self.valueset2match_cond(vs.clone()));
         let os = vec![c1, c2, c3, c4];
         Ok(self.options2match_cond(os))
     }
@@ -474,18 +475,16 @@ fn mk_cond_nodekind(nodekind: NodeKind) -> Cond {
 fn mk_cond_value_set(value_set: ValueSet) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("values []").as_str())
-            .with_cond(
-                move |node: &Node| {
-                    if value_set.check_value(node.as_object()) {
-                       Ok(Pending::empty())
-                    } else {
-                       Err(RbeError::MsgError {
-                        msg: format!("Values failed: {node} not in {value_set}")
-                       })
-                    }
+            .with_name(format!("{}", value_set).as_str())
+            .with_cond(move |node: &Node| {
+                if value_set.check_value(node.as_object()) {
+                    Ok(Pending::empty())
+                } else {
+                    Err(RbeError::MsgError {
+                        msg: format!("Values failed: {node} not in {value_set}"),
+                    })
                 }
-            ),
+            }),
     )
 }
 
@@ -500,50 +499,75 @@ fn create_value_set(values: &Vec<schema_json::ValueSetValueWrapper>) -> CResult<
 
 fn cnv_value(v: &schema_json::ValueSetValueWrapper) -> CResult<ValueSetValue> {
     match &v.vs {
-     schema_json::ValueSetValue::IriStem { stem, .. } => { 
-        let cnv_stem = cnv_iri_ref(&stem)?;
-        Ok(ValueSetValue::IriStem { stem: cnv_stem }) 
-     },
-     schema_json::ValueSetValue::ObjectValue(ovw) => {
-        let ov = cnv_object_value(&ovw.ov)?;
-        Ok(ValueSetValue::ObjectValue(ov))
-     },
-     schema_json::ValueSetValue::Language { language_tag, .. } => 
-       Ok(ValueSetValue::Language { language_tag: language_tag.to_string() }),
-     schema_json::ValueSetValue::LiteralStem { stem, .. } => 
-       Ok(ValueSetValue::LiteralStem { stem: stem.to_string() }),
-     schema_json::ValueSetValue::LiteralStemRange { stem, exclusions, .. } => {
-        let stem = cnv_string_or_wildcard(stem)?;
-        let exclusions = cnv_opt(exclusions, cnv_string_or_literalstem)?;
-        Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
-     },
-       _ => todo!()
+        schema_json::ValueSetValue::IriStem { stem, .. } => {
+            let cnv_stem = cnv_iri_ref(&stem)?;
+            Ok(ValueSetValue::IriStem { stem: cnv_stem })
+        }
+        schema_json::ValueSetValue::ObjectValue(ovw) => {
+            let ov = cnv_object_value(&ovw.ov)?;
+            Ok(ValueSetValue::ObjectValue(ov))
+        }
+        schema_json::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
+            language_tag: language_tag.to_string(),
+        }),
+        schema_json::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
+            stem: stem.to_string(),
+        }),
+        schema_json::ValueSetValue::LiteralStemRange {
+            stem, exclusions, ..
+        } => {
+            let stem = cnv_string_or_wildcard(stem)?;
+            let exclusions = cnv_opt_vec(exclusions, cnv_string_or_literalstem)?;
+            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
+        }
+        _ => todo!(),
     }
 }
 
-fn cnv_opt<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Vec<B>>> 
-where F: Fn(&A) -> CResult<B>
+fn cnv_opt_vec<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Vec<B>>>
+where
+    F: Fn(&A) -> CResult<B>,
 {
-  todo!()
+    todo!()
+}
+
+fn cnv_opt<A, B, F>(maybe_vs: &Option<A>, func: F) -> CResult<Option<B>>
+where
+    F: Fn(&A) -> CResult<B>,
+{
+    todo!()
 }
 
 fn cnv_string_or_wildcard(sw: &schema_json::StringOrWildcard) -> CResult<StringOrWildcard> {
     todo!()
 }
 
-fn cnv_string_or_literalstem(sl: &schema_json::StringOrLiteralStemWrapper) -> CResult<StringOrLiteralStem> {
+fn cnv_string_or_literalstem(
+    sl: &schema_json::StringOrLiteralStemWrapper,
+) -> CResult<StringOrLiteralStem> {
     todo!()
 }
 
 fn cnv_object_value(ov: &schema_json::ObjectValue) -> CResult<ObjectValue> {
     match ov {
-        schema_json::ObjectValue::IriRef(ir) => { 
+        schema_json::ObjectValue::IriRef(ir) => {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
-        },
-        schema_json::ObjectValue::ObjectLiteral { value, language, .. } => 
-          Ok(ObjectValue::ObjectLiteral { value: value.to_string(), language: language.as_ref().map(|s| s.to_string()) })
+        }
+        schema_json::ObjectValue::ObjectLiteral {
+            value, language, ..
+        } => {
+            let language = cnv_opt(language, cnv_lang)?;
+            Ok(ObjectValue::ObjectLiteral {
+                value: value.to_string(),
+                language,
+            })
+        }
     }
+}
+
+fn cnv_lang(lang: &String) -> CResult<Lang> {
+    Ok(Lang::new(lang.as_str()))
 }
 
 fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<NodeKind>) -> CResult<()> {
@@ -626,7 +650,6 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
         }),
     }
 }
-
 
 fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
     Ok(()) // todo!()

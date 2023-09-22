@@ -204,12 +204,14 @@ where
                     debug!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
                 }
                 let mut pending: Pending<V, R> = Pending::new();
-                for (k, v, _, cond) in &vs {
+                for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
+                            debug!("Condition passed: {cond} with value: {v}");
                             pending.merge(new_pending);
                         }
                         Err(err) => {
+                            debug!("Failed condition: {cond} with value: {v}");
                             return Some(Err(err));
                         }
                     }
@@ -218,7 +220,7 @@ where
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
-                        debug!("Rbe matches");
+                        debug!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     }
@@ -326,35 +328,29 @@ mod tests {
         // { p a; q y; q z } == { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
-                move |v| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(
-                move |v| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 't');
-                    Ok(pending)
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 't');
+                Ok(pending)
+            }));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(
-                move |v| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 'u');
-                    Ok(pending)
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 'u');
+                Ok(pending)
+            }));
 
         let vs = vec![('p', 'a'), ('q', 'y'), ('q', 'z')];
 
@@ -391,35 +387,29 @@ mod tests {
         // { p a; q y } != { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
-                move |v| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(
-                move |v| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 't');
-                    Ok(pending)
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 't');
+                Ok(pending)
+            }));
 
         let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(
-                move |v| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 'u');
-                    Ok(pending)
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 'u');
+                Ok(pending)
+            }));
 
         let vs = vec![('p', 'a'), ('q', 'y')];
 
@@ -444,17 +434,15 @@ mod tests {
         // { p a; q a } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
-                move |v| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let vs = vec![('p', 'a'), ('q', 'a')];
 
@@ -478,17 +466,15 @@ mod tests {
         // { p a; q b } == { p is_a; q is_a }
         //     Ok
         let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(
-                move |v| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                },
-            ));
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let vs = vec![('p', 'a'), ('q', 'b')];
 

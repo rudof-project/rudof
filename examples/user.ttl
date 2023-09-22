@@ -2,12 +2,14 @@ prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 
 :a schema:name  "Alice" ;
+   :status      :Active ;
    schema:knows :a, :b  .
 
-:b schema:name  "Bob"   ;
-   schema:knows :c      .
+:b schema:name  "Bob"    ;
+   :status      :Waiting ;
+   schema:knows :c       .
 
-:c schema:name  "Carol" .
+:c schema:name  "Carol"  .
 
 :d schema:name  23      .  # Should fail
 

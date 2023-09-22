@@ -16,7 +16,7 @@ use std::path::PathBuf;
 pub mod cli;
 pub use cli::*;
 
-use shex_ast::{compiled_schema::CompiledSchema, SchemaJson, ShapeLabel};
+use shex_ast::{compiled_schema::CompiledSchema, schema_json::SchemaJson, ShapeLabel};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
 }
 
 fn run_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<()> {
-    let schema = parse_schema(schema, schema_format, debug)?;
+    let schema = parse_schema(schema, schema_format)?;
     println!("Compiled Schema\n{schema}");
     Ok(())
 }
@@ -74,7 +74,7 @@ fn run_validate(
     max_steps: &usize,
     debug: u8,
 ) -> Result<()> {
-    let schema = parse_schema(schema, schema_format, debug)?;
+    let schema = parse_schema(schema, schema_format)?;
     let data = parse_data(data, data_format, debug)?;
     let node = parse_node(node_str, &data)?;
     let shape = parse_shape_label(shape_str)?;
@@ -128,11 +128,11 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
     Ok(())
 }
 
-fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<CompiledSchema> {
+fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat) -> Result<CompiledSchema> {
     match schema_format {
         ShExFormat::ShExC => todo!(),
         ShExFormat::ShExJ => {
-            let schema_json = SchemaJson::parse_schema_buf(schema, debug)?;
+            let schema_json = SchemaJson::parse_schema_buf(schema)?;
             let mut schema: CompiledSchema = CompiledSchema::new();
             schema.from_schema_json(schema_json)?;
             Ok(schema)
