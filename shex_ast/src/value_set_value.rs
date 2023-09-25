@@ -85,6 +85,27 @@ impl ObjectValue {
     }
 }
 
+impl Display for ObjectValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ObjectValue::IriRef(iri) => {
+                write!(f, "{iri}")?;
+                Ok(())
+            }
+            ObjectValue::ObjectLiteral { value, language } => {
+                write!(f, "\"{value}\"")?;
+                match language {
+                    None => Ok(()),
+                    Some(lang) => {
+                        write!(f, "@{lang}")?;
+                        Ok(())
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl ValueSetValue {
     pub fn match_value(&self, object: &Object) -> bool {
         match self {
@@ -102,7 +123,15 @@ impl ValueSetValue {
 
 impl Display for ValueSetValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)?;
-        Ok(())
+        match self {
+            ValueSetValue::IriStem { stem } => todo!(),
+            ValueSetValue::IriStemRange { stem, exclusions } => todo!(),
+            ValueSetValue::LiteralStem { stem } => todo!(),
+            ValueSetValue::LiteralStemRange { stem, exclusions } => todo!(),
+            ValueSetValue::Language { language_tag } => todo!(),
+            ValueSetValue::LanguageStem => todo!(),
+            ValueSetValue::LanguageStemRange => todo!(),
+            ValueSetValue::ObjectValue(ov) => write!(f, "{ov}"),
+        }
     }
 }

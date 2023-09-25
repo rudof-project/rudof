@@ -26,7 +26,7 @@ impl Display for ValueSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for v in &self.values {
-            write!(f, "{v},")?;
+            write!(f, "{v} ")?;
         }
         write!(f, "]")?;
         Ok(())
