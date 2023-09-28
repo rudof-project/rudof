@@ -186,10 +186,41 @@ impl ValidatorRunner {
                 annotations,
             } => {
                 let values = self.neighs(node, rdf)?;
-                let mut rs = rbe_table.matches(values)?;
-                if let Some(pending_result) = rs.next() {
+                let mut result_iter = rbe_table.matches(values)?;
+                let mut current_err = None;
+                let counter = self.step_counter;
+                // let next_result = result_iter.next();
+                let mut found = false;
+                while let Some(next_result) = result_iter.next() {
+                    match next_result {
+                        Ok(pending) => {
+                            for (p, v) in pending.iter() {
+                                debug!("Step {counter}: Value in pending: {p}/{v}");
+                                let atom = Atom::pos(((*p).clone(), *v));
+                                if self.is_processing(&atom) {
+                                    let pred = p.clone();
+                                    debug!(
+                                        "Step {counter} Adding ok: {}/{v} because it was already processed",
+                                        &pred
+                                    );
+                                    self.add_ok(pred, *v);
+                                } else {
+                                    self.insert_pending(&atom);
+                                    // Should also atore result_iter in some place?
+                                }
+                            }
+                            found = true;
+                            break
+                        }
+                        Err(err) => {
+                            current_err = Some(err);
+                        }
+                    }
+                }
+                Ok(found)
+                /*                 if let Some(result) = result_iter.next() {
                     let counter = self.step_counter;
-                    let pending = match pending_result {
+                    let pending = match result {
                         Ok(pending) => pending,
                         Err(err) => {
                             debug!("Failed entry: {err}");
@@ -219,7 +250,7 @@ impl ValidatorRunner {
                     Ok(true)
                 } else {
                     Err(ValidatorError::RbeFailed())
-                }
+                } */
             }
             ShapeExpr::Empty => Ok(true),
             ShapeExpr::ShapeExternal {} => Ok(true),
