@@ -34,6 +34,14 @@ pub enum Command {
             default_value_t = ShExFormat::ShExJ
         )]
         schema_format: ShExFormat,
+
+        #[arg(
+            short = 'r',
+            long = "result-schema-format",
+            value_name = "Result schema format",
+            default_value_t = ShExFormat::ShExJ
+        )]
+        result_schema_format: ShExFormat,
     },
 
     Validate {
@@ -107,6 +115,7 @@ pub enum Command {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum ShExFormat {
+    Internal,
     ShExC,
     ShExJ,
 }
@@ -114,6 +123,7 @@ pub enum ShExFormat {
 impl Display for ShExFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
+            ShExFormat::Internal => write!(dest, "internal"),
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
         }

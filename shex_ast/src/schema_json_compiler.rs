@@ -528,14 +528,34 @@ fn cnv_opt_vec<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Ve
 where
     F: Fn(&A) -> CResult<B>,
 {
-    todo!()
+    match maybe_vs {
+        None => Ok(None),
+        Some(vs) => {
+            let mut rs = Vec::new();
+            for v in vs {
+                match func(v) {
+                    Err(err) => return Err(err),
+                    Ok(result) => {
+                        rs.push(result);
+                    }
+                }
+            }
+            Ok(Some(rs))
+        }
+    }
 }
 
 fn cnv_opt<A, B, F>(maybe_vs: &Option<A>, func: F) -> CResult<Option<B>>
 where
     F: Fn(&A) -> CResult<B>,
 {
-    todo!()
+    match maybe_vs {
+        None => Ok(None),
+        Some(vs) => match func(vs) {
+            Err(err) => Err(err),
+            Ok(v) => Ok(Some(v)),
+        },
+    }
 }
 
 fn cnv_string_or_wildcard(sw: &schema_json::StringOrWildcard) -> CResult<StringOrWildcard> {

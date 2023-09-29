@@ -1,6 +1,7 @@
 use crate::{
-    schema_json, CResult, CompiledSchemaError, Cond, schema_json::IriRef, Node, schema_json::Ref, schema_json::SchemaJson,
-    SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx, ObjectValue, ValueSetValue,
+    schema_json, schema_json::IriRef, schema_json::Ref, schema_json::SchemaJson, CResult,
+    CompiledSchemaError, Cond, Node, ObjectValue, SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx,
+    ValueSetValue,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
@@ -110,7 +111,6 @@ pub enum XsFacet {
     NumericFacet,
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SemAct {
     name: IriS,
@@ -136,6 +136,7 @@ impl CompiledSchema {
         let idx = self.shape_label_counter;
         self.shape_labels_map.insert(shape_label.clone(), idx);
         self.shapes.insert(idx, (shape_label.clone(), se));
+        self.shape_label_counter.incr()
     }
 
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {

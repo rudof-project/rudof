@@ -6,6 +6,7 @@ use crate::MAX_STEPS;
 use indexmap::IndexSet;
 use iri_s::IriS;
 use log::debug;
+use rbe::MatchTableIter;
 use rbe::Pending;
 use shex_ast::compiled_schema::*;
 use shex_ast::Node;
@@ -31,6 +32,7 @@ pub struct ValidatorRunner {
     processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
     rules: IndexSet<solver::Rule<Atom>>,
+    alternative_match_iterators: Vec<MatchTableIter<Pred, Node, ShapeLabelIdx>>,
     // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
     step_counter: usize,
@@ -43,6 +45,7 @@ impl ValidatorRunner {
             processing: IndexSet::new(),
             pending: IndexSet::new(),
             rules: IndexSet::new(),
+            alternative_match_iterators: Vec::new(),
             // alternatives: Vec::new(),
             max_steps: MAX_STEPS,
             step_counter: 0,
@@ -191,10 +194,12 @@ impl ValidatorRunner {
                 let counter = self.step_counter;
                 // let next_result = result_iter.next();
                 let mut found = false;
+
+                // Search for the first result which is not an err
                 while let Some(next_result) = result_iter.next() {
                     match next_result {
-                        Ok(pending) => {
-                            for (p, v) in pending.iter() {
+                        Ok(pending_values) => {
+                            for (p, v) in pending_values.iter() {
                                 debug!("Step {counter}: Value in pending: {p}/{v}");
                                 let atom = Atom::pos(((*p).clone(), *v));
                                 if self.is_processing(&atom) {
@@ -206,11 +211,12 @@ impl ValidatorRunner {
                                     self.add_ok(pred, *v);
                                 } else {
                                     self.insert_pending(&atom);
-                                    // Should also atore result_iter in some place?
                                 }
                             }
+                            // We keep alternative match iterators which will be recovered in case of failure
+                            self.alternative_match_iterators.push(result_iter);
                             found = true;
-                            break
+                            break;
                         }
                         Err(err) => {
                             current_err = Some(err);
@@ -218,39 +224,6 @@ impl ValidatorRunner {
                     }
                 }
                 Ok(found)
-                /*                 if let Some(result) = result_iter.next() {
-                    let counter = self.step_counter;
-                    let pending = match result {
-                        Ok(pending) => pending,
-                        Err(err) => {
-                            debug!("Failed entry: {err}");
-                            todo!();
-                        }
-                    };
-                    debug!(
-                        "Step {counter}: Pending {pending:?}, Processing: {:?}",
-                        &self.processing
-                    );
-                    for (p, v) in pending.iter() {
-                        debug!("Step {counter}: Value in pending: {p}/{v}");
-                        let atom = Atom::pos(((*p).clone(), *v));
-                        if self.is_processing(&atom) {
-                            let pred = p.clone();
-                            debug!(
-                                "Step {counter} Adding ok: {}/{v} because it was already processed",
-                                &pred
-                            );
-                            self.add_ok(pred, *v);
-                        } else {
-                            self.insert_pending(&atom);
-                        }
-                    }
-                    // self.result_map.merge_pending(effective_pending);
-                    // TODO: Add alternatives...
-                    Ok(true)
-                } else {
-                    Err(ValidatorError::RbeFailed())
-                } */
             }
             ShapeExpr::Empty => Ok(true),
             ShapeExpr::ShapeExternal {} => Ok(true),

@@ -140,6 +140,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub enum MatchTableIter<K, V, R>
 where
     K: Key,
@@ -166,6 +167,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct IterCartesianProduct<K, V, R>
 where
     K: Key,
@@ -234,6 +236,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct EmptyIter<K, V, R>
 where
     K: Key,

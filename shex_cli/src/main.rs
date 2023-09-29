@@ -26,7 +26,8 @@ fn main() -> Result<()> {
         Some(Command::Schema {
             schema,
             schema_format,
-        }) => run_schema(schema, schema_format, cli.debug),
+            result_schema_format,
+        }) => run_schema(schema, schema_format, result_schema_format),
         Some(Command::Validate {
             schema,
             schema_format,
@@ -58,9 +59,24 @@ fn main() -> Result<()> {
     }
 }
 
-fn run_schema(schema: &PathBuf, schema_format: &ShExFormat, debug: u8) -> Result<()> {
+fn run_schema(
+    schema: &PathBuf,
+    schema_format: &ShExFormat,
+    result_schema_format: &ShExFormat,
+) -> Result<()> {
     let schema = parse_schema(schema, schema_format)?;
-    println!("Compiled Schema\n{schema}");
+    match result_schema_format {
+        ShExFormat::Internal => {
+            println!("{schema}");
+        }
+        ShExFormat::ShExC => {
+            todo!()
+        }
+        ShExFormat::ShExJ => {
+            // let str = serde_json::to_string(&schema)?;
+            todo!();
+        }
+    }
     Ok(())
 }
 
@@ -130,6 +146,7 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
 
 fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat) -> Result<CompiledSchema> {
     match schema_format {
+        ShExFormat::Internal => todo!(),
         ShExFormat::ShExC => todo!(),
         ShExFormat::ShExJ => {
             let schema_json = SchemaJson::parse_schema_buf(schema)?;
