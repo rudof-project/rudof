@@ -1,15 +1,14 @@
 use std::fmt::Display;
 
-use crate::compiled_schema::ShapeExpr;
-use crate::schema_json::{NodeKind, TripleExpr, XsFacet};
+use crate::compiled_schema::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
     compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
     schema_json, schema_json::IriRef, schema_json::SchemaJson, CompiledSchemaError, ShapeLabel,
     ShapeLabelIdx, ValueSetValue,
 };
 use crate::{
-    CResult, Cond, Node, ObjectValue, Pred, StringOrIriStem, StringOrLiteralStem, StringOrWildcard,
-    ValueSet,
+    schema, CResult, Cond, Node, ObjectValue, Pred, StringOrIriStem, StringOrLiteralStem,
+    StringOrWildcard, ValueSet,
 };
 use iri_s::IriS;
 use log::debug;
@@ -180,11 +179,45 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            schema_json::ShapeExpr::NodeConstraint { .. } => {
-                todo("compile_shape_expr: NodeConstraint")
+            schema_json::ShapeExpr::NodeConstraint {
+                node_kind,
+                datatype,
+                xs_facet,
+                values,
+            } => {
+                let node_kind_cnv: Option<NodeKind> = cnv_opt(node_kind, cnv_node_kind)?;
+                let datatype_cnv = cnv_opt(datatype, cnv_iri_ref)?;
+                let xs_facet_cnv = cnv_opt_vec(xs_facet, cnv_xs_facet)?;
+                let values_cnv = cnv_opt_vec(values, cnv_value)?;
+                let cond =
+                    Self::cnv_node_constraint(&self, &node_kind, datatype, &xs_facet, values)?;
+                Ok(ShapeExpr::NodeConstraint {
+                    node_kind: node_kind_cnv,
+                    datatype: datatype_cnv,
+                    xs_facet: xs_facet_cnv,
+                    values: values_cnv,
+                    cond,
+                })
             }
             schema_json::ShapeExpr::ShapeExternal => todo("compile_shape_expr: ShapeExternal"),
         }
+    }
+
+    fn cnv_node_constraint(
+        &self,
+        nk: &Option<schema_json::NodeKind>,
+        dt: &Option<IriRef>,
+        xs_facet: &Option<Vec<schema_json::XsFacet>>,
+        values: &Option<Vec<schema_json::ValueSetValueWrapper>>,
+    ) -> CResult<Cond> {
+        let maybe_value_set = match values {
+            Some(vs) => {
+                let value_set = create_value_set(vs)?;
+                Some(value_set)
+            }
+            None => None,
+        };
+        self.node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -232,7 +265,7 @@ impl SchemaJsonCompiler {
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
-            TripleExpr::EachOf {
+            schema_json::TripleExpr::EachOf {
                 id: _,
                 expressions,
                 min,
@@ -248,7 +281,7 @@ impl SchemaJsonCompiler {
                 let card = self.cnv_min_max(min, max)?;
                 Ok(Self::mk_card_group(Rbe::and(cs.into_iter()), card))
             }
-            TripleExpr::OneOf {
+            schema_json::TripleExpr::OneOf {
                 id: _,
                 expressions,
                 min,
@@ -264,7 +297,7 @@ impl SchemaJsonCompiler {
                 let card = self.cnv_min_max(min, max)?;
                 Ok(Self::mk_card_group(Rbe::or(cs.into_iter()), card))
             }
-            TripleExpr::TripleConstraint {
+            schema_json::TripleExpr::TripleConstraint {
                 id: _,
                 inverse: _,
                 predicate,
@@ -281,7 +314,7 @@ impl SchemaJsonCompiler {
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
+            schema_json::TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             }),
         }
@@ -343,16 +376,7 @@ impl SchemaJsonCompiler {
                     datatype,
                     xs_facet,
                     values,
-                } => {
-                    let maybe_value_set = match values {
-                        Some(vs) => {
-                            let value_set = create_value_set(vs)?;
-                            Some(value_set)
-                        }
-                        None => None,
-                    };
-                    self.node_constraint2match_cond(node_kind, datatype, xs_facet, &maybe_value_set)
-                }
+                } => self.cnv_node_constraint(node_kind, datatype, xs_facet, values),
 
                 schema_json::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
@@ -382,9 +406,9 @@ impl SchemaJsonCompiler {
 
     fn node_constraint2match_cond(
         &self,
-        node_kind: &Option<NodeKind>,
+        node_kind: &Option<schema_json::NodeKind>,
         datatype: &Option<IriRef>,
-        xs_facet: &Option<Vec<XsFacet>>,
+        xs_facet: &Option<Vec<schema_json::XsFacet>>,
         values: &Option<ValueSet>,
     ) -> CResult<Cond> {
         let c1: Option<Cond> = node_kind.as_ref().map(|k| self.node_kind2match_cond(k));
@@ -404,7 +428,7 @@ impl SchemaJsonCompiler {
         r.map_or(Ok(None), |v| v.map(Some))
     }
 
-    fn node_kind2match_cond(&self, nodekind: &NodeKind) -> Cond {
+    fn node_kind2match_cond(&self, nodekind: &schema_json::NodeKind) -> Cond {
         mk_cond_nodekind(nodekind.clone())
     }
 
@@ -413,7 +437,7 @@ impl SchemaJsonCompiler {
         Ok(mk_cond_datatype(iri))
     }
 
-    fn xs_facet2match_cond(&self, xs_facet: &Vec<XsFacet>) -> Cond {
+    fn xs_facet2match_cond(&self, xs_facet: &Vec<schema_json::XsFacet>) -> Cond {
         todo!()
     }
 
@@ -457,7 +481,7 @@ fn mk_cond_datatype(datatype: IriS) -> Cond {
     )
 }
 
-fn mk_cond_nodekind(nodekind: NodeKind) -> Cond {
+fn mk_cond_nodekind(nodekind: schema_json::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("nodekind{nodekind}").as_str())
@@ -522,6 +546,26 @@ fn cnv_value(v: &schema_json::ValueSetValueWrapper) -> CResult<ValueSetValue> {
         }
         _ => todo!(),
     }
+}
+
+fn cnv_node_kind(nk: &schema_json::NodeKind) -> CResult<NodeKind> {
+    todo!()
+}
+
+fn cnv_xs_facet(xsf: &schema_json::XsFacet) -> CResult<XsFacet> {
+    todo!()
+}
+
+fn cnv_vec<A, B, F>(vs: Vec<A>, func: F) -> CResult<Vec<B>>
+where
+    F: Fn(&A) -> CResult<B>,
+{
+    let mut rs = Vec::new();
+    for v in vs {
+        let b = func(&v)?;
+        rs.push(b);
+    }
+    Ok(rs)
 }
 
 fn cnv_opt_vec<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Vec<B>>>
@@ -590,24 +634,33 @@ fn cnv_lang(lang: &String) -> CResult<Lang> {
     Ok(Lang::new(lang.as_str()))
 }
 
-fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<NodeKind>) -> CResult<()> {
+fn check_node_maybe_node_kind(
+    node: &Node,
+    nodekind: &Option<schema_json::NodeKind>,
+) -> CResult<()> {
     match nodekind {
         None => Ok(()),
         Some(nk) => check_node_node_kind(node, &nk),
     }
 }
 
-fn check_node_node_kind(node: &Node, nk: &NodeKind) -> CResult<()> {
+fn check_node_node_kind(node: &Node, nk: &schema_json::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
-        (NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (NodeKind::Iri, _) => Err(CompiledSchemaError::NodeKindIri { node: node.clone() }),
-        (NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (NodeKind::BNode, _) => Err(CompiledSchemaError::NodeKindBNode { node: node.clone() }),
-        (NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (NodeKind::Literal, _) => Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() }),
-        (NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
-        (NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-        (NodeKind::NonLiteral, _) => {
+        (schema_json::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
+        (schema_json::NodeKind::Iri, _) => {
+            Err(CompiledSchemaError::NodeKindIri { node: node.clone() })
+        }
+        (schema_json::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
+        (schema_json::NodeKind::BNode, _) => {
+            Err(CompiledSchemaError::NodeKindBNode { node: node.clone() })
+        }
+        (schema_json::NodeKind::Literal, Object::Literal(_)) => Ok(()),
+        (schema_json::NodeKind::Literal, _) => {
+            Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() })
+        }
+        (schema_json::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
+        (schema_json::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
+        (schema_json::NodeKind::NonLiteral, _) => {
             Err(CompiledSchemaError::NodeKindNonLiteral { node: node.clone() })
         }
     }

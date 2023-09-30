@@ -51,8 +51,8 @@ pub enum ShapeExpr {
     NodeConstraint {
         node_kind: Option<NodeKind>,
         datatype: Option<IriS>,
-        xs_facet: Vec<XsFacet>,
-        values: Vec<ValueSetValue>,
+        xs_facet: Option<Vec<XsFacet>>,
+        values: Option<Vec<ValueSetValue>>,
         cond: Cond,
     },
     Shape {
