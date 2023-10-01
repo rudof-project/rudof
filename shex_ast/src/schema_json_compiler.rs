@@ -199,7 +199,7 @@ impl SchemaJsonCompiler {
                     cond,
                 })
             }
-            schema_json::ShapeExpr::ShapeExternal => todo("compile_shape_expr: ShapeExternal"),
+            schema_json::ShapeExpr::ShapeExternal => Ok(ShapeExpr::ShapeExternal {}),
         }
     }
 
@@ -217,7 +217,7 @@ impl SchemaJsonCompiler {
             }
             None => None,
         };
-        self.node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set)
+        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -403,55 +403,52 @@ impl SchemaJsonCompiler {
     ) -> CResult<Cond> {
         todo("shape_expr2match_cond")
     }*/
+}
 
-    fn node_constraint2match_cond(
-        &self,
-        node_kind: &Option<schema_json::NodeKind>,
-        datatype: &Option<IriRef>,
-        xs_facet: &Option<Vec<schema_json::XsFacet>>,
-        values: &Option<ValueSet>,
-    ) -> CResult<Cond> {
-        let c1: Option<Cond> = node_kind.as_ref().map(|k| self.node_kind2match_cond(k));
-        let c2 = Self::invert_option(datatype.as_ref().map(|dt| {
-            let c = self.datatype2match_cond(&dt)?;
-            Ok(c)
-        }))?;
-        let c3 = xs_facet.as_ref().map(|xsf| self.xs_facet2match_cond(&xsf));
-        let c4 = values
-            .as_ref()
-            .map(|vs| self.valueset2match_cond(vs.clone()));
-        let os = vec![c1, c2, c3, c4];
-        Ok(self.options2match_cond(os))
-    }
+fn node_constraint2match_cond(
+    node_kind: &Option<schema_json::NodeKind>,
+    datatype: &Option<IriRef>,
+    xs_facet: &Option<Vec<schema_json::XsFacet>>,
+    values: &Option<ValueSet>,
+) -> CResult<Cond> {
+    let c1: Option<Cond> = node_kind.as_ref().map(|k| node_kind2match_cond(k));
+    let c2 = invert_option(datatype.as_ref().map(|dt| {
+        let c = datatype2match_cond(&dt)?;
+        Ok(c)
+    }))?;
+    let c3 = xs_facet.as_ref().map(|xsf| xs_facet2match_cond(&xsf));
+    let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
+    let os = vec![c1, c2, c3, c4];
+    Ok(options2match_cond(os))
+}
 
-    fn invert_option<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
-        r.map_or(Ok(None), |v| v.map(Some))
-    }
+fn invert_option<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
+    r.map_or(Ok(None), |v| v.map(Some))
+}
 
-    fn node_kind2match_cond(&self, nodekind: &schema_json::NodeKind) -> Cond {
-        mk_cond_nodekind(nodekind.clone())
-    }
+fn node_kind2match_cond(nodekind: &schema_json::NodeKind) -> Cond {
+    mk_cond_nodekind(nodekind.clone())
+}
 
-    fn datatype2match_cond(&self, datatype: &IriRef) -> CResult<Cond> {
-        let iri = cnv_iri_ref(datatype)?;
-        Ok(mk_cond_datatype(iri))
-    }
+fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
+    let iri = cnv_iri_ref(datatype)?;
+    Ok(mk_cond_datatype(iri))
+}
 
-    fn xs_facet2match_cond(&self, xs_facet: &Vec<schema_json::XsFacet>) -> Cond {
-        todo!()
-    }
+fn xs_facet2match_cond(xs_facet: &Vec<schema_json::XsFacet>) -> Cond {
+    todo!()
+}
 
-    fn valueset2match_cond(&self, vs: ValueSet) -> Cond {
-        mk_cond_value_set(vs)
-    }
+fn valueset2match_cond(vs: ValueSet) -> Cond {
+    mk_cond_value_set(vs)
+}
 
-    fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(&self, os: T) -> Cond {
-        let vec: Vec<Cond> = os.into_iter().flatten().collect();
-        match &vec[..] {
-            [] => MatchCond::empty(),
-            [c] => c.clone(),
-            _ => MatchCond::And(vec),
-        }
+fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
+    let vec: Vec<Cond> = os.into_iter().flatten().collect();
+    match &vec[..] {
+        [] => MatchCond::empty(),
+        [c] => c.clone(),
+        _ => MatchCond::And(vec),
     }
 }
 
