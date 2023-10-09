@@ -1,29 +1,23 @@
 // #![deny(rust_2018_idioms)]
-pub mod schema;
+pub mod internal;
 
-pub mod compiled_schema;
-pub mod compiled_schema_error;
 pub mod node;
 pub mod pred;
-pub mod schema_builder;
-pub mod schema_json;
-pub mod shape_label;
-pub mod shape_label_idx;
-pub mod value_set;
-pub mod value_set_value;
-pub mod schema2schema_json;
+// pub mod schema_builder;
+pub mod ast;
 
-pub use compiled_schema_error::*;
+pub use internal::compiled_schema_error::*;
 use iri_s::IriS;
+pub use ast::*;
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;
 pub use schema::*;
-pub use schema_builder::*;
-pub use shape_label::*;
-pub use shape_label_idx::*;
-pub use value_set::*;
-pub use value_set_value::*;
+// pub use schema_builder::*;
+pub use internal::shape_label::*;
+pub use internal::shape_label_idx::*;
+pub use internal::value_set::*;
+pub use internal::value_set_value::*;
 
 use srdf::Object;
 

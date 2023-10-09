@@ -11,7 +11,7 @@ use super::{
     value_set_value::ValueSetValueWrapper, xs_facet::XsFacet,
 };
 use super::{node_kind::NodeKind, ref_::Ref};
-use crate::schema_json::serde_string_or_struct::*;
+use crate::ast::serde_string_or_struct::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(transparent)]

@@ -1,10 +1,10 @@
 use iri_s::{IriS, IriSError};
 use srdf::lang::Lang;
-use srdf::Object;
+//use srdf::Object;
 use thiserror::Error;
 
-use crate::schema_json::TripleExprLabel;
-use crate::{schema_json, Node, ShapeLabel};
+use crate::ast::TripleExprLabel;
+use crate::{ast, Node, ShapeLabel};
 
 #[derive(Error, Debug)]
 pub enum CompiledSchemaError {
@@ -18,7 +18,7 @@ pub enum CompiledSchemaError {
     },
 
     #[error("SchemaJson Error")]
-    SchemaJsonError(#[from] schema_json::SchemaJsonError),
+    SchemaJsonError(#[from] ast::SchemaJsonError),
 
     #[error("Duplicated triple expression label in schema: {label:?}")]
     DuplicatedTripleExprLabel { label: TripleExprLabel },

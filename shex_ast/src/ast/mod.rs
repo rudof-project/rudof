@@ -50,7 +50,7 @@ use std::str::FromStr;
 use std::{fmt::Display, result};
 use std::{fs, io};
 
-use crate::schema_json::serde_string_or_struct::*;
+use crate::ast::serde_string_or_struct::*;
 use log::debug;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};

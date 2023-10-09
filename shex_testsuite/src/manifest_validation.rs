@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::compiled_schema::CompiledSchema;
 use shex_ast::{
-    schema_json::schema_json_compiler::SchemaJsonCompiler, schema_json::Schema as SchemaJson, Node,
+    ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node,
     ShapeLabel,
 };
 use shex_validation::ResultValue;

@@ -4,7 +4,7 @@ use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
-use crate::schema_json::serde_string_or_struct::*;
+use crate::ast::serde_string_or_struct::*;
 
 use super::{
     annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, shape_expr::ShapeExpr,

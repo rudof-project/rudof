@@ -16,7 +16,7 @@ use std::path::PathBuf;
 pub mod cli;
 pub use cli::*;
 
-use shex_ast::{compiled_schema::CompiledSchema, schema_json::Schema as SchemaJson, ShapeLabel};
+use shex_ast::{internal::CompiledSchema, ast::Schema as SchemaJson, ShapeLabel};
 
 fn main() -> Result<()> {
     env_logger::init();

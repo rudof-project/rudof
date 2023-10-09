@@ -1,6 +1,6 @@
 use crate::{
-    schema_json::{IriRef, ObjectValueWrapper},
-    ValueSet,
+    ast::{IriRef, ObjectValueWrapper},
+    internal::ValueSet,
 };
 use iri_s::IriS;
 use rbe::Value;

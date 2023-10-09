@@ -1,7 +1,7 @@
-use crate::schema_json::schema_json_compiler::SchemaJsonCompiler;
+use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    schema_json, schema_json::IriRef, schema_json::Ref, schema_json::Schema as SchemaJson, CResult,
-    CompiledSchemaError, Cond, Node, ObjectValue, ShapeLabel, ShapeLabelIdx, ValueSetValue,
+    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, CResult,
+    CompiledSchemaError, Cond, Node, internal::ObjectValue, ShapeLabel, ShapeLabelIdx, internal::ValueSetValue,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
@@ -124,13 +124,13 @@ impl CompiledSchema {
     }
 
     #[allow(dead_code)]
-    fn shape_decl_to_shape_expr<'a>(&mut self, sd: &schema_json::ShapeDecl) -> CResult<ShapeExpr> {
+    fn shape_decl_to_shape_expr<'a>(&mut self, sd: &ast::ShapeDecl) -> CResult<ShapeExpr> {
         self.cnv_shape_expr(&sd.shape_expr)
     }
 
-    fn cnv_shape_expr<'a>(&mut self, se: &schema_json::ShapeExpr) -> CResult<ShapeExpr> {
+    fn cnv_shape_expr<'a>(&mut self, se: &ast::ShapeExpr) -> CResult<ShapeExpr> {
         match se {
-            schema_json::ShapeExpr::ShapeOr { shape_exprs: ses } => {
+            ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let se = self.cnv_shape_expr(&sew.se)?;
@@ -138,7 +138,7 @@ impl CompiledSchema {
                 }
                 Ok(ShapeExpr::ShapeOr { exprs: cnv })
             }
-            schema_json::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
+            ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let se = self.cnv_shape_expr(&sew.se)?;
@@ -146,7 +146,7 @@ impl CompiledSchema {
                 }
                 Ok(ShapeExpr::ShapeAnd { exprs: cnv })
             }
-            schema_json::ShapeExpr::ShapeNot { shape_expr: sew } => {
+            ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 let se = self.cnv_shape_expr(&sew.se)?;
                 Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
             }
@@ -445,6 +445,9 @@ impl Display for CompiledSchema {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::Schema as SchemaJson;
+    use crate::internal::CompiledSchema;
+
 
     #[test]
     fn test_find_component() {
@@ -467,7 +470,7 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut compiled_schema = CompiledSchema::new();
-        compiled_schema.from_schema_json(schema_json).unwrap();
+        compiled_schema.from_schema_json(&schema_json).unwrap();
         //        let shape = compiled_schema.get
     }
 

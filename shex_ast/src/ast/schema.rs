@@ -1,4 +1,4 @@
-use crate::schema_json::{serde_string_or_struct::*, SchemaJsonError};
+use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};

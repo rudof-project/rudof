@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
-use crate::schema_json::serde_string_or_struct::*;
+use crate::ast::serde_string_or_struct::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]

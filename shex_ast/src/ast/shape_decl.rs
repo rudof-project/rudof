@@ -1,6 +1,6 @@
 use super::shape_expr::ShapeExpr;
-use crate::schema_json::deserialize_string_or_struct;
-use crate::schema_json::serialize_string_or_struct;
+use crate::ast::deserialize_string_or_struct;
+use crate::ast::serialize_string_or_struct;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]

@@ -1,14 +1,14 @@
 use std::fmt::Display;
 
-use crate::compiled_schema::{NodeKind, ShapeExpr, XsFacet};
+use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
-    compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
-    schema_json, schema_json::IriRef, schema_json::Schema as SchemaJson, CompiledSchemaError,
-    ShapeLabel, ShapeLabelIdx, ValueSetValue,
+    internal::Annotation, internal::CompiledSchema, internal::SemAct,
+    ast, ast::IriRef, ast::Schema as SchemaJson, CompiledSchemaError,
+    ShapeLabel, ShapeLabelIdx, internal::ValueSetValue,
 };
 use crate::{
-    schema, CResult, Cond, Node, ObjectValue, Pred, StringOrIriStem, StringOrLiteralStem,
-    StringOrWildcard, ValueSet,
+    CResult, Cond, Node, internal::ObjectValue, Pred, internal::StringOrIriStem, internal::StringOrLiteralStem,
+    internal::StringOrWildcard, ValueSet,
 };
 use iri_s::IriS;
 use log::debug;
@@ -102,7 +102,7 @@ impl SchemaJsonCompiler {
 
     fn compile_shape_decl(
         &self,
-        sd: &schema_json::ShapeDecl,
+        sd: &ast::ShapeDecl,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeExpr> {
@@ -111,30 +111,30 @@ impl SchemaJsonCompiler {
 
     fn ref2idx(
         &self,
-        sref: &schema_json::Ref,
+        sref: &ast::Ref,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         match sref {
-            schema_json::Ref::IriRef { value } => {
+            ast::Ref::IriRef { value } => {
                 let idx = self.get_shape_label_idx(&value, compiled_schema)?;
                 Ok(idx)
             }
-            schema_json::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
+            ast::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
         }
     }
 
     fn compile_shape_expr(
         &self,
-        se: &schema_json::ShapeExpr,
+        se: &ast::ShapeExpr,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeExpr> {
         match se {
-            schema_json::ShapeExpr::Ref(se_ref) => {
+            ast::ShapeExpr::Ref(se_ref) => {
                 let idx = self.ref2idx(se_ref, compiled_schema)?;
                 Ok(ShapeExpr::Ref { idx })
             }
-            schema_json::ShapeExpr::ShapeOr { shape_exprs: ses } => {
+            ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
@@ -142,7 +142,7 @@ impl SchemaJsonCompiler {
                 }
                 Ok(ShapeExpr::ShapeOr { exprs: cnv })
             }
-            schema_json::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
+            ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
@@ -150,11 +150,11 @@ impl SchemaJsonCompiler {
                 }
                 Ok(ShapeExpr::ShapeAnd { exprs: cnv })
             }
-            schema_json::ShapeExpr::ShapeNot { shape_expr: sew } => {
+            ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
             }
-            schema_json::ShapeExpr::Shape {
+            ast::ShapeExpr::Shape {
                 closed,
                 extra,
                 expression,
@@ -179,7 +179,7 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            schema_json::ShapeExpr::NodeConstraint {
+            ast::ShapeExpr::NodeConstraint {
                 node_kind,
                 datatype,
                 xs_facet,
@@ -199,16 +199,16 @@ impl SchemaJsonCompiler {
                     cond,
                 })
             }
-            schema_json::ShapeExpr::ShapeExternal => Ok(ShapeExpr::ShapeExternal {}),
+            ast::ShapeExpr::ShapeExternal => Ok(ShapeExpr::ShapeExternal {}),
         }
     }
 
     fn cnv_node_constraint(
         &self,
-        nk: &Option<schema_json::NodeKind>,
+        nk: &Option<ast::NodeKind>,
         dt: &Option<IriRef>,
-        xs_facet: &Option<Vec<schema_json::XsFacet>>,
-        values: &Option<Vec<schema_json::ValueSetValueWrapper>>,
+        xs_facet: &Option<Vec<ast::XsFacet>>,
+        values: &Option<Vec<ast::ValueSetValueWrapper>>,
     ) -> CResult<Cond> {
         let maybe_value_set = match values {
             Some(vs) => {
@@ -240,7 +240,7 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn cnv_sem_acts(sem_acts: &Option<Vec<schema_json::SemAct>>) -> Vec<SemAct> {
+    fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
         if let Some(_vs) = sem_acts {
             // TODO
             Vec::new()
@@ -249,7 +249,7 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn cnv_annotations(annotations: &Option<Vec<schema_json::Annotation>>) -> Vec<Annotation> {
+    fn cnv_annotations(annotations: &Option<Vec<ast::Annotation>>) -> Vec<Annotation> {
         if let Some(_anns) = annotations {
             // TODO
             Vec::new()
@@ -260,12 +260,12 @@ impl SchemaJsonCompiler {
 
     fn triple_expr2rbe(
         &self,
-        triple_expr: &schema_json::TripleExpr,
+        triple_expr: &ast::TripleExpr,
         compiled_schema: &mut CompiledSchema,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
-            schema_json::TripleExpr::EachOf {
+            ast::TripleExpr::EachOf {
                 id: _,
                 expressions,
                 min,
@@ -281,7 +281,7 @@ impl SchemaJsonCompiler {
                 let card = self.cnv_min_max(min, max)?;
                 Ok(Self::mk_card_group(Rbe::and(cs.into_iter()), card))
             }
-            schema_json::TripleExpr::OneOf {
+            ast::TripleExpr::OneOf {
                 id: _,
                 expressions,
                 min,
@@ -297,7 +297,7 @@ impl SchemaJsonCompiler {
                 let card = self.cnv_min_max(min, max)?;
                 Ok(Self::mk_card_group(Rbe::or(cs.into_iter()), card))
             }
-            schema_json::TripleExpr::TripleConstraint {
+            ast::TripleExpr::TripleConstraint {
                 id: _,
                 inverse: _,
                 predicate,
@@ -314,7 +314,7 @@ impl SchemaJsonCompiler {
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            schema_json::TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
+            ast::TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             }),
         }
@@ -366,27 +366,27 @@ impl SchemaJsonCompiler {
 
     fn value_expr2match_cond(
         &self,
-        ve: &Option<Box<schema_json::ShapeExpr>>,
+        ve: &Option<Box<ast::ShapeExpr>>,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<Cond> {
         if let Some(se) = ve.as_deref() {
             match se {
-                schema_json::ShapeExpr::NodeConstraint {
+                ast::ShapeExpr::NodeConstraint {
                     node_kind,
                     datatype,
                     xs_facet,
                     values,
                 } => self.cnv_node_constraint(node_kind, datatype, xs_facet, values),
 
-                schema_json::ShapeExpr::Ref(sref) => {
+                ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok(mk_cond_ref(idx))
                 }
-                schema_json::ShapeExpr::Shape { .. } => todo("valueexpr2match_cond: Shape"),
-                schema_json::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
-                schema_json::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
-                schema_json::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
-                schema_json::ShapeExpr::ShapeExternal => {
+                ast::ShapeExpr::Shape { .. } => todo("valueexpr2match_cond: Shape"),
+                ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
+                ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
+                ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
+                ast::ShapeExpr::ShapeExternal => {
                     todo("value_expr2match_cond: ShapeExternal")
                 }
             }
@@ -406,9 +406,9 @@ impl SchemaJsonCompiler {
 }
 
 fn node_constraint2match_cond(
-    node_kind: &Option<schema_json::NodeKind>,
+    node_kind: &Option<ast::NodeKind>,
     datatype: &Option<IriRef>,
-    xs_facet: &Option<Vec<schema_json::XsFacet>>,
+    xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
 ) -> CResult<Cond> {
     let c1: Option<Cond> = node_kind.as_ref().map(|k| node_kind2match_cond(k));
@@ -426,7 +426,7 @@ fn invert_option<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
     r.map_or(Ok(None), |v| v.map(Some))
 }
 
-fn node_kind2match_cond(nodekind: &schema_json::NodeKind) -> Cond {
+fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
     mk_cond_nodekind(nodekind.clone())
 }
 
@@ -435,7 +435,7 @@ fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
     Ok(mk_cond_datatype(iri))
 }
 
-fn xs_facet2match_cond(xs_facet: &Vec<schema_json::XsFacet>) -> Cond {
+fn xs_facet2match_cond(xs_facet: &Vec<ast::XsFacet>) -> Cond {
     todo!()
 }
 
@@ -478,7 +478,7 @@ fn mk_cond_datatype(datatype: IriS) -> Cond {
     )
 }
 
-fn mk_cond_nodekind(nodekind: schema_json::NodeKind) -> Cond {
+fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("nodekind{nodekind}").as_str())
@@ -509,7 +509,7 @@ fn mk_cond_value_set(value_set: ValueSet) -> Cond {
     )
 }
 
-fn create_value_set(values: &Vec<schema_json::ValueSetValueWrapper>) -> CResult<ValueSet> {
+fn create_value_set(values: &Vec<ast::ValueSetValueWrapper>) -> CResult<ValueSet> {
     let mut vs = ValueSet::new();
     for v in values {
         let cvalue = cnv_value(v)?;
@@ -518,23 +518,23 @@ fn create_value_set(values: &Vec<schema_json::ValueSetValueWrapper>) -> CResult<
     Ok(vs)
 }
 
-fn cnv_value(v: &schema_json::ValueSetValueWrapper) -> CResult<ValueSetValue> {
+fn cnv_value(v: &ast::ValueSetValueWrapper) -> CResult<ValueSetValue> {
     match &v.vs {
-        schema_json::ValueSetValue::IriStem { stem, .. } => {
+        ast::ValueSetValue::IriStem { stem, .. } => {
             let cnv_stem = cnv_iri_ref(&stem)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
-        schema_json::ValueSetValue::ObjectValue(ovw) => {
+        ast::ValueSetValue::ObjectValue(ovw) => {
             let ov = cnv_object_value(&ovw.ov)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
-        schema_json::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
+        ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
             language_tag: language_tag.to_string(),
         }),
-        schema_json::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
+        ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
             stem: stem.to_string(),
         }),
-        schema_json::ValueSetValue::LiteralStemRange {
+        ast::ValueSetValue::LiteralStemRange {
             stem, exclusions, ..
         } => {
             let stem = cnv_string_or_wildcard(stem)?;
@@ -545,11 +545,11 @@ fn cnv_value(v: &schema_json::ValueSetValueWrapper) -> CResult<ValueSetValue> {
     }
 }
 
-fn cnv_node_kind(nk: &schema_json::NodeKind) -> CResult<NodeKind> {
+fn cnv_node_kind(nk: &ast::NodeKind) -> CResult<NodeKind> {
     todo!()
 }
 
-fn cnv_xs_facet(xsf: &schema_json::XsFacet) -> CResult<XsFacet> {
+fn cnv_xs_facet(xsf: &ast::XsFacet) -> CResult<XsFacet> {
     todo!()
 }
 
@@ -599,23 +599,23 @@ where
     }
 }
 
-fn cnv_string_or_wildcard(sw: &schema_json::StringOrWildcard) -> CResult<StringOrWildcard> {
+fn cnv_string_or_wildcard(sw: &ast::StringOrWildcard) -> CResult<StringOrWildcard> {
     todo!()
 }
 
 fn cnv_string_or_literalstem(
-    sl: &schema_json::StringOrLiteralStemWrapper,
+    sl: &ast::StringOrLiteralStemWrapper,
 ) -> CResult<StringOrLiteralStem> {
     todo!()
 }
 
-fn cnv_object_value(ov: &schema_json::ObjectValue) -> CResult<ObjectValue> {
+fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
-        schema_json::ObjectValue::IriRef(ir) => {
+        ast::ObjectValue::IriRef(ir) => {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
-        schema_json::ObjectValue::ObjectLiteral {
+        ast::ObjectValue::ObjectLiteral {
             value, language, ..
         } => {
             let language = cnv_opt(language, cnv_lang)?;
@@ -633,7 +633,7 @@ fn cnv_lang(lang: &String) -> CResult<Lang> {
 
 fn check_node_maybe_node_kind(
     node: &Node,
-    nodekind: &Option<schema_json::NodeKind>,
+    nodekind: &Option<ast::NodeKind>,
 ) -> CResult<()> {
     match nodekind {
         None => Ok(()),
@@ -641,23 +641,23 @@ fn check_node_maybe_node_kind(
     }
 }
 
-fn check_node_node_kind(node: &Node, nk: &schema_json::NodeKind) -> CResult<()> {
+fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
-        (schema_json::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (schema_json::NodeKind::Iri, _) => {
+        (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
+        (ast::NodeKind::Iri, _) => {
             Err(CompiledSchemaError::NodeKindIri { node: node.clone() })
         }
-        (schema_json::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (schema_json::NodeKind::BNode, _) => {
+        (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
+        (ast::NodeKind::BNode, _) => {
             Err(CompiledSchemaError::NodeKindBNode { node: node.clone() })
         }
-        (schema_json::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (schema_json::NodeKind::Literal, _) => {
+        (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
+        (ast::NodeKind::Literal, _) => {
             Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() })
         }
-        (schema_json::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
-        (schema_json::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-        (schema_json::NodeKind::NonLiteral, _) => {
+        (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
+        (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
+        (ast::NodeKind::NonLiteral, _) => {
             Err(CompiledSchemaError::NodeKindNonLiteral { node: node.clone() })
         }
     }
