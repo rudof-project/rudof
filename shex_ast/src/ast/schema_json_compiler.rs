@@ -17,6 +17,7 @@ use rbe::{Cardinality, Key, Pending, RbeError, SingleCond, Value};
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::Object;
+use crate::internal::ShapeExpr::NodeConstraint;
 
 use lazy_static::lazy_static;
 
@@ -179,18 +180,13 @@ impl SchemaJsonCompiler {
                     annotations: Self::cnv_annotations(&annotations),
                 })
             }
-            ast::ShapeExpr::NodeConstraint {
-                node_kind,
-                datatype,
-                xs_facet,
-                values,
-            } => {
-                let node_kind_cnv: Option<NodeKind> = cnv_opt(node_kind, cnv_node_kind)?;
-                let datatype_cnv = cnv_opt(datatype, cnv_iri_ref)?;
-                let xs_facet_cnv = cnv_opt_vec(xs_facet, cnv_xs_facet)?;
-                let values_cnv = cnv_opt_vec(values, cnv_value)?;
+            ast::ShapeExpr::NodeConstraint(nc) => {
+                let node_kind_cnv: Option<NodeKind> = cnv_opt(&nc.node_kind(), cnv_node_kind)?;
+                let datatype_cnv = cnv_opt(&nc.datatype(), cnv_iri_ref)?;
+                let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
+                let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
                 let cond =
-                    Self::cnv_node_constraint(&self, &node_kind, datatype, &xs_facet, values)?;
+                    Self::cnv_node_constraint(&self, &nc.node_kind(), &nc.datatype(), &nc.xs_facet(), &nc.values())?;
                 Ok(ShapeExpr::NodeConstraint {
                     node_kind: node_kind_cnv,
                     datatype: datatype_cnv,
@@ -208,7 +204,7 @@ impl SchemaJsonCompiler {
         nk: &Option<ast::NodeKind>,
         dt: &Option<IriRef>,
         xs_facet: &Option<Vec<ast::XsFacet>>,
-        values: &Option<Vec<ast::ValueSetValueWrapper>>,
+        values: &Option<Vec<ast::ValueSetValue>>,
     ) -> CResult<Cond> {
         let maybe_value_set = match values {
             Some(vs) => {
@@ -371,12 +367,8 @@ impl SchemaJsonCompiler {
     ) -> CResult<Cond> {
         if let Some(se) = ve.as_deref() {
             match se {
-                ast::ShapeExpr::NodeConstraint {
-                    node_kind,
-                    datatype,
-                    xs_facet,
-                    values,
-                } => self.cnv_node_constraint(node_kind, datatype, xs_facet, values),
+                ast::ShapeExpr::NodeConstraint(nc) => 
+                    self.cnv_node_constraint(&nc.node_kind(), &nc.datatype(), &nc.xs_facet(), &nc.values()),
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
@@ -509,7 +501,7 @@ fn mk_cond_value_set(value_set: ValueSet) -> Cond {
     )
 }
 
-fn create_value_set(values: &Vec<ast::ValueSetValueWrapper>) -> CResult<ValueSet> {
+fn create_value_set(values: &Vec<ast::ValueSetValue>) -> CResult<ValueSet> {
     let mut vs = ValueSet::new();
     for v in values {
         let cvalue = cnv_value(v)?;
@@ -518,8 +510,8 @@ fn create_value_set(values: &Vec<ast::ValueSetValueWrapper>) -> CResult<ValueSet
     Ok(vs)
 }
 
-fn cnv_value(v: &ast::ValueSetValueWrapper) -> CResult<ValueSetValue> {
-    match &v.vs {
+fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
+    match &v {
         ast::ValueSetValue::IriStem { stem, .. } => {
             let cnv_stem = cnv_iri_ref(&stem)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
@@ -537,8 +529,8 @@ fn cnv_value(v: &ast::ValueSetValueWrapper) -> CResult<ValueSetValue> {
         ast::ValueSetValue::LiteralStemRange {
             stem, exclusions, ..
         } => {
-            let stem = cnv_string_or_wildcard(stem)?;
-            let exclusions = cnv_opt_vec(exclusions, cnv_string_or_literalstem)?;
+            let stem = cnv_string_or_wildcard(&stem)?;
+            let exclusions = cnv_opt_vec(&exclusions, cnv_string_or_literalstem)?;
             Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
         _ => todo!(),

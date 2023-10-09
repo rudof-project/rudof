@@ -7,7 +7,7 @@ use void::Void;
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
 use crate::ast::serde_string_or_struct::*;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum ObjectValue {
     IriRef(IriRef),
@@ -45,7 +45,7 @@ impl SerializeStringOrStruct for ObjectValue {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ObjectValueWrapper {
     #[serde(

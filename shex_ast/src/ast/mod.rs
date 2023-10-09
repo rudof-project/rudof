@@ -21,6 +21,7 @@ pub mod triple_expr;
 pub mod triple_expr_label;
 pub mod value_set_value;
 pub mod xs_facet;
+pub mod node_constraint;
 
 pub use annotation::*;
 pub use bnode::*;
@@ -43,6 +44,7 @@ pub use triple_expr::*;
 pub use triple_expr_label::*;
 pub use value_set_value::*;
 pub use xs_facet::*;
+pub use node_constraint::*;
 
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};

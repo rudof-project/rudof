@@ -11,7 +11,7 @@ use super::{
     string_or_wildcard::StringOrWildcard, ObjectValue, ObjectValueWrapper,
 };
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum ValueSetValue {
     IriStem {
@@ -71,7 +71,17 @@ pub struct ValueSetValueWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    pub vs: ValueSetValue,
+    vs: ValueSetValue,
+}
+
+impl ValueSetValueWrapper {
+    pub fn new(vs: ValueSetValue) -> ValueSetValueWrapper {
+        ValueSetValueWrapper { vs: vs }
+    }
+    
+    pub fn value(&self) -> ValueSetValue {
+        self.vs.clone()
+    }
 }
 
 impl SerializeStringOrStruct for ValueSetValue {

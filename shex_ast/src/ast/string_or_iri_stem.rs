@@ -8,7 +8,7 @@ use void::Void;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum StringOrIriStem {
     String(String),
@@ -23,7 +23,7 @@ impl FromStr for StringOrIriStem {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct StringOrIriStemWrapper {
     #[serde(

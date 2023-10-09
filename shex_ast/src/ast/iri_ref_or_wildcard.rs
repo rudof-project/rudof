@@ -6,7 +6,7 @@ use void::Void;
 
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum IriRefOrWildcard {
     IriRef(IriRef),

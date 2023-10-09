@@ -1,16 +1,18 @@
 use std::result;
 use std::str::FromStr;
 
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Serializer, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
+use super::ValueSetValue;
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use super::{
     annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, triple_expr::TripleExprWrapper,
     value_set_value::ValueSetValueWrapper, xs_facet::XsFacet,
 };
 use super::{node_kind::NodeKind, ref_::Ref};
+use crate::NodeConstraint;
 use crate::ast::serde_string_or_struct::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -38,19 +40,10 @@ pub enum ShapeExpr {
         #[serde(rename = "shapeExpr")]
         shape_expr: Box<ShapeExprWrapper>,
     },
-    NodeConstraint {
-        #[serde(default, rename = "nodeKind", skip_serializing_if = "Option::is_none")]
-        node_kind: Option<NodeKind>,
 
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        datatype: Option<IriRef>,
+    #[serde(deserialize_with = "deserialize_node_constraint")]
+    NodeConstraint(NodeConstraint), 
 
-        #[serde(default, rename = "xsFacet", skip_serializing_if = "Option::is_none")]
-        xs_facet: Option<Vec<XsFacet>>,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        values: Option<Vec<ValueSetValueWrapper>>,
-    },
     Shape {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         closed: Option<bool>,
@@ -72,6 +65,7 @@ pub enum ShapeExpr {
 
     Ref(Ref),
 }
+
 
 impl FromStr for ShapeExpr {
     type Err = Void;
@@ -117,4 +111,32 @@ impl Default for ShapeExpr {
             annotations: None,
         }
     }
+}
+
+
+
+fn deserialize_node_constraint<'de, D>(deserializer: D) -> Result<NodeConstraint, D::Error> 
+where D: Deserializer<'de> {
+   todo!()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{StringFacet, Pattern};
+
+    use super::*;
+
+    #[test]
+    fn test_serde_xsfacet_pattern() {
+        let facets: Vec<XsFacet> = vec![
+            XsFacet::StringFacet(
+                StringFacet::Pattern(
+                Pattern::new("o*"))
+                )    
+        ];
+        let nc = NodeConstraint::new().with_xsfacets(facets);
+        let json_nc = serde_json::to_string(&nc).unwrap();
+        assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
+    }
+
 }

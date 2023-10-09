@@ -105,8 +105,8 @@ where
     d.deserialize_option(OptStringOrStruct(PhantomData))
 }
 
-/// Some structs can serialized as a string, but only under certain
-/// circumstances.
+/// Some structs can be serialized as a string, 
+/// but only under certain circumstances.
 pub trait SerializeStringOrStruct: Serialize {
     /// Serialize either a string representation of this struct, or a full
     /// struct if the object cannot be represented as a string.

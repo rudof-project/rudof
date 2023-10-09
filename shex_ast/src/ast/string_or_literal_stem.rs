@@ -5,7 +5,7 @@ use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct StringOrLiteralStemWrapper {
     #[serde(
@@ -15,7 +15,7 @@ pub struct StringOrLiteralStemWrapper {
     s: StringOrLiteralStem,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum StringOrLiteralStem {
     String(String),
