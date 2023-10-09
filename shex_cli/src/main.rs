@@ -16,7 +16,7 @@ use std::path::PathBuf;
 pub mod cli;
 pub use cli::*;
 
-use shex_ast::{compiled_schema::CompiledSchema, schema_json::SchemaJson, ShapeLabel};
+use shex_ast::{compiled_schema::CompiledSchema, schema_json::Schema as SchemaJson, ShapeLabel};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -64,24 +64,24 @@ fn run_schema(
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
 ) -> Result<()> {
-    let schema = parse_schema(schema, schema_format)?;
+    let schema_json = parse_schema(schema, schema_format)?;
     match result_schema_format {
         ShExFormat::Internal => {
-            println!("{schema}");
+            println!("{schema_json:?}");
         }
         ShExFormat::ShExC => {
             todo!()
         }
         ShExFormat::ShExJ => {
-            // let str = serde_json::to_string(&schema)?;
-            todo!();
+            let str = serde_json::to_string_pretty(&schema_json)?;
+            println!("{str}");
         }
     }
     Ok(())
 }
 
 fn run_validate(
-    schema: &PathBuf,
+    schema_path: &PathBuf,
     schema_format: &ShExFormat,
     data: &PathBuf,
     data_format: &DataFormat,
@@ -90,7 +90,9 @@ fn run_validate(
     max_steps: &usize,
     debug: u8,
 ) -> Result<()> {
-    let schema = parse_schema(schema, schema_format)?;
+    let schema_json = parse_schema(schema_path, schema_format)?;
+    let mut schema: CompiledSchema = CompiledSchema::new();
+    schema.from_schema_json(&schema_json)?;
     let data = parse_data(data, data_format, debug)?;
     let node = parse_node(node_str, &data)?;
     let shape = parse_shape_label(shape_str)?;
@@ -144,15 +146,16 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
     Ok(())
 }
 
-fn parse_schema(schema: &PathBuf, schema_format: &ShExFormat) -> Result<CompiledSchema> {
+fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => todo!(),
         ShExFormat::ShExC => todo!(),
         ShExFormat::ShExJ => {
-            let schema_json = SchemaJson::parse_schema_buf(schema)?;
-            let mut schema: CompiledSchema = CompiledSchema::new();
-            schema.from_schema_json(schema_json)?;
-            Ok(schema)
+            let schema_json = SchemaJson::parse_schema_buf(schema_path)?;
+            //let mut schema: CompiledSchema = CompiledSchema::new();
+            // schema.from_schema_json(&schema_json)?;
+            // Ok((&schema_json, &schema))
+            Ok(schema_json)
         }
     }
 }

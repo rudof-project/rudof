@@ -7,12 +7,11 @@ pub mod node;
 pub mod pred;
 pub mod schema_builder;
 pub mod schema_json;
-pub mod schema_json_compiler;
 pub mod shape_label;
 pub mod shape_label_idx;
 pub mod value_set;
 pub mod value_set_value;
-
+pub mod schema2schema_json;
 
 pub use compiled_schema_error::*;
 use iri_s::IriS;
@@ -21,7 +20,6 @@ pub use pred::*;
 use rbe::MatchCond;
 pub use schema::*;
 pub use schema_builder::*;
-pub use schema_json_compiler::*;
 pub use shape_label::*;
 pub use shape_label_idx::*;
 pub use value_set::*;

@@ -3,8 +3,8 @@ use std::fmt::Display;
 use crate::compiled_schema::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
     compiled_schema::Annotation, compiled_schema::CompiledSchema, compiled_schema::SemAct,
-    schema_json, schema_json::IriRef, schema_json::SchemaJson, CompiledSchemaError, ShapeLabel,
-    ShapeLabelIdx, ValueSetValue,
+    schema_json, schema_json::IriRef, schema_json::Schema as SchemaJson, CompiledSchemaError,
+    ShapeLabel, ShapeLabelIdx, ValueSetValue,
 };
 use crate::{
     schema, CResult, Cond, Node, ObjectValue, Pred, StringOrIriStem, StringOrLiteralStem,

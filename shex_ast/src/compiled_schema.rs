@@ -1,7 +1,7 @@
+use crate::schema_json::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    schema_json, schema_json::IriRef, schema_json::Ref, schema_json::SchemaJson, CResult,
-    CompiledSchemaError, Cond, Node, ObjectValue, SchemaJsonCompiler, ShapeLabel, ShapeLabelIdx,
-    ValueSetValue,
+    schema_json, schema_json::IriRef, schema_json::Ref, schema_json::Schema as SchemaJson, CResult,
+    CompiledSchemaError, Cond, Node, ObjectValue, ShapeLabel, ShapeLabelIdx, ValueSetValue,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
@@ -75,36 +75,6 @@ impl ShapeExpr {
     }
 }
 
-/*#[derive(Debug, PartialEq)]
-pub enum TripleExpr {
-    EachOf {
-        expressions: Vec<TripleExpr>,
-        min: Min,
-        max: Max,
-        sem_acts: Vec<SemAct>,
-        annotations: Vec<Annotation>,
-    },
-    OneOf {
-        id: Option<TripleExprLabel>,
-        expressions: Vec<TripleExpr>,
-        min: Option<i32>,
-        max: Option<i32>,
-        sem_acts: Vec<SemAct>,
-        annotations: Vec<Annotation>,
-    },
-    TripleConstraint {
-        id: Option<TripleExprLabel>,
-        inverse: bool,
-        predicate: IriS,
-        value_expr: Option<Box<ShapeExpr>>,
-        min: Min,
-        max: Max,
-        sem_acts: Vec<SemAct>,
-        annotations: Vec<Annotation>,
-    },
-    TripleExprRef(TripleExprLabel),
-}
-*/
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum XsFacet {
     StringFacet,
@@ -147,9 +117,9 @@ impl CompiledSchema {
         }
     }
 
-    pub fn from_schema_json<'a>(&mut self, schema_json: SchemaJson) -> Result<()> {
+    pub fn from_schema_json<'a>(&mut self, schema_json: &SchemaJson) -> Result<()> {
         let mut schema_json_compiler = SchemaJsonCompiler::new();
-        schema_json_compiler.compile(&schema_json, self)?;
+        schema_json_compiler.compile(schema_json, self)?;
         Ok(())
     }
 

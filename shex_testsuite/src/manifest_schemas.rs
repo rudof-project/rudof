@@ -9,7 +9,7 @@ use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::schema_json::SchemaJson;
+use shex_ast::schema_json::Schema as SchemaJson;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestSchemasJson")]
