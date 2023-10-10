@@ -6,7 +6,7 @@ use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::compiled_schema::CompiledSchema;
+use shex_ast::internal::CompiledSchema;
 use shex_ast::{
     ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node,
     ShapeLabel,

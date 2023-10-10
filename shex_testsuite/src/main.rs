@@ -20,6 +20,8 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+
+
     /// Name of Manifest file
     #[arg(
         short = 'm',
@@ -37,8 +39,11 @@ struct Cli {
     )]
     config: String,
 
-    #[arg(value_enum, short = 'r', long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
+    #[arg(value_enum, short = 'x', long="run_mode", default_value_t = ManifestRunMode::CollectErrors)]
     manifest_run_mode: ManifestRunMode,
+
+    #[arg(value_enum, short = 'f', long="manifest_mode", default_value = None)]
+    manifest_mode: Option<ManifestMode>,
 
     #[arg(value_enum, short='p', long="print_result_mode", default_value_t = PrintResultMode::Basic)]
     print_result_mode: PrintResultMode,
@@ -107,7 +112,13 @@ fn main() -> Result<()> {
         let manifest_str = fs::read_to_string(&manifest_path)
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
 
-        parse_manifest(manifest_str, config.manifest_mode)?
+        let manifest_mode = if let Some(mm) = cli.manifest_mode {
+          mm 
+        } else {
+          config.manifest_mode  
+        };
+
+        parse_manifest(manifest_str, manifest_mode)?
     };
 
     let entries = match (cli.entry_name, config.single_entries) {
