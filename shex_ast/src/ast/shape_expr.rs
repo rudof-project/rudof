@@ -41,7 +41,6 @@ pub enum ShapeExpr {
         shape_expr: Box<ShapeExprWrapper>,
     },
 
-    #[serde(deserialize_with = "deserialize_node_constraint")]
     NodeConstraint(NodeConstraint), 
 
     Shape {
@@ -115,10 +114,6 @@ impl Default for ShapeExpr {
 
 
 
-fn deserialize_node_constraint<'de, D>(deserializer: D) -> Result<NodeConstraint, D::Error> 
-where D: Deserializer<'de> {
-   todo!()
-}
 
 #[cfg(test)]
 mod tests {

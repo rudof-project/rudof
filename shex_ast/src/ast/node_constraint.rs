@@ -1,8 +1,8 @@
-use std::result;
+use std::{result, fmt};
 
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Serializer, Deserialize, de::{Visitor, SeqAccess, self, MapAccess}};
 
-use crate::{ValueSetValueWrapper, XsFacet, NodeKind, IriRef, StringFacet, Pattern};
+use crate::{ValueSetValueWrapper, XsFacet, NodeKind, IriRef, StringFacet, Pattern, NumericLiteral};
 use super::ValueSetValue;
 use serde::ser::SerializeMap;
 
@@ -55,8 +55,45 @@ impl NodeConstraint {
         self
     }
 
+    pub fn with_pattern(mut self, pat: &str) -> Self {
+        match self.xs_facet {
+            Some(ref mut facets) => {
+                facets.push(XsFacet::pattern(pat))
+            },
+            None => {
+                self.xs_facet = Some(vec![XsFacet::pattern(pat)])
+            }
+        }
+        self
+    }
+
+    pub fn with_pattern_flags(mut self, pat: &str, flags: &str) -> Self {
+        match self.xs_facet {
+            Some(ref mut facets) => {
+                facets.push(XsFacet::pattern_flags(pat, flags))
+            },
+            None => {
+                self.xs_facet = Some(vec![XsFacet::pattern_flags(pat, flags)])
+            }
+        }
+        self
+    }
+
+
     pub fn xs_facet(&self) -> Option<Vec<XsFacet>> {
         self.xs_facet.clone()
+    }
+
+    pub fn with_length(mut self, len: usize) -> Self {
+        match self.xs_facet {
+            Some(ref mut facets) => {
+                facets.push(XsFacet::length(len))
+            },
+            None => {
+                self.xs_facet = Some(vec![XsFacet::length(len)])
+            }
+        }
+        self
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
@@ -93,7 +130,7 @@ impl Serialize for NodeConstraint {
         match node_kind {
             None => (),
             Some(nk) => {
-                map.serialize_entry("nodekind", &format!("{nk}"))?;
+                map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
             }
         }
         match datatype {
@@ -130,5 +167,268 @@ impl Serialize for NodeConstraint {
       }
     }
 }
+
+}
+
+impl<'de> Deserialize<'de> for NodeConstraint {
+    
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: serde::Deserializer<'de> {
+
+    enum Field { Type, NodeKind, Datatype, Length, MinLength, MaxLength, Pattern, Flags, MinInclusive, MaxInclusive, MinExclusive, MaxExclusive, TotalDigits, FractionDigits }
+
+    impl<'de> Deserialize<'de> for Field {
+        fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            struct FieldVisitor;
+
+            impl<'de> Visitor<'de> for FieldVisitor {
+                type Value = Field;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    formatter.write_str("`type` or `nodeKind` or `datatype` or some xsfacet or `values` ")
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                where
+                    E: de::Error,
+                {
+                    match value {
+                        "nodeKind" => Ok(Field::NodeKind),
+                        "datatype" => Ok(Field::Datatype),
+                        "type" => Ok(Field::Type),
+                        "pattern" => Ok(Field::Pattern),
+                        "flags" => Ok(Field::Flags),
+                        "length" => Ok(Field::Length),
+                        "minlength" => Ok(Field::MinLength),
+                        "maxlength" => Ok(Field::MaxLength),
+                        "mininclusive" => Ok(Field::MinInclusive),
+                        "maxinclusive" => Ok(Field::MaxInclusive),
+                        "minexclusive" => Ok(Field::MinExclusive),
+                        "maxexclusive" => Ok(Field::MaxExclusive),
+                        "totaldigits"  => Ok(Field::TotalDigits),
+                        "fractiondigits" => Ok(Field::FractionDigits),
+                        _ => Err(de::Error::unknown_field(value, FIELDS)),
+                    }
+                }
+            }
+
+            deserializer.deserialize_identifier(FieldVisitor)
+        }
+    }
+
+    struct NodeConstraintVisitor;
+    
+    impl<'de> Visitor<'de> for NodeConstraintVisitor {
+            type Value = NodeConstraint;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct NodeConstraint")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<NodeConstraint, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+
+                let mut type_: Option<String> = None ;
+                let mut node_kind: Option<NodeKind> = None;
+                let mut datatype: Option<IriRef> = None;
+                let mut pattern: Option<String> = None;
+                let mut length: Option<usize> = None;
+                let mut minlength: Option<usize> = None;
+                let mut maxlength: Option<usize> = None;
+                let mut mininclusive: Option<NumericLiteral> = None;
+                let mut maxinclusive: Option<NumericLiteral> = None;
+                let mut minexclusive: Option<NumericLiteral> = None;
+                let mut maxexclusive: Option<NumericLiteral> = None;
+                let mut totaldigits: Option<usize> = None ;
+                let mut fractiondigits: Option<usize> = None ;
+                let mut flags: Option<String> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::NodeKind => {
+                            if node_kind.is_some() {
+                                return Err(de::Error::duplicate_field("nodeKind"));
+                            }
+                            let value = map.next_value()?;
+                            node_kind = match value {
+                               "iri" => Some(NodeKind::Iri),
+                               "bnode" => Some(NodeKind::BNode),
+                               "literal" => Some(NodeKind::Literal),
+                               "nonliteral" => Some(NodeKind::NonLiteral),
+                               _ => {
+                                 return Err(de::Error::custom(format!("Unexpected value for `nodeKind`: {value}")))
+                               }
+                            }
+                        }
+                        Field::Datatype => {
+                            if datatype.is_some() {
+                                return Err(de::Error::duplicate_field("datatype"));
+                            }
+                            let iri: IriRef = map.next_value()?;
+                            datatype = Some(iri);
+                        }
+                        Field::Pattern => {
+                            if pattern.is_some() {
+                                return Err(de::Error::duplicate_field("pattern"));
+                            }
+                            pattern = Some(map.next_value()?);
+                        }
+                        Field::Length => {
+                            if length.is_some() {
+                                return Err(de::Error::duplicate_field("length"));
+                            }
+                            length = Some(map.next_value()?);
+                        }
+                        Field::MinLength => {
+                            if minlength.is_some() {
+                                return Err(de::Error::duplicate_field("minlength"));
+                            }
+                            minlength = Some(map.next_value()?);
+                        }
+                        Field::MaxLength => {
+                            if maxlength.is_some() {
+                                return Err(de::Error::duplicate_field("maxlength"));
+                            }
+                            maxlength = Some(map.next_value()?);
+                        }
+                        Field::MinInclusive => {
+                            if mininclusive.is_some() {
+                                return Err(de::Error::duplicate_field("mininclusive"));
+                            }
+                            mininclusive = Some(map.next_value()?);
+                        }
+                        Field::MaxInclusive => {
+                            if maxinclusive.is_some() {
+                                return Err(de::Error::duplicate_field("maxinclusive"));
+                            }
+                            maxinclusive = Some(map.next_value()?);
+                        }
+                        Field::MinExclusive => {
+                            if minexclusive.is_some() {
+                                return Err(de::Error::duplicate_field("minexclusive"));
+                            }
+                            minexclusive = Some(map.next_value()?);
+                        }
+                        Field::MaxExclusive => {
+                            if maxexclusive.is_some() {
+                                return Err(de::Error::duplicate_field("maxexclusive"));
+                            }
+                            maxexclusive = Some(map.next_value()?);
+                        }
+                        Field::TotalDigits => {
+                            if totaldigits.is_some() {
+                                return Err(de::Error::duplicate_field("totaldigits"));
+                            }
+                            totaldigits = Some(map.next_value()?);
+                        }
+                        Field::FractionDigits => {
+                            if fractiondigits.is_some() {
+                                return Err(de::Error::duplicate_field("fractiondigits"));
+                            }
+                            fractiondigits = Some(map.next_value()?);
+                        }
+                        Field::Type => {
+                            if type_.is_some() {
+                                return Err(de::Error::duplicate_field("type"))
+                            }
+                            let value: String = map.next_value()?;
+                            if value != "NodeConstraint" {
+                                return Err(de::Error::custom(format!("Expected NodeConstraint, found: {value}")));
+                            }
+                            type_ = Some("NodeConstraint".to_string());
+                        }
+                        Field::Flags => {
+                            if flags.is_some() {
+                                return Err(de::Error::duplicate_field("flags"))
+                            }
+                            flags = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let mut nc = NodeConstraint::new();
+                if let Some(nk) = node_kind {
+                    nc = nc.with_node_kind(nk)
+                }
+                if let Some(pat) = pattern {
+                    if let Some(flags) = flags {
+                        nc = nc.with_pattern_flags(&pat, &flags)
+                    } else {
+                        nc = nc.with_pattern(&pat)
+                    }
+                }
+                if let Some(length) = length {
+                    nc = nc.with_length(length)
+                }
+                // let secs = secs.ok_or_else(|| de::Error::missing_field("secs"))?;
+                // let nanos = nanos.ok_or_else(|| de::Error::missing_field("nanos"))?;
+                Ok(nc)
+
+                
+            }
+    }
+
+    const FIELDS: &'static [&'static str] = &["type", "nodeKind", "datatype"];
+    deserializer.deserialize_struct("NodeConstraint", FIELDS, NodeConstraintVisitor)
+    }
+
+}
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+     use super::*;
+
+    #[test]
+    fn test_serialize_node_kind_iri() {
+        let nc = NodeConstraint::new().with_node_kind(NodeKind::Iri);
+        let json_nc = serde_json::to_string(&nc).unwrap();
+        assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"nodeKind\":\"iri\"}");
+    }
+
+    #[test]
+    fn test_deserialize_node_kind_iri() {
+        let str = r#"{ "type":"NodeConstraint","nodeKind": "iri"}"#;
+        let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
+        let expected = NodeConstraint::new().with_node_kind(NodeKind::Iri);
+        assert_eq!(deserialized, expected);
+    } 
+
+    #[test]
+    fn test_serialize_pattern() {
+        let nc = NodeConstraint::new().with_pattern("o*");
+        let json_nc = serde_json::to_string(&nc).unwrap();
+        let expected = r#"{"type":"NodeConstraint","pattern":"o*"}"#;
+        assert_eq!(json_nc, expected);
+    } 
+
+    #[test]
+    fn test_deserialize_pattern() {
+        let str = r#"{ "type":"NodeConstraint","pattern": "o*"}"#;
+        let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
+        let expected = NodeConstraint::new().with_pattern("o*");
+        assert_eq!(deserialized, expected);
+    } 
+
+    #[test]
+    fn test_serialize_pattern_flags() {
+        let nc = NodeConstraint::new().with_pattern_flags("o*", "i");
+        let json_nc = serde_json::to_string(&nc).unwrap();
+        let expected = r#"{"type":"NodeConstraint","pattern":"o*","flags":"i"}"#;
+        assert_eq!(json_nc, expected);
+    }    
+    #[test]
+    fn test_deserialize_pattern_flags() {
+        let str = r#"{ "type":"NodeConstraint","pattern": "o*", "flags": "i"}"#;
+        let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
+        let expected = NodeConstraint::new().with_pattern_flags("o*", "i");
+        assert_eq!(deserialized, expected);
+    } 
 
 }

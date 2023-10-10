@@ -6,7 +6,6 @@ use serde_derive::{Deserialize, Serialize};
 use rust_decimal::prelude::*;
 use void::Void;
 
-use crate::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
 
 
@@ -15,6 +14,55 @@ use crate::ast::serde_string_or_struct::*;
 pub enum XsFacet {
     StringFacet(StringFacet),
     NumericFacet(NumericFacet),
+}
+
+impl XsFacet {
+
+    pub fn pattern(pat: &str) -> XsFacet {
+       XsFacet::StringFacet(StringFacet::Pattern(Pattern::new(pat)))
+    }
+
+    pub fn pattern_flags(pat: &str, flags: &str) -> XsFacet {
+        XsFacet::StringFacet(StringFacet::Pattern(Pattern::new_flags(pat, flags)))
+     }
+
+     pub fn length(len: usize) -> XsFacet {
+        XsFacet::StringFacet(StringFacet::Length(len))
+     }
+ 
+     pub fn min_length(len: usize) -> XsFacet {
+        XsFacet::StringFacet(StringFacet::MinLength(len))
+     }
+
+     pub fn max_length(len: usize) -> XsFacet {
+        XsFacet::StringFacet(StringFacet::MaxLength(len))
+     }
+
+     pub fn min_inclusive(nl: NumericLiteral) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::MinInclusive(nl))
+     }
+
+     pub fn max_inclusive(nl: NumericLiteral) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::MaxInclusive(nl))
+     }
+
+     pub fn min_exclusive(nl: NumericLiteral) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::MinExclusive(nl))
+     }
+
+     pub fn max_exclusive(nl: NumericLiteral) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::MaxExclusive(nl))
+     }
+
+     pub fn totaldigits(n: usize) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::TotalDigits(n))
+     }
+
+     pub fn fractiondigits(n: usize) -> XsFacet {
+        XsFacet::NumericFacet(NumericFacet::FractionDigits(n))
+     }
+
+
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
