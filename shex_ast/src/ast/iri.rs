@@ -1,10 +1,16 @@
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
-#[serde(try_from = "String")]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(try_from = "String", into = "String")]
 pub struct Iri {
     value: String,
+}
+
+impl Into<String> for Iri {
+    fn into(self) -> String {
+        self.value
+    }
 }
 
 impl TryFrom<String> for Iri {

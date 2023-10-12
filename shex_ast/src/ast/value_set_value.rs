@@ -64,7 +64,7 @@ pub enum ValueSetValue {
     ObjectValue(ObjectValueWrapper),
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ValueSetValueWrapper {
     #[serde(
@@ -78,7 +78,7 @@ impl ValueSetValueWrapper {
     pub fn new(vs: ValueSetValue) -> ValueSetValueWrapper {
         ValueSetValueWrapper { vs: vs }
     }
-    
+
     pub fn value(&self) -> ValueSetValue {
         self.vs.clone()
     }

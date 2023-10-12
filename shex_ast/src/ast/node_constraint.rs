@@ -1,13 +1,19 @@
-use std::{result, fmt};
+use std::{fmt, result};
 
-use serde::{Serialize, Serializer, Deserialize, de::{Visitor, SeqAccess, self, MapAccess}};
+use log::debug;
+use serde::{
+    de::{self, MapAccess, SeqAccess, Visitor},
+    ser::SerializeSeq,
+    Deserialize, Serialize, Serializer,
+};
 
-use crate::{ValueSetValueWrapper, XsFacet, NodeKind, IriRef, StringFacet, Pattern, NumericLiteral};
 use super::ValueSetValue;
+use crate::{
+    IriRef, NodeKind, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper, XsFacet,
+};
 use serde::ser::SerializeMap;
 
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct NodeConstraint {
     // #[serde(default, rename = "nodeKind", skip_serializing_if = "Option::is_none")]
     node_kind: Option<NodeKind>,
@@ -26,9 +32,9 @@ impl NodeConstraint {
     pub fn new() -> NodeConstraint {
         NodeConstraint {
             node_kind: None,
-            datatype: None, 
-            xs_facet: None, 
-            values: None
+            datatype: None,
+            xs_facet: None,
+            values: None,
         }
     }
 
@@ -38,7 +44,7 @@ impl NodeConstraint {
     }
 
     pub fn datatype(&self) -> Option<IriRef> {
-       self.datatype.clone()
+        self.datatype.clone()
     }
 
     pub fn with_node_kind(mut self, node_kind: NodeKind) -> Self {
@@ -57,28 +63,19 @@ impl NodeConstraint {
 
     pub fn with_pattern(mut self, pat: &str) -> Self {
         match self.xs_facet {
-            Some(ref mut facets) => {
-                facets.push(XsFacet::pattern(pat))
-            },
-            None => {
-                self.xs_facet = Some(vec![XsFacet::pattern(pat)])
-            }
+            Some(ref mut facets) => facets.push(XsFacet::pattern(pat)),
+            None => self.xs_facet = Some(vec![XsFacet::pattern(pat)]),
         }
         self
     }
 
     pub fn with_pattern_flags(mut self, pat: &str, flags: &str) -> Self {
         match self.xs_facet {
-            Some(ref mut facets) => {
-                facets.push(XsFacet::pattern_flags(pat, flags))
-            },
-            None => {
-                self.xs_facet = Some(vec![XsFacet::pattern_flags(pat, flags)])
-            }
+            Some(ref mut facets) => facets.push(XsFacet::pattern_flags(pat, flags)),
+            None => self.xs_facet = Some(vec![XsFacet::pattern_flags(pat, flags)]),
         }
         self
     }
-
 
     pub fn xs_facet(&self) -> Option<Vec<XsFacet>> {
         self.xs_facet.clone()
@@ -86,12 +83,8 @@ impl NodeConstraint {
 
     pub fn with_length(mut self, len: usize) -> Self {
         match self.xs_facet {
-            Some(ref mut facets) => {
-                facets.push(XsFacet::length(len))
-            },
-            None => {
-                self.xs_facet = Some(vec![XsFacet::length(len)])
-            }
+            Some(ref mut facets) => facets.push(XsFacet::length(len)),
+            None => self.xs_facet = Some(vec![XsFacet::length(len)]),
         }
         self
     }
@@ -99,7 +92,7 @@ impl NodeConstraint {
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
         let mut vs: Vec<ValueSetValueWrapper> = Vec::with_capacity(values.len());
         for v in values {
-           vs.push(ValueSetValueWrapper::new(v));
+            vs.push(ValueSetValueWrapper::new(v));
         }
         self.values = Some(vs);
         self
@@ -113,115 +106,151 @@ impl NodeConstraint {
                 for v in values {
                     vs.push(v.value());
                 }
-                Some(vs)        
+                Some(vs)
             }
         }
     }
 }
 
 impl Serialize for NodeConstraint {
-
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error> 
-    where S: Serializer {
-      match self {
-       NodeConstraint { node_kind, datatype, xs_facet, values } => {
-        let mut map = serializer.serialize_map(None)?;
-        map.serialize_entry("type", "NodeConstraint")?;
-        match node_kind {
-            None => (),
-            Some(nk) => {
-                map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
-            }
-        }
-        match datatype {
-            None => (),
-            Some(dt) => {
-                map.serialize_entry("datatype", &format!("{dt}"))?;
-            }
-        }
-        match xs_facet {
-            None => (),
-            Some(facets) => {
-                for f in facets {
-                    match f {
-                        XsFacet::StringFacet(sf) => {
-                            match sf {
-                                StringFacet::Length(_) => todo!(),
-                                StringFacet::MinLength(_) => todo!(),
-                                StringFacet::MaxLength(_) => todo!(),
-                                StringFacet::Pattern(Pattern { str, flags: None}) => {
-                                  map.serialize_entry("pattern", str)?;
-                                },
-                                StringFacet::Pattern(Pattern { str, flags: Some(fs)}) => {
-                                    map.serialize_entry("pattern", str)?;
-                                    map.serialize_entry("flags", fs)?;
-                                  },
-                            }
-                        },
-                        XsFacet::NumericFacet(_) => todo!(),
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            NodeConstraint {
+                node_kind,
+                datatype,
+                xs_facet,
+                values,
+            } => {
+                let mut map = serializer.serialize_map(None)?;
+                // debug!("Adding type = NodeConstraint");
+                // map.serialize_entry("type", "NodeConstraint")?;
+                match node_kind {
+                    None => (),
+                    Some(nk) => {
+                        map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
                     }
                 }
+                match datatype {
+                    None => (),
+                    Some(dt) => {
+                        map.serialize_entry("datatype", &format!("{dt}"))?;
+                    }
+                }
+                match values {
+                    None => (),
+                    Some(values) => {
+                        map.serialize_entry("values", &values)?;
+                    }
+                }
+                match xs_facet {
+                    None => (),
+                    Some(facets) => {
+                        for f in facets {
+                            match f {
+                                XsFacet::StringFacet(sf) => match sf {
+                                    StringFacet::Length(l) => map.serialize_entry("length", l)?,
+                                    StringFacet::MinLength(ml) => {
+                                        map.serialize_entry("minlength", ml)?
+                                    }
+                                    StringFacet::MaxLength(ml) => {
+                                        map.serialize_entry("maxlength", ml)?
+                                    }
+                                    StringFacet::Pattern(Pattern { str, flags: None }) => {
+                                        map.serialize_entry("pattern", str)?;
+                                    }
+                                    StringFacet::Pattern(Pattern {
+                                        str,
+                                        flags: Some(fs),
+                                    }) => {
+                                        map.serialize_entry("pattern", str)?;
+                                        map.serialize_entry("flags", fs)?;
+                                    }
+                                },
+                                XsFacet::NumericFacet(_) => todo!(),
+                            }
+                        }
+                    }
+                }
+                map.end()
             }
         }
-        map.end()
-      }
     }
-}
-
 }
 
 impl<'de> Deserialize<'de> for NodeConstraint {
-    
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: serde::Deserializer<'de> {
+    where
+        D: serde::Deserializer<'de>,
+    {
+        enum Field {
+            Type,
+            NodeKind,
+            Datatype,
+            Values,
+            Length,
+            MinLength,
+            MaxLength,
+            Pattern,
+            Flags,
+            MinInclusive,
+            MaxInclusive,
+            MinExclusive,
+            MaxExclusive,
+            TotalDigits,
+            FractionDigits,
+        }
 
-    enum Field { Type, NodeKind, Datatype, Length, MinLength, MaxLength, Pattern, Flags, MinInclusive, MaxInclusive, MinExclusive, MaxExclusive, TotalDigits, FractionDigits }
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct FieldVisitor;
 
-    impl<'de> Deserialize<'de> for Field {
-        fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-        where
-            D: serde::Deserializer<'de>,
-        {
-            struct FieldVisitor;
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
 
-            impl<'de> Visitor<'de> for FieldVisitor {
-                type Value = Field;
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str(
+                            "`type` or `nodeKind` or `datatype` or some xsfacet or `values` ",
+                        )
+                    }
 
-                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                    formatter.write_str("`type` or `nodeKind` or `datatype` or some xsfacet or `values` ")
-                }
-
-                fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                where
-                    E: de::Error,
-                {
-                    match value {
-                        "nodeKind" => Ok(Field::NodeKind),
-                        "datatype" => Ok(Field::Datatype),
-                        "type" => Ok(Field::Type),
-                        "pattern" => Ok(Field::Pattern),
-                        "flags" => Ok(Field::Flags),
-                        "length" => Ok(Field::Length),
-                        "minlength" => Ok(Field::MinLength),
-                        "maxlength" => Ok(Field::MaxLength),
-                        "mininclusive" => Ok(Field::MinInclusive),
-                        "maxinclusive" => Ok(Field::MaxInclusive),
-                        "minexclusive" => Ok(Field::MinExclusive),
-                        "maxexclusive" => Ok(Field::MaxExclusive),
-                        "totaldigits"  => Ok(Field::TotalDigits),
-                        "fractiondigits" => Ok(Field::FractionDigits),
-                        _ => Err(de::Error::unknown_field(value, FIELDS)),
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "nodeKind" => Ok(Field::NodeKind),
+                            "datatype" => Ok(Field::Datatype),
+                            "type" => Ok(Field::Type),
+                            "pattern" => Ok(Field::Pattern),
+                            "flags" => Ok(Field::Flags),
+                            "length" => Ok(Field::Length),
+                            "minlength" => Ok(Field::MinLength),
+                            "maxlength" => Ok(Field::MaxLength),
+                            "mininclusive" => Ok(Field::MinInclusive),
+                            "maxinclusive" => Ok(Field::MaxInclusive),
+                            "minexclusive" => Ok(Field::MinExclusive),
+                            "maxexclusive" => Ok(Field::MaxExclusive),
+                            "totaldigits" => Ok(Field::TotalDigits),
+                            "fractiondigits" => Ok(Field::FractionDigits),
+                            "values" => Ok(Field::Values),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
                     }
                 }
+
+                deserializer.deserialize_identifier(FieldVisitor)
             }
-
-            deserializer.deserialize_identifier(FieldVisitor)
         }
-    }
 
-    struct NodeConstraintVisitor;
-    
-    impl<'de> Visitor<'de> for NodeConstraintVisitor {
+        struct NodeConstraintVisitor;
+
+        impl<'de> Visitor<'de> for NodeConstraintVisitor {
             type Value = NodeConstraint;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -232,8 +261,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
             where
                 V: MapAccess<'de>,
             {
-
-                let mut type_: Option<String> = None ;
+                let mut type_: Option<String> = None;
                 let mut node_kind: Option<NodeKind> = None;
                 let mut datatype: Option<IriRef> = None;
                 let mut pattern: Option<String> = None;
@@ -244,9 +272,10 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 let mut maxinclusive: Option<NumericLiteral> = None;
                 let mut minexclusive: Option<NumericLiteral> = None;
                 let mut maxexclusive: Option<NumericLiteral> = None;
-                let mut totaldigits: Option<usize> = None ;
-                let mut fractiondigits: Option<usize> = None ;
+                let mut totaldigits: Option<usize> = None;
+                let mut fractiondigits: Option<usize> = None;
                 let mut flags: Option<String> = None;
+                let mut values: Option<Vec<ValueSetValueWrapper>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::NodeKind => {
@@ -255,13 +284,15 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             }
                             let value = map.next_value()?;
                             node_kind = match value {
-                               "iri" => Some(NodeKind::Iri),
-                               "bnode" => Some(NodeKind::BNode),
-                               "literal" => Some(NodeKind::Literal),
-                               "nonliteral" => Some(NodeKind::NonLiteral),
-                               _ => {
-                                 return Err(de::Error::custom(format!("Unexpected value for `nodeKind`: {value}")))
-                               }
+                                "iri" => Some(NodeKind::Iri),
+                                "bnode" => Some(NodeKind::BNode),
+                                "literal" => Some(NodeKind::Literal),
+                                "nonliteral" => Some(NodeKind::NonLiteral),
+                                _ => {
+                                    return Err(de::Error::custom(format!(
+                                        "Unexpected value for `nodeKind`: {value}"
+                                    )))
+                                }
                             }
                         }
                         Field::Datatype => {
@@ -270,6 +301,13 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             }
                             let iri: IriRef = map.next_value()?;
                             datatype = Some(iri);
+                        }
+                        Field::Values => {
+                            if values.is_some() {
+                                return Err(de::Error::duplicate_field("values"));
+                            }
+                            let vs: Vec<ValueSetValueWrapper> = map.next_value()?;
+                            values = Some(vs)
                         }
                         Field::Pattern => {
                             if pattern.is_some() {
@@ -333,17 +371,19 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                         }
                         Field::Type => {
                             if type_.is_some() {
-                                return Err(de::Error::duplicate_field("type"))
+                                return Err(de::Error::duplicate_field("type"));
                             }
                             let value: String = map.next_value()?;
                             if value != "NodeConstraint" {
-                                return Err(de::Error::custom(format!("Expected NodeConstraint, found: {value}")));
+                                return Err(de::Error::custom(format!(
+                                    "Expected NodeConstraint, found: {value}"
+                                )));
                             }
                             type_ = Some("NodeConstraint".to_string());
                         }
                         Field::Flags => {
                             if flags.is_some() {
-                                return Err(de::Error::duplicate_field("flags"))
+                                return Err(de::Error::duplicate_field("flags"));
                             }
                             flags = Some(map.next_value()?);
                         }
@@ -366,26 +406,26 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 // let secs = secs.ok_or_else(|| de::Error::missing_field("secs"))?;
                 // let nanos = nanos.ok_or_else(|| de::Error::missing_field("nanos"))?;
                 Ok(nc)
-
-                
             }
-    }
+        }
 
-    const FIELDS: &'static [&'static str] = &["type", "nodeKind", "datatype"];
-    deserializer.deserialize_struct("NodeConstraint", FIELDS, NodeConstraintVisitor)
+        const FIELDS: &'static [&'static str] = &["type", "nodeKind", "datatype"];
+        deserializer.deserialize_struct("NodeConstraint", FIELDS, NodeConstraintVisitor)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-     use super::*;
+    use super::*;
 
     #[test]
     fn test_serialize_node_kind_iri() {
         let nc = NodeConstraint::new().with_node_kind(NodeKind::Iri);
         let json_nc = serde_json::to_string(&nc).unwrap();
-        assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"nodeKind\":\"iri\"}");
+        assert_eq!(
+            json_nc,
+            "{\"type\":\"NodeConstraint\",\"nodeKind\":\"iri\"}"
+        );
     }
 
     #[test]
@@ -394,7 +434,7 @@ mod tests {
         let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
         let expected = NodeConstraint::new().with_node_kind(NodeKind::Iri);
         assert_eq!(deserialized, expected);
-    } 
+    }
 
     #[test]
     fn test_serialize_pattern() {
@@ -402,7 +442,7 @@ mod tests {
         let json_nc = serde_json::to_string(&nc).unwrap();
         let expected = r#"{"type":"NodeConstraint","pattern":"o*"}"#;
         assert_eq!(json_nc, expected);
-    } 
+    }
 
     #[test]
     fn test_deserialize_pattern() {
@@ -410,7 +450,7 @@ mod tests {
         let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
         let expected = NodeConstraint::new().with_pattern("o*");
         assert_eq!(deserialized, expected);
-    } 
+    }
 
     #[test]
     fn test_serialize_pattern_flags() {
@@ -418,13 +458,12 @@ mod tests {
         let json_nc = serde_json::to_string(&nc).unwrap();
         let expected = r#"{"type":"NodeConstraint","pattern":"o*","flags":"i"}"#;
         assert_eq!(json_nc, expected);
-    }    
+    }
     #[test]
     fn test_deserialize_pattern_flags() {
         let str = r#"{ "type":"NodeConstraint","pattern": "o*", "flags": "i"}"#;
         let deserialized: NodeConstraint = serde_json::from_str(str).unwrap();
         let expected = NodeConstraint::new().with_pattern_flags("o*", "i");
         assert_eq!(deserialized, expected);
-    } 
-
+    }
 }

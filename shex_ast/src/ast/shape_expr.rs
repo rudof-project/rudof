@@ -1,21 +1,21 @@
 use std::result;
 use std::str::FromStr;
 
-use serde::{Serialize, Serializer, Deserializer};
+use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
-use super::ValueSetValue;
 use super::serde_string_or_struct::SerializeStringOrStruct;
+use super::ValueSetValue;
 use super::{
     annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, triple_expr::TripleExprWrapper,
     value_set_value::ValueSetValueWrapper, xs_facet::XsFacet,
 };
 use super::{node_kind::NodeKind, ref_::Ref};
-use crate::NodeConstraint;
 use crate::ast::serde_string_or_struct::*;
+use crate::NodeConstraint;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ShapeExprWrapper {
     #[serde(
@@ -25,7 +25,7 @@ pub struct ShapeExprWrapper {
     pub se: ShapeExpr,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub enum ShapeExpr {
     ShapeOr {
@@ -41,7 +41,7 @@ pub enum ShapeExpr {
         shape_expr: Box<ShapeExprWrapper>,
     },
 
-    NodeConstraint(NodeConstraint), 
+    NodeConstraint(NodeConstraint),
 
     Shape {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -64,7 +64,6 @@ pub enum ShapeExpr {
 
     Ref(Ref),
 }
-
 
 impl FromStr for ShapeExpr {
     type Err = Void;
@@ -112,26 +111,19 @@ impl Default for ShapeExpr {
     }
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
-    use crate::{StringFacet, Pattern};
+    use crate::{Pattern, StringFacet};
 
     use super::*;
 
     #[test]
     fn test_serde_xsfacet_pattern() {
-        let facets: Vec<XsFacet> = vec![
-            XsFacet::StringFacet(
-                StringFacet::Pattern(
-                Pattern::new("o*"))
-                )    
-        ];
+        let facets: Vec<XsFacet> = vec![XsFacet::StringFacet(StringFacet::Pattern(Pattern::new(
+            "o*",
+        )))];
         let nc = NodeConstraint::new().with_xsfacets(facets);
         let json_nc = serde_json::to_string(&nc).unwrap();
         assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
     }
-
 }

@@ -11,7 +11,7 @@ use super::{
     triple_expr_label::TripleExprLabel,
 };
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub enum TripleExpr {
     EachOf {
@@ -85,16 +85,6 @@ pub enum TripleExpr {
     TripleExprRef(TripleExprLabel),
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
-#[serde(transparent)]
-pub struct TripleExprWrapper {
-    #[serde(
-        serialize_with = "serialize_string_or_struct",
-        deserialize_with = "deserialize_string_or_struct"
-    )]
-    pub te: TripleExpr,
-}
-
 impl FromStr for TripleExpr {
     type Err = Void;
 
@@ -117,4 +107,14 @@ impl SerializeStringOrStruct for TripleExpr {
             _ => self.serialize(serializer),
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(transparent)]
+pub struct TripleExprWrapper {
+    #[serde(
+        serialize_with = "serialize_string_or_struct",
+        deserialize_with = "deserialize_string_or_struct"
+    )]
+    pub te: TripleExpr,
 }

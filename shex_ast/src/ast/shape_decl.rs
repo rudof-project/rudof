@@ -3,7 +3,7 @@ use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct ShapeDecl {
     #[serde(rename = "type")]
     pub type_: String,

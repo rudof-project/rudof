@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use super::{Iri, SemAct, ShapeDecl, ShapeExpr};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Schema {
     #[serde(rename = "@context")]
     context: String,

@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use super::iri_ref::IriRef;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct SemAct {
     name: IriRef,
 

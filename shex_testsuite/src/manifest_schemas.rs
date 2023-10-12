@@ -143,15 +143,37 @@ impl ManifestSchemas {
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
         debug!("Runnnig entry: {} with json: {}", self.id, self.json);
-        let schema_json = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
+        let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
                 error: e,
                 entry_name: self.name.to_string(),
             }
         })?;
 
-        debug!("Entry run: {} - {}", self.id, schema_json.type_);
-        Ok(())
+        let schema_serialized = serde_json::to_string_pretty(&schema_parsed).map_err(|e| {
+            ManifestError::SchemaSerializationError {
+                schema_parsed: schema_parsed.clone(),
+                error: e,
+            }
+        })?;
+
+        let schema_parsed_after_serialization =
+            serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
+                ManifestError::SchemaParsingAfterSerialization {
+                    schema_serialized,
+                    error: e,
+                }
+            })?;
+        debug!("Entry run: {} - {}", self.id, schema_parsed.type_);
+
+        if (schema_parsed == schema_parsed_after_serialization) {
+            Ok(())
+        } else {
+            Err(ManifestError::SchemasDifferent {
+                schema_parsed,
+                schema_parsed_after_serialization,
+            })
+        }
     }
 }
 
