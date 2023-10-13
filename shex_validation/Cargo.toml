@@ -8,9 +8,9 @@ edition.workspace = true
 
 [dependencies]
 async-recursion = "1.0.4"
-iri_s = { path = "../iri_s" }
-rbe = { path = "../rbe" }
-srdf = { path = "../srdf" }
+iri_s = { path = "../iri_s", version = "0.0.2" }
+rbe = { path = "../rbe", version = "0.0.2" }
+srdf = { path = "../srdf", version = "0.0.2" }
 shex_ast = { path = "../shex_ast" }
 shapemap = { path = "../shapemap" }
 prefixmap = { path = "../prefixmap" }
@@ -25,6 +25,6 @@ indexmap = { version = "2", feature = "serde" }
 
 
 [dev-dependencies]
-srdf_graph = { path = "../srdf_graph" }
+srdf_graph = { path = "../srdf_graph", version = "0.0.2" }
 oxrdf = "0.1.6"
 
