@@ -111,7 +111,21 @@ The project is using cargo workspaces wihch can be installed with:
 cargo install cargo-workspaces
 ```
 
-## How to run the test-suite
+## Unit-testing
+
+In order to test all the sub-projects
+
+```
+cargo test --all
+```
+
+Testing one specific subproject:
+
+```
+cargo test -p shex_validation
+```
+
+## Using the ShEx test-suite
 
 The ShEx testsuite is included in a git submodule. In order to obtain it, it is necessary to do:
 

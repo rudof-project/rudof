@@ -1,9 +1,8 @@
 use std::{fmt, result};
 
-use log::debug;
+// use log::debug;
 use serde::{
-    de::{self, MapAccess, SeqAccess, Visitor},
-    ser::SerializeSeq,
+    de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
 
@@ -424,7 +423,7 @@ mod tests {
         let json_nc = serde_json::to_string(&nc).unwrap();
         assert_eq!(
             json_nc,
-            "{\"type\":\"NodeConstraint\",\"nodeKind\":\"iri\"}"
+            "{\"nodeKind\":\"iri\"}"
         );
     }
 
@@ -440,7 +439,7 @@ mod tests {
     fn test_serialize_pattern() {
         let nc = NodeConstraint::new().with_pattern("o*");
         let json_nc = serde_json::to_string(&nc).unwrap();
-        let expected = r#"{"type":"NodeConstraint","pattern":"o*"}"#;
+        let expected = r#"{"pattern":"o*"}"#;
         assert_eq!(json_nc, expected);
     }
 
@@ -456,7 +455,7 @@ mod tests {
     fn test_serialize_pattern_flags() {
         let nc = NodeConstraint::new().with_pattern_flags("o*", "i");
         let json_nc = serde_json::to_string(&nc).unwrap();
-        let expected = r#"{"type":"NodeConstraint","pattern":"o*","flags":"i"}"#;
+        let expected = r#"{"pattern":"o*","flags":"i"}"#;
         assert_eq!(json_nc, expected);
     }
     #[test]

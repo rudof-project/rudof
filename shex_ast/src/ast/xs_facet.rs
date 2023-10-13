@@ -63,6 +63,7 @@ impl XsFacet {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
 pub enum StringFacet {
     Length(usize),
     MinLength(usize),

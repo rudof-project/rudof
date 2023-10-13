@@ -92,13 +92,13 @@ impl PrefixMap {
     ///     ("schema".to_string(), "http://schema.org/".to_string())])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(a), ":a");
+    /// assert_eq!(pm.qualify(&a), ":a");
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(knows), "schema:knows");
+    /// assert_eq!(pm.qualify(&knows), "schema:knows");
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(other), "<http://other.org/foo>");
+    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
     /// # Ok::<(), IriSError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {

@@ -123,7 +123,8 @@ mod tests {
             "o*",
         )))];
         let nc = NodeConstraint::new().with_xsfacets(facets);
-        let json_nc = serde_json::to_string(&nc).unwrap();
+        let se = ShapeExpr::NodeConstraint(nc);
+        let json_nc = serde_json::to_string(&se).unwrap();
         assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
     }
 }
