@@ -1,17 +1,18 @@
 [package]
 name = "shex_testsuite"
-version.workspace = true
+version = "0.0.2"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s" }
-shex_ast = { path = "../shex_ast" }
-srdf = { path = "../srdf" }
-srdf_graph = { path = "../srdf_graph" }
-shex_validation = { path = "../shex_validation" }
+iri_s = { path = "../iri_s", version = "0.0.2" }
+shex_ast = { path = "../shex_ast", version = "0.0.2" }
+srdf = { path = "../srdf", version = "0.0.2" }
+srdf_graph = { path = "../srdf_graph", version = "0.0.2" }
+shex_validation = { path = "../shex_validation", version = "0.0.2" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
