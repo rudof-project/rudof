@@ -5,12 +5,12 @@ authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true
-
+license.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s" }
-srdf = { path = "../srdf" }
-prefix_map = { path = "../prefix_map" }
+iri_s = { path = "../iri_s", version = "0.0.2" }
+srdf = { path = "../srdf", version = "0.0.2" }
+prefix_map = { path = "../prefix_map", version = "0.0.2" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"

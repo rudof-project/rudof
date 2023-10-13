@@ -5,8 +5,9 @@ authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true 
+license.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s" }
+iri_s = { path = "../iri_s", version = "0.0.2" }
 indexmap = "1.9.2"
 colored = "2"
