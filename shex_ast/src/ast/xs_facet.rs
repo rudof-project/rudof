@@ -80,7 +80,12 @@ where
     S: Serializer,
 {
     match p {
-        Pattern { str, flags: None } => str.serialize(serializer),
+        Pattern { str, flags: None } => {
+            let mut map = serializer.serialize_map(Some(1))?;
+            map.serialize_entry("pattern", str)?;
+            map.end()
+        } 
+        // str.serialize(serializer),
         Pattern {
             str,
             flags: Some(fs),

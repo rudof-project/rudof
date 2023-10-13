@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
+use iri_s::IriS;
 use oxrdf::*;
 use oxrdf::Literal;
 use reqwest::{
@@ -140,13 +141,48 @@ impl SRDFComparisons for SRDFSPARQL {
         literal.datatype().into_owned()
     }
 
-    fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSPARQLError>  {
+    /*fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSPARQLError>  {
         NamedNode::new(str)
         .map_err(|err| {SRDFSPARQLError::IriParseError { err }})
-    }
+    }*/
 
     fn iri_as_term(iri: NamedNode) -> Term { 
         Term::NamedNode(iri) 
+    }
+
+    fn iri_s2iri(iri_s: &IriS) -> &Self::IRI {
+        iri_s.as_named_node()
+    }
+
+    fn term2object(term: Self::Term) -> srdf::Object {
+        match term {
+            Self::Term::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
+            Self::Term::Literal(lit) => match lit.destruct() {
+                (s, None, None) => srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                    lexical_form: s,
+                    lang: None,
+                }),
+                (s, None, Some(lang)) => {
+                    srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                        lexical_form: s,
+                        lang: Some(srdf::lang::Lang::new(lang.as_str())),
+                    })
+                }
+                (s, Some(datatype), _) => {
+                    srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
+                        lexical_form: s,
+                        datatype: Self::iri2iri_s(datatype),
+                    })
+                }
+            },
+            Self::Term::NamedNode(iri) => srdf::Object::Iri {
+                iri: Self::iri2iri_s(iri),
+            },
+        }
+    }
+
+    fn iri2iri_s(iri: Self::IRI) -> IriS {
+        IriS::from_named_node(iri)
     }
 
 }

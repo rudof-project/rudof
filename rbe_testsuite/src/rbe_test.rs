@@ -1,4 +1,4 @@
-use rbe::{rbe::Rbe, Bag, DerivError};
+use rbe::{rbe::Rbe, Bag, deriv_error::DerivError};
 use serde_derive::{Deserialize, Serialize};
 use crate::{TestType, MatchResult, RbeTestResult};
 

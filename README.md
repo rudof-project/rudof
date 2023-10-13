@@ -120,10 +120,40 @@ git submodule update --init --recursive
 cargo run -p shex_testsuite
 ```
 
-In order to run the validation tests in debug mode:
+```
+Usage: shex_testsuite [OPTIONS]
+
+Options:
+  -m, --manifest <Manifest FILE (.jsonld)>
+          Name of Manifest file [default: shex_testsuite/shexTest/validation/manifest.jsonld]
+  -c, --config <Config file>
+          [default: shex_testsuite/config.yml]
+  -x, --run_mode <MANIFEST_RUN_MODE>
+          [default: collect-errors] [possible values: collect-errors, fail-first-error]
+  -f, --manifest_mode <MANIFEST_MODE>
+          [possible values: schemas, validation, negative-syntax, negative-structure]
+  -p, --print_result_mode <PRINT_RESULT_MODE>
+          [default: basic] [possible values: basic, failed, passed, not-implemented, all]
+  -e, --entry <Entry names>
+          
+  -t, --trait <Trait names>
+          
+  -h, --help
+          Print help
+  -V, --version
+          Print version
+```
+
+### Validation tests
 
 ```
-cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation --debug
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation 
+```
+
+### Schemas tests
+
+```
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/schemas/manifest.jsonld -f schemas -p failed
 ```
 
 ## License

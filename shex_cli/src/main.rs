@@ -1,6 +1,14 @@
 extern crate anyhow;
 extern crate clap;
 extern crate shex_ast;
+extern crate iri_s;
+extern crate log;
+extern crate srdf;
+extern crate oxrdf;
+extern crate srdf_graph;
+extern crate shex_validation;
+extern crate serde_json;
+extern crate regex;
 
 use anyhow::*;
 use clap::Parser;

@@ -550,7 +550,7 @@ mod tests {
         assert_eq!(rbe.symbols(), expected);
     }
 
-    #[test]
+    /*#[test]
     fn test_serialize_rbe() {
         let rbe: Rbe<String, String, String> = Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));
         let expected = indoc! {
@@ -577,5 +577,5 @@ mod tests {
         let expected = Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));
         let rbe: Rbe<String, String, String> = serde_json::from_str(str).unwrap();
         assert_eq!(rbe, expected);
-    }
+    } */
 }

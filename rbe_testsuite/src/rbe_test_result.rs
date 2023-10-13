@@ -1,4 +1,4 @@
-use rbe::DerivError;
+use rbe::deriv_error::DerivError;
 use crate::TestType;
 
 #[derive(PartialEq, Debug, Clone)]
