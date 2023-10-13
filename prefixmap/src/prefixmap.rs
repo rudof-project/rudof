@@ -40,7 +40,7 @@ impl PrefixMap {
     /// Given a prefix map `pm`
     /// ```
     /// use std::collections::HashMap;
-    /// use prefix_map::PrefixMap;
+    /// use prefixmap::PrefixMap;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     ///
@@ -83,7 +83,7 @@ impl PrefixMap {
     /// Given a prefix map `pm`
     /// ```
     /// # use std::collections::HashMap;
-    /// # use prefix_map::PrefixMap;
+    /// # use prefixmap::PrefixMap;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
@@ -148,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn prefix_map_display() {
+    fn prefixmap_display() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", ex_iri);
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn prefix_map_resolve() {
+    fn prefixmap_resolve() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", ex_iri);

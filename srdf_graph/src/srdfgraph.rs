@@ -16,7 +16,7 @@ use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use prefix_map::prefix_map::*;
+use prefixmap::prefixmap::*;
 use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;

@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use iri_s::IriSError;
-use prefix_map::PrefixMap;
+use prefixmap::PrefixMap;
 
 #[derive(Debug)]
 pub struct Schema {

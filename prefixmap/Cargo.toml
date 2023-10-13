@@ -1,5 +1,5 @@
 [package]
-name = "prefix_map"
+name = "prefixmap"
 version = "0.0.2"
 authors.workspace = true
 description.workspace = true

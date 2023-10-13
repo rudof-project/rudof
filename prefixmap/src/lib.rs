@@ -14,7 +14,7 @@
 //! ```
 //! # use std::str::FromStr;
 //! # use iri_s::{IriS, IriSError};
-//! # use prefix_map::PrefixMap;
+//! # use prefixmap::PrefixMap;
 //!
 //! # fn main() -> Result<(), IriSError> {
 //! let schema_iri  = IriS::from_str("http://schema.org/")?;
@@ -33,8 +33,8 @@
 // pm.insert("", IriS::from_str("http://example.org/")?);
 // ```
 pub mod alias;
-pub mod prefix_map;
-pub use crate::prefix_map::*;
+pub mod prefixmap;
+pub use crate::prefixmap::*;
 pub use alias::*;
 
 #[cfg(test)]

@@ -10,7 +10,7 @@ license.workspace = true
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.2" }
 srdf = { path = "../srdf", version = "0.0.2" }
-prefix_map = { path = "../prefix_map", version = "0.0.2" }
+prefixmap = { path = "../prefixmap", version = "0.0.2" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"

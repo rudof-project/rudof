@@ -1,4 +1,4 @@
-use prefix_map::PrefixMap;
+use prefixmap::PrefixMap;
 use rbe::Pending;
 use shex_ast::{Node, ShapeLabel};
 use srdf::Object;

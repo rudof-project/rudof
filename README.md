@@ -91,7 +91,7 @@ The repo is divided in the following modules:
 - [iri_s](https://github.com/weso/shex-rs/tree/master/iri_s) defines simple IRIs.
 - [srdf](https://github.com/weso/shex-rs/tree/master/srdf) simple RDF model which will be used for validation.
 - [srdf_oxgraph](https://github.com/weso/shex-rs/tree/master/srdf_oxgraph) simple RDF model implementation based on [RIO](https://github.com/oxigraph/oxigraph)
-- [prefix_map](https://github.com/weso/shex-rs/tree/master/prefix_map) Prefix maps implementation.
+- [prefixmap](https://github.com/weso/shex-rs/tree/master/prefixmap) Prefix maps implementation.
 - [shex_ast](https://github.com/weso/shex-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
 - [shex_pest](https://github.com/weso/shex-rs/tree/master/shex_pest) defines a compact syntax parser using [PEST](https://pest.rs/)
 - [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained.
