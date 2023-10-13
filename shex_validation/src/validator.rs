@@ -3,25 +3,13 @@ use crate::solver;
 use crate::validator_error::*;
 use crate::validator_runner::ValidatorRunner;
 use crate::ResultValue;
-use crate::MAX_STEPS;
-use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
-use rbe::Pending;
 use shex_ast::internal::*;
 use shex_ast::Node;
-use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
-use shex_ast::ShapeLabel€;
-use srdf::literal::Literal;
-use srdf::NeighsIterator;
-use srdf::{Object, SRDFComparisons, SRDF};
-use std::collections::HashSet;
-use std::hash::Hash;
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use shex_ast::ShapeLabel;
+use srdf::SRDF;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = solver::Atom<(Node, ShapeLabelIdx)>;
