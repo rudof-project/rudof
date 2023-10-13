@@ -2,6 +2,90 @@
 
 This repo is a Rust implementation of [ShEx](http://shex.io/).
 
+# Usage
+
+This repository is still work-in-progress. 
+
+## Obtaining the binaries
+
+[TODO](https://github.com/weso/shex-rs/issues/7)
+
+## Compiling from source
+
+shex-rs has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code. 
+
+## Command line usage
+
+```
+$ shex-cli --help
+Usage: shex_cli [OPTIONS] [COMMAND]
+Commands:
+  schema
+  validate
+  data
+  node
+  help
+          Print this message or the help of the given subcommand(s)
+```
+
+### Obtaining information about a schema
+
+```
+Usage: shex_cli schema [OPTIONS] --schema <Schema file name>
+
+Options:
+  -s, --schema <Schema file name>
+          
+  -f, --schema-format <Schema format>
+          [default: shexj] [possible values: internal, shexc, shexj]
+  -r, --result-schema-format <Result schema format>
+          [default: shexj] [possible values: internal, shexc, shexj]
+  -h, --help
+          Print help
+```
+
+
+### Obtaining information about RDF data
+
+```
+Usage: shex_cli data [OPTIONS] --data <RDF data path>
+
+Options:
+  -d, --data <RDF data path>           
+  -t, --data-format <RDF Data format>  [default: turtle] [possible values: turtle]
+  -h, --help                           Print help
+```
+
+### Obtaining information about a node in RDF data
+
+```
+Usage: shex_cli node [OPTIONS] --node <NODE> --data <RDF data path>
+
+Options:
+  -n, --node <NODE>                    
+  -d, --data <RDF data path>           
+  -t, --data-format <RDF Data format>  [default: turtle] [possible values: turtle]
+  -h, --help                           Print help
+```
+
+### Validating an RDF node against some data
+
+```
+Usage: shex_cli validate [OPTIONS] --schema <Schema file name> --node <NODE> --shape <shape label> --data <RDF data path>
+
+Options:
+  -s, --schema <Schema file name>      
+  -f, --schema-format <Schema format>  [default: shexj] [possible values: internal, shexc, shexj]
+  -n, --node <NODE>                    
+  -l, --shape <shape label>            
+  -d, --data <RDF data path>           
+  -t, --data-format <RDF Data format>  [default: turtle] [possible values: turtle]
+  -m, --max-steps <max steps to run>   [default: 100]
+  -h, --help                           Print help
+```
+
+## Main modules
+
 The repo is divided in the following modules:
 
 - [iri_s](https://github.com/weso/shex-rs/tree/master/iri_s) defines simple IRIs.
