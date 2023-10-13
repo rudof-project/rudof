@@ -5,15 +5,16 @@ authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [dependencies]
 async-recursion = "1.0.4"
 iri_s = { path = "../iri_s", version = "0.0.2" }
 rbe = { path = "../rbe", version = "0.0.2" }
 srdf = { path = "../srdf", version = "0.0.2" }
-shex_ast = { path = "../shex_ast" }
-shapemap = { path = "../shapemap" }
-prefixmap = { path = "../prefixmap" }
+shex_ast = { path = "../shex_ast", version = "0.0.2" }
+shapemap = { path = "../shapemap", version = "0.0.2" }
+prefixmap = { path = "../prefixmap", version = "0.0.2" }
 thiserror = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
