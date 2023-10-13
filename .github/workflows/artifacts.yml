@@ -23,7 +23,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
       - run: cargo build --release
-        working-directory: ./server
+        working-directory: ./shex_cli
       - uses: actions/upload-artifact@v3
         with:
           name: shex_cli
