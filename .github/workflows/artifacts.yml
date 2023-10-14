@@ -13,6 +13,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+    binary_linux:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - run: rustup update && rustup target add aarch64-unknown-linux-gnu
+      - run: |
+          sudo apt update && sudo apt install -y g++-aarch64-linux-gnu
+          echo -e "\n\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" >> .cargo/config.toml
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
+        working-directory: ./shex_cli
+      - run: cargo build --release --target aarch64-unknown-linux-gnu
+        working-directory: ./shex_cli
+        env:
+          BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
+      - uses: actions/upload-artifact@v3
+        with:
+          name: shex_cli_x86_64_linux_gnu
+          path: target/release/shex_cli
+      - uses: actions/upload-artifact@v3
+        with:
+          name: shex_cli_aarch64-linux_gnu
+          path: target/aarch64-unknown-linux-gnu/release/shex_cli
+      - run: mv target/release/shex_cli shex_cli_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+        if: github.event_name == 'release'
+      - run: mv target/aarch64-unknown-linux-gnu/release/shex_cli shex_cli_${{ github.event.release.tag_name }}_aarch64_linux_gnu
+        if: github.event_name == 'release'
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            shex_cli_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+            shex_cli_${{ github.event.release.tag_name }}_aarch64_linux_gnu
+        if: github.event_name == 'release'
+
   binary_windows:
     runs-on: windows-latest
     steps:
@@ -26,11 +62,11 @@ jobs:
         working-directory: ./shex_cli
       - uses: actions/upload-artifact@v3
         with:
-          name: shex_cli
+          name: shex_cli_x86_64_windows_msvc
           path: target/release/shex_cli.exe
-      - run: mv target/release/shex_cli.exe chec_cli_${{ github.event.release.tag_name }}.exe
+      - run: mv target/release/shex_cli.exe shex_cli_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
         if: github.event_name == 'release'
       - uses: softprops/action-gh-release@v1
         with:
-          files: shex_cli_${{ github.event.release.tag_name }}.exe
+          files: shex_cli_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
         if: github.event_name == 'release'
