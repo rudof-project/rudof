@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-    binary_linux:
+  binary_linux:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
