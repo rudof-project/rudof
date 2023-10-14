@@ -49,6 +49,41 @@ jobs:
             shex_cli_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
 
+  binary_mac:
+    runs-on: macos-latest
+    env:
+      DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
+      SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+      MACOSX_DEPLOYMENT_TARGET: '10.14'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - run: rustup update && rustup target add aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
+        working-directory: ./server
+      - run: cargo build --release --target aarch64-apple-darwin
+        working-directory: ./server
+      - uses: actions/upload-artifact@v3
+        with:
+          name: shex_cli_x86_64_apple
+          path: target/release/shex_cli
+      - uses: actions/upload-artifact@v3
+        with:
+          name: shex_cli_aarch64_apple
+          path: target/aarch64-apple-darwin/release/shex_cli
+      - run: mv target/release/shex_cli shex_cli_${{ github.event.release.tag_name }}_x86_64_apple
+        if: github.event_name == 'release'
+      - run: mv target/aarch64-apple-darwin/release/shex_cli shex_cli_${{ github.event.release.tag_name }}_aarch64_apple
+        if: github.event_name == 'release'
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            shex_cli_${{ github.event.release.tag_name }}_x86_64_apple
+            shex_cli_${{ github.event.release.tag_name }}_aarch64_apple
+        if: github.event_name == 'release'
+
   binary_windows:
     runs-on: windows-latest
     steps:
