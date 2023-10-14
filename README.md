@@ -1,26 +1,24 @@
 # shex-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool `sx`
+This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool `sx`.
+
+This software is work-in-progress yet.
 
 # Example usage
 
 ## Validate an example
 
-The folder `examples` contains several example files with ShEx schemas and RDF data. 
+The folder `examples` contains several example files with ShEx schemas and RDF data.
 
 Validate a specific node with a shape:
 
 ```
-$ sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
+sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
 ```
-
-## Obtaining the binaries
-
-[TODO](https://github.com/weso/shex-rs/issues/7)
 
 ## Compiling from source
 
-shex-rs has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code. 
+shex-rs has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
 
 ## Command line usage
 
@@ -51,7 +49,6 @@ Options:
   -h, --help
           Print help
 ```
-
 
 ### Obtaining information about RDF data
 

@@ -80,76 +80,48 @@ impl NodeConstraint {
         self.xs_facet.clone()
     }
 
-    pub fn with_length(mut self, len: usize) -> Self {
+    pub fn with_length(self, len: usize) -> Self {
+        self.add_facet(XsFacet::length(len))
+    }
+
+    pub fn with_minlength(self, len: usize) -> Self {
+        self.add_facet(XsFacet::min_length(len))
+    }
+
+    pub fn with_maxlength(self, len: usize) -> Self {
+        self.add_facet(XsFacet::max_length(len))
+    }
+
+    pub fn with_min_inclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::min_inclusive(n))
+    }
+
+    pub fn with_max_inclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::max_inclusive(n))
+    }
+
+    pub fn add_facet(mut self, f: XsFacet) -> Self {
         match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::length(len)),
-            None => self.xs_facet = Some(vec![XsFacet::length(len)]),
+            Some(ref mut facets) => facets.push(f),
+            None => self.xs_facet = Some(vec![f]),
         }
         self
     }
 
-    pub fn with_minlength(mut self, len: usize) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::min_length(len)),
-            None => self.xs_facet = Some(vec![XsFacet::min_length(len)]),
-        }
-        self
+    pub fn with_min_exclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::min_exclusive(n))
     }
 
-    pub fn with_maxlength(mut self, len: usize) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::max_length(len)),
-            None => self.xs_facet = Some(vec![XsFacet::max_length(len)]),
-        }
-        self
+    pub fn with_max_exclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::max_exclusive(n))
     }
 
-    pub fn with_min_inclusive(mut self, n: NumericLiteral) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::min_inclusive(n)),
-            None => self.xs_facet = Some(vec![XsFacet::min_inclusive(n)]),
-        }
-        self
+    pub fn with_totaldigits(self, n: usize) -> Self {
+        self.add_facet(XsFacet::totaldigits(n))
     }
 
-    pub fn with_max_inclusive(mut self, n: NumericLiteral) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::max_inclusive(n)),
-            None => self.xs_facet = Some(vec![XsFacet::max_inclusive(n)]),
-        }
-        self
-    }
-
-    pub fn with_min_exclusive(mut self, n: NumericLiteral) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::min_exclusive(n)),
-            None => self.xs_facet = Some(vec![XsFacet::min_exclusive(n)]),
-        }
-        self
-    }
-
-    pub fn with_max_exclusive(mut self, n: NumericLiteral) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::max_exclusive(n)),
-            None => self.xs_facet = Some(vec![XsFacet::max_exclusive(n)]),
-        }
-        self
-    }
-
-    pub fn with_totaldigits(mut self, n: usize) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::totaldigits(n)),
-            None => self.xs_facet = Some(vec![XsFacet::totaldigits(n)]),
-        }
-        self
-    }
-
-    pub fn with_fractiondigits(mut self, n: usize) -> Self {
-        match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::fractiondigits(n)),
-            None => self.xs_facet = Some(vec![XsFacet::fractiondigits(n)]),
-        }
-        self
+    pub fn with_fractiondigits(self, n: usize) -> Self {
+        self.add_facet(XsFacet::fractiondigits(n))
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {

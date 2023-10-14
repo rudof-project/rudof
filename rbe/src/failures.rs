@@ -8,7 +8,6 @@ use serde_derive::Serialize;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::hash::Hash;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Failures<K, V, R>

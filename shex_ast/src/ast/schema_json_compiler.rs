@@ -1,23 +1,19 @@
-use std::fmt::Display;
-
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
-    internal::Annotation, internal::CompiledSchema, internal::SemAct,
-    ast, ast::IriRef, ast::Schema as SchemaJson, CompiledSchemaError,
-    ShapeLabel, ShapeLabelIdx, internal::ValueSetValue,
+    ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
+    internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
 };
 use crate::{
-    CResult, Cond, Node, internal::ObjectValue, Pred, internal::StringOrIriStem, internal::StringOrLiteralStem,
-    internal::StringOrWildcard, ValueSet,
+    internal::ObjectValue, internal::StringOrLiteralStem, internal::StringOrWildcard, CResult,
+    Cond, Node, Pred, ValueSet,
 };
 use iri_s::IriS;
 use log::debug;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
-use rbe::{Cardinality, Key, Pending, RbeError, SingleCond, Value};
+use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::Object;
-use crate::internal::ShapeExpr::NodeConstraint;
 
 use lazy_static::lazy_static;
 
@@ -185,8 +181,13 @@ impl SchemaJsonCompiler {
                 let datatype_cnv = cnv_opt(&nc.datatype(), cnv_iri_ref)?;
                 let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
                 let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
-                let cond =
-                    Self::cnv_node_constraint(&self, &nc.node_kind(), &nc.datatype(), &nc.xs_facet(), &nc.values())?;
+                let cond = Self::cnv_node_constraint(
+                    &self,
+                    &nc.node_kind(),
+                    &nc.datatype(),
+                    &nc.xs_facet(),
+                    &nc.values(),
+                )?;
                 Ok(ShapeExpr::NodeConstraint {
                     node_kind: node_kind_cnv,
                     datatype: datatype_cnv,
@@ -367,8 +368,12 @@ impl SchemaJsonCompiler {
     ) -> CResult<Cond> {
         if let Some(se) = ve.as_deref() {
             match se {
-                ast::ShapeExpr::NodeConstraint(nc) => 
-                    self.cnv_node_constraint(&nc.node_kind(), &nc.datatype(), &nc.xs_facet(), &nc.values()),
+                ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
+                    &nc.node_kind(),
+                    &nc.datatype(),
+                    &nc.xs_facet(),
+                    &nc.values(),
+                ),
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
@@ -378,9 +383,7 @@ impl SchemaJsonCompiler {
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
-                ast::ShapeExpr::ShapeExternal => {
-                    todo("value_expr2match_cond: ShapeExternal")
-                }
+                ast::ShapeExpr::ShapeExternal => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
             Ok(MatchCond::single(SingleCond::new().with_name(".")))
@@ -595,9 +598,7 @@ fn cnv_string_or_wildcard(sw: &ast::StringOrWildcard) -> CResult<StringOrWildcar
     todo!()
 }
 
-fn cnv_string_or_literalstem(
-    sl: &ast::StringOrLiteralStemWrapper,
-) -> CResult<StringOrLiteralStem> {
+fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<StringOrLiteralStem> {
     todo!()
 }
 
@@ -623,10 +624,7 @@ fn cnv_lang(lang: &String) -> CResult<Lang> {
     Ok(Lang::new(lang.as_str()))
 }
 
-fn check_node_maybe_node_kind(
-    node: &Node,
-    nodekind: &Option<ast::NodeKind>,
-) -> CResult<()> {
+fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<ast::NodeKind>) -> CResult<()> {
     match nodekind {
         None => Ok(()),
         Some(nk) => check_node_node_kind(node, &nk),
@@ -636,13 +634,9 @@ fn check_node_maybe_node_kind(
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
         (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::Iri, _) => {
-            Err(CompiledSchemaError::NodeKindIri { node: node.clone() })
-        }
+        (ast::NodeKind::Iri, _) => Err(CompiledSchemaError::NodeKindIri { node: node.clone() }),
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::BNode, _) => {
-            Err(CompiledSchemaError::NodeKindBNode { node: node.clone() })
-        }
+        (ast::NodeKind::BNode, _) => Err(CompiledSchemaError::NodeKindBNode { node: node.clone() }),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
         (ast::NodeKind::Literal, _) => {
             Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() })

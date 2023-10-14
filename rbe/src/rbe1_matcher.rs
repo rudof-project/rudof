@@ -1,9 +1,5 @@
-use core::hash::Hash;
 use log::debug;
-use std::{
-    collections::HashSet,
-    fmt::{Debug, Display},
-};
+use std::collections::HashSet;
 
 use crate::{rbe1::Rbe, Key, Ref, Value};
 use crate::{rbe_error::RbeError, Pending};

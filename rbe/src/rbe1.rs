@@ -472,7 +472,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use indoc::indoc;
     use test_log::test;
 
     #[test_log::test]
@@ -567,11 +566,11 @@ mod tests {
 
     #[test]
     fn test_deserialize_rbe() {
-        let str = r#"{ 
-            "Symbol": { 
+        let str = r#"{
+            "Symbol": {
                 "key": "foo",
                 "cond": {},
-                "card": {"min": 1, "max": 2 } 
+                "card": {"min": 1, "max": 2 }
             }
         }"#;
         let expected = Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));

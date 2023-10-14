@@ -14,9 +14,8 @@ members = [
     "prefixmap",
     "srdf",
     "shex_ast",
+    "shex_compact",
     "shex_cli",
-    # "shex_antlr",
-    # "shex_pest",
     "srdf_graph",
     "srdf_sparql",
     "shex_testsuite",
@@ -24,6 +23,8 @@ members = [
     "shapemap",
     "shapemap_oxgraph",
     "validation_oxgraph"
+    # "shex_antlr",
+    # "shex_pest",
 ]
 
 #default-members = [

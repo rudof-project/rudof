@@ -1,0 +1,11 @@
+[package]
+name = "shex_compact"
+version = "0.0.2"
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+shex_ast = { path = "../shex_ast", version = "0.0.2" }

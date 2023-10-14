@@ -80,7 +80,8 @@ mod tests {
                         "predicate": "http://schema.org/name",
                         "valueExpr": {
                           "type": "NodeConstraint",
-                          "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                          "datatype": "http://www.w3.org/2001/XMLSchema#string",
+                          "length": 3
                         }
                   }
                 }
@@ -92,7 +93,7 @@ mod tests {
 
         let schema: Schema = serde_json::from_str(&str).unwrap();
         let serialized = serde_json::to_string_pretty(&schema).unwrap();
-        println!("{}",serialized);
+        println!("{}", serialized);
         let schema_after_serialization = serde_json::from_str(&serialized).unwrap();
         assert_eq!(schema, schema_after_serialization);
     }
