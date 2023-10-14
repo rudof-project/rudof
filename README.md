@@ -1,10 +1,18 @@
 # shex-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/).
+This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool `sx`
 
-# Usage
+# Example usage
 
-This repository is still work-in-progress. 
+## Validate an example
+
+The folder `examples` contains several example files with ShEx schemas and RDF data. 
+
+Validate a specific node with a shape:
+
+```
+$ sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
+```
 
 ## Obtaining the binaries
 

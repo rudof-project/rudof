@@ -58,3 +58,42 @@ impl Schema {
         Self::parse_schema_buf(&attempt)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_deser_user() {
+        let str = r#"
+        {
+            "type": "Schema",
+            "shapes": [
+              {
+                "type": "ShapeDecl",
+                "id": "http://example.org/User",
+                "shapeExpr": {
+                  "type": "Shape",
+                  "expression": {
+                        "type": "TripleConstraint",
+                        "predicate": "http://schema.org/name",
+                        "valueExpr": {
+                          "type": "NodeConstraint",
+                          "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                        }
+                  }
+                }
+              }
+            ],
+            "@context": "http://www.w3.org/ns/shex.jsonld"
+          }
+        "#;
+
+        let schema: Schema = serde_json::from_str(&str).unwrap();
+        let serialized = serde_json::to_string_pretty(&schema).unwrap();
+        println!("{}",serialized);
+        let schema_after_serialization = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(schema, schema_after_serialization);
+    }
+}
