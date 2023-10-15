@@ -30,34 +30,34 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ env.CLI_PATH }}
+        working-directory: ./${{ vars.CLI_PATH }}
       - name: Build the release version of `shex-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-unknown-linux-gnu
-        working-directory: ./${{ env.CLI_PATH }}
+        working-directory: ./${{ vars.CLI_PATH }}
         env:
           BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BINARY_NAME }}_x86_64_linux_gnu
-          path: target/release/${{ env.BINARY_NAME }}
+          name: ${{ vars.BINARY_NAME }}_x86_64_linux_gnu
+          path: target/release/${{ vars.BINARY_NAME }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (aarch64)
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BINARY_NAME }}_aarch64-linux_gnu
-          path: target/aarch64-unknown-linux-gnu/release/${{ env.CLI_PATH }}
+          name: ${{ vars.BINARY_NAME }}_aarch64-linux_gnu
+          path: target/aarch64-unknown-linux-gnu/release/${{ vars.CLI_PATH }}
       - name: Move the generated binary for them to be uploaded to the release (x86)
-        run: mv target/release/${{ env.BINARY_NAME }} ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+        run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
         if: github.event_name == 'release'
       - name: Move the generated binary for them to be uploaded to the release (aarch64)
-        run: mv target/aarch64-unknown-linux-gnu/release/${{ env.BINARY_NAME }} ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
+        run: mv target/aarch64-unknown-linux-gnu/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-            ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
+            ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+            ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
 
   binary_mac:
@@ -77,32 +77,32 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ env.CLI_PATH }}
+        working-directory: ./${{ vars.CLI_PATH }}
       - name: Build the release version of `shex-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-apple-darwin
-        working-directory: ./${{ env.CLI_PATH }}
+        working-directory: ./${{ vars.CLI_PATH }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BINARY_NAME }}_x86_64_apple
-          path: target/release/${{ env.BINARY_NAME }}
+          name: ${{ vars.BINARY_NAME }}_x86_64_apple
+          path: target/release/${{ vars.BINARY_NAME }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (aarch64)
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BINARY_NAME }}_aarch64_apple
-          path: target/aarch64-apple-darwin/release/${{ env.BINARY_NAME }}
+          name: ${{ vars.BINARY_NAME }}_aarch64_apple
+          path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
       - name: Move the generated binary for them to be uploaded to the release (x86)
-        run: mv target/release/${{ env.BINARY_NAME }} ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
+        run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
         if: github.event_name == 'release'
       - name: Move the generated binary for them to be uploaded to the release (aarch64)
-        run: mv target/aarch64-apple-darwin/release/${{ env.BINARY_NAME }} ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
+        run: mv target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
         if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
-            ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
+            ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
+            ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
         if: github.event_name == 'release'
 
   binary_windows:
@@ -120,19 +120,19 @@ jobs:
         run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ env.CLI_PATH }}
+        working-directory: ./${{ vars.CLI_PATH }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BINARY_NAME }}_x86_64_windows_msvc
-          path: target/release/${{ env.BINARY_NAME }}.exe
+          name: ${{ vars.BINARY_NAME }}_x86_64_windows_msvc
+          path: target/release/${{ vars.BINARY_NAME }}.exe
       - name: Move the generated binary for them to be uploaded to the release (x86)
-        run: mv target/release/${{ env.BINARY_NAME }}.exe ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
+        run: mv target/release/${{ vars.BINARY_NAME }}.exe ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
         if: github.event_name == 'release'
       - name: Upload the generated binary to its corresponding release
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ env.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
+          files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
         if: github.event_name == 'release'
 
   docker:
@@ -151,5 +151,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          build-args: BINARY_NAME = ${{ env.BINARY_NAME }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BINARY_NAME }}:latest
+          build-args: BINARY_NAME = ${{ vars.BINARY_NAME }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
