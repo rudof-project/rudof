@@ -3,8 +3,8 @@ name = "shex-rs"
 version = "0.0.2"
 
 [[bin]]
-path = "shex_cli/src/main.rs"
-name = "shexrs"
+path = "shex_cli/src/main.rs" # shex-cli --> CLI_PATH
+name = "sx" # sx --> BINARY_NAME
 
 [workspace]
 members = [
