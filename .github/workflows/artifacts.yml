@@ -30,10 +30,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ vars.CLI_PATH }}
       - name: Build the release version of `shex-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-unknown-linux-gnu
-        working-directory: ./${{ vars.CLI_PATH }}
         env:
           BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
@@ -77,10 +75,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ vars.CLI_PATH }}
       - name: Build the release version of `shex-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-apple-darwin
-        working-directory: ./${{ vars.CLI_PATH }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
@@ -120,7 +116,6 @@ jobs:
         run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
       - name: Build the release version of `shex-rs` for the x86 architecture
         run: cargo build --release
-        working-directory: ./${{ vars.CLI_PATH }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
