@@ -152,4 +152,4 @@ jobs:
         with:
           push: true
           build-args: BINARY_NAME = ${{ env.BINARY_NAME }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/shexrs:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BINARY_NAME }}:latest
