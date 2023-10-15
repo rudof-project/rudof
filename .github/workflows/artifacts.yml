@@ -146,6 +146,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          build-contexts: | 
+          build-args: | 
             BINARY_NAME = ${{ vars.BINARY_NAME }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
