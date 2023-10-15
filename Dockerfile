@@ -1,3 +1,5 @@
+ARG BINARY_NAME
+
 FROM clux/muslrust:latest as builder
 RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser
 
