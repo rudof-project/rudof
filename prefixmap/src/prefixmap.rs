@@ -1,10 +1,12 @@
 use colored::*;
 use indexmap::IndexMap;
 use iri_s::*;
+use serde::{Deserialize, Serialize, Serializer};
+use std::result;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PrefixMap {
     map: IndexMap<String, IriS>,
 }
@@ -126,6 +128,24 @@ impl Default for PrefixMap {
         PrefixMap {
             map: IndexMap::new(),
         }
+    }
+}
+
+impl Serialize for PrefixMap {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        todo!()
+    }
+}
+
+impl<'de> Deserialize<'de> for PrefixMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        todo!()
     }
 }
 

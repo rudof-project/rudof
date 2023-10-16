@@ -1,5 +1,6 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use log::debug;
+use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::fs;
@@ -31,9 +32,36 @@ pub struct Schema {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shapes: Option<Vec<ShapeDecl>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefixmap: Option<PrefixMap>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base: Option<Iri>,
 }
 
 impl Schema {
+    pub fn new() -> Schema {
+        Schema {
+            context: "http://www.w3.org/ns/shex.jsonld".to_string(),
+            type_: "Schema".to_string(),
+            imports: None,
+            start: None,
+            start_acts: None,
+            shapes: None,
+            prefixmap: None,
+            base: None,
+        }
+    }
+
+    pub fn with_import(mut self, i: Iri) -> Self {
+        match self.imports {
+            None => self.imports = Some(vec![i]),
+            Some(ref mut imports) => imports.push(i),
+        }
+        self
+    }
+
     pub fn parse_schema_buf(path_buf: &PathBuf) -> Result<Schema, SchemaJsonError> {
         let schema = {
             let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {

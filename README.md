@@ -1,8 +1,7 @@
 # shex-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool `sx`.
-
-This software is work-in-progress yet.
+This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool.
+We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shex-rs/releases)). 
 
 # Example usage
 
