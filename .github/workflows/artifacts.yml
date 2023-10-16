@@ -135,6 +135,8 @@ jobs:
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3
+    - name: Install cargo deb
+      run: cargo install cargo-deb
     - name: Build the .deb file using cargo deb
       run: cargo deb
     - name: Upload the .deb Artifact
