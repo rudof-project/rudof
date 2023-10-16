@@ -138,7 +138,8 @@ fn shape_or(i: &str) -> IResult<&str, ShapeExpr> {
 
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, ShapeLabel> {
-    alt((iri, blank_node))(i)
+    let (i, iri_s) = iri(i)?; // alt((iri, blank_node))(i)?;
+    Ok((i, ShapeLabel::Iri(iri_s)))
 }
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
@@ -148,11 +149,17 @@ fn iri(i: &str) -> IResult<&str, IriS> {
 
 /// `[137s]   	prefixedName	   ::=   	PNAME_LN | PNAME_NS`
 fn prefixed_name(i: &str) -> IResult<&str, IriS> {
-    alt((pname_ln, pname_ns))(i)
+    let (i, s) = alt((pname_ln, pname_ns))(i)?;
+    todo!()
 }
 
 /// `[138s]   	blankNode	   ::=   	BLANK_NODE_LABEL`
-fn blank_node(i: &str) -> IResult<&str, BlankNode> {
+fn blank_node(i: &str) -> IResult<&str, &str> {
+    todo!()
+}
+
+/// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
+fn pname_ln(i: &str) -> IResult<&str, &str> {
     todo!()
 }
 
