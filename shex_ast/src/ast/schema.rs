@@ -1,4 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
+use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
@@ -60,6 +61,17 @@ impl Schema {
             Some(ref mut imports) => imports.push(i),
         }
         self
+    }
+
+    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
+        match self.prefixmap {
+            None => {
+                let mut pm = PrefixMap::new();
+                pm.insert(alias, iri);
+                self.prefixmap = Some(pm);
+            }
+            Some(ref mut pm) => pm.insert(alias, iri),
+        }
     }
 
     pub fn parse_schema_buf(path_buf: &PathBuf) -> Result<Schema, SchemaJsonError> {

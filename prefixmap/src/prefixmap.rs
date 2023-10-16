@@ -20,8 +20,8 @@ impl PrefixMap {
         PrefixMap::default()
     }
 
-    pub fn insert(&mut self, alias: &str, iri: IriS) {
-        self.map.insert(alias.to_owned(), iri);
+    pub fn insert(&mut self, alias: &str, iri: &IriS) {
+        self.map.insert(alias.to_owned(), iri.clone());
     }
 
     pub fn find(&self, str: &str) -> Option<&IriS> {
@@ -32,7 +32,7 @@ impl PrefixMap {
         let mut pm = PrefixMap::new();
         for (a, s) in hm.iter() {
             let iri = IriS::from_str(s)?;
-            pm.insert(a, iri);
+            pm.insert(a, &iri);
         }
         Ok(pm)
     }
@@ -162,7 +162,7 @@ mod tests {
     fn prefix_map1() {
         let mut pm = PrefixMap::new();
         let binding = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", binding);
+        pm.insert("ex", &binding);
         let expected = IriS::from_str("http://example.org/name").unwrap();
         assert_eq!(pm.resolve("ex:name").unwrap().unwrap(), expected);
     }
@@ -171,9 +171,9 @@ mod tests {
     fn prefixmap_display() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", ex_iri);
+        pm.insert("ex", &ex_iri);
         let ex_rdf = IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap();
-        pm.insert("rdf", ex_rdf);
+        pm.insert("rdf", &ex_rdf);
         assert_eq!(
             pm.to_string(),
             "ex <http://example.org/>\nrdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
@@ -184,7 +184,7 @@ mod tests {
     fn prefixmap_resolve() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", ex_iri);
+        pm.insert("ex", &ex_iri);
         assert_eq!(
             pm.resolve(&"ex:pepe").unwrap(),
             Some(IriS::from_str("http://example.org/pepe").unwrap())

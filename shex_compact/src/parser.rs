@@ -33,9 +33,34 @@ impl<'a> ShExParser<'a> {
         })
     }
 
-    pub fn parse(&self) -> Result<Schema> {
+    pub fn parse(&mut self) -> Result<Schema> {
         let mut schema = Schema::new();
-        for statements in self.shex_statement_iterator {}
+        while let Some(ss) = self.shex_statement_iterator.next() {
+            let statements = ss?;
+            for s in statements {
+                match s {
+                    ShExStatement::BaseDecl { iri } => {
+                        todo!()
+                    }
+                    ShExStatement::PrefixDecl { alias, iri } => {
+                        schema.add_prefix(alias, &iri);
+                    }
+                    ShExStatement::StartDecl { shape_expr } => {
+                        todo!()
+                    }
+                    ShExStatement::ImportDecl { iri } => {
+                        todo!()
+                    }
+                    ShExStatement::ShapeDecl {
+                        shape_label,
+                        shape_expr,
+                    } => {
+                        todo!()
+                    }
+                }
+            }
+        }
+        Ok(schema)
     }
 }
 
@@ -69,7 +94,11 @@ impl<'a> Iterator for StatementIterator<'a> {
         let mut r;
         match shex_statement(self.src) {
             Ok((left, s)) => {
-                r = Some(Ok(s));
+                if s.is_empty() {
+                    r = None;
+                } else {
+                    r = Some(Ok(s));
+                }
                 self.src = left;
             }
             Err(Err::Incomplete(_)) => {
@@ -81,6 +110,7 @@ impl<'a> Iterator for StatementIterator<'a> {
                 self.done = true;
             }
         }
+
         match tws(self.src) {
             Ok((left, _)) => {
                 self.src = left;
@@ -101,5 +131,21 @@ impl<'a> Iterator for StatementIterator<'a> {
             }));
         }
         r
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prefix() {
+        let str = r#"prefix e: <http://example.org/>"#;
+
+        let mut parser = ShExParser::new(str, None).unwrap();
+        let schema = parser.parse().unwrap();
+        let mut expected = Schema::new();
+        expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
+        assert_eq!(schema, expected)
     }
 }

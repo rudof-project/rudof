@@ -1,3 +1,4 @@
+use iri_s::IriS;
 use nom::{
     branch::alt,
     bytes::complete::{tag_no_case, take_while, take_while1},
@@ -62,7 +63,7 @@ fn prefix_decl(i: &str) -> IResult<&str, ShExStatement> {
         i,
         ShExStatement::PrefixDecl {
             alias: pname_ns,
-            iri: iri_ref,
+            iri: IriS::new_unchecked(iri_ref),
         },
     ))
 }
@@ -187,7 +188,7 @@ mod tests {
                 "",
                 ShExStatement::PrefixDecl {
                     alias: "a.b.c",
-                    iri: "urn"
+                    iri: IriS::new_unchecked("urn")
                 }
             ))
         );

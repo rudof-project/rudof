@@ -5,7 +5,7 @@ use shex_ast::{ShapeExpr, ShapeLabel};
 pub enum ShExStatement<'a> {
     PrefixDecl {
         alias: &'a str,
-        iri: &'a str,
+        iri: IriS,
     },
     BaseDecl {
         iri: IriS,
