@@ -142,7 +142,7 @@ jobs:
     - name: Upload the .deb Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ vars.BINARY_NAME }}
+        name: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_amd64.deb
         path: target/debian/*.deb
     - name: Upload the generated binary to its corresponding release
       uses: softprops/action-gh-release@v1
