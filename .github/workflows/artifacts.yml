@@ -143,7 +143,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ vars.BINARY_NAME }}
-        path: target/x86_64-unknown-linux-musl/debian/*.deb
+        path: target/debian/*.deb
 
   docker:
     runs-on: ubuntu-latest
