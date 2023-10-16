@@ -196,7 +196,7 @@ impl SchemaJsonCompiler {
                     cond,
                 })
             }
-            ast::ShapeExpr::ShapeExternal => Ok(ShapeExpr::ShapeExternal {}),
+            ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }
     }
 
@@ -383,7 +383,7 @@ impl SchemaJsonCompiler {
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
-                ast::ShapeExpr::ShapeExternal => todo("value_expr2match_cond: ShapeExternal"),
+                ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
             Ok(MatchCond::single(SingleCond::new().with_name(".")))

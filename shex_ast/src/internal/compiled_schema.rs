@@ -1,7 +1,7 @@
 use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, CResult,
-    CompiledSchemaError, Cond, Node, internal::ObjectValue, ShapeLabel, ShapeLabelIdx, internal::ValueSetValue,
+    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, internal::ObjectValue,
+    internal::ValueSetValue, CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
@@ -62,7 +62,7 @@ pub enum ShapeExpr {
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },
-    ShapeExternal {},
+    External {},
     Ref {
         idx: ShapeLabelIdx,
     },
@@ -447,7 +447,6 @@ impl Display for CompiledSchema {
 mod tests {
     use crate::ast::Schema as SchemaJson;
     use crate::internal::CompiledSchema;
-
 
     #[test]
     fn test_find_component() {

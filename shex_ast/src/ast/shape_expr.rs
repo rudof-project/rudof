@@ -60,7 +60,7 @@ pub enum ShapeExpr {
         annotations: Option<Vec<Annotation>>,
     },
 
-    ShapeExternal,
+    External,
 
     Ref(Ref),
 }
@@ -97,6 +97,10 @@ impl ShapeExpr {
             annotations: None,
         }
     }
+
+    pub fn external() -> ShapeExpr {
+        ShapeExpr::External
+    }
 }
 
 impl Default for ShapeExpr {
@@ -127,5 +131,4 @@ mod tests {
         let json_nc = serde_json::to_string(&se).unwrap();
         assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
     }
-
 }

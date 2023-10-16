@@ -10,6 +10,7 @@ use nom::{
     sequence::{delimited, tuple},
     Err, IResult, InputTake, Needed,
 };
+use shex_ast::{ShapeExpr, ShapeLabel};
 
 use crate::ShExStatement;
 
@@ -37,13 +38,21 @@ pub fn tws(i: &str) -> IResult<&str, ()> {
     )(i)
 }
 
-/// [2] `shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
+/// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub fn shex_statement(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    directives(i)
+    let (i, (ds, sts)) = tuple((directives, statements))(i)?;
+    let mut result = Vec::new();
+    result.extend(ds);
+    result.extend(sts);
+    Ok((i, result))
 }
 
 pub fn directives(i: &str) -> IResult<&str, Vec<ShExStatement>> {
     many0(directive)(i)
+}
+
+pub fn statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
+    many0(statement)(i)
 }
 
 /// [2] `directive	   ::=   	baseDecl | prefixDecl | importDecl`
@@ -63,14 +72,94 @@ fn prefix_decl(i: &str) -> IResult<&str, ShExStatement> {
         i,
         ShExStatement::PrefixDecl {
             alias: pname_ns,
-            iri: IriS::new_unchecked(iri_ref),
+            iri: iri_ref,
         },
     ))
 }
 
+/// `[5]   	notStartAction	   ::=   	start | shapeExprDecl`
+fn not_start_action(i: &str) -> IResult<&str, ShExStatement> {
+    alt((start, shape_expr_decl))(i)
+}
+
+/// `[6]   	start	   ::=   	"start" '=' inlineShapeExpression`
+fn start(i: &str) -> IResult<&str, ShExStatement> {
+    let (i, (_, _, _, _, se)) = tuple((
+        tag_no_case("START"),
+        tws,
+        char('='),
+        tws,
+        inline_shape_expression,
+    ))(i)?;
+    Ok((i, ShExStatement::StartDecl { shape_expr: se }))
+}
+
+/// `[8]   	statement	   ::=   	directive | notStartAction`
+fn statement(i: &str) -> IResult<&str, ShExStatement> {
+    alt((directive, not_start_action))(i)
+}
+
+/// `[9]   	shapeExprDecl	   ::=   	shapeExprLabel (shapeExpression | "EXTERNAL")`
+fn shape_expr_decl(i: &str) -> IResult<&str, ShExStatement> {
+    let (i, (shape_label, _, shape_expr)) =
+        tuple((shape_expr_label, tws, shape_expr_or_external))(i)?;
+    Ok((
+        i,
+        ShExStatement::ShapeDecl {
+            shape_label,
+            shape_expr,
+        },
+    ))
+}
+
+fn shape_expr_or_external(i: &str) -> IResult<&str, ShapeExpr> {
+    alt((shape_expression, external))(i)
+}
+
+fn external(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, _) = tag_no_case("EXTERNAL")(i)?;
+    Ok((i, ShapeExpr::external()))
+}
+
+/// `[10]   	shapeExpression	   ::=   	shapeOr`
+fn shape_expression(i: &str) -> IResult<&str, ShapeExpr> {
+    shape_or(i)
+}
+
+/// `[11]   	inlineShapeExpression	   ::=   	inlineShapeOr`
+fn inline_shape_expression(i: &str) -> IResult<&str, ShapeExpr> {
+    todo!()
+}
+
+/// `[12]   	shapeOr	   ::=   	shapeAnd ("OR" shapeAnd)*`
+fn shape_or(i: &str) -> IResult<&str, ShapeExpr> {
+    todo!()
+}
+
+/// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
+fn shape_expr_label(i: &str) -> IResult<&str, ShapeLabel> {
+    alt((iri, blank_node))(i)
+}
+
+/// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
+fn iri(i: &str) -> IResult<&str, IriS> {
+    alt((iri_ref, prefixed_name))(i)
+}
+
+/// `[137s]   	prefixedName	   ::=   	PNAME_LN | PNAME_NS`
+fn prefixed_name(i: &str) -> IResult<&str, IriS> {
+    alt((pname_ln, pname_ns))(i)
+}
+
+/// `[138s]   	blankNode	   ::=   	BLANK_NODE_LABEL`
+fn blank_node(i: &str) -> IResult<&str, BlankNode> {
+    todo!()
+}
+
 /// `[18t]   	<IRIREF>	   ::=   	"<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
-fn iri_ref(i: &str) -> IResult<&str, &str> {
-    delimited(char('<'), take_while(is_iri_ref), char('>'))(i)
+fn iri_ref(i: &str) -> IResult<&str, IriS> {
+    let (i, str) = delimited(char('<'), take_while(is_iri_ref), char('>'))(i)?;
+    Ok((i, IriS::new_unchecked(str)))
 }
 
 #[inline]
