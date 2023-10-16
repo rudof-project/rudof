@@ -144,6 +144,11 @@ jobs:
       with:
         name: ${{ vars.BINARY_NAME }}
         path: target/debian/*.deb
+    - name: Upload the generated binary to its corresponding release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_amd64.deb
+      if: github.event_name == 'release'
 
   docker:
     runs-on: ubuntu-latest
