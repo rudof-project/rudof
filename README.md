@@ -1,8 +1,6 @@
 # shex-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports Shapes written in JSON-LD syntax and a simple command line tool `sx`.
-
-This software is work-in-progress yet.
+This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports Shapes written in JSON-LD syntax and a simple command line tool `sx`. The development roadmap is using [GitHub milestones](https://github.com/weso/shex-rs/milestones). This software is work-in-progress yet.
 
 ### Installation
 
