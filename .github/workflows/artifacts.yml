@@ -135,8 +135,6 @@ jobs:
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3
-      with:
-        submodules: true
     - name: Build the .deb file using cargo deb
       uses: ebbflow-io/cargo-deb-amd64-ubuntu@1.0
     - name: Upload the .deb Artifact
