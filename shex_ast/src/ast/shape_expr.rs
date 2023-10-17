@@ -101,6 +101,10 @@ impl ShapeExpr {
     pub fn external() -> ShapeExpr {
         ShapeExpr::External
     }
+
+    pub fn or(ses: Vec<ShapeExpr>) -> ShapeExpr {
+        S
+    }
 }
 
 impl Default for ShapeExpr {

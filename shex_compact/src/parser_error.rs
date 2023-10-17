@@ -6,5 +6,5 @@ pub enum ParseError<'a> {
     NomError { err: nom::error::Error<&'a str> },
 
     #[error("{msg}")]
-    Custom { msg: &'static str },
+    Custom { msg: String },
 }

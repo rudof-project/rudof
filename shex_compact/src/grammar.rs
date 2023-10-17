@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use nom::{
     branch::alt,
-    bytes::complete::{tag_no_case, take_while, take_while1},
+    bytes::complete::{tag_no_case, take_while, take_while1, tag},
     character::complete::{char, one_of},
     combinator::{map, opt, recognize},
     error::{ErrorKind, ParseError},
@@ -128,13 +128,102 @@ fn shape_expression(i: &str) -> IResult<&str, ShapeExpr> {
 
 /// `[11]   	inlineShapeExpression	   ::=   	inlineShapeOr`
 fn inline_shape_expression(i: &str) -> IResult<&str, ShapeExpr> {
+    inline_shape_or(i)
+}
+
+
+/// `[12]   	shapeOr	   ::=   	shapeAnd ("OR" shapeAnd)*`
+fn shape_or(mut i: &str) -> IResult<&str, ShapeExpr> {
+    let mut ses = Vec::new();
+    // skip tws
+    if let Ok((left, _)) = tws(i) {
+        i = left;
+    }
+    match shape_and(i) {
+        Ok((left, se)) => {
+            ses.push(se);
+            i = left;
+        },
+        Err(e) => return Err(e)
+    }
+    loop {
+        match or(i) {
+           Ok((left, _)) => {
+              i = left; 
+           },
+           _ => return Ok((i, make_shape_or(ses))),
+        }
+
+        match shape_and(i) {
+            Ok((left, se)) => {
+                ses.push(se);
+                i = left;
+            },
+            _ => return Ok((i, make_shape_or(ses)))
+        }
+    }
+}
+
+fn or(i: &str) -> IResult<&str, ()> {
+    let (i, _) = tag_no_case("OR")(i)?;
+    Ok((i, ()))
+}
+
+
+fn make_shape_or(ses: Vec<ShapeExpr>) -> ShapeExpr {
+  if ses.len() == 1 {
+    ses[0]
+  } else {
+      ShapeExpr::or(ses)
+  }
+}
+
+fn make_shape_and(ses: Vec<ShapeExpr>) -> ShapeExpr {
+    if ses.len() == 1 {
+      ses[0]
+    } else {
+        ShapeExpr::or(ses)
+    }
+  }
+
+/// `[13]   	inlineShapeOr	   ::=   	inlineShapeAnd ("OR" inlineShapeAnd)*`
+fn inline_shape_or(i: &str) -> IResult<&str, ShapeExpr> {
     todo!()
 }
 
-/// `[12]   	shapeOr	   ::=   	shapeAnd ("OR" shapeAnd)*`
-fn shape_or(i: &str) -> IResult<&str, ShapeExpr> {
-    todo!()
+/// `[14]   	shapeAnd	   ::=   	shapeNot ("AND" shapeNot)*``
+fn shape_and(mut i: &str) -> IResult<&str, ShapeExpr> {
+    let mut ses = Vec::new();
+    // skip tws
+    if let Ok((left, _)) = tws(i) {
+        i = left;
+    }
+    match shape_not(i) {
+        Ok((left, se)) => {
+            ses.push(se);
+            i = left;
+        },
+        Err(e) => return Err(e)
+    }
+    loop {
+        match and(i) {
+           Ok((left, _)) => {
+              i = left; 
+           },
+           _ => return Ok((i, make_shape_and(ses))),
+        }
+
+        match shape_not(i) {
+            Ok((left, se)) => {
+                ses.push(se);
+                i = left;
+            },
+            _ => return Ok((i, make_shape_and(ses)))
+        }
+    }
 }
+
+/// `[15]   	inlineShapeAnd	   ::=   	inlineShapeNot ("AND" inlineShapeNot)*`
 
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, ShapeLabel> {
@@ -160,7 +249,68 @@ fn blank_node(i: &str) -> IResult<&str, &str> {
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
 fn pname_ln(i: &str) -> IResult<&str, &str> {
-    todo!()
+    // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
+    let (i, (str_pname_ns, str_pn_local)) = tuple((pname_ns, pn_local))(i)?;
+    // concat
+    println!("pname_ln with pname_ns = {str_pname_ns} and pn_local = {str_pn_local}");
+    Ok((i, str_pname_ns))
+}
+
+/// `[77]   	<PN_LOCAL>	   ::=   	(PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`
+fn pn_local(i: &str) -> IResult<&str, &str> {
+    recognize(tuple((alt((one_if(is_pn_local_start), plx)), pn_local2)))(i)
+}
+
+fn is_pn_local_start(c: char) -> bool {
+    c == ':' || is_digit(c) || is_pn_chars_u(c)
+}
+
+fn pn_local2(src: &str) -> IResult<&str, ()> {
+    match pn_local3(src) {
+        Ok((left, m)) => {
+            // if last is a '.', remove that
+            if m.ends_with('.') {
+                Ok(((&src[m.len() - 1..]), ()))
+            } else {
+                Ok((left, ()))
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn pn_local3(i: &str) -> IResult<&str, &str> {
+    recognize(many0(alt((pn_chars_colon, plx, tag(".")))))(i)
+}
+
+fn pn_chars_colon(i: &str) -> IResult<&str, &str> {
+    take_while1(is_pn_chars_colon)(i)
+}
+
+fn is_pn_chars_colon(c: char) -> bool {
+    c == ':' || is_pn_chars(c)
+}
+
+fn plx(i: &str) -> IResult<&str, &str> {
+    alt((percent, pn_local_esc))(i)
+}
+
+/// ShEx rule
+/// `[173s]   	<PN_LOCAL_ESC>	   ::=   	"\\" ( "_" | "~" | "." | "-" | "!" | "$" | "&" | "'" | 
+///                "(" | ")" | "*" | "+" | "," | ";" | "=" | "/" | "?" | "#" | "@" | "%" )``
+fn pn_local_esc(i: &str) -> IResult<&str, &str> {
+    recognize(tuple((
+        char('\\'),
+        one_if(|c| "_~.-!$&'()*+,;=/?#@%".contains(c)),
+    )))(i)
+}
+
+fn percent(i: &str) -> IResult<&str, &str> {
+    recognize(tuple((char('%'), one_if(is_hex), one_if(is_hex))))(i)
+}
+
+fn is_hex(c: char) -> bool {
+    is_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
 /// `[18t]   	<IRIREF>	   ::=   	"<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
@@ -289,4 +439,58 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn test_prefix_basic() {
+        assert_eq!(
+            prefix_decl("prefix e: <http://example.org/>"),
+            Ok((
+                "",
+                ShExStatement::PrefixDecl {
+                    alias: "e",
+                    iri: IriS::new_unchecked("http://example.org/")
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn test_directives_prefix_decl() {
+        assert_eq!(
+            directives("prefix e: <http://example.org/>"),
+            Ok((
+                "",
+                vec![ShExStatement::PrefixDecl {
+                    alias: "e",
+                    iri: IriS::new_unchecked("http://example.org/")
+                }]
+            ))
+        );
+    }
+
+    #[test]
+    fn test_shex_statement_prefix_decl() {
+        assert_eq!(
+            shex_statement("prefix e: <http://example.org/>"),
+            Ok((
+                "",
+                vec![ShExStatement::PrefixDecl {
+                    alias: "e",
+                    iri: IriS::new_unchecked("http://example.org/")
+                }]
+            ))
+        );
+    }
+
+    #[test]
+    fn test_shape_expr_label() {
+        assert_eq!(
+            shape_expr_label("<http://example.org/S>"),
+            Ok((
+                "",
+                ShapeLabel::Iri(IriS::new_unchecked("http://example.org/S"))
+            ))
+        );
+    }
+
 }
