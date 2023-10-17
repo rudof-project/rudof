@@ -1,5 +1,6 @@
 use std::{fmt, result};
 
+use log::debug;
 // use log::debug;
 use serde::{
     de::{self, MapAccess, Visitor},
@@ -123,8 +124,9 @@ impl Serialize for NodeConstraint {
                 xs_facet,
                 values,
             } => {
+                debug!("Serializing NodeConstraint: {self:?}");
                 let mut map = serializer.serialize_map(None)?;
-                // debug!("Adding type = NodeConstraint");
+                
                 // map.serialize_entry("type", "NodeConstraint")?;
                 match node_kind {
                     None => (),

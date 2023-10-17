@@ -374,7 +374,7 @@ impl SchemaJsonCompiler {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok(mk_cond_ref(idx))
                 }
-                ast::ShapeExpr::Shape { .. } => todo("valueexpr2match_cond: Shape"),
+                ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
