@@ -1,10 +1,13 @@
 [package]
 name = "shex-rs"
 version = "0.0.2"
+description = "ShEx implementation in Rust"
+license = "GPL-3.0-or-later"
+authors = [ "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", "Jose Emilio Labra Gayo" ]
 
 [[bin]]
 path = "shex_cli/src/main.rs"
-name = "shexrs"
+name = "sx" # TODO: sx --> BINARY_NAME
 
 [workspace]
 members = [
@@ -14,9 +17,8 @@ members = [
     "prefixmap",
     "srdf",
     "shex_ast",
+    "shex_compact",
     "shex_cli",
-    # "shex_antlr",
-    # "shex_pest",
     "srdf_graph",
     "srdf_sparql",
     "shex_testsuite",
@@ -24,6 +26,8 @@ members = [
     "shapemap",
     "shapemap_oxgraph",
     "validation_oxgraph"
+    # "shex_antlr",
+    # "shex_pest",
 ]
 
 #default-members = [

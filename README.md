@@ -1,24 +1,46 @@
 # shex-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/).
+This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool.
+We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shex-rs/releases)).
 
-# Usage
+The development roadmap is using [GitHub milestones](https://github.com/weso/shex-rs/milestones).
 
-This repository is still work-in-progress. 
+### Installation
 
-## Obtaining the binaries
+<details markdown="block">
+<summary>Instructions</summary>
 
-[TODO](https://github.com/weso/shex-rs/issues/7)
+#### Official releases
 
-## Compiling from source
+You can download a binary from the [latest release](https://github.com/weso/shex-rs/releases/latest) page.
 
-shex-rs has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code. 
+#### Compiling from source
+
+`shex-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
+
+#### Docker
+
+TBD
+
+</details>
+
+### Usage
+
+#### Validate an example
+
+The folder `examples` contains several example files with ShEx schemas and RDF data.
+
+Validate a specific node with a shape:
+
+```
+sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
+```
 
 ## Command line usage
 
 ```
-$ shex-cli --help
-Usage: shex_cli [OPTIONS] [COMMAND]
+$ sx --help
+Usage: sx [OPTIONS] [COMMAND]
 Commands:
   schema
   validate
@@ -31,7 +53,7 @@ Commands:
 ### Obtaining information about a schema
 
 ```
-Usage: shex_cli schema [OPTIONS] --schema <Schema file name>
+Usage: sx schema [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
@@ -44,11 +66,10 @@ Options:
           Print help
 ```
 
-
 ### Obtaining information about RDF data
 
 ```
-Usage: shex_cli data [OPTIONS] --data <RDF data path>
+Usage: sx data [OPTIONS] --data <RDF data path>
 
 Options:
   -d, --data <RDF data path>           
@@ -59,7 +80,7 @@ Options:
 ### Obtaining information about a node in RDF data
 
 ```
-Usage: shex_cli node [OPTIONS] --node <NODE> --data <RDF data path>
+Usage: sx node [OPTIONS] --node <NODE> --data <RDF data path>
 
 Options:
   -n, --node <NODE>                    
@@ -71,7 +92,7 @@ Options:
 ### Validating an RDF node against some data
 
 ```
-Usage: shex_cli validate [OPTIONS] --schema <Schema file name> --node <NODE> --shape <shape label> --data <RDF data path>
+Usage: sx validate [OPTIONS] --schema <Schema file name> --node <NODE> --shape <shape label> --data <RDF data path>
 
 Options:
   -s, --schema <Schema file name>      

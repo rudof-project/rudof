@@ -127,4 +127,5 @@ mod tests {
         let json_nc = serde_json::to_string(&se).unwrap();
         assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
     }
+
 }

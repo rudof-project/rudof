@@ -81,12 +81,48 @@ impl NodeConstraint {
         self.xs_facet.clone()
     }
 
-    pub fn with_length(mut self, len: usize) -> Self {
+    pub fn with_length(self, len: usize) -> Self {
+        self.add_facet(XsFacet::length(len))
+    }
+
+    pub fn with_minlength(self, len: usize) -> Self {
+        self.add_facet(XsFacet::min_length(len))
+    }
+
+    pub fn with_maxlength(self, len: usize) -> Self {
+        self.add_facet(XsFacet::max_length(len))
+    }
+
+    pub fn with_min_inclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::min_inclusive(n))
+    }
+
+    pub fn with_max_inclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::max_inclusive(n))
+    }
+
+    pub fn add_facet(mut self, f: XsFacet) -> Self {
         match self.xs_facet {
-            Some(ref mut facets) => facets.push(XsFacet::length(len)),
-            None => self.xs_facet = Some(vec![XsFacet::length(len)]),
+            Some(ref mut facets) => facets.push(f),
+            None => self.xs_facet = Some(vec![f]),
         }
         self
+    }
+
+    pub fn with_min_exclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::min_exclusive(n))
+    }
+
+    pub fn with_max_exclusive(self, n: NumericLiteral) -> Self {
+        self.add_facet(XsFacet::max_exclusive(n))
+    }
+
+    pub fn with_totaldigits(self, n: usize) -> Self {
+        self.add_facet(XsFacet::totaldigits(n))
+    }
+
+    pub fn with_fractiondigits(self, n: usize) -> Self {
+        self.add_facet(XsFacet::fractiondigits(n))
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
@@ -95,6 +131,11 @@ impl NodeConstraint {
             vs.push(ValueSetValueWrapper::new(v));
         }
         self.values = Some(vs);
+        self
+    }
+
+    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
+        self.values = Some(values);
         self
     }
 
@@ -404,13 +445,57 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 if let Some(length) = length {
                     nc = nc.with_length(length)
                 }
-                // let secs = secs.ok_or_else(|| de::Error::missing_field("secs"))?;
-                // let nanos = nanos.ok_or_else(|| de::Error::missing_field("nanos"))?;
+                if let Some(datatype) = datatype {
+                    nc = nc.with_datatype(datatype)
+                }
+                if let Some(values) = values {
+                    nc = nc.with_values_wrapped(values)
+                }
+                if let Some(minlength) = minlength {
+                    nc = nc.with_minlength(minlength)
+                }
+                if let Some(maxlength) = maxlength {
+                    nc = nc.with_maxlength(maxlength)
+                }
+                if let Some(mininclusive) = mininclusive {
+                    nc = nc.with_min_inclusive(mininclusive)
+                }
+                if let Some(maxinclusive) = maxinclusive {
+                    nc = nc.with_max_inclusive(maxinclusive)
+                }
+                if let Some(minexclusive) = minexclusive {
+                    nc = nc.with_min_exclusive(minexclusive)
+                }
+                if let Some(maxexclusive) = maxexclusive {
+                    nc = nc.with_max_exclusive(maxexclusive)
+                }
+                if let Some(totaldigits) = totaldigits {
+                    nc = nc.with_totaldigits(totaldigits)
+                }
+                if let Some(fractiondigits) = fractiondigits {
+                    nc = nc.with_fractiondigits(fractiondigits)
+                }
                 Ok(nc)
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["type", "nodeKind", "datatype"];
+        const FIELDS: &'static [&'static str] = &[
+            "type",
+            "nodeKind",
+            "datatype",
+            "values",
+            "pattern",
+            "flags",
+            "length",
+            "minlength",
+            "maxlength",
+            "mininclusive",
+            "maxinclusive",
+            "minexclusive",
+            "maxexclusive",
+            "totaldigits",
+            "fractiondigits",
+        ];
         deserializer.deserialize_struct("NodeConstraint", FIELDS, NodeConstraintVisitor)
     }
 }
@@ -423,10 +508,7 @@ mod tests {
     fn test_serialize_node_kind_iri() {
         let nc = NodeConstraint::new().with_node_kind(NodeKind::Iri);
         let json_nc = serde_json::to_string(&nc).unwrap();
-        assert_eq!(
-            json_nc,
-            "{\"nodeKind\":\"iri\"}"
-        );
+        assert_eq!(json_nc, "{\"nodeKind\":\"iri\"}");
     }
 
     #[test]

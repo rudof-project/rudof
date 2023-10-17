@@ -8,8 +8,6 @@ use crate::Value;
 use crate::Values;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-use std::fmt::Display;
-use std::hash::Hash;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]

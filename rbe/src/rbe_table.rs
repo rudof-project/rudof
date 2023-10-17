@@ -1,11 +1,9 @@
-use core::hash::Hash;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
 use log::debug;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::vec::IntoIter;
 
 use crate::Bag;
@@ -16,7 +14,6 @@ use crate::RbeError;
 use crate::Ref;
 use crate::Value;
 // use crate::RbeError;
-use crate::keys::Keys;
 use crate::rbe::Rbe;
 use crate::rbe1::Rbe as Rbe1;
 use crate::rbe_error;

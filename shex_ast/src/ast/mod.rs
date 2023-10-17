@@ -24,6 +24,7 @@ pub mod triple_expr_label;
 pub mod value_set_value;
 pub mod xs_facet;
 
+use crate::ast::serde_string_or_struct::*;
 pub use annotation::*;
 pub use bnode::*;
 pub use iri::*;
@@ -47,18 +48,6 @@ pub use triple_expr::*;
 pub use triple_expr_label::*;
 pub use value_set_value::*;
 pub use xs_facet::*;
-
-use std::fmt::Formatter;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::{fmt::Display, result};
-use std::{fs, io};
-
-use crate::ast::serde_string_or_struct::*;
-use log::debug;
-use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
-use void::Void;
 
 #[derive(Debug, Clone)]
 struct ClosedError;
