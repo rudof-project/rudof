@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
@@ -12,6 +13,20 @@ pub enum Ref {
     BNode { value: String },
 }
 
+impl Ref {
+    pub fn iri_unchecked(s: &str) -> Ref {
+        Ref::IriRef {
+            value: s.to_string(),
+        }
+    }
+
+    pub fn bnode_unchecked(s: &str) -> Ref {
+        Ref::BNode {
+            value: s.to_string(),
+        }
+    }
+}
+
 impl Into<String> for Ref {
     fn into(self) -> String {
         match self {
@@ -21,13 +36,18 @@ impl Into<String> for Ref {
     }
 }
 
-
 impl TryFrom<String> for Ref {
     type Error = Void;
 
     // TODO: We should parse the bnode
     fn try_from(s: String) -> Result<Self, Self::Error> {
         Ok(Ref::IriRef { value: s })
+    }
+}
+
+impl From<IriS> for Ref {
+    fn from(iri: IriS) -> Ref {
+        Ref::iri_unchecked(iri.as_str())
     }
 }
 

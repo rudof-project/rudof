@@ -17,6 +17,11 @@ pub struct IriS {
 }
 
 impl IriS {
+    // TODO: Maybe define this one as const...
+    pub fn rdf_type() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+    }
+
     pub fn new(str: &str) -> Result<IriS, IriSError> {
         let iri = NamedNode::new(str)?;
         Ok(IriS { iri })

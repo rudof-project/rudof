@@ -7,3 +7,9 @@ pub struct Annotation {
     predicate: IriRef,
     object: ObjectValue,
 }
+
+impl Annotation {
+    pub fn new(predicate: IriRef, object: ObjectValue) -> Annotation {
+        Annotation { predicate, object }
+    }
+}

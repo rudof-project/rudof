@@ -13,7 +13,7 @@ use super::{
 };
 use super::{node_kind::NodeKind, ref_::Ref};
 use crate::ast::serde_string_or_struct::*;
-use crate::NodeConstraint;
+use crate::{Node, NodeConstraint, TripleExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -23,6 +23,12 @@ pub struct ShapeExprWrapper {
         deserialize_with = "deserialize_string_or_struct"
     )]
     pub se: ShapeExpr,
+}
+
+impl Into<ShapeExprWrapper> for ShapeExpr {
+    fn into(self) -> ShapeExprWrapper {
+        ShapeExprWrapper { se: self }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -102,8 +108,54 @@ impl ShapeExpr {
         ShapeExpr::External
     }
 
+    pub fn not(se: ShapeExpr) -> ShapeExpr {
+        ShapeExpr::ShapeNot {
+            shape_expr: Box::new(se.into()),
+        }
+    }
+
     pub fn or(ses: Vec<ShapeExpr>) -> ShapeExpr {
-        S
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
+        ShapeExpr::ShapeOr { shape_exprs }
+    }
+
+    pub fn and(ses: Vec<ShapeExpr>) -> ShapeExpr {
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
+        ShapeExpr::ShapeAnd { shape_exprs }
+    }
+
+    pub fn node_constraint(nc: NodeConstraint) -> ShapeExpr {
+        ShapeExpr::NodeConstraint(nc)
+    }
+
+    pub fn shape_ref(ref_: Ref) -> ShapeExpr {
+        ShapeExpr::Ref(ref_)
+    }
+
+    pub fn any() -> ShapeExpr {
+        ShapeExpr::default()
+    }
+
+    pub fn shape(
+        closed: Option<bool>,
+        extra: Option<Vec<IriRef>>,
+        expression: Option<TripleExpr>,
+        sem_acts: Option<Vec<SemAct>>,
+        annotations: Option<Vec<Annotation>>,
+    ) -> ShapeExpr {
+        ShapeExpr::Shape {
+            closed,
+            extra,
+            expression: expression.map(|e| e.into()),
+            sem_acts,
+            annotations,
+        }
     }
 }
 

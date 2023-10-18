@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
@@ -9,12 +10,19 @@ pub struct IriRef {
     pub value: String,
 }
 
-impl TryFrom<&str> for IriRef {
-    type Error = Void;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Ok(IriRef {
+impl From<&str> for IriRef {
+    fn from(s: &str) -> Self {
+        IriRef {
             value: s.to_string(),
-        })
+        }
+    }
+}
+
+impl From<IriS> for IriRef {
+    fn from(i: IriS) -> IriRef {
+        IriRef {
+            value: i.to_string(),
+        }
     }
 }
 

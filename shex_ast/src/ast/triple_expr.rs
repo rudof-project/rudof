@@ -118,3 +118,9 @@ pub struct TripleExprWrapper {
     )]
     pub te: TripleExpr,
 }
+
+impl Into<TripleExprWrapper> for TripleExpr {
+    fn into(self) -> TripleExprWrapper {
+        TripleExprWrapper { te: self }
+    }
+}

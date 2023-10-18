@@ -9,3 +9,9 @@ pub struct SemAct {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     code: Option<String>,
 }
+
+impl SemAct {
+    pub fn new(name: IriRef, code: Option<String>) -> SemAct {
+        SemAct { name, code }
+    }
+}
