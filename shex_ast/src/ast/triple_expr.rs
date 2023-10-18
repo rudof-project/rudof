@@ -85,6 +85,21 @@ pub enum TripleExpr {
     TripleExprRef(TripleExprLabel),
 }
 
+impl TripleExpr {
+    
+    pub fn triple_constraint(predicate: IriRef, se: Option<ShapeExpr>, min: Option<i32>, max: Option<i32>) -> TripleExpr {
+        TripleExpr::TripleConstraint { 
+            id: None, 
+            inverse: None, predicate, 
+            value_expr: se.map(|se| Box::new(se)), 
+            min, 
+            max, 
+            sem_acts: None, 
+            annotations: None 
+        }
+    }
+}
+
 impl FromStr for TripleExpr {
     type Err = Void;
 

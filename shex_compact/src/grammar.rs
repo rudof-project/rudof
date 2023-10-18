@@ -3,7 +3,7 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{char, one_of},
-    combinator::{fail, map, opt, recognize},
+    combinator::{fail, map, opt, recognize, map_res},
     error::{ErrorKind, ParseError},
     error_position,
     multi::{fold_many0, many0, many1},
@@ -15,7 +15,7 @@ use shex_ast::{
     ShapeLabel, TripleExpr,
 };
 
-use crate::{Qualifier, ShExStatement};
+use crate::{Qualifier, ShExStatement, Cardinality};
 
 fn not_eol(c: char) -> bool {
     c != '\n' && c != '\r'
@@ -288,6 +288,11 @@ fn shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
         }
     }
     let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
+    let annotations = if annotations.is_empty() {
+        None 
+    } else {
+        Some(annotations)
+    };
     Ok((
         i,
         ShapeExpr::shape(
@@ -333,19 +338,34 @@ fn triple_expression(i: &str) -> IResult<&str, TripleExpr> {
 fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
     let (i, (predicate, se, maybe_card)) =
         tuple((predicate, inline_shape_expression, opt(cardinality)))(i)?;
-    let min = maybe_card.min();
-    let max = maybe_card.max();
-    Ok(TripleExpr::triple_constraint(predicate, se, maybe_card))
+    let min = maybe_card.and_then(|m| m.min());
+    let max = maybe_card.and_then(|m| m.max());
+    Ok((i, TripleExpr::triple_constraint(predicate, Some(se), min, max)))
 }
 
 /// `46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
 fn cardinality(i: &str) -> IResult<&str, Cardinality> {
-    alt((plus, star, question_mark, repeat_range))(i)
+    alt((plus, star, optional, 
+        // Pending
+        // repeat_range
+    ))(i)
 }
 
 fn plus(i: &str) -> IResult<&str, Cardinality> {
-    map_res(char('+'), |_| Cardinality::plus)(i)
+    let (i, _) = char('+')(i)?;
+    Ok((i, Cardinality::plus()))
 }
+
+fn star(i: &str) -> IResult<&str, Cardinality> {
+    let (i, _) = char('*')(i)?;
+    Ok((i, Cardinality::star()))
+}
+
+fn optional(i: &str) -> IResult<&str, Cardinality> {
+    let (i, _) = char('?')(i)?;
+    Ok((i, Cardinality::optional()))
+}
+
 
 /// `[58]   	annotation	   ::=   	"//" predicate (iri | literal)`
 fn annotation(i: &str) -> IResult<&str, Annotation> {
@@ -376,11 +396,11 @@ fn code_decl(i: &str) -> IResult<&str, SemAct> {
 }
 
 fn code_or_percent(i: &str) -> IResult<&str, Option<String>> {
-    let (i, maybe_code) = alt((code, percent))(i)?;
+    let (i, maybe_code) = alt((code, percent_code))(i)?;
     Ok((i, maybe_code))
 }
 
-fn percent(i: &str) -> IResult<&str, Option<String>> {
+fn percent_code(i: &str) -> IResult<&str, Option<String>> {
     let (i, _) = char('%')(i)?;
     Ok((i, None))
 }

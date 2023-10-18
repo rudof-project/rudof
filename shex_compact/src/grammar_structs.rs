@@ -22,6 +22,7 @@ pub enum ShExStatement<'a> {
     },
 }
 
+#[derive(PartialEq, Debug)]
 pub enum Qualifier {
     Closed,
     Extra(Vec<IriRef>),
