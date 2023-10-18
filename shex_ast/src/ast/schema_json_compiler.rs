@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
     ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
@@ -113,7 +115,7 @@ impl SchemaJsonCompiler {
     ) -> CResult<ShapeLabelIdx> {
         match sref {
             ast::Ref::IriRef { value } => {
-                let idx = self.get_shape_label_idx(&value, compiled_schema)?;
+                let idx = self.get_shape_label_idx(value.as_str(), compiled_schema)?;
                 Ok(idx)
             }
             ast::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
@@ -318,7 +320,7 @@ impl SchemaJsonCompiler {
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
-        let iri = IriS::new(predicate.value.as_str())?;
+        let iri = IriS::from_str(predicate.value.as_str())?;
         Ok(Pred::from(iri))
     }
 
@@ -718,6 +720,6 @@ fn todo<A>(str: &str) -> CResult<A> {
 }
 
 fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, CompiledSchemaError> {
-    let iri = IriS::new(&iri.value.as_str())?;
+    let iri = IriS::from_str(&iri.value.as_str())?;
     Ok(iri)
 }

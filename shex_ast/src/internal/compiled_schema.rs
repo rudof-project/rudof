@@ -6,6 +6,7 @@ use crate::{
 use iri_s::IriS;
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::str::FromStr;
 // use std::str::FromStr;
 use crate::Pred;
 use log::debug;
@@ -184,7 +185,7 @@ impl CompiledSchema {
     pub fn find_ref(&mut self, se_ref: &Ref) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             Ref::IriRef { value } => {
-                let label = ShapeLabel::from_iri_str(value)?;
+                let label = ShapeLabel::iri(value.clone());
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             }
             Ref::BNode { value } => {
@@ -255,8 +256,8 @@ impl CompiledSchema {
     }
 
     fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS> {
-        let iri = IriS::new(&iri.value.as_str())?;
-        Ok(iri)
+        let iri_s = iri.value.clone();
+        Ok(iri_s)
     }
 
     pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {

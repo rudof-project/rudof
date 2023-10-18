@@ -1,5 +1,6 @@
 use std::{result, str::FromStr};
 
+use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -24,12 +25,11 @@ pub enum ObjectValue {
 }
 
 impl FromStr for ObjectValue {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ObjectValue::IriRef(IriRef {
-            value: s.to_string(),
-        }))
+        let iri_ref = IriRef::try_from(s)?;
+        Ok(ObjectValue::IriRef(iri_ref))
     }
 }
 

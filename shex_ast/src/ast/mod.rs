@@ -58,6 +58,10 @@ pub struct FromStrRefError;
 #[cfg(test)]
 mod tests {
 
+    use std::str::FromStr;
+
+    use iri_s::IriS;
+
     use super::*;
 
     #[test]
@@ -78,7 +82,7 @@ mod tests {
                     id: None,
                     inverse: None,
                     predicate: IriRef {
-                        value: "http://a.example/p1".to_string(),
+                        value: IriS::new_unchecked("http://a.example/p1"),
                     },
                     value_expr: None,
                     min: None,
@@ -112,10 +116,10 @@ mod tests {
                     id: None,
                     inverse: None,
                     predicate: IriRef {
-                        value: "http://a.example/p1".to_string(),
+                        value: IriS::new_unchecked("http://a.example/p1"),
                     },
                     value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                        value: "http://all.example/S5".to_string(),
+                        value: IriS::new_unchecked("http://all.example/S5"),
                     }))),
                     min: None,
                     max: None,
@@ -137,14 +141,16 @@ mod tests {
  "valueExpr": "http://all.example/S5"
 }"#;
         let te = serde_json::from_str::<TripleExpr>(&str).unwrap();
+        let p1 = IriS::from_str("http://a.example/p1").unwrap();
+        let S5 = IriS::from_str("http://all.example/S5").unwrap();
         let expected = TripleExpr::TripleConstraint {
             id: None,
             inverse: None,
             predicate: IriRef {
-                value: "http://a.example/p1".to_string(),
+                value: p1,
             },
             value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                value: "http://all.example/S5".to_string(),
+                value: S5,
             }))),
             max: None,
             min: None,

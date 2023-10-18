@@ -1,22 +1,22 @@
 use std::str::FromStr;
 
-use iri_s::IriS;
+use iri_s::{IriS, IriSError};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
 use super::FromStrRefError;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(try_from = "String", into = "String")]
+#[serde(try_from = "&str", into = "String")]
 pub enum Ref {
-    IriRef { value: String },
+    IriRef { value: IriS },
     BNode { value: String },
 }
 
 impl Ref {
     pub fn iri_unchecked(s: &str) -> Ref {
         Ref::IriRef {
-            value: s.to_string(),
+            value: IriS::new_unchecked(s),
         }
     }
 
@@ -30,18 +30,19 @@ impl Ref {
 impl Into<String> for Ref {
     fn into(self) -> String {
         match self {
-            Ref::IriRef { value } => value,
+            Ref::IriRef { value } => value.to_string(),
             Ref::BNode { value } => value,
         }
     }
 }
 
-impl TryFrom<String> for Ref {
-    type Error = Void;
+impl TryFrom<&str> for Ref {
+    type Error = IriSError;
 
     // TODO: We should parse the bnode
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        Ok(Ref::IriRef { value: s })
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let iri_s = IriS::from_str(s)?;
+        Ok(Ref::IriRef { value: iri_s })
     }
 }
 
@@ -52,11 +53,12 @@ impl From<IriS> for Ref {
 }
 
 impl FromStr for Ref {
-    type Err = FromStrRefError;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let iri_s = IriS::from_str(s)?;
         Ok(Ref::IriRef {
-            value: s.to_string(),
+            value: iri_s,
         })
     }
 }

@@ -1,6 +1,7 @@
 use std::result;
 use std::str::FromStr;
 
+use iri_s::{IriSError, IriS};
 use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -72,11 +73,12 @@ pub enum ShapeExpr {
 }
 
 impl FromStr for ShapeExpr {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let iri_s = IriS::from_str(s)?;
         Ok(ShapeExpr::Ref(Ref::IriRef {
-            value: s.to_string(),
+            value: iri_s,
         }))
     }
 }

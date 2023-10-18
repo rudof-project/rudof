@@ -1,9 +1,9 @@
 use std::{result, str::FromStr};
 
 use crate::ast::serde_string_or_struct::*;
+use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
 
 use super::{
     iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard,
@@ -99,13 +99,12 @@ impl SerializeStringOrStruct for ValueSetValue {
 }
 
 impl FromStr for ValueSetValue {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let iri_ref = IriRef::try_from(s)?;
         Ok(ValueSetValue::ObjectValue(ObjectValueWrapper {
-            ov: ObjectValue::IriRef(IriRef {
-                value: s.to_string(),
-            }),
+            ov: ObjectValue::IriRef(iri_ref),
         }))
     }
 }

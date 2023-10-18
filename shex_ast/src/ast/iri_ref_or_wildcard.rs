@@ -1,5 +1,6 @@
 use std::{result, str::FromStr};
 
+use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -17,12 +18,11 @@ pub enum IriRefOrWildcard {
 }
 
 impl FromStr for IriRefOrWildcard {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(IriRefOrWildcard::IriRef(IriRef {
-            value: s.to_string(),
-        }))
+        let iri_ref = IriRef::try_from(s)?;
+        Ok(IriRefOrWildcard::IriRef(iri_ref))
     }
 }
 

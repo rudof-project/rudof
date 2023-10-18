@@ -1,8 +1,8 @@
 use std::{result, str::FromStr};
 
+use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
 
 use crate::ast::serde_string_or_struct::*;
 
@@ -101,13 +101,12 @@ impl TripleExpr {
 }
 
 impl FromStr for TripleExpr {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let iri_ref = IriRef::try_from(s)?;
         Ok(TripleExpr::TripleExprRef(TripleExprLabel::IriRef {
-            value: IriRef {
-                value: s.to_string(),
-            },
+            value: iri_ref,
         }))
     }
 }

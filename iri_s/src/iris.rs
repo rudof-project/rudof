@@ -22,11 +22,6 @@ impl IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
-    pub fn new(str: &str) -> Result<IriS, IriSError> {
-        let iri = NamedNode::new(str)?;
-        Ok(IriS { iri })
-    }
-
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
         IriS { iri }
@@ -75,13 +70,20 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_iri(s)
+        let iri = NamedNode::new(s)?;
+        Ok(IriS { iri })
     }
 }
 
-fn parse_iri(s: &str) -> Result<IriS, IriSError> {
-    IriS::new(s)
-}
+/*impl TryFrom<&str> for IriS {
+    type Error = IriSError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let iri = NamedNode::new(value)?;
+        Ok(IriS { iri })
+    }
+}*/
+
 
 impl Default for IriS {
     fn default() -> Self {
@@ -102,7 +104,9 @@ impl<'de> Visitor<'de> for IriVisitor {
     where
         E: de::Error,
     {
-        IriS::new(v).map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
+        IriS::from_str(v).map_err(|e| 
+            E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}"))
+        )
     }
 }
 

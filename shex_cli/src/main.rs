@@ -19,7 +19,7 @@ use shex_ast::Node;
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 pub mod cli;
 pub use cli::*;
@@ -184,7 +184,7 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     match iri_r.captures(node_str) {
         Some(captures) => match captures.get(1) {
             Some(cs) => {
-                let iri = IriS::new(cs.as_str())?;
+                let iri = IriS::from_str(cs.as_str())?;
                 Ok(iri.into())
             }
             None => {
@@ -193,7 +193,7 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
         },
         None => match data.resolve(node_str) {
             Ok(Some(named_node)) => {
-                let iri = IriS::new(named_node.as_str())?;
+                let iri = IriS::from_str(named_node.as_str())?;
                 Ok(iri.into())
             }
             Ok(None) => {
@@ -207,6 +207,6 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
 }
 
 fn parse_shape_label(label_str: &str) -> Result<ShapeLabel> {
-    let iri = IriS::new(label_str)?;
+    let iri = IriS::from_str(label_str)?;
     Ok(ShapeLabel::Iri(iri))
 }
