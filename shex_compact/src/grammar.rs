@@ -43,11 +43,24 @@ pub fn tws(i: &str) -> IResult<&str, ()> {
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub fn shex_statement(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    let (i, (ds, sts)) = tuple((directives, statements))(i)?;
+    let (i, (ds, maybe_sts)) = tuple((directives, opt(rest_shex_statements)))(i)?;
     let mut result = Vec::new();
     result.extend(ds);
-    result.extend(sts);
+    match maybe_sts {
+        None => {},
+        Some(sts) => {
+            result.extend(sts);
+        }
+    }
     Ok((i, result))
+}
+
+/// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
+pub fn rest_shex_statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
+    let (i, (s, ss)) = tuple((alt((not_start_action, start_actions)), statements))(i)?;
+    let mut rs = vec![s];
+    rs.extend(ss);
+    Ok((i, rs))
 }
 
 pub fn directives(i: &str) -> IResult<&str, Vec<ShExStatement>> {
@@ -95,6 +108,12 @@ fn start(i: &str) -> IResult<&str, ShExStatement> {
         inline_shape_expression,
     ))(i)?;
     Ok((i, ShExStatement::StartDecl { shape_expr: se }))
+}
+
+/// `[7]   	startActions	   ::=   	codeDecl+`
+fn start_actions(i: &str) -> IResult<&str, ShExStatement> {
+    let (i, cs) = many1(code_decl)(i)?;
+    Ok((i, ShExStatement::StartActions { actions: cs }))
 }
 
 /// `[8]   	statement	   ::=   	directive | notStartAction`
@@ -265,14 +284,14 @@ fn non_lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
 
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
 fn shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
-    let (i, (qualifiers, _, _, maybe_triple_expr, _, _, annotations, sem_actions)) = tuple((
-        qualifiers,
+    let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _, _, annotations, _,  sem_actions)) = tuple((
+        qualifiers, tws,         
         char('{'),
         tws,
         opt(triple_expression),
         tws,
-        char('}'),
-        annotations,
+        char('}'), tws, 
+        annotations, tws, 
         semantic_actions,
     ))(i)?;
     let closed = if qualifiers.contains(&Qualifier::Closed) {
@@ -342,7 +361,25 @@ fn one_of_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 
 /// `[38]   	multiElementOneOf	   ::=   	groupTripleExpr ('|' groupTripleExpr)+`
 fn multi_element_one_of(i: &str) -> IResult<&str, TripleExpr> {
-    todo!()
+    let (i, (te1, _, tes)) = tuple((group_triple_expr, tws, rest_group_triple_expr))(i)?;
+    let mut rs = vec![te1];
+    for te in tes {
+        rs.push(te);
+    }
+    let te = TripleExpr::one_of(rs);
+    Ok((i, te))
+}
+
+
+/// From [38] rest_group_triple_expr = ('|' groupTripleExpr)+
+fn rest_group_triple_expr(i: &str) -> IResult<&str, Vec<TripleExpr>> {
+   let (i, vs) = many1(tuple((char('|'), tws, group_triple_expr)))(i)?;
+   let mut tes = Vec::new();
+   for v in vs {
+    let (_, _, te) = v;
+    tes.push(te);
+   }
+   Ok((i, tes))
 }
 
 /// `[40]   	groupTripleExpr	   ::=   	singleElementGroup | multiElementGroup`
@@ -352,20 +389,83 @@ fn group_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 
 /// `[41]   	singleElementGroup	   ::=   	unaryTripleExpr ';'?`
 fn single_element_group(i: &str) -> IResult<&str, TripleExpr> {
-   let (i, (te, _)) = tuple((unary_triple_expr, opt(char(';'))))(i)?;
+   let (i, (te, _, _)) = 
+     tuple((unary_triple_expr, tws, opt(char(';'))))(i)?;
    Ok((i, te))
 }
 
+/// `[42]   	multiElementGroup	   ::=   	unaryTripleExpr (';' unaryTripleExpr)+ ';'?`
 fn multi_element_group(i: &str) -> IResult<&str, TripleExpr> {
+   let (i, (te1, _, tes, _, _)) = 
+     tuple((unary_triple_expr, tws, 
+            rest_unary_triple_expr, tws, 
+            opt(char(';'))))(i)?;
+   let mut rs = vec![te1];
+   for t in tes {
+    rs.push(t);
+   }
+   let te = TripleExpr::each_of(rs);
+   Ok((i, te))
+}
 
+/// From [42] rest_unary_triple_expr = (';' unaryTripleExpr)+ 
+fn rest_unary_triple_expr(i: &str) -> IResult<&str, Vec<TripleExpr>> {
+    let (i, vs) = many1(tuple((char(';'), tws, unary_triple_expr)))(i)?;
+    let mut tes = Vec::new();
+    for v in vs {
+        let (_, _, te) = v;
+        tes.push(te)
+    }
+    Ok((i, tes))
+}
+
+/// `[43] unaryTripleExpr ::= ('$' tripleExprLabel)? (tripleConstraint | bracketedTripleExpr)`
+/// `                     |   include`
+fn unary_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
+    alt((unary_triple_expr_opt1, include_))(i)
+}
+
+/// From [41] unary_triple_expr_opt1 = ('$' tripleExprLabel)? (tripleConstraint | bracketedTripleExpr)
+fn unary_triple_expr_opt1(i: &str) -> IResult<&str, TripleExpr> {
+   let (i, (maybe_label, _, te)) = 
+      tuple( (triple_expr_label_opt, tws, 
+              alt((triple_constraint, bracketed_triple_expr))))(i)?;
+   // Pending: Process maybe_label
+   Ok((i, te))
+}
+
+// From unary_triple_expr_opt1 
+fn triple_expr_label_opt(i: &str) -> IResult<&str, Option<Ref>> {
+  let (i, maybe_ts) = opt(
+    tuple((char('$'), tws, triple_expr_label))
+  )(i)?;
+  let maybe_label = match maybe_ts {
+    Some((_, _, r)) => Some(r),
+    None => None
+  };
+  Ok((i, maybe_label))
 }
 
 
+/// `[44]   	bracketedTripleExpr	   ::=   	'(' tripleExpression ')' cardinality? annotation* semanticActions`
+fn bracketed_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
+    let (i, (_, _, te, _, _, _, maybe_card, _, annotations, _, sem_acts)) = 
+      tuple(
+        (char('('), tws, 
+        triple_expression, tws, 
+        char(')'), tws, 
+        opt(cardinality), tws, 
+        annotations, tws, 
+        semantic_actions))(i)?;
+    // Pending
+    // let te = te.with_card(maybe_card).with_annotations(annotations).with_sem_acts(sem_acts);
+    Ok((i, te))
+}
 
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
-    let (i, (predicate, se, maybe_card)) =
-        tuple((predicate, inline_shape_expression, opt(cardinality)))(i)?;
+    let (i, (predicate, _, se, _, maybe_card)) =
+        tuple((predicate, tws, inline_shape_expression, tws, opt(cardinality)))(i)?;
     let (min,max) = match maybe_card {
         None => (None, None),
         Some(card) => (card.min(), card.max())
@@ -396,6 +496,13 @@ fn optional(i: &str) -> IResult<&str, Cardinality> {
     Ok((i, Cardinality::optional()))
 }
 
+/// `[57]   	include	   ::=   	'&' tripleExprLabel`
+fn include_(i:&str) -> IResult<&str, TripleExpr> {
+    let (i, (_, _, tel)) = tuple((char('&'), tws, triple_expr_label))(i)?;
+    // Pending: We should add a temporary reference to a triple_expr_label which should be dereferenced in a second step
+    todo!()
+    // Ok((i, tel))
+}
 
 /// `[58]   	annotation	   ::=   	"//" predicate (iri | literal)`
 fn annotation(i: &str) -> IResult<&str, Annotation> {
@@ -442,6 +549,13 @@ fn predicate(i: &str) -> IResult<&str, IriRef> {
 
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, Ref> {
+    let (i, iri_ref) = iri(i)?; // alt((iri, blank_node))(i)?;
+    let iri_s: IriS = iri_ref.into();
+    Ok((i, Ref::from(iri_s)))
+}
+
+/// `[64]   	tripleExprLabel	   ::=   	iri | blankNode`
+fn triple_expr_label(i: &str) -> IResult<&str, Ref> {
     let (i, iri_ref) = iri(i)?; // alt((iri, blank_node))(i)?;
     let iri_s: IriS = iri_ref.into();
     Ok((i, Ref::from(iri_s)))
@@ -813,6 +927,36 @@ mod tests {
         assert_eq!(shape_expression("{ <http://example.org/p> . }"), Ok(("", 
           ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None)), None, None)
         )));
+    }
+
+    #[test]
+    fn test_shape_def_triple_constraint() {
+        let p = IriRef::try_from("http://example.org/p").unwrap();
+
+        assert_eq!(shape_definition("{ <http://example.org/p> . }"), Ok(("", 
+          ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None)), None, None)
+        )));
+    }
+
+
+    #[test]
+    fn test_triple_expression() {
+        let p = IriRef::try_from("http://example.org/p").unwrap();
+
+        assert_eq!(
+            triple_expression("<http://example.org/p> . ?"), 
+            Ok(("", TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))))
+        );
+    }
+
+    #[test]
+    fn test_triple_constraint() {
+        let p = IriRef::try_from("http://example.org/p").unwrap();
+
+        assert_eq!(
+            unary_triple_expr_opt1("<http://example.org/p> . ?"), 
+            Ok(("", TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))))
+        );
     }
 
     #[test]

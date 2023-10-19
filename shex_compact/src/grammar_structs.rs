@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use shex_ast::{IriRef, Ref, ShapeExpr};
+use shex_ast::{IriRef, Ref, ShapeExpr, SemAct};
 
 #[derive(Debug, PartialEq)]
 pub enum ShExStatement<'a> {
@@ -12,6 +12,9 @@ pub enum ShExStatement<'a> {
     },
     ImportDecl {
         iri: IriS,
+    },
+    StartActions {
+        actions: Vec<SemAct>
     },
     StartDecl {
         shape_expr: ShapeExpr,

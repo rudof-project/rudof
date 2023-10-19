@@ -157,7 +157,9 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
 fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => todo!(),
-        ShExFormat::ShExC => todo!(),
+        ShExFormat::ShExC => {
+            let 
+        },
         ShExFormat::ShExJ => {
             let schema_json = SchemaJson::parse_schema_buf(schema_path)?;
             //let mut schema: CompiledSchema = CompiledSchema::new();
