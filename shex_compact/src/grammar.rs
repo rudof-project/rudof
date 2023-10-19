@@ -43,7 +43,7 @@ pub fn tws(i: &str) -> IResult<&str, ()> {
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub fn shex_statement(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    let (i, (ds, maybe_sts)) = tuple((directives, opt(rest_shex_statements)))(i)?;
+    let (i, (ds, _, maybe_sts)) = tuple((directives, tws, opt(rest_shex_statements)))(i)?;
     let mut result = Vec::new();
     result.extend(ds);
     match maybe_sts {
@@ -57,7 +57,7 @@ pub fn shex_statement(i: &str) -> IResult<&str, Vec<ShExStatement>> {
 
 /// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
 pub fn rest_shex_statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    let (i, (s, ss)) = tuple((alt((not_start_action, start_actions)), statements))(i)?;
+    let (i, (s, _, ss)) = tuple((alt((not_start_action, start_actions)), tws, statements))(i)?;
     let mut rs = vec![s];
     rs.extend(ss);
     Ok((i, rs))
