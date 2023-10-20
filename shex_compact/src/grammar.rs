@@ -734,8 +734,21 @@ fn pn_prefix(i: &str) -> IResult<&str, &str> {
     recognize(tuple((
         satisfy(is_pn_chars_base),
         take_while(is_pn_chars),
-        // fold_many0(alt((char('.'), take_while1(is_pn_chars))), || (), |_, _| ()),
+        rest_pn_chars, // fold_many0(tuple((char('.'), take_while1(is_pn_chars))), || (), |_, _| ()),
     )))(i)
+}
+
+fn rest_pn_chars(i: &str) -> IResult<&str, Vec<&str>> {
+    let (i, vs) = fold_many0(
+        tuple((char_dot, take_while1(is_pn_chars))),
+        Vec::new,
+        |mut cs: Vec<&str>, (c, rs)| {
+            cs.push(c);
+            cs.push(rs);
+            cs
+        },
+    )(i)?;
+    Ok((i, vs))
 }
 
 fn pn_chars_base(i: &str) -> IResult<&str, char> {
@@ -896,6 +909,20 @@ mod tests {
         assert_eq!(comment("#"), Ok(("", "")));
         assert_eq!(comment("#abc"), Ok(("", "abc")));
         assert_eq!(comment("#\n\n"), Ok(("\n", "")));
+    }
+
+    #[test]
+    fn test_prefix_id_with_dots() {
+        assert_eq!(
+            prefix_decl("prefix a.b.c: <urn>"),
+            Ok((
+                "",
+                ShExStatement::PrefixDecl {
+                    alias: "a.b.c",
+                    iri: IriS::new_unchecked("urn")
+                }
+            ))
+        );
     }
 
     #[test]
