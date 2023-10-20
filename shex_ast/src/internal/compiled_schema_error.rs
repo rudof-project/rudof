@@ -69,4 +69,7 @@ pub enum CompiledSchemaError {
 
     #[error("Not implemented yet: {msg}")]
     Todo { msg: String },
+
+    #[error("Internal: {msg}")]
+    Internal { msg: String },
 }

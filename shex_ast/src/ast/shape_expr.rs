@@ -1,7 +1,7 @@
 use std::result;
 use std::str::FromStr;
 
-use iri_s::{IriSError, IriS};
+use iri_s::{IriS, IriSError};
 use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -78,7 +78,7 @@ impl FromStr for ShapeExpr {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_s = IriS::from_str(s)?;
         Ok(ShapeExpr::Ref(Ref::IriRef {
-            value: iri_s,
+            value: IriRef::iri(iri_s),
         }))
     }
 }

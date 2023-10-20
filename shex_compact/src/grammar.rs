@@ -2,13 +2,13 @@ use iri_s::IriS;
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
-    character::complete::{char, one_of},
+    character::complete::{char, one_of, satisfy},
     combinator::{fail, map, map_res, opt, recognize},
     error::{ErrorKind, ParseError},
     error_position,
     multi::{fold_many0, many0, many1},
     sequence::{delimited, tuple},
-    Err, IResult, InputTake, Needed, 
+    Err, IResult, InputTake, Needed,
 };
 use shex_ast::{
     object_value::ObjectValue, Annotation, IriRef, NodeConstraint, Ref, SemAct, ShapeExpr,
@@ -64,7 +64,13 @@ pub fn rest_shex_statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
 }
 
 pub fn directives(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    many0(directive)(i)
+    let (i, vs) = many0(tuple((directive, tws)))(i)?;
+    let mut rs = Vec::new();
+    for v in vs {
+        let (d, _) = v;
+        rs.push(d);
+    }
+    Ok((i, rs))
 }
 
 pub fn statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
@@ -570,8 +576,8 @@ fn predicate(i: &str) -> IResult<&str, IriRef> {
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, Ref> {
     let (i, iri_ref) = iri(i)?; // alt((iri, blank_node))(i)?;
-    let iri_s: IriS = iri_ref.into();
-    Ok((i, Ref::from(iri_s)))
+    println!("Shape_expr_label: {iri_ref}");
+    Ok((i, Ref::iri_ref(iri_ref)))
 }
 
 /// `[64]   	tripleExprLabel	   ::=   	iri | blankNode`
@@ -612,7 +618,9 @@ fn at_pname_ln(i: &str) -> IResult<&str, ShapeExpr> {
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
 fn iri(i: &str) -> IResult<&str, IriRef> {
-    alt((iri_ref_s, prefixed_name))(i)
+    // alt((iri_ref_s, prefixed_name))(i)
+    // prefixed_name(i)
+    iri_ref_s(i)
 }
 
 fn iri_ref_s(i: &str) -> IResult<&str, IriRef> {
@@ -622,8 +630,13 @@ fn iri_ref_s(i: &str) -> IResult<&str, IriRef> {
 
 /// `[137s]   	prefixedName	   ::=   	PNAME_LN | PNAME_NS`
 fn prefixed_name(i: &str) -> IResult<&str, IriRef> {
-    let (i, s) = alt((pname_ln, pname_ns))(i)?;
-    todo!()
+    let (i, iri_ref) = alt((pname_ln, pname_ns_iri_ref))(i)?;
+    Ok((i, iri_ref))
+}
+
+fn pname_ns_iri_ref(i: &str) -> IResult<&str, IriRef> {
+    let (i, pname_ns) = pname_ns(i)?;
+    Ok((i, IriRef::prefixed(pname_ns, "")))
 }
 
 /// `[138s]   	blankNode	   ::=   	BLANK_NODE_LABEL`
@@ -632,12 +645,10 @@ fn blank_node(i: &str) -> IResult<&str, &str> {
 }
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
-fn pname_ln(i: &str) -> IResult<&str, &str> {
+fn pname_ln(i: &str) -> IResult<&str, IriRef> {
     // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
-    let (i, (str_pname_ns, str_pn_local)) = tuple((pname_ns, pn_local))(i)?;
-    // concat
-    println!("pname_ln with pname_ns = {str_pname_ns} and pn_local = {str_pn_local}");
-    Ok((i, str_pname_ns))
+    let (i, (prefix, local)) = tuple((pname_ns, pn_local))(i)?;
+    Ok((i, IriRef::prefixed(prefix, local)))
 }
 
 /// `[77]   	<PN_LOCAL>	   ::=   	(PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`
@@ -711,22 +722,40 @@ fn is_iri_ref(chr: char) -> bool {
 
 /// [140s] `<PNAME_NS>	   ::=   	PN_PREFIX? ":"`
 fn pname_ns(i: &str) -> IResult<&str, &str> {
-    let (i, pn_prefix) = opt(pn_prefix)(i)?;
-    let (i, _) = char(':')(i)?;
-    Ok((i, pn_prefix.unwrap_or("")))
+    let (i, (maybe_pn_prefix, _)) = tuple((opt(pn_prefix), char(':')))(i)?;
+    Ok((i, maybe_pn_prefix.unwrap_or("")))
 }
 
 /// [168s] `<PN_PREFIX>	::= PN_CHARS_BASE ( (PN_CHARS | ".")* PN_CHARS )?`
 fn pn_prefix(i: &str) -> IResult<&str, &str> {
+    /*let (i, (pn_chars_base, maybe_rest)) = tuple((pn_chars_base, opt(rest_pn_prefix)))(i)?;
+    let mut s: String = pn_chars_base.to_string();
+    Ok((i, s.as_str()))*/
     recognize(tuple((
-        one_if(is_pn_chars_base),
+        satisfy(is_pn_chars_base),
         take_while(is_pn_chars),
-        fold_many0(
-            tuple((char('.'), take_while1(is_pn_chars))),
-            || (),
-            |_, _| (),
-        ),
+        // fold_many0(alt((char('.'), take_while1(is_pn_chars))), || (), |_, _| ()),
     )))(i)
+}
+
+fn pn_chars_base(i: &str) -> IResult<&str, char> {
+    satisfy(is_pn_chars_base)(i)
+}
+
+/// From [168s] rest_pn_prefix = (PN_CHARS | ".")* PN_CHARS )
+fn rest_pn_prefix(i: &str) -> IResult<&str, &str> {
+    let (i, (vs, cs)) = tuple((many0(alt((pn_chars, char_dot))), pn_chars))(i)?;
+    // TODO...collect vs
+    Ok((i, cs))
+}
+
+fn char_dot(i: &str) -> IResult<&str, &str> {
+    let (i, _) = char('.')(i)?;
+    Ok((i, "."))
+}
+
+fn pn_chars(i: &str) -> IResult<&str, &str> {
+    one_if(is_pn_chars)(i)
 }
 
 /// [164s] `<PN_CHARS_BASE>	   ::=   	   [A-Z] | [a-z]`
@@ -791,7 +820,8 @@ fn one_if<'a, E: ParseError<&'a str>, F: Fn(char) -> bool>(
                 Err(Err::Error(error_position!(i, ErrorKind::OneOf)))
             }
         } else {
-            Err(Err::Incomplete(Needed::new(1)))
+            // Err(Err::Incomplete(Needed::new(1)))
+            Err(Err::Error(error_position!(i, ErrorKind::OneOf)))
         }
     }
 }
@@ -871,11 +901,11 @@ mod tests {
     #[test]
     fn test_prefix_id() {
         assert_eq!(
-            prefix_decl("prefix a.b.c: <urn>"),
+            prefix_decl("prefix a: <urn>"),
             Ok((
                 "",
                 ShExStatement::PrefixDecl {
-                    alias: "a.b.c",
+                    alias: "a",
                     iri: IriS::new_unchecked("urn")
                 }
             ))
@@ -1049,4 +1079,19 @@ mod tests {
     fn test_empty_shex_statement() {
         assert_eq!(shex_statement(""), Ok(((""), Vec::new())))
     }
+
+    /*#[test]
+    fn test_incomplete() {
+        use super::*;
+
+        fn m(i: &str) -> IResult<&str, Vec<ShExStatement>> {
+            let (i, maybe_cs) = opt(tuple((tws, char('$'), tws, shex_statement)))(i)?;
+            let cs = match maybe_cs {
+                Some((_, _, _, cs)) => cs,
+                None => Vec::new(),
+            };
+            Ok((i, cs))
+        }
+        assert_eq!(m("$ prefix : <a> \n <b> ."), Ok(((""), Vec::new())))
+    }*/
 }

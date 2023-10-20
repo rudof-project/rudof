@@ -115,7 +115,8 @@ impl SchemaJsonCompiler {
     ) -> CResult<ShapeLabelIdx> {
         match sref {
             ast::Ref::IriRef { value } => {
-                let idx = self.get_shape_label_idx(value.as_str(), compiled_schema)?;
+                let s: String = (*value).clone().into();
+                let idx = self.get_shape_label_idx(s.as_str(), compiled_schema)?;
                 Ok(idx)
             }
             ast::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
@@ -320,8 +321,14 @@ impl SchemaJsonCompiler {
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
-        let iri = IriS::from_str(predicate.value.as_str())?;
-        Ok(Pred::from(iri))
+        match predicate {
+            IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
+            IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::Internal {
+                msg: format!(
+                    "Cannot convert prefixed {prefix}:{local} to predicate without context"
+                ),
+            }),
+        }
     }
 
     fn cnv_min_max(&self, min: &Option<i32>, max: &Option<i32>) -> CResult<Cardinality> {
@@ -720,6 +727,10 @@ fn todo<A>(str: &str) -> CResult<A> {
 }
 
 fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, CompiledSchemaError> {
-    let iri = IriS::from_str(&iri.value.as_str())?;
-    Ok(iri)
+    match iri {
+        IriRef::Iri(iri) => Ok(iri.clone()),
+        _ => Err(CompiledSchemaError::Internal {
+            msg: format!("Cannot convert {iri} to Iri"),
+        }),
+    }
 }

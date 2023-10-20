@@ -81,9 +81,7 @@ mod tests {
                 te: TripleExpr::TripleConstraint {
                     id: None,
                     inverse: None,
-                    predicate: IriRef {
-                        value: IriS::new_unchecked("http://a.example/p1"),
-                    },
+                    predicate: IriS::new_unchecked("http://a.example/p1").into(),
                     value_expr: None,
                     min: None,
                     max: None,
@@ -115,11 +113,9 @@ mod tests {
                 te: TripleExpr::TripleConstraint {
                     id: None,
                     inverse: None,
-                    predicate: IriRef {
-                        value: IriS::new_unchecked("http://a.example/p1"),
-                    },
+                    predicate: IriS::new_unchecked("http://a.example/p1").into(),
                     value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                        value: IriS::new_unchecked("http://all.example/S5"),
+                        value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
                     }))),
                     min: None,
                     max: None,
@@ -146,11 +142,9 @@ mod tests {
         let expected = TripleExpr::TripleConstraint {
             id: None,
             inverse: None,
-            predicate: IriRef {
-                value: p1,
-            },
+            predicate: p1.into(),
             value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                value: S5,
+                value: IriRef::iri(S5),
             }))),
             max: None,
             min: None,
