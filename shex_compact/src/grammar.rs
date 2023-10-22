@@ -395,7 +395,7 @@ fn rest_group_triple_expr(i: &str) -> IResult<&str, Vec<TripleExpr>> {
 
 /// `[40]   	groupTripleExpr	   ::=   	singleElementGroup | multiElementGroup`
 fn group_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
-    alt((single_element_group, multi_element_group))(i)
+    alt((multi_element_group, single_element_group))(i)
 }
 
 /// `[41]   	singleElementGroup	   ::=   	unaryTripleExpr ';'?`
@@ -618,9 +618,9 @@ fn at_pname_ln(i: &str) -> IResult<&str, ShapeExpr> {
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
 fn iri(i: &str) -> IResult<&str, IriRef> {
-    // alt((iri_ref_s, prefixed_name))(i)
+    alt((iri_ref_s, prefixed_name))(i)
     // prefixed_name(i)
-    iri_ref_s(i)
+    // iri_ref_s(i)
 }
 
 fn iri_ref_s(i: &str) -> IResult<&str, IriRef> {
@@ -1107,18 +1107,14 @@ mod tests {
         assert_eq!(shex_statement(""), Ok(((""), Vec::new())))
     }
 
-    /*#[test]
+    #[test]
     fn test_incomplete() {
         use super::*;
 
-        fn m(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-            let (i, maybe_cs) = opt(tuple((tws, char('$'), tws, shex_statement)))(i)?;
-            let cs = match maybe_cs {
-                Some((_, _, _, cs)) => cs,
-                None => Vec::new(),
-            };
-            Ok((i, cs))
+        fn m(i: &str) -> IResult<&str, ShapeExpr> {
+            let (i, s) = shape_definition(i)?;
+            Ok((i, s))
         }
-        assert_eq!(m("$ prefix : <a> \n <b> ."), Ok(((""), Vec::new())))
-    }*/
+        assert_eq!(m("{ :p xsd:string ; :q . }"), Ok(((""), ShapeExpr::any())))
+    }
 }
