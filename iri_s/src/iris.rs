@@ -46,6 +46,14 @@ impl IriS {
         Ok(IriS { iri })
     }
 
+    pub fn resolve(&self, other: IriS) -> Result<Self, IriSError> {
+        let base = Iri::parse(self.iri.as_str())?;
+        let other_str = other.as_str();
+        let resolved = base.resolve(other_str)?;
+        let iri = NamedNode::new(resolved.as_str())?;
+        Ok(IriS { iri })
+    }
+
     /*    pub fn is_absolute(&self) -> bool {
         self.0.is_absolute()
     } */
@@ -84,7 +92,6 @@ impl FromStr for IriS {
     }
 }*/
 
-
 impl Default for IriS {
     fn default() -> Self {
         IriS::new_unchecked(&String::default())
@@ -104,9 +111,8 @@ impl<'de> Visitor<'de> for IriVisitor {
     where
         E: de::Error,
     {
-        IriS::from_str(v).map_err(|e| 
-            E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}"))
-        )
+        IriS::from_str(v)
+            .map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
     }
 }
 

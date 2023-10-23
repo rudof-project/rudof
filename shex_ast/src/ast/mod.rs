@@ -13,6 +13,7 @@ pub mod schema_json_compiler;
 pub mod schema_json_error;
 pub mod sem_act;
 pub mod serde_string_or_struct;
+pub mod shape;
 pub mod shape_decl;
 pub mod shape_expr;
 pub mod start_action;
@@ -38,6 +39,7 @@ pub use ref_::*;
 pub use schema::*;
 pub use schema_json_error::*;
 pub use sem_act::*;
+pub use shape::*;
 pub use shape_decl::*;
 pub use shape_expr::*;
 pub use start_action::*;
@@ -74,26 +76,18 @@ mod tests {
             }
           }"#;
         let se = serde_json::from_str::<ShapeExpr>(&str).unwrap();
-        let expected = ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: Some(TripleExprWrapper {
-                te: TripleExpr::TripleConstraint {
-                    id: None,
-                    inverse: None,
-                    predicate: IriRef {
-                        value: IriS::new_unchecked("http://a.example/p1"),
-                    },
-                    value_expr: None,
-                    min: None,
-                    max: None,
-                    sem_acts: None,
-                    annotations: None,
-                },
-            }),
-            sem_acts: None,
-            annotations: None,
-        };
+        let expected = ShapeExpr::Shape(Shape::default().with_expression(
+            TripleExpr::TripleConstraint {
+                id: None,
+                inverse: None,
+                predicate: IriS::new_unchecked("http://a.example/p1").into(),
+                value_expr: None,
+                min: None,
+                max: None,
+                sem_acts: None,
+                annotations: None,
+            },
+        ));
         assert_eq!(se, expected);
     }
 
@@ -108,28 +102,20 @@ mod tests {
             }
           }"#;
         let se = serde_json::from_str::<ShapeExpr>(&str).unwrap();
-        let expected = ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: Some(TripleExprWrapper {
-                te: TripleExpr::TripleConstraint {
-                    id: None,
-                    inverse: None,
-                    predicate: IriRef {
-                        value: IriS::new_unchecked("http://a.example/p1"),
-                    },
-                    value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                        value: IriS::new_unchecked("http://all.example/S5"),
-                    }))),
-                    min: None,
-                    max: None,
-                    sem_acts: None,
-                    annotations: None,
-                },
-            }),
-            sem_acts: None,
-            annotations: None,
-        };
+        let expected = ShapeExpr::Shape(Shape::default().with_expression(
+            TripleExpr::TripleConstraint {
+                id: None,
+                inverse: None,
+                predicate: IriS::new_unchecked("http://a.example/p1").into(),
+                value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+                    value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
+                }))),
+                min: None,
+                max: None,
+                sem_acts: None,
+                annotations: None,
+            },
+        ));
         assert_eq!(se, expected);
     }
 
@@ -146,11 +132,9 @@ mod tests {
         let expected = TripleExpr::TripleConstraint {
             id: None,
             inverse: None,
-            predicate: IriRef {
-                value: p1,
-            },
+            predicate: p1.into(),
             value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
-                value: S5,
+                value: IriRef::iri(S5),
             }))),
             max: None,
             min: None,

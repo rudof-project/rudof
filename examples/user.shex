@@ -4,6 +4,6 @@ prefix schema: <http://schema.org/>
 
 :User {
   schema:name   xsd:string             ;
-  schema:knows  @:User               * ;
+#  schema:knows  @:User                ;
   :status       [ :Active :Waiting ] ? ;
 }

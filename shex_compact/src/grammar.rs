@@ -2,20 +2,20 @@ use iri_s::IriS;
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
-    character::complete::{char, one_of},
-    combinator::{fail, map, opt, recognize, map_res},
-    error::{ErrorKind, ParseError},
+    character::complete::{char, digit1, one_of, satisfy},
+    combinator::{fail, map, map_res, opt, recognize},
+    error::{ErrorKind, FromExternalError, ParseError},
     error_position,
     multi::{fold_many0, many0, many1},
     sequence::{delimited, tuple},
-    Err, IResult, InputLength, InputTake, Needed, Parser,
+    Err, IResult, InputTake, Needed,
 };
 use shex_ast::{
-    object_value::ObjectValue, Annotation, IriRef, NodeConstraint, Ref, SemAct, ShapeExpr,
-    ShapeLabel, TripleExpr,
+    object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet,
 };
 
-use crate::{Qualifier, ShExStatement, Cardinality};
+use crate::{Cardinality, Qualifier, ShExStatement};
 
 fn not_eol(c: char) -> bool {
     c != '\n' && c != '\r'
@@ -47,7 +47,7 @@ pub fn shex_statement(i: &str) -> IResult<&str, Vec<ShExStatement>> {
     let mut result = Vec::new();
     result.extend(ds);
     match maybe_sts {
-        None => {},
+        None => {}
         Some(sts) => {
             result.extend(sts);
         }
@@ -64,7 +64,13 @@ pub fn rest_shex_statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
 }
 
 pub fn directives(i: &str) -> IResult<&str, Vec<ShExStatement>> {
-    many0(directive)(i)
+    let (i, vs) = many0(tuple((directive, tws)))(i)?;
+    let mut rs = Vec::new();
+    for v in vs {
+        let (d, _) = v;
+        rs.push(d);
+    }
+    Ok((i, rs))
 }
 
 pub fn statements(i: &str) -> IResult<&str, Vec<ShExStatement>> {
@@ -218,13 +224,14 @@ fn shape_atom(i: &str) -> IResult<&str, ShapeExpr> {
     alt((
         // Pending
         // non_lit_shape,
-        // lit_node_constraint,
+        lit_node_constraint_shape_expr,
         shape_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
 }
 
+/// `From [18] `shape_opt_non_lit ::= shapeOrRef nonLitNodeConstraint?`
 fn shape_opt_non_lit(i: &str) -> IResult<&str, ShapeExpr> {
     let (i, se) = shape_or_ref(i)?;
     let (i, maybe_non_lit) = opt(non_lit_node_constraint)(i)?;
@@ -243,11 +250,26 @@ fn inline_shape_atom(i: &str) -> IResult<&str, ShapeExpr> {
     alt((
         // Pending
         // nonlit_inline_shape,
-        // lit_node_constraint,
-        // inline_shape_non_lit,
+        lit_node_constraint_shape_expr,
+        inline_shape_or_ref_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
+}
+
+/// `from [20] `inline_shape_or_ref_opt_non_lit ::= inlineShapeOrRef nonLitNodeConstraint?`
+fn inline_shape_or_ref_opt_non_lit(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, se) = inline_shape_or_ref(i)?;
+    let (i, maybe_non_lit) = opt(non_lit_node_constraint)(i)?;
+    match maybe_non_lit {
+        None => Ok((i, se)),
+        Some(nl) => Ok((i, ShapeExpr::and(vec![se, ShapeExpr::node_constraint(nl)]))),
+    }
+}
+
+fn lit_node_constraint_shape_expr(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, nc) = lit_node_constraint(i)?;
+    Ok((i, ShapeExpr::NodeConstraint(nc)))
 }
 
 fn paren_shape_expr(i: &str) -> IResult<&str, ShapeExpr> {
@@ -265,6 +287,11 @@ fn shape_or_ref(i: &str) -> IResult<&str, ShapeExpr> {
     alt((shape_definition, shape_ref))(i)
 }
 
+/// `[22]   	inlineShapeOrRef	   ::=   	   inlineShapeDefinition | shapeRef`
+fn inline_shape_or_ref(i: &str) -> IResult<&str, ShapeExpr> {
+    alt((inline_shape_definition, shape_ref))(i)
+}
+
 /// `[23]   	shapeRef	   ::=   	   ATPNAME_LN | ATPNAME_NS | '@' shapeExprLabel`
 fn shape_ref(i: &str) -> IResult<&str, ShapeExpr> {
     alt((at_pname_ln, at_pname_ns, at_shape_expr_label))(i)
@@ -275,6 +302,38 @@ fn at_shape_expr_label(i: &str) -> IResult<&str, ShapeExpr> {
     Ok((i, ShapeExpr::shape_ref(label)))
 }
 
+/// `[24]   	litNodeConstraint	   ::=   	   "LITERAL" xsFacet*
+/// | datatype xsFacet*
+/// | valueSet xsFacet*
+/// | numericFacet+`
+fn lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
+    alt((
+        literal_facets,
+        datatype_facets,
+        value_set_facets,
+        // numeric_facets,
+    ))(i)
+}
+
+fn literal_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws, facets))(i)?;
+    Ok((i, NodeConstraint::new().with_xsfacets(facets)))
+}
+
+fn datatype_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (dt, _, facets)) = tuple((datatype, tws, facets))(i)?;
+    Ok((i, dt.with_xsfacets(facets)))
+}
+
+fn value_set_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (vs, _, facets)) = tuple((value_set, tws, facets))(i)?;
+    Ok((i, vs.with_xsfacets(facets)))
+}
+
+fn facets(i: &str) -> IResult<&str, Vec<XsFacet>> {
+    many0(xs_facet)(i)
+}
+
 /// `[25]   	nonLitNodeConstraint	   ::=   	   nonLiteralKind stringFacet*`
 /// `| stringFacet+`
 fn non_lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
@@ -282,17 +341,112 @@ fn non_lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
     fail(i)
 }
 
+/// `[27]   	xsFacet	   ::=   	stringFacet | numericFacet`
+fn xs_facet(i: &str) -> IResult<&str, XsFacet> {
+    alt((
+        string_facet,
+        // numeric_facet
+    ))(i)
+}
+
+/// `[28]   	stringFacet	   ::=   	   stringLength INTEGER`
+/// `| REGEXP`
+fn string_facet(i: &str) -> IResult<&str, XsFacet> {
+    alt((
+        string_length,
+        // regexp
+    ))(i)
+}
+
+// `[29]   	stringLength	   ::=   	"LENGTH" | "MINLENGTH" | "MAXLENGTH"`
+fn string_length(i: &str) -> IResult<&str, XsFacet> {
+    alt((min_length, max_length, length))(i)
+}
+
+fn min_length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("MIN_LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::min_length(n)))
+}
+
+fn max_length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("MAX_LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::max_length(n)))
+}
+
+fn length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::length(n)))
+}
+
+fn pos_integer(i: &str) -> IResult<&str, usize> {
+    let (i, n) = integer(i)?;
+    let u: usize;
+    if n < 0 {
+        Err(Err::Error(error_position!(i, ErrorKind::Digit)))
+    } else {
+        u = n as usize;
+        Ok((i, u))
+    }
+}
+
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
 fn shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
-    let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _, _, annotations, _,  sem_actions)) = tuple((
-        qualifiers, tws,         
+    let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _, _, annotations, _, sem_actions)) =
+        tuple((
+            qualifiers,
+            tws,
+            char('{'),
+            tws,
+            opt(triple_expression),
+            tws,
+            char('}'),
+            tws,
+            annotations,
+            tws,
+            semantic_actions,
+        ))(i)?;
+    let closed = if qualifiers.contains(&Qualifier::Closed) {
+        Some(true)
+    } else {
+        None
+    };
+    let mut extra = Vec::new();
+    for q in qualifiers {
+        match q {
+            Qualifier::Closed => {}
+            Qualifier::Extra(ps) => {
+                for p in ps {
+                    extra.push(p)
+                }
+            }
+        }
+    }
+    let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
+    let annotations = if annotations.is_empty() {
+        None
+    } else {
+        Some(annotations)
+    };
+    Ok((
+        i,
+        ShapeExpr::shape(
+            Shape::new(closed, maybe_extra, maybe_triple_expr)
+                .with_annotations(annotations)
+                .with_sem_acts(sem_actions),
+        ),
+    ))
+}
+
+/// `[34]   	inlineShapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}'`
+fn inline_shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _)) = tuple((
+        qualifiers,
+        tws,
         char('{'),
         tws,
         opt(triple_expression),
         tws,
-        char('}'), tws, 
-        annotations, tws, 
-        semantic_actions,
+        char('}'),
     ))(i)?;
     let closed = if qualifiers.contains(&Qualifier::Closed) {
         Some(true)
@@ -303,26 +457,17 @@ fn shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
     for q in qualifiers {
         match q {
             Qualifier::Closed => {}
-            Qualifier::Extra(ps) => for p in ps {
-                extra.push(p)
+            Qualifier::Extra(ps) => {
+                for p in ps {
+                    extra.push(p)
+                }
             }
         }
     }
     let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
-    let annotations = if annotations.is_empty() {
-        None 
-    } else {
-        Some(annotations)
-    };
     Ok((
         i,
-        ShapeExpr::shape(
-            closed,
-            maybe_extra,
-            maybe_triple_expr,
-            sem_actions,
-            annotations,
-        ),
+        ShapeExpr::shape(Shape::new(closed, maybe_extra, maybe_triple_expr)),
     ))
 }
 
@@ -351,7 +496,7 @@ fn extra_property_set(i: &str) -> IResult<&str, Qualifier> {
 
 /// `[36]   	tripleExpression	   ::=   	oneOfTripleExpr`
 fn triple_expression(i: &str) -> IResult<&str, TripleExpr> {
-    one_of_triple_expr(i) 
+    one_of_triple_expr(i)
 }
 
 /// `[37]   	oneOfTripleExpr	   ::=   	groupTripleExpr | multiElementOneOf`
@@ -370,45 +515,46 @@ fn multi_element_one_of(i: &str) -> IResult<&str, TripleExpr> {
     Ok((i, te))
 }
 
-
 /// From [38] rest_group_triple_expr = ('|' groupTripleExpr)+
 fn rest_group_triple_expr(i: &str) -> IResult<&str, Vec<TripleExpr>> {
-   let (i, vs) = many1(tuple((char('|'), tws, group_triple_expr)))(i)?;
-   let mut tes = Vec::new();
-   for v in vs {
-    let (_, _, te) = v;
-    tes.push(te);
-   }
-   Ok((i, tes))
+    let (i, vs) = many1(tuple((char('|'), tws, group_triple_expr)))(i)?;
+    let mut tes = Vec::new();
+    for v in vs {
+        let (_, _, te) = v;
+        tes.push(te);
+    }
+    Ok((i, tes))
 }
 
 /// `[40]   	groupTripleExpr	   ::=   	singleElementGroup | multiElementGroup`
 fn group_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
-    alt((single_element_group, multi_element_group))(i)
+    alt((multi_element_group, single_element_group))(i)
 }
 
 /// `[41]   	singleElementGroup	   ::=   	unaryTripleExpr ';'?`
 fn single_element_group(i: &str) -> IResult<&str, TripleExpr> {
-   let (i, (te, _, _)) = 
-     tuple((unary_triple_expr, tws, opt(char(';'))))(i)?;
-   Ok((i, te))
+    let (i, (te, _, _)) = tuple((unary_triple_expr, tws, opt(char(';'))))(i)?;
+    Ok((i, te))
 }
 
 /// `[42]   	multiElementGroup	   ::=   	unaryTripleExpr (';' unaryTripleExpr)+ ';'?`
 fn multi_element_group(i: &str) -> IResult<&str, TripleExpr> {
-   let (i, (te1, _, tes, _, _)) = 
-     tuple((unary_triple_expr, tws, 
-            rest_unary_triple_expr, tws, 
-            opt(char(';'))))(i)?;
-   let mut rs = vec![te1];
-   for t in tes {
-    rs.push(t);
-   }
-   let te = TripleExpr::each_of(rs);
-   Ok((i, te))
+    let (i, (te1, _, tes, _, _)) = tuple((
+        unary_triple_expr,
+        tws,
+        rest_unary_triple_expr,
+        tws,
+        opt(char(';')),
+    ))(i)?;
+    let mut rs = vec![te1];
+    for t in tes {
+        rs.push(t);
+    }
+    let te = TripleExpr::each_of(rs);
+    Ok((i, te))
 }
 
-/// From [42] rest_unary_triple_expr = (';' unaryTripleExpr)+ 
+/// From [42] rest_unary_triple_expr = (';' unaryTripleExpr)+
 fn rest_unary_triple_expr(i: &str) -> IResult<&str, Vec<TripleExpr>> {
     let (i, vs) = many1(tuple((char(';'), tws, unary_triple_expr)))(i)?;
     let mut tes = Vec::new();
@@ -427,36 +573,40 @@ fn unary_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 
 /// From [41] unary_triple_expr_opt1 = ('$' tripleExprLabel)? (tripleConstraint | bracketedTripleExpr)
 fn unary_triple_expr_opt1(i: &str) -> IResult<&str, TripleExpr> {
-   let (i, (maybe_label, _, te)) = 
-      tuple( (triple_expr_label_opt, tws, 
-              alt((triple_constraint, bracketed_triple_expr))))(i)?;
-   // Pending: Process maybe_label
-   Ok((i, te))
+    let (i, (maybe_label, _, te)) = tuple((
+        triple_expr_label_opt,
+        tws,
+        alt((triple_constraint, bracketed_triple_expr)),
+    ))(i)?;
+    // Pending: Process maybe_label
+    Ok((i, te))
 }
 
-// From unary_triple_expr_opt1 
+// From unary_triple_expr_opt1
 fn triple_expr_label_opt(i: &str) -> IResult<&str, Option<Ref>> {
-  let (i, maybe_ts) = opt(
-    tuple((char('$'), tws, triple_expr_label))
-  )(i)?;
-  let maybe_label = match maybe_ts {
-    Some((_, _, r)) => Some(r),
-    None => None
-  };
-  Ok((i, maybe_label))
+    let (i, maybe_ts) = opt(tuple((char('$'), tws, triple_expr_label)))(i)?;
+    let maybe_label = match maybe_ts {
+        Some((_, _, r)) => Some(r),
+        None => None,
+    };
+    Ok((i, maybe_label))
 }
-
 
 /// `[44]   	bracketedTripleExpr	   ::=   	'(' tripleExpression ')' cardinality? annotation* semanticActions`
 fn bracketed_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
-    let (i, (_, _, te, _, _, _, maybe_card, _, annotations, _, sem_acts)) = 
-      tuple(
-        (char('('), tws, 
-        triple_expression, tws, 
-        char(')'), tws, 
-        opt(cardinality), tws, 
-        annotations, tws, 
-        semantic_actions))(i)?;
+    let (i, (_, _, te, _, _, _, maybe_card, _, annotations, _, sem_acts)) = tuple((
+        char('('),
+        tws,
+        triple_expression,
+        tws,
+        char(')'),
+        tws,
+        opt(cardinality),
+        tws,
+        annotations,
+        tws,
+        semantic_actions,
+    ))(i)?;
     // Pending
     // let te = te.with_card(maybe_card).with_annotations(annotations).with_sem_acts(sem_acts);
     Ok((i, te))
@@ -464,18 +614,27 @@ fn bracketed_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
-    let (i, (predicate, _, se, _, maybe_card)) =
-        tuple((predicate, tws, inline_shape_expression, tws, opt(cardinality)))(i)?;
-    let (min,max) = match maybe_card {
+    let (i, (predicate, _, se, _, maybe_card)) = tuple((
+        predicate,
+        tws,
+        inline_shape_expression,
+        tws,
+        opt(cardinality),
+    ))(i)?;
+    let (min, max) = match maybe_card {
         None => (None, None),
-        Some(card) => (card.min(), card.max())
+        Some(card) => (card.min(), card.max()),
     };
-    Ok((i, TripleExpr::triple_constraint(predicate, Some(se), min, max)))
+    Ok((
+        i,
+        TripleExpr::triple_constraint(predicate, Some(se), min, max),
+    ))
 }
 
-/// `46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
+/// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
 fn cardinality(i: &str) -> IResult<&str, Cardinality> {
-    alt((plus, star, optional, 
+    alt((
+        plus, star, optional,
         // Pending
         // repeat_range
     ))(i)
@@ -496,8 +655,58 @@ fn optional(i: &str) -> IResult<&str, Cardinality> {
     Ok((i, Cardinality::optional()))
 }
 
+/// `[48]   	valueSet	   ::=   	'[' valueSetValue* ']'`
+fn value_set(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (_, _, vs, _, _)) = tuple((char('['), tws, many0(value_set_value), tws, char(']')))(i)?;
+    Ok((i, NodeConstraint::new().with_values(vs)))
+}
+
+/// `[49]   	valueSetValue	   ::=   	iriRange | literalRange | languageRange`
+/// `                               | exclusion+`
+fn value_set_value(i: &str) -> IResult<&str, ValueSetValue> {
+    alt((
+        // Pending
+        iri_range,
+        // literal_range,
+        // language_range,
+        // exclusion_plus
+    ))(i)
+}
+
+type Exclusion = ();
+
+/// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
+fn iri_range(i: &str) -> IResult<&str, ValueSetValue> {
+    let (i, (iri, _, maybe_exc)) = tuple((iri, tws, opt(char_exclusion)))(i)?;
+    // Pending char_exclusion
+    let vs = ValueSetValue::iri(iri);
+    Ok((i, vs))
+}
+
+fn char_exclusion(i: &str) -> IResult<&str, Vec<Exclusion>> {
+    let (i, (_, _, es)) = tuple((char('~'), tws, many0(exclusion)))(i)?;
+    Ok((i, es))
+}
+
+/// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
+fn exclusion(i: &str) -> IResult<&str, Exclusion> {
+    let (i, (_, _, _, _, e, _, maybe_tilde)) =
+        tuple((char('.'), tws, char('-'), tws, exc, tws, opt(char('~'))))(i)?;
+    Ok((i, ()))
+}
+
+/// `from [50] exc = iri | literal | LANGTAG`
+fn exc(i: &str) -> IResult<&str, Exclusion> {
+    let (i, e) = alt((
+        iri,
+        // literal,
+        // lang_tag
+    ))(i)?;
+    Ok((i, ()))
+}
+
 /// `[57]   	include	   ::=   	'&' tripleExprLabel`
-fn include_(i:&str) -> IResult<&str, TripleExpr> {
+fn include_(i: &str) -> IResult<&str, TripleExpr> {
     let (i, (_, _, tel)) = tuple((char('&'), tws, triple_expr_label))(i)?;
     // Pending: We should add a temporary reference to a triple_expr_label which should be dereferenced in a second step
     todo!()
@@ -547,11 +756,25 @@ fn predicate(i: &str) -> IResult<&str, IriRef> {
     alt((iri, rdf_type))(i)
 }
 
+/// `[62]   	datatype	   ::=   	iri`
+fn datatype(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, iri_ref) = iri(i)?;
+    Ok((i, NodeConstraint::new().with_datatype(iri_ref)))
+}
+
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, Ref> {
-    let (i, iri_ref) = iri(i)?; // alt((iri, blank_node))(i)?;
-    let iri_s: IriS = iri_ref.into();
-    Ok((i, Ref::from(iri_s)))
+    let (i, ref_) = alt((iri_as_ref, blank_node_ref))(i)?;
+    Ok((i, ref_))
+}
+fn iri_as_ref(i: &str) -> IResult<&str, Ref> {
+    let (i, iri_ref) = iri(i)?;
+    Ok((i, Ref::iri_ref(iri_ref)))
+}
+
+fn blank_node_ref(i: &str) -> IResult<&str, Ref> {
+    let ((i, bn)) = blank_node(i)?;
+    Ok((i, Ref::bnode_unchecked(bn)))
 }
 
 /// `[64]   	tripleExprLabel	   ::=   	iri | blankNode`
@@ -587,7 +810,7 @@ fn at_pname_ns(i: &str) -> IResult<&str, ShapeExpr> {
 /// `[71]   	<ATPNAME_LN>	   ::=   	"@" PNAME_LN`
 fn at_pname_ln(i: &str) -> IResult<&str, ShapeExpr> {
     let (i, (_, _, pname_ln)) = tuple((char('@'), tws, pname_ln))(i)?;
-    todo!();
+    Ok((i, ShapeExpr::iri_ref(pname_ln)))
 }
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
@@ -602,22 +825,74 @@ fn iri_ref_s(i: &str) -> IResult<&str, IriRef> {
 
 /// `[137s]   	prefixedName	   ::=   	PNAME_LN | PNAME_NS`
 fn prefixed_name(i: &str) -> IResult<&str, IriRef> {
-    let (i, s) = alt((pname_ln, pname_ns))(i)?;
-    todo!()
+    let (i, iri_ref) = alt((pname_ln, pname_ns_iri_ref))(i)?;
+    Ok((i, iri_ref))
+}
+
+fn pname_ns_iri_ref(i: &str) -> IResult<&str, IriRef> {
+    let (i, pname_ns) = pname_ns(i)?;
+    Ok((i, IriRef::prefixed(pname_ns, "")))
 }
 
 /// `[138s]   	blankNode	   ::=   	BLANK_NODE_LABEL`
 fn blank_node(i: &str) -> IResult<&str, &str> {
-    todo!()
+    blank_node_label(i)
+}
+
+/// `[142s]   	<BLANK_NODE_LABEL>	   ::=   	"_:" (PN_CHARS_U | [0-9]) ((PN_CHARS | ".")* PN_CHARS)?`
+fn blank_node_label(i: &str) -> IResult<&str, &str> {
+    let (i, _) = tag("_:")(i)?;
+    let (i, label) = recognize(tuple((one_if(is_pn_chars_u_digit), blank_node_label2)))(i)?;
+    Ok((i, label))
+}
+
+fn is_pn_chars_u_digit(c: char) -> bool {
+    is_digit(c) || is_pn_chars_u(c)
+}
+
+fn is_pn_chars_or_dot(c: char) -> bool {
+    c == '.' || is_pn_chars(c)
+}
+
+fn blank_node_label2(src: &str) -> IResult<&str, ()> {
+    match blank_node_label3(src) {
+        Ok((left, m)) => {
+            // if last is a '.', remove that
+            if m.ends_with('.') {
+                Ok(((&src[m.len() - 1..]), ()))
+            } else {
+                Ok((left, ()))
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn blank_node_label3(i: &str) -> IResult<&str, &str> {
+    take_while(is_pn_chars_or_dot)(i)
+}
+
+/// `[19t]   	<INTEGER>	   ::=   	[+-]? [0-9]+`
+fn integer(i: &str) -> IResult<&str, isize> {
+    let (i, (maybe_sign, digits)) = tuple((opt(one_of("+-")), digits))(i)?;
+    let n = match maybe_sign {
+        None => digits,
+        Some('+') => digits,
+        Some('-') => -digits,
+        _ => panic!("Internal parser error, Strange maybe_sign: {maybe_sign:?}"),
+    };
+    Ok((i, n))
+}
+
+fn digits(i: &str) -> IResult<&str, isize> {
+    map_res(digit1, str::parse)(i)
 }
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
-fn pname_ln(i: &str) -> IResult<&str, &str> {
+fn pname_ln(i: &str) -> IResult<&str, IriRef> {
     // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
-    let (i, (str_pname_ns, str_pn_local)) = tuple((pname_ns, pn_local))(i)?;
-    // concat
-    println!("pname_ln with pname_ns = {str_pname_ns} and pn_local = {str_pn_local}");
-    Ok((i, str_pname_ns))
+    let (i, (prefix, local)) = tuple((pname_ns, pn_local))(i)?;
+    Ok((i, IriRef::prefixed(prefix, local)))
 }
 
 /// `[77]   	<PN_LOCAL>	   ::=   	(PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`
@@ -691,22 +966,53 @@ fn is_iri_ref(chr: char) -> bool {
 
 /// [140s] `<PNAME_NS>	   ::=   	PN_PREFIX? ":"`
 fn pname_ns(i: &str) -> IResult<&str, &str> {
-    let (i, pn_prefix) = opt(pn_prefix)(i)?;
-    let (i, _) = char(':')(i)?;
-    Ok((i, pn_prefix.unwrap_or("")))
+    let (i, (maybe_pn_prefix, _)) = tuple((opt(pn_prefix), char(':')))(i)?;
+    Ok((i, maybe_pn_prefix.unwrap_or("")))
 }
 
 /// [168s] `<PN_PREFIX>	::= PN_CHARS_BASE ( (PN_CHARS | ".")* PN_CHARS )?`
 fn pn_prefix(i: &str) -> IResult<&str, &str> {
+    /*let (i, (pn_chars_base, maybe_rest)) = tuple((pn_chars_base, opt(rest_pn_prefix)))(i)?;
+    let mut s: String = pn_chars_base.to_string();
+    Ok((i, s.as_str()))*/
     recognize(tuple((
-        one_if(is_pn_chars_base),
+        satisfy(is_pn_chars_base),
         take_while(is_pn_chars),
-        fold_many0(
-            tuple((char('.'), take_while1(is_pn_chars))),
-            || (),
-            |_, _| (),
-        ),
+        rest_pn_chars, // fold_many0(tuple((char('.'), take_while1(is_pn_chars))), || (), |_, _| ()),
     )))(i)
+}
+
+fn rest_pn_chars(i: &str) -> IResult<&str, Vec<&str>> {
+    let (i, vs) = fold_many0(
+        tuple((char_dot, take_while1(is_pn_chars))),
+        Vec::new,
+        |mut cs: Vec<&str>, (c, rs)| {
+            cs.push(c);
+            cs.push(rs);
+            cs
+        },
+    )(i)?;
+    Ok((i, vs))
+}
+
+fn pn_chars_base(i: &str) -> IResult<&str, char> {
+    satisfy(is_pn_chars_base)(i)
+}
+
+/// From [168s] rest_pn_prefix = (PN_CHARS | ".")* PN_CHARS )
+fn rest_pn_prefix(i: &str) -> IResult<&str, &str> {
+    let (i, (vs, cs)) = tuple((many0(alt((pn_chars, char_dot))), pn_chars))(i)?;
+    // TODO...collect vs
+    Ok((i, cs))
+}
+
+fn char_dot(i: &str) -> IResult<&str, &str> {
+    let (i, _) = char('.')(i)?;
+    Ok((i, "."))
+}
+
+fn pn_chars(i: &str) -> IResult<&str, &str> {
+    one_if(is_pn_chars)(i)
 }
 
 /// [164s] `<PN_CHARS_BASE>	   ::=   	   [A-Z] | [a-z]`
@@ -771,7 +1077,8 @@ fn one_if<'a, E: ParseError<&'a str>, F: Fn(char) -> bool>(
                 Err(Err::Error(error_position!(i, ErrorKind::OneOf)))
             }
         } else {
-            Err(Err::Incomplete(Needed::new(1)))
+            // Err(Err::Incomplete(Needed::new(1)))
+            Err(Err::Error(error_position!(i, ErrorKind::OneOf)))
         }
     }
 }
@@ -811,7 +1118,7 @@ where
         if let Ok((left, _)) = tws(i) {
             i = left;
         }
-    
+
         match sep(i) {
             Ok((left, _)) => {
                 i = left;
@@ -849,13 +1156,27 @@ mod tests {
     }
 
     #[test]
-    fn test_prefix_id() {
+    fn test_prefix_id_with_dots() {
         assert_eq!(
             prefix_decl("prefix a.b.c: <urn>"),
             Ok((
                 "",
                 ShExStatement::PrefixDecl {
                     alias: "a.b.c",
+                    iri: IriS::new_unchecked("urn")
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn test_prefix_id() {
+        assert_eq!(
+            prefix_decl("prefix a: <urn>"),
+            Ok((
+                "",
+                ShExStatement::PrefixDecl {
+                    alias: "a",
                     iri: IriS::new_unchecked("urn")
                 }
             ))
@@ -908,10 +1229,7 @@ mod tests {
     fn test_shape_expr_label() {
         assert_eq!(
             shape_expr_label("<http://example.org/S>"),
-            Ok((
-                "",
-                Ref::iri_unchecked("http://example.org/S")
-            ))
+            Ok(("", Ref::iri_unchecked("http://example.org/S")))
         );
     }
 
@@ -924,28 +1242,52 @@ mod tests {
     fn test_shape_expr_triple_constraint() {
         let p = IriRef::try_from("http://example.org/p").unwrap();
 
-        assert_eq!(shape_expression("{ <http://example.org/p> . }"), Ok(("", 
-          ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None)), None, None)
-        )));
+        assert_eq!(
+            shape_expression("{ <http://example.org/p> . }"),
+            Ok((
+                "",
+                ShapeExpr::shape(
+                    Shape::default().with_expression(TripleExpr::triple_constraint(
+                        p,
+                        Some(ShapeExpr::any()),
+                        None,
+                        None
+                    ))
+                )
+            ))
+        );
     }
 
     #[test]
     fn test_shape_def_triple_constraint() {
         let p = IriRef::try_from("http://example.org/p").unwrap();
 
-        assert_eq!(shape_definition("{ <http://example.org/p> . }"), Ok(("", 
-          ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None)), None, None)
-        )));
+        assert_eq!(
+            shape_definition("{ <http://example.org/p> . }"),
+            Ok((
+                "",
+                ShapeExpr::shape(
+                    Shape::default().with_expression(TripleExpr::triple_constraint(
+                        p,
+                        Some(ShapeExpr::any()),
+                        None,
+                        None
+                    ))
+                )
+            ))
+        );
     }
-
 
     #[test]
     fn test_triple_expression() {
         let p = IriRef::try_from("http://example.org/p").unwrap();
 
         assert_eq!(
-            triple_expression("<http://example.org/p> . ?"), 
-            Ok(("", TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))))
+            triple_expression("<http://example.org/p> . ?"),
+            Ok((
+                "",
+                TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))
+            ))
         );
     }
 
@@ -954,20 +1296,43 @@ mod tests {
         let p = IriRef::try_from("http://example.org/p").unwrap();
 
         assert_eq!(
-            unary_triple_expr_opt1("<http://example.org/p> . ?"), 
-            Ok(("", TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))))
+            unary_triple_expr_opt1("<http://example.org/p> . ?"),
+            Ok((
+                "",
+                TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), Some(0), Some(1))
+            ))
         );
     }
 
     #[test]
     fn test_shape_expr_and() {
         let p = IriRef::try_from("http://example.org/p").unwrap();
-        let q = IriRef::try_from("http://example.org/q").unwrap(); 
-        let se1 = ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None)), None, None);
-        let se2 = ShapeExpr::shape(None, None, Some(TripleExpr::triple_constraint(q, Some(ShapeExpr::any()), None, None)), None, None);
-        assert_eq!(shape_expression("{ <http://example.org/p> . } AND { <http://example.org/q> . }"), 
-          Ok(("", 
-           ShapeExpr::and(vec![se1, se2])
-        )));
+        let q = IriRef::try_from("http://example.org/q").unwrap();
+        let se1 = ShapeExpr::shape(Shape::default().with_expression(
+            TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None),
+        ));
+        let se2 = ShapeExpr::shape(Shape::default().with_expression(
+            TripleExpr::triple_constraint(q, Some(ShapeExpr::any()), None, None),
+        ));
+        assert_eq!(
+            shape_expression("{ <http://example.org/p> . } AND { <http://example.org/q> . }"),
+            Ok(("", ShapeExpr::and(vec![se1, se2])))
+        );
+    }
+
+    #[test]
+    fn test_empty_shex_statement() {
+        assert_eq!(shex_statement(""), Ok(((""), Vec::new())))
+    }
+
+    #[test]
+    fn test_incomplete() {
+        use super::*;
+
+        fn m(i: &str) -> IResult<&str, ShapeExpr> {
+            let (i, s) = shape_atom(i)?;
+            Ok((i, s))
+        }
+        assert_eq!(m("@:User"), Ok(((""), ShapeExpr::any())))
     }
 }

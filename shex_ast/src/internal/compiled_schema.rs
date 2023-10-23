@@ -185,7 +185,8 @@ impl CompiledSchema {
     pub fn find_ref(&mut self, se_ref: &Ref) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             Ref::IriRef { value } => {
-                let label = ShapeLabel::iri(value.clone());
+                let iri_s: IriS = (*value).clone().into();
+                let label = ShapeLabel::iri(iri_s);
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             }
             Ref::BNode { value } => {
@@ -255,8 +256,8 @@ impl CompiledSchema {
         }
     }
 
-    fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS> {
-        let iri_s = iri.value.clone();
+    fn cnv_iri_ref<'a>(&self, iri_ref: &IriRef) -> Result<IriS> {
+        let iri_s = (*iri_ref).clone().into();
         Ok(iri_s)
     }
 

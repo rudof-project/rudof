@@ -64,6 +64,14 @@ pub enum ValueSetValue {
     ObjectValue(ObjectValueWrapper),
 }
 
+impl ValueSetValue {
+    pub fn iri(iri: IriRef) -> ValueSetValue {
+        ValueSetValue::ObjectValue(ObjectValueWrapper {
+            ov: ObjectValue::IriRef(iri),
+        })
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ValueSetValueWrapper {

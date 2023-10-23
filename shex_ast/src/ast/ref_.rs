@@ -2,22 +2,25 @@ use std::str::FromStr;
 
 use iri_s::{IriS, IriSError};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
 
-use super::FromStrRefError;
+use crate::IriRef;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "&str", into = "String")]
 pub enum Ref {
-    IriRef { value: IriS },
+    IriRef { value: IriRef },
     BNode { value: String },
 }
 
 impl Ref {
     pub fn iri_unchecked(s: &str) -> Ref {
         Ref::IriRef {
-            value: IriS::new_unchecked(s),
+            value: IriS::new_unchecked(s).into(),
         }
+    }
+
+    pub fn iri_ref(i: IriRef) -> Ref {
+        Ref::IriRef { value: i }
     }
 
     pub fn bnode_unchecked(s: &str) -> Ref {
@@ -42,7 +45,9 @@ impl TryFrom<&str> for Ref {
     // TODO: We should parse the bnode
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let iri_s = IriS::from_str(s)?;
-        Ok(Ref::IriRef { value: iri_s })
+        Ok(Ref::IriRef {
+            value: IriRef::iri(iri_s),
+        })
     }
 }
 
@@ -58,7 +63,7 @@ impl FromStr for Ref {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_s = IriS::from_str(s)?;
         Ok(Ref::IriRef {
-            value: iri_s,
+            value: IriRef::iri(iri_s),
         })
     }
 }

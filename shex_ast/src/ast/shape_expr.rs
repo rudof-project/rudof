@@ -1,7 +1,8 @@
 use std::result;
 use std::str::FromStr;
 
-use iri_s::{IriSError, IriS};
+use iri_s::{IriS, IriSError};
+use prefixmap::PrefixMap;
 use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -14,7 +15,7 @@ use super::{
 };
 use super::{node_kind::NodeKind, ref_::Ref};
 use crate::ast::serde_string_or_struct::*;
-use crate::{Node, NodeConstraint, TripleExpr};
+use crate::{NodeConstraint, Shape, TripleExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -24,6 +25,15 @@ pub struct ShapeExprWrapper {
         deserialize_with = "deserialize_string_or_struct"
     )]
     pub se: ShapeExpr,
+}
+
+impl ShapeExprWrapper {
+    pub fn deref(mut self, base: &Option<IriS>, prefixmap: &Option<PrefixMap>) -> Self {
+        self = ShapeExprWrapper {
+            se: self.se.deref(base, prefixmap),
+        };
+        self
+    }
 }
 
 impl Into<ShapeExprWrapper> for ShapeExpr {
@@ -50,22 +60,7 @@ pub enum ShapeExpr {
 
     NodeConstraint(NodeConstraint),
 
-    Shape {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        closed: Option<bool>,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        extra: Option<Vec<IriRef>>,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        expression: Option<TripleExprWrapper>,
-
-        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
-        sem_acts: Option<Vec<SemAct>>,
-
-        #[serde(skip_serializing_if = "Option::is_none")]
-        annotations: Option<Vec<Annotation>>,
-    },
+    Shape(Shape),
 
     External,
 
@@ -78,7 +73,7 @@ impl FromStr for ShapeExpr {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_s = IriS::from_str(s)?;
         Ok(ShapeExpr::Ref(Ref::IriRef {
-            value: iri_s,
+            value: IriRef::iri(iri_s),
         }))
     }
 }
@@ -97,13 +92,7 @@ impl SerializeStringOrStruct for ShapeExpr {
 
 impl ShapeExpr {
     pub fn empty_shape() -> ShapeExpr {
-        ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: None,
-            sem_acts: None,
-            annotations: None,
-        }
+        ShapeExpr::Shape(Shape::default())
     }
 
     pub fn external() -> ShapeExpr {
@@ -136,6 +125,10 @@ impl ShapeExpr {
         ShapeExpr::NodeConstraint(nc)
     }
 
+    pub fn iri_ref(iri_ref: IriRef) -> ShapeExpr {
+        ShapeExpr::Ref(Ref::iri_ref(iri_ref))
+    }
+
     pub fn shape_ref(ref_: Ref) -> ShapeExpr {
         ShapeExpr::Ref(ref_)
     }
@@ -144,32 +137,36 @@ impl ShapeExpr {
         ShapeExpr::default()
     }
 
-    pub fn shape(
-        closed: Option<bool>,
-        extra: Option<Vec<IriRef>>,
-        expression: Option<TripleExpr>,
-        sem_acts: Option<Vec<SemAct>>,
-        annotations: Option<Vec<Annotation>>,
-    ) -> ShapeExpr {
-        ShapeExpr::Shape {
-            closed,
-            extra,
-            expression: expression.map(|e| e.into()),
-            sem_acts,
-            annotations,
-        }
+    pub fn shape(shape: Shape) -> ShapeExpr {
+        ShapeExpr::Shape(shape)
+    }
+
+    pub fn deref(
+        mut self,
+        base: &Option<IriS>,
+        prefix_map: &Option<PrefixMap>,
+    ) -> Result<Self, IriSError> {
+        self = match self {
+            ShapeExpr::External => self,
+            ShapeExpr::ShapeAnd { shape_exprs } => ShapeExpr::ShapeAnd {
+                shape_exprs: shape_exprs
+                    .into_iter()
+                    .map(|se| se.deref(base, prefix_map))
+                    .collect(),
+            },
+            ShapeExpr::Shape(shape) => {
+                let shape = shape.deref(base, prefix_map)?;
+                ShapeExpr::Shape(shape)
+            }
+            _ => todo!(),
+        };
+        self
     }
 }
 
 impl Default for ShapeExpr {
     fn default() -> Self {
-        ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: None,
-            sem_acts: None,
-            annotations: None,
-        }
+        ShapeExpr::Shape(Shape::default())
     }
 }
 

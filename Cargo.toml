@@ -3,7 +3,10 @@ name = "shex-rs"
 version = "0.0.2"
 description = "ShEx implementation in Rust"
 license = "GPL-3.0-or-later"
-authors = [ "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", "Jose Emilio Labra Gayo" ]
+authors = [ 
+    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", 
+    "Jose Emilio Labra Gayo" 
+]
 
 [[bin]]
 path = "shex_cli/src/main.rs"
@@ -58,6 +61,7 @@ shex_ast = { version = "0.0.1", path = "./shex_ast" }
 # shex_antlr = { version = "0.0.1", path = "./shex_antlr" }
 shex_testsuite = { version = "0.0.1", path = "./shex_testsuite" }
 shex_validation = { version = "0.0.1", path = "./shex_validation" }
+shex_compact = { version = "0.0.1", path = "./shex_compact" }
 shapemap = { version = "0.0.1", path = "./shapemap" }
 shapemap_oxgraph = { version = "0.0.1", path = "./shapemap_oxgraph" }
 validation_oxgraph = { version = "0.0.1", path = "./validation_oxgraph" }
@@ -69,6 +73,7 @@ env_logger = "0.10"
 anyhow = "1.0"
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
+shex_compact = { path = "./shex_compact" }
 srdf = { path = "./srdf" }
 srdf_graph = { path = "./srdf_graph" }
 iri_s = { path = "./iri_s" }

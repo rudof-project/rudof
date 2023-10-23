@@ -1,4 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
+use crate::{Ref, ShapeLabel};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
@@ -71,6 +72,18 @@ impl Schema {
                 self.prefixmap = Some(pm);
             }
             Some(ref mut pm) => pm.insert(alias, iri),
+        }
+    }
+
+    pub fn add_shape(&mut self, shape_label: Ref, shape_expr: ShapeExpr) {
+        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
+        match self.shapes {
+            None => {
+                let mut ses = Vec::new();
+                ses.push(sd);
+                self.shapes = Some(ses);
+            }
+            Some(ref mut ses) => ses.push(sd),
         }
     }
 
