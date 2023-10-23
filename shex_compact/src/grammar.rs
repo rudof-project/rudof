@@ -2,17 +2,17 @@ use iri_s::IriS;
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
-    character::complete::{char, one_of, satisfy},
+    character::complete::{char, digit1, one_of, satisfy},
     combinator::{fail, map, map_res, opt, recognize},
-    error::{ErrorKind, ParseError},
+    error::{ErrorKind, FromExternalError, ParseError},
     error_position,
     multi::{fold_many0, many0, many1},
     sequence::{delimited, tuple},
     Err, IResult, InputTake, Needed,
 };
 use shex_ast::{
-    object_value::ObjectValue, Annotation, IriRef, NodeConstraint, Ref, SemAct, ShapeExpr,
-    ShapeLabel, TripleExpr,
+    object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet,
 };
 
 use crate::{Cardinality, Qualifier, ShExStatement};
@@ -224,13 +224,14 @@ fn shape_atom(i: &str) -> IResult<&str, ShapeExpr> {
     alt((
         // Pending
         // non_lit_shape,
-        // lit_node_constraint,
+        lit_node_constraint_shape_expr,
         shape_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
 }
 
+/// `From [18] `shape_opt_non_lit ::= shapeOrRef nonLitNodeConstraint?`
 fn shape_opt_non_lit(i: &str) -> IResult<&str, ShapeExpr> {
     let (i, se) = shape_or_ref(i)?;
     let (i, maybe_non_lit) = opt(non_lit_node_constraint)(i)?;
@@ -249,11 +250,26 @@ fn inline_shape_atom(i: &str) -> IResult<&str, ShapeExpr> {
     alt((
         // Pending
         // nonlit_inline_shape,
-        // lit_node_constraint,
-        // inline_shape_non_lit,
+        lit_node_constraint_shape_expr,
+        inline_shape_or_ref_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
+}
+
+/// `from [20] `inline_shape_or_ref_opt_non_lit ::= inlineShapeOrRef nonLitNodeConstraint?`
+fn inline_shape_or_ref_opt_non_lit(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, se) = inline_shape_or_ref(i)?;
+    let (i, maybe_non_lit) = opt(non_lit_node_constraint)(i)?;
+    match maybe_non_lit {
+        None => Ok((i, se)),
+        Some(nl) => Ok((i, ShapeExpr::and(vec![se, ShapeExpr::node_constraint(nl)]))),
+    }
+}
+
+fn lit_node_constraint_shape_expr(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, nc) = lit_node_constraint(i)?;
+    Ok((i, ShapeExpr::NodeConstraint(nc)))
 }
 
 fn paren_shape_expr(i: &str) -> IResult<&str, ShapeExpr> {
@@ -271,6 +287,11 @@ fn shape_or_ref(i: &str) -> IResult<&str, ShapeExpr> {
     alt((shape_definition, shape_ref))(i)
 }
 
+/// `[22]   	inlineShapeOrRef	   ::=   	   inlineShapeDefinition | shapeRef`
+fn inline_shape_or_ref(i: &str) -> IResult<&str, ShapeExpr> {
+    alt((inline_shape_definition, shape_ref))(i)
+}
+
 /// `[23]   	shapeRef	   ::=   	   ATPNAME_LN | ATPNAME_NS | '@' shapeExprLabel`
 fn shape_ref(i: &str) -> IResult<&str, ShapeExpr> {
     alt((at_pname_ln, at_pname_ns, at_shape_expr_label))(i)
@@ -281,11 +302,91 @@ fn at_shape_expr_label(i: &str) -> IResult<&str, ShapeExpr> {
     Ok((i, ShapeExpr::shape_ref(label)))
 }
 
+/// `[24]   	litNodeConstraint	   ::=   	   "LITERAL" xsFacet*
+/// | datatype xsFacet*
+/// | valueSet xsFacet*
+/// | numericFacet+`
+fn lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
+    alt((
+        literal_facets,
+        datatype_facets,
+        value_set_facets,
+        // numeric_facets,
+    ))(i)
+}
+
+fn literal_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws, facets))(i)?;
+    Ok((i, NodeConstraint::new().with_xsfacets(facets)))
+}
+
+fn datatype_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (dt, _, facets)) = tuple((datatype, tws, facets))(i)?;
+    Ok((i, dt.with_xsfacets(facets)))
+}
+
+fn value_set_facets(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (vs, _, facets)) = tuple((value_set, tws, facets))(i)?;
+    Ok((i, vs.with_xsfacets(facets)))
+}
+
+fn facets(i: &str) -> IResult<&str, Vec<XsFacet>> {
+    many0(xs_facet)(i)
+}
+
 /// `[25]   	nonLitNodeConstraint	   ::=   	   nonLiteralKind stringFacet*`
 /// `| stringFacet+`
 fn non_lit_node_constraint(i: &str) -> IResult<&str, NodeConstraint> {
     // Pending
     fail(i)
+}
+
+/// `[27]   	xsFacet	   ::=   	stringFacet | numericFacet`
+fn xs_facet(i: &str) -> IResult<&str, XsFacet> {
+    alt((
+        string_facet,
+        // numeric_facet
+    ))(i)
+}
+
+/// `[28]   	stringFacet	   ::=   	   stringLength INTEGER`
+/// `| REGEXP`
+fn string_facet(i: &str) -> IResult<&str, XsFacet> {
+    alt((
+        string_length,
+        // regexp
+    ))(i)
+}
+
+// `[29]   	stringLength	   ::=   	"LENGTH" | "MINLENGTH" | "MAXLENGTH"`
+fn string_length(i: &str) -> IResult<&str, XsFacet> {
+    alt((min_length, max_length, length))(i)
+}
+
+fn min_length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("MIN_LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::min_length(n)))
+}
+
+fn max_length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("MAX_LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::max_length(n)))
+}
+
+fn length(i: &str) -> IResult<&str, XsFacet> {
+    let (i, (_, _, n)) = tuple((tag_no_case("LENGTH"), tws, pos_integer))(i)?;
+    Ok((i, XsFacet::length(n)))
+}
+
+fn pos_integer(i: &str) -> IResult<&str, usize> {
+    let (i, n) = integer(i)?;
+    let u: usize;
+    if n < 0 {
+        Err(Err::Error(error_position!(i, ErrorKind::Digit)))
+    } else {
+        u = n as usize;
+        Ok((i, u))
+    }
 }
 
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
@@ -329,12 +430,44 @@ fn shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
     Ok((
         i,
         ShapeExpr::shape(
-            closed,
-            maybe_extra,
-            maybe_triple_expr,
-            sem_actions,
-            annotations,
+            Shape::new(closed, maybe_extra, maybe_triple_expr)
+                .with_annotations(annotations)
+                .with_sem_acts(sem_actions),
         ),
+    ))
+}
+
+/// `[34]   	inlineShapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}'`
+fn inline_shape_definition(i: &str) -> IResult<&str, ShapeExpr> {
+    let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _)) = tuple((
+        qualifiers,
+        tws,
+        char('{'),
+        tws,
+        opt(triple_expression),
+        tws,
+        char('}'),
+    ))(i)?;
+    let closed = if qualifiers.contains(&Qualifier::Closed) {
+        Some(true)
+    } else {
+        None
+    };
+    let mut extra = Vec::new();
+    for q in qualifiers {
+        match q {
+            Qualifier::Closed => {}
+            Qualifier::Extra(ps) => {
+                for p in ps {
+                    extra.push(p)
+                }
+            }
+        }
+    }
+    let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
+    Ok((
+        i,
+        ShapeExpr::shape(Shape::new(closed, maybe_extra, maybe_triple_expr)),
     ))
 }
 
@@ -498,7 +631,7 @@ fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
     ))
 }
 
-/// `46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
+/// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
 fn cardinality(i: &str) -> IResult<&str, Cardinality> {
     alt((
         plus, star, optional,
@@ -520,6 +653,56 @@ fn star(i: &str) -> IResult<&str, Cardinality> {
 fn optional(i: &str) -> IResult<&str, Cardinality> {
     let (i, _) = char('?')(i)?;
     Ok((i, Cardinality::optional()))
+}
+
+/// `[48]   	valueSet	   ::=   	'[' valueSetValue* ']'`
+fn value_set(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, (_, _, vs, _, _)) = tuple((char('['), tws, many0(value_set_value), tws, char(']')))(i)?;
+    Ok((i, NodeConstraint::new().with_values(vs)))
+}
+
+/// `[49]   	valueSetValue	   ::=   	iriRange | literalRange | languageRange`
+/// `                               | exclusion+`
+fn value_set_value(i: &str) -> IResult<&str, ValueSetValue> {
+    alt((
+        // Pending
+        iri_range,
+        // literal_range,
+        // language_range,
+        // exclusion_plus
+    ))(i)
+}
+
+type Exclusion = ();
+
+/// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
+fn iri_range(i: &str) -> IResult<&str, ValueSetValue> {
+    let (i, (iri, _, maybe_exc)) = tuple((iri, tws, opt(char_exclusion)))(i)?;
+    // Pending char_exclusion
+    let vs = ValueSetValue::iri(iri);
+    Ok((i, vs))
+}
+
+fn char_exclusion(i: &str) -> IResult<&str, Vec<Exclusion>> {
+    let (i, (_, _, es)) = tuple((char('~'), tws, many0(exclusion)))(i)?;
+    Ok((i, es))
+}
+
+/// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
+fn exclusion(i: &str) -> IResult<&str, Exclusion> {
+    let (i, (_, _, _, _, e, _, maybe_tilde)) =
+        tuple((char('.'), tws, char('-'), tws, exc, tws, opt(char('~'))))(i)?;
+    Ok((i, ()))
+}
+
+/// `from [50] exc = iri | literal | LANGTAG`
+fn exc(i: &str) -> IResult<&str, Exclusion> {
+    let (i, e) = alt((
+        iri,
+        // literal,
+        // lang_tag
+    ))(i)?;
+    Ok((i, ()))
 }
 
 /// `[57]   	include	   ::=   	'&' tripleExprLabel`
@@ -573,11 +756,25 @@ fn predicate(i: &str) -> IResult<&str, IriRef> {
     alt((iri, rdf_type))(i)
 }
 
+/// `[62]   	datatype	   ::=   	iri`
+fn datatype(i: &str) -> IResult<&str, NodeConstraint> {
+    let (i, iri_ref) = iri(i)?;
+    Ok((i, NodeConstraint::new().with_datatype(iri_ref)))
+}
+
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
 fn shape_expr_label(i: &str) -> IResult<&str, Ref> {
-    let (i, iri_ref) = iri(i)?; // alt((iri, blank_node))(i)?;
-    println!("Shape_expr_label: {iri_ref}");
+    let (i, ref_) = alt((iri_as_ref, blank_node_ref))(i)?;
+    Ok((i, ref_))
+}
+fn iri_as_ref(i: &str) -> IResult<&str, Ref> {
+    let (i, iri_ref) = iri(i)?;
     Ok((i, Ref::iri_ref(iri_ref)))
+}
+
+fn blank_node_ref(i: &str) -> IResult<&str, Ref> {
+    let ((i, bn)) = blank_node(i)?;
+    Ok((i, Ref::bnode_unchecked(bn)))
 }
 
 /// `[64]   	tripleExprLabel	   ::=   	iri | blankNode`
@@ -613,14 +810,12 @@ fn at_pname_ns(i: &str) -> IResult<&str, ShapeExpr> {
 /// `[71]   	<ATPNAME_LN>	   ::=   	"@" PNAME_LN`
 fn at_pname_ln(i: &str) -> IResult<&str, ShapeExpr> {
     let (i, (_, _, pname_ln)) = tuple((char('@'), tws, pname_ln))(i)?;
-    todo!();
+    Ok((i, ShapeExpr::iri_ref(pname_ln)))
 }
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
 fn iri(i: &str) -> IResult<&str, IriRef> {
     alt((iri_ref_s, prefixed_name))(i)
-    // prefixed_name(i)
-    // iri_ref_s(i)
 }
 
 fn iri_ref_s(i: &str) -> IResult<&str, IriRef> {
@@ -641,7 +836,56 @@ fn pname_ns_iri_ref(i: &str) -> IResult<&str, IriRef> {
 
 /// `[138s]   	blankNode	   ::=   	BLANK_NODE_LABEL`
 fn blank_node(i: &str) -> IResult<&str, &str> {
-    todo!()
+    blank_node_label(i)
+}
+
+/// `[142s]   	<BLANK_NODE_LABEL>	   ::=   	"_:" (PN_CHARS_U | [0-9]) ((PN_CHARS | ".")* PN_CHARS)?`
+fn blank_node_label(i: &str) -> IResult<&str, &str> {
+    let (i, _) = tag("_:")(i)?;
+    let (i, label) = recognize(tuple((one_if(is_pn_chars_u_digit), blank_node_label2)))(i)?;
+    Ok((i, label))
+}
+
+fn is_pn_chars_u_digit(c: char) -> bool {
+    is_digit(c) || is_pn_chars_u(c)
+}
+
+fn is_pn_chars_or_dot(c: char) -> bool {
+    c == '.' || is_pn_chars(c)
+}
+
+fn blank_node_label2(src: &str) -> IResult<&str, ()> {
+    match blank_node_label3(src) {
+        Ok((left, m)) => {
+            // if last is a '.', remove that
+            if m.ends_with('.') {
+                Ok(((&src[m.len() - 1..]), ()))
+            } else {
+                Ok((left, ()))
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn blank_node_label3(i: &str) -> IResult<&str, &str> {
+    take_while(is_pn_chars_or_dot)(i)
+}
+
+/// `[19t]   	<INTEGER>	   ::=   	[+-]? [0-9]+`
+fn integer(i: &str) -> IResult<&str, isize> {
+    let (i, (maybe_sign, digits)) = tuple((opt(one_of("+-")), digits))(i)?;
+    let n = match maybe_sign {
+        None => digits,
+        Some('+') => digits,
+        Some('-') => -digits,
+        _ => panic!("Internal parser error, Strange maybe_sign: {maybe_sign:?}"),
+    };
+    Ok((i, n))
+}
+
+fn digits(i: &str) -> IResult<&str, isize> {
+    map_res(digit1, str::parse)(i)
 }
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
@@ -1003,16 +1247,12 @@ mod tests {
             Ok((
                 "",
                 ShapeExpr::shape(
-                    None,
-                    None,
-                    Some(TripleExpr::triple_constraint(
+                    Shape::default().with_expression(TripleExpr::triple_constraint(
                         p,
                         Some(ShapeExpr::any()),
                         None,
                         None
-                    )),
-                    None,
-                    None
+                    ))
                 )
             ))
         );
@@ -1027,16 +1267,12 @@ mod tests {
             Ok((
                 "",
                 ShapeExpr::shape(
-                    None,
-                    None,
-                    Some(TripleExpr::triple_constraint(
+                    Shape::default().with_expression(TripleExpr::triple_constraint(
                         p,
                         Some(ShapeExpr::any()),
                         None,
                         None
-                    )),
-                    None,
-                    None
+                    ))
                 )
             ))
         );
@@ -1072,30 +1308,12 @@ mod tests {
     fn test_shape_expr_and() {
         let p = IriRef::try_from("http://example.org/p").unwrap();
         let q = IriRef::try_from("http://example.org/q").unwrap();
-        let se1 = ShapeExpr::shape(
-            None,
-            None,
-            Some(TripleExpr::triple_constraint(
-                p,
-                Some(ShapeExpr::any()),
-                None,
-                None,
-            )),
-            None,
-            None,
-        );
-        let se2 = ShapeExpr::shape(
-            None,
-            None,
-            Some(TripleExpr::triple_constraint(
-                q,
-                Some(ShapeExpr::any()),
-                None,
-                None,
-            )),
-            None,
-            None,
-        );
+        let se1 = ShapeExpr::shape(Shape::default().with_expression(
+            TripleExpr::triple_constraint(p, Some(ShapeExpr::any()), None, None),
+        ));
+        let se2 = ShapeExpr::shape(Shape::default().with_expression(
+            TripleExpr::triple_constraint(q, Some(ShapeExpr::any()), None, None),
+        ));
         assert_eq!(
             shape_expression("{ <http://example.org/p> . } AND { <http://example.org/q> . }"),
             Ok(("", ShapeExpr::and(vec![se1, se2])))
@@ -1112,9 +1330,9 @@ mod tests {
         use super::*;
 
         fn m(i: &str) -> IResult<&str, ShapeExpr> {
-            let (i, s) = shape_definition(i)?;
+            let (i, s) = shape_atom(i)?;
             Ok((i, s))
         }
-        assert_eq!(m("{ :p xsd:string ; :q . }"), Ok(((""), ShapeExpr::any())))
+        assert_eq!(m("@:User"), Ok(((""), ShapeExpr::any())))
     }
 }

@@ -1,6 +1,7 @@
 use std::{result, str::FromStr};
 
-use iri_s::IriSError;
+use iri_s::{IriS, IriSError};
+use prefixmap::PrefixMap;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
@@ -86,16 +87,29 @@ pub enum TripleExpr {
 }
 
 impl TripleExpr {
-    
-    pub fn triple_constraint(predicate: IriRef, se: Option<ShapeExpr>, min: Option<i32>, max: Option<i32>) -> TripleExpr {
-        TripleExpr::TripleConstraint { 
-            id: None, 
-            inverse: None, predicate, 
-            value_expr: se.map(|se| Box::new(se)), 
-            min, 
-            max, 
-            sem_acts: None, 
-            annotations: None 
+    pub fn deref(
+        mut self,
+        base: Option<IriS>,
+        prefixmap: Option<PrefixMap>,
+    ) -> Result<Self, IriSError> {
+        todo!()
+    }
+
+    pub fn triple_constraint(
+        predicate: IriRef,
+        se: Option<ShapeExpr>,
+        min: Option<i32>,
+        max: Option<i32>,
+    ) -> TripleExpr {
+        TripleExpr::TripleConstraint {
+            id: None,
+            inverse: None,
+            predicate,
+            value_expr: se.map(|se| Box::new(se)),
+            min,
+            max,
+            sem_acts: None,
+            annotations: None,
         }
     }
 
@@ -105,12 +119,12 @@ impl TripleExpr {
             tews.push(te.into())
         }
         TripleExpr::EachOf {
-            id: None, 
-            expressions: tews, 
-            min: None, 
-            max: None, 
-            sem_acts: None, 
-            annotations: None
+            id: None,
+            expressions: tews,
+            min: None,
+            max: None,
+            sem_acts: None,
+            annotations: None,
         }
     }
 
@@ -120,23 +134,66 @@ impl TripleExpr {
             tews.push(te.into())
         }
         TripleExpr::OneOf {
-            id: None, 
-            expressions: tews, 
-            min: None, 
-            max: None, 
-            sem_acts: None, 
-            annotations: None
+            id: None,
+            expressions: tews,
+            min: None,
+            max: None,
+            sem_acts: None,
+            annotations: None,
         }
     }
 
     pub fn with_min(mut self, new_min: Option<i32>) -> Self {
         self = match self {
-            TripleExpr::EachOf { id, expressions, min:_, max, sem_acts, annotations } => 
-               TripleExpr::EachOf { id, expressions, min: new_min, max, sem_acts, annotations},
-            TripleExpr::OneOf { id, expressions, min:_, max, sem_acts, annotations } => 
-               TripleExpr::OneOf { id, expressions, min: new_min, max, sem_acts, annotations},
-            TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min:_, max, sem_acts, annotations } => 
-               TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min: new_min, max, sem_acts, annotations},
+            TripleExpr::EachOf {
+                id,
+                expressions,
+                min: _,
+                max,
+                sem_acts,
+                annotations,
+            } => TripleExpr::EachOf {
+                id,
+                expressions,
+                min: new_min,
+                max,
+                sem_acts,
+                annotations,
+            },
+            TripleExpr::OneOf {
+                id,
+                expressions,
+                min: _,
+                max,
+                sem_acts,
+                annotations,
+            } => TripleExpr::OneOf {
+                id,
+                expressions,
+                min: new_min,
+                max,
+                sem_acts,
+                annotations,
+            },
+            TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min: _,
+                max,
+                sem_acts,
+                annotations,
+            } => TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min: new_min,
+                max,
+                sem_acts,
+                annotations,
+            },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update min to TripleExprRef({lbl:?}")
             }
@@ -146,12 +203,55 @@ impl TripleExpr {
 
     pub fn with_max(mut self, new_max: Option<i32>) -> Self {
         self = match self {
-            TripleExpr::EachOf { id, expressions, min, max:_, sem_acts, annotations } => 
-               TripleExpr::EachOf { id, expressions, min, max: new_max, sem_acts, annotations},
-            TripleExpr::OneOf { id, expressions, min, max:_, sem_acts, annotations } => 
-               TripleExpr::OneOf { id, expressions, min, max: new_max, sem_acts, annotations},
-            TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max: _, sem_acts, annotations } => 
-               TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max: new_max, sem_acts, annotations},
+            TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max: _,
+                sem_acts,
+                annotations,
+            } => TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max: new_max,
+                sem_acts,
+                annotations,
+            },
+            TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max: _,
+                sem_acts,
+                annotations,
+            } => TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max: new_max,
+                sem_acts,
+                annotations,
+            },
+            TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max: _,
+                sem_acts,
+                annotations,
+            } => TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max: new_max,
+                sem_acts,
+                annotations,
+            },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update max to TripleExprRef({lbl:?}")
             }
@@ -161,12 +261,55 @@ impl TripleExpr {
 
     pub fn with_sem_acts(mut self, new_sem_acts: Option<Vec<SemAct>>) -> Self {
         self = match self {
-            TripleExpr::EachOf { id, expressions, min, max, sem_acts:_, annotations } => 
-               TripleExpr::EachOf { id, expressions, min, max, sem_acts: new_sem_acts, annotations},
-            TripleExpr::OneOf { id, expressions, min, max, sem_acts:_, annotations } => 
-               TripleExpr::OneOf { id, expressions, min, max, sem_acts: new_sem_acts, annotations},
-            TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts:_, annotations } => 
-               TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts: new_sem_acts, annotations},
+            TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts: _,
+                annotations,
+            } => TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts: new_sem_acts,
+                annotations,
+            },
+            TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts: _,
+                annotations,
+            } => TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts: new_sem_acts,
+                annotations,
+            },
+            TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max,
+                sem_acts: _,
+                annotations,
+            } => TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max,
+                sem_acts: new_sem_acts,
+                annotations,
+            },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update sem_acts to TripleExprRef({lbl:?}")
             }
@@ -176,19 +319,61 @@ impl TripleExpr {
 
     pub fn with_annotations(mut self, new_annotations: Option<Vec<Annotation>>) -> Self {
         self = match self {
-            TripleExpr::EachOf { id, expressions, min, max, sem_acts, annotations:_ } => 
-               TripleExpr::EachOf { id, expressions, min, max, sem_acts, annotations: new_annotations},
-            TripleExpr::OneOf { id, expressions, min, max, sem_acts, annotations: new_annotations } => 
-               TripleExpr::OneOf { id, expressions, min, max, sem_acts, annotations: new_annotations},
-            TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations: _ } => 
-               TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations: new_annotations},
+            TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts,
+                annotations: _,
+            } => TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts,
+                annotations: new_annotations,
+            },
+            TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts,
+                annotations: new_annotations,
+            } => TripleExpr::OneOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts,
+                annotations: new_annotations,
+            },
+            TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max,
+                sem_acts,
+                annotations: _,
+            } => TripleExpr::TripleConstraint {
+                id,
+                inverse,
+                predicate,
+                value_expr,
+                min,
+                max,
+                sem_acts,
+                annotations: new_annotations,
+            },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update annotations to TripleExprRef({lbl:?}")
             }
         };
         self
     }
-
 }
 
 impl FromStr for TripleExpr {
@@ -222,6 +407,20 @@ pub struct TripleExprWrapper {
         deserialize_with = "deserialize_string_or_struct"
     )]
     pub te: TripleExpr,
+}
+
+impl TripleExprWrapper {
+    pub fn defer(
+        mut self,
+        base: Option<IriS>,
+        prefixmap: Option<PrefixMap>,
+    ) -> Result<Self, IriSError> {
+        self = {
+            let te = self.te.defer(base, prefixmap)?;
+            TripleExprWrapper { te }
+        };
+        self
+    }
 }
 
 impl Into<TripleExprWrapper> for TripleExpr {

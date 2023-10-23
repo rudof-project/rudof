@@ -154,15 +154,9 @@ impl SchemaJsonCompiler {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
             }
-            ast::ShapeExpr::Shape {
-                closed,
-                extra,
-                expression,
-                sem_acts,
-                annotations,
-            } => {
-                let new_extra = self.cnv_extra(extra)?;
-                let rbe_table = match expression {
+            ast::ShapeExpr::Shape(shape) => {
+                let new_extra = self.cnv_extra(&shape.extra)?;
+                let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
                     Some(tew) => {
                         let mut table = RbeTable::new();
@@ -172,11 +166,11 @@ impl SchemaJsonCompiler {
                     }
                 };
                 Ok(ShapeExpr::Shape {
-                    closed: Self::cnv_closed(closed),
+                    closed: Self::cnv_closed(&shape.closed),
                     extra: new_extra,
                     rbe_table,
-                    sem_acts: Self::cnv_sem_acts(&sem_acts),
-                    annotations: Self::cnv_annotations(&annotations),
+                    sem_acts: Self::cnv_sem_acts(&shape.sem_acts),
+                    annotations: Self::cnv_annotations(&shape.annotations),
                 })
             }
             ast::ShapeExpr::NodeConstraint(nc) => {

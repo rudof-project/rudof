@@ -1,6 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use iri_s::{IriS, IriSError};
+use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
@@ -21,6 +22,26 @@ impl IriRef {
 
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
+    }
+
+    pub fn deref(
+        mut self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, IriSError> {
+        self = match self {
+            IriRef::Iri(iri_s) => match base {
+                None => IriRef::Iri(iri_s),
+                Some(base_iri) => {
+                    let iri = base_iri.resolve(iri_s)?;
+                    IriRef::Iri(iri)
+                }
+            },
+            IriRef::Prefixed { prefix, local } => {
+                todo!()
+            }
+        };
+        Ok(self)
     }
 }
 

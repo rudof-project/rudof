@@ -8,7 +8,8 @@ use serde::{
 
 use super::ValueSetValue;
 use crate::{
-    IriRef, NodeKind, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper, XsFacet,
+    IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper,
+    XsFacet,
 };
 use serde::ser::SerializeMap;
 

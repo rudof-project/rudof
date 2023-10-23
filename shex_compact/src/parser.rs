@@ -26,8 +26,7 @@ pub struct ShExParser<'a> {
     done: bool,
 }
 
-impl <'a> ShExParser<'a> {
-
+impl<'a> ShExParser<'a> {
     pub fn parse(src: String, base: Option<IriS>) -> Result<Schema> {
         let mut schema = Schema::new();
         let mut parser = ShExParser {
@@ -43,6 +42,7 @@ impl <'a> ShExParser<'a> {
                         todo!()
                     }
                     ShExStatement::PrefixDecl { alias, iri } => {
+                        println!("PrefixDecl: {alias:?} {iri:?}");
                         schema.add_prefix(alias, &iri);
                     }
                     ShExStatement::StartDecl { shape_expr } => {
@@ -55,16 +55,16 @@ impl <'a> ShExParser<'a> {
                         shape_label,
                         shape_expr,
                     } => {
-                        todo!()
+                        println!("ShapeDecl: {shape_label:?} {shape_expr:?}");
+                        let deref = shape_expr.deref(schema.base(), schema.prefix_map())
+                        schema.add_shape(shape_label, shape_expr);
                     }
-                    ShExStatement::StartActions {
-                        actions
-                    } => {
+                    ShExStatement::StartActions { actions } => {
                         todo!()
                     }
                 }
             }
-        };
+        }
         Ok(schema)
     }
 
@@ -98,7 +98,6 @@ impl <'a> ShExParser<'a> {
         Ok(())
     }*/
 
-
     pub fn parse_buf(path_buf: &PathBuf, base: Option<IriS>) -> Result<Schema> {
         let data = fs::read_to_string(&path_buf.as_path())?;
         let schema = ShExParser::parse(data, base)?;
@@ -120,7 +119,7 @@ impl<'a> StatementIterator<'a> {
             }),
             Err(Err::Incomplete(_)) => Ok(StatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
-                msg: format!("cannot start parsing. Error: {}",e),
+                msg: format!("cannot start parsing. Error: {}", e),
             }),
         }
     }
