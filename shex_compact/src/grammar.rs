@@ -614,6 +614,7 @@ fn bracketed_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
+    println!("Checking triple_constraint...{i}");
     let (i, (predicate, _, se, _, maybe_card)) = tuple((
         predicate,
         tws,
@@ -621,6 +622,7 @@ fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
         tws,
         opt(cardinality),
     ))(i)?;
+    println!("triple_constraint: Cardinality");
     let (min, max) = match maybe_card {
         None => (None, None),
         Some(card) => (card.min(), card.max()),
@@ -1330,9 +1332,16 @@ mod tests {
         use super::*;
 
         fn m(i: &str) -> IResult<&str, ShapeExpr> {
-            let (i, s) = inline_shape_atom(i)?;
+            let (i, s) = shape_definition(i)?;
             Ok((i, s))
         }
-        assert_eq!(m("@:User *"), Ok(((""), ShapeExpr::any())))
+        let te = TripleExpr::triple_constraint(
+            IriRef::prefixed("","p"), 
+            Some(ShapeExpr::iri_ref(IriRef::prefixed("", "User"))), 
+            Some(0), 
+            Some(-1));
+        assert_eq!(m("{ :p @:User * ; }"), Ok(((""), 
+          ShapeExpr::shape(Shape::new(None, None, Some(te)))
+          )))
     }
 }
