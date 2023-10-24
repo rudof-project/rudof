@@ -15,7 +15,7 @@ use super::{
 };
 use super::{node_kind::NodeKind, ref_::Ref};
 use crate::ast::serde_string_or_struct::*;
-use crate::{NodeConstraint, Shape, TripleExpr};
+use crate::{NodeConstraint, Shape, TripleExpr, Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -27,12 +27,15 @@ pub struct ShapeExprWrapper {
     pub se: ShapeExpr,
 }
 
-impl ShapeExprWrapper {
-    pub fn deref(mut self, base: &Option<IriS>, prefixmap: &Option<PrefixMap>) -> Self {
-        self = ShapeExprWrapper {
-            se: self.se.deref(base, prefixmap),
+impl Deref for ShapeExprWrapper {
+    fn deref(&self, 
+        base: &Option<IriS>, 
+        prefixmap: &Option<PrefixMap>) -> Result<Self, DerefError> {
+        let se = self.se.deref(base, prefixmap)?; 
+        let sew = ShapeExprWrapper {
+            se: se,
         };
-        self
+        Ok(sew)
     }
 }
 
@@ -140,34 +143,55 @@ impl ShapeExpr {
     pub fn shape(shape: Shape) -> ShapeExpr {
         ShapeExpr::Shape(shape)
     }
-
-    pub fn deref(
-        mut self,
-        base: &Option<IriS>,
-        prefix_map: &Option<PrefixMap>,
-    ) -> Result<Self, IriSError> {
-        self = match self {
-            ShapeExpr::External => self,
-            ShapeExpr::ShapeAnd { shape_exprs } => ShapeExpr::ShapeAnd {
-                shape_exprs: shape_exprs
-                    .into_iter()
-                    .map(|se| se.deref(base, prefix_map))
-                    .collect(),
-            },
-            ShapeExpr::Shape(shape) => {
-                let shape = shape.deref(base, prefix_map)?;
-                ShapeExpr::Shape(shape)
-            }
-            _ => todo!(),
-        };
-        self
-    }
 }
 
 impl Default for ShapeExpr {
     fn default() -> Self {
         ShapeExpr::Shape(Shape::default())
     }
+}
+
+impl Deref for ShapeExpr {
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        match self {
+            ShapeExpr::External => Ok(ShapeExpr::External),
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeAnd {
+                  shape_exprs
+             })
+            },
+            ShapeExpr::ShapeOr { shape_exprs} => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeOr {
+                  shape_exprs
+             })
+            }
+            ShapeExpr::ShapeNot { shape_expr } => {
+                let shape_expr = <ShapeExpr as Deref>::deref_box(shape_expr, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeNot {
+                  shape_expr
+             })
+            }
+            ShapeExpr::Shape(shape) => {
+                let shape = shape.deref(base, prefixmap)?;
+                Ok(ShapeExpr::Shape(shape))
+            },
+            ShapeExpr::Ref(ref_) => {
+              let ref_ = ref_.deref(base, prefixmap)?;
+              Ok(ShapeExpr::Ref(ref_))
+            },
+            ShapeExpr::NodeConstraint(nc) => {
+                let nc = nc.deref(base, prefixmap)?;
+                Ok(ShapeExpr::NodeConstraint(nc))
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]

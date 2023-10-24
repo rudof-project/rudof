@@ -1,5 +1,6 @@
 use iri_s::IriSError;
 use oxiri::IriParseError;
+use prefixmap::PrefixMapError;
 use rio_turtle::TurtleError;
 use std::io;
 use thiserror::Error;
@@ -28,8 +29,14 @@ pub enum SRDFGraphError {
     },
 
     #[error(transparent)]
-    IriError {
+    IriSError {
         #[from]
         err: IriSError,
+    },
+
+    #[error(transparent)]
+    PrefixMapError {
+        #[from]
+        err: PrefixMapError,
     },
 }

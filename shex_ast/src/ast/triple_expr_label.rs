@@ -1,6 +1,8 @@
 use iri_s::IriSError;
 use serde_derive::{Deserialize, Serialize};
 
+use crate::{Deref, DerefError};
+
 use super::bnode::BNode;
 use super::iri_ref::IriRef;
 
@@ -11,6 +13,21 @@ pub enum TripleExprLabel {
     BNode { value: BNode },
 }
 
+impl Deref for TripleExprLabel {
+    fn deref(&self, 
+        base: &Option<iri_s::IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> where Self: Sized {
+        match self {
+            TripleExprLabel::IriRef { value } => {
+                let new_value = value.deref(base, prefixmap)?;
+                Ok(TripleExprLabel::IriRef { value: new_value })
+            },
+            TripleExprLabel::BNode { value }  => 
+               Ok(TripleExprLabel::BNode { value: value.clone()})
+        }
+    }
+}
 
 impl TryFrom<&str> for TripleExprLabel {
     type Error = IriSError;

@@ -198,12 +198,9 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
             }
         },
         None => match data.resolve(node_str) {
-            Ok(Some(named_node)) => {
+            Ok(named_node) => {
                 let iri = IriS::from_str(named_node.as_str())?;
                 Ok(iri.into())
-            }
-            Ok(None) => {
-                todo!()
             }
             Err(_err_resolve) => {
                 todo!()

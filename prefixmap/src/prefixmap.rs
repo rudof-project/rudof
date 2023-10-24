@@ -7,6 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::result;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
+use crate::PrefixMapError;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[serde(transparent)]
@@ -57,30 +58,70 @@ impl PrefixMap {
     /// )?;
     /// let a = pm.resolve(":a")?;
     /// let a_resolved = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(a, Some(a_resolved));
+    /// assert_eq!(a, a_resolved);
     ///
     /// let knows = pm.resolve("schema:knows")?;
     /// let knows_resolved = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(knows, Some(knows_resolved));
+    /// assert_eq!(knows, knows_resolved);
     /// # Ok::<(), IriSError>(())
     /// ```
-    pub fn resolve(&self, str: &str) -> Result<Option<IriS>, IriSError> {
+    pub fn resolve(&self, str: &str) -> Result<IriS, PrefixMapError> {
         match split(str) {
-            Some((alias, local_name)) => match self.find(alias) {
-                Some(iri) => {
-                    let new_iri = iri.extend(local_name)?;
-                    Ok(Some(new_iri))
-                }
-                None => {
-                    let iri = IriS::from_str(str)?;
-                    Ok(Some(iri))
-                }
-            },
+            Some((prefix, local)) => {
+                let iri = self.resolve_prefix_local(prefix, local)?;
+                Ok(iri)
+            }
             None => {
                 let iri = IriS::from_str(str)?;
-                Ok(Some(iri))
+                Ok(iri)
             }
         }
+    }
+
+    /// Resolves a prefix and a local name against a prefix map
+    /// Example:
+    /// Given a prefix map `pm`
+    /// ```
+    /// use std::collections::HashMap;
+    /// use prefixmap::PrefixMap;
+    /// # use iri_s::*;
+    /// # use std::str::FromStr;
+    ///
+    ///
+    /// let pm = PrefixMap::from_hashmap(
+    ///   &HashMap::from([
+    ///     ("".to_string(), "http://example.org/".to_string()),
+    ///     ("schema".to_string(), "http://schema.org/".to_string())
+    ///     ("xsd".to_string(), "http://www.w3.org/2001/XMLSchema#".to_string())
+    /// ])
+    /// 
+    /// )?;
+    /// let a = pm.resolve_prefix_local("", "a")?;
+    /// let a_resolved = IriS::from_str("http://example.org/a")?;
+    /// assert_eq!(a, a_resolved);
+    ///
+    /// let knows = pm.resolve_prefix_local("schema","knows")?;
+    /// let knows_resolved = IriS::from_str("http://schema.org/knows")?;
+    /// assert_eq!(knows, knows_resolved);
+    /// 
+    /// let xsd_string = pm.resolve_prefix_local("xsd","string")?;
+    /// let xsd_string_resolved = IriS::from_str("http://www.w3.org/2001/XMLSchema#string")?;
+    /// assert_eq!(xsd_string, xsd_string_resolved);
+    /// # Ok::<(), IriSError>(())
+    /// ```
+    pub fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
+        match self.find(prefix) {
+                Some(iri) => {
+                    let new_iri = iri.extend(local)?;
+                    Ok(new_iri)
+                }
+                None => {
+                    Err(PrefixMapError::PrefixNotFound {
+                        prefix: prefix.to_string(),
+                        prefixmap: self.clone()
+                    })
+                }
+      }
     }
 
     /// Qualifies an IRI against a prefix map
@@ -149,7 +190,7 @@ mod tests {
         let binding = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", &binding);
         let expected = IriS::from_str("http://example.org/name").unwrap();
-        assert_eq!(pm.resolve("ex:name").unwrap().unwrap(), expected);
+        assert_eq!(pm.resolve("ex:name").unwrap(), expected);
     }
 
     #[test]
@@ -172,7 +213,19 @@ mod tests {
         pm.insert("ex", &ex_iri);
         assert_eq!(
             pm.resolve(&"ex:pepe").unwrap(),
-            Some(IriS::from_str("http://example.org/pepe").unwrap())
+            IriS::from_str("http://example.org/pepe").unwrap()
         );
     }
+
+    #[test]
+    fn prefixmap_resolve_xsd() {
+        let mut pm = PrefixMap::new();
+        let ex_iri = IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap();
+        pm.insert("xsd", &ex_iri);
+        assert_eq!(
+            pm.resolve_prefix_local("xsd", "string").unwrap(),
+            IriS::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap()
+        );
+    }
+
 }

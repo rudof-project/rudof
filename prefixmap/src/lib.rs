@@ -34,8 +34,11 @@
 // ```
 pub mod alias;
 pub mod prefixmap;
+pub mod prefixmap_error;
+
 pub use crate::prefixmap::*;
 pub use alias::*;
+pub use prefixmap_error::*;
 
 #[cfg(test)]
 mod tests {
@@ -45,13 +48,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() -> Result<(), IriSError> {
+    fn it_works() -> Result<(), PrefixMapError> {
         let mut pm = PrefixMap::new();
         let schema_iri = IriS::from_str("http://schema.org/")?;
         pm.insert("schema", &schema_iri);
         let resolved = pm.resolve("schema:knows")?;
         let schema_knows = IriS::from_str("http://schema.org/knows")?;
-        assert_eq!(resolved, Some(schema_knows));
+        assert_eq!(resolved, schema_knows);
         Ok(())
     }
 }

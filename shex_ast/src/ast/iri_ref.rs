@@ -4,6 +4,7 @@ use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
+use crate::{Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -24,24 +25,44 @@ impl IriRef {
         IriRef::Iri(iri)
     }
 
-    pub fn deref(
-        mut self,
+    pub fn to_string(&self) -> String {
+        match self {
+            IriRef::Iri(iri) => iri.to_string(),
+            IriRef::Prefixed { prefix, local } => {
+                format!("{prefix}:{local}")
+            }
+        }
+    }
+
+}
+
+impl Deref for IriRef {
+    fn deref(
+        &self,
         base: &Option<IriS>,
         prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, IriSError> {
-        self = match self {
+    ) -> Result<Self, DerefError> {
+        match self {
             IriRef::Iri(iri_s) => match base {
-                None => IriRef::Iri(iri_s),
+                None => Ok(IriRef::Iri(iri_s.clone())),
                 Some(base_iri) => {
-                    let iri = base_iri.resolve(iri_s)?;
-                    IriRef::Iri(iri)
+                    let iri = base_iri.resolve(iri_s.clone())?;
+                    Ok(IriRef::Iri(iri))
                 }
             },
             IriRef::Prefixed { prefix, local } => {
-                todo!()
+                match prefixmap {
+                    None => Err(DerefError::NoPrefixMapPrefixedName { 
+                        prefix: prefix.clone(), 
+                        local: local.clone() }
+                    ),
+                    Some(prefixmap) => {
+                        let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+                        Ok(IriRef::Iri(iri))
+                    }
+                }
             }
-        };
-        Ok(self)
+        }
     }
 }
 

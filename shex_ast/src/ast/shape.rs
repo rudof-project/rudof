@@ -2,7 +2,7 @@ use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Annotation, IriRef, SemAct, TripleExpr, TripleExprWrapper};
+use crate::{Annotation, IriRef, SemAct, TripleExpr, TripleExprWrapper, Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 
@@ -53,31 +53,59 @@ impl Shape {
         self
     }
 
-    pub fn deref(
-        mut self,
+}
+
+impl Deref for Shape {
+    fn deref(
+        &self,
         base: &Option<IriS>,
         prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, IriSError> {
-        self = Shape {
-            closed: self.closed,
-            extra: self.extra.map(|es| {
-                es.into_iter()
-                    .map(|e| {
-                        let e = e.deref(base, prefixmap)?;
-                        e
-                    })
-                    .collect()
-            }),
-            expression: self.expression.map(|e| {
-                let e = e.deref(base, prefixmap)?;
-                e
-            }),
-            sem_acts: self.sem_acts,
-            annotations: self
-                .annotations
-                .map(|anns| anns.into_iter().map(|a| a.deref(base, prefixmap)).collect()),
+    ) -> Result<Self, DerefError> {
+        let new_extra = match &self.extra {
+            None => None,
+            Some(es) => {
+                let mut ves = Vec::new();
+                for e in es {
+                    ves.push(e.deref(base, prefixmap)?);
+                }
+                Some(ves)
+            }
         };
-        self
+        let new_expr = match &self.expression {
+            None => None,
+            Some(expr) => {
+                let ed = expr.deref(base, prefixmap)?;
+                Some(ed)
+            }
+        };
+        let new_anns = match &self.annotations {
+            None => None,
+            Some(anns) => {
+                let mut new_as = Vec::new();
+                for a in anns {
+                   new_as.push(a.deref(base, prefixmap)?);
+                }
+                Some(new_as)
+            }
+        };
+        let new_sem_acts = match &self.sem_acts {
+            None => None,
+            Some(sem_acts) => {
+                let mut new_sas = Vec::new();
+                for sa in sem_acts {
+                    new_sas.push(sa.deref(base, prefixmap)?);
+                }
+                Some(new_sas)
+            }
+        };
+        let shape = Shape {
+            closed: self.closed,
+            extra: new_extra,
+            expression: new_expr,
+            sem_acts: new_sem_acts,
+            annotations: new_anns,
+        };
+        Ok(shape)
     }
 }
 

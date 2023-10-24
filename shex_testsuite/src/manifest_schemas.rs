@@ -164,7 +164,7 @@ impl SchemasEntry {
                     error: e,
                 }
             })?;
-        debug!("Entry run: {} - {}", self.id, schema_parsed.type_);
+        debug!("Entry run: {} - {}", self.id, schema_parsed.get_type());
 
         if (schema_parsed == schema_parsed_after_serialization) {
             Ok(())

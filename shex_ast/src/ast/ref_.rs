@@ -3,7 +3,7 @@ use std::str::FromStr;
 use iri_s::{IriS, IriSError};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::IriRef;
+use crate::{IriRef, Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -35,6 +35,23 @@ impl Into<String> for Ref {
         match self {
             Ref::IriRef { value } => value.to_string(),
             Ref::BNode { value } => value,
+        }
+    }
+}
+
+impl Deref for Ref {
+    fn deref(&self, 
+        base: &Option<IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> {
+        match self {
+            Ref::IriRef { value } => {
+                let value = value.deref(base, prefixmap)?;
+                Ok(Ref::IriRef { value })
+            },
+            Ref::BNode { value } => {
+                Ok(Ref::BNode { value: value.clone() })
+            }
         }
     }
 }

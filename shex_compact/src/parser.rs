@@ -6,6 +6,7 @@ use iri_s::IriS;
 use nom::error::Error;
 use nom::Err;
 use prefixmap::PrefixMap;
+use shex_ast::Deref;
 use shex_ast::Schema;
 use shex_ast::ShapeExpr;
 
@@ -56,7 +57,9 @@ impl<'a> ShExParser<'a> {
                         shape_expr,
                     } => {
                         println!("ShapeDecl: {shape_label:?} {shape_expr:?}");
-                        let deref = shape_expr.deref(schema.base(), schema.prefix_map())
+                        let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
+                        let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
+                        println!("ShapeDecl after deref: {shape_label:?} {shape_expr:?}");
                         schema.add_shape(shape_label, shape_expr);
                     }
                     ShExStatement::StartActions { actions } => {

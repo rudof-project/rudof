@@ -40,9 +40,8 @@ impl IriS {
     }
 
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
-        let base = Iri::parse(self.iri.as_str())?;
-        let extended = base.resolve(str)?;
-        let iri = NamedNode::new(extended.as_str())?;
+        let extended_str = format!("{}{}", self.iri.as_str(), str);
+        let iri = NamedNode::new(extended_str)?;
         Ok(IriS { iri })
     }
 

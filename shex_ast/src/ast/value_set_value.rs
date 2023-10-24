@@ -1,6 +1,6 @@
 use std::{result, str::FromStr};
 
-use crate::ast::serde_string_or_struct::*;
+use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
 use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
@@ -72,6 +72,23 @@ impl ValueSetValue {
     }
 }
 
+impl Deref for ValueSetValue {
+    fn deref(&self, 
+        base: &Option<iri_s::IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> where Self: Sized {
+        match self {
+            ValueSetValue::ObjectValue(ov) => {
+                let ov = ov.deref(base, prefixmap)?;
+                Ok(ValueSetValue::ObjectValue(ov))
+            }
+            _ => {
+                todo!()
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ValueSetValueWrapper {
@@ -79,7 +96,7 @@ pub struct ValueSetValueWrapper {
         serialize_with = "serialize_string_or_struct",
         deserialize_with = "deserialize_string_or_struct"
     )]
-    vs: ValueSetValue,
+    pub vs: ValueSetValue,
 }
 
 impl ValueSetValueWrapper {
@@ -89,6 +106,16 @@ impl ValueSetValueWrapper {
 
     pub fn value(&self) -> ValueSetValue {
         self.vs.clone()
+    }
+}
+
+impl Deref for ValueSetValueWrapper {
+    fn deref(&self, 
+        base: &Option<iri_s::IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> where Self: Sized {
+        let vs = self.vs.deref(base, prefixmap)?;
+        Ok(ValueSetValueWrapper { vs })
     }
 }
 

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::Ref;
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::{
     ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
@@ -20,7 +21,6 @@ use srdf::Object;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref MY_VAR: String = "some value".to_string();
     static ref XSD_STRING: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string");
     static ref RDF_LANG_STRING: IriS =
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
@@ -54,11 +54,11 @@ impl SchemaJsonCompiler {
         schema_json: &SchemaJson,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<()> {
-        match &schema_json.shapes {
+        match &schema_json.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
-                    let label = self.id_to_shape_label(sd.id.as_str())?;
+                    let label = self.id_to_shape_label(&sd.id)?;
                     compiled_schema.add_shape(label, ShapeExpr::Empty);
                     self.shape_decls_counter += 1;
                 }
@@ -72,7 +72,7 @@ impl SchemaJsonCompiler {
         schema_json: &SchemaJson,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<()> {
-        match &schema_json.shapes {
+        match &schema_json.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
@@ -85,14 +85,21 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn id_to_shape_label<'a>(&self, id: &str) -> CResult<ShapeLabel> {
-        let label = ShapeLabel::from_iri_str(id)?;
-        Ok(label)
+    fn id_to_shape_label<'a>(&self, id: &Ref) -> CResult<ShapeLabel> {
+        match id {
+           Ref::IriRef { value }  => {
+            let shape_label = iri_ref_2_shape_label(value)?;
+            Ok(shape_label)
+           },
+           Ref::BNode { value}  => {
+             Ok(ShapeLabel::BNode(value.clone()))
+           }
+        }
     }
 
     fn get_shape_label_idx(
         &self,
-        id: &str,
+        id: &Ref,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         let label = self.id_to_shape_label(id)?;
@@ -113,14 +120,8 @@ impl SchemaJsonCompiler {
         sref: &ast::Ref,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
-        match sref {
-            ast::Ref::IriRef { value } => {
-                let s: String = (*value).clone().into();
-                let idx = self.get_shape_label_idx(s.as_str(), compiled_schema)?;
-                Ok(idx)
-            }
-            ast::Ref::BNode { value: _ } => todo("ref2idx: BNode"),
-        }
+        let idx = self.get_shape_label_idx(sref, compiled_schema)?;
+        Ok(idx)
     }
 
     fn compile_shape_expr(
@@ -414,7 +415,7 @@ fn node_constraint2match_cond(
         let c = datatype2match_cond(&dt)?;
         Ok(c)
     }))?;
-    let c3 = xs_facet.as_ref().map(|xsf| xs_facet2match_cond(&xsf));
+    let c3 = xs_facet.as_ref().map(|xsf| xs_facets2match_cond(&xsf));
     let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
     let os = vec![c1, c2, c3, c4];
     Ok(options2match_cond(os))
@@ -433,8 +434,16 @@ fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
     Ok(mk_cond_datatype(iri))
 }
 
-fn xs_facet2match_cond(xs_facet: &Vec<ast::XsFacet>) -> Cond {
-    todo!()
+fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
+    let mut conds = Vec::new();
+    for xs_facet in xs_facets {
+      conds.push(xs_facet2match_cond(xs_facet))
+    }
+    MatchCond::And(conds)
+}
+
+fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
+   todo!()
 }
 
 fn valueset2match_cond(vs: ValueSet) -> Cond {
@@ -489,6 +498,15 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
                 },
             ),
     )
+}
+
+fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
+    match id {
+        IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
+        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError { 
+            prefix: prefix.clone(), 
+            local: local.clone() })
+    }
 }
 
 fn mk_cond_value_set(value_set: ValueSet) -> Cond {
@@ -660,7 +678,7 @@ fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriS>) -> CResult<()
 }
 
 fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
-    // TODO: String literals
+    debug!("check_node_datatype: {node:?} datatype: {dt}");
     match node.as_object() {
         Object::Literal(Literal::DatatypeLiteral {
             ref datatype,
@@ -680,9 +698,12 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
             lexical_form,
             lang: None,
         }) => {
+            debug!("StringLiteral...{}", *dt);
             if *dt == *XSD_STRING {
+                debug!("datatype cond passes");
                 Ok(())
             } else {
+                debug!("datatype cond fails: {}!={}", dt, *XSD_STRING);
                 Err(CompiledSchemaError::DatatypeDontMatchString {
                     expected: dt.clone(),
                     lexical_form: lexical_form.clone(),
@@ -710,9 +731,9 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
     }
 }
 
-fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
+/*fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
     Ok(()) // todo!()
-}
+}*/
 
 fn todo<A>(str: &str) -> CResult<A> {
     Err(CompiledSchemaError::Todo {

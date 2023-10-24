@@ -5,7 +5,7 @@ use prefixmap::PrefixMap;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::ast::serde_string_or_struct::*;
+use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
 
 use super::{
     annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, shape_expr::ShapeExpr,
@@ -87,13 +87,6 @@ pub enum TripleExpr {
 }
 
 impl TripleExpr {
-    pub fn deref(
-        mut self,
-        base: Option<IriS>,
-        prefixmap: Option<PrefixMap>,
-    ) -> Result<Self, IriSError> {
-        todo!()
-    }
 
     pub fn triple_constraint(
         predicate: IriRef,
@@ -376,6 +369,70 @@ impl TripleExpr {
     }
 }
 
+impl Deref for TripleExpr {
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        match self {
+           TripleExpr::EachOf {
+            id, expressions, min, max, sem_acts, annotations
+           } => {
+            let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
+            let annotations = <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
+            let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
+            let expressions = <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+            Ok(TripleExpr::EachOf {
+                id,
+                expressions,
+                min: min.clone(),
+                max: max.clone(),
+                sem_acts,
+                annotations
+            })
+           },
+           TripleExpr::OneOf {
+            id, expressions, min, max, sem_acts, annotations
+           } => {
+            let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
+            let annotations = <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
+            let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
+            let expressions = <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+            Ok(TripleExpr::OneOf {
+                id,
+                expressions,
+                min: min.clone(),
+                max: max.clone(),
+                sem_acts,
+                annotations
+            })
+           },
+           TripleExpr::TripleConstraint { id, inverse, predicate, value_expr, min, max, sem_acts, annotations } => {
+            let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
+            let annotations = <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
+            let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
+            let predicate = predicate.deref(base, prefixmap)?;
+            let value_expr = <ShapeExpr as Deref>::deref_opt_box(value_expr, base, prefixmap)?;
+            Ok(TripleExpr::TripleConstraint {
+                id,
+                inverse: inverse.clone(),
+                predicate,
+                value_expr,
+                min: min.clone(),
+                max: max.clone(),
+                sem_acts,
+                annotations
+            })
+           }
+           TripleExpr::TripleExprRef(label) => {
+            let label = label.deref(base, prefixmap)?;
+            Ok(TripleExpr::TripleExprRef(label))
+           }
+        }
+    }
+}
+
 impl FromStr for TripleExpr {
     type Err = IriSError;
 
@@ -410,16 +467,17 @@ pub struct TripleExprWrapper {
 }
 
 impl TripleExprWrapper {
-    pub fn defer(
-        mut self,
-        base: Option<IriS>,
-        prefixmap: Option<PrefixMap>,
-    ) -> Result<Self, IriSError> {
-        self = {
-            let te = self.te.defer(base, prefixmap)?;
-            TripleExprWrapper { te }
-        };
-        self
+    
+}
+
+impl Deref for TripleExprWrapper {
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        let te = self.te.deref(base, prefixmap)?;
+        Ok(TripleExprWrapper { te })
     }
 }
 

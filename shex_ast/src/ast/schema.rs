@@ -16,10 +16,10 @@ pub struct Schema {
     context: String,
 
     #[serde(rename = "type")]
-    pub type_: String,
+    type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub imports: Option<Vec<Iri>>,
+    imports: Option<Vec<Iri>>,
 
     #[serde(
         default,
@@ -27,19 +27,19 @@ pub struct Schema {
         serialize_with = "serialize_opt_string_or_struct",
         deserialize_with = "deserialize_opt_string_or_struct"
     )]
-    pub start: Option<ShapeExpr>,
+    start: Option<ShapeExpr>,
 
     #[serde(default, rename = "startActs", skip_serializing_if = "Option::is_none")]
-    pub start_acts: Option<Vec<SemAct>>,
+    start_acts: Option<Vec<SemAct>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub shapes: Option<Vec<ShapeDecl>>,
+    shapes: Option<Vec<ShapeDecl>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub prefixmap: Option<PrefixMap>,
+    prefixmap: Option<PrefixMap>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub base: Option<Iri>,
+    base: Option<IriS>,
 }
 
 impl Schema {
@@ -109,6 +109,22 @@ impl Schema {
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
         Self::parse_schema_buf(&attempt)
+    }
+
+    pub fn base(&self) -> Option<IriS> {
+      self.base.clone()
+    }
+
+    pub fn prefixmap(&self) -> Option<PrefixMap> {
+        self.prefixmap.clone()
+    }
+
+    pub fn shapes(&self) -> Option<Vec<ShapeDecl>> {
+        self.shapes.clone()
+    }
+
+    pub fn get_type(&self) -> String {
+         self.type_.clone()
     }
 }
 

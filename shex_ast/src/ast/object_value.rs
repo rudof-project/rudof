@@ -6,7 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
-use crate::ast::serde_string_or_struct::*;
+use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
@@ -22,6 +22,18 @@ pub enum ObjectValue {
         #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
         type_: Option<String>,
     },
+}
+
+impl Deref for ObjectValue {
+    fn deref(&self, base: &Option<iri_s::IriS>, prefixmap: &Option<prefixmap::PrefixMap>) -> Result<Self, DerefError> {
+        match self {
+            ObjectValue::IriRef(iri_ref) => {
+                let new_iri_ref = iri_ref.deref(base, prefixmap)?;
+                Ok(ObjectValue::IriRef(new_iri_ref))
+            },
+            other => Ok(other.clone())
+        }
+    }
 }
 
 impl FromStr for ObjectValue {
@@ -53,4 +65,14 @@ pub struct ObjectValueWrapper {
         deserialize_with = "deserialize_string_or_struct"
     )]
     pub ov: ObjectValue,
+}
+
+impl Deref for ObjectValueWrapper {
+    fn deref(&self, 
+        base: &Option<iri_s::IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> where Self: Sized {
+       let ov = self.ov.deref(base, prefixmap)?;
+       Ok(ObjectValueWrapper { ov })
+    }
 }

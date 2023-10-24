@@ -241,11 +241,11 @@ fn shape_opt_non_lit(i: &str) -> IResult<&str, ShapeExpr> {
     }
 }
 
-/// `[20]   	inlineShapeAtom	   ::=   	   nonLitNodeConstraint inlineShapeOrRef?
-/// `| litNodeConstraint`
-/// `| inlineShapeOrRef nonLitNodeConstraint?`
-/// `| '(' shapeExpression ')'`
-/// `| '.'`
+/// `[20]   	inlineShapeAtom	   ::= nonLitNodeConstraint inlineShapeOrRef?`
+/// `                                | litNodeConstraint`
+/// `                                | inlineShapeOrRef nonLitNodeConstraint?`
+/// `                                | '(' shapeExpression ')'`
+/// `                                | '.'`
 fn inline_shape_atom(i: &str) -> IResult<&str, ShapeExpr> {
     alt((
         // Pending
@@ -1330,9 +1330,9 @@ mod tests {
         use super::*;
 
         fn m(i: &str) -> IResult<&str, ShapeExpr> {
-            let (i, s) = shape_atom(i)?;
+            let (i, s) = inline_shape_atom(i)?;
             Ok((i, s))
         }
-        assert_eq!(m("@:User"), Ok(((""), ShapeExpr::any())))
+        assert_eq!(m("@:User *"), Ok(((""), ShapeExpr::any())))
     }
 }

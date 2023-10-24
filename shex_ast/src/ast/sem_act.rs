@@ -1,5 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
+use crate::{Deref, DerefError};
+
 use super::iri_ref::IriRef;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -13,5 +15,15 @@ pub struct SemAct {
 impl SemAct {
     pub fn new(name: IriRef, code: Option<String>) -> SemAct {
         SemAct { name, code }
+    }
+}
+
+impl Deref for SemAct {
+    fn deref(&self, base: &Option<iri_s::IriS>, prefixmap: &Option<prefixmap::PrefixMap>) -> Result<Self, DerefError> {
+        let new_name = self.name.deref(base, prefixmap)?;
+        Ok(SemAct {
+            name: new_name,
+            code: self.code.clone()
+        })
     }
 }
