@@ -1,9 +1,2 @@
-prefix : <http://example.org/> 
-prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-prefix schema: <http://schema.org/>
-
-:A {
-  :p . ;
-  :p . * ;
-  :p . ? ;
-}
+prefix : <http://s/>
+:A {:p .;:p . * ; :p . }

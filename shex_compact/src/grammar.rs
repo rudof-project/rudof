@@ -1,21 +1,86 @@
 use iri_s::IriS;
+use std::fmt::Debug;
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{char, digit1, one_of, satisfy},
     combinator::{fail, map, map_res, opt, recognize},
-    error::{ErrorKind, FromExternalError, ParseError},
+    error::{ErrorKind, ParseError},
     error_position,
     multi::{fold_many0, many0, many1},
     sequence::{delimited, tuple},
-    Err, IResult, InputTake, Needed,
+    Err, IResult, InputTake, 
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
     Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet,
 };
+use thiserror::Error;
 
-use crate::{Cardinality, Qualifier, ShExStatement};
+use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError};
+use macros::traced;
+use nom_locate::LocatedSpan;
+
+
+// Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
+
+pub(super) type IntermediateResult<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
+
+/// A [`LocatedSpan`] over the input.
+pub(super) type Span<'a> = LocatedSpan<&'a str>;
+
+/// Create a [`Span`][nom_locate::LocatedSpan] over the input.
+pub fn span_from_str(input: &str) -> Span<'_> {
+    Span::new(input)
+}
+
+/// A [`ParseError`] at a certain location
+#[derive(Debug, Error)]
+#[error("Parse error on line {}, column {}: {}\nat {}{}", .line, .column, .source, .fragment, format_parse_error_context(.context))]
+pub struct LocatedParseError {
+    #[source]
+    pub(super) source: ShExParseError,
+    pub(super) line: u32,
+    pub(super) column: usize,
+    pub(super) fragment: String,
+    pub(super) context: Vec<LocatedParseError>,
+}
+
+fn format_parse_error_context(context: &[LocatedParseError]) -> String {
+    let mut fragments = Vec::new();
+
+    for error in context {
+        let error_string = format!("{error}");
+        for line in error_string.split('\n') {
+            fragments.push(format!("{}{line}", " ".repeat(2)));
+        }
+    }
+
+    if fragments.is_empty() {
+        String::new()
+    } else {
+        format!("\nContext:\n{}", fragments.join("\n"))
+    }
+}
+
+/// A combinator to add tracing to the parser.
+/// [fun] is an identifier for the parser and [parser] is the actual parser.
+#[inline(always)]
+fn traced<'a, T, P>(
+    fun: &'static str,
+    mut parser: P,
+) -> impl FnMut(Span<'a>) -> IntermediateResult<'a, T>
+where
+    T: Debug,
+    P: FnMut(Span<'a>) -> IntermediateResult<'a, T>,
+{
+    move |input| {
+        log::trace!(target: "parser", "{fun}({input:?})");
+        let result = parser(input);
+        log::trace!(target: "parser", "{fun}({input:?}) -> {result:?}");
+        result
+    }
+}
 
 fn not_eol(c: char) -> bool {
     c != '\n' && c != '\r'
@@ -615,12 +680,13 @@ fn bracketed_triple_expr(i: &str) -> IResult<&str, TripleExpr> {
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint(i: &str) -> IResult<&str, TripleExpr> {
     println!("Checking triple_constraint...{i}");
-    let (i, (predicate, _, se, _, maybe_card)) = tuple((
+    let (i, (predicate, _, se, _, maybe_card, _)) = tuple((
         predicate,
         tws,
         inline_shape_expression,
         tws,
         opt(cardinality),
+        tws
     ))(i)?;
     println!("triple_constraint: Cardinality");
     let (min, max) = match maybe_card {
