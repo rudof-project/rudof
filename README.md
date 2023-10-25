@@ -46,6 +46,19 @@ Validate a specific node with a shape:
 sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
 ```
 
+#### Debuggin information
+
+It is possible to change the debug level information with:
+
+```
+export RUST_LOG=value
+```
+
+where `value` can be `debug` to show more verbose information or `info` to show basic information.
+
+
+
+
 ## Command line usage
 
 ```
