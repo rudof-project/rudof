@@ -11,9 +11,9 @@ pub enum CompiledSchemaError {
     #[error("Parsing {str:?} as IRI")]
     Str2IriError { str: String },
 
-    #[error("Parsing as IRI: {err:?}")]
+    #[error("Parsing {str} as IRI: {err:?}")]
     IriParseError {
-        #[from]
+        str: String,
         err: IriSError,
     },
 
@@ -69,4 +69,10 @@ pub enum CompiledSchemaError {
 
     #[error("Not implemented yet: {msg}")]
     Todo { msg: String },
+
+    #[error("Can't convert prefixed name {prefix}:{local} to shape label")]
+    IriRef2ShapeLabelError { prefix: String, local: String },
+
+    #[error("Internal: {msg}")]
+    Internal { msg: String },
 }

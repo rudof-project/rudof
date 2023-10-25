@@ -9,6 +9,10 @@ pub enum ShapeLabel {
 }
 
 impl ShapeLabel {
+
+    pub fn iri(i: IriS) -> ShapeLabel {
+        ShapeLabel::Iri(i)
+    }
     pub fn from_bnode_str(s: String) -> ShapeLabel {
         ShapeLabel::BNode(s)
     }

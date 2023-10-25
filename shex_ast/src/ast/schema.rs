@@ -1,4 +1,6 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
+use crate::{Ref, ShapeLabel};
+use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
@@ -14,10 +16,10 @@ pub struct Schema {
     context: String,
 
     #[serde(rename = "type")]
-    pub type_: String,
+    type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub imports: Option<Vec<Iri>>,
+    imports: Option<Vec<Iri>>,
 
     #[serde(
         default,
@@ -25,19 +27,19 @@ pub struct Schema {
         serialize_with = "serialize_opt_string_or_struct",
         deserialize_with = "deserialize_opt_string_or_struct"
     )]
-    pub start: Option<ShapeExpr>,
+    start: Option<ShapeExpr>,
 
     #[serde(default, rename = "startActs", skip_serializing_if = "Option::is_none")]
-    pub start_acts: Option<Vec<SemAct>>,
+    start_acts: Option<Vec<SemAct>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub shapes: Option<Vec<ShapeDecl>>,
+    shapes: Option<Vec<ShapeDecl>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub prefixmap: Option<PrefixMap>,
+    prefixmap: Option<PrefixMap>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub base: Option<Iri>,
+    base: Option<IriS>,
 }
 
 impl Schema {
@@ -62,6 +64,29 @@ impl Schema {
         self
     }
 
+    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
+        match self.prefixmap {
+            None => {
+                let mut pm = PrefixMap::new();
+                pm.insert(alias, iri);
+                self.prefixmap = Some(pm);
+            }
+            Some(ref mut pm) => pm.insert(alias, iri),
+        }
+    }
+
+    pub fn add_shape(&mut self, shape_label: Ref, shape_expr: ShapeExpr) {
+        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
+        match self.shapes {
+            None => {
+                let mut ses = Vec::new();
+                ses.push(sd);
+                self.shapes = Some(ses);
+            }
+            Some(ref mut ses) => ses.push(sd),
+        }
+    }
+
     pub fn parse_schema_buf(path_buf: &PathBuf) -> Result<Schema, SchemaJsonError> {
         let schema = {
             let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
@@ -84,6 +109,22 @@ impl Schema {
         let mut attempt = PathBuf::from(base);
         attempt.push(json_path);
         Self::parse_schema_buf(&attempt)
+    }
+
+    pub fn base(&self) -> Option<IriS> {
+      self.base.clone()
+    }
+
+    pub fn prefixmap(&self) -> Option<PrefixMap> {
+        self.prefixmap.clone()
+    }
+
+    pub fn shapes(&self) -> Option<Vec<ShapeDecl>> {
+        self.shapes.clone()
+    }
+
+    pub fn get_type(&self) -> String {
+         self.type_.clone()
     }
 }
 

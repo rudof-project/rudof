@@ -55,9 +55,9 @@ impl SRDFGraph {
         Ok(SRDFGraph { graph: graph, pm })
     }
 
-    pub fn resolve(&self, str: &str) -> Result<Option<OxNamedNode>, SRDFGraphError> {
-        let r = self.pm.resolve(str).map(|opt| opt.map(Self::cnv_iri))?;
-        Ok(r)
+    pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
+        let r = self.pm.resolve(str)?;
+        Ok(Self::cnv_iri(r))
     }
 
     pub fn qualify_named_node(&self, node: &OxNamedNode) -> String {

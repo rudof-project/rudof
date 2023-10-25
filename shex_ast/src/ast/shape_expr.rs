@@ -1,6 +1,8 @@
 use std::result;
 use std::str::FromStr;
 
+use iri_s::{IriS, IriSError};
+use prefixmap::PrefixMap;
 use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use void::Void;
@@ -13,7 +15,7 @@ use super::{
 };
 use super::{node_kind::NodeKind, ref_::Ref};
 use crate::ast::serde_string_or_struct::*;
-use crate::NodeConstraint;
+use crate::{NodeConstraint, Shape, TripleExpr, Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -23,6 +25,24 @@ pub struct ShapeExprWrapper {
         deserialize_with = "deserialize_string_or_struct"
     )]
     pub se: ShapeExpr,
+}
+
+impl Deref for ShapeExprWrapper {
+    fn deref(&self, 
+        base: &Option<IriS>, 
+        prefixmap: &Option<PrefixMap>) -> Result<Self, DerefError> {
+        let se = self.se.deref(base, prefixmap)?; 
+        let sew = ShapeExprWrapper {
+            se: se,
+        };
+        Ok(sew)
+    }
+}
+
+impl Into<ShapeExprWrapper> for ShapeExpr {
+    fn into(self) -> ShapeExprWrapper {
+        ShapeExprWrapper { se: self }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -43,34 +63,20 @@ pub enum ShapeExpr {
 
     NodeConstraint(NodeConstraint),
 
-    Shape {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        closed: Option<bool>,
+    Shape(Shape),
 
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        extra: Option<Vec<IriRef>>,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        expression: Option<TripleExprWrapper>,
-
-        #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
-        sem_acts: Option<Vec<SemAct>>,
-
-        #[serde(skip_serializing_if = "Option::is_none")]
-        annotations: Option<Vec<Annotation>>,
-    },
-
-    ShapeExternal,
+    External,
 
     Ref(Ref),
 }
 
 impl FromStr for ShapeExpr {
-    type Err = Void;
+    type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let iri_s = IriS::from_str(s)?;
         Ok(ShapeExpr::Ref(Ref::IriRef {
-            value: s.to_string(),
+            value: IriRef::iri(iri_s),
         }))
     }
 }
@@ -89,26 +95,103 @@ impl SerializeStringOrStruct for ShapeExpr {
 
 impl ShapeExpr {
     pub fn empty_shape() -> ShapeExpr {
-        ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: None,
-            sem_acts: None,
-            annotations: None,
+        ShapeExpr::Shape(Shape::default())
+    }
+
+    pub fn external() -> ShapeExpr {
+        ShapeExpr::External
+    }
+
+    pub fn not(se: ShapeExpr) -> ShapeExpr {
+        ShapeExpr::ShapeNot {
+            shape_expr: Box::new(se.into()),
         }
+    }
+
+    pub fn or(ses: Vec<ShapeExpr>) -> ShapeExpr {
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
+        ShapeExpr::ShapeOr { shape_exprs }
+    }
+
+    pub fn and(ses: Vec<ShapeExpr>) -> ShapeExpr {
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
+        ShapeExpr::ShapeAnd { shape_exprs }
+    }
+
+    pub fn node_constraint(nc: NodeConstraint) -> ShapeExpr {
+        ShapeExpr::NodeConstraint(nc)
+    }
+
+    pub fn iri_ref(iri_ref: IriRef) -> ShapeExpr {
+        ShapeExpr::Ref(Ref::iri_ref(iri_ref))
+    }
+
+    pub fn shape_ref(ref_: Ref) -> ShapeExpr {
+        ShapeExpr::Ref(ref_)
+    }
+
+    pub fn any() -> ShapeExpr {
+        ShapeExpr::default()
+    }
+
+    pub fn shape(shape: Shape) -> ShapeExpr {
+        ShapeExpr::Shape(shape)
     }
 }
 
 impl Default for ShapeExpr {
     fn default() -> Self {
-        ShapeExpr::Shape {
-            closed: None,
-            extra: None,
-            expression: None,
-            sem_acts: None,
-            annotations: None,
+        ShapeExpr::Shape(Shape::default())
+    }
+}
+
+impl Deref for ShapeExpr {
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        match self {
+            ShapeExpr::External => Ok(ShapeExpr::External),
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeAnd {
+                  shape_exprs
+             })
+            },
+            ShapeExpr::ShapeOr { shape_exprs} => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeOr {
+                  shape_exprs
+             })
+            }
+            ShapeExpr::ShapeNot { shape_expr } => {
+                let shape_expr = <ShapeExpr as Deref>::deref_box(shape_expr, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeNot {
+                  shape_expr
+             })
+            }
+            ShapeExpr::Shape(shape) => {
+                let shape = shape.deref(base, prefixmap)?;
+                Ok(ShapeExpr::Shape(shape))
+            },
+            ShapeExpr::Ref(ref_) => {
+              let ref_ = ref_.deref(base, prefixmap)?;
+              Ok(ShapeExpr::Ref(ref_))
+            },
+            ShapeExpr::NodeConstraint(nc) => {
+                let nc = nc.deref(base, prefixmap)?;
+                Ok(ShapeExpr::NodeConstraint(nc))
+            }
         }
     }
+
 }
 
 #[cfg(test)]
@@ -127,5 +210,4 @@ mod tests {
         let json_nc = serde_json::to_string(&se).unwrap();
         assert_eq!(json_nc, "{\"type\":\"NodeConstraint\",\"pattern\":\"o*\"}");
     }
-
 }

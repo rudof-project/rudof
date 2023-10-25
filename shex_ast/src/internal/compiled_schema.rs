@@ -1,11 +1,12 @@
 use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, CResult,
-    CompiledSchemaError, Cond, Node, internal::ObjectValue, ShapeLabel, ShapeLabelIdx, internal::ValueSetValue,
+    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, internal::ObjectValue,
+    internal::ValueSetValue, CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::str::FromStr;
 // use std::str::FromStr;
 use crate::Pred;
 use log::debug;
@@ -62,7 +63,7 @@ pub enum ShapeExpr {
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
     },
-    ShapeExternal {},
+    External {},
     Ref {
         idx: ShapeLabelIdx,
     },
@@ -184,7 +185,8 @@ impl CompiledSchema {
     pub fn find_ref(&mut self, se_ref: &Ref) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             Ref::IriRef { value } => {
-                let label = ShapeLabel::from_iri_str(value)?;
+                let iri_s: IriS = (*value).clone().into();
+                let label = ShapeLabel::iri(iri_s);
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             }
             Ref::BNode { value } => {
@@ -254,9 +256,9 @@ impl CompiledSchema {
         }
     }
 
-    fn cnv_iri_ref<'a>(&self, iri: &IriRef) -> Result<IriS> {
-        let iri = IriS::new(&iri.value.as_str())?;
-        Ok(iri)
+    fn cnv_iri_ref<'a>(&self, iri_ref: &IriRef) -> Result<IriS> {
+        let iri_s = (*iri_ref).clone().into();
+        Ok(iri_s)
     }
 
     pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {
@@ -447,7 +449,6 @@ impl Display for CompiledSchema {
 mod tests {
     use crate::ast::Schema as SchemaJson;
     use crate::internal::CompiledSchema;
-
 
     #[test]
     fn test_find_component() {

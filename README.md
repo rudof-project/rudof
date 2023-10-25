@@ -12,7 +12,17 @@ The development roadmap is using [GitHub milestones](https://github.com/weso/she
 
 #### Official releases
 
-You can download a binary from the [latest release](https://github.com/weso/shex-rs/releases/latest) page.
+You can download a binary from the [latest release](https://github.com/weso/shex-rs/releases/latest) page. There you will also find the compiled packages for the installation on
+your system using a package manager.
+
+##### Ubuntu
+
+Note that the example below is for version 0.0.2. For any other version, please change the X.X.X values accordingly:
+
+```
+wget https://github.com/weso/shex-rs/releases/download/0.0.2/sx_0.0.2_amd64.deb
+sudo dpkg -i sx_0.0.2_amd64.deb
+```
 
 #### Compiling from source
 
@@ -35,6 +45,19 @@ Validate a specific node with a shape:
 ```
 sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
 ```
+
+#### Debuggin information
+
+It is possible to change the debug level information with:
+
+```
+export RUST_LOG=value
+```
+
+where `value` can be `debug` to show more verbose information or `info` to show basic information.
+
+
+
 
 ## Command line usage
 

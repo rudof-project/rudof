@@ -9,7 +9,8 @@ use serde::{
 
 use super::ValueSetValue;
 use crate::{
-    IriRef, NodeKind, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper, XsFacet,
+    IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper,
+    XsFacet, Deref, DerefError,
 };
 use serde::ser::SerializeMap;
 
@@ -150,6 +151,22 @@ impl NodeConstraint {
                 Some(vs)
             }
         }
+    }
+}
+
+impl Deref for NodeConstraint {
+    fn deref(&self, 
+        base: &Option<iri_s::IriS>, 
+        prefixmap: &Option<prefixmap::PrefixMap>
+    ) -> Result<Self, DerefError> where Self: Sized {
+       let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
+       let values = <ValueSetValueWrapper as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
+       Ok(NodeConstraint {
+        node_kind: self.node_kind.clone(),
+        datatype,
+        xs_facet: self.xs_facet.clone(),
+        values
+       })
     }
 }
 

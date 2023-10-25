@@ -1,14 +1,15 @@
 extern crate anyhow;
 extern crate clap;
-extern crate shex_ast;
 extern crate iri_s;
 extern crate log;
-extern crate srdf;
 extern crate oxrdf;
-extern crate srdf_graph;
-extern crate shex_validation;
-extern crate serde_json;
 extern crate regex;
+extern crate serde_json;
+extern crate shex_ast;
+extern crate shex_compact;
+extern crate shex_validation;
+extern crate srdf;
+extern crate srdf_graph;
 
 use anyhow::*;
 use clap::Parser;
@@ -16,15 +17,16 @@ use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
 use shex_ast::Node;
+use shex_compact::ShExParser;
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 pub mod cli;
 pub use cli::*;
 
-use shex_ast::{internal::CompiledSchema, ast::Schema as SchemaJson, ShapeLabel};
+use shex_ast::{ast::Schema as SchemaJson, internal::CompiledSchema, ShapeLabel};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -68,24 +70,25 @@ fn main() -> Result<()> {
 }
 
 fn run_schema(
-    schema: &PathBuf,
+    schema_buf: &PathBuf,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
 ) -> Result<()> {
-    let schema_json = parse_schema(schema, schema_format)?;
+    let schema_json = parse_schema(schema_buf, schema_format)?;
     match result_schema_format {
         ShExFormat::Internal => {
             println!("{schema_json:?}");
+            Ok(())
         }
-        ShExFormat::ShExC => {
-            todo!()
-        }
+        ShExFormat::ShExC => Err(anyhow!(
+            "Cannot convert to ShEx compact syntax yet:\n{schema_json:?}"
+        )),
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema_json)?;
             println!("{str}");
+            Ok(())
         }
     }
-    Ok(())
 }
 
 fn run_validate(
@@ -156,8 +159,11 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
 
 fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<SchemaJson> {
     match schema_format {
-        ShExFormat::Internal => todo!(),
-        ShExFormat::ShExC => todo!(),
+        ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
+        ShExFormat::ShExC => {
+            let schema = ShExParser::parse_buf(schema_path, None)?;
+            Ok(schema)
+        }
         ShExFormat::ShExJ => {
             let schema_json = SchemaJson::parse_schema_buf(schema_path)?;
             //let mut schema: CompiledSchema = CompiledSchema::new();
@@ -184,7 +190,7 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     match iri_r.captures(node_str) {
         Some(captures) => match captures.get(1) {
             Some(cs) => {
-                let iri = IriS::new(cs.as_str())?;
+                let iri = IriS::from_str(cs.as_str())?;
                 Ok(iri.into())
             }
             None => {
@@ -192,12 +198,9 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
             }
         },
         None => match data.resolve(node_str) {
-            Ok(Some(named_node)) => {
-                let iri = IriS::new(named_node.as_str())?;
+            Ok(named_node) => {
+                let iri = IriS::from_str(named_node.as_str())?;
                 Ok(iri.into())
-            }
-            Ok(None) => {
-                todo!()
             }
             Err(_err_resolve) => {
                 todo!()
@@ -207,6 +210,6 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
 }
 
 fn parse_shape_label(label_str: &str) -> Result<ShapeLabel> {
-    let iri = IriS::new(label_str)?;
+    let iri = IriS::from_str(label_str)?;
     Ok(ShapeLabel::Iri(iri))
 }

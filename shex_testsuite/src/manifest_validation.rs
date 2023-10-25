@@ -19,6 +19,7 @@ use srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
+use std::str::FromStr;
 use ValidationType::*;
 
 #[derive(Deserialize, Debug)]
@@ -238,11 +239,11 @@ fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, M
 fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
     match focus {
         Focus::Single(str) => {
-            let iri = IriS::new(str.as_str())?;
+            let iri = IriS::from_str(str.as_str())?;
             Ok(iri.into())
         }
         Focus::Typed(str, str_type) => {
-            let datatype = IriS::new(str_type.as_str())?;
+            let datatype = IriS::from_str(str_type.as_str())?;
             Ok(Object::Literal(Literal::datatype(str, datatype)).into())
         }
     }

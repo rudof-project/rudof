@@ -226,7 +226,7 @@ impl ValidatorRunner {
                 Ok(found)
             }
             ShapeExpr::Empty => Ok(true),
-            ShapeExpr::ShapeExternal {} => Ok(true),
+            ShapeExpr::External {} => Ok(true),
         }
     }
 

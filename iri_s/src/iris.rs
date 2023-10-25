@@ -17,9 +17,9 @@ pub struct IriS {
 }
 
 impl IriS {
-    pub fn new(str: &str) -> Result<IriS, IriSError> {
-        let iri = NamedNode::new(str)?;
-        Ok(IriS { iri })
+    // TODO: Maybe define this one as const...
+    pub fn rdf_type() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
     pub fn new_unchecked(str: &str) -> IriS {
@@ -40,9 +40,16 @@ impl IriS {
     }
 
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
+        let extended_str = format!("{}{}", self.iri.as_str(), str);
+        let iri = NamedNode::new(extended_str)?;
+        Ok(IriS { iri })
+    }
+
+    pub fn resolve(&self, other: IriS) -> Result<Self, IriSError> {
         let base = Iri::parse(self.iri.as_str())?;
-        let extended = base.resolve(str)?;
-        let iri = NamedNode::new(extended.as_str())?;
+        let other_str = other.as_str();
+        let resolved = base.resolve(other_str)?;
+        let iri = NamedNode::new(resolved.as_str())?;
         Ok(IriS { iri })
     }
 
@@ -70,13 +77,19 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_iri(s)
+        let iri = NamedNode::new(s)?;
+        Ok(IriS { iri })
     }
 }
 
-fn parse_iri(s: &str) -> Result<IriS, IriSError> {
-    IriS::new(s)
-}
+/*impl TryFrom<&str> for IriS {
+    type Error = IriSError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let iri = NamedNode::new(value)?;
+        Ok(IriS { iri })
+    }
+}*/
 
 impl Default for IriS {
     fn default() -> Self {
@@ -97,7 +110,8 @@ impl<'de> Visitor<'de> for IriVisitor {
     where
         E: de::Error,
     {
-        IriS::new(v).map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
+        IriS::from_str(v)
+            .map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
     }
 }
 

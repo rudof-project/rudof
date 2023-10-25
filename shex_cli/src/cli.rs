@@ -31,7 +31,7 @@ pub enum Command {
             short = 'f',
             long = "schema-format",
             value_name = "Schema format",
-            default_value_t = ShExFormat::ShExJ
+            default_value_t = ShExFormat::ShExC
         )]
         schema_format: ShExFormat,
 
@@ -52,7 +52,7 @@ pub enum Command {
             short = 'f',
             long = "schema-format",
             value_name = "Schema format",
-            default_value_t = ShExFormat::ShExJ
+            default_value_t = ShExFormat::ShExC
         )]
         schema_format: ShExFormat,
 
