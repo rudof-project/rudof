@@ -18,33 +18,48 @@ use shex_ast::{
 use thiserror::Error;
 
 use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError};
-use macros::traced;
 use nom_locate::LocatedSpan;
 
 
 // Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
 
-pub(super) type IntermediateResult<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
+pub type IntermediateResult<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
 
 /// A [`LocatedSpan`] over the input.
-pub(super) type Span<'a> = LocatedSpan<&'a str>;
+pub type Span<'a> = LocatedSpan<&'a str>;
 
 /// Create a [`Span`][nom_locate::LocatedSpan] over the input.
 pub fn span_from_str(input: &str) -> Span<'_> {
     Span::new(input)
 }
 
+/// The result of a parse
+pub type ParseResult<'a, T> = Result<T, LocatedParseError>;
+
+
 /// A [`ParseError`] at a certain location
 #[derive(Debug, Error)]
-#[error("Parse error on line {}, column {}: {}\nat {}{}", .line, .column, .source, .fragment, format_parse_error_context(.context))]
+#[error("Parse error on line {}, column {}: {}\nat {}{}", 
+  .line, .column, 
+  .source, 
+  .fragment, 
+  format_parse_error_context(.context))]
 pub struct LocatedParseError {
     #[source]
-    pub(super) source: ShExParseError,
-    pub(super) line: u32,
-    pub(super) column: usize,
-    pub(super) fragment: String,
-    pub(super) context: Vec<LocatedParseError>,
+    pub source: ShExParseError,
+    pub line: u32,
+    pub column: usize,
+    pub fragment: String,
+    pub context: Vec<LocatedParseError>,
 }
+
+impl LocatedParseError {
+    /// Append another [`LocatedParseError`] as context to this error.
+    pub fn append(&mut self, other: LocatedParseError) {
+        self.context.push(other)
+    }
+}
+
 
 fn format_parse_error_context(context: &[LocatedParseError]) -> String {
     let mut fragments = Vec::new();
@@ -60,6 +75,18 @@ fn format_parse_error_context(context: &[LocatedParseError]) -> String {
         String::new()
     } else {
         format!("\nContext:\n{}", fragments.join("\n"))
+    }
+}
+
+impl nom::error::ParseError<Span<'_>> for LocatedParseError {
+    fn from_error_kind(input: Span, kind: ErrorKind) -> Self {
+        ShExParseError::SyntaxError(kind.description().to_string()).at(input)
+    }
+
+    fn append(input: Span, kind: ErrorKind, other: Self) -> Self {
+        let mut error = ShExParseError::SyntaxError(kind.description().to_string()).at(input);
+        error.append(other);
+        error
     }
 }
 

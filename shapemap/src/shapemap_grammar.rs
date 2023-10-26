@@ -16,7 +16,6 @@ use nom_locate::LocatedSpan;
 use prefixmap::PrefixMap;
 use thiserror::Error;
 
-use crate::ShapeMap;
 
 // This parser approach borrows lots of ideas and code from [Nemo](https://github.com/knowsys/nemo)
 
@@ -382,6 +381,7 @@ where
         result
     }
 }
+
 /// A combinator that makes sure all input has been consumed.
 pub fn all_input_consumed<'a, T: 'a>(
     parser: impl FnMut(Span<'a>) -> IntermediateResult<'a, T> + 'a,

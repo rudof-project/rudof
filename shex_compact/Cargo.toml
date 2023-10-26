@@ -11,7 +11,6 @@ license.workspace = true
 shex_ast = { path = "../shex_ast", version = "0.0.2" }
 iri_s = { path = "../iri_s", version = "0.0.2" }
 prefixmap = { path = "../prefixmap", version = "0.0.2" } 
-macros = { path = "../libs/macros" }
 nom = "7"
 nom_locate = "4"
 thiserror = "1"
