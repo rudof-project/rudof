@@ -71,36 +71,6 @@ impl<'a> ShExParser<'a> {
         Ok(schema)
     }
 
-    /*pub fn process_statements(&mut self) -> Result<'a, ()> {
-        // let mut schema = Schema::new();
-        while let Some(ss) = self.shex_statement_iterator.next() {
-            let statements = ss?;
-            for s in statements {
-                match s {
-                    ShExStatement::BaseDecl { iri } => {
-                        todo!()
-                    }
-                    ShExStatement::PrefixDecl { alias, iri } => {
-                        self.schema.add_prefix(alias, &iri);
-                    }
-                    ShExStatement::StartDecl { shape_expr } => {
-                        todo!()
-                    }
-                    ShExStatement::ImportDecl { iri } => {
-                        todo!()
-                    }
-                    ShExStatement::ShapeDecl {
-                        shape_label,
-                        shape_expr,
-                    } => {
-                        todo!()
-                    }
-                }
-            }
-        }
-        Ok(())
-    }*/
-
     pub fn parse_buf(path_buf: &PathBuf, base: Option<IriS>) -> Result<Schema> {
         let data = fs::read_to_string(&path_buf.as_path())?;
         let schema = ShExParser::parse(data, base)?;
