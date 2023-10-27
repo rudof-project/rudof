@@ -1,4 +1,5 @@
 use iri_s::IriS;
+use colored::*;
 use std::{fmt::Debug, num::ParseIntError};
 use nom::{
     branch::alt,
@@ -127,7 +128,16 @@ where
     move |input| {
         log::trace!(target: "parser", "{fun}({input:?})");
         let result = parser(input);
-        log::trace!(target: "parser", "{fun}({input:?}) -> {result:?}");
+        match &result {
+            Ok(res) => { 
+                let s = format!("{fun}({input:?}) -> {res:?}");
+                log::trace!(target: "parser", "{}", s.green()); 
+            }
+            Err(e) => { 
+                let s = format!("{fun}({input:?}) -> {e:?}");
+                log::trace!(target: "parser", "{}", s.red()); 
+            }
+        }
         result
     }
 }
@@ -143,20 +153,6 @@ pub fn comment(input: Span) -> IntermediateResult<()> {
     ))(input)
 }
 
-/*fn not_eol(c: char) -> bool {
-    c != '\n' && c != '\r'
-}
-
-fn comment(i: &str) -> IResult<&str, &str> {
-    let (i, _) = char('#')(i)?;
-    let (i, comment) = take_while(not_eol)(i)?;
-    if i.is_empty() {
-        Ok((i, comment))
-    } else {
-        // remove one \n or \r
-        Ok((&i[1..], comment))
-    }
-}*/
 
 /// A combinator that recognises an arbitrary amount of whitespace and
 /// comments.
@@ -186,21 +182,11 @@ pub fn token_tws<'a>(
     )
 }
 
-
-/// whitespace that may contain comments
-/*pub fn tws(i: &str) -> IResult<&str, ()> {
-    fold_many0(
-        alt((map(one_of(" \t\n\r"), |_| ()), map(comment, |_| ()))),
-        || (),
-        |_, _| (),
-    )(i)
-} */
-
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, Vec<ShExStatement>> {
     traced("shex_statement", 
     move |i| {
-    let (i, (ds, _, maybe_sts)) = tuple((directives, tws1, opt(rest_shex_statements)))(i)?;
+    let (i, (ds, _, maybe_sts)) = tuple((directives, tws0, opt(rest_shex_statements)))(i)?;
     let mut result = Vec::new();
      result.extend(ds);
      match maybe_sts {
@@ -215,7 +201,7 @@ pub fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, Ve
 
 /// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
 pub fn rest_shex_statements(i: Span) -> IntermediateResult<Vec<ShExStatement>> {
-    let (i, (s, _, ss, _)) = tuple((alt((not_start_action, start_actions)), tws1, statements, tws0))(i)?;
+    let (i, (s, _, ss, _)) = tuple((alt((not_start_action, start_actions)), tws0, statements, tws0))(i)?;
     let mut rs = vec![s];
     rs.extend(ss);
     Ok((i, rs))

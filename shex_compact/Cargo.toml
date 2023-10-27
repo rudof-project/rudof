@@ -15,6 +15,7 @@ nom = "7"
 nom_locate = "4"
 thiserror = "1"
 log = "0.4"
+colored = "2"
 
 [dev-dependencies]
 env_logger = "*"
