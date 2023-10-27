@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, num::ParseIntError};
 use iri_s::IriSError;
 use shex_ast::DerefError;
 use thiserror::Error;
@@ -8,7 +8,7 @@ use crate::{LocatedParseError, Span};
 #[derive(Error, Debug)]
 pub enum ParseError {
     #[error("Nom Parsing error: {err:?}")]
-    NomError { err: nom::error::ErrorKind },
+    NomError { err: Box<LocatedParseError> },
 
     #[error(transparent)]
     IOError { #[from] err: io::Error },
@@ -30,6 +30,28 @@ pub enum ParseError {
 
     #[error(r#"Expected "{0}""#)]
     ExpectedToken(String),
+
+    #[error("Expected shape definition of shape reference")]
+    ExpectedShapeOrRef,
+
+    #[error("Expected shape expression declaration")]
+    ExpectedShapeExprDecl,
+
+    #[error("Expected prefixed name")]
+    ExpectedPrefixedName,
+
+
+    #[error("Expected prefix declaration")]
+    ExpectedPrefixDecl,
+
+    #[error("Parse int error: {err}")]
+    ParseIntError{ 
+        str: String,
+        err: ParseIntError
+    }
+
+    
+
 
 }
 
@@ -64,3 +86,5 @@ impl ParseError {
         }
     }
 }
+
+

@@ -10,11 +10,12 @@ use shex_ast::Deref;
 use shex_ast::Schema;
 use shex_ast::ShapeExpr;
 
+use crate::Span;
 use crate::shex_statement;
-use crate::tws;
 use crate::ParseError;
 use crate::ParserState;
 use crate::ShExStatement;
+use crate::tws0;
 
 // This code is inspired from:
 // https://github.com/vandenoever/rome/blob/master/src/io/turtle/parser.rs
@@ -31,7 +32,7 @@ impl<'a> ShExParser<'a> {
     pub fn parse(src: String, base: Option<IriS>) -> Result<Schema> {
         let mut schema = Schema::new();
         let mut parser = ShExParser {
-            shex_statement_iterator: StatementIterator::new(src.as_str())?,
+            shex_statement_iterator: StatementIterator::new(Span::new(src.as_str()))?,
             state: ParserState::default(),
             done: false,
         };
@@ -79,13 +80,13 @@ impl<'a> ShExParser<'a> {
 }
 
 struct StatementIterator<'a> {
-    src: &'a str,
+    src: Span<'a>,
     done: bool,
 }
 
 impl<'a> StatementIterator<'a> {
-    pub fn new(src: &str) -> Result<StatementIterator> {
-        match tws(src) {
+    pub fn new(src: Span) -> Result<StatementIterator> {
+        match tws0(src) {
             Ok((left, _)) => Ok(StatementIterator {
                 src: left,
                 done: false,
@@ -106,7 +107,7 @@ impl<'a> Iterator for StatementIterator<'a> {
             return None;
         }
         let mut r;
-        match shex_statement(self.src) {
+        match shex_statement()(self.src) {
             Ok((left, s)) => {
                 if s.is_empty() {
                     r = None;
@@ -121,12 +122,12 @@ impl<'a> Iterator for StatementIterator<'a> {
                 r = None;
             }
             Err(Err::Error(e)) | Err(Err::Failure(e)) => {
-                r = Some(Err(ParseError::NomError { err: e.code }));
+                r = Some(Err(ParseError::NomError { err: Box::new(e) }));
                 self.done = true;
             }
         }
 
-        match tws(self.src) {
+        match tws0(self.src) {
             Ok((left, _)) => {
                 self.src = left;
             }
