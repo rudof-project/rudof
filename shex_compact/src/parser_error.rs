@@ -40,6 +40,11 @@ pub enum ParseError {
     #[error("Expected prefixed name")]
     ExpectedPrefixedName,
 
+    #[error("Expected Start declaration")]
+    ExpectedStart,
+
+    #[error("Expected triple constraint")]
+    ExpectedTripleConstraint,
 
     #[error("Expected prefix declaration")]
     ExpectedPrefixDecl,

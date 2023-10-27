@@ -249,19 +249,23 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, ShExState
 
 /// `[5]   	notStartAction	   ::=   	start | shapeExprDecl`
 fn not_start_action(i: Span) -> IntermediateResult<ShExStatement> {
-    alt((start, shape_expr_decl()))(i)
+    alt((start(), shape_expr_decl()))(i)
 }
 
 /// `[6]   	start	   ::=   	"start" '=' inlineShapeExpression`
-fn start(i: Span) -> IntermediateResult<ShExStatement> {
-    let (i, (_, _, _, _, se)) = tuple((
+fn start<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, ShExStatement> {
+    map_error(move |i| {
+        let (i, (_, _, _, _, se)) = tuple((
         tag_no_case("START"),
         tws0,
-        char('='),
+        cut(char('=')),
         tws0,
-        inline_shape_expression,
+        cut(inline_shape_expression),
     ))(i)?;
     Ok((i, ShExStatement::StartDecl { shape_expr: se }))
+    },
+    || ShExParseError::ExpectedStart
+  )
 }
 
 /// `[7]   	startActions	   ::=   	codeDecl+`
@@ -734,7 +738,7 @@ fn unary_triple_expr_opt1(i: Span) -> IntermediateResult<TripleExpr> {
     let (i, (maybe_label, _, te)) = tuple((
         triple_expr_label_opt,
         tws0,
-        alt((triple_constraint, bracketed_triple_expr)),
+        alt((triple_constraint(), bracketed_triple_expr)),
     ))(i)?;
     // Pending: Process maybe_label
     Ok((i, te))
@@ -771,13 +775,15 @@ fn bracketed_triple_expr(i: Span) -> IntermediateResult<TripleExpr> {
 }
 
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
-fn triple_constraint(i: Span) -> IntermediateResult<TripleExpr> {
-    let (i, (predicate, _, se, _, maybe_card, _)) = tuple((
+fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, TripleExpr> {
+    map_error(
+        move |i| { 
+        let (i, (predicate, _, se, _, maybe_card, _)) = tuple((
         predicate,
         tws0,
-        inline_shape_expression,
+        cut(inline_shape_expression),
         tws0,
-        opt(cardinality),
+        cut(opt(cardinality)),
         tws0
     ))(i)?;
     let (min, max) = match maybe_card {
@@ -787,7 +793,9 @@ fn triple_constraint(i: Span) -> IntermediateResult<TripleExpr> {
     Ok((
         i,
         TripleExpr::triple_constraint(predicate, Some(se), min, max),
-    ))
+    ))}, 
+    || ShExParseError::ExpectedTripleConstraint
+  )
 }
 
 /// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
