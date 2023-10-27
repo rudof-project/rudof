@@ -759,11 +759,11 @@ fn bracketed_triple_expr(i: Span) -> IntermediateResult<TripleExpr> {
     let (i, (_, _, te, _, _, _, maybe_card, _, annotations, _, sem_acts)) = tuple((
         char('('),
         tws0,
-        triple_expression,
+        cut(triple_expression),
         tws0,
-        char(')'),
+        cut(char(')')),
         tws0,
-        opt(cardinality),
+        cut(opt(cardinality())),
         tws0,
         annotations,
         tws0,
@@ -783,7 +783,7 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, Tri
         tws0,
         cut(inline_shape_expression),
         tws0,
-        cut(opt(cardinality)),
+        cut(opt(cardinality())),
         tws0
     ))(i)?;
     let (min, max) = match maybe_card {
@@ -799,12 +799,15 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, Tri
 }
 
 /// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
-fn cardinality(i: Span) -> IntermediateResult<Cardinality> {
-    alt((
+fn cardinality<'a>() -> impl FnMut(Span<'a>) -> IntermediateResult<'a, Cardinality> {
+   map_error(move |i| {
+     alt((
         plus, star, optional,
         // Pending
         // repeat_range
-    ))(i)
+     ))(i)
+    }, || ShExParseError::ExpectedCardinality 
+  )
 }
 
 fn plus(i: Span) -> IntermediateResult<Cardinality> {
@@ -1502,14 +1505,16 @@ mod tests {
             shape_expression("{ <http://example.org/p> . } AND { <http://example.org/q> . }"),
             Ok(("", ShapeExpr::and(vec![se1, se2])))
         );
-    }
+    }*/
 
     #[test]
     fn test_empty_shex_statement() {
-        assert_eq!(shex_statement(""), Ok(((""), Vec::new())))
+        let (_, result) = shex_statement()(Span::new("")).unwrap();
+        let expected = Vec::new();
+        assert_eq!(result, expected)
     }
 
-    #[test]
+    /*#[test]
     fn test_incomplete() {
         use super::*;
 

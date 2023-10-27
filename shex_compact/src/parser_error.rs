@@ -43,6 +43,9 @@ pub enum ParseError {
     #[error("Expected Start declaration")]
     ExpectedStart,
 
+    #[error("Expected cardinality")]
+    ExpectedCardinality,
+
     #[error("Expected triple constraint")]
     ExpectedTripleConstraint,
 
