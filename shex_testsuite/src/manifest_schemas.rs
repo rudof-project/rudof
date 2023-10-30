@@ -160,6 +160,8 @@ impl SchemasEntry {
         let schema_parsed_after_serialization =
             serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
                 ManifestError::SchemaParsingAfterSerialization {
+                    schema_name: self.name.to_string(),
+                    schema_parsed: schema_parsed.clone(),
                     schema_serialized,
                     error: e,
                 }

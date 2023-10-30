@@ -64,8 +64,10 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
-    #[error("Parsing schema serialized\nSchema serialized: {schema_serialized}\nError: {error}")]
+    #[error("Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}")]
     SchemaParsingAfterSerialization {
+        schema_name: String,
+        schema_parsed: Schema,
         schema_serialized: String,
         error: serde_json::Error,
     },

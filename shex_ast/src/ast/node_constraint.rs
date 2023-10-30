@@ -210,7 +210,7 @@ impl Serialize for NodeConstraint {
                         for f in facets {
                             match f {
                                 XsFacet::StringFacet(sf) => match sf {
-                                    StringFacet::Length(l) => map.serialize_entry("length", l)?,
+                                    StringFacet::Length(len) => map.serialize_entry("length", len)?,
                                     StringFacet::MinLength(ml) => {
                                         map.serialize_entry("minlength", ml)?
                                     }
@@ -228,7 +228,14 @@ impl Serialize for NodeConstraint {
                                         map.serialize_entry("flags", fs)?;
                                     }
                                 },
-                                XsFacet::NumericFacet(_) => todo!(),
+                                XsFacet::NumericFacet(nf) => match nf {
+                                    NumericFacet::FractionDigits(fd) => map.serialize_entry("fractiondigits", fd)?,
+                                    NumericFacet::TotalDigits(td) => map.serialize_entry("totaldigits", td)?,
+                                    NumericFacet::MaxExclusive(me) => map.serialize_entry("maxexclusive", me)?,
+                                    NumericFacet::MaxInclusive(mi) => map.serialize_entry("maxinclusive", mi)?,
+                                    NumericFacet::MinInclusive(mi) => map.serialize_entry("mininclusive", mi)?,
+                                    NumericFacet::MinExclusive(me) => map.serialize_entry("minexclusive", me)?,
+                                },
                             }
                         }
                     }

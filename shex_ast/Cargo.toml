@@ -21,6 +21,7 @@ log = "0.4"
 lazy_static = "1"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
+regex = "1.10"
 
 [dev-dependencies]
 env_logger = "0.10"

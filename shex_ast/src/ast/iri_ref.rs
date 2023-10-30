@@ -27,7 +27,7 @@ impl IriRef {
 
     pub fn to_string(&self) -> String {
         match self {
-            IriRef::Iri(iri) => iri.to_string(),
+            IriRef::Iri(iri) => iri.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => {
                 format!("{prefix}:{local}")
             }
@@ -94,7 +94,7 @@ impl From<IriS> for IriRef {
 impl Into<String> for IriRef {
     fn into(self) -> String {
         match self {
-            IriRef::Iri(i) => i.to_string(),
+            IriRef::Iri(i) => i.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => format!("{prefix}:{local}"),
         }
     }
@@ -103,9 +103,10 @@ impl Into<String> for IriRef {
 impl Display for IriRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IriRef::Iri(i) => write!(f, "<{}>", i.to_string())?,
+            IriRef::Iri(i) => write!(f, "{}", i.to_string())?,
             IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}")?,
         }
         Ok(())
     }
 }
+

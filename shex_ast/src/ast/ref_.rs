@@ -1,7 +1,8 @@
 use std::str::FromStr;
-
+use regex::Regex;
 use iri_s::{IriS, IriSError};
 use serde_derive::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{IriRef, Deref, DerefError};
 
@@ -34,7 +35,9 @@ impl Into<String> for Ref {
     fn into(self) -> String {
         match self {
             Ref::IriRef { value } => value.to_string(),
-            Ref::BNode { value } => value,
+            Ref::BNode { value } => {
+                format!("_:{value}")
+            },
         }
     }
 }
@@ -56,15 +59,37 @@ impl Deref for Ref {
     }
 }
 
-impl TryFrom<&str> for Ref {
-    type Error = IriSError;
+#[derive(Error, Debug)]
+pub enum RefError {
+   #[error(transparent)]
+   IriSError(#[from] IriSError),
 
-    // TODO: We should parse the bnode
+   #[error("Cannot parse as Iri or BNode: {str}")]
+   BadRef{ str: String }
+
+}
+
+impl TryFrom<&str> for Ref {
+    type Error = RefError;
+
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let iri_s = IriS::from_str(s)?;
-        Ok(Ref::IriRef {
-            value: IriRef::iri(iri_s),
-        })
+        let re_iri = Regex::new(r"<(.*)>").unwrap();
+        if let Some(iri_str) = re_iri.captures(s) {
+            let iri_s = IriS::from_str(&iri_str[1])?;
+            Ok(Ref::IriRef {
+                value: IriRef::iri(iri_s),
+            })
+        } else {
+            let re_bnode = Regex::new(r"_:(.*)").unwrap();
+            if let Some(bnode_s) = re_bnode.captures(s) {
+                Ok(Ref::BNode { value: bnode_s[1].to_string() })
+            } else {
+                let iri_s = IriS::from_str(s)?;
+                Ok(Ref::IriRef {
+                    value: IriRef::iri(iri_s),
+                })
+            }
+        }
     }
 }
 
@@ -75,12 +100,9 @@ impl From<IriS> for Ref {
 }
 
 impl FromStr for Ref {
-    type Err = IriSError;
+    type Err = RefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri_s = IriS::from_str(s)?;
-        Ok(Ref::IriRef {
-            value: IriRef::iri(iri_s),
-        })
+        TryFrom::try_from(s)
     }
 }

@@ -60,7 +60,7 @@ impl IriS {
 
 impl fmt::Display for IriS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.iri)
+        write!(f, "{}", self.iri.as_str())
     }
 }
 
