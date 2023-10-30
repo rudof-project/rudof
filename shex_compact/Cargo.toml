@@ -18,5 +18,5 @@ log = "0.4"
 colored = "2"
 
 [dev-dependencies]
-env_logger = "*"
+env_logger = "0.10"
 
