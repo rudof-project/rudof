@@ -1,6 +1,6 @@
 [package]
 name = "shex_compact"
-version = "0.0.4"
+version = "0.0.3"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -8,9 +8,9 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-shex_ast = { path = "../shex_ast", version = "0.0.4" }
-iri_s = { path = "../iri_s", version = "0.0.4" }
-prefixmap = { path = "../prefixmap", version = "0.0.4" } 
+shex_ast = { path = "../shex_ast", version = "0.0.3" }
+iri_s = { path = "../iri_s", version = "0.0.3" }
+prefixmap = { path = "../prefixmap", version = "0.0.3" } 
 nom = "7"
 nom_locate = "4"
 thiserror = "1"

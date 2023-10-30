@@ -1,6 +1,6 @@
 [package]
 name = "rbe_testsuite"
-version = "0.0.4"
+version = "0.0.3"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -8,7 +8,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-rbe = { path = "../rbe", version = "0.0.4" }
+rbe = { path = "../rbe", version = "0.0.3" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
