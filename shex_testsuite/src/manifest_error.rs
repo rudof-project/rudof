@@ -58,6 +58,14 @@ pub enum ManifestError {
         schema_parsed_after_serialization: Schema,
     },
 
+    #[error(
+        "ShEx Schema is different from schema parsed\n{json_schema_parsed:?}\n{shex_schema_parsed:?}"
+    )]
+    ShExSchemaDifferent {
+        json_schema_parsed: Schema,
+        shex_schema_parsed: Schema,
+    },
+
     #[error("Schema parsed could not be serialized\n{schema_parsed:?}\n{error:?}")]
     SchemaSerializationError {
         schema_parsed: Schema,

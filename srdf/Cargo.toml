@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.0.2"
+version = "0.0.3"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -9,7 +9,7 @@ license.workspace = true
 
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.2" }
+iri_s = { path = "../iri_s", version = "0.0.3" }
 async-trait = "0.1.68"
 hashbag = "0.1.11"
 serde = "1.0"

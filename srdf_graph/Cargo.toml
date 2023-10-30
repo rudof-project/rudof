@@ -1,6 +1,6 @@
 [package]
 name = "srdf_graph"
-version = "0.0.2"
+version = "0.0.3"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -8,9 +8,9 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.2" }
-srdf = { path = "../srdf", version = "0.0.2" }
-prefixmap = { path = "../prefixmap", version = "0.0.2" }
+iri_s = { path = "../iri_s", version = "0.0.3" }
+srdf = { path = "../srdf", version = "0.0.3" }
+prefixmap = { path = "../prefixmap", version = "0.0.3" }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
 oxrdf = "0.1.6"

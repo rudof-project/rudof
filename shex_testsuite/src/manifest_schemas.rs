@@ -2,9 +2,10 @@ use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use std::collections::HashMap;
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::context_entry_value::ContextEntryValue;
+use crate::shex_compact::ShExParser;
 use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
@@ -142,7 +143,10 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        println!("Runnnig entry: {} with json: {} and shex: {}", self.id, self.json, self.shex);
+        println!(
+            "Runnnig entry: {} with json: {} and shex: {}",
+            self.id, self.json, self.shex
+        );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
                 error: e,
@@ -169,7 +173,18 @@ impl SchemasEntry {
         debug!("Entry run: {} - {}", self.id, schema_parsed.get_type());
 
         if (schema_parsed == schema_parsed_after_serialization) {
-            Ok(())
+            let shex_local = Path::new(&self.shex);
+            let mut shex_buf = PathBuf::from(base);
+            shex_buf.push(shex_local);
+            let shex_schema_parsed = ShExParser::parse_buf(shex_buf)?;
+            if schema_parsed == shex_schema_parsed {
+                Ok(())
+            } else {
+                Err(ManifestError::ShExSchemaDifferent {
+                    json_schema_parsed: schema_parsed,
+                    shex_schema_parsed,
+                })
+            }
         } else {
             Err(ManifestError::SchemasDifferent {
                 schema_parsed,

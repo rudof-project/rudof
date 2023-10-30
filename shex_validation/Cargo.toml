@@ -1,6 +1,6 @@
 [package]
 name = "shex_validation"
-version = "0.0.2"
+version = "0.0.3"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -9,12 +9,12 @@ license.workspace = true
 
 [dependencies]
 async-recursion = "1.0.4"
-iri_s = { path = "../iri_s", version = "0.0.2" }
-rbe = { path = "../rbe", version = "0.0.2" }
-srdf = { path = "../srdf", version = "0.0.2" }
-shex_ast = { path = "../shex_ast", version = "0.0.2" }
-shapemap = { path = "../shapemap", version = "0.0.2" }
-prefixmap = { path = "../prefixmap", version = "0.0.2" }
+iri_s = { path = "../iri_s", version = "0.0.3" }
+rbe = { path = "../rbe", version = "0.0.3" }
+srdf = { path = "../srdf", version = "0.0.3" }
+shex_ast = { path = "../shex_ast", version = "0.0.3" }
+shapemap = { path = "../shapemap", version = "0.0.3" }
+prefixmap = { path = "../prefixmap", version = "0.0.3" }
 thiserror = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
@@ -26,6 +26,6 @@ indexmap = { version = "2", feature = "serde" }
 
 
 [dev-dependencies]
-srdf_graph = { path = "../srdf_graph", version = "0.0.2" }
+srdf_graph = { path = "../srdf_graph", version = "0.0.3" }
 oxrdf = "0.1.6"
 
