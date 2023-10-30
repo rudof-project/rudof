@@ -142,7 +142,7 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        debug!("Runnnig entry: {} with json: {}", self.id, self.json);
+        println!("Runnnig entry: {} with json: {} and shex: {}", self.id, self.json, self.shex);
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
                 error: e,
