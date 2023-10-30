@@ -10,12 +10,12 @@ use shex_ast::Deref;
 use shex_ast::Schema;
 use shex_ast::ShapeExpr;
 
-use crate::Span;
 use crate::shex_statement;
+use crate::tws0;
 use crate::ParseError;
 use crate::ParserState;
 use crate::ShExStatement;
-use crate::tws0;
+use crate::Span;
 
 // This code is inspired from:
 // https://github.com/vandenoever/rome/blob/master/src/io/turtle/parser.rs
@@ -44,7 +44,7 @@ impl<'a> ShExParser<'a> {
                         todo!()
                     }
                     ShExStatement::PrefixDecl { alias, iri } => {
-                        println!("PrefixDecl: {alias:?} {iri:?}");
+                        log::debug!("ShEx statement: PrefixDecl: {alias:?} {iri:?}");
                         schema.add_prefix(alias, &iri);
                     }
                     ShExStatement::StartDecl { shape_expr } => {
@@ -57,10 +57,9 @@ impl<'a> ShExParser<'a> {
                         shape_label,
                         shape_expr,
                     } => {
-                        println!("ShapeDecl: {shape_label:?} {shape_expr:?}");
                         let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                         let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                        println!("ShapeDecl after deref: {shape_label:?} {shape_expr:?}");
+                        log::debug!("ShEx statement: ShapeDecl after deref: {shape_label:?} {shape_expr:?}");
                         schema.add_shape(shape_label, shape_expr);
                     }
                     ShExStatement::StartActions { actions } => {

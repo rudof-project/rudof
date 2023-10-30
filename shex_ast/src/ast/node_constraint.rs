@@ -9,8 +9,8 @@ use serde::{
 
 use super::ValueSetValue;
 use crate::{
-    IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper,
-    XsFacet, Deref, DerefError,
+    Deref, DerefError, IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet,
+    ValueSetValueWrapper, XsFacet,
 };
 use serde::ser::SerializeMap;
 
@@ -58,7 +58,11 @@ impl NodeConstraint {
     }
 
     pub fn with_xsfacets(mut self, facets: Vec<XsFacet>) -> Self {
-        self.xs_facet = Some(facets);
+        self.xs_facet = if facets.is_empty() {
+            None
+        } else {
+            Some(facets)
+        };
         self
     }
 
@@ -155,18 +159,22 @@ impl NodeConstraint {
 }
 
 impl Deref for NodeConstraint {
-    fn deref(&self, 
-        base: &Option<iri_s::IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
-    ) -> Result<Self, DerefError> where Self: Sized {
-       let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
-       let values = <ValueSetValueWrapper as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
-       Ok(NodeConstraint {
-        node_kind: self.node_kind.clone(),
-        datatype,
-        xs_facet: self.xs_facet.clone(),
-        values
-       })
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
+    where
+        Self: Sized,
+    {
+        let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
+        let values = <ValueSetValueWrapper as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
+        Ok(NodeConstraint {
+            node_kind: self.node_kind.clone(),
+            datatype,
+            xs_facet: self.xs_facet.clone(),
+            values,
+        })
     }
 }
 
@@ -184,7 +192,7 @@ impl Serialize for NodeConstraint {
             } => {
                 debug!("Serializing NodeConstraint: {self:?}");
                 let mut map = serializer.serialize_map(None)?;
-                
+
                 // map.serialize_entry("type", "NodeConstraint")?;
                 match node_kind {
                     None => (),
@@ -210,7 +218,9 @@ impl Serialize for NodeConstraint {
                         for f in facets {
                             match f {
                                 XsFacet::StringFacet(sf) => match sf {
-                                    StringFacet::Length(len) => map.serialize_entry("length", len)?,
+                                    StringFacet::Length(len) => {
+                                        map.serialize_entry("length", len)?
+                                    }
                                     StringFacet::MinLength(ml) => {
                                         map.serialize_entry("minlength", ml)?
                                     }
@@ -229,12 +239,24 @@ impl Serialize for NodeConstraint {
                                     }
                                 },
                                 XsFacet::NumericFacet(nf) => match nf {
-                                    NumericFacet::FractionDigits(fd) => map.serialize_entry("fractiondigits", fd)?,
-                                    NumericFacet::TotalDigits(td) => map.serialize_entry("totaldigits", td)?,
-                                    NumericFacet::MaxExclusive(me) => map.serialize_entry("maxexclusive", me)?,
-                                    NumericFacet::MaxInclusive(mi) => map.serialize_entry("maxinclusive", mi)?,
-                                    NumericFacet::MinInclusive(mi) => map.serialize_entry("mininclusive", mi)?,
-                                    NumericFacet::MinExclusive(me) => map.serialize_entry("minexclusive", me)?,
+                                    NumericFacet::FractionDigits(fd) => {
+                                        map.serialize_entry("fractiondigits", fd)?
+                                    }
+                                    NumericFacet::TotalDigits(td) => {
+                                        map.serialize_entry("totaldigits", td)?
+                                    }
+                                    NumericFacet::MaxExclusive(me) => {
+                                        map.serialize_entry("maxexclusive", me)?
+                                    }
+                                    NumericFacet::MaxInclusive(mi) => {
+                                        map.serialize_entry("maxinclusive", mi)?
+                                    }
+                                    NumericFacet::MinInclusive(mi) => {
+                                        map.serialize_entry("mininclusive", mi)?
+                                    }
+                                    NumericFacet::MinExclusive(me) => {
+                                        map.serialize_entry("minexclusive", me)?
+                                    }
                                 },
                             }
                         }

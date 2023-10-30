@@ -3,19 +3,14 @@ use std::str::FromStr;
 
 use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
-use serde::{Deserializer, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
 
+use super::iri_ref::IriRef;
+use super::ref_::Ref;
 use super::serde_string_or_struct::SerializeStringOrStruct;
-use super::ValueSetValue;
-use super::{
-    annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, triple_expr::TripleExprWrapper,
-    value_set_value::ValueSetValueWrapper, xs_facet::XsFacet,
-};
-use super::{node_kind::NodeKind, ref_::Ref};
 use crate::ast::serde_string_or_struct::*;
-use crate::{NodeConstraint, Shape, TripleExpr, Deref, DerefError};
+use crate::{Deref, DerefError, NodeConstraint, Shape};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -28,13 +23,13 @@ pub struct ShapeExprWrapper {
 }
 
 impl Deref for ShapeExprWrapper {
-    fn deref(&self, 
-        base: &Option<IriS>, 
-        prefixmap: &Option<PrefixMap>) -> Result<Self, DerefError> {
-        let se = self.se.deref(base, prefixmap)?; 
-        let sew = ShapeExprWrapper {
-            se: se,
-        };
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        let se = self.se.deref(base, prefixmap)?;
+        let sew = ShapeExprWrapper { se: se };
         Ok(sew)
     }
 }
@@ -161,42 +156,35 @@ impl Deref for ShapeExpr {
             ShapeExpr::External => Ok(ShapeExpr::External),
             ShapeExpr::ShapeAnd { shape_exprs } => {
                 let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
-                Ok(ShapeExpr::ShapeAnd {
-                  shape_exprs
-             })
-            },
-            ShapeExpr::ShapeOr { shape_exprs} => {
+                Ok(ShapeExpr::ShapeAnd { shape_exprs })
+            }
+            ShapeExpr::ShapeOr { shape_exprs } => {
                 let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
-                Ok(ShapeExpr::ShapeOr {
-                  shape_exprs
-             })
+                Ok(ShapeExpr::ShapeOr { shape_exprs })
             }
             ShapeExpr::ShapeNot { shape_expr } => {
                 let shape_expr = <ShapeExpr as Deref>::deref_box(shape_expr, base, prefixmap)?;
-                Ok(ShapeExpr::ShapeNot {
-                  shape_expr
-             })
+                Ok(ShapeExpr::ShapeNot { shape_expr })
             }
             ShapeExpr::Shape(shape) => {
                 let shape = shape.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Shape(shape))
-            },
+            }
             ShapeExpr::Ref(ref_) => {
-              let ref_ = ref_.deref(base, prefixmap)?;
-              Ok(ShapeExpr::Ref(ref_))
-            },
+                let ref_ = ref_.deref(base, prefixmap)?;
+                Ok(ShapeExpr::Ref(ref_))
+            }
             ShapeExpr::NodeConstraint(nc) => {
                 let nc = nc.deref(base, prefixmap)?;
                 Ok(ShapeExpr::NodeConstraint(nc))
             }
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Pattern, StringFacet};
+    use crate::{Pattern, StringFacet, XsFacet};
 
     use super::*;
 

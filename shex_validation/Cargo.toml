@@ -26,6 +26,6 @@ indexmap = { version = "2", feature = "serde" }
 
 
 [dev-dependencies]
-srdf_graph = { path = "../srdf_graph", version = "0.0.4" }
+srdf_graph = { path = "../srdf_graph", version = "0.0.3" }
 oxrdf = "0.1.6"
 

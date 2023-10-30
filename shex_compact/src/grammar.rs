@@ -5,8 +5,8 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1, is_not},
     character::complete::{char, digit1, one_of, satisfy, multispace1},
-    combinator::{fail, map, map_res, opt, recognize, value, cut},
-    error::{ErrorKind, ParseError, FromExternalError},
+    combinator::{fail, map_res, opt, recognize, value, cut},
+    error::{ErrorKind, FromExternalError},
     error_position,
     multi::{fold_many0, many0, many1},
     sequence::{delimited, tuple, pair},
@@ -14,7 +14,7 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind,
 };
 use log;
 use thiserror::Error;
@@ -479,7 +479,10 @@ fn lit_node_constraint(i: Span) -> IntermediateResult<NodeConstraint> {
 
 fn literal_facets(i: Span) -> IntermediateResult<NodeConstraint> {
     let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws1, facets))(i)?;
-    Ok((i, NodeConstraint::new().with_xsfacets(facets)))
+    Ok((i, NodeConstraint::new()
+     .with_node_kind(NodeKind::Literal)
+     .with_xsfacets(facets))
+    )
 }
 
 fn datatype_facets(i: Span) -> IntermediateResult<NodeConstraint> {
@@ -496,8 +499,8 @@ fn facets(i: Span) -> IntermediateResult<Vec<XsFacet>> {
     many0(xs_facet)(i)
 }
 
-/// `[25]   	nonLitNodeConstraint	   ::=   	   nonLiteralKind stringFacet*`
-/// `| stringFacet+`
+/// `[25] nonLitNodeConstraint ::= nonLiteralKind stringFacet*`
+/// `                            | stringFacet+`
 fn non_lit_node_constraint(i: Span) -> IntermediateResult<NodeConstraint> {
     // Pending
     fail(i)

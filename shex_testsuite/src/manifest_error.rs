@@ -1,5 +1,6 @@
 use iri_s::IriSError;
 use shex_ast::{ast::SchemaJsonError, CompiledSchemaError, Schema};
+use shex_compact::ParseError;
 use shex_validation::{ResultValue, ValidatorError};
 use srdf_graph::SRDFGraphError;
 use std::io;
@@ -33,6 +34,9 @@ pub enum ManifestError {
 
     #[error(transparent)]
     SRDFError(#[from] SRDFGraphError),
+
+    #[error(transparent)]
+    ParseError(#[from] ParseError),
 
     #[error(transparent)]
     CompiledSchemaError(#[from] CompiledSchemaError),
@@ -79,4 +83,6 @@ pub enum ManifestError {
         schema_serialized: String,
         error: serde_json::Error,
     },
+
+
 }
