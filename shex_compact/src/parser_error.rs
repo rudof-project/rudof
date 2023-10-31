@@ -1,6 +1,6 @@
-use std::{io, num::ParseIntError};
 use iri_s::IriSError;
 use shex_ast::DerefError;
+use std::{io, num::ParseIntError};
 use thiserror::Error;
 
 use crate::{LocatedParseError, Span};
@@ -11,20 +11,29 @@ pub enum ParseError {
     NomError { err: Box<LocatedParseError> },
 
     #[error(transparent)]
-    IOError { #[from] err: io::Error },
+    IOError {
+        #[from]
+        err: io::Error,
+    },
 
     #[error("{msg}")]
     Custom { msg: String },
 
     #[error(transparent)]
-    IRISError { #[from] err: IriSError },
+    IRISError {
+        #[from]
+        err: IriSError,
+    },
 
     #[error(transparent)]
-    DerefError { #[from] err: DerefError },
+    DerefError {
+        #[from]
+        err: DerefError,
+    },
 
     #[error("Syntax error: {0}")]
     SyntaxError(String),
-   
+
     #[error("Expected further input: {0}")]
     MissingInput(String),
 
@@ -52,17 +61,12 @@ pub enum ParseError {
     #[error("Expected prefix declaration")]
     ExpectedPrefixDecl,
 
+    #[error("Expected string literal")]
+    ExpectedStringLiteral,
+
     #[error("Parse int error: {err}")]
-    ParseIntError{ 
-        str: String,
-        err: ParseIntError
-    }
-
-    
-
-
+    ParseIntError { str: String, err: ParseIntError },
 }
-
 
 impl ParseError {
     /// Locate this error by adding a position.
@@ -94,5 +98,3 @@ impl ParseError {
         }
     }
 }
-
-

@@ -1,9 +1,10 @@
 use std::{result, str::FromStr};
 
 use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
-use iri_s::IriSError;
+use iri_s::{IriS, IriSError};
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
+use srdf::{lang::Lang, literal::Literal};
 
 use super::{
     iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard,
@@ -70,13 +71,30 @@ impl ValueSetValue {
             ov: ObjectValue::IriRef(iri),
         })
     }
+
+    pub fn literal(value: &str, language: Option<Lang>, type_: Option<IriRef>) -> ValueSetValue {
+        let ov = ObjectValue::ObjectLiteral {
+            value: value.to_string(),
+            language,
+            type_,
+        };
+        ValueSetValue::ObjectValue(ObjectValueWrapper { ov })
+    }
+
+    pub fn object_value(value: ObjectValue) -> ValueSetValue {
+        ValueSetValue::ObjectValue(ObjectValueWrapper { ov: value })
+    }
 }
 
 impl Deref for ValueSetValue {
-    fn deref(&self, 
-        base: &Option<iri_s::IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
-    ) -> Result<Self, DerefError> where Self: Sized {
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
+    where
+        Self: Sized,
+    {
         match self {
             ValueSetValue::ObjectValue(ov) => {
                 let ov = ov.deref(base, prefixmap)?;
@@ -110,10 +128,14 @@ impl ValueSetValueWrapper {
 }
 
 impl Deref for ValueSetValueWrapper {
-    fn deref(&self, 
-        base: &Option<iri_s::IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
-    ) -> Result<Self, DerefError> where Self: Sized {
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
+    where
+        Self: Sized,
+    {
         let vs = self.vs.deref(base, prefixmap)?;
         Ok(ValueSetValueWrapper { vs })
     }

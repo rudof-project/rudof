@@ -1,7 +1,5 @@
-use std::str::FromStr;
-
-use crate::Ref;
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
+use crate::Ref;
 use crate::{
     ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
     internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
@@ -87,13 +85,11 @@ impl SchemaJsonCompiler {
 
     fn id_to_shape_label<'a>(&self, id: &Ref) -> CResult<ShapeLabel> {
         match id {
-           Ref::IriRef { value }  => {
-            let shape_label = iri_ref_2_shape_label(value)?;
-            Ok(shape_label)
-           },
-           Ref::BNode { value}  => {
-             Ok(ShapeLabel::BNode(value.clone()))
-           }
+            Ref::IriRef { value } => {
+                let shape_label = iri_ref_2_shape_label(value)?;
+                Ok(shape_label)
+            }
+            Ref::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
         }
     }
 
@@ -437,13 +433,13 @@ fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
 fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
     let mut conds = Vec::new();
     for xs_facet in xs_facets {
-      conds.push(xs_facet2match_cond(xs_facet))
+        conds.push(xs_facet2match_cond(xs_facet))
     }
     MatchCond::And(conds)
 }
 
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
-   todo!()
+    todo!()
 }
 
 fn valueset2match_cond(vs: ValueSet) -> Cond {
@@ -503,9 +499,10 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError { 
-            prefix: prefix.clone(), 
-            local: local.clone() })
+        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError {
+            prefix: prefix.clone(),
+            local: local.clone(),
+        }),
     }
 }
 
@@ -631,13 +628,10 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
         }
         ast::ObjectValue::ObjectLiteral {
             value, language, ..
-        } => {
-            let language = cnv_opt(language, cnv_lang)?;
-            Ok(ObjectValue::ObjectLiteral {
-                value: value.to_string(),
-                language,
-            })
-        }
+        } => Ok(ObjectValue::ObjectLiteral {
+            value: value.to_string(),
+            language: language.clone(),
+        }),
     }
 }
 

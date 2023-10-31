@@ -75,6 +75,16 @@ impl Schema {
         }
     }
 
+    pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
+        self.prefixmap = prefixmap;
+        self
+    }
+
+    pub fn with_base(mut self, base: Option<IriS>) -> Self {
+        self.base = base;
+        self
+    }
+
     pub fn add_shape(&mut self, shape_label: Ref, shape_expr: ShapeExpr) {
         let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
         match self.shapes {
@@ -112,7 +122,7 @@ impl Schema {
     }
 
     pub fn base(&self) -> Option<IriS> {
-      self.base.clone()
+        self.base.clone()
     }
 
     pub fn prefixmap(&self) -> Option<PrefixMap> {
@@ -124,7 +134,7 @@ impl Schema {
     }
 
     pub fn get_type(&self) -> String {
-         self.type_.clone()
+        self.type_.clone()
     }
 }
 

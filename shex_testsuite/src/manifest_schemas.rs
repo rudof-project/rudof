@@ -172,13 +172,15 @@ impl SchemasEntry {
                     error: e,
                 }
             })?;
-        debug!("Entry run: {} - {}", self.id, schema_parsed.get_type());
 
         if schema_parsed == schema_parsed_after_serialization {
             let shex_local = Path::new(&self.shex);
             let mut shex_buf = PathBuf::from(base);
             shex_buf.push(shex_local);
-            let shex_schema_parsed = ShExParser::parse_buf(&shex_buf, None)?;
+            let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, None)?;
+
+            // We remove base and prefixmap for comparisons
+            shex_schema_parsed = shex_schema_parsed.with_base(None).with_prefixmap(None);
             if schema_parsed == shex_schema_parsed {
                 Ok(())
             } else {
