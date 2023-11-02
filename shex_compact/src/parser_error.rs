@@ -61,6 +61,12 @@ pub enum ParseError {
     #[error("Expected prefix declaration")]
     ExpectedPrefixDecl,
 
+    #[error("Expected base declaration")]
+    ExpectedBaseDecl,
+
+    #[error("Expected import declaration")]
+    ExpectedImportDecl,
+
     #[error("Expected string literal")]
     ExpectedStringLiteral,
 

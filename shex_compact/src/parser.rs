@@ -7,6 +7,7 @@ use nom::error::Error;
 use nom::Err;
 use prefixmap::PrefixMap;
 use shex_ast::Deref;
+use shex_ast::Iri;
 use shex_ast::Schema;
 use shex_ast::ShapeExpr;
 
@@ -24,8 +25,8 @@ type Result<A> = std::result::Result<A, ParseError>;
 
 pub struct ShExParser<'a> {
     shex_statement_iterator: StatementIterator<'a>,
-    state: ParserState,
-    done: bool,
+    // state: ParserState,
+    // done: bool,
 }
 
 impl<'a> ShExParser<'a> {
@@ -33,25 +34,28 @@ impl<'a> ShExParser<'a> {
         let mut schema = Schema::new();
         let mut parser = ShExParser {
             shex_statement_iterator: StatementIterator::new(Span::new(src.as_str()))?,
-            state: ParserState::default(),
-            done: false,
+            // state: ParserState::default(),
+            // done: false,
         };
         while let Some(ss) = parser.shex_statement_iterator.next() {
             let statements = ss?;
             for s in statements {
                 match s {
                     ShExStatement::BaseDecl { iri } => {
-                        todo!()
+                        log::debug!("ShEx statement: BaseDecl: {iri:?}");
+                        schema = schema.with_base(Some(iri));
                     }
                     ShExStatement::PrefixDecl { alias, iri } => {
                         log::debug!("ShEx statement: PrefixDecl: {alias:?} {iri:?}");
                         schema.add_prefix(alias, &iri);
                     }
                     ShExStatement::StartDecl { shape_expr } => {
-                        todo!()
+                        log::debug!("ShEx statement: StartDecl {shape_expr:?}");
+                        schema = schema.with_start(Some(shape_expr))
                     }
                     ShExStatement::ImportDecl { iri } => {
-                        todo!()
+                        log::debug!("ShEx statement: ImportDecl {iri:?}");
+                        schema = schema.with_import(Iri::new(iri.as_str()));
                     }
                     ShExStatement::ShapeDecl {
                         shape_label,
@@ -59,11 +63,14 @@ impl<'a> ShExParser<'a> {
                     } => {
                         let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                         let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                        log::debug!("ShEx statement: ShapeDecl after deref: {shape_label:?} {shape_expr:?}");
+                        log::debug!(
+                            "ShEx statement: ShapeDecl after deref: {shape_label:?} {shape_expr:?}"
+                        );
                         schema.add_shape(shape_label, shape_expr);
                     }
                     ShExStatement::StartActions { actions } => {
-                        todo!()
+                        log::debug!("ShEx statement: StartActions {actions:?}");
+                        schema = schema.with_start_actions(Some(actions));
                     }
                 }
             }

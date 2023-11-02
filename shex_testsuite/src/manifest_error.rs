@@ -3,13 +3,16 @@ use shex_ast::{ast::SchemaJsonError, CompiledSchemaError, Schema};
 use shex_compact::ParseError;
 use shex_validation::{ResultValue, ValidatorError};
 use srdf_graph::SRDFGraphError;
-use std::io;
+use std::{ffi::OsString, io, path::Path};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError { path_name: String, error: io::Error },
+
+    #[error("Base path {base:?} can't be converted to Url")]
+    BasePathError { base: OsString },
 
     #[error("Reading JSON from {path_name:?}. Error: {error:?}")]
     JsonError {
@@ -83,6 +86,4 @@ pub enum ManifestError {
         schema_serialized: String,
         error: serde_json::Error,
     },
-
-
 }

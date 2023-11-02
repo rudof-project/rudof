@@ -1,9 +1,9 @@
 pub mod annotation;
 pub mod bnode;
+pub mod deref;
 pub mod iri;
 pub mod iri_ref;
 pub mod iri_ref_or_wildcard;
-pub mod deref;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod numeric_literal;
@@ -27,12 +27,12 @@ pub mod value_set_value;
 pub mod xs_facet;
 
 use crate::ast::serde_string_or_struct::*;
+pub use crate::deref::*;
 pub use annotation::*;
 pub use bnode::*;
 pub use iri::*;
 pub use iri_ref::*;
 pub use iri_ref_or_wildcard::*;
-pub use crate::deref::*;
 pub use node_constraint::*;
 pub use node_kind::*;
 pub use numeric_literal::*;

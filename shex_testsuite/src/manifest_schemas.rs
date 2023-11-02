@@ -5,12 +5,14 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 
 use crate::context_entry_value::ContextEntryValue;
+use iri_s::IriS;
 use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;
+use url::Url;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestSchemasJson")]
@@ -144,10 +146,11 @@ impl ManifestSchemas {
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
         log::debug!(
-            "Runnnig entry: {} with json: {} and shex: {}",
+            "Runnnig entry: {} with json: {}, shex: {}, base: {:?}",
             self.id,
             self.json,
-            self.shex
+            self.shex,
+            base
         );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
@@ -177,7 +180,11 @@ impl SchemasEntry {
             let shex_local = Path::new(&self.shex);
             let mut shex_buf = PathBuf::from(base);
             shex_buf.push(shex_local);
-            let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, None)?;
+            let base_url = Url::from_file_path(base).map_err(|_| ManifestError::BasePathError {
+                base: base.as_os_str().to_os_string(),
+            })?;
+            let base_iri = IriS::new_unchecked(base_url.as_str());
+            let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
 
             // We remove base and prefixmap for comparisons
             shex_schema_parsed = shex_schema_parsed.with_base(None).with_prefixmap(None);

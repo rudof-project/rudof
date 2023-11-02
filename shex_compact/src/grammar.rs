@@ -126,16 +126,16 @@ where
     P: FnMut(Span<'a>) -> IRes<'a, T>,
 {
     move |input| {
-        log::trace!(target: "parser", "{fun}({input:?})");
+        log::debug!(target: "parser", "{fun}({input:?})");
         let result = parser(input);
         match &result {
             Ok(res) => { 
                 let s = format!("{fun}({input:?}) -> {res:?}");
-                log::trace!(target: "parser", "{}", s.green()); 
+                log::debug!(target: "parser", "{}", s.green()); 
             }
             Err(e) => { 
                 let s = format!("{fun}({input:?}) -> {e:?}");
-                log::trace!(target: "parser", "{}", s.red()); 
+                log::debug!(target: "parser", "{}", s.red()); 
             }
         }
         result
@@ -221,14 +221,34 @@ pub fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
     many0(statement)(i)
 }
 
-/// [2] `directive	   ::=   	baseDecl | prefixDecl | importDecl`
+/// `[2] directive	   ::=   	baseDecl | prefixDecl | importDecl`
 pub fn directive(i: Span) -> IRes<ShExStatement> {
     alt((
-        // base_decl,
+        base_decl(),
         prefix_decl(),
-        // import_decl
+        import_decl()
     ))(i)
 }
+
+/// `[3]   	baseDecl	   ::=   	"BASE" IRIREF`
+fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+    traced("base_decl",
+    map_error(move |i| {
+         let (i, (_, _, iri_ref)) =
+         tuple(
+            (tag_no_case("BASE"), 
+              tws0, 
+              cut(iri_ref)))(i)?;
+     Ok((
+         i,
+         ShExStatement::BaseDecl {
+             iri: iri_ref,
+         },
+     ))
+    }, || ShExParseError::ExpectedBaseDecl
+   ))
+ }
+ 
 
 /// [4] `prefixDecl	   ::=   	"PREFIX" PNAME_NS IRIREF`
 fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
@@ -246,6 +266,26 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
    }, || ShExParseError::ExpectedPrefixDecl
   ))
 }
+
+/// `[4½]   	importDecl	   ::=   	"IMPORT" IRIREF`
+fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+    traced("import_decl",
+    map_error(move |i| {
+         let (i, (_, _, iri_ref)) =
+         tuple(
+            (tag_no_case("IMPORT"), 
+              tws0, 
+              cut(iri_ref)))(i)?;
+     log::debug!("grammar: Import {iri_ref:?}");         
+     Ok((
+         i,
+         ShExStatement::ImportDecl {
+             iri: iri_ref,
+         },
+     ))
+    }, || ShExParseError::ExpectedImportDecl
+   ))
+ }
 
 /// `[5]   	notStartAction	   ::=   	start | shapeExprDecl`
 fn not_start_action(i: Span) -> IRes<ShExStatement> {
@@ -380,13 +420,22 @@ fn inline_shape_not(i: Span) -> IRes<ShapeExpr> {
 /// `| '.'`
 fn shape_atom(i: Span) -> IRes<ShapeExpr> {
     alt((
-        // Pending
-        // non_lit_shape,
+        non_lit_opt_shape_or_ref,
         lit_node_constraint_shape_expr,
         shape_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
+}
+
+fn non_lit_opt_shape_or_ref(i: Span) -> IRes<ShapeExpr> {
+    let (i, (non_lit, _, maybe_se)) = tuple((non_lit_node_constraint, tws0, opt(shape_or_ref())))(i)?;
+    let nc = ShapeExpr::node_constraint(non_lit);
+    let se_result = match maybe_se {
+        None => nc,
+        Some(se) => make_shape_and(vec![nc, se])
+    };
+    Ok((i, se_result)) 
 }
 
 /// `From [18] `shape_opt_non_lit ::= shapeOrRef nonLitNodeConstraint?`
@@ -406,13 +455,24 @@ fn shape_opt_non_lit(i: Span) -> IRes<ShapeExpr> {
 /// `                                | '.'`
 fn inline_shape_atom(i: Span) -> IRes<ShapeExpr> {
     alt((
-        // Pending
-        // nonlit_inline_shape,
+        non_lit_inline_opt_shape_or_ref,
         lit_node_constraint_shape_expr,
         inline_shape_or_ref_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
+}
+
+/// From [20] `non_lit_inline_opt_shape_or_ref = nonLitNodeConstraint inlineShapeOrRef?`
+fn non_lit_inline_opt_shape_or_ref(i: Span) -> IRes<ShapeExpr> {
+    let (i, (non_lit, _, maybe_se)) = tuple((non_lit_node_constraint, tws0, opt(inline_shape_or_ref)))(i)?;
+    let nc = ShapeExpr::node_constraint(non_lit);
+    let se_result = match maybe_se {
+        None => nc,
+        Some(se) => make_shape_and(vec![nc, se])
+    };
+    Ok((i, se_result)) 
+
 }
 
 /// `from [20] `inline_shape_or_ref_opt_non_lit ::= inlineShapeOrRef nonLitNodeConstraint?`
@@ -907,7 +967,7 @@ fn dash<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
 
 /// `[54]   	literalExclusion	   ::=   	'-' literal '~'?`
 fn literal_exclusion(i: Span) -> IRes<Exclusion> {
-    let ((i, (_, literal, maybe_tilde))) = tuple((dash(), literal, opt(tilde())))(i)?;
+    let (i, (_, literal, maybe_tilde)) = tuple((dash(), literal, opt(tilde())))(i)?;
     todo!()
     // Ok((i, Exclusion::))
 }
@@ -1340,6 +1400,7 @@ fn is_hex(c: char) -> bool {
 /// `[18t]   	<IRIREF>	   ::=   	"<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
 fn iri_ref(i: Span) -> IRes<IriS> {
     let (i, str) = delimited(char('<'), take_while(is_iri_ref), char('>'))(i)?;
+    log::debug!("Iri_ref {str}");
     Ok((i, IriS::new_unchecked(str.fragment())))
 }
 

@@ -1,10 +1,10 @@
-use std::str::FromStr;
-use regex::Regex;
 use iri_s::{IriS, IriSError};
+use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 use thiserror::Error;
 
-use crate::{IriRef, Deref, DerefError};
+use crate::{Deref, DerefError, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -37,36 +37,36 @@ impl Into<String> for Ref {
             Ref::IriRef { value } => value.to_string(),
             Ref::BNode { value } => {
                 format!("_:{value}")
-            },
+            }
         }
     }
 }
 
 impl Deref for Ref {
-    fn deref(&self, 
-        base: &Option<IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
+    fn deref(
+        &self,
+        base: &Option<IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
             Ref::IriRef { value } => {
                 let value = value.deref(base, prefixmap)?;
                 Ok(Ref::IriRef { value })
-            },
-            Ref::BNode { value } => {
-                Ok(Ref::BNode { value: value.clone() })
             }
+            Ref::BNode { value } => Ok(Ref::BNode {
+                value: value.clone(),
+            }),
         }
     }
 }
 
 #[derive(Error, Debug)]
 pub enum RefError {
-   #[error(transparent)]
-   IriSError(#[from] IriSError),
+    #[error("Cannot pase as IriS")]
+    IriSError(#[from] IriSError),
 
-   #[error("Cannot parse as Iri or BNode: {str}")]
-   BadRef{ str: String }
-
+    #[error("Cannot parse as Iri or BNode: {str}")]
+    BadRef { str: String },
 }
 
 impl TryFrom<&str> for Ref {
@@ -82,7 +82,9 @@ impl TryFrom<&str> for Ref {
         } else {
             let re_bnode = Regex::new(r"_:(.*)").unwrap();
             if let Some(bnode_s) = re_bnode.captures(s) {
-                Ok(Ref::BNode { value: bnode_s[1].to_string() })
+                Ok(Ref::BNode {
+                    value: bnode_s[1].to_string(),
+                })
             } else {
                 let iri_s = IriS::from_str(s)?;
                 Ok(Ref::IriRef {

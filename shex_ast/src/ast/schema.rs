@@ -1,5 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Ref, ShapeLabel};
+use crate::{Iri, Ref, ShapeLabel};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::{Iri, SemAct, ShapeDecl, ShapeExpr};
+use super::{SemAct, ShapeDecl, ShapeExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Schema {
@@ -64,6 +64,11 @@ impl Schema {
         self
     }
 
+    pub fn with_start_actions(mut self, start_actions: Option<Vec<SemAct>>) -> Self {
+        self.start_acts = start_actions;
+        self
+    }
+
     pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         match self.prefixmap {
             None => {
@@ -82,6 +87,11 @@ impl Schema {
 
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
+        self
+    }
+
+    pub fn with_start(mut self, start: Option<ShapeExpr>) -> Self {
+        self.start = start;
         self
     }
 

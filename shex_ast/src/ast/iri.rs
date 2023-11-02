@@ -7,6 +7,14 @@ pub struct Iri {
     value: String,
 }
 
+impl Iri {
+    pub fn new(str: &str) -> Iri {
+        Iri {
+            value: str.to_string(),
+        }
+    }
+}
+
 impl Into<String> for Iri {
     fn into(self) -> String {
         self.value
