@@ -8,6 +8,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Obtaining absolute path for {base:?}: {error:?}")]
+    AbsolutePathError { base: OsString, error: io::Error },
+
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError { path_name: String, error: io::Error },
 

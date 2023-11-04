@@ -180,9 +180,16 @@ impl SchemasEntry {
             let shex_local = Path::new(&self.shex);
             let mut shex_buf = PathBuf::from(base);
             shex_buf.push(shex_local);
-            let base_url = Url::from_file_path(base).map_err(|_| ManifestError::BasePathError {
-                base: base.as_os_str().to_os_string(),
-            })?;
+            let base_absolute =
+                base.canonicalize()
+                    .map_err(|err| ManifestError::AbsolutePathError {
+                        base: base.as_os_str().to_os_string(),
+                        error: err,
+                    })?;
+            let base_url =
+                Url::from_file_path(&base_absolute).map_err(|_| ManifestError::BasePathError {
+                    base: base_absolute.as_os_str().to_os_string(),
+                })?;
             let base_iri = IriS::new_unchecked(base_url.as_str());
             let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
 
