@@ -1240,17 +1240,17 @@ fn repeat_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
     traced("repeat_range", map_error(move |i| {
        let (i, (_, min, maybe_rest_range, _)) = tuple((token("{"), integer, opt(rest_range()), cut(token("}"))))(i)?;
        let cardinality = match maybe_rest_range {
-        None => {
+         None => {
            Cardinality::exact(min as i32)
-        },
-        Some(maybe_max) => match maybe_max {
+         },
+         Some(maybe_max) => match maybe_max {
             None => {
-                Cardinality::only_min(min as i32)
+                Cardinality::min_max(min as i32, -1)
             },
             Some(max) => {
                 Cardinality::min_max(min as i32, max as i32)
             }
-        }
+         }
        };
        Ok((i, cardinality))
     }, || ShExParseError::ExpectedRepeatRange))
@@ -1260,15 +1260,15 @@ fn repeat_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
 /// rest_range = "," integer_or_star ?
 fn rest_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<i32>> {
     traced("rest_range", map_error(move |i| {
-      let (i, (_, max)) = tuple((token_tws(","), integer_or_star))(i)?;
-      Ok((i, max))
+      let (i, (_, maybe_max)) = tuple((token_tws(","), opt(integer_or_star)))(i)?;
+      Ok((i, maybe_max))
     }, || ShExParseError::ExpectedRestRepeatRange))
 }
 
 /// From rest_range, integer_or_star = INTEGER | "*"
-fn integer_or_star(i:Span) -> IRes<Option<i32>> {
-    alt((map(integer, |n| Some(n as i32)), 
-        (map(token_tws("*"), |_| None)
+fn integer_or_star(i:Span) -> IRes<i32> {
+    alt((map(integer, |n| n as i32), 
+        (map(token_tws("*"), |_| (-1))
     )))(i)
 }
 
