@@ -61,6 +61,12 @@ pub enum ParseError {
     #[error("Expected prefix declaration")]
     ExpectedPrefixDecl,
 
+    #[error("Expected cardinality declaration starting by {{")]
+    ExpectedRepeatRange,
+
+    #[error("Expected rest of cardinality declaration after comma")]
+    ExpectedRestRepeatRange,
+
     #[error("Expected base declaration")]
     ExpectedBaseDecl,
 
@@ -69,6 +75,21 @@ pub enum ParseError {
 
     #[error("Expected string literal")]
     ExpectedStringLiteral,
+
+    #[error("Expected shape definition")]
+    ExpectedShapeDefinition,
+
+    #[error("Expected EXTRA property set")]
+    ExpectedEXTRAPropertySet,
+
+    #[error("Expected CLOSED")]
+    ExpectedClosed,
+
+    #[error("Expected CLOSED or EXTRA followed by list of predicates")]
+    ExpectedQualifier,
+
+    #[error("Expected list of CLOSED or EXTRA followed by list of predicates")]
+    ExpectedQualifiers,
 
     #[error("Parse int error: {err}")]
     ParseIntError { str: String, err: ParseIntError },

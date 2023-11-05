@@ -60,6 +60,12 @@ impl From<u64> for Max {
     }
 }
 
+impl From<isize> for Max {
+    fn from(m: isize) -> Self {
+        Max::IntMax(m as usize)
+    }
+}
+
 impl fmt::Display for Max {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {

@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use shex_ast::{IriRef, Ref, ShapeExpr, SemAct};
+use shex_ast::{IriRef, Ref, SemAct, ShapeExpr};
 
 #[derive(Debug, PartialEq)]
 pub enum ShExStatement<'a> {
@@ -14,7 +14,7 @@ pub enum ShExStatement<'a> {
         iri: IriS,
     },
     StartActions {
-        actions: Vec<SemAct>
+        actions: Vec<SemAct>,
     },
     StartDecl {
         shape_expr: ShapeExpr,
@@ -31,6 +31,7 @@ pub enum Qualifier {
     Extra(Vec<IriRef>),
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Cardinality {
     min: Option<i32>,
     max: Option<i32>,
@@ -59,6 +60,27 @@ impl Cardinality {
     }
 
     pub fn range(min: i32, max: i32) -> Cardinality {
+        Cardinality {
+            min: Some(min),
+            max: Some(max),
+        }
+    }
+
+    pub fn exact(n: i32) -> Cardinality {
+        Cardinality {
+            min: Some(n),
+            max: Some(n),
+        }
+    }
+
+    pub fn only_min(n: i32) -> Cardinality {
+        Cardinality {
+            min: Some(n),
+            max: None,
+        }
+    }
+
+    pub fn min_max(min: i32, max: i32) -> Cardinality {
         Cardinality {
             min: Some(min),
             max: Some(max),

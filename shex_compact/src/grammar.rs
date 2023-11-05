@@ -16,6 +16,7 @@ use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
     Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind,
 };
+use rbe::Max;
 use log;
 use thiserror::Error;
 
@@ -126,16 +127,16 @@ where
     P: FnMut(Span<'a>) -> IRes<'a, T>,
 {
     move |input| {
-        log::debug!(target: "parser", "{fun}({input:?})");
+        log::trace!(target: "parser", "{fun}({input:?})");
         let result = parser(input);
         match &result {
             Ok(res) => { 
                 let s = format!("{fun}({input:?}) -> {res:?}");
-                log::debug!(target: "parser", "{}", s.green()); 
+                log::trace!(target: "parser", "{}", s.green()); 
             }
             Err(e) => { 
                 let s = format!("{fun}({input:?}) -> {e:?}");
-                log::debug!(target: "parser", "{}", s.red()); 
+                log::trace!(target: "parser", "{}", s.red()); 
             }
         }
         result
@@ -504,7 +505,7 @@ fn dot(i: Span) -> IRes<ShapeExpr> {
 fn shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
   traced("shape_or_ref", 
   map_error(
-    move |i| { alt((shape_definition, shape_ref))(i) },
+    move |i| { alt((shape_definition(), shape_ref))(i) },
     || ShExParseError::ExpectedShapeOrRef
   ))  
 }
@@ -615,10 +616,12 @@ fn pos_integer(i: Span) -> IRes<usize> {
 }
 
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
-fn shape_definition(i: Span) -> IRes<ShapeExpr> {
+fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+    traced("shape_definition",
+    map_error(move |i| {
     let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _, _, annotations, _, sem_actions)) =
         tuple((
-            qualifiers,
+            qualifiers(),
             tws0,
             char('{'),
             tws0,
@@ -660,12 +663,13 @@ fn shape_definition(i: Span) -> IRes<ShapeExpr> {
                 .with_sem_acts(sem_actions),
         ),
     ))
+  }, || ShExParseError::ExpectedShapeDefinition))
 }
 
 /// `[34]   	inlineShapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}'`
 fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
     let (i, (qualifiers, _, _, _, maybe_triple_expr, _, _)) = tuple((
-        qualifiers,
+        qualifiers(),
         tws0,
         char('{'),
         tws0,
@@ -700,23 +704,31 @@ fn annotations(i: Span) -> IRes<Vec<Annotation>> {
     many0(annotation)(i)
 }
 
-fn qualifiers(i: Span) -> IRes<Vec<Qualifier>> {
-    many0(qualifier)(i)
+fn qualifiers<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<Qualifier>> {
+    traced("qualifiers", map_error(move |i| many0(qualifier())(i), || ShExParseError::ExpectedQualifiers))
 }
 
-fn qualifier(i: Span) -> IRes<Qualifier> {
-    alt((closed, extra_property_set))(i)
+fn qualifier<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
+    traced("qualifier", map_error(move |i| {
+        alt((closed(), extra_property_set()))(i)
+    }, || ShExParseError::ExpectedQualifier)
+    )
 }
 
-fn closed(i: Span) -> IRes<Qualifier> {
-    let (i, _) = tag_no_case("CLOSED")(i)?;
+fn closed<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
+    traced("Closed", map_error(move |i| {
+    let (i, _) = token_tws("CLOSED")(i)?;
     Ok((i, Qualifier::Closed))
+    }, || ShExParseError::ExpectedClosed))
 }
 
 /// `[35]   	extraPropertySet	   ::=   	"EXTRA" predicate+`
-fn extra_property_set(i: Span) -> IRes<Qualifier> {
-    let (i, (_, ps)) = tuple((tag_no_case("EXTRA"), many1(predicate)))(i)?;
+fn extra_property_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
+    traced("extra_property_set", 
+    map_error(move |i| {
+    let (i, (_, ps)) = tuple((token_tws("EXTRA"), cut(many1(predicate))))(i)?;
     Ok((i, Qualifier::Extra(ps)))
+    }, || ShExParseError::ExpectedEXTRAPropertySet))
 }
 
 /// `[36]   	tripleExpression	   ::=   	oneOfTripleExpr`
@@ -868,14 +880,15 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
 
 /// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
 fn cardinality<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
-   map_error(move |i| {
+   traced("cardinality", map_error(move |i| {
      alt((
-        plus, star, optional,
-        // Pending
-        // repeat_range
+        plus, 
+        star, 
+        optional,
+        repeat_range()
      ))(i)
     }, || ShExParseError::ExpectedCardinality 
-  )
+  ))
 }
 
 fn plus(i: Span) -> IRes<Cardinality> {
@@ -1220,6 +1233,45 @@ fn code_str(i: Span) -> IRes<&str> {
     // Pending
     fail(i)
 }
+
+
+/// `[68]   	<REPEAT_RANGE>	   ::=   	"{" INTEGER ( "," (INTEGER | "*")? )? "}"`
+fn repeat_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
+    traced("repeat_range", map_error(move |i| {
+       let (i, (_, min, maybe_rest_range, _)) = tuple((token("{"), integer, opt(rest_range()), cut(token("}"))))(i)?;
+       let cardinality = match maybe_rest_range {
+        None => {
+           Cardinality::exact(min as i32)
+        },
+        Some(maybe_max) => match maybe_max {
+            None => {
+                Cardinality::only_min(min as i32)
+            },
+            Some(max) => {
+                Cardinality::min_max(min as i32, max as i32)
+            }
+        }
+       };
+       Ok((i, cardinality))
+    }, || ShExParseError::ExpectedRepeatRange))
+}
+
+/// From [68] rest_range = "," (INTEGER | "*")?
+/// rest_range = "," integer_or_star ?
+fn rest_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<i32>> {
+    traced("rest_range", map_error(move |i| {
+      let (i, (_, max)) = tuple((token_tws(","), integer_or_star))(i)?;
+      Ok((i, max))
+    }, || ShExParseError::ExpectedRestRepeatRange))
+}
+
+/// From rest_range, integer_or_star = INTEGER | "*"
+fn integer_or_star(i:Span) -> IRes<Option<i32>> {
+    alt((map(integer, |n| Some(n as i32)), 
+        (map(token_tws("*"), |_| None)
+    )))(i)
+}
+
 /// `[69]   	<RDF_TYPE>	   ::=   	"a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag_no_case("a")(i)?;
