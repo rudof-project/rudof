@@ -3,8 +3,6 @@ use std::{result, str::FromStr};
 use iri_s::IriSError;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
-
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

@@ -10,7 +10,7 @@ use super::iri_ref::IriRef;
 use super::ref_::Ref;
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
-use crate::{Deref, DerefError, NodeConstraint, Shape};
+use crate::{Deref, DerefError, NodeConstraint, RefError, Shape};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -66,13 +66,11 @@ pub enum ShapeExpr {
 }
 
 impl FromStr for ShapeExpr {
-    type Err = IriSError;
+    type Err = RefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri_s = IriS::from_str(s)?;
-        Ok(ShapeExpr::Ref(Ref::IriRef {
-            value: IriRef::iri(iri_s),
-        }))
+        let ref_ = Ref::from_str(s)?;
+        Ok(ShapeExpr::Ref(ref_))
     }
 }
 
