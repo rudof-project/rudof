@@ -844,13 +844,24 @@ fn bracketed_triple_expr(i: Span) -> IRes<TripleExpr> {
         tws0,
         semantic_actions,
     ))(i)?;
-    // Pending
-    // let te = te.with_card(maybe_card).with_annotations(annotations).with_sem_acts(sem_acts);
+    let mut te = te;
+    match maybe_card {
+        Some(card) => {
+           te = te.with_min(card.min());
+           te = te.with_max(card.max());
+        },
+        None => {}
+    };
+    if !annotations.is_empty() {
+      te = te.with_annotations(Some(annotations));
+    }
+    te = te.with_sem_acts(sem_acts);
     Ok((i, te))
 }
 
 /// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
+    traced("triple_constraint",
     map_error(
         move |i| { 
         let (i, (predicate, _, se, _, maybe_card, _)) = tuple((
@@ -875,7 +886,7 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
         TripleExpr::triple_constraint(predicate, value_expr, min, max),
     ))}, 
     || ShExParseError::ExpectedTripleConstraint
-  )
+  ))
 }
 
 /// `[46]   	cardinality	   ::=   	'*' | '+' | '?' | REPEAT_RANGE`
