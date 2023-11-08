@@ -738,34 +738,36 @@ fn triple_expression(i: Span) -> IRes<TripleExpr> {
 
 /// `[37]   	oneOfTripleExpr	   ::=   	groupTripleExpr | multiElementOneOf`
 fn one_of_triple_expr(i: Span) -> IRes<TripleExpr> {
-    alt((group_triple_expr, multi_element_one_of))(i)
+    alt((multi_element_one_of(), group_triple_expr()))(i)
 }
 
 /// `[38]   	multiElementOneOf	   ::=   	groupTripleExpr ('|' groupTripleExpr)+`
-fn multi_element_one_of(i: Span) -> IRes<TripleExpr> {
-    let (i, (te1, _, tes)) = tuple((group_triple_expr, tws0, rest_group_triple_expr))(i)?;
+fn multi_element_one_of<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
+  traced("multi_element_one_of", move |i| {
+    let (i, (te1, _, tes)) = tuple((group_triple_expr(), tws0, rest_group_triple_expr))(i)?;
     let mut rs = vec![te1];
     for te in tes {
         rs.push(te);
     }
     let te = TripleExpr::one_of(rs);
     Ok((i, te))
+  })
 }
 
 /// From [38] rest_group_triple_expr = ('|' groupTripleExpr)+
 fn rest_group_triple_expr(i: Span) -> IRes<Vec<TripleExpr>> {
-    let (i, vs) = many1(tuple((char('|'), tws0, group_triple_expr)))(i)?;
+    let (i, vs) = many1(tuple((token_tws("|"), group_triple_expr())))(i)?;
     let mut tes = Vec::new();
     for v in vs {
-        let (_, _, te) = v;
+        let (_, te) = v;
         tes.push(te);
     }
     Ok((i, tes))
 }
 
 /// `[40]   	groupTripleExpr	   ::=   	singleElementGroup | multiElementGroup`
-fn group_triple_expr(i: Span) -> IRes<TripleExpr> {
-    alt((multi_element_group, single_element_group))(i)
+fn group_triple_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
+    traced("group_triple_expr", move |i| { alt((multi_element_group, single_element_group))(i) })
 }
 
 /// `[41]   	singleElementGroup	   ::=   	unaryTripleExpr ';'?`
