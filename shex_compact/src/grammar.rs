@@ -14,13 +14,13 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet,
 };
 use rbe::Max;
 use log;
 use thiserror::Error;
 
-use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError};
+use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength};
 use nom_locate::LocatedSpan;
 use srdf::{lang::Lang, literal::Literal};
 
@@ -571,7 +571,7 @@ fn non_lit_node_constraint(i: Span) -> IRes<NodeConstraint> {
 fn xs_facet(i: Span) -> IRes<XsFacet> {
     alt((
         string_facet,
-        // numeric_facet
+        numeric_facet()
     ))(i)
 }
 
@@ -613,6 +613,42 @@ fn pos_integer(i: Span) -> IRes<usize> {
         u = n as usize;
         Ok((i, u))
     }
+}
+
+/// `[30]   	numericFacet	   ::=   	   numericRange numericLiteral
+/// `| numericLength INTEGER`
+fn numeric_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
+    traced("numeric_facet", move |i| {
+        numeric_length_int()(i)
+        /*Pending alt((
+            numeric_range_lit(), 
+            numeric_length_int()
+        ))(i) */
+    })
+}
+
+/// `From [30] numeric_range_lit = numericRange numericLiteral``
+/*fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericFacet> {
+   todo!()
+}*/
+
+/// `From [30] numericLength INTEGER`
+fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
+    traced("numeric_length_int", move |i| {
+    let (i, (numeric_length,n)) = tuple((numeric_length, integer))(i)?;
+    let nm = match numeric_length {
+        NumericLength::FractionDigits => XsFacet::NumericFacet(NumericFacet::FractionDigits(n as usize)),
+        NumericLength::TotalDigits => XsFacet::NumericFacet(NumericFacet::TotalDigits(n as usize))
+    };
+    Ok((i, nm))
+    })
+}
+
+fn numeric_length(i: Span) -> IRes<NumericLength> {
+    alt((
+        map(token_tws("TOTALDIGITS"), |_| NumericLength::TotalDigits),
+        map(token_tws("FRACTIONDIGITS"), |_| NumericLength::FractionDigits)
+    ))(i)
 }
 
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
@@ -1071,8 +1107,8 @@ pub fn boolean_literal(i: Span) -> IRes<ObjectValue> {
 }
 
 pub fn boolean_value(i: Span) -> IRes<bool> {
-    alt((map(token("true"), |_| true), 
-         map(token("false"), |_| false)))(i)
+    alt((map(token_tws("true"), |_| true), 
+         map(token_tws("false"), |_| false)))(i)
 }
 
 /// `[65]   	rdfLiteral	   ::=   	langString | string ("^^" datatype)?`

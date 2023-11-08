@@ -32,7 +32,7 @@ pub enum Qualifier {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Cardinality {
+pub(crate) struct Cardinality {
     min: Option<i32>,
     max: Option<i32>,
 }
@@ -103,4 +103,9 @@ impl Default for Cardinality {
             max: Some(1),
         }
     }
+}
+
+pub(crate) enum NumericLength {
+    TotalDigits,
+    FractionDigits,
 }
