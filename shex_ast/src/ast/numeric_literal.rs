@@ -6,7 +6,7 @@ use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteral {
-    Integer(usize),
+    Integer(isize),
     Decimal(Decimal),
     Double(f64),
 }
@@ -48,7 +48,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: usize = v.try_into().unwrap();
+                let n: isize = v.try_into().unwrap();
                 Ok(NumericLiteral::Integer(n))
             }
 
@@ -56,7 +56,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: usize = v.try_into().unwrap();
+                let n: isize = v.try_into().unwrap();
                 Ok(NumericLiteral::Integer(n))
             }
 
@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: usize = v.try_into().unwrap();
+                let n: isize = v.try_into().unwrap();
                 Ok(NumericLiteral::Integer(n))
             }
 
@@ -72,7 +72,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: usize = v.try_into().unwrap();
+                let n: isize = v.try_into().unwrap();
                 Ok(NumericLiteral::Integer(n))
             }
 
@@ -80,7 +80,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: usize = v.try_into().unwrap();
+                let n: isize = v.try_into().unwrap();
                 Ok(NumericLiteral::Integer(n))
             }
 

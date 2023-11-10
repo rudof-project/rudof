@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use colored::*;
-use std::{fmt::Debug, num::ParseIntError};
+use std::{fmt::Debug, num::ParseIntError, result};
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1, is_not},
@@ -14,13 +14,13 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral,
 };
 use rbe::Max;
 use log;
 use thiserror::Error;
 
-use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength};
+use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength, NumericRange};
 use nom_locate::LocatedSpan;
 use srdf::{lang::Lang, literal::Literal};
 
@@ -534,7 +534,7 @@ fn lit_node_constraint(i: Span) -> IRes<NodeConstraint> {
         literal_facets,
         datatype_facets,
         value_set_facets,
-        // numeric_facets,
+        numeric_facets,
     ))(i)
 }
 
@@ -556,6 +556,11 @@ fn value_set_facets(i: Span) -> IRes<NodeConstraint> {
     Ok((i, vs.with_xsfacets(facets)))
 }
 
+/// `from [24] numeric_facets = numericFacet+`
+fn numeric_facets(i: Span) -> IRes<NodeConstraint> {
+    map(many1(numeric_facet()), |ns| NodeConstraint::new().with_xsfacets(ns))(i)
+}
+
 fn facets(i: Span) -> IRes<Vec<XsFacet>> {
     many0(xs_facet)(i)
 }
@@ -563,7 +568,6 @@ fn facets(i: Span) -> IRes<Vec<XsFacet>> {
 /// `[25] nonLitNodeConstraint ::= nonLiteralKind stringFacet*`
 /// `                            | stringFacet+`
 fn non_lit_node_constraint(i: Span) -> IRes<NodeConstraint> {
-    // Pending
     fail(i)
 }
 
@@ -619,17 +623,33 @@ fn pos_integer(i: Span) -> IRes<usize> {
 /// `| numericLength INTEGER`
 fn numeric_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
     traced("numeric_facet", move |i| {
-        numeric_length_int()(i)
-        /*Pending alt((
+        alt((
             numeric_range_lit(), 
             numeric_length_int()
-        ))(i) */
+        ))(i)
     })
 }
 
 /// `From [30] numeric_range_lit = numericRange numericLiteral``
-/*fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericFacet> {
-   todo!()
+fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
+  traced("numeric_range", move |i| {  
+   let (i, (n_range, v)) = tuple((numeric_range, cut(numeric_literal)))(i)?;
+   let v = match n_range {
+     NumericRange::MinInclusive => XsFacet::NumericFacet(NumericFacet::MinInclusive(v)),
+     NumericRange::MinExclusive => XsFacet::NumericFacet(NumericFacet::MinExclusive(v)),
+     NumericRange::MaxInclusive => XsFacet::NumericFacet(NumericFacet::MaxInclusive(v)),
+     NumericRange::MaxExclusive => XsFacet::NumericFacet(NumericFacet::MaxExclusive(v)),
+   };
+   Ok((i, v))
+  })
+}
+
+/*fn object_value_to_numeric_literal(ov: ObjectValue) -> result::Result<NumericLiteral, ShExParseError> {
+    match ov {
+        ObjectValue::IriRef(_) => panic!("object_value_to_numeric_literal with IRI?"),
+        ObjectValue::IntegerLiteral(n) => Ok(NumericLiteral::Integer(n as usize)),
+        _ => panic!("object_value_to_numeric_literal: {ov:?}")
+    }
 }*/
 
 /// `From [30] numericLength INTEGER`
@@ -649,6 +669,17 @@ fn numeric_length(i: Span) -> IRes<NumericLength> {
         map(token_tws("TOTALDIGITS"), |_| NumericLength::TotalDigits),
         map(token_tws("FRACTIONDIGITS"), |_| NumericLength::FractionDigits)
     ))(i)
+}
+
+
+/// `[31]    	numericRange 	   ::=    	"MININCLUSIVE" | "MINEXCLUSIVE" | "MAXINCLUSIVE" | "MAXEXCLUSIVE"`
+fn numeric_range(i: Span) -> IRes<NumericRange> {
+        alt((
+          map(token_tws("MININCLUSIVE"), |_| NumericRange::MinInclusive),
+          map(token_tws("MAXINCLUSIVE"), |_| NumericRange::MaxInclusive),
+          map(token_tws("MINEXCLUSIVE"), |_| NumericRange::MinExclusive),
+          map(token_tws("MAXEXCLUSIVE"), |_| NumericRange::MaxExclusive),
+    ))(i) 
 }
 
 /// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
@@ -1084,22 +1115,18 @@ fn percent_code(i: Span) -> IRes<Option<String>> {
 fn literal(i: Span) -> IRes<ObjectValue> {
    alt((
     rdf_literal, 
-    numeric_literal, 
+    map(numeric_literal, |n| ObjectValue::NumericLiteral(n)), 
     boolean_literal))(i)
 }
 
 /// `[16t]   	numericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE`
-pub fn numeric_literal(i: Span) -> IRes<ObjectValue> {
+pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     /* Pending alt((
         // double, 
         // decimal, 
-        integer_value
+        integer
     ))(i) */
-    integer_value(i)
-}
-
-pub fn integer_value(i: Span) -> IRes<ObjectValue> {
-    map(integer, |n| ObjectValue::integer(n))(i)
+    map(integer, |n| NumericLiteral::Integer(n))(i)
 }
 
 pub fn boolean_literal(i: Span) -> IRes<ObjectValue> {

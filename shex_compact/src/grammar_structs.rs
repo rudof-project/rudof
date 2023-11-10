@@ -109,3 +109,10 @@ pub(crate) enum NumericLength {
     TotalDigits,
     FractionDigits,
 }
+
+pub(crate) enum NumericRange {
+    MinInclusive,
+    MinExclusive,
+    MaxInclusive,
+    MaxExclusive,
+}

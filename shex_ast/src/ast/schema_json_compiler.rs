@@ -626,6 +626,9 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
+        ast::ObjectValue::NumericLiteral(n) => {
+            todo!()
+        }
         ast::ObjectValue::ObjectLiteral {
             value, language, ..
         } => Ok(ObjectValue::ObjectLiteral {

@@ -6,12 +6,14 @@ use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
 
 use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
-use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
+use crate::{ast::serde_string_or_struct::*, Deref, DerefError, NumericLiteral};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum ObjectValue {
     IriRef(IriRef),
+
+    NumericLiteral(NumericLiteral),
 
     ObjectLiteral {
         value: String,
@@ -22,6 +24,13 @@ pub enum ObjectValue {
         #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
         type_: Option<IriRef>,
     },
+}
+
+fn serialize_integer_literal<S>(v: &isize, serializer: S) -> result::Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    v.serialize(serializer)
 }
 
 impl ObjectValue {
@@ -55,6 +64,7 @@ impl Deref for ObjectValue {
                 let new_iri_ref = iri_ref.deref(base, prefixmap)?;
                 Ok(ObjectValue::IriRef(new_iri_ref))
             }
+            ObjectValue::NumericLiteral(n) => Ok(ObjectValue::NumericLiteral(n.clone())),
             ObjectValue::ObjectLiteral {
                 value,
                 language,
