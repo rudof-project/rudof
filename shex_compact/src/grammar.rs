@@ -1,10 +1,10 @@
 use iri_s::IriS;
 use colored::*;
-use std::{fmt::Debug, num::ParseIntError, result};
+use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}, result};
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1, is_not},
-    character::complete::{char, digit1, one_of, satisfy, multispace1, alpha1, alphanumeric1, none_of},
+    character::complete::{char, digit1, one_of, satisfy, multispace1, alpha1, alphanumeric1, none_of, digit0},
     combinator::{fail, map_res, opt, recognize, value, cut, map},
     error::{ErrorKind, FromExternalError},
     error_position,
@@ -16,7 +16,7 @@ use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
     Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral,
 };
-use rbe::Max;
+use rust_decimal::Decimal;
 use log;
 use thiserror::Error;
 
@@ -449,11 +449,11 @@ fn shape_opt_non_lit(i: Span) -> IRes<ShapeExpr> {
     }
 }
 
-/// `[20]   	inlineShapeAtom	   ::= nonLitNodeConstraint inlineShapeOrRef?`
-/// `                                | litNodeConstraint`
-/// `                                | inlineShapeOrRef nonLitNodeConstraint?`
-/// `                                | '(' shapeExpression ')'`
-/// `                                | '.'`
+/// `[20] inlineShapeAtom ::= nonLitNodeConstraint inlineShapeOrRef?`
+/// `                      | litNodeConstraint`
+/// `                      | inlineShapeOrRef nonLitNodeConstraint?`
+/// `                      | '(' shapeExpression ')'`
+/// `                      | '.'`
 fn inline_shape_atom(i: Span) -> IRes<ShapeExpr> {
     alt((
         non_lit_inline_opt_shape_or_ref,
@@ -531,28 +531,30 @@ fn at_shape_expr_label(i: Span) -> IRes<ShapeExpr> {
 /// | numericFacet+`
 fn lit_node_constraint(i: Span) -> IRes<NodeConstraint> {
     alt((
-        literal_facets,
+        literal_facets(),
         datatype_facets,
         value_set_facets,
         numeric_facets,
     ))(i)
 }
 
-fn literal_facets(i: Span) -> IRes<NodeConstraint> {
-    let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws1, facets))(i)?;
-    Ok((i, NodeConstraint::new()
-     .with_node_kind(NodeKind::Literal)
-     .with_xsfacets(facets))
+fn literal_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
+    traced("literal_facets", move |i| {
+     let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws1, facets()))(i)?;
+     Ok((i, NodeConstraint::new()
+            .with_node_kind(NodeKind::Literal)
+            .with_xsfacets(facets))
     )
+    })
 }
 
 fn datatype_facets(i: Span) -> IRes<NodeConstraint> {
-    let (i, (dt, _, facets)) = tuple((datatype, tws1, facets))(i)?;
+    let (i, (dt, _, facets)) = tuple((datatype, tws1, facets()))(i)?;
     Ok((i, dt.with_xsfacets(facets)))
 }
 
 fn value_set_facets(i: Span) -> IRes<NodeConstraint> {
-    let (i, (vs, _, facets)) = tuple((value_set, tws1, facets))(i)?;
+    let (i, (vs, _, facets)) = tuple((value_set, tws1, facets()))(i)?;
     Ok((i, vs.with_xsfacets(facets)))
 }
 
@@ -561,8 +563,10 @@ fn numeric_facets(i: Span) -> IRes<NodeConstraint> {
     map(many1(numeric_facet()), |ns| NodeConstraint::new().with_xsfacets(ns))(i)
 }
 
-fn facets(i: Span) -> IRes<Vec<XsFacet>> {
-    many0(xs_facet)(i)
+fn facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<XsFacet>> {
+    traced("facets", move |i| {
+     many0(xs_facet())(i)
+    })
 }
 
 /// `[25] nonLitNodeConstraint ::= nonLiteralKind stringFacet*`
@@ -597,11 +601,13 @@ fn  non_literal_kind(i: Span) -> IRes<NodeKind> {
 }
 
 /// `[27]   	xsFacet	   ::=   	stringFacet | numericFacet`
-fn xs_facet(i: Span) -> IRes<XsFacet> {
-    alt((
+fn xs_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
+  traced("xs_facet", move |i| {
+     alt((
         string_facet,
         numeric_facet()
     ))(i)
+  })
 }
 
 /// `[28]   	stringFacet	   ::=   	   stringLength INTEGER`
@@ -619,12 +625,12 @@ fn string_length(i: Span) -> IRes<XsFacet> {
 }
 
 fn min_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = tuple((tag_no_case("MIN_LENGTH"), tws1, pos_integer))(i)?;
+    let (i, (_, _, n)) = tuple((tag_no_case("MINLENGTH"), tws1, pos_integer))(i)?;
     Ok((i, XsFacet::min_length(n)))
 }
 
 fn max_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = tuple((tag_no_case("MAX_LENGTH"), tws1, pos_integer))(i)?;
+    let (i, (_, _, n)) = tuple((tag_no_case("MAXLENGTH"), tws1, pos_integer))(i)?;
     Ok((i, XsFacet::max_length(n)))
 }
 
@@ -668,14 +674,6 @@ fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
    Ok((i, v))
   })
 }
-
-/*fn object_value_to_numeric_literal(ov: ObjectValue) -> result::Result<NumericLiteral, ShExParseError> {
-    match ov {
-        ObjectValue::IriRef(_) => panic!("object_value_to_numeric_literal with IRI?"),
-        ObjectValue::IntegerLiteral(n) => Ok(NumericLiteral::Integer(n as usize)),
-        _ => panic!("object_value_to_numeric_literal: {ov:?}")
-    }
-}*/
 
 /// `From [30] numericLength INTEGER`
 fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
@@ -958,13 +956,16 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     traced("triple_constraint",
     map_error(
         move |i| { 
-        let (i, (predicate, _, se, _, maybe_card, _)) = tuple((
+        let (i, (predicate, _, se, _, maybe_card, _, annotations, _, sem_acts)) = tuple((
         predicate,
         tws0,
         cut(inline_shape_expression),
         tws0,
         cut(opt(cardinality())),
-        tws0
+        tws0,
+        annotations,
+        tws0,
+        semantic_actions
     ))(i)?;
     let (min, max) = match maybe_card {
         None => (None, None),
@@ -975,10 +976,12 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     } else {
         Some(se)
     };
-    Ok((
-        i,
-        TripleExpr::triple_constraint(predicate, value_expr, min, max),
-    ))}, 
+    let mut te = TripleExpr::triple_constraint(predicate, value_expr, min, max);
+    te = te.with_sem_acts(sem_acts);
+    if !annotations.is_empty() {
+        te = te.with_annotations(Some(annotations))
+    }
+    Ok((i,te))}, 
     || ShExParseError::ExpectedTripleConstraint
   ))
 }
@@ -1146,12 +1149,12 @@ fn literal(i: Span) -> IRes<ObjectValue> {
 
 /// `[16t]   	numericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE`
 pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
-    /* Pending alt((
-        // double, 
-        // decimal, 
-        integer
-    ))(i) */
-    map(integer, |n| NumericLiteral::Integer(n))(i)
+    alt((
+        map(double, |n| NumericLiteral::Double(n)), 
+        decimal,
+        map(integer, |n| NumericLiteral::Integer(n))
+    ))(i)
+    
 }
 
 pub fn boolean_literal(i: Span) -> IRes<ObjectValue> {
@@ -1382,8 +1385,8 @@ fn rdf_type(i: Span) -> IRes<IriRef> {
 /// `[70]   	<ATPNAME_NS>	   ::=   	"@" PNAME_NS`
 fn at_pname_ns(i: Span) -> IRes<ShapeExpr> {
     let (i, (_, _, pname)) = tuple((char('@'), tws0, pname_ns))(i)?;
-    todo!()
-    // Ok((i, ShapeExpr::shape_ref())
+    let ref_ = Ref::iri_unchecked(pname.fragment());
+    Ok((i, ShapeExpr::shape_ref(ref_)))
 }
 
 /// `[71]   	<ATPNAME_LN>	   ::=   	"@" PNAME_LN`
@@ -1471,6 +1474,43 @@ fn integer(i: Span) -> IRes<isize> {
     Ok((i, n))
 }
 
+/// `[20t]   	<DECIMAL>	   ::=   	[+-]? [0-9]* "." [0-9]+`
+fn decimal(i: Span) -> IRes<NumericLiteral> {
+    map_res(
+        pair(
+            recognize(preceded(opt(sign), digit0)),
+            preceded(token("."), digit1),
+        ),
+        |(whole, fraction)| {
+            Ok::<_, ParseIntError>(NumericLiteral::decimal(whole.parse()?, fraction.parse()?))
+        },
+    )(i)
+}
+
+
+/// `[21t] <DOUBLE>	::= [+-]? ([0-9]+ "." [0-9]* EXPONENT | "."? [0-9]+ EXPONENT)`
+fn double(i: Span) -> IRes<f64> {
+    map_res(
+        recognize(preceded(
+         opt(sign),
+         alt((
+           recognize(tuple((digit1, token("."), digit0, exponent))),
+           recognize(tuple((token("."), digit1, exponent))),
+           recognize(pair(digit1, exponent)),
+         )),
+        )),
+     |value: LocatedSpan<&str>| value.parse()
+    )(i)
+}
+
+pub fn exponent(input: Span) -> IRes<Span> {
+    recognize(tuple((one_of("eE"), opt(sign), digit1)))(input)
+}
+
+pub fn sign(input: Span) -> IRes<Span> {
+    recognize(one_of("+-"))(input)
+}
+
 fn digits(i: Span) -> IRes<isize> {
     map_res(digit1, |number: Span| number.parse::<isize>())(i)
 }
@@ -1480,6 +1520,13 @@ impl FromExternalError<Span<'_>, ParseIntError> for LocatedParseError {
         ShExParseError::ParseIntError{ str: input.fragment().to_string(), err: e }.at(input)
     }
 }
+
+impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: ParseFloatError) -> Self {
+        ShExParseError::ParseFloatError{ str: input.fragment().to_string(), err: e }.at(input)
+    }
+}
+
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
 fn pname_ln(i: Span) -> IRes<IriRef> {

@@ -1,6 +1,9 @@
 use iri_s::IriSError;
 use shex_ast::DerefError;
-use std::{io, num::ParseIntError};
+use std::{
+    io,
+    num::{ParseFloatError, ParseIntError},
+};
 use thiserror::Error;
 
 use crate::{LocatedParseError, Span};
@@ -91,8 +94,15 @@ pub enum ParseError {
     #[error("Expected list of CLOSED or EXTRA followed by list of predicates")]
     ExpectedQualifiers,
 
-    #[error("Parse int error: {err}")]
+    #[error("Parse int error for str {str}: {err} ")]
     ParseIntError { str: String, err: ParseIntError },
+
+    #[error("Parse f64 error for str {str}: {err}")]
+    ParseFloatError {
+        str: String, 
+        
+        err: ParseFloatError,
+    },
 }
 
 impl ParseError {

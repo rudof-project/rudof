@@ -11,6 +11,22 @@ pub enum NumericLiteral {
     Double(f64),
 }
 
+impl NumericLiteral {
+    pub fn double(d: f64) -> NumericLiteral {
+        NumericLiteral::Double(d)
+    }
+
+    pub fn decimal(whole: i64, fraction: u32) -> NumericLiteral {
+        let s = format!("{whole}.{fraction}");
+        let d = Decimal::from_str_exact(s.as_str()).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn integer(n: isize) -> NumericLiteral {
+        NumericLiteral::Integer(n)
+    }
+}
+
 impl Serialize for NumericLiteral {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
@@ -88,16 +104,16 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: Decimal = v.try_into().unwrap();
-                Ok(NumericLiteral::Decimal(n))
+                // let n: Double = v.try_into().unwrap();
+                Ok(NumericLiteral::double(v))
             }
 
             fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                let n: Decimal = v.try_into().unwrap();
-                Ok(NumericLiteral::Decimal(n))
+                // let n: Decimal = v.try_into().unwrap();
+                Ok(NumericLiteral::double(v as f64))
             }
         }
 
@@ -127,17 +143,17 @@ mod tests {
 
     #[test]
     fn test_serialize_decimal() {
-        let n = NumericLiteral::Decimal(dec!(5.5));
-        let expected = r#"5.5"#;
+        let n = NumericLiteral::Decimal(dec!(5.35));
+        let expected = r#"5.35"#;
         let json = serde_json::to_string(&n).unwrap();
         assert_eq!(json, expected);
     }
 
     #[test]
     fn test_deserialize_decimal() {
-        let str = r#"5.5"#;
+        let str = r#"5.35"#;
         let deser: NumericLiteral = serde_json::from_str(str).unwrap();
-        let expected = NumericLiteral::Decimal(dec!(5.5));
+        let expected = NumericLiteral::Decimal(dec!(5.35));
         assert_eq!(deser, expected);
     }
 }

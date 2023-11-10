@@ -18,6 +18,8 @@ nom_locate = "4"
 thiserror = "1"
 log = "0.4"
 colored = "2"
+rust_decimal = "1.32"
+rust_decimal_macros = "1.32"
 
 [dev-dependencies]
 env_logger = "0.10"
