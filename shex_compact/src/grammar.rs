@@ -568,7 +568,32 @@ fn facets(i: Span) -> IRes<Vec<XsFacet>> {
 /// `[25] nonLitNodeConstraint ::= nonLiteralKind stringFacet*`
 /// `                            | stringFacet+`
 fn non_lit_node_constraint(i: Span) -> IRes<NodeConstraint> {
-    fail(i)
+    alt((non_literal_kind_string_facets, string_facets))(i)
+}
+
+/// `from [25] non_literal_kind_string-facets = nonLiteralKind stringFacet* `
+fn non_literal_kind_string_facets(i: Span) -> IRes<NodeConstraint> {
+    let (i, (kind, facets)) = tuple((non_literal_kind, many0(string_facet)))(i)?;
+    let mut nc = NodeConstraint::new().with_node_kind(kind);
+    if !facets.is_empty() {
+       nc = nc.with_xsfacets(facets);
+    } 
+    Ok((i, nc))
+}
+
+/// `from [25] string_facets = string_facet+`
+fn string_facets(i: Span) -> IRes<NodeConstraint> {
+   let (i, facets) = many1(string_facet)(i)?;
+   Ok((i, NodeConstraint::new().with_xsfacets(facets)))
+}
+
+/// `[26]   	nonLiteralKind	   ::=   	"IRI" | "BNODE" | "NONLITERAL"` 
+fn  non_literal_kind(i: Span) -> IRes<NodeKind> {
+    alt((
+        map(token_tws("IRI"), |_| NodeKind::Iri),
+        map(token_tws("BNODE"), |_| NodeKind::BNode),
+        map(token_tws("NONLITERAL"), |_| NodeKind::NonLiteral)
+    ))(i)
 }
 
 /// `[27]   	xsFacet	   ::=   	stringFacet | numericFacet`
