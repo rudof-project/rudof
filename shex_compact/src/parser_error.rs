@@ -70,6 +70,9 @@ pub enum ParseError {
     #[error("Expected rest of cardinality declaration after comma")]
     ExpectedRestRepeatRange,
 
+    #[error("Expected annotation")]
+    ExpectedAnnotation,
+
     #[error("Expected base declaration")]
     ExpectedBaseDecl,
 
@@ -98,11 +101,7 @@ pub enum ParseError {
     ParseIntError { str: String, err: ParseIntError },
 
     #[error("Parse f64 error for str {str}: {err}")]
-    ParseFloatError {
-        str: String, 
-        
-        err: ParseFloatError,
-    },
+    ParseFloatError { str: String, err: ParseFloatError },
 }
 
 impl ParseError {

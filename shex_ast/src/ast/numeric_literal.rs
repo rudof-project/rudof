@@ -1,24 +1,33 @@
 use core::fmt;
 use std::result;
 
-use rust_decimal::Decimal;
+use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteral {
     Integer(isize),
     Decimal(Decimal),
-    Double(f64),
 }
 
 impl NumericLiteral {
-    pub fn double(d: f64) -> NumericLiteral {
+    /*     pub fn double(d: f64) -> NumericLiteral {
         NumericLiteral::Double(d)
-    }
+    }*/
 
     pub fn decimal(whole: i64, fraction: u32) -> NumericLiteral {
         let s = format!("{whole}.{fraction}");
         let d = Decimal::from_str_exact(s.as_str()).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_f64(d: f64) -> NumericLiteral {
+        let d: Decimal = Decimal::from_f64(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_f32(d: f32) -> NumericLiteral {
+        let d: Decimal = Decimal::from_f32(d).unwrap();
         NumericLiteral::Decimal(d)
     }
 
@@ -40,8 +49,7 @@ impl Serialize for NumericLiteral {
             NumericLiteral::Decimal(d) => {
                 let f: f64 = (*d).try_into().unwrap();
                 serializer.serialize_f64(f)
-            }
-            NumericLiteral::Double(d) => serializer.serialize_f64(*d),
+            } // NumericLiteral::Double(d) => serializer.serialize_f64(*d),
         }
     }
 }
@@ -104,16 +112,14 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                // let n: Double = v.try_into().unwrap();
-                Ok(NumericLiteral::double(v))
+                Ok(NumericLiteral::decimal_from_f64(v))
             }
 
             fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                // let n: Decimal = v.try_into().unwrap();
-                Ok(NumericLiteral::double(v as f64))
+                Ok(NumericLiteral::decimal_from_f32(v))
             }
         }
 

@@ -791,7 +791,7 @@ fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
 }
 
 fn annotations(i: Span) -> IRes<Vec<Annotation>> {
-    many0(annotation)(i)
+    many0(annotation())(i)
 }
 
 fn qualifiers<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<Qualifier>> {
@@ -1102,9 +1102,11 @@ fn include_(i: Span) -> IRes<TripleExpr> {
 }
 
 /// `[58]   	annotation	   ::=   	"//" predicate (iri | literal)`
-fn annotation(i: Span) -> IRes<Annotation> {
-    let (i, (_, p, o)) = tuple((tag("//"), predicate, iri_or_literal))(i)?;
+fn annotation<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Annotation> {
+    traced("annotation", map_error(move |i| {
+    let (i, (_, p, _, o)) = tuple((token_tws("//"), cut(predicate), tws0, cut(iri_or_literal)))(i)?;
     Ok((i, Annotation::new(p.into(), o)))
+    }, || ShExParseError::ExpectedAnnotation))
 }
 
 fn iri_or_literal(i: Span) -> IRes<ObjectValue> {
@@ -1150,7 +1152,7 @@ fn literal(i: Span) -> IRes<ObjectValue> {
 /// `[16t]   	numericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE`
 pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     alt((
-        map(double, |n| NumericLiteral::Double(n)), 
+        map(double, |n| NumericLiteral::decimal_from_f64(n)), 
         decimal,
         map(integer, |n| NumericLiteral::Integer(n))
     ))(i)
