@@ -1156,7 +1156,6 @@ pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
         decimal,
         map(integer, |n| NumericLiteral::Integer(n))
     ))(i)
-    
 }
 
 pub fn boolean_literal(i: Span) -> IRes<ObjectValue> {
