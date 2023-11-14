@@ -20,6 +20,7 @@ log = "0.4"
 colored = "2"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
+pretty-print = "0.1.9"
 
 [dev-dependencies]
 env_logger = "0.10"

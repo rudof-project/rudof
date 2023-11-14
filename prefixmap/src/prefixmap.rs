@@ -1,18 +1,18 @@
 use colored::*;
+use indexmap::map::Iter;
 use indexmap::IndexMap;
 use iri_s::*;
-use serde::{Deserializer, Serialize, Serializer};
+// use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use std::result;
+use crate::PrefixMapError;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
-use crate::PrefixMapError;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[serde(transparent)]
 pub struct PrefixMap {
-    map: IndexMap<String, IriS>,
+    pub map: IndexMap<String, IriS>,
 }
 
 fn split(str: &str) -> Option<(&str, &str)> {
@@ -39,6 +39,11 @@ impl PrefixMap {
             pm.insert(a, &iri);
         }
         Ok(pm)
+    }
+
+    /// Return an iterator over the key-value pairs of the prefix map, in their order
+    pub fn iter(&self) -> Iter<String, IriS> {
+        self.map.iter()
     }
 
     /// Resolves a string against a prefix map
@@ -94,7 +99,7 @@ impl PrefixMap {
     ///     ("schema".to_string(), "http://schema.org/".to_string())
     ///     ("xsd".to_string(), "http://www.w3.org/2001/XMLSchema#".to_string())
     /// ])
-    /// 
+    ///
     /// )?;
     /// let a = pm.resolve_prefix_local("", "a")?;
     /// let a_resolved = IriS::from_str("http://example.org/a")?;
@@ -103,7 +108,7 @@ impl PrefixMap {
     /// let knows = pm.resolve_prefix_local("schema","knows")?;
     /// let knows_resolved = IriS::from_str("http://schema.org/knows")?;
     /// assert_eq!(knows, knows_resolved);
-    /// 
+    ///
     /// let xsd_string = pm.resolve_prefix_local("xsd","string")?;
     /// let xsd_string_resolved = IriS::from_str("http://www.w3.org/2001/XMLSchema#string")?;
     /// assert_eq!(xsd_string, xsd_string_resolved);
@@ -111,17 +116,15 @@ impl PrefixMap {
     /// ```
     pub fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         match self.find(prefix) {
-                Some(iri) => {
-                    let new_iri = iri.extend(local)?;
-                    Ok(new_iri)
-                }
-                None => {
-                    Err(PrefixMapError::PrefixNotFound {
-                        prefix: prefix.to_string(),
-                        prefixmap: self.clone()
-                    })
-                }
-      }
+            Some(iri) => {
+                let new_iri = iri.extend(local)?;
+                Ok(new_iri)
+            }
+            None => Err(PrefixMapError::PrefixNotFound {
+                prefix: prefix.to_string(),
+                prefixmap: self.clone(),
+            }),
+        }
     }
 
     /// Qualifies an IRI against a prefix map
@@ -227,5 +230,4 @@ mod tests {
             IriS::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap()
         );
     }
-
 }
