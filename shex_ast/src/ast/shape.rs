@@ -2,7 +2,7 @@ use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Annotation, IriRef, SemAct, TripleExpr, TripleExprWrapper, Deref, DerefError};
+use crate::{Annotation, Deref, DerefError, IriRef, SemAct, TripleExpr, TripleExprWrapper};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 
@@ -53,6 +53,14 @@ impl Shape {
         self
     }
 
+    pub fn is_closed(&self) -> bool {
+        self.closed.unwrap_or_else(|| false)
+    }
+
+    pub fn triple_expr(&self) -> Option<TripleExpr> {
+        self.expression.as_ref().map(|tew| tew.te.clone())
+    }
+
 }
 
 impl Deref for Shape {
@@ -83,7 +91,7 @@ impl Deref for Shape {
             Some(anns) => {
                 let mut new_as = Vec::new();
                 for a in anns {
-                   new_as.push(a.deref(base, prefixmap)?);
+                    new_as.push(a.deref(base, prefixmap)?);
                 }
                 Some(new_as)
             }

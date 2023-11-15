@@ -139,6 +139,10 @@ impl Schema {
         self.prefixmap.clone()
     }
 
+    pub fn start(&self) -> Option<ShapeExpr> {
+        self.start.clone()
+    }
+
     pub fn shapes(&self) -> Option<Vec<ShapeDecl>> {
         self.shapes.clone()
     }
