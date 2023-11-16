@@ -202,17 +202,16 @@ where
             (Some(0), Some(1)) => self.doc.space().append(self.doc.text("?")),
             (Some(0), Some(-1)) => self.doc.space().append(self.doc.text("*")),
             (Some(1), Some(-1)) => self.doc.space().append(self.doc.text("+")),
-            (Some(m), Some(n)) => self
-                .doc
-                .space()
-                .append(self.doc.text("{"))
-                .append(self.doc.space())
-                .append(self.doc.text(m.to_string()))
-                .append(self.doc.text(","))
-                .append(self.doc.space())
-                .append(self.doc.text(n.to_string()))
-                .append(self.doc.space())
-                .append(self.doc.text("}")),
+            (Some(m), Some(n)) => self.doc.space().append(
+                self.enclose_space(
+                    "{",
+                    self.doc
+                        .text(m.to_string())
+                        .append(self.doc.text(","))
+                        .append(self.doc.text(n.to_string())),
+                    "}",
+                ),
+            ),
             (Some(m), None) => self
                 .doc
                 .space()
@@ -368,7 +367,8 @@ where
             printer
                 .keyword("base")
                 .append(printer.doc.space())
-                .append(printer.pp_iri(&base))
+                .append(printer.pp_iri_unqualified(&base))
+                .append(printer.doc.hardline())
         }
     }
 
