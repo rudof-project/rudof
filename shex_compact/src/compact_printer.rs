@@ -1,5 +1,6 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::{borrow::Cow, marker::PhantomData, str::FromStr};
 
+use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
@@ -26,20 +27,19 @@ where
 {
     width: usize,
     indent: isize,
-    with_color: bool,
-    keyword_color: Color,
+    keyword_color: Option<Color>,
     schema: &'a Schema,
     doc: &'a Arena<'a, A>,
     marker: PhantomData<A>,
-}
-
-enum Color {
-    Blue,
-    Black,
+    prefixmap: PrefixMap,
 }
 
 const DEFAULT_WIDTH: usize = 100;
 const DEFAULT_INDENT: isize = 4;
+const DEFAULT_QUALIFY_ALIAS_COLOR: Option<Color> = Some(Color::Blue);
+const DEFAULT_QUALIFY_SEMICOLON_COLOR: Option<Color> = Some(Color::BrightGreen);
+const DEFAULT_QUALIFY_LOCALNAME_COLOR: Option<Color> = Some(Color::Black);
+const DEFAULT_KEYWORD_COLOR: Option<Color> = Some(Color::BrightBlue);
 
 impl<'a, A> ShExCompactPrinter<'a, A>
 where
@@ -49,11 +49,16 @@ where
         ShExCompactPrinter {
             width: DEFAULT_WIDTH,
             indent: DEFAULT_INDENT,
-            with_color: false,
-            keyword_color: Color::Blue,
+            keyword_color: DEFAULT_KEYWORD_COLOR,
             schema,
             doc,
             marker: PhantomData,
+            prefixmap: schema
+                .prefixmap()
+                .unwrap_or_else(|| PrefixMap::default())
+                .with_qualify_localname_color(DEFAULT_QUALIFY_LOCALNAME_COLOR)
+                .with_qualify_prefix_color(DEFAULT_QUALIFY_ALIAS_COLOR)
+                .with_qualify_semicolon_color(DEFAULT_QUALIFY_SEMICOLON_COLOR),
         }
     }
 
@@ -352,9 +357,14 @@ where
     where
         U: Into<Cow<'a, str>>,
     {
-        if self.with_color {
-            // TODO...add colors..
-            self.doc.text(s)
+        if let Some(color) = self.keyword_color {
+            use std::borrow::Borrow;
+            let data: Cow<str> = s.into();
+            let s: String = match data {
+                Cow::Owned(t) => t,
+                Cow::Borrowed(t) => t.into(),
+            };
+            self.doc.text(s.as_str().color(color).to_string())
         } else {
             self.doc.text(s)
         }
@@ -381,7 +391,8 @@ where
                 pms.push(
                     printer
                         .doc
-                        .text("prefix")
+                        .nil()
+                        .append(printer.keyword("prefix"))
                         .append(printer.doc.space())
                         .append(printer.doc.text(alias))
                         .append(printer.doc.text(":"))
@@ -404,14 +415,7 @@ where
     }
 
     fn pp_iri(&self, iri: &IriS) -> DocBuilder<'a, Arena<'a, A>, A> {
-        match self.schema.prefixmap() {
-            Some(pm) => self.doc.text(pm.qualify(iri)),
-            None => self
-                .doc
-                .text("<")
-                .append(self.doc.text(iri.to_string()))
-                .append(self.doc.text(">")),
-        }
+        self.doc.text(self.prefixmap.qualify(iri))
     }
 
     fn opt_pp<V>(
