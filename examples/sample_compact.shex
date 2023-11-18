@@ -10,10 +10,21 @@ shapes:User {
     schema:employer @<Company> {1, 2}
 }
 
-<Company> {
-
+<Company> CLOSED EXTRA :code {
+  :code xsd:integer MINLENGTH 10 ;
+} AND {
+  :owner @:Person
+} OR {
+  :owner @:Association  
 }
 
+:Person shapes:User AND {
+    :name xsd:string ;
+}
+
+:Association {
+    :name xsd:string ;
+}
 
 
 

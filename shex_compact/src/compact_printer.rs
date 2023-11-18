@@ -4,10 +4,12 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
+use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, IriRef, NodeConstraint, NodeKind,
-    Ref, Schema, Shape, ShapeDecl, ShapeExpr, TripleExpr,
+    NumericFacet, NumericLiteral, Pattern, Ref, Schema, Shape, ShapeDecl, ShapeExpr, StringFacet,
+    TripleExpr, XsFacet,
 };
 
 #[derive(Default, Debug, Clone)]
@@ -68,7 +70,6 @@ where
     }
 
     pub fn pretty_print(&self) -> String {
-        // let arena = pretty::Arena::<()>::new();
         let doc = self.pp_schema();
         doc.pretty(self.width as usize).to_string()
     }
@@ -95,7 +96,7 @@ where
 
     fn pp_shape_decl(&self, sd: &ShapeDecl) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.pp_ref(&sd.id)
-            .append(self.doc.space())
+            .append(self.space())
             .append(self.pp_shape_expr(&sd.shape_expr))
     }
 
@@ -105,9 +106,9 @@ where
         move |se, printer| {
             printer
                 .keyword("base")
-                .append(printer.doc.space())
+                .append(printer.space())
                 .append("=")
-                .append(printer.doc.space())
+                .append(printer.space())
                 .append(printer.pp_shape_expr(se))
         }
     }
@@ -118,22 +119,48 @@ where
             ShapeExpr::Shape(s) => self.pp_shape(s),
             ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
             ShapeExpr::External => self.pp_external(),
-            ShapeExpr::ShapeAnd { shape_exprs } => todo!(),
-            ShapeExpr::ShapeOr { shape_exprs } => todo!(),
-            ShapeExpr::ShapeNot { shape_expr } => todo!(),
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                let mut docs = Vec::new();
+                for sew in shape_exprs {
+                    docs.push(self.pp_shape_expr(&sew.se))
+                }
+                self.doc
+                    .intersperse(docs, self.keyword(" AND "))
+                    .group()
+                    .nest(self.indent)
+            }
+            ShapeExpr::ShapeOr { shape_exprs } => {
+                let mut docs = Vec::new();
+                for sew in shape_exprs {
+                    docs.push(self.pp_shape_expr(&sew.se))
+                }
+                self.doc
+                    .intersperse(docs, self.keyword(" OR "))
+                    .group()
+                    .nest(self.indent)
+            }
+            ShapeExpr::ShapeNot { shape_expr } => self
+                .doc
+                .nil()
+                .append(self.keyword("NOT "))
+                .append(self.pp_shape_expr(&shape_expr.se)),
         }
+    }
+
+    fn space(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.space()
     }
 
     fn pp_shape(&self, s: &Shape) -> DocBuilder<'a, Arena<'a, A>, A> {
         let closed = if s.is_closed() {
-            self.keyword("CLOSED")
+            self.keyword("CLOSED ")
         } else {
             self.doc.nil()
         };
         let extra = self.opt_pp(s.extra.clone(), self.pp_extra());
         closed
             .append(extra)
-            .append(self.doc.space())
+            .append(self.space())
             .append(self.doc.text("{"))
             .append(self.doc.line())
             .append(self.opt_pp(s.triple_expr(), self.pp_triple_expr()))
@@ -248,13 +275,24 @@ where
     fn pp_extra(
         &self,
     ) -> impl Fn(&Vec<IriRef>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-        move |es, printer| printer.doc.text("EXTRA...todo!")
+        move |es, printer| {
+            let mut docs = Vec::new();
+            for e in es {
+                docs.push(printer.pp_iri_ref(e))
+            }
+            printer
+                .doc
+                .nil()
+                .append(printer.keyword("EXTRA "))
+                .append(printer.doc.intersperse(docs, printer.doc.space()))
+        }
     }
 
     fn pp_node_constraint(&self, nc: &NodeConstraint) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.opt_pp(nc.node_kind(), self.pp_node_kind())
             .append(self.opt_pp(nc.datatype(), self.pp_datatype()))
             .append(self.opt_pp(nc.values(), self.pp_value_set()))
+            .append(self.opt_pp(nc.xs_facet(), self.pp_xsfacets()))
     }
 
     fn pp_node_kind(
@@ -283,6 +321,80 @@ where
                 "]",
             ))
         }
+    }
+
+    fn pp_xsfacets(
+        &self,
+    ) -> impl Fn(&Vec<XsFacet>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        move |xsfacets, printer| {
+            let mut docs = Vec::new();
+            for v in xsfacets {
+                docs.push(printer.pp_xsfacet(v))
+            }
+            printer
+                .doc
+                .space()
+                .append(printer.doc.intersperse(docs, printer.doc.space()))
+        }
+    }
+
+    fn pp_xsfacet(&self, xsfacet: &XsFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match xsfacet {
+            XsFacet::NumericFacet(nf) => self.pp_numericfacet(nf),
+            XsFacet::StringFacet(sf) => self.pp_stringfacet(sf),
+        }
+    }
+
+    fn pp_numericfacet(&self, nf: &NumericFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match nf {
+            NumericFacet::FractionDigits(fd) => self
+                .keyword("FractionDigits")
+                .append(self.space())
+                .append(self.pp_usize(fd)),
+            NumericFacet::TotalDigits(td) => self
+                .keyword("TotalDigits")
+                .append(self.space())
+                .append(self.pp_usize(td)),
+            NumericFacet::MinInclusive(m) => self
+                .keyword("MinInclusive")
+                .append(self.space())
+                .append(self.pp_numeric_literal(m)),
+            NumericFacet::MaxInclusive(m) => self
+                .keyword("MaxInclusive")
+                .append(self.space())
+                .append(self.pp_numeric_literal(m)),
+            NumericFacet::MinExclusive(m) => self
+                .keyword("MinExclusive")
+                .append(self.space())
+                .append(self.pp_numeric_literal(m)),
+            NumericFacet::MaxExclusive(m) => self
+                .keyword("MaxExclusive")
+                .append(self.space())
+                .append(self.pp_numeric_literal(m)),
+        }
+    }
+
+    fn pp_stringfacet(&self, sf: &StringFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match sf {
+            StringFacet::Length(l) => self
+                .keyword("Length")
+                .append(self.space())
+                .append(self.pp_usize(l)),
+            StringFacet::MinLength(l) => self
+                .keyword("MinLength")
+                .append(self.space())
+                .append(self.pp_usize(l)),
+            StringFacet::MaxLength(l) => self
+                .keyword("MaxLength")
+                .append(self.space())
+                .append(self.pp_usize(l)),
+            StringFacet::Pattern(pat) => self.pp_pattern(pat),
+        }
+    }
+
+    fn pp_pattern(&self, pattern: &Pattern) -> DocBuilder<'a, Arena<'a, A>, A> {
+        let str = format!("/{pattern:?}/");
+        self.doc.text(str)
     }
 
     fn pp_datatype(
@@ -338,8 +450,27 @@ where
         }
     }
 
+    fn pp_numeric_literal(&self, value: &NumericLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match value {
+            NumericLiteral::Integer(n) => self.pp_isize(n),
+            NumericLiteral::Decimal(d) => self.pp_decimal(d),
+        }
+    }
+
     fn pp_bnode(&self, value: &String) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text("_:").append(self.doc.text(value.clone()))
+    }
+
+    fn pp_isize(&self, value: &isize) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_decimal(&self, value: &Decimal) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_usize(&self, value: &usize) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
     }
 
     fn pp_iri_ref(&self, value: &IriRef) -> DocBuilder<'a, Arena<'a, A>, A> {
@@ -408,10 +539,8 @@ where
     }
 
     fn pp_iri_unqualified(&self, iri: &IriS) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.doc
-            .text("<")
-            .append(self.doc.text(iri.to_string()))
-            .append(self.doc.text(">"))
+        let str = format!("<{}>", iri.to_string());
+        self.doc.text(str)
     }
 
     fn pp_iri(&self, iri: &IriS) -> DocBuilder<'a, Arena<'a, A>, A> {
