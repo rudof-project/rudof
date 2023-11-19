@@ -73,6 +73,12 @@ pub enum ParseError {
     #[error("Expected annotation")]
     ExpectedAnnotation,
 
+    #[error("Expected code in semantic action")]
+    Code,
+
+    #[error("Expected code declaration")]
+    CodeDeclaration,
+
     #[error("Expected base declaration")]
     ExpectedBaseDecl,
 

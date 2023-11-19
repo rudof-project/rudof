@@ -315,7 +315,7 @@ fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 
 /// `[7]   	startActions	   ::=   	codeDecl+`
 fn start_actions(i: Span) -> IRes<ShExStatement> {
-    let (i, cs) = many1(code_decl)(i)?;
+    let (i, cs) = many1(code_decl())(i)?;
     Ok((i, ShExStatement::StartActions { actions: cs }))
 }
 
@@ -1121,7 +1121,7 @@ fn iri_or_literal(i: Span) -> IRes<ObjectValue> {
 
 /// `[59]   	semanticActions	   ::=   	codeDecl*`
 fn semantic_actions(i: Span) -> IRes<Option<Vec<SemAct>>> {
-    let (i, sas) = many0(code_decl)(i)?;
+    let (i, sas) = many0(code_decl())(i)?;
     if sas.is_empty() {
         Ok((i, None))
     } else {
@@ -1130,13 +1130,15 @@ fn semantic_actions(i: Span) -> IRes<Option<Vec<SemAct>>> {
 }
 
 /// `[60]   	codeDecl	   ::=   	'%' iri (CODE | '%')`
-fn code_decl(i: Span) -> IRes<SemAct> {
-    let (i, (_, iri, code)) = tuple((char('%'), iri, code_or_percent))(i)?;
+fn code_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SemAct> {
+    traced("code_decl", map_error(move |i| {
+    let (i, (_, _, iri, _, code)) = tuple((char('%'), tws0, cut(iri), tws0, cut(code_or_percent)))(i)?;
     Ok((i, SemAct::new(IriRef::from(iri), code)))
+    }, || ShExParseError::CodeDeclaration))
 }
 
 fn code_or_percent(i: Span) -> IRes<Option<String>> {
-    let (i, maybe_code) = alt((code, percent_code))(i)?;
+    let (i, maybe_code) = alt((code(), percent_code))(i)?;
     Ok((i, maybe_code))
 }
 
@@ -1334,17 +1336,83 @@ fn triple_expr_label(i: Span) -> IRes<Ref> {
 }
 
 /// `[67]   	<CODE>	   ::=   	"{" ([^%\\] | "\\" [%\\] | UCHAR)* "%" "}"`
-fn code(i: Span) -> IRes<Option<String>> {
-    let (i, str) = delimited(char('{'), code_str, char('}'))(i)?;
-    Ok((i, Some(str.to_string())))
+fn code<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<String>> {
+    traced("code", map_error(move |i| {
+    let (i, (_, str, _, _, _)) = tuple((char('{'), cut(code_str), cut(char('%')), tws0, cut(char('}'))))(i)?;
+    let str = unescape_code(str.fragment());
+    Ok((i, Some(str)))
+    }, || ShExParseError::Code))
 }
 
-fn code_str(i: Span) -> IRes<&str> {
-    // Pending
-    fail(i)
+fn unescape_code(str: &str) -> String {
+    let non_escaped = ['%', '\\'];
+    let mut queue : VecDeque<_> = str.chars().collect();
+    let mut r = String::new();
+    while let Some(c) = queue.pop_front() {
+        if c != '\\' {
+            r.push(c);
+            continue;
+        }
+        match queue.pop_front() {
+            Some(c) if non_escaped.contains(&c) => {
+                r.push('\\');
+                r.push(c)
+            }
+            Some('u') => {
+                let mut s = String::new();
+                for _ in 0..4 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_pattern: \\u is not followed by 4 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                let c = char::from_u32(u).unwrap(); 
+                r.push(c)
+            }
+            Some('U') => {
+                let mut s = String::new();
+                for _ in 0..8 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_pattern: \\u is not followed by 8 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                let c = char::from_u32(u).unwrap(); 
+                r.push(c)
+            }
+            Some(c) => r.push(c),
+            None => panic!("unescape pattern. No more characters after \\")
+        }
+    }
+    r
 }
 
 
+/// from [67] code_str = ([^%\\] | "\\" [%\\] | UCHAR)*
+fn code_str(i: Span) -> IRes<Span> {
+    recognize(many0(alt(
+      (recognize(none_of(REQUIRES_ESCAPE_CODE)),
+       escaped_code,
+       uchar
+      )
+    )))(i)
+}
+
+/// Characters requiring escape sequences in patterns
+/// %, 5C = \
+const REQUIRES_ESCAPE_CODE: &str = "%\u{5C}";
+
+/// from [67] escaped_code = "\\" [%\\]
+fn escaped_code(i: Span) -> IRes<Span> {
+    recognize(preceded(token(r"\"), one_of(r#"%\"#)))(i)
+}
+  
 /// `[68]   	<REPEAT_RANGE>	   ::=   	"{" INTEGER ( "," (INTEGER | "*")? )? "}"`
 fn repeat_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
     traced("repeat_range", map_error(move |i| {
@@ -1413,12 +1481,12 @@ fn regexp(i: Span) -> IRes<Pattern> {
     } else {
         Some(flags.to_string())
     };
-    let str = unscape_pattern(str.fragment());
+    let str = unescape_pattern(str.fragment());
     Ok((i, Pattern { str, flags }))
 }
 
 /// unescape characters in pattern strings
-fn unscape_pattern(str: &str) -> String {
+fn unescape_pattern(str: &str) -> String {
     let non_escaped = ['t','n','r','-', '\\'];
     let mut queue : VecDeque<_> = str.chars().collect();
     let mut r = String::new();
@@ -1471,13 +1539,13 @@ fn unscape_pattern(str: &str) -> String {
 fn pattern(i: Span) -> IRes<Span> {
     recognize(many1(alt(
         (recognize(none_of(REQUIRES_ESCAPE_PATTERN)),
-         epattern,
+         escaped_pattern,
          uchar)
     )))(i)
 }
 
-/// from [72b] epattern = '\\' [nrt\\|.?*+(){}$-\[\]^/]
-fn epattern(i: Span) -> IRes<Span> {
+/// from [72b] escaped_pattern = '\\' [nrt\\|.?*+(){}$-\[\]^/]
+fn escaped_pattern(i: Span) -> IRes<Span> {
   recognize(preceded(token(r"\"), one_of(r#"nrt\|.?*+(){}$-[]^/"#)))(i)
 }
 

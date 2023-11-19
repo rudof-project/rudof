@@ -8,8 +8,8 @@ use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, IriRef, NodeConstraint, NodeKind,
-    NumericFacet, NumericLiteral, Pattern, Ref, Schema, Shape, ShapeDecl, ShapeExpr, StringFacet,
-    TripleExpr, XsFacet,
+    NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
+    StringFacet, TripleExpr, XsFacet,
 };
 
 #[derive(Default, Debug, Clone)]
@@ -77,6 +77,7 @@ where
     fn pp_schema(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.opt_pp(self.schema.prefixmap(), self.pp_prefix_map())
             .append(self.opt_pp(self.schema.base(), self.pp_base()))
+            .append(self.opt_pp(self.schema.start_actions(), self.pp_actions()))
             .append(self.opt_pp(self.schema.start(), self.pp_start()))
             .append(self.opt_pp(self.schema.shapes(), self.pp_shape_decls()))
     }
@@ -212,13 +213,14 @@ where
             } => {
                 let doc_expr = match value_expr {
                     Some(se) => printer.pp_shape_expr(se),
-                    None => printer.doc.nil(),
+                    None => printer.doc.text("."),
                 };
                 printer
                     .pp_iri_ref(predicate)
                     .append(self.doc.space())
                     .append(doc_expr)
                     .append(self.pp_cardinality(min, max))
+                    .append(self.opt_pp((*sem_acts).clone(), self.pp_actions()))
             }
             TripleExpr::TripleExprRef(_) => todo!(),
         }
@@ -503,6 +505,35 @@ where
         } else {
             self.doc.text(s)
         }
+    }
+
+    fn pp_actions(
+        &self,
+    ) -> impl Fn(&Vec<SemAct>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        move |actions, printer| {
+            let mut docs = Vec::new();
+            for a in actions {
+                docs.push(printer.pp_action(a))
+            }
+            printer
+                .doc
+                .intersperse(docs, printer.doc.hardline())
+                .append(printer.doc.hardline())
+        }
+    }
+
+    fn pp_action(&self, a: &SemAct) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc
+            .text("%")
+            .append(self.pp_iri_ref(&a.name()))
+            .append(match a.code() {
+                None => self.doc.text("%"),
+                Some(str) => self
+                    .doc
+                    .text("{")
+                    .append(self.doc.text(str))
+                    .append(self.doc.text("%}")),
+            })
     }
 
     fn pp_base(
