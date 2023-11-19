@@ -393,7 +393,11 @@ where
     }
 
     fn pp_pattern(&self, pattern: &Pattern) -> DocBuilder<'a, Arena<'a, A>, A> {
-        let str = format!("/{pattern:?}/");
+        let flags = match &pattern.flags {
+            Some(flags) => flags.clone(),
+            None => "".to_string(),
+        };
+        let str = format!("/{}/{}", pattern.str, flags);
         self.doc.text(str)
     }
 

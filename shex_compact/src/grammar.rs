@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use colored::*;
-use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}, result};
+use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}, result, collections::VecDeque};
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1, is_not},
@@ -14,7 +14,7 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet,
 };
 use rust_decimal::Decimal;
 use log;
@@ -151,9 +151,13 @@ pub fn comment(input: Span) -> IRes<()> {
         // a comment that immediately precedes the end of the line –
         // this must come after the normal line comment above
         value((), tag("#")),
+        value((), multi_comment)
     ))(input)
 }
 
+pub fn multi_comment(i: Span) -> IRes<()> {
+    value((), delimited(tag("/*"), is_not("*/"), tag("*/")))(i)
+}
 
 /// A combinator that recognises an arbitrary amount of whitespace and
 /// comments.
@@ -615,7 +619,7 @@ fn xs_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 fn string_facet(i: Span) -> IRes<XsFacet> {
     alt((
         string_length,
-        // regexp
+        map(regexp, |p| XsFacet::StringFacet(StringFacet::Pattern(p)))
     ))(i)
 }
 
@@ -1272,6 +1276,7 @@ pub fn hex(input: Span) -> IRes<Span> {
 const HEXDIGIT: &str = "0123456789ABCDEFabcdef";
 
 /// Characters requiring escape sequences in single-line string literals.
+/// 22 = ", 5C = \, 0A = \n, 0D = \r
 const REQUIRES_ESCAPE: &str = "\u{22}\u{5C}\u{0A}\u{0D}";
 
 
@@ -1282,12 +1287,12 @@ pub fn uchar(input: Span) -> IRes<Span> {
     )))(input)
 }
 
-pub fn echar(input: Span) -> IRes<Span> {
+fn echar(input: Span) -> IRes<Span> {
     recognize(preceded(token(r"\"), one_of(r#"tbnrf"'\"#)))(input)
 }
 
 /// 
-pub fn lang_string(i: Span) -> IRes<Lang> {
+fn lang_string(i: Span) -> IRes<Lang> {
     let (i, lang_str) = preceded(
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),
@@ -1394,6 +1399,96 @@ fn at_pname_ns(i: Span) -> IRes<ShapeExpr> {
 fn at_pname_ln(i: Span) -> IRes<ShapeExpr> {
     let (i, (_, _, pname_ln)) = tuple((char('@'), tws0, pname_ln))(i)?;
     Ok((i, ShapeExpr::iri_ref(pname_ln)))
+}
+
+/// `[72] <REGEXP>	::= '/' ([^/\\\n\r]
+/// | '\\' [nrt\\|.?*+(){}$-\[\]^/]
+/// | UCHAR
+/// )+ '/' [smix]*`
+fn regexp(i: Span) -> IRes<Pattern> {
+    let(i, (_, str, _, flags)) = tuple((char('/'), pattern, cut(char('/')), flags))(i)?;
+    let flags = flags.fragment();
+    let flags = if flags.is_empty() {
+        None 
+    } else {
+        Some(flags.to_string())
+    };
+    let str = unscape_pattern(str.fragment());
+    Ok((i, Pattern { str, flags }))
+}
+
+/// unescape characters in pattern strings
+fn unscape_pattern(str: &str) -> String {
+    let non_escaped = ['t','n','r','-', '\\'];
+    let mut queue : VecDeque<_> = str.chars().collect();
+    let mut r = String::new();
+    while let Some(c) = queue.pop_front() {
+        if c != '\\' {
+            r.push(c);
+            continue;
+        }
+        match queue.pop_front() {
+            Some(c) if non_escaped.contains(&c) => {
+                r.push('\\');
+                r.push(c)
+            }
+            Some('u') => {
+                let mut s = String::new();
+                for _ in 0..4 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_pattern: \\u is not followed by 4 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                let c = char::from_u32(u).unwrap(); 
+                r.push(c)
+            }
+            Some('U') => {
+                let mut s = String::new();
+                for _ in 0..8 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_pattern: \\u is not followed by 8 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                let c = char::from_u32(u).unwrap(); 
+                r.push(c)
+            }
+            Some(c) => r.push(c),
+            None => panic!("unescape pattern. No more characters after \\")
+        }
+    }
+    r
+}
+
+/// [72b] from [72] pattern = ([^/\\\n\r] | '\\' [nrt\\|.?*+(){}$-\[\]^/] | UCHAR) +
+fn pattern(i: Span) -> IRes<Span> {
+    recognize(many1(alt(
+        (recognize(none_of(REQUIRES_ESCAPE_PATTERN)),
+         epattern,
+         uchar)
+    )))(i)
+}
+
+/// from [72b] epattern = '\\' [nrt\\|.?*+(){}$-\[\]^/]
+fn epattern(i: Span) -> IRes<Span> {
+  recognize(preceded(token(r"\"), one_of(r#"nrt\|.?*+(){}$-[]^/"#)))(i)
+}
+
+/// Characters requiring escape sequences in patterns
+/// 2F = /, 5C = \, 0A = \n, 0D = \r
+const REQUIRES_ESCAPE_PATTERN: &str = "\u{2F}\u{5C}\u{0A}\u{0D}";
+
+
+/// `from [72] flags = [smix]*`
+fn flags(i: Span) -> IRes<Span> {
+    recognize(many0(alt((char('s'), char('m'), char('i'), char('x')))))(i)
 }
 
 /// `[136s]   	iri	   ::=   	IRIREF | prefixedName`
