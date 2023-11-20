@@ -7,9 +7,9 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    object_value::ObjectValue, value_set_value::ValueSetValue, IriRef, NodeConstraint, NodeKind,
-    NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
-    StringFacet, TripleExpr, XsFacet,
+    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, IriRef, NodeConstraint,
+    NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl,
+    ShapeExpr, StringFacet, TripleExpr, XsFacet,
 };
 
 #[derive(Default, Debug, Clone)]
@@ -203,6 +203,7 @@ where
             } => todo!(),
             TripleExpr::TripleConstraint {
                 id,
+                negated,
                 inverse,
                 predicate,
                 value_expr,
@@ -216,13 +217,33 @@ where
                     None => printer.doc.text("."),
                 };
                 printer
-                    .pp_iri_ref(predicate)
+                    .doc
+                    .nil()
+                    .append(self.pp_negated(negated))
+                    .append(self.pp_inverse(inverse))
+                    .append(self.pp_iri_ref(predicate))
                     .append(self.doc.space())
                     .append(doc_expr)
                     .append(self.pp_cardinality(min, max))
                     .append(self.opt_pp((*sem_acts).clone(), self.pp_actions()))
             }
             TripleExpr::TripleExprRef(_) => todo!(),
+        }
+    }
+
+    // type DB<'a, A> = DocBuilder<'a, Arena<'a, A>, A>;
+
+    fn pp_negated(&self, negated: &Option<bool>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match negated {
+            Some(true) => self.doc.text("!"),
+            _ => self.doc.nil(),
+        }
+    }
+
+    fn pp_inverse(&self, inverse: &Option<bool>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match inverse {
+            Some(true) => self.doc.text("^"),
+            _ => self.doc.nil(),
         }
     }
 
@@ -463,8 +484,8 @@ where
         }
     }
 
-    fn pp_bnode(&self, value: &String) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.doc.text("_:").append(self.doc.text(value.clone()))
+    fn pp_bnode(&self, value: &BNode) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(format!("{value}"))
     }
 
     fn pp_isize(&self, value: &isize) -> DocBuilder<'a, Arena<'a, A>, A> {

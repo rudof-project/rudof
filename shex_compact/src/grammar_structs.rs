@@ -116,3 +116,14 @@ pub(crate) enum NumericRange {
     MaxInclusive,
     MaxExclusive,
 }
+
+pub(crate) struct SenseFlags {
+    pub(crate) inverse: Option<bool>,
+    pub(crate) negated: Option<bool>,
+}
+
+impl SenseFlags {
+    pub(crate) fn extract(&self) -> (Option<bool>, Option<bool>) {
+        (self.negated, self.inverse)
+    }
+}

@@ -190,7 +190,7 @@ impl CompiledSchema {
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             }
             Ref::BNode { value } => {
-                let label = ShapeLabel::from_bnode_str((*value).clone());
+                let label = ShapeLabel::from_bnode((*value).clone());
                 Ok(label)
             }
         }?;

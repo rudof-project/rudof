@@ -10,7 +10,7 @@ use crate::{LocatedParseError, Span};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
-    #[error("Nom Parsing error: {err:?}")]
+    #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
     #[error(transparent)]
@@ -49,6 +49,18 @@ pub enum ParseError {
     #[error("Expected shape expression declaration")]
     ExpectedShapeExprDecl,
 
+    #[error("Expected value set")]
+    ValueSetFacets,
+
+    #[error("Expected literal node constraint")]
+    LitNodeConstraint,
+
+    #[error("Expected shape expression definition or external ")]
+    ShapeExprOrExternal,
+
+    #[error("Expected non literal node constraint followed by optional shape or shape reference")]
+    NonLitNodeConstraintOptShapeOrRef,
+
     #[error("Expected prefixed name")]
     ExpectedPrefixedName,
 
@@ -70,14 +82,44 @@ pub enum ParseError {
     #[error("Expected rest of cardinality declaration after comma")]
     ExpectedRestRepeatRange,
 
+    #[error("Expected IRI or Literal")]
+    ExpectedIriOrLiteral,
+
+    #[error("Expected Literal")]
+    Literal,
+
+    #[error("Expected Shape Atom")]
+    ShapeAtom,
+
     #[error("Expected annotation")]
     ExpectedAnnotation,
+
+    #[error("Expected triple expression")]
+    TripleExpression,
+
+    #[error("Expected string literal between single quotes")]
+    StringLiteralQuote,
+
+    #[error("Expected RDF Literal")]
+    RDFLiteral,
+
+    #[error("Expected triple expression between parenthesis")]
+    BracketedTripleExpr,
+
+    #[error("Expected OneOf triple expression")]
+    OneOfTripleExpr,
 
     #[error("Expected code in semantic action")]
     Code,
 
     #[error("Expected code declaration")]
     CodeDeclaration,
+
+    #[error("Expected unary triple expression")]
+    UnaryTripleExpr,
+
+    #[error("Expected include")]
+    Include,
 
     #[error("Expected base declaration")]
     ExpectedBaseDecl,

@@ -290,6 +290,7 @@ impl SchemaJsonCompiler {
             }
             ast::TripleExpr::TripleConstraint {
                 id: _,
+                negated: _,
                 inverse: _,
                 predicate,
                 value_expr,
