@@ -1,1 +1,2 @@
-<S1> [ 'a' ]
+prefix e: <http://example.org/>
+e:S {}

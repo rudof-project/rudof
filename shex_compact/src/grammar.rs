@@ -16,7 +16,6 @@ use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
     Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, TripleExprLabel, BNode,
 };
-use rust_decimal::Decimal;
 use log;
 use thiserror::Error;
 
@@ -354,7 +353,7 @@ fn external(i: Span) -> IRes<ShapeExpr> {
     Ok((i, ShapeExpr::external()))
 }
 
-/// `[10]   	shapeExpression	   ::=   	shapeOr`
+/// `[10] shapeExpression ::= shapeOr`
 fn shape_expression(i: Span) -> IRes<ShapeExpr> {
     shape_or(i)
 }
@@ -566,7 +565,7 @@ fn datatype_facets(i: Span) -> IRes<NodeConstraint> {
 
 fn value_set_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
   traced("value_set_facets", map_error(move |i| {
-    let (i, (vs, _, facets)) = tuple((value_set, tws1, facets()))(i)?;
+    let (i, (vs, _, facets)) = tuple((value_set, tws0, facets()))(i)?;
     Ok((i, vs.with_xsfacets(facets)))
   }, || ShExParseError::ValueSetFacets))
 }
@@ -2227,6 +2226,26 @@ mod tests {
             ValueSetValue::literal("a", None, None)
             ];
         let expected = NodeConstraint::new().with_values(expected_values);
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_node_constraint_value_set() {
+        let (_, result) = lit_node_constraint()(Span::new("[ 'a' ]")).unwrap();
+        let expected_values = vec![
+            ValueSetValue::literal("a", None, None)
+            ];
+        let expected = NodeConstraint::new().with_values(expected_values);
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_shape_atom_node_constraint() {
+        let (_, result) = lit_node_constraint_shape_expr(Span::new("[ 'a' ]")).unwrap();
+        let expected_values = vec![
+            ValueSetValue::literal("a", None, None)
+            ];
+        let expected = ShapeExpr::NodeConstraint(NodeConstraint::new().with_values(expected_values));
         assert_eq!(result, expected)
     }
 

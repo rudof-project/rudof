@@ -159,14 +159,23 @@ impl<'a> Iterator for StatementIterator<'a> {
 
 #[cfg(test)]
 mod tests {
+    use shex_ast::{Ref, Shape};
+
     use super::*;
 
     #[test]
     fn test_prefix() {
-        let str = r#"prefix e: <http://example.org/>"#;
+        let str = r#"
+ prefix e: <http://example.org/>
+ e:S {}
+ "#;
         let schema = ShExParser::parse(str.to_string(), None).unwrap();
         let mut expected = Schema::new();
         expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
+        expected.add_shape(
+            Ref::iri_unchecked("http://example.org/S"),
+            ShapeExpr::Shape(Shape::new(None, None, None)),
+        );
         assert_eq!(schema, expected)
     }
 }

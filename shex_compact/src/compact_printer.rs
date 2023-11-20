@@ -13,12 +13,47 @@ use shex_ast::{
 };
 
 #[derive(Default, Debug, Clone)]
-pub struct ShExFormatter {}
+pub struct ShExFormatter {
+    keyword_color: Option<Color>,
+    qualify_prefix_color: Option<Color>,
+    qualify_semicolon_color: Option<Color>,
+    qualify_localname_color: Option<Color>,
+}
 
 impl ShExFormatter {
+    pub fn with_keyword_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.keyword_color = color;
+        self
+    }
+    pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.qualify_prefix_color = color;
+        self
+    }
+    pub fn with_semicolon_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.qualify_semicolon_color = color;
+        self
+    }
+
+    pub fn with_qualify_localname_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.qualify_localname_color = color;
+        self
+    }
+
+    pub fn without_colors(mut self) -> ShExFormatter {
+        self.keyword_color = None;
+        self.qualify_localname_color = None;
+        self.qualify_prefix_color = None;
+        self.qualify_semicolon_color = None;
+        self
+    }
+
     pub fn format_schema(&self, schema: &Schema) -> String {
         let arena = Arena::<()>::new();
-        let printer = ShExCompactPrinter::new(schema, &arena);
+        let mut printer = ShExCompactPrinter::new(schema, &arena);
+        printer = printer.with_keyword_color(self.keyword_color);
+        printer = printer.with_qualify_localname_color(self.qualify_localname_color);
+        printer = printer.with_qualify_prefix_color(self.qualify_prefix_color);
+        printer = printer.with_qualify_semicolon_color(self.qualify_semicolon_color);
         printer.pretty_print()
     }
 }
@@ -66,6 +101,26 @@ where
 
     pub fn with_width(mut self, width: usize) -> Self {
         self.width = width;
+        self
+    }
+
+    pub fn with_keyword_color(mut self, color: Option<Color>) -> Self {
+        self.keyword_color = color;
+        self
+    }
+
+    pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
+        self.prefixmap = self.prefixmap.with_qualify_prefix_color(color);
+        self
+    }
+
+    pub fn with_qualify_semicolon_color(mut self, color: Option<Color>) -> Self {
+        self.prefixmap = self.prefixmap.with_qualify_semicolon_color(color);
+        self
+    }
+
+    pub fn with_qualify_localname_color(mut self, color: Option<Color>) -> Self {
+        self.prefixmap = self.prefixmap.with_qualify_localname_color(color);
         self
     }
 
@@ -694,10 +749,12 @@ mod tests {
         pm.insert("", &IriS::new_unchecked("http://example.org/"));
         pm.insert("schema", &IriS::new_unchecked("https://schema.org/"));
         let schema = Schema::new().with_prefixmap(Some(pm));
-        let s = ShExFormatter::default().format_schema(&schema);
+        let s = ShExFormatter::default()
+            .without_colors()
+            .format_schema(&schema);
         assert_eq!(
             s,
-            "prefix : <http://example.org/>\nprefix schema: <https://schema.org/>"
+            "prefix : <http://example.org/>\nprefix schema: <https://schema.org/>\n"
         );
     }
 }
