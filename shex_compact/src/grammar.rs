@@ -830,7 +830,8 @@ fn closed<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
 fn extra_property_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
     traced("extra_property_set", 
     map_error(move |i| {
-    let (i, (_, ps)) = tuple((token_tws("EXTRA"), cut(many1(predicate))))(i)?;
+    let (i, (_, ps)) = tuple((token_tws("EXTRA"), cut(many1(tuple((predicate, tws0))))))(i)?;
+    let ps = ps.into_iter().map(|(p,_)| p).collect();
     Ok((i, Qualifier::Extra(ps)))
     }, || ShExParseError::ExpectedEXTRAPropertySet))
 }
@@ -1085,7 +1086,7 @@ fn value_set_value(i: Span) -> IRes<ValueSetValue> {
         // Pending
         iri_range,
         literal_range,
-        // language_range,
+        language_range(),
         // exclusion_plus
     ))(i)
 }
@@ -1116,7 +1117,7 @@ fn exclusion(i: Span) -> IRes<Exclusion> {
 fn exc(i: Span) -> IRes<Exclusion> {
     let (i, e) = alt((
         iri,
-        // literal,
+        // literal(),
         // lang_tag
     ))(i)?;
     Ok((i, ()))
@@ -1151,6 +1152,53 @@ fn literal_exclusion(i: Span) -> IRes<Exclusion> {
     // Ok((i, Exclusion::))
 }
 
+/// `[55] languageRange ::= LANGTAG ('~' languageExclusion*)?`
+/// `                     | '@' '~' languageExclusion*`
+fn language_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+  traced("language_range", map_error(move |i| { alt((
+    language_range1(),
+    language_range2() 
+  ))(i) }, || ShExParseError::LanguageRange))
+}
+
+/// `From [55] languageRange1 = LANGTAG ('~' languageExclusion*)?`
+fn language_range1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+    traced("language_range1", map_error(move |i| { 
+        let (i, (lang_tag, _, maybe_stem_exclusions)) = 
+          tuple((lang_tag, tws0, opt(tuple((token_tws("~"), language_exclusions)))))(i)?;
+        let value: ValueSetValue = match maybe_stem_exclusions {
+            None => ValueSetValue::language(lang_tag),
+            Some((_, exclusions)) => if exclusions.is_empty() {
+                ValueSetValue::language_stem(lang_tag)
+            } else {
+                todo!()
+            }
+        };
+        Ok((i, value))  
+    }, || ShExParseError::LanguageRange))
+  }
+
+/// `From [55] languageRange1 = '@' '~' languageExclusion*`
+fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+    traced("language_range2", map_error(move |i| { 
+       let (i, (_,_, exclusions)) = tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
+       todo!()
+     }, || ShExParseError::LanguageRange))
+  }
+
+/// `from [55] language_exclusions = languageExclusion*`
+fn language_exclusions(i: Span) -> IRes<Vec<LanguageExclusion>> {
+    many0(language_exclusion)(i)
+}
+
+type LanguageExclusion = ();
+
+/// `[56]   	languageExclusion	   ::=   	'-' LANGTAG '~'?`
+fn language_exclusion(i: Span) -> IRes<LanguageExclusion> {
+    let (i, (_, lang_tag, maybe_stem)) = tuple((token_tws("-"), lang_tag, opt(token_tws("~"))))(i)?;
+    // Pending 
+    Ok((i, ()))
+}
 /// `[57]   	include	   ::=   	'&' tripleExprLabel`
 fn include_<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     traced("include", map_error(move |i| {
@@ -1241,7 +1289,7 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
   traced("rdf_literal", map_error(move |i| {
     let (i, str) = string()(i)?;
     let (i, maybe_value) = opt(alt((
-        map(lang_string, |lang| ObjectValue::ObjectLiteral {
+        map(lang_tag, |lang| ObjectValue::ObjectLiteral {
             value: str.fragment().to_string(),
             language: Some(lang),
             type_: None
@@ -1369,8 +1417,8 @@ fn echar(input: Span) -> IRes<Span> {
     recognize(preceded(token(r"\"), one_of(r#"tbnrf"'\"#)))(input)
 }
 
-/// 
-fn lang_string(i: Span) -> IRes<Lang> {
+/// `[145s]   	<LANGTAG>	   ::=   	"@" ([a-zA-Z])+ ("-" ([a-zA-Z0-9])+)*`
+fn lang_tag(i:Span) -> IRes<Lang> {
     let (i, lang_str) = preceded(
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),

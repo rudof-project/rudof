@@ -1,8 +1,8 @@
-use std::{result, str::FromStr};
+use std::{result, str::FromStr, fmt};
 
-use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
+use crate::{ast::serde_string_or_struct::*, Deref, DerefError, LangOrWildcard};
 use iri_s::{IriS, IriSError};
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Serializer, de::Visitor};
 use serde_derive::{Deserialize, Serialize};
 use srdf::{lang::Lang, literal::Literal};
 
@@ -57,11 +57,30 @@ pub enum ValueSetValue {
         #[serde(rename = "type")]
         type_: String,
 
-        #[serde(rename = "languageTag")]
-        language_tag: String,
+        #[serde(rename = "languageTag", 
+           serialize_with = "serialize_lang", 
+           deserialize_with = "deserialize_lang")]
+        language_tag: Lang,
     },
-    LanguageStem,
-    LanguageStemRange,
+    LanguageStem {
+        #[serde(rename = "type")]
+        type_: String,
+
+        stem: Lang,
+    },
+    LanguageStemRange {
+        #[serde(rename = "type")]
+        type_: String,
+
+        #[serde(
+            serialize_with = "serialize_string_or_struct",
+            deserialize_with = "deserialize_string_or_struct"
+        )]
+        stem: LangOrWildcard,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
+    },
     ObjectValue(ObjectValueWrapper),
 }
 
@@ -84,6 +103,21 @@ impl ValueSetValue {
     pub fn object_value(value: ObjectValue) -> ValueSetValue {
         ValueSetValue::ObjectValue(ObjectValueWrapper { ov: value })
     }
+
+    pub fn language(lang: Lang) -> ValueSetValue {
+        ValueSetValue::Language { 
+           type_: "Language".to_string(),
+           language_tag: lang
+        }
+    }
+
+    pub fn language_stem(lang: Lang) -> ValueSetValue {
+        ValueSetValue::LanguageStem { 
+           type_: "LanguageStem".to_string(),
+           stem: lang
+        }
+    }
+
 }
 
 impl Deref for ValueSetValue {
@@ -99,6 +133,12 @@ impl Deref for ValueSetValue {
             ValueSetValue::ObjectValue(ov) => {
                 let ov = ov.deref(base, prefixmap)?;
                 Ok(ValueSetValue::ObjectValue(ov))
+            },
+            ValueSetValue::Language { type_, language_tag } => {
+                Ok(ValueSetValue::Language { type_: type_.clone(), language_tag: language_tag.clone() })
+            }
+            ValueSetValue::LanguageStem { type_, stem } => {
+                Ok(ValueSetValue::LanguageStem { type_: type_.clone(), stem: stem.clone() })
             }
             _ => {
                 todo!()
@@ -165,3 +205,36 @@ impl FromStr for ValueSetValue {
         }))
     }
 }
+
+fn serialize_lang<S>(p: &Lang, serializer: S) -> result::Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+   serializer.serialize_str(p.value().as_str())
+}
+
+fn deserialize_lang<'de, D>(deserializer: D) -> Result<Lang, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct LangVisitor;
+
+        impl<'de> Visitor<'de> for LangVisitor {
+            type Value = Lang;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Lang")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Lang::new(v))
+            }
+  
+
+        }
+
+        deserializer.deserialize_str(LangVisitor)
+    }

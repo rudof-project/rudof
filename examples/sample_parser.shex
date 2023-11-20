@@ -1,2 +1,1 @@
-prefix e: <http://example.org/>
-e:S {}
+<S> EXTRA <p> <q> {}

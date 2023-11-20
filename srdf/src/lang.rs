@@ -13,6 +13,10 @@ impl Lang {
             lang: str.to_string(),
         }
     }
+
+    pub fn value(&self) -> String {
+        self.lang.clone()
+    }
 }
 
 impl Display for Lang {

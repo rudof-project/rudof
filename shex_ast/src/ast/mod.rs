@@ -4,6 +4,7 @@ pub mod deref;
 pub mod iri;
 pub mod iri_ref;
 pub mod iri_ref_or_wildcard;
+pub mod lang_or_wildcard;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod numeric_literal;
@@ -33,6 +34,7 @@ pub use bnode::*;
 pub use iri::*;
 pub use iri_ref::*;
 pub use iri_ref_or_wildcard::*;
+pub use lang_or_wildcard::*;
 pub use node_constraint::*;
 pub use node_kind::*;
 pub use numeric_literal::*;
@@ -81,6 +83,7 @@ mod tests {
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
+                negated: None,
                 inverse: None,
                 predicate: IriS::new_unchecked("http://a.example/p1").into(),
                 value_expr: None,
@@ -107,6 +110,7 @@ mod tests {
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
+                negated: None,
                 inverse: None,
                 predicate: IriS::new_unchecked("http://a.example/p1").into(),
                 value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
@@ -133,6 +137,7 @@ mod tests {
         let S5 = IriS::from_str("http://all.example/S5").unwrap();
         let expected = TripleExpr::TripleConstraint {
             id: None,
+            negated: None,
             inverse: None,
             predicate: p1.into(),
             value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {

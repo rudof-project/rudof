@@ -85,6 +85,9 @@ pub enum ParseError {
     #[error("Expected IRI or Literal")]
     ExpectedIriOrLiteral,
 
+    #[error("Expected language range")]
+    LanguageRange,
+
     #[error("Expected Literal")]
     Literal,
 
