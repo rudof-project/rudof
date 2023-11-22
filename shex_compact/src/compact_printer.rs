@@ -528,6 +528,7 @@ where
         match value {
             NumericLiteral::Integer(n) => self.pp_isize(n),
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
+            NumericLiteral::Double(d) => self.pp_decimal(d), // TODO: Review
         }
     }
 

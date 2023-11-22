@@ -8,6 +8,7 @@ use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 pub enum NumericLiteral {
     Integer(isize),
     Decimal(Decimal),
+    Double(Decimal),
 }
 
 impl NumericLiteral {
@@ -49,7 +50,11 @@ impl Serialize for NumericLiteral {
             NumericLiteral::Decimal(d) => {
                 let f: f64 = (*d).try_into().unwrap();
                 serializer.serialize_f64(f)
-            } // NumericLiteral::Double(d) => serializer.serialize_f64(*d),
+            }
+            NumericLiteral::Double(d) => {
+                let f: f64 = (*d).try_into().unwrap();
+                serializer.serialize_f64(f)
+            }
         }
     }
 }
@@ -124,6 +129,12 @@ impl<'de> Deserialize<'de> for NumericLiteral {
         }
 
         deserializer.deserialize_any(NumericLiteralVisitor)
+    }
+}
+
+impl ToString for NumericLiteral {
+    fn to_string(&self) -> String {
+        todo!()
     }
 }
 

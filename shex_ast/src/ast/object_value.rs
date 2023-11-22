@@ -50,10 +50,8 @@ impl ObjectValue {
 
     pub fn bool(b: bool) -> ObjectValue {
         let dt_boolean = IriRef::Iri(IriS::xsd_boolean());
-        ObjectValue::ObjectLiteral {
-            value: b.to_string(),
-            language: None,
-            type_: Some(dt_boolean),
+        ObjectValue::BooleanLiteral {
+            value: b
         }
     }
 }

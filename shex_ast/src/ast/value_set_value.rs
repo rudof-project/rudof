@@ -1,13 +1,14 @@
-use std::{fmt, result, str::FromStr};
-
+use crate::NumericLiteral;
 use crate::{ast::serde_string_or_struct::*, Deref, DerefError, LangOrWildcard};
 use iri_s::IriSError;
+use serde::ser::SerializeMap;
 use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
 };
 use serde_derive::Serialize;
 use srdf::lang::Lang;
+use std::{fmt, result, str::FromStr};
 
 use super::{
     iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard,
@@ -211,14 +212,19 @@ impl ValueSetValueType {
             "IriStemRange" => Some(ValueSetValueType::IriStemRange),
             "LanguageStemRange" => Some(ValueSetValueType::LanguageStemRange),
             "LiteralStemRange" => Some(ValueSetValueType::LiteralStemRange),
-            "http://www.w3.org/2001/XMLSchema#boolean" => Some(ValueSetValueType::Boolean),
-            "http://www.w3.org/2001/XMLSchema#decimal" => Some(ValueSetValueType::Decimal),
-            "http://www.w3.org/2001/XMLSchema#double" => Some(ValueSetValueType::Double),
-            "http://www.w3.org/2001/XMLSchema#integer" => Some(ValueSetValueType::Integer),
+            BOOLEAN_STR => Some(ValueSetValueType::Boolean),
+            DECIMAL_STR => Some(ValueSetValueType::Decimal),
+            DOUBLE_STR => Some(ValueSetValueType::Double),
+            INTEGER_STR => Some(ValueSetValueType::Integer),
             _ => None,
         }
     }
 }
+
+const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
+const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
+const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
 impl Serialize for ValueSetValue {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
@@ -226,12 +232,34 @@ impl Serialize for ValueSetValue {
         S: Serializer,
     {
         match self {
-            ValueSetValue::ObjectValue(v) => {
-                let s = format!("objectValue {v:?}");
-                serializer.serialize_str(s.as_str())
+            ValueSetValue::ObjectValue(v) => match v {
+                ObjectValue::BooleanLiteral { value } => {
+                    let mut map = serializer.serialize_map(Some(2))?;
+                    map.serialize_entry("type", BOOLEAN_STR)?;
+                    let value_str = if *value { "true" } else { "false" };
+                    map.serialize_entry("value", value_str)?;
+                    map.end()
+                }
+                ObjectValue::NumericLiteral(num) => {
+                    let mut map = serializer.serialize_map(Some(2))?;
+                    map.serialize_entry("type", get_type_str(num))?;
+                    map.serialize_entry("value", &num.to_string());
+                    map.end()
+                }
+                _ => {
+                    todo!()
+                }
             },
             _ => todo!(),
         }
+    }
+}
+
+fn get_type_str(n: &NumericLiteral) -> &str {
+    match n {
+        NumericLiteral::Integer(_) => INTEGER_STR,
+        NumericLiteral::Double(_) => DOUBLE_STR,
+        NumericLiteral::Decimal(_) => DECIMAL_STR,
     }
 }
 
@@ -401,6 +429,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
+                    
                     Some(v) => Err(de::Error::custom(format!(
                         "Unknown ValueSetValueType {v:?}"
                     ))),
