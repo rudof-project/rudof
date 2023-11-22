@@ -539,7 +539,7 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(&ovw.ov)?;
+            let ov = cnv_object_value(&ovw)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -628,6 +628,9 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
             Ok(ObjectValue::IriRef(iri))
         }
         ast::ObjectValue::NumericLiteral(n) => {
+            todo!()
+        }
+        ast::ObjectValue::BooleanLiteral { value } => {
             todo!()
         }
         ast::ObjectValue::ObjectLiteral {

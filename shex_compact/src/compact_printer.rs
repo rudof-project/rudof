@@ -493,26 +493,21 @@ where
         match v {
             ValueSetValue::LanguageStem { stem } => todo!(),
             ValueSetValue::LanguageStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::ObjectValue(ov) => self.pp_object_value(&ov.ov),
+            ValueSetValue::ObjectValue(ov) => self.pp_object_value(&ov),
             ValueSetValue::IriStem { stem } => todo!(),
-            ValueSetValue::IriStemRange {
-                stem,
-                exclusions,
-            } => todo!(),
+            ValueSetValue::IriStemRange { stem, exclusions } => todo!(),
             ValueSetValue::LiteralStem { stem } => todo!(),
-            ValueSetValue::LiteralStemRange {
-                stem,
-                exclusions,
-            } => todo!(),
-            ValueSetValue::Language {
-                language_tag,
-            } => todo!(),
+            ValueSetValue::LiteralStemRange { stem, exclusions } => todo!(),
+            ValueSetValue::Language { language_tag } => todo!(),
         }
     }
 
     fn pp_object_value(&self, v: &ObjectValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
             ObjectValue::IriRef(i) => self.pp_iri_ref(i),
+            ObjectValue::BooleanLiteral { value } => {
+                todo!()
+            }
             ObjectValue::ObjectLiteral {
                 type_,
                 value,

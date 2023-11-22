@@ -15,6 +15,11 @@ pub enum ObjectValue {
 
     NumericLiteral(NumericLiteral),
 
+    #[serde(serialize_with = "serialize_boolean_literal")]
+    BooleanLiteral {
+        value: bool,
+    },
+
     ObjectLiteral {
         value: String,
 
@@ -65,6 +70,9 @@ impl Deref for ObjectValue {
                 Ok(ObjectValue::IriRef(new_iri_ref))
             }
             ObjectValue::NumericLiteral(n) => Ok(ObjectValue::NumericLiteral(n.clone())),
+            ObjectValue::BooleanLiteral { value } => Ok(ObjectValue::BooleanLiteral {
+                value: value.clone(),
+            }),
             ObjectValue::ObjectLiteral {
                 value,
                 language,
@@ -126,5 +134,15 @@ impl Deref for ObjectValueWrapper {
     {
         let ov = self.ov.deref(base, prefixmap)?;
         Ok(ObjectValueWrapper { ov })
+    }
+}
+
+fn serialize_boolean_literal<S>(value: &bool, serializer: S) -> result::Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match value {
+        false => serializer.serialize_str("false"),
+        true => serializer.serialize_str("true"),
     }
 }

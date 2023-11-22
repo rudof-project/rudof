@@ -1095,10 +1095,16 @@ type Exclusion = ();
 
 /// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
 fn iri_range(i: Span) -> IRes<ValueSetValue> {
-    let (i, (iri, _, maybe_exc)) = tuple((iri, tws0, opt(tilde_exclusion)))(i)?;
-    // Pending char_exclusion
-    let vs = ValueSetValue::iri(iri);
-    Ok((i, vs))
+    let (i, (iri, _, maybe_stem)) = tuple((iri, tws0, opt(tilde_exclusion)))(i)?;
+    let value = match maybe_stem {
+        None => ValueSetValue::iri(iri),
+        Some(excs) => if excs.is_empty() {
+           ValueSetValue::IriStem { stem: iri }
+        } else {
+            todo!()
+        }
+    };
+    Ok((i, value))
 }
 
 fn tilde_exclusion(i: Span) -> IRes<Vec<Exclusion>> {

@@ -10,7 +10,7 @@ use serde::{
 use super::ValueSetValue;
 use crate::{
     Deref, DerefError, IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet,
-    ValueSetValueWrapper, XsFacet,
+    XsFacet,
 };
 use serde::ser::SerializeMap;
 
@@ -26,7 +26,7 @@ pub struct NodeConstraint {
     xs_facet: Option<Vec<XsFacet>>,
 
     // #[serde(default, skip_serializing_if = "Option::is_none")]
-    values: Option<Vec<ValueSetValueWrapper>>,
+    values: Option<Vec<ValueSetValue>>,
 }
 
 impl NodeConstraint {
@@ -131,28 +131,28 @@ impl NodeConstraint {
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
-        let mut vs: Vec<ValueSetValueWrapper> = Vec::with_capacity(values.len());
+        let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
         for v in values {
-            vs.push(ValueSetValueWrapper::new(v));
+            vs.push(v);
         }
         self.values = Some(vs);
         self
     }
 
-    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
+    /*    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
         self.values = Some(values);
         self
-    }
+    } */
 
     pub fn values(&self) -> Option<Vec<ValueSetValue>> {
         match &self.values {
             None => None,
-            Some(values) => {
-                let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
-                for v in values {
-                    vs.push(v.value());
+            Some(vs) => {
+                let mut r = Vec::new();
+                for v in vs {
+                    r.push((*v).clone())
                 }
-                Some(vs)
+                Some(r)
             }
         }
     }
@@ -168,7 +168,7 @@ impl Deref for NodeConstraint {
         Self: Sized,
     {
         let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
-        let values = <ValueSetValueWrapper as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
+        let values = <ValueSetValue as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
         Ok(NodeConstraint {
             node_kind: self.node_kind.clone(),
             datatype,
@@ -363,7 +363,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 let mut totaldigits: Option<usize> = None;
                 let mut fractiondigits: Option<usize> = None;
                 let mut flags: Option<String> = None;
-                let mut values: Option<Vec<ValueSetValueWrapper>> = None;
+                let mut values: Option<Vec<ValueSetValue>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::NodeKind => {
@@ -394,7 +394,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             if values.is_some() {
                                 return Err(de::Error::duplicate_field("values"));
                             }
-                            let vs: Vec<ValueSetValueWrapper> = map.next_value()?;
+                            let vs: Vec<ValueSetValue> = map.next_value()?;
                             values = Some(vs)
                         }
                         Field::Pattern => {
@@ -495,7 +495,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                     nc = nc.with_datatype(datatype)
                 }
                 if let Some(values) = values {
-                    nc = nc.with_values_wrapped(values)
+                    nc = nc.with_values(values)
                 }
                 if let Some(minlength) = minlength {
                     nc = nc.with_minlength(minlength)
