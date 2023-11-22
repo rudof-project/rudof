@@ -491,23 +491,20 @@ where
 
     fn pp_value_set_value(&self, v: &ValueSetValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
-            ValueSetValue::LanguageStem { type_, stem } => todo!(),
-            ValueSetValue::LanguageStemRange { type_, stem, exclusions } => todo!(),
+            ValueSetValue::LanguageStem { stem } => todo!(),
+            ValueSetValue::LanguageStemRange { stem, exclusions } => todo!(),
             ValueSetValue::ObjectValue(ov) => self.pp_object_value(&ov.ov),
-            ValueSetValue::IriStem { type_, stem } => todo!(),
+            ValueSetValue::IriStem { stem } => todo!(),
             ValueSetValue::IriStemRange {
-                type_,
                 stem,
                 exclusions,
             } => todo!(),
-            ValueSetValue::LiteralStem { type_, stem } => todo!(),
+            ValueSetValue::LiteralStem { stem } => todo!(),
             ValueSetValue::LiteralStemRange {
-                type_,
                 stem,
                 exclusions,
             } => todo!(),
             ValueSetValue::Language {
-                type_,
                 language_tag,
             } => todo!(),
         }

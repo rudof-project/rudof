@@ -1,10 +1,13 @@
 use std::{result, str::FromStr, fmt};
 
 use crate::{ast::serde_string_or_struct::*, Deref, DerefError, LangOrWildcard};
-use iri_s::{IriS, IriSError};
-use serde::{Serialize, Serializer, de::Visitor};
-use serde_derive::{Deserialize, Serialize};
-use srdf::{lang::Lang, literal::Literal};
+use iri_s::IriSError;
+use serde::{
+    de::{self, MapAccess, Visitor, Unexpected},
+    Deserialize, Serialize, Serializer,
+};
+use serde_derive::{Serialize};
+use srdf::lang::Lang;
 
 use super::{
     iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard,
@@ -12,19 +15,13 @@ use super::{
     string_or_wildcard::StringOrWildcard, ObjectValue, ObjectValueWrapper,
 };
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type")]
 pub enum ValueSetValue {
     IriStem {
-        #[serde(rename = "type")]
-        type_: String,
-
         stem: IriRef,
     },
     IriStemRange {
-        #[serde(rename = "type")]
-        type_: String,
-
         #[serde(
             serialize_with = "serialize_string_or_struct",
             deserialize_with = "deserialize_string_or_struct"
@@ -35,15 +32,9 @@ pub enum ValueSetValue {
         exclusions: Option<Vec<StringOrIriStemWrapper>>,
     },
     LiteralStem {
-        #[serde(rename = "type")]
-        type_: String,
-
         stem: String,
     },
     LiteralStemRange {
-        #[serde(rename = "type")]
-        type_: String,
-
         #[serde(
             serialize_with = "serialize_string_or_struct",
             deserialize_with = "deserialize_string_or_struct"
@@ -54,24 +45,18 @@ pub enum ValueSetValue {
         exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
     },
     Language {
-        #[serde(rename = "type")]
-        type_: String,
-
         #[serde(rename = "languageTag", 
            serialize_with = "serialize_lang", 
            deserialize_with = "deserialize_lang")]
         language_tag: Lang,
     },
     LanguageStem {
-        #[serde(rename = "type")]
-        type_: String,
-
+        #[serde(rename = "stem", 
+           serialize_with = "serialize_lang", 
+           deserialize_with = "deserialize_lang")]
         stem: Lang,
     },
     LanguageStemRange {
-        #[serde(rename = "type")]
-        type_: String,
-
         #[serde(
             serialize_with = "serialize_string_or_struct",
             deserialize_with = "deserialize_string_or_struct"
@@ -81,14 +66,12 @@ pub enum ValueSetValue {
         #[serde(skip_serializing_if = "Option::is_none")]
         exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
     },
-    ObjectValue(ObjectValueWrapper),
+    ObjectValue(ObjectValue),
 }
 
 impl ValueSetValue {
     pub fn iri(iri: IriRef) -> ValueSetValue {
-        ValueSetValue::ObjectValue(ObjectValueWrapper {
-            ov: ObjectValue::IriRef(iri),
-        })
+        ValueSetValue::ObjectValue(ObjectValue::IriRef(iri))
     }
 
     pub fn literal(value: &str, language: Option<Lang>, type_: Option<IriRef>) -> ValueSetValue {
@@ -97,23 +80,21 @@ impl ValueSetValue {
             language,
             type_,
         };
-        ValueSetValue::ObjectValue(ObjectValueWrapper { ov })
+        ValueSetValue::ObjectValue(ov)
     }
 
     pub fn object_value(value: ObjectValue) -> ValueSetValue {
-        ValueSetValue::ObjectValue(ObjectValueWrapper { ov: value })
+        ValueSetValue::ObjectValue(ov)
     }
 
     pub fn language(lang: Lang) -> ValueSetValue {
         ValueSetValue::Language { 
-           type_: "Language".to_string(),
            language_tag: lang
         }
     }
 
     pub fn language_stem(lang: Lang) -> ValueSetValue {
         ValueSetValue::LanguageStem { 
-           type_: "LanguageStem".to_string(),
            stem: lang
         }
     }
@@ -134,11 +115,11 @@ impl Deref for ValueSetValue {
                 let ov = ov.deref(base, prefixmap)?;
                 Ok(ValueSetValue::ObjectValue(ov))
             },
-            ValueSetValue::Language { type_, language_tag } => {
-                Ok(ValueSetValue::Language { type_: type_.clone(), language_tag: language_tag.clone() })
+            ValueSetValue::Language { language_tag } => {
+                Ok(ValueSetValue::Language { language_tag: language_tag.clone() })
             }
-            ValueSetValue::LanguageStem { type_, stem } => {
-                Ok(ValueSetValue::LanguageStem { type_: type_.clone(), stem: stem.clone() })
+            ValueSetValue::LanguageStem { stem } => {
+                Ok(ValueSetValue::LanguageStem { stem: stem.clone() })
             }
             _ => {
                 todo!()
@@ -147,7 +128,7 @@ impl Deref for ValueSetValue {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+/*#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
 pub struct ValueSetValueWrapper {
     #[serde(
@@ -179,7 +160,7 @@ impl Deref for ValueSetValueWrapper {
         let vs = self.vs.deref(base, prefixmap)?;
         Ok(ValueSetValueWrapper { vs })
     }
-}
+}*/
 
 impl SerializeStringOrStruct for ValueSetValue {
     fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
@@ -187,9 +168,7 @@ impl SerializeStringOrStruct for ValueSetValue {
         S: Serializer,
     {
         match &self {
-            ValueSetValue::ObjectValue(ObjectValueWrapper {
-                ov: ObjectValue::IriRef(ref r),
-            }) => r.serialize(serializer),
+            ValueSetValue::ObjectValue(ObjectValue::IriRef(ref r)) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }
@@ -200,17 +179,15 @@ impl FromStr for ValueSetValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(ValueSetValue::ObjectValue(ObjectValueWrapper {
-            ov: ObjectValue::IriRef(iri_ref),
-        }))
+        Ok(ValueSetValue::ObjectValue(ObjectValue::IriRef(iri_ref)))
     }
 }
 
-fn serialize_lang<S>(p: &Lang, serializer: S) -> result::Result<S::Ok, S::Error>
+fn serialize_lang<S>(lang: &Lang, serializer: S) -> result::Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-   serializer.serialize_str(p.value().as_str())
+   serializer.serialize_str(lang.value().as_str())
 }
 
 fn deserialize_lang<'de, D>(deserializer: D) -> Result<Lang, D::Error>
@@ -235,6 +212,100 @@ fn deserialize_lang<'de, D>(deserializer: D) -> Result<Lang, D::Error>
   
 
         }
-
         deserializer.deserialize_str(LangVisitor)
     }
+
+
+impl<'de> Deserialize<'de> for ValueSetValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            enum Field {
+                Type,
+                Value,
+                Language,
+                Stem,
+                Exclusions
+            }
+    
+            impl<'de> Deserialize<'de> for Field {
+                fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    struct FieldVisitor;
+    
+                    impl<'de> Visitor<'de> for FieldVisitor {
+                        type Value = Field;
+    
+                        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                            formatter.write_str(
+                                "field of value set value: `type` or `value` or `language` or `stem` or `exclusions`",
+                            )
+                        }
+    
+                        fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                        where
+                            E: de::Error,
+                        {
+                            match value {
+                                "type" => Ok(Field::Type),
+                                "value" => Ok(Field::Value),
+                                "stem" => Ok(Field::Stem),
+                                "language" => Ok(Field::Language),
+                                "exclusions" => Ok(Field::Exclusions),
+                                _ => Err(de::Error::unknown_field(value, FIELDS)),
+                            }
+                        }
+                    }
+    
+                    deserializer.deserialize_identifier(FieldVisitor)
+                }
+            }
+    
+            struct ValueSetValueVisitor;
+    
+            impl<'de> Visitor<'de> for ValueSetValueVisitor {
+                type Value = ValueSetValue;
+    
+                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    formatter.write_str("ValueSet value")
+                }
+
+                fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+                  where E: de::Error {
+                     FromStr::from_str(s).map_err(|e| {
+                        de::Error::invalid_value(Unexpected::Str(s), &self)
+                     })
+                  }
+
+                fn visit_map<V>(self, mut map: V) -> Result<ValueSetValue, V::Error>
+                where
+                    V: MapAccess<'de>,
+                {
+                    let mut type_: Option<String> = None;
+                    while let Some(key) = map.next_key()? {
+                        match key {
+                            Field::Type => {
+                                if type_.is_some() {
+                                    return Err(de::Error::duplicate_field("type"));
+                                }
+                                let value: String = map.next_value()?;
+                                if value != "NodeConstraint" {
+                                    return Err(de::Error::custom(format!(
+                                        "Expected NodeConstraint, found: {value}"
+                                    )));
+                                }
+                                type_ = Some("NodeConstraint".to_string());
+                            }
+                        }
+                    }
+                    Ok(nc)
+                }
+            }
+    
+            deserializer.deserialize_any(ValueSetValueVisitor)
+        }
+    }
+    
