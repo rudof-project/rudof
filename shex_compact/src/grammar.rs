@@ -550,7 +550,7 @@ fn lit_node_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint>
 
 fn literal_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
     traced("literal_facets", move |i| {
-     let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws1, facets()))(i)?;
+     let (i, (_, _, facets)) = tuple((tag_no_case("LITERAL"), tws0, facets()))(i)?;
      Ok((i, NodeConstraint::new()
             .with_node_kind(NodeKind::Literal)
             .with_xsfacets(facets))
