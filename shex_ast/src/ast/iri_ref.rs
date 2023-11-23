@@ -1,10 +1,9 @@
 use std::{fmt::Display, str::FromStr};
 
+use crate::{Deref, DerefError};
 use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
-use void::Void;
-use crate::{Deref, DerefError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -33,7 +32,6 @@ impl IriRef {
             }
         }
     }
-
 }
 
 impl Deref for IriRef {
@@ -50,25 +48,32 @@ impl Deref for IriRef {
                     Ok(IriRef::Iri(iri))
                 }
             },
-            IriRef::Prefixed { prefix, local } => {
-                match prefixmap {
-                    None => Err(DerefError::NoPrefixMapPrefixedName { 
-                        prefix: prefix.clone(), 
-                        local: local.clone() }
-                    ),
-                    Some(prefixmap) => {
-                        let iri = prefixmap.resolve_prefix_local(prefix, local)?;
-                        Ok(IriRef::Iri(iri))
-                    }
+            IriRef::Prefixed { prefix, local } => match prefixmap {
+                None => Err(DerefError::NoPrefixMapPrefixedName {
+                    prefix: prefix.clone(),
+                    local: local.clone(),
+                }),
+                Some(prefixmap) => {
+                    let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+                    Ok(IriRef::Iri(iri))
                 }
-            }
+            },
         }
     }
 }
 
 impl TryFrom<&str> for IriRef {
     type Error = IriSError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        FromStr::from_str(value)
+    }
+}
+
+impl FromStr for IriRef {
+    type Err = IriSError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_s = IriS::from_str(s)?;
         Ok(IriRef::Iri(iri_s))
     }
@@ -109,4 +114,3 @@ impl Display for IriRef {
         Ok(())
     }
 }
-

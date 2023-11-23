@@ -1,6 +1,7 @@
 pub mod annotation;
 pub mod bnode;
 pub mod deref;
+pub mod exclusion;
 pub mod iri;
 pub mod iri_ref;
 pub mod iri_ref_or_wildcard;
@@ -29,6 +30,7 @@ pub mod xs_facet;
 
 use crate::ast::serde_string_or_struct::*;
 pub use crate::deref::*;
+pub use crate::exclusion::*;
 pub use annotation::*;
 pub use bnode::*;
 pub use iri::*;

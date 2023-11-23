@@ -1132,9 +1132,14 @@ fn exc(i: Span) -> IRes<Exclusion> {
 /// `[53]  literalRange	::= literal ('~' literalExclusion*)?`
 fn literal_range(i: Span) -> IRes<ValueSetValue> {
    let (i, (literal, _, maybe_exc)) = tuple((literal(), tws0, opt(tilde_literal_exclusion)))(i)?;
-
-   // Pending literal_exclusion
-   let vs = ValueSetValue::object_value(literal);
+   let vs = match maybe_exc {
+     None => ValueSetValue::object_value(literal),
+     Some(excs) => if excs.is_empty() {
+       ValueSetValue::literal_stem(literal.lexical_form())
+     } else {
+        todo!()
+     }
+   };
    Ok((i, vs))
 }
 
@@ -1273,7 +1278,7 @@ fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
 /// `[16t]   	numericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE`
 pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     alt((
-        map(double, |n| NumericLiteral::decimal_from_f64(n)), 
+        map(double, |n| NumericLiteral::double(n)), 
         decimal,
         map(integer, |n| NumericLiteral::Integer(n))
     ))(i)
@@ -1777,7 +1782,7 @@ fn decimal(i: Span) -> IRes<NumericLiteral> {
             preceded(token("."), digit1),
         ),
         |(whole, fraction)| {
-            Ok::<_, ParseIntError>(NumericLiteral::decimal(whole.parse()?, fraction.parse()?))
+            Ok::<_, ParseIntError>(NumericLiteral::decimal_from_parts(whole.parse()?, fraction.parse()?))
         },
     )(i)
 }

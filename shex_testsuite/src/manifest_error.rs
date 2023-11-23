@@ -62,9 +62,10 @@ pub enum ManifestError {
     #[error("Expected OK but obtained {value} for {entry}")]
     ExpectedOkButObtained { value: ResultValue, entry: String },
 
-    #[error("Schema parsed is different to schema serialized after parsing\n{schema_parsed:?}\n{schema_parsed_after_serialization:?}")]
+    #[error("Schema parsed is different to schema serialized after parsing\nSchema parsed from JSON\n{schema_parsed:?}\nSchema serialized: {schema_serialized}\nSchema serialized after parsing:\n{schema_parsed_after_serialization:?}")]
     SchemasDifferent {
         schema_parsed: Schema,
+        schema_serialized: String,
         schema_parsed_after_serialization: Schema,
     },
 

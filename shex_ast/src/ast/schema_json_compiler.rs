@@ -551,9 +551,10 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
         ast::ValueSetValue::LiteralStemRange {
             stem, exclusions, ..
         } => {
-            let stem = cnv_string_or_wildcard(&stem)?;
+            todo!()
+            /*let stem = cnv_string_or_wildcard(&stem)?;
             let exclusions = cnv_opt_vec(&exclusions, cnv_string_or_literalstem)?;
-            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
+            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })*/
         }
         _ => todo!(),
     }

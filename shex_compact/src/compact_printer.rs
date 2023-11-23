@@ -528,7 +528,7 @@ where
         match value {
             NumericLiteral::Integer(n) => self.pp_isize(n),
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
-            NumericLiteral::Double(d) => self.pp_decimal(d), // TODO: Review
+            NumericLiteral::Double(d) => self.pp_double(d), // TODO: Review
         }
     }
 
@@ -543,6 +543,11 @@ where
     fn pp_decimal(&self, value: &Decimal) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())
     }
+
+    fn pp_double(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
 
     fn pp_usize(&self, value: &usize) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())

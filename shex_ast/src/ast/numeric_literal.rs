@@ -8,15 +8,15 @@ use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 pub enum NumericLiteral {
     Integer(isize),
     Decimal(Decimal),
-    Double(Decimal),
+    Double(f64),
 }
 
 impl NumericLiteral {
-    /*     pub fn double(d: f64) -> NumericLiteral {
-        NumericLiteral::Double(d)
-    }*/
+    pub fn decimal(d: Decimal) -> NumericLiteral {
+        NumericLiteral::Decimal(d)
+    }
 
-    pub fn decimal(whole: i64, fraction: u32) -> NumericLiteral {
+    pub fn decimal_from_parts(whole: i64, fraction: u32) -> NumericLiteral {
         let s = format!("{whole}.{fraction}");
         let d = Decimal::from_str_exact(s.as_str()).unwrap();
         NumericLiteral::Decimal(d)
@@ -34,6 +34,10 @@ impl NumericLiteral {
 
     pub fn integer(n: isize) -> NumericLiteral {
         NumericLiteral::Integer(n)
+    }
+
+    pub fn double(d: f64) -> NumericLiteral {
+        NumericLiteral::Double(d)
     }
 }
 
@@ -134,7 +138,11 @@ impl<'de> Deserialize<'de> for NumericLiteral {
 
 impl ToString for NumericLiteral {
     fn to_string(&self) -> String {
-        todo!()
+        match self {
+            NumericLiteral::Double(d) => format!("{}", d),
+            NumericLiteral::Integer(n) => n.to_string(),
+            NumericLiteral::Decimal(d) => d.to_string(),
+        }
     }
 }
 

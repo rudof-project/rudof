@@ -1,12 +1,12 @@
-use crate::NumericLiteral;
 use crate::{ast::serde_string_or_struct::*, Deref, DerefError, LangOrWildcard};
+use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion, NumericLiteral};
 use iri_s::IriSError;
+use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
 };
-use serde_derive::Serialize;
 use srdf::lang::Lang;
 use std::{fmt, result, str::FromStr};
 
@@ -23,15 +23,14 @@ pub enum ValueSetValue {
     },
     IriStemRange {
         stem: IriRefOrWildcard,
-        exclusions: Option<Vec<StringOrIriStemWrapper>>,
+        exclusions: Option<Vec<IriExclusion>>,
     },
     LiteralStem {
         stem: String,
     },
     LiteralStemRange {
         stem: StringOrWildcard,
-
-        exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
+        exclusions: Option<Vec<LiteralExclusion>>,
     },
     Language {
         language_tag: Lang,
@@ -41,7 +40,7 @@ pub enum ValueSetValue {
     },
     LanguageStemRange {
         stem: LangOrWildcard,
-        exclusions: Option<Vec<StringOrLiteralStemWrapper>>,
+        exclusions: Option<Vec<LanguageExclusion>>,
     },
 
     ObjectValue(ObjectValue),
@@ -72,6 +71,10 @@ impl ValueSetValue {
     pub fn language_stem(lang: Lang) -> ValueSetValue {
         ValueSetValue::LanguageStem { stem: lang }
     }
+
+    pub fn literal_stem(stem: String) -> ValueSetValue {
+        ValueSetValue::LiteralStem { stem }
+    }
 }
 
 impl Deref for ValueSetValue {
@@ -95,46 +98,28 @@ impl Deref for ValueSetValue {
                 Ok(ValueSetValue::LanguageStem { stem: stem.clone() })
             }
             ValueSetValue::IriStem { stem } => Ok(ValueSetValue::IriStem { stem: stem.clone() }),
-            _ => {
-                todo!()
+            ValueSetValue::IriStemRange { stem, exclusions } => Ok(ValueSetValue::IriStemRange {
+                stem: stem.clone(),
+                exclusions: exclusions.clone(),
+            }),
+            ValueSetValue::LanguageStemRange { stem, exclusions } => {
+                Ok(ValueSetValue::LanguageStemRange {
+                    stem: stem.clone(),
+                    exclusions: exclusions.clone(),
+                })
+            }
+            ValueSetValue::LiteralStem { stem } => {
+                Ok(ValueSetValue::LiteralStem { stem: stem.clone() })
+            }
+            ValueSetValue::LiteralStemRange { stem, exclusions } => {
+                Ok(ValueSetValue::LiteralStemRange {
+                    stem: stem.clone(),
+                    exclusions: exclusions.clone(),
+                })
             }
         }
     }
 }
-
-/*#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(transparent)]
-pub struct ValueSetValueWrapper {
-    #[serde(
-        serialize_with = "serialize_string_or_struct",
-        deserialize_with = "deserialize_string_or_struct"
-    )]
-    pub vs: ValueSetValue,
-}
-
-impl ValueSetValueWrapper {
-    pub fn new(vs: ValueSetValue) -> ValueSetValueWrapper {
-        ValueSetValueWrapper { vs: vs }
-    }
-
-    pub fn value(&self) -> ValueSetValue {
-        self.vs.clone()
-    }
-}
-
-impl Deref for ValueSetValueWrapper {
-    fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError>
-    where
-        Self: Sized,
-    {
-        let vs = self.vs.deref(base, prefixmap)?;
-        Ok(ValueSetValueWrapper { vs })
-    }
-}*/
 
 impl SerializeStringOrStruct for ValueSetValue {
     fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
@@ -157,36 +142,6 @@ impl FromStr for ValueSetValue {
     }
 }
 
-fn serialize_lang<S>(lang: &Lang, serializer: S) -> result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(lang.value().as_str())
-}
-
-fn deserialize_lang<'de, D>(deserializer: D) -> Result<Lang, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    struct LangVisitor;
-
-    impl<'de> Visitor<'de> for LangVisitor {
-        type Value = Lang;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("Lang")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            Ok(Lang::new(v))
-        }
-    }
-    deserializer.deserialize_str(LangVisitor)
-}
-
 #[derive(Debug, PartialEq)]
 enum ValueSetValueType {
     IriStem,
@@ -200,23 +155,27 @@ enum ValueSetValueType {
     Integer,
     Decimal,
     Double,
+    Other(IriRef),
 }
 
 impl ValueSetValueType {
-    fn parse(s: &str) -> Option<ValueSetValueType> {
+    fn parse(s: &str) -> Result<ValueSetValueType, IriSError> {
         match s {
-            "IriStem" => Some(ValueSetValueType::IriStem),
-            "LanguageStem" => Some(ValueSetValueType::LanguageStem),
-            "LiteralStem" => Some(ValueSetValueType::LiteralStem),
-            "Language" => Some(ValueSetValueType::Language),
-            "IriStemRange" => Some(ValueSetValueType::IriStemRange),
-            "LanguageStemRange" => Some(ValueSetValueType::LanguageStemRange),
-            "LiteralStemRange" => Some(ValueSetValueType::LiteralStemRange),
-            BOOLEAN_STR => Some(ValueSetValueType::Boolean),
-            DECIMAL_STR => Some(ValueSetValueType::Decimal),
-            DOUBLE_STR => Some(ValueSetValueType::Double),
-            INTEGER_STR => Some(ValueSetValueType::Integer),
-            _ => None,
+            "IriStem" => Ok(ValueSetValueType::IriStem),
+            "LanguageStem" => Ok(ValueSetValueType::LanguageStem),
+            "LiteralStem" => Ok(ValueSetValueType::LiteralStem),
+            "Language" => Ok(ValueSetValueType::Language),
+            "IriStemRange" => Ok(ValueSetValueType::IriStemRange),
+            "LanguageStemRange" => Ok(ValueSetValueType::LanguageStemRange),
+            "LiteralStemRange" => Ok(ValueSetValueType::LiteralStemRange),
+            BOOLEAN_STR => Ok(ValueSetValueType::Boolean),
+            DECIMAL_STR => Ok(ValueSetValueType::Decimal),
+            DOUBLE_STR => Ok(ValueSetValueType::Double),
+            INTEGER_STR => Ok(ValueSetValueType::Integer),
+            other => {
+                let iri = FromStr::from_str(other)?;
+                Ok(ValueSetValueType::Other(iri))
+            }
         }
     }
 }
@@ -243,14 +202,73 @@ impl Serialize for ValueSetValue {
                 ObjectValue::NumericLiteral(num) => {
                     let mut map = serializer.serialize_map(Some(2))?;
                     map.serialize_entry("type", get_type_str(num))?;
-                    map.serialize_entry("value", &num.to_string());
+                    map.serialize_entry("value", &num.to_string())?;
                     map.end()
                 }
-                _ => {
-                    todo!()
+                ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
+                ObjectValue::ObjectLiteral {
+                    value,
+                    language,
+                    type_,
+                } => {
+                    let mut map = serializer.serialize_map(Some(3))?;
+                    match type_ {
+                        Some(t) => map.serialize_entry("type", t.to_string().as_str())?,
+                        None => {}
+                    };
+                    match language {
+                        Some(lan) => map.serialize_entry("language", lan.value().as_str())?,
+                        None => {}
+                    }
+                    map.serialize_entry("value", value)?;
+                    map.end()
                 }
             },
-            _ => todo!(),
+            ValueSetValue::Language { language_tag } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "Language")?;
+                map.serialize_entry("languageTag", &language_tag.value())?;
+                map.end()
+            }
+            ValueSetValue::IriStem { stem } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "IriStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+            ValueSetValue::IriStemRange { stem, exclusions } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "IriStemRange")?;
+                map.serialize_entry("stem", stem)?;
+                map.serialize_entry("exclusions", exclusions)?;
+                map.end()
+            }
+            ValueSetValue::LanguageStem { stem } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LanguageStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+            ValueSetValue::LanguageStemRange { stem, exclusions } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LanguageStemRange")?;
+                map.serialize_entry("stem", stem)?;
+                map.serialize_entry("exclusions", exclusions)?;
+                map.end()
+            }
+            ValueSetValue::LiteralStem { stem } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LiteralStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+            ValueSetValue::LiteralStemRange { stem, exclusions } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LiteralStemRange")?;
+                map.serialize_entry("stem", stem)?;
+                map.serialize_entry("exclusions", exclusions)?;
+                map.end()
+            }
         }
     }
 }
@@ -336,7 +354,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                 E: de::Error,
             {
                 FromStr::from_str(s)
-                    .map_err(|e| de::Error::invalid_value(Unexpected::Str(s), &self))
+                    .map_err(|e| de::Error::custom(format!("Error parsing string `{s}`: {e}")))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<ValueSetValue, V::Error>
@@ -348,7 +366,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                 let mut value: Option<String> = None;
                 let mut language_tag: Option<String> = None;
                 let mut language: Option<String> = None;
-                let mut exclusions: Option<String> = None;
+                let mut exclusions: Option<Vec<Exclusion>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Type => {
@@ -357,13 +375,13 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                             }
                             let value: String = map.next_value()?;
 
-                            if let Some(parsed_type_) = ValueSetValueType::parse(&value.as_str()) {
-                                type_ = Some(parsed_type_)
-                            } else {
-                                return Err(de::Error::custom(format!(
-                                    "Expected ValueSetValue type, found: {value}"
-                                )));
-                            }
+                            let parsed_type_ =
+                                ValueSetValueType::parse(&value.as_str()).map_err(|e| {
+                                    de::Error::custom(format!(
+                                    "Error parsing ValueSetValue type, found: {value}. Error: {e}"
+                                ))
+                                })?;
+                            type_ = Some(parsed_type_);
                         }
                         Field::Value => {
                             if value.is_some() {
@@ -398,6 +416,41 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     }
                 }
                 match type_ {
+                    Some(ValueSetValueType::LiteralStemRange) => match stem {
+                        Some(stem) => match exclusions {
+                            Some(excs) => {
+                                if excs.is_empty() {
+                                    todo!()
+                                } else {
+                                    todo!()
+                                    /*Ok(ValueSetValue::LiteralStemRange {
+                                        stem: stem,
+                                        exclusions: excs,
+                                    })*/
+                                }
+                            }
+                            None => {
+                                todo!()
+                            }
+                        },
+                        None => Err(de::Error::missing_field("stem")),
+                    },
+                    Some(ValueSetValueType::LanguageStemRange) => {
+                        todo!()
+                    }
+                    Some(ValueSetValueType::IriStemRange) => {
+                        todo!()
+                    }
+                    Some(ValueSetValueType::LiteralStem) => match stem {
+                        Some(stem) => Ok(ValueSetValue::LiteralStem { stem: stem }),
+                        None => Err(de::Error::missing_field("stem")),
+                    },
+                    Some(ValueSetValueType::LanguageStem) => match stem {
+                        Some(stem) => Ok(ValueSetValue::LanguageStem {
+                            stem: Lang::new(&stem),
+                        }),
+                        None => Err(de::Error::missing_field("stem")),
+                    },
                     Some(ValueSetValueType::Language) => match language_tag {
                         Some(language_tag) => Ok(ValueSetValue::Language {
                             language_tag: Lang::new(language_tag.as_str()),
@@ -408,7 +461,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         Some(stem) => {
                             let iri_ref = TryFrom::try_from(stem.as_str()).map_err(|e| {
                                 de::Error::custom(format!(
-                                    "Can't parse stem as IRIREF for IriStem: {e}"
+                                    "Can't parse stem `{stem}` as IRIREF for IriStem. Error: {e}"
                                 ))
                             })?;
                             Ok(ValueSetValue::IriStem { stem: iri_ref })
@@ -429,11 +482,79 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
-                    
-                    Some(v) => Err(de::Error::custom(format!(
-                        "Unknown ValueSetValueType {v:?}"
-                    ))),
-                    None => todo!(),
+                    Some(ValueSetValueType::Double) => match value {
+                        Some(s) => {
+                            let n = f64::from_str(&s).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "Can't parse value {s} as double: Error {e}"
+                                ))
+                            })?;
+                            Ok(ValueSetValue::ObjectValue(ObjectValue::NumericLiteral(
+                                NumericLiteral::double(n),
+                            )))
+                        }
+                        None => Err(de::Error::missing_field("value")),
+                    },
+                    Some(ValueSetValueType::Decimal) => match value {
+                        Some(s) => {
+                            let n = Decimal::from_str(&s).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "Can't parse value {s} as decimal: Error {e}"
+                                ))
+                            })?;
+                            Ok(ValueSetValue::ObjectValue(ObjectValue::NumericLiteral(
+                                NumericLiteral::decimal(n),
+                            )))
+                        }
+                        None => Err(de::Error::missing_field("value")),
+                    },
+                    Some(ValueSetValueType::Integer) => match value {
+                        Some(s) => {
+                            let n = isize::from_str(&s).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "Can't parse value {s} as integer: Error {e}"
+                                ))
+                            })?;
+                            Ok(ValueSetValue::ObjectValue(ObjectValue::NumericLiteral(
+                                NumericLiteral::integer(n),
+                            )))
+                        }
+                        None => Err(de::Error::missing_field("value")),
+                    },
+                    Some(ValueSetValueType::Other(iri)) => match value {
+                        Some(v) => match language_tag {
+                            Some(lang) => {
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::ObjectLiteral {
+                                    value: v,
+                                    language: Some(Lang::new(&lang)),
+                                    type_: Some(iri),
+                                }))
+                            }
+                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::ObjectLiteral {
+                                value: v,
+                                language: None,
+                                type_: Some(iri),
+                            })),
+                        },
+                        None => Err(de::Error::missing_field("value")),
+                    },
+                    None => match value {
+                        Some(value) => match language {
+                            Some(language) => {
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::ObjectLiteral {
+                                    value,
+                                    language: Some(Lang::new(&language)),
+                                    type_: None,
+                                }))
+                            }
+                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::ObjectLiteral {
+                                value,
+                                language: None,
+                                type_: None,
+                            })),
+                        },
+                        None => Err(de::Error::missing_field("value")),
+                    },
                 }
             }
         }

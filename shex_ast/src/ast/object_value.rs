@@ -31,12 +31,12 @@ pub enum ObjectValue {
     },
 }
 
-fn serialize_integer_literal<S>(v: &isize, serializer: S) -> result::Result<S::Ok, S::Error>
+/*fn serialize_integer_literal<S>(v: &isize, serializer: S) -> result::Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     v.serialize(serializer)
-}
+}*/
 
 impl ObjectValue {
     pub fn integer(n: isize) -> ObjectValue {
@@ -49,9 +49,16 @@ impl ObjectValue {
     }
 
     pub fn bool(b: bool) -> ObjectValue {
-        let dt_boolean = IriRef::Iri(IriS::xsd_boolean());
-        ObjectValue::BooleanLiteral {
-            value: b
+        ObjectValue::BooleanLiteral { value: b }
+    }
+
+    pub fn lexical_form(&self) -> String {
+        match self {
+            ObjectValue::BooleanLiteral { value: true } => "true".to_string(),
+            ObjectValue::BooleanLiteral { value: false } => "false".to_string(),
+            ObjectValue::IriRef(iri) => iri.to_string(),
+            ObjectValue::NumericLiteral(n) => n.to_string(),
+            ObjectValue::ObjectLiteral { value, .. } => value.to_string(),
         }
     }
 }

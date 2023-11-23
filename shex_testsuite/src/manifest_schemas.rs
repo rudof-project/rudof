@@ -171,7 +171,7 @@ impl SchemasEntry {
                 ManifestError::SchemaParsingAfterSerialization {
                     schema_name: self.name.to_string(),
                     schema_parsed: schema_parsed.clone(),
-                    schema_serialized,
+                    schema_serialized: schema_serialized.clone(),
                     error: e,
                 }
             })?;
@@ -206,6 +206,7 @@ impl SchemasEntry {
         } else {
             Err(ManifestError::SchemasDifferent {
                 schema_parsed,
+                schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization,
             })
         }
