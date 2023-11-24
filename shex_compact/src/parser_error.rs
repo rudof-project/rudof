@@ -73,6 +73,9 @@ pub enum ParseError {
     #[error("Expected triple constraint")]
     ExpectedTripleConstraint,
 
+    #[error("Expected literal range")]
+    ExpectedLiteralRange,
+
     #[error("Expected prefix declaration")]
     ExpectedPrefixDecl,
 

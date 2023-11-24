@@ -624,22 +624,18 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
 
 fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
-        ast::ObjectValue::IriRef(ir) => {
+        ast::ObjectValue::Iri(ir) => {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
-        ast::ObjectValue::NumericLiteral(n) => {
+        ast::ObjectValue::Literal(n) => {
             todo!()
-        }
-        ast::ObjectValue::BooleanLiteral { value } => {
-            todo!()
-        }
-        ast::ObjectValue::ObjectLiteral {
-            value, language, ..
-        } => Ok(ObjectValue::ObjectLiteral {
-            value: value.to_string(),
-            language: language.clone(),
-        }),
+        } /*ast::ObjectValue::ObjectLiteral {
+              value, language, ..
+          } => Ok(ObjectValue::ObjectLiteral {
+              value: value.to_string(),
+              language: language.clone(),
+          })*/
     }
 }
 

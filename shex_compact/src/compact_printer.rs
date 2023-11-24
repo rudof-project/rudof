@@ -7,9 +7,9 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, IriRef, NodeConstraint,
-    NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl,
-    ShapeExpr, StringFacet, TripleExpr, XsFacet,
+    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, IriRef, Literal,
+    NodeConstraint, NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape,
+    ShapeDecl, ShapeExpr, StringFacet, TripleExpr, XsFacet,
 };
 
 #[derive(Default, Debug, Clone)]
@@ -504,16 +504,16 @@ where
 
     fn pp_object_value(&self, v: &ObjectValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
-            ObjectValue::IriRef(i) => self.pp_iri_ref(i),
-            ObjectValue::BooleanLiteral { value } => {
+            ObjectValue::Iri(i) => self.pp_iri_ref(i),
+            ObjectValue::Literal(Literal::BooleanLiteral { value }) => {
                 todo!()
             }
-            ObjectValue::ObjectLiteral {
+            ObjectValue::Literal(Literal::ObjectLiteral {
                 type_,
                 value,
                 language,
-            } => todo!(),
-            ObjectValue::NumericLiteral(_) => todo!(),
+            }) => todo!(),
+            ObjectValue::Literal(Literal::NumericLiteral(_)) => todo!(),
         }
     }
 
@@ -547,7 +547,6 @@ where
     fn pp_double(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())
     }
-
 
     fn pp_usize(&self, value: &usize) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())

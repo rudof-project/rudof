@@ -1,6 +1,7 @@
 use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
+use rust_decimal::Decimal;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
@@ -11,8 +12,12 @@ use crate::{ast::serde_string_or_struct::*, Deref, DerefError, NumericLiteral};
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum ObjectValue {
-    IriRef(IriRef),
+    Iri(IriRef),
+    Literal(Literal),
+}
 
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+pub enum Literal {
     NumericLiteral(NumericLiteral),
 
     #[serde(serialize_with = "serialize_boolean_literal")]
@@ -41,25 +46,45 @@ where
 impl ObjectValue {
     pub fn integer(n: isize) -> ObjectValue {
         let dt_integer = IriRef::Iri(IriS::xsd_integer());
-        ObjectValue::ObjectLiteral {
+        ObjectValue::Literal(Literal::ObjectLiteral {
             value: n.to_string(),
             language: None,
             type_: Some(dt_integer),
-        }
+        })
+    }
+
+    pub fn double(n: f64) -> ObjectValue {
+        ObjectValue::Literal(Literal::NumericLiteral(NumericLiteral::Double(n)))
+    }
+
+    pub fn decimal(n: Decimal) -> ObjectValue {
+        ObjectValue::Literal(Literal::NumericLiteral(NumericLiteral::decimal(n)))
     }
 
     pub fn bool(b: bool) -> ObjectValue {
-        ObjectValue::BooleanLiteral { value: b }
+        ObjectValue::Literal(Literal::BooleanLiteral { value: b })
     }
 
     pub fn lexical_form(&self) -> String {
         match self {
-            ObjectValue::BooleanLiteral { value: true } => "true".to_string(),
-            ObjectValue::BooleanLiteral { value: false } => "false".to_string(),
-            ObjectValue::IriRef(iri) => iri.to_string(),
-            ObjectValue::NumericLiteral(n) => n.to_string(),
-            ObjectValue::ObjectLiteral { value, .. } => value.to_string(),
+            ObjectValue::Iri(iri) => iri.to_string(),
+            ObjectValue::Literal(lit) => lit.lexical_form(),
         }
+    }
+}
+
+impl Literal {
+    pub fn lexical_form(&self) -> String {
+        match self {
+            Literal::BooleanLiteral { value: true } => "true".to_string(),
+            Literal::BooleanLiteral { value: false } => "false".to_string(),
+            Literal::NumericLiteral(n) => n.to_string(),
+            Literal::ObjectLiteral { value, .. } => value.to_string(),
+        }
+    }
+
+    pub fn bool(b: bool) -> Literal {
+        Literal::BooleanLiteral { value: b }
     }
 }
 
@@ -70,15 +95,30 @@ impl Deref for ObjectValue {
         prefixmap: &Option<prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
-            ObjectValue::IriRef(iri_ref) => {
+            ObjectValue::Iri(iri_ref) => {
                 let new_iri_ref = iri_ref.deref(base, prefixmap)?;
-                Ok(ObjectValue::IriRef(new_iri_ref))
+                Ok(ObjectValue::Iri(new_iri_ref))
             }
-            ObjectValue::NumericLiteral(n) => Ok(ObjectValue::NumericLiteral(n.clone())),
-            ObjectValue::BooleanLiteral { value } => Ok(ObjectValue::BooleanLiteral {
+            ObjectValue::Literal(lit) => {
+                let new_lit = lit.deref(base, prefixmap)?;
+                Ok(ObjectValue::Literal(new_lit))
+            }
+        }
+    }
+}
+
+impl Deref for Literal {
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError> {
+        match self {
+            Literal::NumericLiteral(n) => Ok(Literal::NumericLiteral(n.clone())),
+            Literal::BooleanLiteral { value } => Ok(Literal::BooleanLiteral {
                 value: value.clone(),
             }),
-            ObjectValue::ObjectLiteral {
+            Literal::ObjectLiteral {
                 value,
                 language,
                 type_,
@@ -87,7 +127,7 @@ impl Deref for ObjectValue {
                     .as_ref()
                     .map(|dt| dt.deref(base, prefixmap))
                     .transpose()?;
-                Ok(ObjectValue::ObjectLiteral {
+                Ok(Literal::ObjectLiteral {
                     value: value.clone(),
                     language: language.clone(),
                     type_: new_type_,
@@ -102,7 +142,7 @@ impl FromStr for ObjectValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(ObjectValue::IriRef(iri_ref))
+        Ok(ObjectValue::Iri(iri_ref))
     }
 }
 
@@ -112,7 +152,7 @@ impl SerializeStringOrStruct for ObjectValue {
         S: Serializer,
     {
         match &self {
-            ObjectValue::IriRef(ref r) => r.serialize(serializer),
+            ObjectValue::Iri(ref r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

@@ -9,22 +9,73 @@ use srdf::lang::Lang;
 
 use crate::IriRef;
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 pub enum LiteralExclusion {
     Literal(String),
     LiteralStem(String),
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+impl Serialize for LiteralExclusion {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            LiteralExclusion::Literal(str) => serializer.serialize_str(str),
+            LiteralExclusion::LiteralStem(stem) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LiteralStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 pub enum IriExclusion {
     Iri(IriRef),
     IriStem(String),
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+impl Serialize for IriExclusion {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            IriExclusion::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
+            IriExclusion::IriStem(stem) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "IriStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum LanguageExclusion {
     Language(Lang),
     LanguageStem(String),
+}
+
+impl Serialize for LanguageExclusion {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            LanguageExclusion::Language(lang) => serializer.serialize_str(lang.value().as_str()),
+            LanguageExclusion::LanguageStem(stem) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LanguageStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

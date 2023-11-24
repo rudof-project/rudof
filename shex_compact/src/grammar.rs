@@ -14,14 +14,14 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, TripleExprLabel, BNode,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, Literal, IriExclusion,
 };
 use log;
 use thiserror::Error;
 
 use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength, NumericRange, SenseFlags};
 use nom_locate::LocatedSpan;
-use srdf::{lang::Lang, literal::Literal};
+use srdf::lang::Lang;
 
 // Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
 
@@ -1085,17 +1085,15 @@ fn value_set_value(i: Span) -> IRes<ValueSetValue> {
     alt((
         // Pending
         iri_range,
-        literal_range,
+        literal_range(),
         language_range(),
         // exclusion_plus
     ))(i)
 }
 
-type Exclusion = ();
-
 /// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
 fn iri_range(i: Span) -> IRes<ValueSetValue> {
-    let (i, (iri, _, maybe_stem)) = tuple((iri, tws0, opt(tilde_exclusion)))(i)?;
+    let (i, (iri, _, maybe_stem)) = tuple((iri, tws0, opt(tilde_iri_exclusion)))(i)?;
     let value = match maybe_stem {
         None => ValueSetValue::iri(iri),
         Some(excs) => if excs.is_empty() {
@@ -1107,60 +1105,78 @@ fn iri_range(i: Span) -> IRes<ValueSetValue> {
     Ok((i, value))
 }
 
-fn tilde_exclusion(i: Span) -> IRes<Vec<Exclusion>> {
-    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(exclusion)))(i)?;
+fn tilde_iri_exclusion(i: Span) -> IRes<Vec<IriExclusion>> {
+    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(iri_exc)))(i)?;
+    Ok((i, es))
+}
+
+fn tilde_literal_exclusion(i: Span) -> IRes<Vec<LiteralExclusion>> {
+    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(literal_exc)))(i)?;
     Ok((i, es))
 }
 
 /// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
-fn exclusion(i: Span) -> IRes<Exclusion> {
-    let (i, (_, _, _, _, e, _, maybe_tilde)) =
-        tuple((char('.'), tws0, char('-'), tws0, exc, tws0, opt(char('~'))))(i)?;
+fn iri_exc(i: Span) -> IRes<IriExclusion> {
+    let (i, (_, _, e, _, maybe_tilde)) =
+        tuple((token_tws("."), token_tws("-"), iri, tws0, opt(token_tws("~"))))(i)?;
+    // Ok((i, ()))
+    todo!()
+}
+
+fn literal_exc(i: Span) -> IRes<LiteralExclusion> {
+    let (i, (_, _, literal, _, maybe_tilde)) =
+        tuple((token_tws("."), token_tws("-"), literal(), tws0, opt(char('~'))))(i)?;
+    // Ok((i, ()))
+    todo!()
+}
+
+fn lang_exclusion(i: Span) -> IRes<LanguageExclusion> {
+    let (i, (_, _, lang_tag, _, maybe_tilde)) =
+        tuple((token_tws("."), token_tws("-"), lang_tag, tws0, opt(char('~'))))(i)?;
     Ok((i, ()))
 }
 
-/// `from [50] exc = iri | literal | LANGTAG`
-fn exc(i: Span) -> IRes<Exclusion> {
-    let (i, e) = alt((
-        iri,
-        // literal(),
-        // lang_tag
-    ))(i)?;
-    Ok((i, ()))
-}
 
 /// `[53]  literalRange	::= literal ('~' literalExclusion*)?`
-fn literal_range(i: Span) -> IRes<ValueSetValue> {
-   let (i, (literal, _, maybe_exc)) = tuple((literal(), tws0, opt(tilde_literal_exclusion)))(i)?;
-   let vs = match maybe_exc {
-     None => ValueSetValue::object_value(literal),
+fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+   traced("literal_range", map_error(move |i| { 
+    let (i, (literal, _, maybe_exc)) = tuple((literal(), tws0, opt(tilde_literal_exclusion)))(i)?;
+    let vs = match maybe_exc {
+     None => ValueSetValue::ObjectValue(ObjectValue::Literal(literal)),
      Some(excs) => if excs.is_empty() {
        ValueSetValue::literal_stem(literal.lexical_form())
      } else {
         todo!()
      }
-   };
-   Ok((i, vs))
+    };
+     Ok((i, vs))
+    }, || ShExParseError::ExpectedLiteralRange 
+   ))
 }
 
-fn tilde_literal_exclusion(i: Span) -> IRes<Vec<Exclusion>> {
-    let (i, (_, _, es)) = tuple((tilde(), tws0, many0(literal_exclusion)))(i)?;
+/*fn tilde_literal_exclusion<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<Exclusion>> {
+  move |i| {  
+    let (i, (_, es)) = tuple((tilde(), many0(literal_exclusion)))(i)?;
     Ok((i, es))
-}
+  }
+}*/
 
 fn tilde<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
-    move |i| { token("~")(i) }
+    move |i| { token_tws("~")(i) }
 }
 
 fn dash<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
-    move |i| { token("-")(i) }
+    move |i| { token_tws("-")(i) }
 }
 
 /// `[54]   	literalExclusion	   ::=   	'-' literal '~'?`
-fn literal_exclusion(i: Span) -> IRes<Exclusion> {
+fn literal_exclusion(i: Span) -> IRes<LiteralExclusion> {
     let (i, (_, literal, maybe_tilde)) = tuple((dash(), literal(), opt(tilde())))(i)?;
-    todo!()
-    // Ok((i, Exclusion::))
+    let le = match maybe_tilde {
+        Some(_) => LiteralExclusion::LiteralStem(literal.lexical_form()),
+        None => LiteralExclusion::Literal(literal.lexical_form())
+    };
+    Ok((i, le))
 }
 
 /// `[55] languageRange ::= LANGTAG ('~' languageExclusion*)?`
@@ -1230,8 +1246,8 @@ fn annotation<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Annotation> {
 fn iri_or_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
    traced("iri_or_literal", map_error(move |i| {
     alt((
-      map(iri, |i| ObjectValue::IriRef(i)),
-      literal()
+      map(iri, |i| ObjectValue::Iri(i)),
+      map(literal(), |lit| ObjectValue::Literal(lit))
     ))(i)
     }, || ShExParseError::ExpectedIriOrLiteral))
 }
@@ -1265,12 +1281,12 @@ fn percent_code(i: Span) -> IRes<Option<String>> {
 }
 
 /// `[13t] literal	::= rdfLiteral | numericLiteral | booleanLiteral`
-fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
+fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
    traced("literal", map_error(
     move |i| { 
      alt((
       rdf_literal(), 
-      map(numeric_literal, |n| ObjectValue::NumericLiteral(n)), 
+      map(numeric_literal, |n| Literal::NumericLiteral(n)), 
       boolean_literal))(i)
     }, || ShExParseError::Literal))
 }
@@ -1284,8 +1300,8 @@ pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     ))(i)
 }
 
-pub fn boolean_literal(i: Span) -> IRes<ObjectValue> {
-    map(boolean_value, |b| ObjectValue::bool(b))(i)
+pub fn boolean_literal(i: Span) -> IRes<Literal> {
+    map(boolean_value, |b| Literal::bool(b))(i)
 }
 
 pub fn boolean_value(i: Span) -> IRes<bool> {
@@ -1296,17 +1312,17 @@ pub fn boolean_value(i: Span) -> IRes<bool> {
 /// `[65] rdfLiteral ::= langString | string ("^^" datatype)?`
 /// Refactored according to rdfLiteral in Turtle
 /// `rdfLiteral ::= string (LANGTAG | '^^' iri)?`
-fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
+fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
   traced("rdf_literal", map_error(move |i| {
     let (i, str) = string()(i)?;
     let (i, maybe_value) = opt(alt((
-        map(lang_tag, |lang| ObjectValue::ObjectLiteral {
+        map(lang_tag, |lang| Literal::ObjectLiteral {
             value: str.fragment().to_string(),
             language: Some(lang),
             type_: None
         }),
         map(preceded(token("^^"), datatype_iri), |datatype| {
-            ObjectValue::ObjectLiteral {
+            Literal::ObjectLiteral {
                 value: str.fragment().to_string(),
                 language: None,
                 type_: Some(datatype)
@@ -1315,7 +1331,7 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
     )))(i)?;
     let value = match maybe_value {
         Some(v) => v,
-        None => ObjectValue::ObjectLiteral {
+        None => Literal::ObjectLiteral {
             value: str.fragment().to_string(),
             language: None,
             type_: None
