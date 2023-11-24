@@ -34,6 +34,62 @@ pub enum Exclusion {
     IriExclusion(IriExclusion),
 }
 
+#[derive(Debug)]
+pub struct SomeNoLitExclusion {
+    exc: Exclusion,
+}
+
+#[derive(Debug)]
+pub struct SomeNoIriExclusion {
+    exc: Exclusion,
+}
+
+#[derive(Debug)]
+pub struct SomeNoLanguageExclusion {
+    exc: Exclusion,
+}
+
+impl Exclusion {
+    pub fn parse_literal_exclusions(
+        excs: Vec<Exclusion>,
+    ) -> Result<Vec<LiteralExclusion>, SomeNoLitExclusion> {
+        let mut lit_excs = Vec::new();
+        for e in excs {
+            match e {
+                Exclusion::LiteralExclusion(le) => lit_excs.push(le),
+                other => return Err(SomeNoLitExclusion { exc: other }),
+            }
+        }
+        Ok(lit_excs)
+    }
+
+    pub fn parse_iri_exclusions(
+        excs: Vec<Exclusion>,
+    ) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
+        let mut iri_excs = Vec::new();
+        for e in excs {
+            match e {
+                Exclusion::IriExclusion(le) => iri_excs.push(le),
+                other => return Err(SomeNoIriExclusion { exc: other }),
+            }
+        }
+        Ok(iri_excs)
+    }
+
+    pub fn parse_language_exclusions(
+        excs: Vec<Exclusion>,
+    ) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
+        let mut lang_excs = Vec::new();
+        for e in excs {
+            match e {
+                Exclusion::LanguageExclusion(le) => lang_excs.push(le),
+                other => return Err(SomeNoIriExclusion { exc: other }),
+            }
+        }
+        Ok(lang_excs)
+    }
+}
+
 impl Serialize for Exclusion {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where

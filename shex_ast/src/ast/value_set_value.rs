@@ -7,13 +7,13 @@ use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
 };
+use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
 use std::{fmt, result, str::FromStr};
 
 use super::{
-    iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard,
-    string_or_iri_stem::StringOrIriStemWrapper, string_or_literal_stem::StringOrLiteralStemWrapper,
-    string_or_wildcard::StringOrWildcard, ObjectValue,
+    iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
+    ObjectValue,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -281,6 +281,166 @@ fn get_type_str(n: &NumericLiteral) -> &str {
     }
 }
 
+#[derive(Serialize, Debug)]
+enum Stem {
+    Str(String),
+    Wildcard {
+        #[serde(rename = "type")]
+        type_: String,
+    },
+}
+
+#[derive(Debug)]
+struct NoStringOrWildCard;
+
+#[derive(Debug)]
+struct NoString;
+
+#[derive(Debug)]
+struct NoLanguage;
+
+#[derive(Debug)]
+enum ErrStemIriRef {
+    StemIsWildcard,
+    IriError { err: IriSError },
+}
+
+impl Stem {
+    fn as_iri(&self) -> Result<IriRef, ErrStemIriRef> {
+        match self {
+            Stem::Str(s) => {
+                let iri_ref =
+                    IriRef::from_str(s.as_str()).map_err(|e| ErrStemIriRef::IriError { err: e })?;
+                Ok(iri_ref)
+            }
+            _ => Err(ErrStemIriRef::StemIsWildcard),
+        }
+    }
+
+    fn as_language(&self) -> Result<String, NoLanguage> {
+        match self {
+            Stem::Str(s) => Ok(s.clone()),
+            _ => Err(NoLanguage),
+        }
+    }
+
+    fn as_string(&self) -> Result<String, NoString> {
+        match self {
+            Stem::Str(s) => Ok(s.clone()),
+            _ => Err(NoString),
+        }
+    }
+    fn as_string_or_wildcard(&self) -> Result<StringOrWildcard, NoStringOrWildCard> {
+        match self {
+            Stem::Str(s) => Ok(StringOrWildcard::String(s.clone())),
+            Stem::Wildcard { type_ } => Ok(StringOrWildcard::Wildcard {
+                type_: type_.clone(),
+            }),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Stem {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        enum Field {
+            Type,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("stem value or wildcard with `type`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "type" => Ok(Field::Type),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct StemVisitor;
+
+        const FIELDS: &'static [&'static str] = &["type"];
+
+        impl<'de> Visitor<'de> for StemVisitor {
+            type Value = Stem;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("stem value")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                /*FromStr::from_str(s)
+                .map_err(|e| de::Error::custom(format!("Error parsing string `{s}`: {e}"))) */
+                todo!()
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Stem, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut type_: Option<StemType> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Type => {
+                            if type_.is_some() {
+                                return Err(de::Error::duplicate_field("type"));
+                            }
+                            let value: String = map.next_value()?;
+
+                            let parsed_type_ = StemType::parse(&value.as_str()).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "Error parsing stem type, found: {value}. Error: {e}"
+                                ))
+                            })?;
+                            type_ = Some(parsed_type_);
+                        }
+                    }
+                }
+                match type_ {
+                    Some(StemType::Wildcard) => todo!(),
+                    _ => todo!(),
+                }
+            }
+        }
+        deserializer.deserialize_any(StemVisitor)
+    }
+}
+
+enum StemType {
+    Str,
+    Wildcard,
+}
+
+impl StemType {
+    fn parse(s: &str) -> Result<StemType, IriSError> {
+        todo!()
+    }
+}
+
 impl<'de> Deserialize<'de> for ValueSetValue {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -362,7 +522,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                 V: MapAccess<'de>,
             {
                 let mut type_: Option<ValueSetValueType> = None;
-                let mut stem: Option<String> = None;
+                let mut stem: Option<Stem> = None;
                 let mut value: Option<String> = None;
                 let mut language_tag: Option<String> = None;
                 let mut language: Option<String> = None;
@@ -419,15 +579,16 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::LiteralStemRange) => match stem {
                         Some(stem) => match exclusions {
                             Some(excs) => {
-                                if excs.is_empty() {
-                                    todo!()
-                                } else {
-                                    todo!()
-                                    /*Ok(ValueSetValue::LiteralStemRange {
-                                        stem: stem,
-                                        exclusions: excs,
-                                    })*/
-                                }
+                                let lit_excs = Exclusion::parse_literal_exclusions(excs).map_err(|e| {
+                                    de::Error::custom("LiteralStemRange: some exclusions are not literal exclusions: {e:?}")
+                                })?;
+                                let stem = stem.as_string_or_wildcard().map_err(|e| {
+                                    de::Error::custom(format!("LiteralStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
+                                })?;
+                                Ok(ValueSetValue::LiteralStemRange {
+                                    stem: stem,
+                                    exclusions: Some(lit_excs),
+                                })
                             }
                             None => {
                                 todo!()
@@ -442,13 +603,23 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         todo!()
                     }
                     Some(ValueSetValueType::LiteralStem) => match stem {
-                        Some(stem) => Ok(ValueSetValue::LiteralStem { stem: stem }),
+                        Some(stem) => {
+                            let stem = stem.as_string().map_err(|e| {
+                                de::Error::custom("LiteralStem: value of stem must be a string")
+                            })?;
+                            Ok(ValueSetValue::LiteralStem { stem: stem })
+                        }
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ValueSetValueType::LanguageStem) => match stem {
-                        Some(stem) => Ok(ValueSetValue::LanguageStem {
-                            stem: Lang::new(&stem),
-                        }),
+                        Some(stem) => {
+                            let stem = stem.as_language().map_err(|e| {
+                                de::Error::custom("LanguageStem: stem is not a language")
+                            })?;
+                            Ok(ValueSetValue::LanguageStem {
+                                stem: Lang::new(&stem),
+                            })
+                        }
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ValueSetValueType::Language) => match language_tag {
@@ -459,9 +630,9 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     },
                     Some(ValueSetValueType::IriStem) => match stem {
                         Some(stem) => {
-                            let iri_ref = TryFrom::try_from(stem.as_str()).map_err(|e| {
+                            let iri_ref = stem.as_iri().map_err(|e| {
                                 de::Error::custom(format!(
-                                    "Can't parse stem `{stem}` as IRIREF for IriStem. Error: {e}"
+                                    "Can't parse stem `{stem:?}` as IRIREF for IriStem. Error: {e:?}"
                                 ))
                             })?;
                             Ok(ValueSetValue::IriStem { stem: iri_ref })
