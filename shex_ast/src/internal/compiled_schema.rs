@@ -1,9 +1,10 @@
 use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, internal::ObjectValue,
-    internal::ValueSetValue, CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
+    ast, ast::Ref, ast::Schema as SchemaJson, internal::ObjectValue, internal::ValueSetValue,
+    CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
+use prefixmap::IriRef;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;

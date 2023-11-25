@@ -3,6 +3,7 @@ use std::result;
 
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde::{de::Visitor, Deserialize, Serialize, Serializer};
+use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteral {
@@ -38,6 +39,19 @@ impl NumericLiteral {
 
     pub fn double(d: f64) -> NumericLiteral {
         NumericLiteral::Double(d)
+    }
+
+    pub fn lexical_form(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Eq for NumericLiteral {}
+
+impl Hash for NumericLiteral {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        core::mem::discriminant(self).hash(state);
+        // self.to_string().hash(state)
     }
 }
 

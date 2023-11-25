@@ -1,10 +1,11 @@
 use iri_s::{IriS, IriSError};
+use prefixmap::{Deref, DerefError, IriRef};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 
-use crate::{BNode, Deref, DerefError, IriRef};
+use crate::BNode;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "&str", into = "String")]

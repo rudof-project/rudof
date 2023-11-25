@@ -13,15 +13,16 @@ use nom::{
     Err, IResult, InputTake, 
 };
 use shex_ast::{
-    object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, IriRef, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, Literal, IriExclusion,
+    object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, NodeConstraint,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion,
 };
 use log;
 use thiserror::Error;
 
 use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength, NumericRange, SenseFlags};
 use nom_locate::LocatedSpan;
-use srdf::lang::Lang;
+use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
+use prefixmap::IriRef;
 
 // Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
 
@@ -1301,7 +1302,7 @@ pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
 }
 
 pub fn boolean_literal(i: Span) -> IRes<Literal> {
-    map(boolean_value, |b| Literal::bool(b))(i)
+    map(boolean_value, |b| Literal::boolean(b))(i)
 }
 
 pub fn boolean_value(i: Span) -> IRes<bool> {
@@ -1316,17 +1317,9 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
   traced("rdf_literal", map_error(move |i| {
     let (i, str) = string()(i)?;
     let (i, maybe_value) = opt(alt((
-        map(lang_tag, |lang| Literal::ObjectLiteral {
-            value: str.fragment().to_string(),
-            language: Some(lang),
-            type_: None
-        }),
+        map(lang_tag, |lang| Literal::lang_str(&str, lang)),
         map(preceded(token("^^"), datatype_iri), |datatype| {
-            Literal::ObjectLiteral {
-                value: str.fragment().to_string(),
-                language: None,
-                type_: Some(datatype)
-            }
+            Literal::datatype(&str, datatype)
         }),
     )))(i)?;
     let value = match maybe_value {

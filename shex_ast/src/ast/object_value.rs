@@ -1,13 +1,14 @@
 use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
+use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use srdf::lang::Lang;
+use srdf::{lang::Lang, literal::Literal};
 
-use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
-use crate::{ast::serde_string_or_struct::*, Deref, DerefError, NumericLiteral};
+use super::serde_string_or_struct::SerializeStringOrStruct;
+use crate::ast::serde_string_or_struct::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
@@ -16,53 +17,21 @@ pub enum ObjectValue {
     Literal(Literal),
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-pub enum Literal {
-    NumericLiteral(NumericLiteral),
-
-    #[serde(serialize_with = "serialize_boolean_literal")]
-    BooleanLiteral {
-        value: bool,
-    },
-
-    ObjectLiteral {
-        value: String,
-
-        #[serde(skip_serializing_if = "Option::is_none")]
-        language: Option<Lang>,
-
-        #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
-        type_: Option<IriRef>,
-    },
-}
-
-/*fn serialize_integer_literal<S>(v: &isize, serializer: S) -> result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    v.serialize(serializer)
-}*/
-
 impl ObjectValue {
     pub fn integer(n: isize) -> ObjectValue {
-        let dt_integer = IriRef::Iri(IriS::xsd_integer());
-        ObjectValue::Literal(Literal::ObjectLiteral {
-            value: n.to_string(),
-            language: None,
-            type_: Some(dt_integer),
-        })
+        ObjectValue::Literal(Literal::integer(n))
     }
 
     pub fn double(n: f64) -> ObjectValue {
-        ObjectValue::Literal(Literal::NumericLiteral(NumericLiteral::Double(n)))
+        ObjectValue::Literal(Literal::double(n))
     }
 
     pub fn decimal(n: Decimal) -> ObjectValue {
-        ObjectValue::Literal(Literal::NumericLiteral(NumericLiteral::decimal(n)))
+        ObjectValue::Literal(Literal::decimal(n))
     }
 
     pub fn bool(b: bool) -> ObjectValue {
-        ObjectValue::Literal(Literal::BooleanLiteral { value: b })
+        ObjectValue::Literal(Literal::boolean(b))
     }
 
     pub fn lexical_form(&self) -> String {
@@ -70,21 +39,6 @@ impl ObjectValue {
             ObjectValue::Iri(iri) => iri.to_string(),
             ObjectValue::Literal(lit) => lit.lexical_form(),
         }
-    }
-}
-
-impl Literal {
-    pub fn lexical_form(&self) -> String {
-        match self {
-            Literal::BooleanLiteral { value: true } => "true".to_string(),
-            Literal::BooleanLiteral { value: false } => "false".to_string(),
-            Literal::NumericLiteral(n) => n.to_string(),
-            Literal::ObjectLiteral { value, .. } => value.to_string(),
-        }
-    }
-
-    pub fn bool(b: bool) -> Literal {
-        Literal::BooleanLiteral { value: b }
     }
 }
 
@@ -102,36 +56,6 @@ impl Deref for ObjectValue {
             ObjectValue::Literal(lit) => {
                 let new_lit = lit.deref(base, prefixmap)?;
                 Ok(ObjectValue::Literal(new_lit))
-            }
-        }
-    }
-}
-
-impl Deref for Literal {
-    fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError> {
-        match self {
-            Literal::NumericLiteral(n) => Ok(Literal::NumericLiteral(n.clone())),
-            Literal::BooleanLiteral { value } => Ok(Literal::BooleanLiteral {
-                value: value.clone(),
-            }),
-            Literal::ObjectLiteral {
-                value,
-                language,
-                type_,
-            } => {
-                let new_type_ = type_
-                    .as_ref()
-                    .map(|dt| dt.deref(base, prefixmap))
-                    .transpose()?;
-                Ok(Literal::ObjectLiteral {
-                    value: value.clone(),
-                    language: language.clone(),
-                    type_: new_type_,
-                })
             }
         }
     }

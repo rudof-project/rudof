@@ -1,16 +1,15 @@
 use std::result;
 use std::str::FromStr;
 
-use iri_s::{IriS, IriSError};
-use prefixmap::PrefixMap;
+use iri_s::IriS;
+use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use super::iri_ref::IriRef;
 use super::ref_::Ref;
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
-use crate::{Deref, DerefError, NodeConstraint, RefError, Shape};
+use crate::{NodeConstraint, RefError, Shape};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]

@@ -4,10 +4,10 @@ use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
+use srdf::numeric_literal::NumericLiteral;
 use void::Void;
 
 use crate::ast::serde_string_or_struct::*;
-use crate::NumericLiteral;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
@@ -85,7 +85,7 @@ where
             let mut map = serializer.serialize_map(Some(1))?;
             map.serialize_entry("pattern", str)?;
             map.end()
-        } 
+        }
         // str.serialize(serializer),
         Pattern {
             str,

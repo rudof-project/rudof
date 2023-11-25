@@ -1,4 +1,5 @@
 use iri_s::{IriS, IriSError};
+use prefixmap::IriRef;
 use srdf::lang::Lang;
 //use srdf::Object;
 use thiserror::Error;
@@ -12,10 +13,7 @@ pub enum CompiledSchemaError {
     Str2IriError { str: String },
 
     #[error("Parsing {str} as IRI: {err:?}")]
-    IriParseError {
-        str: String,
-        err: IriSError,
-    },
+    IriParseError { str: String, err: IriSError },
 
     #[error("SchemaJson Error")]
     SchemaJsonError(#[from] ast::SchemaJsonError),
@@ -43,8 +41,8 @@ pub enum CompiledSchemaError {
 
     #[error("Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}")]
     DatatypeDontMatch {
-        found: IriS,
-        expected: IriS,
+        found: IriRef,
+        expected: IriRef,
         lexical_form: String,
     },
 

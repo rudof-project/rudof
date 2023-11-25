@@ -1,8 +1,7 @@
-use crate::{ast::serde_string_or_struct::*, Deref, DerefError, LangOrWildcard};
-use crate::{
-    Exclusion, IriExclusion, LanguageExclusion, Literal, LiteralExclusion, NumericLiteral,
-};
+use crate::{ast::serde_string_or_struct::*, LangOrWildcard};
+use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriSError;
+use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
@@ -11,11 +10,12 @@ use serde::{
 };
 use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
+use srdf::literal::Literal;
+use srdf::numeric_literal::NumericLiteral;
 use std::{fmt, result, str::FromStr};
 
 use super::{
-    iri_ref::IriRef, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
-    ObjectValue,
+    iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -53,12 +53,19 @@ impl ValueSetValue {
         ValueSetValue::ObjectValue(ObjectValue::Iri(iri))
     }
 
-    pub fn literal(value: &str, language: Option<Lang>, type_: Option<IriRef>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(Literal::ObjectLiteral {
-            value: value.to_string(),
-            language,
-            type_,
+    pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
+        let ov = ObjectValue::Literal(Literal::StringLiteral {
+            lexical_form: value.to_string(),
+            lang,
         });
+        ValueSetValue::ObjectValue(ov)
+    }
+
+    pub fn datatype_literal(value: &str, type_: IriRef) -> ValueSetValue {
+        let ov = ObjectValue::UnderefDatatypeLiteral {
+            lexical_form: value.to_string(),
+            datatype: type_,
+        };
         ValueSetValue::ObjectValue(ov)
     }
 
@@ -194,7 +201,7 @@ impl Serialize for ValueSetValue {
     {
         match self {
             ValueSetValue::ObjectValue(v) => match v {
-                ObjectValue::Literal(Literal::BooleanLiteral { value }) => {
+                ObjectValue::Literal(Literal::BooleanLiteral(value)) => {
                     let mut map = serializer.serialize_map(Some(2))?;
                     map.serialize_entry("type", BOOLEAN_STR)?;
                     let value_str = if *value { "true" } else { "false" };
@@ -208,21 +215,31 @@ impl Serialize for ValueSetValue {
                     map.end()
                 }
                 ObjectValue::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
-                ObjectValue::Literal(Literal::ObjectLiteral {
-                    value,
-                    language,
-                    type_,
-                }) => {
+                ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
                     let mut map = serializer.serialize_map(Some(3))?;
-                    match type_ {
-                        Some(t) => map.serialize_entry("type", t.to_string().as_str())?,
-                        None => {}
-                    };
-                    match language {
+                    match lang {
                         Some(lan) => map.serialize_entry("language", lan.value().as_str())?,
                         None => {}
                     }
-                    map.serialize_entry("value", value)?;
+                    map.serialize_entry("value", lexical_form)?;
+                    map.end()
+                }
+                ObjectValue::Literal(Literal::DatatypeLiteral {
+                    lexical_form,
+                    datatype,
+                }) => {
+                    let mut map = serializer.serialize_map(Some(2))?;
+                    map.serialize_entry("type", datatype)?;
+                    map.serialize_entry("value", lexical_form)?;
+                    map.end()
+                }
+                ObjectValue::UnderefDatatypeLiteral {
+                    lexical_form,
+                    datatype,
+                } => {
+                    let mut map = serializer.serialize_map(Some(2))?;
+                    map.serialize_entry("type", datatype)?;
+                    map.serialize_entry("value", lexical_form)?;
                     map.end()
                 }
             },
@@ -688,36 +705,32 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::ObjectLiteral {
-                                    value: v,
-                                    language: Some(Lang::new(&lang)),
-                                    type_: Some(iri),
+                                Literal::StringLiteral {
+                                    lexical_form: v,
+                                    lang: Some(Lang::new(&lang)),
                                 },
                             ))),
-                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::ObjectLiteral {
-                                    value: v,
-                                    language: None,
-                                    type_: Some(iri),
+                            None => Ok(ValueSetValue::ObjectValue(
+                                ObjectValue::UnderefDatatypeLiteral {
+                                    lexical_form: v,
+                                    datatype: iri,
                                 },
-                            ))),
+                            )),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
                     None => match value {
-                        Some(value) => match language {
+                        Some(lexical_form) => match language {
                             Some(language) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::ObjectLiteral {
-                                    value,
-                                    language: Some(Lang::new(&language)),
-                                    type_: None,
+                                Literal::StringLiteral {
+                                    lexical_form,
+                                    lang: Some(Lang::new(&language)),
                                 },
                             ))),
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::ObjectLiteral {
-                                    value,
-                                    language: None,
-                                    type_: None,
+                                Literal::StringLiteral {
+                                    lexical_form,
+                                    lang: None,
                                 },
                             ))),
                         },

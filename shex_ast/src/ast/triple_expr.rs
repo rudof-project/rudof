@@ -1,14 +1,14 @@
 use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
-use prefixmap::PrefixMap;
+use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{ast::serde_string_or_struct::*, Deref, DerefError};
+use crate::ast::serde_string_or_struct::*;
 
 use super::{
-    annotation::Annotation, iri_ref::IriRef, sem_act::SemAct, shape_expr::ShapeExpr,
+    annotation::Annotation, sem_act::SemAct, shape_expr::ShapeExpr,
     triple_expr_label::TripleExprLabel,
 };
 

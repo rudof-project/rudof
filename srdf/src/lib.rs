@@ -1,6 +1,7 @@
 pub mod async_srdf;
 pub mod bnode;
 pub mod lang;
+pub mod numeric_literal;
 pub mod literal;
 pub mod neighs;
 pub mod rdf;

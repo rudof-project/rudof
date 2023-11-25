@@ -2,7 +2,8 @@ use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Annotation, Deref, DerefError, IriRef, SemAct, TripleExpr, TripleExprWrapper};
+use crate::{Annotation, SemAct, TripleExpr, TripleExprWrapper};
+use prefixmap::{Deref, DerefError, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 
@@ -60,7 +61,6 @@ impl Shape {
     pub fn triple_expr(&self) -> Option<TripleExpr> {
         self.expression.as_ref().map(|tew| tew.te.clone())
     }
-
 }
 
 impl Deref for Shape {

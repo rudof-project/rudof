@@ -1,9 +1,10 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, path::Prefix, str::FromStr};
 
+use crate::PrefixMap;
 use crate::{Deref, DerefError};
 use iri_s::{IriS, IriSError};
-use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -12,7 +13,23 @@ pub enum IriRef {
     Prefixed { prefix: String, local: String },
 }
 
+#[derive(Debug, Error)]
+#[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
+pub struct Underef {
+    prefix: String,
+    local: String,
+}
+
 impl IriRef {
+    pub fn get_iri(&self) -> Result<IriS, Underef> {
+        match self {
+            IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::Prefixed { prefix, local } => Err(Underef {
+                prefix: prefix.clone(),
+                local: local.clone(),
+            }),
+        }
+    }
     pub fn prefixed(prefix: &str, local: &str) -> IriRef {
         IriRef::Prefixed {
             prefix: prefix.to_string(),

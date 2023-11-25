@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
 
-use crate::IriRef;
+use prefixmap::IriRef;
 
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 pub enum LiteralExclusion {

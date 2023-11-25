@@ -1,17 +1,16 @@
 use std::{fmt, result};
 
 use log::debug;
+use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
 use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
+use srdf::numeric_literal::NumericLiteral;
 
 use super::ValueSetValue;
-use crate::{
-    Deref, DerefError, IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet,
-    XsFacet,
-};
+use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};
 use serde::ser::SerializeMap;
 
 #[derive(Debug, PartialEq, Clone)]

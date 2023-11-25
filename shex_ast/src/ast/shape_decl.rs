@@ -1,11 +1,11 @@
 use super::shape_expr::ShapeExpr;
-use crate::Deref;
-use crate::DerefError;
-use crate::IriRef;
 use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
 use crate::Ref;
 use crate::ShapeLabel;
+use prefixmap::Deref;
+use prefixmap::DerefError;
+use prefixmap::IriRef;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -31,22 +31,23 @@ impl ShapeDecl {
             shape_expr,
         }
     }
-
-    
 }
 
-
 impl Deref for ShapeDecl {
-    fn deref(&self, 
-        base: &Option<iri_s::IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
-    ) -> Result<Self, DerefError> where Self: Sized {
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
+    where
+        Self: Sized,
+    {
         let id = self.id.deref(base, prefixmap)?;
         let shape_expr = self.shape_expr.deref(base, prefixmap)?;
         Ok(ShapeDecl {
             type_: self.type_.clone(),
             id,
-            shape_expr
+            shape_expr,
         })
     }
 }

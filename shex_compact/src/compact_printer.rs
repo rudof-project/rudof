@@ -2,14 +2,14 @@ use std::{borrow::Cow, marker::PhantomData, str::FromStr};
 
 use colored::*;
 use iri_s::IriS;
-use prefixmap::PrefixMap;
+use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, IriRef, Literal,
-    NodeConstraint, NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape,
-    ShapeDecl, ShapeExpr, StringFacet, TripleExpr, XsFacet,
+    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, Literal, NodeConstraint,
+    NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl,
+    ShapeExpr, StringFacet, TripleExpr, XsFacet,
 };
 
 #[derive(Default, Debug, Clone)]

@@ -1,9 +1,10 @@
 use std::{result, str::FromStr};
 
+use super::serde_string_or_struct::SerializeStringOrStruct;
 use iri_s::IriSError;
+use prefixmap::IriRef;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use super::{iri_ref::IriRef, serde_string_or_struct::SerializeStringOrStruct};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]

@@ -1,7 +1,7 @@
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::Ref;
 use crate::{
-    ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
+    ast, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
     internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
 };
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
 };
 use iri_s::IriS;
 use log::debug;
+use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use srdf::lang::Lang;
@@ -630,6 +631,9 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
         }
         ast::ObjectValue::Literal(n) => {
             todo!()
+        }
+        ast::ObjectValue::UnderefDatatypeLiteral { .. } => {
+            todo!()
         } /*ast::ObjectValue::ObjectLiteral {
               value, language, ..
           } => Ok(ObjectValue::ObjectLiteral {
@@ -675,7 +679,7 @@ fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriS>) -> CResult<()
     }
 }
 
-fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
+fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
     debug!("check_node_datatype: {node:?} datatype: {dt}");
     match node.as_object() {
         Object::Literal(Literal::DatatypeLiteral {
