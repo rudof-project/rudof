@@ -34,6 +34,10 @@ impl ObjectValue {
         ObjectValue::Literal(Literal::boolean(b))
     }
 
+    pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
+        ObjectValue::Literal(Literal::datatype(lexical_form, datatype))
+    }
+
     pub fn lexical_form(&self) -> String {
         match self {
             ObjectValue::Iri(iri) => iri.to_string(),

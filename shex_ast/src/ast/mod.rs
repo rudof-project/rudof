@@ -63,6 +63,7 @@ mod tests {
     use std::str::FromStr;
 
     use iri_s::IriS;
+    use prefixmap::IriRef;
 
     use super::*;
 

@@ -16,7 +16,7 @@ use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use prefixmap::prefixmap::*;
+use prefixmap::{prefixmap::*, IriRef};
 use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
@@ -283,9 +283,10 @@ impl SRDFComparisons for SRDFGraph {
                     })
                 }
                 (s, Some(datatype), _) => {
+                    let iri_s = Self::iri2iri_s(datatype);
                     srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
                         lexical_form: s,
-                        datatype: Self::iri2iri_s(datatype),
+                        datatype: IriRef::Iri(iri_s),
                     })
                 }
             },

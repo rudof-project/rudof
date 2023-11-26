@@ -10,10 +10,7 @@ use super::serde_string_or_struct::SerializeStringOrStruct;
 #[serde(untagged)]
 pub enum StringOrWildcard {
     String(String),
-    Wildcard {
-        #[serde(rename = "type")]
-        type_: String,
-    },
+    Wildcard,
 }
 
 impl FromStr for StringOrWildcard {

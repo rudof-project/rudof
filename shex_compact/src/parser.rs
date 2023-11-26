@@ -1,20 +1,15 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
 use iri_s::IriS;
-use nom::error::Error;
 use nom::Err;
-use prefixmap::PrefixMap;
-use shex_ast::Deref;
+use prefixmap::Deref;
 use shex_ast::Iri;
 use shex_ast::Schema;
-use shex_ast::ShapeExpr;
 
 use crate::shex_statement;
 use crate::tws0;
 use crate::ParseError;
-use crate::ParserState;
 use crate::ShExStatement;
 use crate::Span;
 
@@ -159,7 +154,7 @@ impl<'a> Iterator for StatementIterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use shex_ast::{Ref, Shape};
+    use shex_ast::{Ref, Shape, ShapeExpr};
 
     use super::*;
 

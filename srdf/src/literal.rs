@@ -36,10 +36,10 @@ impl Literal {
         Literal::NumericLiteral(NumericLiteral::decimal(d))
     }
 
-    pub fn datatype(lexical_form: &str, datatype: IriRef) -> Literal {
+    pub fn datatype(lexical_form: &str, datatype: &IriRef) -> Literal {
         Literal::DatatypeLiteral {
             lexical_form: lexical_form.to_owned(),
-            datatype,
+            datatype: datatype.clone(),
         }
     }
 

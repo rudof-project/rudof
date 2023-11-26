@@ -7,10 +7,11 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, Literal, NodeConstraint,
-    NodeKind, NumericFacet, NumericLiteral, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl,
-    ShapeExpr, StringFacet, TripleExpr, XsFacet,
+    object_value::ObjectValue, value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind,
+    NumericFacet, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, StringFacet,
+    TripleExpr, XsFacet,
 };
+use srdf::{literal::Literal, numeric_literal::NumericLiteral};
 
 #[derive(Default, Debug, Clone)]
 pub struct ShExFormatter {
@@ -505,15 +506,15 @@ where
     fn pp_object_value(&self, v: &ObjectValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
             ObjectValue::Iri(i) => self.pp_iri_ref(i),
-            ObjectValue::Literal(Literal::BooleanLiteral { value }) => {
+            ObjectValue::Literal(Literal::BooleanLiteral(value)) => {
                 todo!()
             }
-            ObjectValue::Literal(Literal::ObjectLiteral {
-                type_,
-                value,
-                language,
-            }) => todo!(),
             ObjectValue::Literal(Literal::NumericLiteral(_)) => todo!(),
+            ObjectValue::Literal(Literal::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            }) => todo!(),
+            ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => todo!(),
         }
     }
 

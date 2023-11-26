@@ -61,11 +61,8 @@ impl ValueSetValue {
         ValueSetValue::ObjectValue(ov)
     }
 
-    pub fn datatype_literal(value: &str, type_: IriRef) -> ValueSetValue {
-        let ov = ObjectValue::UnderefDatatypeLiteral {
-            lexical_form: value.to_string(),
-            datatype: type_,
-        };
+    pub fn datatype_literal(value: &str, type_: &IriRef) -> ValueSetValue {
+        let ov = ObjectValue::datatype_literal(value, type_);
         ValueSetValue::ObjectValue(ov)
     }
 
@@ -83,6 +80,13 @@ impl ValueSetValue {
 
     pub fn literal_stem(stem: String) -> ValueSetValue {
         ValueSetValue::LiteralStem { stem }
+    }
+
+    pub fn string_stem_range(str: String, exc: Vec<LiteralExclusion>) -> ValueSetValue {
+        ValueSetValue::LiteralStemRange {
+            stem: StringOrWildcard::String(str),
+            exclusions: Some(exc),
+        }
     }
 }
 
@@ -233,15 +237,6 @@ impl Serialize for ValueSetValue {
                     map.serialize_entry("value", lexical_form)?;
                     map.end()
                 }
-                ObjectValue::UnderefDatatypeLiteral {
-                    lexical_form,
-                    datatype,
-                } => {
-                    let mut map = serializer.serialize_map(Some(2))?;
-                    map.serialize_entry("type", datatype)?;
-                    map.serialize_entry("value", lexical_form)?;
-                    map.end()
-                }
             },
             ValueSetValue::Language { language_tag } => {
                 let mut map = serializer.serialize_map(Some(2))?;
@@ -303,14 +298,16 @@ fn get_type_str(n: &NumericLiteral) -> &str {
 #[derive(Serialize, Debug)]
 enum Stem {
     Str(String),
-    Wildcard {
-        #[serde(rename = "type")]
-        type_: String,
-    },
+    Wildcard,
 }
 
 #[derive(Debug)]
 struct NoStringOrWildCard;
+
+#[derive(Debug)]
+struct NoIriRefOrWildCard {
+    err: IriSError,
+}
 
 #[derive(Debug)]
 struct NoString;
@@ -349,12 +346,21 @@ impl Stem {
             _ => Err(NoString),
         }
     }
+
     fn as_string_or_wildcard(&self) -> Result<StringOrWildcard, NoStringOrWildCard> {
         match self {
             Stem::Str(s) => Ok(StringOrWildcard::String(s.clone())),
-            Stem::Wildcard { type_ } => Ok(StringOrWildcard::Wildcard {
-                type_: type_.clone(),
-            }),
+            Stem::Wildcard => Ok(StringOrWildcard::Wildcard),
+        }
+    }
+
+    fn as_iri_or_wildcard(&self) -> Result<IriRefOrWildcard, NoIriRefOrWildCard> {
+        match self {
+            Stem::Str(s) => {
+                let iri = FromStr::from_str(s).map_err(|err| NoIriRefOrWildCard { err })?;
+                Ok(IriRefOrWildcard::IriRef(IriRef::iri(iri)))
+            }
+            Stem::Wildcard => Ok(IriRefOrWildcard::Wildcard),
         }
     }
 }
@@ -438,8 +444,8 @@ impl<'de> Deserialize<'de> for Stem {
                     }
                 }
                 match type_ {
-                    Some(StemType::Wildcard) => todo!(),
-                    _ => todo!(),
+                    Some(StemType::Wildcard) => Ok(Stem::Wildcard),
+                    _ => Err(de::Error::custom("Unknwon stem type")),
                 }
             }
         }
@@ -459,7 +465,12 @@ struct StemTypeError {
 
 impl StemType {
     fn parse(s: &str) -> Result<StemType, StemTypeError> {
-        todo!()
+        match s {
+            "Wildcard" => Ok(StemType::Wildcard),
+            _ => Err(StemTypeError {
+                stem_type: s.to_string(),
+            }),
+        }
     }
 }
 
@@ -621,9 +632,24 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::LanguageStemRange) => {
                         todo!()
                     }
-                    Some(ValueSetValueType::IriStemRange) => {
-                        todo!()
-                    }
+                    Some(ValueSetValueType::IriStemRange) => match stem {
+                        Some(stem) => match exclusions {
+                            Some(excs) => {
+                                let iri_excs = Exclusion::parse_iri_exclusions(excs).map_err(|e| {
+                                    de::Error::custom("IriStemRange: some exclusions are not IRI exclusions: {e:?}")
+                                })?;
+                                let stem = stem.as_iri_or_wildcard().map_err(|e| {
+                                    de::Error::custom(format!("IriStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
+                                })?;
+                                Ok(ValueSetValue::IriStemRange {
+                                    stem: stem,
+                                    exclusions: Some(iri_excs),
+                                })
+                            }
+                            None => Err(de::Error::missing_field("exclusions")),
+                        },
+                        None => Err(de::Error::missing_field("stem")),
+                    },
                     Some(ValueSetValueType::LiteralStem) => match stem {
                         Some(stem) => {
                             let stem = stem.as_string().map_err(|e| {
@@ -710,12 +736,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     lang: Some(Lang::new(&lang)),
                                 },
                             ))),
-                            None => Ok(ValueSetValue::ObjectValue(
-                                ObjectValue::UnderefDatatypeLiteral {
-                                    lexical_form: v,
-                                    datatype: iri,
-                                },
-                            )),
+                            None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

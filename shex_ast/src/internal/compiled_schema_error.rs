@@ -47,17 +47,17 @@ pub enum CompiledSchemaError {
     },
 
     #[error("Datatype expected {expected} but found no literal {node}")]
-    DatatypeNoLiteral { expected: IriS, node: Node },
+    DatatypeNoLiteral { expected: IriRef, node: Node },
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
     DatatypeDontMatchString {
-        expected: IriS,
+        expected: IriRef,
         lexical_form: String,
     },
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
     DatatypeDontMatchLangString {
-        expected: IriS,
+        expected: IriRef,
         lexical_form: String,
         lang: Lang,
     },

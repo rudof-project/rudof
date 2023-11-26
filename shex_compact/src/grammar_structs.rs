@@ -1,5 +1,6 @@
 use iri_s::IriS;
-use shex_ast::{IriRef, Ref, SemAct, ShapeExpr};
+use prefixmap::IriRef;
+use shex_ast::{Ref, SemAct, ShapeExpr};
 
 #[derive(Debug, PartialEq)]
 pub enum ShExStatement<'a> {

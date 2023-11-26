@@ -1,19 +1,14 @@
 use std::{result, str::FromStr};
 
-use super::serde_string_or_struct::SerializeStringOrStruct;
 use iri_s::IriSError;
 use prefixmap::IriRef;
+use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum IriRefOrWildcard {
     IriRef(IriRef),
-    Wildcard {
-        #[serde(rename = "type")]
-        type_: String,
-    },
+    Wildcard,
 }
 
 impl FromStr for IriRefOrWildcard {
@@ -25,14 +20,18 @@ impl FromStr for IriRefOrWildcard {
     }
 }
 
-impl SerializeStringOrStruct for IriRefOrWildcard {
-    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+impl Serialize for IriRefOrWildcard {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match &self {
-            IriRefOrWildcard::IriRef(ref r) => r.serialize(serializer),
-            _ => self.serialize(serializer),
+        match self {
+            IriRefOrWildcard::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
+            IriRefOrWildcard::Wildcard => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("type", "Wildcard")?;
+                map.end()
+            }
         }
     }
 }

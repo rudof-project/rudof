@@ -2,14 +2,15 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 use iri_s::IriS;
-use oxrdf::*;
 use oxrdf::Literal;
+use oxrdf::*;
+use prefixmap::IriRef;
 use reqwest::{
     header::{self, ACCEPT, USER_AGENT},
     Url,
 };
 use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader};
-use srdf::{SRDF, SRDFComparisons, AsyncSRDF};
+use srdf::{AsyncSRDF, SRDFComparisons, SRDF};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -26,8 +27,8 @@ pub enum SRDFSPARQLError {
     #[error(transparent)]
     IriParseError {
         #[from]
-        err: IriParseError
-    }
+        err: IriParseError,
+    },
 }
 
 impl From<reqwest::Error> for SRDFSPARQLError {
@@ -146,8 +147,8 @@ impl SRDFComparisons for SRDFSPARQL {
         .map_err(|err| {SRDFSPARQLError::IriParseError { err }})
     }*/
 
-    fn iri_as_term(iri: NamedNode) -> Term { 
-        Term::NamedNode(iri) 
+    fn iri_as_term(iri: NamedNode) -> Term {
+        Term::NamedNode(iri)
     }
 
     fn iri_s2iri(iri_s: &IriS) -> &Self::IRI {
@@ -169,9 +170,10 @@ impl SRDFComparisons for SRDFSPARQL {
                     })
                 }
                 (s, Some(datatype), _) => {
+                    let iri_s = Self::iri2iri_s(datatype);
                     srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
                         lexical_form: s,
-                        datatype: Self::iri2iri_s(datatype),
+                        datatype: IriRef::Iri(iri_s),
                     })
                 }
             },
@@ -184,7 +186,6 @@ impl SRDFComparisons for SRDFSPARQL {
     fn iri2iri_s(iri: Self::IRI) -> IriS {
         IriS::from_named_node(iri)
     }
-
 }
 
 #[async_trait]
@@ -195,7 +196,6 @@ impl AsyncSRDF for SRDFSPARQL {
     type Subject = Subject;
     type Term = Term;
     type Err = SRDFSPARQLError;
-    
 
     async fn get_predicates_subject(
         &self,
@@ -258,11 +258,9 @@ impl AsyncSRDF for SRDFSPARQL {
     ) -> Result<HashSet<Subject>, SRDFSPARQLError> {
         todo!();
     }
-
 }
 
 impl SRDF for SRDFSPARQL {
-
     fn get_predicates_for_subject(
         &self,
         subject: &Subject,
@@ -324,9 +322,7 @@ impl SRDF for SRDFSPARQL {
     ) -> Result<HashSet<Subject>, SRDFSPARQLError> {
         todo!();
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -345,9 +341,8 @@ mod tests {
         ));
         let maybe_data = wikidata.get_predicates_for_subject(&q80);
         let data = maybe_data.unwrap();
-        let p19: NamedNode = NamedNode::new_unchecked(
-            "http://www.wikidata.org/prop/P19".to_string(),
-        );
+        let p19: NamedNode =
+            NamedNode::new_unchecked("http://www.wikidata.org/prop/P19".to_string());
 
         assert_eq!(data.contains(&p19), true);
     }

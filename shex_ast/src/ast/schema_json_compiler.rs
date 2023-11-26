@@ -20,9 +20,12 @@ use srdf::Object;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref XSD_STRING: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string");
-    static ref RDF_LANG_STRING: IriS =
-        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
+    static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/2001/XMLSchema#string"
+    ));
+    static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+    ));
 }
 
 #[derive(Debug)]
@@ -428,8 +431,8 @@ fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
 }
 
 fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
-    let iri = cnv_iri_ref(datatype)?;
-    Ok(mk_cond_datatype(iri))
+    //let iri = cnv_iri_ref(datatype)?;
+    Ok(mk_cond_datatype(datatype))
 }
 
 fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
@@ -468,18 +471,17 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     )
 }
 
-fn mk_cond_datatype(datatype: IriS) -> Cond {
+fn mk_cond_datatype(datatype: &IriRef) -> Cond {
+    let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype{datatype}").as_str())
-            .with_cond(
-                move |value: &Node| match check_node_datatype(value, &datatype) {
-                    Ok(_) => Ok(Pending::new()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("Datatype error: {err}"),
-                    }),
-                },
-            ),
+            .with_name(format!("datatype{dt}").as_str())
+            .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("Datatype error: {err}"),
+                }),
+            }),
     )
 }
 
@@ -631,9 +633,6 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
         }
         ast::ObjectValue::Literal(n) => {
             todo!()
-        }
-        ast::ObjectValue::UnderefDatatypeLiteral { .. } => {
-            todo!()
         } /*ast::ObjectValue::ObjectLiteral {
               value, language, ..
           } => Ok(ObjectValue::ObjectLiteral {
@@ -672,7 +671,7 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     }
 }
 
-fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriS>) -> CResult<()> {
+fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<()> {
     match datatype {
         None => Ok(()),
         Some(dt) => check_node_datatype(node, dt),

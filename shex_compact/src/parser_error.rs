@@ -1,5 +1,5 @@
 use iri_s::IriSError;
-use shex_ast::DerefError;
+use prefixmap::DerefError;
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},

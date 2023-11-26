@@ -4,7 +4,7 @@ use std::{fmt, result};
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{de, Deserialize, Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 use srdf::lang::Lang;
 
 use prefixmap::IriRef;
@@ -21,7 +21,7 @@ impl Serialize for LiteralExclusion {
         S: Serializer,
     {
         match self {
-            LiteralExclusion::Literal(str) => serializer.serialize_str(str),
+            LiteralExclusion::Literal(lit) => serializer.serialize_str(lit.as_str()),
             LiteralExclusion::LiteralStem(stem) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LiteralStem")?;
@@ -35,7 +35,7 @@ impl Serialize for LiteralExclusion {
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 pub enum IriExclusion {
     Iri(IriRef),
-    IriStem(String),
+    IriStem(IriRef),
 }
 
 impl Serialize for IriExclusion {
@@ -58,7 +58,7 @@ impl Serialize for IriExclusion {
 #[derive(Debug, PartialEq, Clone)]
 pub enum LanguageExclusion {
     Language(Lang),
-    LanguageStem(String),
+    LanguageStem(Lang),
 }
 
 impl Serialize for LanguageExclusion {
@@ -83,6 +83,7 @@ pub enum Exclusion {
     LiteralExclusion(LiteralExclusion),
     LanguageExclusion(LanguageExclusion),
     IriExclusion(IriExclusion),
+    Untyped(String),
 }
 
 #[derive(Debug)]
@@ -119,9 +120,14 @@ impl Exclusion {
     ) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
         let mut iri_excs = Vec::new();
         for e in excs {
-            match e {
-                Exclusion::IriExclusion(le) => iri_excs.push(le),
-                other => return Err(SomeNoIriExclusion { exc: other }),
+            match &e {
+                Exclusion::IriExclusion(le) => iri_excs.push(le.clone()),
+                v @ Exclusion::Untyped(s) => {
+                    let iri = FromStr::from_str(s.as_str())
+                        .map_err(|e| SomeNoIriExclusion { exc: v.clone() })?;
+                    iri_excs.push(IriExclusion::Iri(iri))
+                }
+                other => return Err(SomeNoIriExclusion { exc: other.clone() }),
             }
         }
         Ok(iri_excs)
@@ -157,7 +163,13 @@ impl Serialize for Exclusion {
                 map.serialize_entry("stem", stem)?;
                 map.end()
             }
-            Exclusion::LanguageExclusion(_) => todo!(),
+            Exclusion::LanguageExclusion(stem) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "LanguageStem")?;
+                map.serialize_entry("stem", stem)?;
+                map.end()
+            }
+            Exclusion::Untyped(str) => serializer.serialize_str(str),
         }
     }
 }
@@ -213,20 +225,19 @@ impl<'de> Deserialize<'de> for Exclusion {
                 formatter.write_str("Exclusion value")
             }
 
-            /*fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                FromStr::from_str(s)
-                    .map_err(|e| de::Error::custom(format!("Error parsing string `{s}`: {e}")))
-            }*/
+                Ok(Exclusion::Untyped(s.to_string()))
+            }
 
             fn visit_map<V>(self, mut map: V) -> Result<Exclusion, V::Error>
             where
                 V: MapAccess<'de>,
             {
                 let mut type_: Option<ExclusionType> = None;
-                let mut stem: Option<String> = None;
+                let mut stem: Option<StemValue> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Type => {
@@ -253,22 +264,31 @@ impl<'de> Deserialize<'de> for Exclusion {
                 }
                 match type_ {
                     Some(ExclusionType::LiteralStem) => match stem {
-                        Some(stem) => Ok(Exclusion::LiteralExclusion(
-                            LiteralExclusion::LiteralStem(stem),
+                        Some(StemValue::Literal(lit)) => Ok(Exclusion::LiteralExclusion(
+                            LiteralExclusion::LiteralStem(lit),
                         )),
+                        Some(_) => Err(de::Error::custom(format!(
+                            "Stem {stem:?} must be a literal"
+                        ))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::LanguageStem) => match stem {
-                        Some(stem) => Ok(Exclusion::LanguageExclusion(
-                            LanguageExclusion::LanguageStem(stem),
+                        Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
+                            LanguageExclusion::LanguageStem(lang),
                         )),
+                        Some(_) => Err(de::Error::custom(format!(
+                            "Stem {stem:?} must be a language"
+                        ))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::IriStem) => match stem {
-                        Some(stem) => Ok(Exclusion::IriExclusion(IriExclusion::IriStem(stem))),
+                        Some(StemValue::Iri(iri)) => {
+                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri)))
+                        }
+                        Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be an IRI"))),
                         None => Err(de::Error::missing_field("stem")),
                     },
-                    None => todo!(),
+                    None => Err(de::Error::custom("No value of exclusion type")),
                 }
             }
         }
@@ -282,6 +302,14 @@ enum ExclusionType {
     IriStem,
     LiteralStem,
     LanguageStem,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(untagged)]
+enum StemValue {
+    Iri(IriRef),
+    Literal(String),
+    Language(Lang),
 }
 
 #[derive(Debug)]

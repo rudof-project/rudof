@@ -14,7 +14,7 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion, LanguageExclusion, Exclusion,
 };
 use log;
 use thiserror::Error;
@@ -1084,12 +1084,30 @@ fn value_set(i: Span) -> IRes<NodeConstraint> {
 /// `                               | exclusion+`
 fn value_set_value(i: Span) -> IRes<ValueSetValue> {
     alt((
-        // Pending
         iri_range,
         literal_range(),
         language_range(),
-        // exclusion_plus
+        exclusion_plus
     ))(i)
+}
+
+fn exclusion_plus(i: Span) -> IRes<ValueSetValue> {
+   let (i, excs) = many1(exclusion)(i)?;
+   todo!()
+}
+
+/// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
+fn exclusion(i: Span) -> IRes<Exclusion> {
+    let (i, (_,exc)) = tuple(
+        (
+            token_tws("."), 
+            alt((
+             map(literal_exclusion, |le| Exclusion::LiteralExclusion(le)), 
+             map(iri_exclusion, |ie| Exclusion::IriExclusion(ie)), 
+             map(language_exclusion, |le| Exclusion::LanguageExclusion(le))
+            ))
+        ))(i)?;
+    Ok((i, exc))     
 }
 
 /// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
@@ -1107,36 +1125,25 @@ fn iri_range(i: Span) -> IRes<ValueSetValue> {
 }
 
 fn tilde_iri_exclusion(i: Span) -> IRes<Vec<IriExclusion>> {
-    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(iri_exc)))(i)?;
+    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(iri_exclusion)))(i)?;
     Ok((i, es))
 }
 
 fn tilde_literal_exclusion(i: Span) -> IRes<Vec<LiteralExclusion>> {
-    let (i, (_, _, es)) = tuple((char('~'), tws0, many0(literal_exc)))(i)?;
+    let (i, (_, es)) = tuple((token_tws("~"), many0(literal_exclusion)))(i)?;
     Ok((i, es))
 }
 
-/// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
-fn iri_exc(i: Span) -> IRes<IriExclusion> {
-    let (i, (_, _, e, _, maybe_tilde)) =
-        tuple((token_tws("."), token_tws("-"), iri, tws0, opt(token_tws("~"))))(i)?;
-    // Ok((i, ()))
-    todo!()
+/// `[52]   	exclusion	   ::=   	'-' (iri | literal | LANGTAG) '~'?`
+fn iri_exclusion(i: Span) -> IRes<IriExclusion> {
+    let (i, (_, iri, _, maybe_tilde)) =
+        tuple((token_tws("-"), iri, tws0, opt(token_tws("~"))))(i)?;
+    let iri_exc = match maybe_tilde {
+        None => IriExclusion::Iri(iri),
+        Some(_) => IriExclusion::IriStem(iri)
+    };
+    Ok((i, iri_exc))
 }
-
-fn literal_exc(i: Span) -> IRes<LiteralExclusion> {
-    let (i, (_, _, literal, _, maybe_tilde)) =
-        tuple((token_tws("."), token_tws("-"), literal(), tws0, opt(char('~'))))(i)?;
-    // Ok((i, ()))
-    todo!()
-}
-
-fn lang_exclusion(i: Span) -> IRes<LanguageExclusion> {
-    let (i, (_, _, lang_tag, _, maybe_tilde)) =
-        tuple((token_tws("."), token_tws("-"), lang_tag, tws0, opt(char('~'))))(i)?;
-    Ok((i, ()))
-}
-
 
 /// `[53]  literalRange	::= literal ('~' literalExclusion*)?`
 fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
@@ -1147,7 +1154,7 @@ fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
      Some(excs) => if excs.is_empty() {
        ValueSetValue::literal_stem(literal.lexical_form())
      } else {
-        todo!()
+        ValueSetValue::string_stem_range(literal.lexical_form(), excs)
      }
     };
      Ok((i, vs))
@@ -1170,7 +1177,7 @@ fn dash<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
     move |i| { token_tws("-")(i) }
 }
 
-/// `[54]   	literalExclusion	   ::=   	'-' literal '~'?`
+/// `[54] literalExclusion  ::= '-' literal '~'?`
 fn literal_exclusion(i: Span) -> IRes<LiteralExclusion> {
     let (i, (_, literal, maybe_tilde)) = tuple((dash(), literal(), opt(tilde())))(i)?;
     let le = match maybe_tilde {
@@ -1219,14 +1226,17 @@ fn language_exclusions(i: Span) -> IRes<Vec<LanguageExclusion>> {
     many0(language_exclusion)(i)
 }
 
-type LanguageExclusion = ();
-
 /// `[56]   	languageExclusion	   ::=   	'-' LANGTAG '~'?`
 fn language_exclusion(i: Span) -> IRes<LanguageExclusion> {
-    let (i, (_, lang_tag, maybe_stem)) = tuple((token_tws("-"), lang_tag, opt(token_tws("~"))))(i)?;
-    // Pending 
-    Ok((i, ()))
+    let (i, (_, lang, _, maybe_tilde)) =
+        tuple((token_tws("-"), lang_tag, tws0, opt(token_tws("~"))))(i)?;
+    let lang_exc = match maybe_tilde {
+        None => LanguageExclusion::Language(lang),
+        Some(_) => LanguageExclusion::LanguageStem(lang),
+    };    
+    Ok((i, lang_exc))
 }
+
 /// `[57]   	include	   ::=   	'&' tripleExprLabel`
 fn include_<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     traced("include", map_error(move |i| {
@@ -1319,16 +1329,12 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
     let (i, maybe_value) = opt(alt((
         map(lang_tag, |lang| Literal::lang_str(&str, lang)),
         map(preceded(token("^^"), datatype_iri), |datatype| {
-            Literal::datatype(&str, datatype)
+            Literal::datatype(&str, &datatype)
         }),
     )))(i)?;
     let value = match maybe_value {
         Some(v) => v,
-        None => Literal::ObjectLiteral {
-            value: str.fragment().to_string(),
-            language: None,
-            type_: None
-        }
+        None => Literal::str(str.fragment())
     };
     Ok((i, value))
   }, || ShExParseError::RDFLiteral))
@@ -2291,7 +2297,7 @@ mod tests {
     fn test_value_set() {
         let (_, result) = value_set(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![
-            ValueSetValue::literal("a", None, None)
+            ValueSetValue::string_literal("a", None)
             ];
         let expected = NodeConstraint::new().with_values(expected_values);
         assert_eq!(result, expected)
@@ -2301,7 +2307,7 @@ mod tests {
     fn test_node_constraint_value_set() {
         let (_, result) = lit_node_constraint()(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![
-            ValueSetValue::literal("a", None, None)
+            ValueSetValue::string_literal("a", None)
             ];
         let expected = NodeConstraint::new().with_values(expected_values);
         assert_eq!(result, expected)
@@ -2311,7 +2317,7 @@ mod tests {
     fn test_shape_atom_node_constraint() {
         let (_, result) = lit_node_constraint_shape_expr(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![
-            ValueSetValue::literal("a", None, None)
+            ValueSetValue::string_literal("a", None)
             ];
         let expected = ShapeExpr::NodeConstraint(NodeConstraint::new().with_values(expected_values));
         assert_eq!(result, expected)
