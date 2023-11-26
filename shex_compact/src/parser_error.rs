@@ -49,6 +49,18 @@ pub enum ParseError {
     #[error("Expected shape expression declaration")]
     ExpectedShapeExprDecl,
 
+    #[error("Expected exclusion that starts by .")]
+    ExclusionPlus,
+
+    #[error("Expected exclusion")]
+    Exclusion,
+
+    #[error("Expected set of values between [ and ]")]
+    ValueSet,
+
+    #[error("Expected value set value")]
+    ValueSetValue,
+
     #[error("Expected value set")]
     ValueSetFacets,
 

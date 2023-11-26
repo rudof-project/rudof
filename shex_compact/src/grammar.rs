@@ -14,8 +14,10 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion, LanguageExclusion, Exclusion,
+    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion, LanguageExclusion, Exclusion, LangOrWildcard
 };
+use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
+use shex_ast::string_or_wildcard::StringOrWildcard;
 use log;
 use thiserror::Error;
 
@@ -566,7 +568,7 @@ fn datatype_facets(i: Span) -> IRes<NodeConstraint> {
 
 fn value_set_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
   traced("value_set_facets", map_error(move |i| {
-    let (i, (vs, _, facets)) = tuple((value_set, tws0, facets()))(i)?;
+    let (i, (vs, _, facets)) = tuple((value_set(), tws0, facets()))(i)?;
     Ok((i, vs.with_xsfacets(facets)))
   }, || ShExParseError::ValueSetFacets))
 }
@@ -1075,39 +1077,38 @@ fn optional(i: Span) -> IRes<Cardinality> {
 }
 
 /// `[48]   	valueSet	   ::=   	'[' valueSetValue* ']'`
-fn value_set(i: Span) -> IRes<NodeConstraint> {
-    let (i, (_, _, vs, _, _)) = tuple((char('['), tws0, many0(value_set_value), tws0, char(']')))(i)?;
+fn value_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
+  traced("value set", map_error(move |i| {
+    let (i, (_, vs, _)) = tuple((token_tws("["), many0(value_set_value()), token_tws("]")))(i)?;
     Ok((i, NodeConstraint::new().with_values(vs)))
+  }, || ShExParseError::ValueSet))
 }
 
 /// `[49]   	valueSetValue	   ::=   	iriRange | literalRange | languageRange`
 /// `                               | exclusion+`
-fn value_set_value(i: Span) -> IRes<ValueSetValue> {
+fn value_set_value<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+ traced("value_set_value", map_error(move |i| {
     alt((
+        exclusion_plus(),
         iri_range,
         literal_range(),
         language_range(),
-        exclusion_plus
-    ))(i)
+    ))(i) }, || ShExParseError::ValueSetValue))
 }
 
-fn exclusion_plus(i: Span) -> IRes<ValueSetValue> {
-   let (i, excs) = many1(exclusion)(i)?;
-   todo!()
-}
-
-/// `[50]   	exclusion	   ::=   	'.' '-' (iri | literal | LANGTAG) '~'?`
-fn exclusion(i: Span) -> IRes<Exclusion> {
-    let (i, (_,exc)) = tuple(
-        (
-            token_tws("."), 
-            alt((
-             map(literal_exclusion, |le| Exclusion::LiteralExclusion(le)), 
-             map(iri_exclusion, |ie| Exclusion::IriExclusion(ie)), 
-             map(language_exclusion, |le| Exclusion::LanguageExclusion(le))
-            ))
-        ))(i)?;
-    Ok((i, exc))     
+/// exclusion+ changed by: '.' (iriExclusion+ | literalExclusion+ | languageExclusion+)
+fn exclusion_plus<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
+  traced("wildcard exclusion", map_error(move |i| {
+   let (i, (_, e)) = tuple((
+    token_tws("."), 
+    alt((
+        map(many1(literal_exclusion), |es| ValueSetValue::LiteralStemRange { stem: StringOrWildcard::Wildcard, exclusions: Some(es) }),
+        map(many1(language_exclusion), |es| ValueSetValue::LanguageStemRange { stem: LangOrWildcard::Wildcard, exclusions: Some(es) }),
+        map(many1(iri_exclusion), |es| ValueSetValue::IriStemRange { stem: IriRefOrWildcard::Wildcard, exclusions: Some(es) })
+      ))
+     ))(i)?;
+   Ok((i, e))
+  }, || ShExParseError::ExclusionPlus))
 }
 
 /// `[51]   	iriRange	   ::=   	   iri ('~' exclusion*)?`
@@ -2295,7 +2296,7 @@ mod tests {
 
     #[test]
     fn test_value_set() {
-        let (_, result) = value_set(Span::new("[ 'a' ]")).unwrap();
+        let (_, result) = value_set()(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![
             ValueSetValue::string_literal("a", None)
             ];

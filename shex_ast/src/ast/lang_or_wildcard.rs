@@ -11,10 +11,7 @@ use super::serde_string_or_struct::SerializeStringOrStruct;
 #[serde(untagged)]
 pub enum LangOrWildcard {
     Lang(Lang),
-    Wildcard {
-        #[serde(rename = "type")]
-        type_: String,
-    },
+    Wildcard,
 }
 
 impl FromStr for LangOrWildcard {
