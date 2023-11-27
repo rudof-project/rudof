@@ -28,6 +28,36 @@ impl NumericLiteral {
         NumericLiteral::Decimal(d)
     }
 
+    pub fn decimal_from_isize(d: isize) -> NumericLiteral {
+        let d: Decimal = Decimal::from_isize(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_i32(d: i32) -> NumericLiteral {
+        let d: Decimal = Decimal::from_i32(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_i64(d: i64) -> NumericLiteral {
+        let d: Decimal = Decimal::from_i64(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_u128(d: u128) -> NumericLiteral {
+        let d: Decimal = Decimal::from_u128(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_u64(d: u64) -> NumericLiteral {
+        let d: Decimal = Decimal::from_u64(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
+    pub fn decimal_from_u32(d: u32) -> NumericLiteral {
+        let d: Decimal = Decimal::from_u32(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
     pub fn decimal_from_f32(d: f32) -> NumericLiteral {
         let d: Decimal = Decimal::from_f32(d).unwrap();
         NumericLiteral::Decimal(d)
@@ -95,40 +125,35 @@ impl<'de> Deserialize<'de> for NumericLiteral {
             where
                 E: serde::de::Error,
             {
-                let n: isize = v.try_into().unwrap();
-                Ok(NumericLiteral::Integer(n))
+                Ok(NumericLiteral::decimal_from_i32(v))
             }
 
             fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                let n: isize = v.try_into().unwrap();
-                Ok(NumericLiteral::Integer(n))
+                Ok(NumericLiteral::decimal_from_i64(v))
             }
 
             fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                let n: isize = v.try_into().unwrap();
-                Ok(NumericLiteral::Integer(n))
+                Ok(NumericLiteral::decimal_from_u64(v))
             }
 
             fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                let n: isize = v.try_into().unwrap();
-                Ok(NumericLiteral::Integer(n))
+                Ok(NumericLiteral::decimal_from_u32(v))
             }
 
             fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                let n: isize = v.try_into().unwrap();
-                Ok(NumericLiteral::Integer(n))
+                Ok(NumericLiteral::decimal_from_u128(v))
             }
 
             fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>

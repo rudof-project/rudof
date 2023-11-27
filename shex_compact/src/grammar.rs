@@ -679,7 +679,7 @@ fn numeric_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 /// `From [30] numeric_range_lit = numericRange numericLiteral``
 fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
   traced("numeric_range", move |i| {  
-   let (i, (n_range, v)) = tuple((numeric_range, cut(numeric_literal)))(i)?;
+   let (i, (n_range, v)) = tuple((numeric_range, cut(raw_numeric_literal)))(i)?;
    let v = match n_range {
      NumericRange::MinInclusive => XsFacet::NumericFacet(NumericFacet::MinInclusive(v)),
      NumericRange::MinExclusive => XsFacet::NumericFacet(NumericFacet::MinExclusive(v)),
@@ -1119,7 +1119,7 @@ fn iri_range(i: Span) -> IRes<ValueSetValue> {
         Some(excs) => if excs.is_empty() {
            ValueSetValue::IriStem { stem: iri }
         } else {
-            todo!()
+            ValueSetValue::IriStemRange { stem: IriRefOrWildcard::IriRef(iri), exclusions: Some(excs) }
         }
     };
     Ok((i, value))
@@ -1207,7 +1207,10 @@ fn language_range1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
             Some((_, exclusions)) => if exclusions.is_empty() {
                 ValueSetValue::language_stem(lang_tag)
             } else {
-                todo!()
+                ValueSetValue::LanguageStemRange { 
+                    stem: LangOrWildcard::Lang(lang_tag), 
+                    exclusions: Some(exclusions) 
+                }
             }
         };
         Ok((i, value))  
@@ -1312,6 +1315,18 @@ pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     ))(i)
 }
 
+/// raw_numeric_literal obtains a numeric literal as a JSON
+/// `[16t]   	rawnumericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE
+/// `
+pub fn raw_numeric_literal(i: Span) -> IRes<NumericLiteral> {
+    alt((
+        map(double, |n| NumericLiteral::decimal_from_f64(n)), 
+        decimal,
+        map(integer, |n| NumericLiteral::decimal_from_isize(n))
+    ))(i)
+}
+
+
 pub fn boolean_literal(i: Span) -> IRes<Literal> {
     map(boolean_value, |b| Literal::boolean(b))(i)
 }
@@ -1351,10 +1366,10 @@ fn datatype_iri(i: Span) -> IRes<IriRef> {
 pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span> {
     traced("string", map_error(move |i| {
         alt((
-            string_literal_single_quote(),
-            string_literal_quote,
             string_literal_long_quote,
             string_literal_long_single_quote,
+            string_literal_single_quote(),
+            string_literal_quote,
         ))(i)
     },
         || ShExParseError::ExpectedStringLiteral

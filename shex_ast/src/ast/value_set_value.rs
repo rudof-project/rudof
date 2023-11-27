@@ -8,11 +8,12 @@ use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
 };
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Serialize;
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::numeric_literal::NumericLiteral;
 use std::{fmt, result, str::FromStr};
+use thiserror::Error;
 
 use super::{
     iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
@@ -295,72 +296,95 @@ fn get_type_str(n: &NumericLiteral) -> &str {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 enum Stem {
     Str(String),
     Wildcard,
 }
 
-#[derive(Debug)]
-struct NoStringOrWildCard;
+#[derive(Debug, Error)]
+enum StemError {
+    #[error("Stem is no string or wildcard: {stem:?}")]
+    NoStringOrWildCard { stem: Stem },
 
-#[derive(Debug)]
-struct NoIriRefOrWildCard {
-    err: IriSError,
-}
+    #[error("Stem is no IriRef or wildcard. Stem: {stem:?}, IriError: {err}")]
+    NoIriRefOrWildCard { stem: Stem, err: IriSError },
 
-#[derive(Debug)]
-struct NoString;
+    #[error("Stem is no lang or wildcard: {stem:?}")]
+    NoLangOrWildcard { stem: Stem },
 
-#[derive(Debug)]
-struct NoLanguage;
+    #[error("Stem should be IriRef but is wildcard")]
+    StemAsIriRefIsWildcard,
 
-#[derive(Debug)]
-enum ErrStemIriRef {
-    StemIsWildcard,
-    IriError { err: IriSError },
+    #[error("Error obtaining IRI for stem: {stem:?} Error: {err}")]
+    IriError { stem: Stem, err: IriSError },
+
+    #[error("Stem is no language: {stem:?}")]
+    NoLanguage { stem: Stem },
+
+    #[error("Stem can not act as string: {stem:?}")]
+    NoString { stem: Stem },
+
+    #[error("Stem can not act as lang: {str}")]
+    NoLang { str: String },
 }
 
 impl Stem {
-    fn as_iri(&self) -> Result<IriRef, ErrStemIriRef> {
+    fn as_iri(&self) -> Result<IriRef, StemError> {
         match self {
             Stem::Str(s) => {
-                let iri_ref =
-                    IriRef::from_str(s.as_str()).map_err(|e| ErrStemIriRef::IriError { err: e })?;
+                let iri_ref = IriRef::from_str(s.as_str()).map_err(|e| StemError::IriError {
+                    stem: self.clone(),
+                    err: e,
+                })?;
                 Ok(iri_ref)
             }
-            _ => Err(ErrStemIriRef::StemIsWildcard),
+            _ => Err(StemError::StemAsIriRefIsWildcard),
         }
     }
 
-    fn as_language(&self) -> Result<String, NoLanguage> {
+    fn as_language(&self) -> Result<String, StemError> {
         match self {
             Stem::Str(s) => Ok(s.clone()),
-            _ => Err(NoLanguage),
+            _ => Err(StemError::NoLanguage { stem: self.clone() }),
         }
     }
 
-    fn as_string(&self) -> Result<String, NoString> {
+    fn as_string(&self) -> Result<String, StemError> {
         match self {
             Stem::Str(s) => Ok(s.clone()),
-            _ => Err(NoString),
+            _ => Err(StemError::NoString { stem: self.clone() }),
         }
     }
 
-    fn as_string_or_wildcard(&self) -> Result<StringOrWildcard, NoStringOrWildCard> {
+    fn as_string_or_wildcard(&self) -> Result<StringOrWildcard, StemError> {
         match self {
             Stem::Str(s) => Ok(StringOrWildcard::String(s.clone())),
             Stem::Wildcard => Ok(StringOrWildcard::Wildcard),
         }
     }
 
-    fn as_iri_or_wildcard(&self) -> Result<IriRefOrWildcard, NoIriRefOrWildCard> {
+    fn as_iri_or_wildcard(&self) -> Result<IriRefOrWildcard, StemError> {
         match self {
             Stem::Str(s) => {
-                let iri = FromStr::from_str(s).map_err(|err| NoIriRefOrWildCard { err })?;
+                let iri = FromStr::from_str(s).map_err(|err| StemError::NoIriRefOrWildCard {
+                    stem: self.clone(),
+                    err,
+                })?;
                 Ok(IriRefOrWildcard::IriRef(IriRef::iri(iri)))
             }
             Stem::Wildcard => Ok(IriRefOrWildcard::Wildcard),
+        }
+    }
+
+    fn as_lang_or_wildcard(&self) -> Result<LangOrWildcard, StemError> {
+        match self {
+            Stem::Str(s) => {
+                let lang =
+                    FromStr::from_str(s).map_err(|_| StemError::NoLang { str: s.clone() })?;
+                Ok(lang)
+            }
+            Stem::Wildcard => Ok(LangOrWildcard::Wildcard),
         }
     }
 }
@@ -629,9 +653,24 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         },
                         None => Err(de::Error::missing_field("stem")),
                     },
-                    Some(ValueSetValueType::LanguageStemRange) => {
-                        todo!()
-                    }
+                    Some(ValueSetValueType::LanguageStemRange) => match stem {
+                        Some(stem) => match exclusions {
+                            Some(excs) => {
+                                let lang_excs = Exclusion::parse_language_exclusions(excs).map_err(|e| {
+                                    de::Error::custom("LanguageStemRange: some exclusions are not Lang exclusions: {e:?}")
+                                })?;
+                                let stem = stem.as_lang_or_wildcard().map_err(|e| {
+                                    de::Error::custom(format!("IriStemRange: stem is not lang or wildcard. stem `{stem:?}`: {e:?}"))
+                                })?;
+                                Ok(ValueSetValue::LanguageStemRange {
+                                    stem: stem,
+                                    exclusions: Some(lang_excs),
+                                })
+                            }
+                            None => Err(de::Error::missing_field("exclusions")),
+                        },
+                        None => Err(de::Error::missing_field("stem")),
+                    },
                     Some(ValueSetValueType::IriStemRange) => match stem {
                         Some(stem) => match exclusions {
                             Some(excs) => {
