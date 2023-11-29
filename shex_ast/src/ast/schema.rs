@@ -95,8 +95,13 @@ impl Schema {
         self
     }
 
-    pub fn add_shape(&mut self, shape_label: ShapeExprLabel, shape_expr: ShapeExpr) {
-        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
+    pub fn add_shape(
+        &mut self,
+        shape_label: ShapeExprLabel,
+        shape_expr: ShapeExpr,
+        is_abstract: bool,
+    ) {
+        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr, is_abstract);
         match self.shapes {
             None => {
                 let mut ses = Vec::new();

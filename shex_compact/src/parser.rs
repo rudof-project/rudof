@@ -53,6 +53,7 @@ impl<'a> ShExParser<'a> {
                         schema = schema.with_import(Iri::new(iri.as_str()));
                     }
                     ShExStatement::ShapeDecl {
+                        is_abstract,
                         shape_label,
                         shape_expr,
                     } => {
@@ -61,7 +62,7 @@ impl<'a> ShExParser<'a> {
                         log::debug!(
                             "ShEx statement: ShapeDecl after deref: {shape_label:?} {shape_expr:?}"
                         );
-                        schema.add_shape(shape_label, shape_expr);
+                        schema.add_shape(shape_label, shape_expr, is_abstract);
                     }
                     ShExStatement::StartActions { actions } => {
                         log::debug!("ShEx statement: StartActions {actions:?}");
@@ -154,7 +155,7 @@ impl<'a> Iterator for StatementIterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use shex_ast::{ShapeExprLabel, Shape, ShapeExpr};
+    use shex_ast::{Shape, ShapeExpr, ShapeExprLabel};
 
     use super::*;
 
@@ -170,6 +171,7 @@ mod tests {
         expected.add_shape(
             ShapeExprLabel::iri_unchecked("http://example.org/S"),
             ShapeExpr::Shape(Shape::new(None, None, None)),
+            false,
         );
         assert_eq!(schema, expected)
     }

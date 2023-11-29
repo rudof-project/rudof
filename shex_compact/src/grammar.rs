@@ -343,11 +343,20 @@ fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
     traced("shape_expr_decl", 
     map_error(
         move |i| {
-      let (i, (shape_label, _, shape_expr)) =
-        tuple((shape_expr_label, tws0, cut(shape_expr_or_external())))(i)?;
+      let (i, (maybe_abstract, shape_label, _, shape_expr)) =
+        tuple((
+            opt(tag_no_case_tws("abstract")), 
+            shape_expr_label, 
+            tws0, 
+            cut(shape_expr_or_external())))(i)?;
+    let is_abstract = match maybe_abstract {
+        Some(_) => true,
+        None => false
+    };            
     Ok((
         i,
         ShExStatement::ShapeDecl {
+            is_abstract,  
             shape_label,
             shape_expr,
         },

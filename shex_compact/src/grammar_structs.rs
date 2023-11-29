@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shex_ast::{ShapeExprLabel, SemAct, ShapeExpr};
+use shex_ast::{SemAct, ShapeExpr, ShapeExprLabel};
 
 #[derive(Debug, PartialEq)]
 pub enum ShExStatement<'a> {
@@ -21,6 +21,7 @@ pub enum ShExStatement<'a> {
         shape_expr: ShapeExpr,
     },
     ShapeDecl {
+        is_abstract: bool,
         shape_label: ShapeExprLabel,
         shape_expr: ShapeExpr,
     },
@@ -30,7 +31,7 @@ pub enum ShExStatement<'a> {
 pub enum Qualifier {
     Closed,
     Extra(Vec<IriRef>),
-    Extends(ShapeExprLabel)
+    Extends(ShapeExprLabel),
 }
 
 #[derive(PartialEq, Debug)]

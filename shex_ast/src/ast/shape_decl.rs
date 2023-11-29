@@ -14,6 +14,9 @@ pub struct ShapeDecl {
 
     pub id: ShapeExprLabel,
 
+    #[serde(rename = "abstract", default = "default_abstract")]
+    pub is_abstract: bool,
+
     #[serde(
         rename = "shapeExpr",
         serialize_with = "serialize_string_or_struct",
@@ -22,13 +25,23 @@ pub struct ShapeDecl {
     pub shape_expr: ShapeExpr,
 }
 
+fn default_abstract() -> bool {
+    false
+}
+
 impl ShapeDecl {
-    pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr) -> Self {
+    pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) -> Self {
         ShapeDecl {
             type_: "ShapeDecl".to_string(),
+            is_abstract,
             id: label,
             shape_expr,
         }
+    }
+
+    pub fn with_is_abstract(mut self, is_abstract: bool) -> Self {
+        self.is_abstract = is_abstract;
+        self
     }
 }
 
@@ -45,6 +58,7 @@ impl Deref for ShapeDecl {
         let shape_expr = self.shape_expr.deref(base, prefixmap)?;
         Ok(ShapeDecl {
             type_: self.type_.clone(),
+            is_abstract: self.is_abstract.clone(),
             id,
             shape_expr,
         })
