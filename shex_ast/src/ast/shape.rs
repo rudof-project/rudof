@@ -2,7 +2,7 @@ use iri_s::{IriS, IriSError};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Annotation, SemAct, TripleExpr, TripleExprWrapper};
+use crate::{Annotation, SemAct, TripleExpr, TripleExprWrapper, ShapeExprLabel};
 use prefixmap::{Deref, DerefError, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -22,6 +22,9 @@ pub struct Shape {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Vec<Annotation>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extends: Option<Vec<ShapeExprLabel>>
 }
 
 impl Shape {
@@ -36,6 +39,7 @@ impl Shape {
             expression: expression.map(|e| e.into()),
             sem_acts: None,
             annotations: None,
+            extends: None
         }
     }
 
@@ -53,6 +57,12 @@ impl Shape {
         self.annotations = annotations;
         self
     }
+
+    pub fn with_extends(mut self, extends: Option<Vec<ShapeExprLabel>>) -> Self {
+        self.extends = extends;
+        self
+    }
+
 
     pub fn is_closed(&self) -> bool {
         self.closed.unwrap_or_else(|| false)
@@ -106,12 +116,24 @@ impl Deref for Shape {
                 Some(new_sas)
             }
         };
+        let new_extends = match &self.extends {
+            None => None,
+            Some(extends) => {
+                let mut new_extends = Vec::new();
+                for e in extends {
+                    new_extends.push(e.deref(base, prefixmap)?);
+                }
+                Some(new_extends)
+            }
+        };
+
         let shape = Shape {
             closed: self.closed,
             extra: new_extra,
             expression: new_expr,
             sem_acts: new_sem_acts,
             annotations: new_anns,
+            extends: new_extends,
         };
         Ok(shape)
     }
@@ -125,6 +147,7 @@ impl Default for Shape {
             expression: None,
             sem_acts: None,
             annotations: None,
+            extends: None
         }
     }
 }

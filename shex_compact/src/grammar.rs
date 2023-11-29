@@ -14,7 +14,7 @@ use nom::{
 };
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, NodeConstraint,
-    Ref, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion, LanguageExclusion, Exclusion, LangOrWildcard
+    ShapeExprLabel, SemAct, Shape, ShapeExpr, TripleExpr, XsFacet, NodeKind, NumericFacet, Pattern, StringFacet, TripleExprLabel, BNode, LiteralExclusion, IriExclusion, LanguageExclusion, LangOrWildcard
 };
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
@@ -188,6 +188,18 @@ pub fn token_tws<'a>(
         || ShExParseError::ExpectedToken(token.to_string()),
     )
 }
+
+/// A combinator that creates a parser for a case insensitive tag,
+/// surrounded by trailing whitespace or comments.
+pub fn tag_no_case_tws<'a>(
+    token: &'a str,
+) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+    map_error(
+        delimited(tws0, tag_no_case(token), tws0),
+        || ShExParseError::ExpectedToken(token.to_string()),
+    )
+}
+
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
@@ -516,24 +528,29 @@ fn dot(i: Span) -> IRes<ShapeExpr> {
 fn shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
   traced("shape_or_ref", 
   map_error(
-    move |i| { alt((shape_definition(), shape_ref))(i) },
+    move |i| { alt((
+        shape_definition(), 
+        map(shape_ref, |label| ShapeExpr::Ref(label))
+    ))(i) },
     || ShExParseError::ExpectedShapeOrRef
   ))  
 }
 
 /// `[22]   	inlineShapeOrRef	   ::=   	   inlineShapeDefinition | shapeRef`
 fn inline_shape_or_ref(i: Span) -> IRes<ShapeExpr> {
-    alt((inline_shape_definition, shape_ref))(i)
+    alt((inline_shape_definition, 
+         map(shape_ref, |label| { ShapeExpr::Ref(label)})
+        ))(i)
 }
 
 /// `[23]   	shapeRef	   ::=   	   ATPNAME_LN | ATPNAME_NS | '@' shapeExprLabel`
-fn shape_ref(i: Span) -> IRes<ShapeExpr> {
+fn shape_ref(i: Span) -> IRes<ShapeExprLabel> {
     alt((at_pname_ln, at_pname_ns, at_shape_expr_label))(i)
 }
 
-fn at_shape_expr_label(i: Span) -> IRes<ShapeExpr> {
+fn at_shape_expr_label(i: Span) -> IRes<ShapeExprLabel> {
     let (i, (_, label)) = tuple((char('@'), shape_expr_label))(i)?;
-    Ok((i, ShapeExpr::shape_ref(label)))
+    Ok((i, label))
 }
 
 /// `[24] litNodeConstraint	::= "LITERAL" xsFacet*
@@ -720,7 +737,8 @@ fn numeric_range(i: Span) -> IRes<NumericRange> {
     ))(i) 
 }
 
-/// `[33]   	shapeDefinition	   ::=   	(extraPropertySet | "CLOSED")* '{' tripleExpression? '}' annotation* semanticActions`
+/// `[33]  shapeDefinition	   ::= qualifiers '{' tripleExpression? '}' annotation* semanticActions`
+/// qualifiers = (extraPropertySet | "CLOSED" | extends) *
 fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
     traced("shape_definition",
     map_error(move |i| {
@@ -740,8 +758,12 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
         None
     };
     let mut extra = Vec::new();
+    let mut extends = Vec::new();
     for q in qualifiers {
         match q {
+            Qualifier::Extends(label) => {
+                extends.push(label)
+            }
             Qualifier::Closed => {}
             Qualifier::Extra(ps) => {
                 for p in ps {
@@ -751,6 +773,11 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
         }
     }
     let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
+    let maybe_extends = if extends.is_empty() { 
+        None 
+    } else { 
+        Some(extends)
+    };
     let annotations = if annotations.is_empty() {
         None
     } else {
@@ -761,13 +788,14 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
         ShapeExpr::shape(
             Shape::new(closed, maybe_extra, maybe_triple_expr)
                 .with_annotations(annotations)
-                .with_sem_acts(sem_actions),
+                .with_sem_acts(sem_actions)
+                .with_extends(maybe_extends),
         ),
     ))
   }, || ShExParseError::ExpectedShapeDefinition))
 }
 
-/// `[34] inlineShapeDefinition	::= (extraPropertySet | "CLOSED")* '{' tripleExpression? '}'`
+/// `[34] inlineShapeDefinition	::= qualifiers '{' tripleExpression? '}'`
 fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
     let (i, (qualifiers, _, maybe_triple_expr, _)) = tuple((
         qualifiers(),
@@ -783,6 +811,9 @@ fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
     let mut extra = Vec::new();
     for q in qualifiers {
         match q {
+            Qualifier::Extends(labels) => {
+                todo!()
+            }
             Qualifier::Closed => {}
             Qualifier::Extra(ps) => {
                 for p in ps {
@@ -815,11 +846,24 @@ fn qualifiers<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<Qualifier>> {
     traced("qualifiers", map_error(move |i| many0(qualifier())(i), || ShExParseError::ExpectedQualifiers))
 }
 
+/// `From [34] qualifiers ::= extraPropertySet | "CLOSED" | extension`
 fn qualifier<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
     traced("qualifier", map_error(move |i| {
-        alt((closed(), extra_property_set()))(i)
+        alt((extension(), closed(), extra_property_set()))(i)
     }, || ShExParseError::ExpectedQualifier)
     )
+}
+
+
+fn extension<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
+  traced("extension", map_error(move |i| {
+    let (i, (_,sr)) = alt((
+        tuple((tag_no_case_tws("extends"), shape_ref)),
+        tuple((token_tws("&"), shape_ref))
+     ))(i)?; 
+     Ok((i, Qualifier::Extends(sr)))
+  }, || ShExParseError::Extension)
+  )
 }
 
 fn closed<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
@@ -1221,7 +1265,14 @@ fn language_range1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
 fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
     traced("language_range2", map_error(move |i| { 
        let (i, (_,_, exclusions)) = tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
-       todo!()
+       let v = if exclusions.is_empty() {
+         ValueSetValue::LanguageStem { stem: Lang::new("") }
+       } else {
+         ValueSetValue::LanguageStemRange { 
+            stem: LangOrWildcard::Lang(Lang::new("")), 
+            exclusions: Some(exclusions) }
+       };
+       Ok((i,v))
      }, || ShExParseError::LanguageRange))
   }
 
@@ -1480,18 +1531,18 @@ fn datatype(i: Span) -> IRes<NodeConstraint> {
 }
 
 /// `[63]   	shapeExprLabel	   ::=   	iri | blankNode`
-fn shape_expr_label(i: Span) -> IRes<Ref> {
+fn shape_expr_label(i: Span) -> IRes<ShapeExprLabel> {
     let (i, ref_) = alt((iri_as_ref, blank_node_ref))(i)?;
     Ok((i, ref_))
 }
-fn iri_as_ref(i: Span) -> IRes<Ref> {
+fn iri_as_ref(i: Span) -> IRes<ShapeExprLabel> {
     let (i, iri_ref) = iri(i)?;
-    Ok((i, Ref::iri_ref(iri_ref)))
+    Ok((i, ShapeExprLabel::iri_ref(iri_ref)))
 }
 
-fn blank_node_ref(i: Span) -> IRes<Ref> {
+fn blank_node_ref(i: Span) -> IRes<ShapeExprLabel> {
     let (i, bn) = blank_node(i)?;
-    Ok((i, Ref::bnode(bn)))
+    Ok((i, ShapeExprLabel::bnode(bn)))
 }
 
 /// `[64]   	tripleExprLabel	   ::=   	iri | blankNode`
@@ -1624,16 +1675,16 @@ fn rdf_type(i: Span) -> IRes<IriRef> {
 }
 
 /// `[70]   	<ATPNAME_NS>	   ::=   	"@" PNAME_NS`
-fn at_pname_ns(i: Span) -> IRes<ShapeExpr> {
-    let (i, (_, _, pname)) = tuple((char('@'), tws0, pname_ns))(i)?;
-    let ref_ = Ref::iri_unchecked(pname.fragment());
-    Ok((i, ShapeExpr::shape_ref(ref_)))
+fn at_pname_ns(i: Span) -> IRes<ShapeExprLabel> {
+    let (i, (_, _, pname)) = tuple((char('@'), tws0, pname_ns_iri_ref))(i)?;
+    let label = ShapeExprLabel::iri_ref(pname);
+    Ok((i, label))
 }
 
 /// `[71]   	<ATPNAME_LN>	   ::=   	"@" PNAME_LN`
-fn at_pname_ln(i: Span) -> IRes<ShapeExpr> {
+fn at_pname_ln(i: Span) -> IRes<ShapeExprLabel> {
     let (i, (_, _, pname_ln)) = tuple((char('@'), tws0, pname_ln))(i)?;
-    Ok((i, ShapeExpr::iri_ref(pname_ln)))
+    Ok((i, ShapeExprLabel::iri_ref(pname_ln)))
 }
 
 /// `[72] <REGEXP>	::= '/' ([^/\\\n\r]

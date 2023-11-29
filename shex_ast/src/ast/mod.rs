@@ -7,7 +7,7 @@ pub mod lang_or_wildcard;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod object_value;
-pub mod ref_;
+// pub mod ref_;
 pub mod schema;
 pub mod schema_json_compiler;
 pub mod schema_json_error;
@@ -16,6 +16,7 @@ pub mod serde_string_or_struct;
 pub mod shape;
 pub mod shape_decl;
 pub mod shape_expr;
+pub mod shape_expr_label;
 pub mod start_action;
 pub mod string_or_iri_stem;
 pub mod string_or_literal_stem;
@@ -35,13 +36,14 @@ pub use lang_or_wildcard::*;
 pub use node_constraint::*;
 pub use node_kind::*;
 pub use object_value::*;
-pub use ref_::*;
+// pub use ref_::*;
 pub use schema::*;
 pub use schema_json_error::*;
 pub use sem_act::*;
 pub use shape::*;
 pub use shape_decl::*;
 pub use shape_expr::*;
+pub use shape_expr_label::*;
 pub use start_action::*;
 pub use string_or_iri_stem::*;
 pub use string_or_literal_stem::*;
@@ -110,7 +112,7 @@ mod tests {
                 negated: None,
                 inverse: None,
                 predicate: IriS::new_unchecked("http://a.example/p1").into(),
-                value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+                value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
                     value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
                 }))),
                 min: None,
@@ -137,7 +139,7 @@ mod tests {
             negated: None,
             inverse: None,
             predicate: p1.into(),
-            value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+            value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
                 value: IriRef::iri(S5),
             }))),
             max: None,

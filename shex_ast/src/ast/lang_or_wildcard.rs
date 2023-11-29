@@ -1,14 +1,11 @@
 use std::{result, str::FromStr};
-
+use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
 use void::Void;
 
-use super::serde_string_or_struct::SerializeStringOrStruct;
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LangOrWildcard {
     Lang(Lang),
     Wildcard,
@@ -22,14 +19,18 @@ impl FromStr for LangOrWildcard {
     }
 }
 
-impl SerializeStringOrStruct for LangOrWildcard {
-    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+impl Serialize for LangOrWildcard {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match &self {
-            LangOrWildcard::Lang(ref lang) => lang.serialize(serializer),
-            _ => self.serialize(serializer),
+        match self {
+            LangOrWildcard::Lang(lang) => serializer.serialize_str(&lang.value()),
+            LangOrWildcard::Wildcard => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("type", "Wildcard")?;
+                map.end()
+            }
         }
     }
 }

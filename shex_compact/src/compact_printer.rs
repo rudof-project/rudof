@@ -8,7 +8,7 @@ use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind,
-    NumericFacet, Pattern, Ref, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, StringFacet,
+    NumericFacet, Pattern, ShapeExprLabel, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, StringFacet,
     TripleExpr, XsFacet,
 };
 use srdf::{literal::Literal, numeric_literal::NumericLiteral};
@@ -152,7 +152,7 @@ where
     }
 
     fn pp_shape_decl(&self, sd: &ShapeDecl) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.pp_ref(&sd.id)
+        self.pp_label(&sd.id)
             .append(self.space())
             .append(self.pp_shape_expr(&sd.shape_expr))
     }
@@ -172,7 +172,7 @@ where
 
     fn pp_shape_expr(&self, se: &ShapeExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
         match se {
-            ShapeExpr::Ref(ref_) => self.doc.text("@").append(self.pp_ref(ref_)),
+            ShapeExpr::Ref(ref_) => self.doc.text("@").append(self.pp_label(ref_)),
             ShapeExpr::Shape(s) => self.pp_shape(s),
             ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
             ShapeExpr::External => self.pp_external(),
@@ -518,10 +518,10 @@ where
         }
     }
 
-    fn pp_ref(&self, ref_: &Ref) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_label(&self, ref_: &ShapeExprLabel) -> DocBuilder<'a, Arena<'a, A>, A> {
         match ref_ {
-            Ref::BNode { value } => self.pp_bnode(value),
-            Ref::IriRef { value } => self.pp_iri_ref(value),
+            ShapeExprLabel::BNode { value } => self.pp_bnode(value),
+            ShapeExprLabel::IriRef { value } => self.pp_iri_ref(value),
         }
     }
 

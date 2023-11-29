@@ -154,7 +154,7 @@ impl<'a> Iterator for StatementIterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use shex_ast::{Ref, Shape, ShapeExpr};
+    use shex_ast::{ShapeExprLabel, Shape, ShapeExpr};
 
     use super::*;
 
@@ -168,7 +168,7 @@ mod tests {
         let mut expected = Schema::new();
         expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
         expected.add_shape(
-            Ref::iri_unchecked("http://example.org/S"),
+            ShapeExprLabel::iri_unchecked("http://example.org/S"),
             ShapeExpr::Shape(Shape::new(None, None, None)),
         );
         assert_eq!(schema, expected)

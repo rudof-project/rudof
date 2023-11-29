@@ -261,7 +261,7 @@ impl Serialize for ValueSetValue {
             ValueSetValue::LanguageStem { stem } => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LanguageStem")?;
-                map.serialize_entry("stem", stem)?;
+                map.serialize_entry("stem", &stem.value())?;
                 map.end()
             }
             ValueSetValue::LanguageStemRange { stem, exclusions } => {

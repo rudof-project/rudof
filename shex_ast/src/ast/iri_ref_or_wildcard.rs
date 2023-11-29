@@ -1,5 +1,4 @@
 use std::{result, str::FromStr};
-
 use iri_s::IriSError;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;

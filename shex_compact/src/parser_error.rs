@@ -76,6 +76,9 @@ pub enum ParseError {
     #[error("Expected prefixed name")]
     ExpectedPrefixedName,
 
+    #[error("Expected extends followed by shape references")]
+    Extension,
+
     #[error("Expected Start declaration")]
     ExpectedStart,
 

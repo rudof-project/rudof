@@ -1,8 +1,7 @@
 use super::shape_expr::ShapeExpr;
 use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
-use crate::Ref;
-use crate::ShapeLabel;
+use crate::ShapeExprLabel;
 use prefixmap::Deref;
 use prefixmap::DerefError;
 use prefixmap::IriRef;
@@ -13,7 +12,7 @@ pub struct ShapeDecl {
     #[serde(rename = "type")]
     pub type_: String,
 
-    pub id: Ref,
+    pub id: ShapeExprLabel,
 
     #[serde(
         rename = "shapeExpr",
@@ -24,7 +23,7 @@ pub struct ShapeDecl {
 }
 
 impl ShapeDecl {
-    pub fn new(label: Ref, shape_expr: ShapeExpr) -> Self {
+    pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr) -> Self {
         ShapeDecl {
             type_: "ShapeDecl".to_string(),
             id: label,

@@ -1,5 +1,5 @@
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
-use crate::Ref;
+use crate::ShapeExprLabel;
 use crate::{
     ast, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
     internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
@@ -87,19 +87,19 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn id_to_shape_label<'a>(&self, id: &Ref) -> CResult<ShapeLabel> {
+    fn id_to_shape_label<'a>(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
         match id {
-            Ref::IriRef { value } => {
+            ShapeExprLabel::IriRef { value } => {
                 let shape_label = iri_ref_2_shape_label(value)?;
                 Ok(shape_label)
             }
-            Ref::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
         }
     }
 
     fn get_shape_label_idx(
         &self,
-        id: &Ref,
+        id: &ShapeExprLabel,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         let label = self.id_to_shape_label(id)?;
@@ -117,7 +117,7 @@ impl SchemaJsonCompiler {
 
     fn ref2idx(
         &self,
-        sref: &ast::Ref,
+        sref: &ast::ShapeExprLabel,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         let idx = self.get_shape_label_idx(sref, compiled_schema)?;

@@ -6,10 +6,9 @@ use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use super::ref_::Ref;
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
-use crate::{NodeConstraint, RefError, Shape};
+use crate::{NodeConstraint, RefError, Shape, ShapeExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -61,14 +60,14 @@ pub enum ShapeExpr {
 
     External,
 
-    Ref(Ref),
+    Ref(ShapeExprLabel),
 }
 
 impl FromStr for ShapeExpr {
     type Err = RefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let ref_ = Ref::from_str(s)?;
+        let ref_ = ShapeExprLabel::from_str(s)?;
         Ok(ShapeExpr::Ref(ref_))
     }
 }
@@ -121,11 +120,11 @@ impl ShapeExpr {
     }
 
     pub fn iri_ref(iri_ref: IriRef) -> ShapeExpr {
-        ShapeExpr::Ref(Ref::iri_ref(iri_ref))
+        ShapeExpr::Ref(ShapeExprLabel::iri_ref(iri_ref))
     }
 
-    pub fn shape_ref(ref_: Ref) -> ShapeExpr {
-        ShapeExpr::Ref(ref_)
+    pub fn shape_ref(label: ShapeExprLabel) -> ShapeExpr {
+        ShapeExpr::Ref(label)
     }
 
     pub fn any() -> ShapeExpr {

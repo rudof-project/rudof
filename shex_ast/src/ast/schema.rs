@@ -1,5 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Iri, Ref, ShapeLabel};
+use crate::{Iri, ShapeExprLabel};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
@@ -95,7 +95,7 @@ impl Schema {
         self
     }
 
-    pub fn add_shape(&mut self, shape_label: Ref, shape_expr: ShapeExpr) {
+    pub fn add_shape(&mut self, shape_label: ShapeExprLabel, shape_expr: ShapeExpr) {
         let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
         match self.shapes {
             None => {
