@@ -1563,6 +1563,7 @@ fn triple_expr_label(i: Span) -> IRes<TripleExprLabel> {
 }
 
 /// `[67]   	<CODE>	   ::=   	"{" ([^%\\] | "\\" [%\\] | UCHAR)* "%" "}"`
+/// `          code_str = ([^%\\] | "\\" [%\\] | UCHAR)*`
 fn code<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<String>> {
     traced("code", map_error(move |i| {
     let (i, (_, str, _, _, _)) = tuple((char('{'), cut(code_str), cut(char('%')), tws0, cut(char('}'))))(i)?;
@@ -1989,11 +1990,84 @@ fn is_hex(c: char) -> bool {
 }
 
 /// `[18t]   	<IRIREF>	   ::=   	"<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
+/// iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*
 fn iri_ref(i: Span) -> IRes<IriS> {
-    let (i, str) = delimited(char('<'), take_while(is_iri_ref), char('>'))(i)?;
+    let (i, str) = delimited(
+        char('<'), 
+        // take_while(is_iri_ref),
+        iri_chars,  
+        char('>'))(i)?;
     log::debug!("Iri_ref {str}");
-    Ok((i, IriS::new_unchecked(str.fragment())))
+    Ok((i, IriS::new_unchecked(str.as_str())))
 }
+
+/// `iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*`
+fn iri_chars(i: Span) -> IRes<String> {
+    let (i, chars) = many0(iri_char)(i)?;
+    let s: String = chars.iter().collect();
+    Ok((i, s))
+}
+
+/// `iri_chars = [^#0000- <>\"{}|^`\\] | UCHAR`
+fn iri_char(i:Span) -> IRes<char> {
+   let (i, char) = alt((
+    iri_chr, 
+    (map(uchar, |str| unescape_uchar(str.fragment())))
+    ))(i)?;
+    Ok((i, char))
+}
+
+fn unescape_uchar(str: &str) -> char {
+    let mut r: char = '?' ;
+    let mut queue: VecDeque<_> = str.chars().collect();
+    while let Some(c) = queue.pop_front() {
+        if c!= '\\' {
+            panic!("unescape_uchar doesn't start by \\")
+        }
+        match queue.pop_front() {
+            Some('u') => {
+                let mut s = String::new();
+                for _ in 0..4 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_code: \\u is not followed by 4 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                r = char::from_u32(u).unwrap(); 
+            }
+            Some('U') => {
+                let mut s = String::new();
+                for _ in 0..8 {
+                    if let Some(c) = queue.pop_front() {
+                       s.push(c)
+                    } else {
+                        panic!("unescape_code: \\u is not followed by 8 chars")
+                    }
+                } 
+
+                let u = u32::from_str_radix(&s, 16).unwrap();
+                r = char::from_u32(u).unwrap(); 
+            }
+            Some(c) => {
+                panic!("Unexpected char {c} after escape \\ in uchar")
+            }
+            None => panic!("unescape pattern requires a u or U after \\")
+        }
+    }
+    r
+}
+
+/// `iri_chr = [^#0000- <>\"{}|^`\\]`
+fn iri_chr(i: Span) -> IRes<char> {
+  none_of(IRI_CHARS_DISALLOWED)(i)
+}
+
+/// `[^#0000- <>\"{}|^`\\]`
+const IRI_CHARS_DISALLOWED: &str = r#"\u{00}=<>"{}|^`\"#;
+
 
 #[inline]
 fn is_iri_ref(chr: char) -> bool {
@@ -2367,6 +2441,13 @@ mod tests {
         let (_, result) = string_literal_single_quote()(Span::new("'a'")).unwrap();
         let expected = "a".to_string();
         assert_eq!(result.fragment().to_string(), expected)
+    }
+
+    #[test]
+    fn test_iri_ref_uchar() {
+        let (_, result) = iri_ref(Span::new("<http://example.org/p\\u0031>")).unwrap();
+        let expected = IriS::new_unchecked("http://example.org/p1");
+        assert_eq!(result, expected)
     }
 
     #[test]
