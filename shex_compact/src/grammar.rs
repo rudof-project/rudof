@@ -2067,11 +2067,9 @@ fn iri_chr(i: Span) -> IRes<char> {
         disallowed.push(c);
     }
     none_of(disallowed.clone().as_str())(i)
+    // Next definition looks better but fails in one case
+    // satisfy(is_iri_ref)(i) one)
 }
-
-/// `[^#0000- <>\"{}|^`\\]`
-const IRI_CHARS_DISALLOWED: &str = r#"\u{00}=<>"{}|^`\"#;
-
 
 #[inline]
 fn is_iri_ref(chr: char) -> bool {
