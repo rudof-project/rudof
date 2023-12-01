@@ -129,10 +129,12 @@ impl Deref for Literal {
             Literal::DatatypeLiteral {
                 lexical_form,
                 datatype,
-            } => Ok(Literal::DatatypeLiteral {
+            } => {
+                let dt = datatype.deref(base, prefixmap)?;
+                Ok(Literal::DatatypeLiteral {
                 lexical_form: lexical_form.clone(),
-                datatype: datatype.clone(),
-            }),
+                datatype: dt,
+            })},
         }
     }
 }

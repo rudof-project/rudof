@@ -14,6 +14,7 @@ use crate::ast::serde_string_or_struct::*;
 #[serde(untagged)]
 pub enum ObjectValue {
     Iri(IriRef),
+    
     Literal(Literal),
 }
 
@@ -110,7 +111,7 @@ impl Deref for ObjectValueWrapper {
     }
 }
 
-fn serialize_boolean_literal<S>(value: &bool, serializer: S) -> result::Result<S::Ok, S::Error>
+/*fn serialize_boolean_literal<S>(value: &bool, serializer: S) -> result::Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -118,4 +119,4 @@ where
         false => serializer.serialize_str("false"),
         true => serializer.serialize_str("true"),
     }
-}
+}*/

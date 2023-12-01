@@ -1997,7 +1997,6 @@ fn iri_ref(i: Span) -> IRes<IriS> {
         // take_while(is_iri_ref),
         iri_chars,  
         char('>'))(i)?;
-    log::debug!("Iri_ref {str}");
     Ok((i, IriS::new_unchecked(str.as_str())))
 }
 
@@ -2062,18 +2061,12 @@ fn unescape_uchar(str: &str) -> char {
 
 /// `iri_chr = [^#0000- <>\"{}|^`\\]`
 fn iri_chr(i: Span) -> IRes<char> {
-    let mut disallowed = "<>\"{}|^`\\".to_string();
-    for c in '\u{0000}'..='\u{0020}' {
-        disallowed.push(c);
-    }
-    none_of(disallowed.clone().as_str())(i)
-    // Next definition looks better but fails in one case
-    // satisfy(is_iri_ref)(i) one)
+    satisfy(is_iri_ref)(i) 
 }
 
 #[inline]
 fn is_iri_ref(chr: char) -> bool {
-    chr > ' ' && "<>\"{}|^`".find(chr) == None
+    chr > ' ' && "<>\"{}|^`\\".find(chr) == None
 }
 
 /// [140s] `<PNAME_NS>	   ::=   	PN_PREFIX? ":"`

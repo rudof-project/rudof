@@ -58,6 +58,7 @@ pub enum ShapeExpr {
 
     Shape(Shape),
 
+    #[serde(rename="ShapeExternal")]
     External,
 
     Ref(ShapeExprLabel),
