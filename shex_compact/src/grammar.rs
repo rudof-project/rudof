@@ -2062,7 +2062,11 @@ fn unescape_uchar(str: &str) -> char {
 
 /// `iri_chr = [^#0000- <>\"{}|^`\\]`
 fn iri_chr(i: Span) -> IRes<char> {
-  none_of(IRI_CHARS_DISALLOWED)(i)
+    let mut disallowed = "<>\"{}|^`\\".to_string();
+    for c in '\u{0000}'..='\u{0020}' {
+        disallowed.push(c);
+    }
+    none_of(disallowed.clone().as_str())(i)
 }
 
 /// `[^#0000- <>\"{}|^`\\]`
