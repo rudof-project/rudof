@@ -11,7 +11,6 @@ use serde::{
 use serde_derive::Serialize;
 use srdf::lang::Lang;
 use srdf::literal::Literal;
-use srdf::numeric_literal::NumericLiteral;
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 
@@ -135,7 +134,7 @@ impl Deref for ValueSetValue {
     }
 }
 
-impl SerializeStringOrStruct for ValueSetValue {
+/*impl SerializeStringOrStruct for ValueSetValue {
     fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -145,7 +144,7 @@ impl SerializeStringOrStruct for ValueSetValue {
             _ => self.serialize(serializer),
         }
     }
-}
+}*/
 
 impl FromStr for ValueSetValue {
     type Err = IriSError;
@@ -155,6 +154,10 @@ impl FromStr for ValueSetValue {
         Ok(ValueSetValue::ObjectValue(ObjectValue::Iri(iri_ref)))
     }
 }
+
+// TODO: Technical debt
+// The code for serialize/deserialize value_set_value embeds the code to serialize/deserialize object value
+// I would prefer to reuse the code from object_value here...
 
 #[derive(Debug, PartialEq)]
 enum ValueSetValueType {
@@ -171,6 +174,11 @@ enum ValueSetValueType {
     Double,
     Other(IriRef),
 }
+
+const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
+const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
+const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
 impl ValueSetValueType {
     fn parse(s: &str) -> Result<ValueSetValueType, IriSError> {
@@ -194,10 +202,10 @@ impl ValueSetValueType {
     }
 }
 
-const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
-const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
-const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
-const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
+//const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
+//const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+//const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
+//const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
 impl Serialize for ValueSetValue {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
@@ -205,40 +213,7 @@ impl Serialize for ValueSetValue {
         S: Serializer,
     {
         match self {
-            ValueSetValue::ObjectValue(v) => match v {
-                ObjectValue::Literal(Literal::BooleanLiteral(value)) => {
-                    let mut map = serializer.serialize_map(Some(2))?;
-                    map.serialize_entry("type", BOOLEAN_STR)?;
-                    let value_str = if *value { "true" } else { "false" };
-                    map.serialize_entry("value", value_str)?;
-                    map.end()
-                }
-                ObjectValue::Literal(Literal::NumericLiteral(num)) => {
-                    let mut map = serializer.serialize_map(Some(2))?;
-                    map.serialize_entry("type", get_type_str(num))?;
-                    map.serialize_entry("value", &num.to_string())?;
-                    map.end()
-                }
-                ObjectValue::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
-                ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
-                    let mut map = serializer.serialize_map(Some(3))?;
-                    match lang {
-                        Some(lan) => map.serialize_entry("language", lan.value().as_str())?,
-                        None => {}
-                    }
-                    map.serialize_entry("value", lexical_form)?;
-                    map.end()
-                }
-                ObjectValue::Literal(Literal::DatatypeLiteral {
-                    lexical_form,
-                    datatype,
-                }) => {
-                    let mut map = serializer.serialize_map(Some(2))?;
-                    map.serialize_entry("type", datatype)?;
-                    map.serialize_entry("value", lexical_form)?;
-                    map.end()
-                }
-            },
+            ValueSetValue::ObjectValue(v) => v.serialize(serializer),
             ValueSetValue::Language { language_tag } => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "Language")?;
@@ -285,14 +260,6 @@ impl Serialize for ValueSetValue {
                 map.end()
             }
         }
-    }
-}
-
-fn get_type_str(n: &NumericLiteral) -> &str {
-    match n {
-        NumericLiteral::Integer(_) => INTEGER_STR,
-        NumericLiteral::Double(_) => DOUBLE_STR,
-        NumericLiteral::Decimal(_) => DECIMAL_STR,
     }
 }
 
@@ -637,7 +604,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         Some(stem) => match exclusions {
                             Some(excs) => {
                                 let lit_excs = Exclusion::parse_literal_exclusions(excs).map_err(|e| {
-                                    de::Error::custom("LiteralStemRange: some exclusions are not literal exclusions: {e:?}")
+                                    de::Error::custom(format!("LiteralStemRange: some exclusions are not literal exclusions: {e:?}"))
                                 })?;
                                 let stem = stem.as_string_or_wildcard().map_err(|e| {
                                     de::Error::custom(format!("LiteralStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
@@ -660,7 +627,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     de::Error::custom("LanguageStemRange: some exclusions are not Lang exclusions: {e:?}")
                                 })?;
                                 let stem = stem.as_lang_or_wildcard().map_err(|e| {
-                                    de::Error::custom(format!("IriStemRange: stem is not lang or wildcard. stem `{stem:?}`: {e:?}"))
+                                    de::Error::custom(format!("LanguageStemRange: stem is not lang or wildcard. stem `{stem:?}`: {e:?}"))
                                 })?;
                                 Ok(ValueSetValue::LanguageStemRange {
                                     stem: stem,

@@ -109,6 +109,7 @@ impl Exclusion {
         for e in excs {
             match e {
                 Exclusion::LiteralExclusion(le) => lit_excs.push(le),
+                Exclusion::Untyped(s) => lit_excs.push(LiteralExclusion::Literal(s)),
                 other => return Err(SomeNoLitExclusion { exc: other }),
             }
         }
@@ -140,6 +141,9 @@ impl Exclusion {
         for e in excs {
             match e {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
+                Exclusion::Untyped(s) => {
+                    lang_excs.push(LanguageExclusion::Language(Lang::new(s.as_str())))
+                }
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
         }
@@ -275,6 +279,9 @@ impl<'de> Deserialize<'de> for Exclusion {
                     Some(ExclusionType::LanguageStem) => match stem {
                         Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
                             LanguageExclusion::LanguageStem(lang),
+                        )),
+                        Some(StemValue::Literal(l)) => Ok(Exclusion::LanguageExclusion(
+                            LanguageExclusion::LanguageStem(Lang::new(l.as_str())),
                         )),
                         Some(_) => Err(de::Error::custom(format!(
                             "Stem {stem:?} must be a language"

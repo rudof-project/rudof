@@ -1,8 +1,8 @@
-use iri_s::{IriS, IriSError};
+use iri_s::IriS;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Annotation, SemAct, TripleExpr, TripleExprWrapper, ShapeExprLabel};
+use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -24,7 +24,7 @@ pub struct Shape {
     pub annotations: Option<Vec<Annotation>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub extends: Option<Vec<ShapeExprLabel>>
+    pub extends: Option<Vec<ShapeExprLabel>>,
 }
 
 impl Shape {
@@ -39,7 +39,7 @@ impl Shape {
             expression: expression.map(|e| e.into()),
             sem_acts: None,
             annotations: None,
-            extends: None
+            extends: None,
         }
     }
 
@@ -62,7 +62,6 @@ impl Shape {
         self.extends = extends;
         self
     }
-
 
     pub fn is_closed(&self) -> bool {
         self.closed.unwrap_or_else(|| false)
@@ -147,7 +146,7 @@ impl Default for Shape {
             expression: None,
             sem_acts: None,
             annotations: None,
-            extends: None
+            extends: None,
         }
     }
 }

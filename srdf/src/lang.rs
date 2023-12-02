@@ -10,7 +10,7 @@ pub struct Lang {
 impl Lang {
     pub fn new(str: &str) -> Lang {
         Lang {
-            lang: str.to_string(),
+            lang: str.to_lowercase().to_string(),
         }
     }
 

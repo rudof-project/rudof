@@ -465,7 +465,16 @@ fn non_lit_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr>
     let nc = ShapeExpr::node_constraint(non_lit);
     let se_result = match maybe_se {
         None => nc,
-        Some(se) => make_shape_and(vec![nc, se])
+        Some(se) => match se {
+         ShapeExpr::ShapeAnd { shape_exprs } => {
+            let mut new_ses = vec![nc];
+            for sew in shape_exprs {
+                new_ses.push(sew.se)
+            }
+            ShapeExpr::and(new_ses)
+         },
+         other => make_shape_and(vec![nc, other])
+        }
     };
     Ok((i, se_result)) 
   }, || ShExParseError::NonLitNodeConstraintOptShapeOrRef))
@@ -1410,7 +1419,7 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
     )))(i)?;
     let value = match maybe_value {
         Some(v) => v,
-        None => Literal::str(str.fragment())
+        None => Literal::str(&str)
     };
     Ok((i, value))
   }, || ShExParseError::RDFLiteral))
@@ -1423,73 +1432,84 @@ fn datatype_iri(i: Span) -> IRes<IriRef> {
 
 /// `[135s] string ::= STRING_LITERAL1 | STRING_LITERAL_LONG1`
 /// `                  | STRING_LITERAL2 | STRING_LITERAL_LONG2`
-pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span> {
+pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
     traced("string", map_error(move |i| {
         alt((
-            string_literal_long_quote,
-            string_literal_long_single_quote,
-            string_literal_single_quote(),
-            string_literal_quote,
+            string_literal_long1,
+            string_literal_long2,
+            string_literal1(),
+            string_literal2,
         ))(i)
     },
         || ShExParseError::ExpectedStringLiteral
     ))
 }
 
-pub fn string_literal_quote(input: Span) -> IRes<Span> {
-    delimited(
+pub fn string_literal2(i: Span) -> IRes<String> {
+    let (i, chars) = delimited(
         token(r#"""#),
-        cut(recognize(many0(alt((
-            recognize(none_of(REQUIRES_ESCAPE)),
-            echar,
-            uchar,
-        ))))),
-        token(r#"""#),
-    )(input)
-}
-
-pub fn string_literal_single_quote<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
-   traced("string_literal_single_quote", map_error(move |i| {
-        delimited(
-        token("'"),
-        recognize(many0(alt((
-            single_quote_char(),
+        cut(many0(alt((
+            none_of(REQUIRES_ESCAPE),
             echar,
             uchar,
         )))),
+        token(r#"""#),
+    )(i)?;
+    let str = chars.iter().collect();
+    Ok((i, str))
+}
+
+/// `[156s] <STRING_LITERAL1> ::= "'" ([^'\\\n\r] | ECHAR | UCHAR)* "'"`
+pub fn string_literal1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
+   traced("string_literal1", map_error(move |i| {
+        let (i, chars) = delimited(
         token("'"),
-    )(i)
+        many0(alt((
+            single_quote_char(),
+            echar,
+            uchar,
+        ))),
+        token("'"),
+    )(i)?;
+    let str = chars.iter().collect();
+    Ok((i, str))
    }, || ShExParseError::StringLiteralQuote))
 }
 
-fn single_quote_char<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span> {
+fn single_quote_char<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, char> {
   traced("single_quote_char", move |i| {
-    recognize(none_of(REQUIRES_ESCAPE_SINGLE_QUOTE))(i)
+    none_of(REQUIRES_ESCAPE_SINGLE_QUOTE)(i)
   })
 }
 
-pub fn string_literal_long_single_quote(input: Span) -> IRes<Span> {
-    delimited(
+/// `[158s]   	<STRING_LITERAL_LONG1>	   ::=   	"'''" ( ("'" | "''")? ([^\\'\\] | ECHAR | UCHAR) )* "'''"`
+pub fn string_literal_long1(i: Span) -> IRes<String> {
+    let (i, chars) = delimited(
         token("'''"),
-        cut(recognize(many0(alt((
-            recognize(none_of(r"'\")),
+        cut(many0(alt((
+            none_of(r"'\"),
             echar,
             uchar,
-        ))))),
+        )))),
         token("'''"),
-    )(input)
+    )(i)?;
+    let str = chars.iter().collect();
+    Ok((i, str))
 }
 
-pub fn string_literal_long_quote(input: Span) -> IRes<Span> {
-    delimited(
+/// `[159s]   	<STRING_LITERAL_LONG2>	   ::=   	'"""' ( ('"' | '""')? ([^\"\\] | ECHAR | UCHAR) )* '"""'`
+pub fn string_literal_long2(i: Span) -> IRes<String> {
+    let (i, chars) = delimited(
         token(r#"""""#),
-        cut(recognize(many0(alt((
-            recognize(none_of(r#""\"#)),
+        cut(many0(alt((
+            none_of(r#""\"#),
             echar,
             uchar,
-        ))))),
+        )))),
         token(r#"""""#),
-    )(input)
+    )(i)?;
+    let str = chars.iter().collect();
+    Ok((i, str))
 }
 
 pub fn hex(input: Span) -> IRes<Span> {
@@ -1508,15 +1528,33 @@ const REQUIRES_ESCAPE: &str = "\u{22}\u{5C}\u{0A}\u{0D}";
 const REQUIRES_ESCAPE_SINGLE_QUOTE: &str = "\u{27}\u{5C}\u{0A}\u{0D}";
 
 
-pub fn uchar(input: Span) -> IRes<Span> {
-    recognize(alt((
+/// `[26t] <UCHAR>	::= "\\u" HEX HEX HEX HEX`
+/// `                 | "\\U" HEX HEX HEX HEX HEX HEX HEX HEX`
+pub fn uchar(i: Span) -> IRes<char> {
+    let (i,str) = recognize(alt((
         preceded(token(r"\u"), count(hex, 4)),
         preceded(token(r"\U"), count(hex, 8)),
-    )))(input)
+    )))(i)?;
+    let c = unescape_uchar(str.fragment()).unwrap();
+    Ok((i,c))
 }
 
-fn echar(input: Span) -> IRes<Span> {
-    recognize(preceded(token(r"\"), one_of(r#"tbnrf"'\"#)))(input)
+/// `[160s]   	<ECHAR>	   ::=   	"\\" [tbnrf\\\"\\']`
+/// Escaped chars. The unicode chars come from Turtle https://www.w3.org/TR/turtle/#string
+fn echar(i: Span) -> IRes<char> {
+    let (i, c) = preceded(token(r"\"), one_of(r#"tbnrf"'\"#))(i)?;
+    let c = match c {
+        't' =>  '\t',
+        'b' =>  '\u{0008}',
+        'n' =>  '\n',
+        'r' =>  '\u{000D}',
+        'f' =>  '\u{000C}',
+        '\"' => '\u{0022}',
+        '\'' => '\u{0027}',
+        '\\' => '\u{005C}',
+        _ => panic!("echar: unrecognized character: {c}")
+    };
+    Ok((i, c))
 }
 
 /// `[145s]   	<LANGTAG>	   ::=   	"@" ([a-zA-Z])+ ("-" ([a-zA-Z0-9])+)*`
@@ -1567,12 +1605,12 @@ fn triple_expr_label(i: Span) -> IRes<TripleExprLabel> {
 fn code<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<String>> {
     traced("code", map_error(move |i| {
     let (i, (_, str, _, _, _)) = tuple((char('{'), cut(code_str), cut(char('%')), tws0, cut(char('}'))))(i)?;
-    let str = unescape_code(str.fragment());
+    // let str = unescape_code(str.fragment());
     Ok((i, Some(str)))
     }, || ShExParseError::Code))
 }
 
-fn unescape_code(str: &str) -> String {
+/*fn unescape_code(str: &str) -> String {
     let non_escaped = ['%', '\\'];
     let mut queue : VecDeque<_> = str.chars().collect();
     let mut r = String::new();
@@ -1619,17 +1657,19 @@ fn unescape_code(str: &str) -> String {
         }
     }
     r
-}
+}*/
 
 
 /// from [67] code_str = ([^%\\] | "\\" [%\\] | UCHAR)*
-fn code_str(i: Span) -> IRes<Span> {
-    recognize(many0(alt(
-      (recognize(none_of(REQUIRES_ESCAPE_CODE)),
+fn code_str(i: Span) -> IRes<String> {
+    let (i, chars) = many0(alt(
+      (none_of(REQUIRES_ESCAPE_CODE),
        escaped_code,
        uchar
       )
-    )))(i)
+    ))(i)?;
+    let str = chars.iter().collect();
+    Ok((i, str))
 }
 
 /// Characters requiring escape sequences in patterns
@@ -1637,8 +1677,9 @@ fn code_str(i: Span) -> IRes<Span> {
 const REQUIRES_ESCAPE_CODE: &str = "%\u{5C}";
 
 /// from [67] escaped_code = "\\" [%\\]
-fn escaped_code(i: Span) -> IRes<Span> {
-    recognize(preceded(token(r"\"), one_of(r#"%\"#)))(i)
+fn escaped_code(i: Span) -> IRes<char> {
+    let (i, c) = preceded(token(r"\"), one_of(r#"%\"#))(i)?;
+    Ok((i, c))
 }
   
 /// `[68]   	<REPEAT_RANGE>	   ::=   	"{" INTEGER ( "," (INTEGER | "*")? )? "}"`
@@ -1709,7 +1750,7 @@ fn regexp(i: Span) -> IRes<Pattern> {
     } else {
         Some(flags.to_string())
     };
-    let str = unescape_pattern(str.fragment());
+    let str = unescape_pattern(&str);
     Ok((i, Pattern { str, flags }))
 }
 
@@ -1764,17 +1805,21 @@ fn unescape_pattern(str: &str) -> String {
 }
 
 /// [72b] from [72] pattern = ([^/\\\n\r] | '\\' [nrt\\|.?*+(){}$-\[\]^/] | UCHAR) +
-fn pattern(i: Span) -> IRes<Span> {
-    recognize(many1(alt(
-        (recognize(none_of(REQUIRES_ESCAPE_PATTERN)),
-         escaped_pattern,
-         uchar)
-    )))(i)
+fn pattern(i: Span) -> IRes<String> {
+    let (i, chars) = many1(alt((
+        map(none_of(REQUIRES_ESCAPE_PATTERN), |c| vec![c]),
+        escaped_pattern,
+        map(uchar, |c| vec![c])
+       ))
+    )(i)?;
+    let str = chars.iter().flatten().collect();
+    Ok((i,str))
 }
 
 /// from [72b] escaped_pattern = '\\' [nrt\\|.?*+(){}$-\[\]^/]
-fn escaped_pattern(i: Span) -> IRes<Span> {
-  recognize(preceded(token(r"\"), one_of(r#"nrt\|.?*+(){}$-[]^/"#)))(i)
+fn escaped_pattern(i: Span) -> IRes<Vec<char>> {
+  let (i, c) = preceded(token(r"\"), one_of(r#"nrt\|.?*+(){}$-[]^/"#))(i)?;
+  Ok((i,vec!['\\', c]))
 }
 
 /// Characters requiring escape sequences in patterns
@@ -2011,17 +2056,37 @@ fn iri_chars(i: Span) -> IRes<String> {
 fn iri_char(i:Span) -> IRes<char> {
    let (i, char) = alt((
     iri_chr, 
-    (map(uchar, |str| unescape_uchar(str.fragment())))
+    uchar
     ))(i)?;
     Ok((i, char))
 }
 
-fn unescape_uchar(str: &str) -> char {
-    let mut r: char = '?' ;
+#[derive(Error, Debug)]
+enum UCharError {
+    #[error("Doesn't start by \\")]
+    NoStartByBackSlash,
+
+    #[error("unescape_code: \\u is not followed by 4 chars")]
+    LowercaseUNotFollowedBy4chars,
+
+    #[error("unescape code: \\U is not followed by 8 chars")]
+    UppercaseUNotFollowedBy8chars,
+
+    #[error("Unexpected {c} after \\")]
+    UnexpectedCharacterAfterBackSlash{c: char},
+
+    #[error("No character after \\")]
+    NoCharAfterBackSlash
+
+}
+
+
+fn unescape_uchar(str: &str) -> Result<char, UCharError> {
+    let mut r: char = '?';
     let mut queue: VecDeque<_> = str.chars().collect();
     while let Some(c) = queue.pop_front() {
         if c!= '\\' {
-            panic!("unescape_uchar doesn't start by \\")
+            return Err(UCharError::NoStartByBackSlash)
         }
         match queue.pop_front() {
             Some('u') => {
@@ -2030,7 +2095,7 @@ fn unescape_uchar(str: &str) -> char {
                     if let Some(c) = queue.pop_front() {
                        s.push(c)
                     } else {
-                        panic!("unescape_code: \\u is not followed by 4 chars")
+                        return Err(UCharError::LowercaseUNotFollowedBy4chars)
                     }
                 } 
 
@@ -2043,7 +2108,7 @@ fn unescape_uchar(str: &str) -> char {
                     if let Some(c) = queue.pop_front() {
                        s.push(c)
                     } else {
-                        panic!("unescape_code: \\u is not followed by 8 chars")
+                        return Err(UCharError::UppercaseUNotFollowedBy8chars)
                     }
                 } 
 
@@ -2051,12 +2116,12 @@ fn unescape_uchar(str: &str) -> char {
                 r = char::from_u32(u).unwrap(); 
             }
             Some(c) => {
-                panic!("Unexpected char {c} after escape \\ in uchar")
+                return Err(UCharError::UnexpectedCharacterAfterBackSlash { c })
             }
-            None => panic!("unescape pattern requires a u or U after \\")
+            None => return Err(UCharError::NoCharAfterBackSlash)
         }
     }
-    r
+    Ok(r)
 }
 
 /// `iri_chr = [^#0000- <>\"{}|^`\\]`
@@ -2433,9 +2498,9 @@ mod tests {
 
     #[test]
     fn test_string_literal() {
-        let (_, result) = string_literal_single_quote()(Span::new("'a'")).unwrap();
+        let (_, result) = string_literal1()(Span::new("'a'")).unwrap();
         let expected = "a".to_string();
-        assert_eq!(result.fragment().to_string(), expected)
+        assert_eq!(result, expected)
     }
 
     #[test]

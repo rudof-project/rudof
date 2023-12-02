@@ -1,3 +1,5 @@
-<S> {
-   <p> [. - "v1" - "v2" ]
+base <x:/>
+<S1> {
+ <p> BNODE {} AND IRI
 }
+<S2> BNODE {} AND IRI

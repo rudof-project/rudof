@@ -56,6 +56,11 @@ pub use xs_facet::*;
 #[derive(Debug, Clone)]
 struct ClosedError;
 
+const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
+const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
+const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
+
 #[derive(Debug, Clone)]
 pub struct FromStrRefError;
 

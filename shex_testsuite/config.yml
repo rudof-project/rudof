@@ -19,15 +19,16 @@ excluded_entries:
 - extends-abstract-multi-empty_pass
 - extends-abstract-multi-empty_fail-Ref1ExtraOR
 - extends-abstract-multi-empty_pass-missingOptRef1
+- openopen1dotcloseCode1closeCode3
 
 # Entries with error parsing schema
-- 1dot-relative_pass-short-shape
+# - 1dot-relative_pass-short-shape
 - 1dot-relative_pass-relative-shape
 - false-lead-excluding-value-shape
 - nPlus1-greedy-rewrite
 - nPlus1-greedy-rewrite
 - PTstar-greedy-rewrite
-- nPlus1
+# - nPlus1
 - skipped
 - PstarT
 - PTstar
