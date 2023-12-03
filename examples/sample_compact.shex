@@ -1,0 +1,30 @@
+prefix : <http://example.org/>
+prefix shapes: <http://example.org/shapes/>
+prefix schema: <https://schema.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+base <http://example.org/>
+
+shapes:User {
+    schema:name  xsd:string ? ;
+    schema:knows @shapes:User * ;
+    schema:employer @<Company> {1, 2}
+}
+
+<Company> CLOSED EXTRA :code {
+  :code xsd:integer MINLENGTH 10 ;
+} AND {
+  :owner @:Person
+} OR {
+  :owner @:Association  
+}
+
+:Person shapes:User AND {
+    :name xsd:string ;
+}
+
+:Association {
+    :name xsd:string ;
+}
+
+
+

@@ -1,5 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Ref, ShapeLabel};
+use crate::{Iri, ShapeExprLabel};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::{Iri, SemAct, ShapeDecl, ShapeExpr};
+use super::{SemAct, ShapeDecl, ShapeExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Schema {
@@ -64,6 +64,11 @@ impl Schema {
         self
     }
 
+    pub fn with_start_actions(mut self, start_actions: Option<Vec<SemAct>>) -> Self {
+        self.start_acts = start_actions;
+        self
+    }
+
     pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         match self.prefixmap {
             None => {
@@ -75,8 +80,28 @@ impl Schema {
         }
     }
 
-    pub fn add_shape(&mut self, shape_label: Ref, shape_expr: ShapeExpr) {
-        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr);
+    pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
+        self.prefixmap = prefixmap;
+        self
+    }
+
+    pub fn with_base(mut self, base: Option<IriS>) -> Self {
+        self.base = base;
+        self
+    }
+
+    pub fn with_start(mut self, start: Option<ShapeExpr>) -> Self {
+        self.start = start;
+        self
+    }
+
+    pub fn add_shape(
+        &mut self,
+        shape_label: ShapeExprLabel,
+        shape_expr: ShapeExpr,
+        is_abstract: bool,
+    ) {
+        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr, is_abstract);
         match self.shapes {
             None => {
                 let mut ses = Vec::new();
@@ -112,11 +137,19 @@ impl Schema {
     }
 
     pub fn base(&self) -> Option<IriS> {
-      self.base.clone()
+        self.base.clone()
     }
 
     pub fn prefixmap(&self) -> Option<PrefixMap> {
         self.prefixmap.clone()
+    }
+
+    pub fn start_actions(&self) -> Option<Vec<SemAct>> {
+        self.start_acts.clone()
+    }
+
+    pub fn start(&self) -> Option<ShapeExpr> {
+        self.start.clone()
     }
 
     pub fn shapes(&self) -> Option<Vec<ShapeDecl>> {
@@ -124,7 +157,7 @@ impl Schema {
     }
 
     pub fn get_type(&self) -> String {
-         self.type_.clone()
+        self.type_.clone()
     }
 }
 

@@ -490,9 +490,9 @@ where
 mod tests {
     use super::*;
     use indoc::indoc;
-    use test_log::test;
+    // use test_log::test;
 
-    #[test_log::test]
+    #[test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
         let rbe = Rbe::and(vec![

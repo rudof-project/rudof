@@ -1,7 +1,4 @@
-use crate::{
-    ast::{IriRef, ObjectValueWrapper},
-    internal::ValueSet,
-};
+use crate::internal::ValueSet;
 use iri_s::IriS;
 use rbe::Value;
 use serde::Serializer;
@@ -83,6 +80,8 @@ impl ObjectValue {
                         lexical_form,
                         datatype,
                     } => todo!(),
+                    Literal::BooleanLiteral(_) => todo!(),
+                    Literal::NumericLiteral(_) => todo!(),
                 },
                 _ => false,
             },
@@ -140,5 +139,3 @@ impl Display for ValueSetValue {
         }
     }
 }
-
-

@@ -165,6 +165,14 @@ fn print_failed(result: &ManifestRunResult) {
     }
 }
 
+fn print_failed_simple(result: &ManifestRunResult) {
+    println!("--- Failed ---");
+    for (name, _) in &result.failed {
+        println!("{name}");
+    }
+}
+
+
 fn print_panicked(result: &ManifestRunResult) {
     println!("--- Not implemented ---");
     for (name, _err) in &result.panicked {
@@ -192,6 +200,10 @@ fn print_result(result: ManifestRunResult, print_result_mode: PrintResultMode) {
         }
         PrintResultMode::Failed => {
             print_failed(&result);
+            print_basic(&result);
+        }
+        PrintResultMode::FailedSimple => {
+            print_failed_simple(&result);
             print_basic(&result);
         }
         PrintResultMode::Passed => {

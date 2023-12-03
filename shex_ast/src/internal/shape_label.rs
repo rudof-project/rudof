@@ -1,20 +1,21 @@
 use iri_s::{IriS, IriSError};
 use std::{fmt::Display, str::FromStr};
 
+use crate::BNode;
+
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum ShapeLabel {
     Iri(IriS),
-    BNode(String),
-    Start
+    BNode(BNode),
+    Start,
 }
 
 impl ShapeLabel {
-
     pub fn iri(i: IriS) -> ShapeLabel {
         ShapeLabel::Iri(i)
     }
-    pub fn from_bnode_str(s: String) -> ShapeLabel {
-        ShapeLabel::BNode(s)
+    pub fn from_bnode(bn: BNode) -> ShapeLabel {
+        ShapeLabel::BNode(bn)
     }
 
     pub fn from_iri_str(s: &str) -> Result<ShapeLabel, IriSError> {
@@ -28,7 +29,7 @@ impl Display for ShapeLabel {
         match self {
             ShapeLabel::Iri(iri) => write!(dest, "{iri}"),
             ShapeLabel::BNode(bnode) => write!(dest, "{bnode}"),
-            ShapeLabel::Start => write!(dest, "Start")
+            ShapeLabel::Start => write!(dest, "Start"),
         }
     }
 }

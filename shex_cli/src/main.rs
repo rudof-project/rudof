@@ -17,7 +17,7 @@ use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
 use shex_ast::Node;
-use shex_compact::ShExParser;
+use shex_compact::{ShExFormatter, ShExParser};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
@@ -80,9 +80,11 @@ fn run_schema(
             println!("{schema_json:?}");
             Ok(())
         }
-        ShExFormat::ShExC => Err(anyhow!(
-            "Cannot convert to ShEx compact syntax yet:\n{schema_json:?}"
-        )),
+        ShExFormat::ShExC => {
+            let str = ShExFormatter::default().format_schema(&schema_json);
+            println!("{str}");
+            Ok(())
+        }
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema_json)?;
             println!("{str}");

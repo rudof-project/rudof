@@ -3,13 +3,13 @@ use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use iri_s::IriS;
 use log::debug;
+use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::internal::CompiledSchema;
 use shex_ast::{
-    ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node,
-    ShapeLabel,
+    ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node, ShapeLabel,
 };
 use shex_validation::ResultValue;
 use shex_validation::Validator;
@@ -244,7 +244,7 @@ fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
         }
         Focus::Typed(str, str_type) => {
             let datatype = IriS::from_str(str_type.as_str())?;
-            Ok(Object::Literal(Literal::datatype(str, datatype)).into())
+            Ok(Object::Literal(Literal::datatype(str, &IriRef::Iri(datatype))).into())
         }
     }
 }

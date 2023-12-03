@@ -2,14 +2,17 @@ use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use std::collections::HashMap;
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::context_entry_value::ContextEntryValue;
+use iri_s::IriS;
 use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
 use shex_ast::ast::Schema as SchemaJson;
+use shex_compact::ShExParser;
+use url::Url;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestSchemasJson")]
@@ -142,7 +145,13 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        debug!("Runnnig entry: {} with json: {}", self.id, self.json);
+        log::debug!(
+            "Runnnig entry: {} with json: {}, shex: {}, base: {:?}",
+            self.id,
+            self.json,
+            self.shex,
+            base
+        );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
                 error: e,
@@ -160,17 +169,44 @@ impl SchemasEntry {
         let schema_parsed_after_serialization =
             serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
                 ManifestError::SchemaParsingAfterSerialization {
-                    schema_serialized,
+                    schema_name: self.name.to_string(),
+                    schema_parsed: schema_parsed.clone(),
+                    schema_serialized: schema_serialized.clone(),
                     error: e,
                 }
             })?;
-        debug!("Entry run: {} - {}", self.id, schema_parsed.get_type());
 
-        if (schema_parsed == schema_parsed_after_serialization) {
-            Ok(())
+        if schema_parsed == schema_parsed_after_serialization {
+            let shex_local = Path::new(&self.shex);
+            let mut shex_buf = PathBuf::from(base);
+            shex_buf.push(shex_local);
+            let base_absolute =
+                base.canonicalize()
+                    .map_err(|err| ManifestError::AbsolutePathError {
+                        base: base.as_os_str().to_os_string(),
+                        error: err,
+                    })?;
+            let base_url =
+                Url::from_file_path(&base_absolute).map_err(|_| ManifestError::BasePathError {
+                    base: base_absolute.as_os_str().to_os_string(),
+                })?;
+            let base_iri = IriS::new_unchecked(base_url.as_str());
+            let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
+
+            // We remove base and prefixmap for comparisons
+            shex_schema_parsed = shex_schema_parsed.with_base(None).with_prefixmap(None);
+            if schema_parsed == shex_schema_parsed {
+                Ok(())
+            } else {
+                Err(ManifestError::ShExSchemaDifferent {
+                    json_schema_parsed: schema_parsed,
+                    shex_schema_parsed,
+                })
+            }
         } else {
             Err(ManifestError::SchemasDifferent {
                 schema_parsed,
+                schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization,
             })
         }

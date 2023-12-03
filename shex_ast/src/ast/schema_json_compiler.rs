@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
-use crate::Ref;
 use crate::internal::{NodeKind, ShapeExpr, XsFacet};
+use crate::ShapeExprLabel;
 use crate::{
-    ast, ast::IriRef, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
+    ast, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
     internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
 };
 use crate::{
@@ -12,6 +10,7 @@ use crate::{
 };
 use iri_s::IriS;
 use log::debug;
+use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use srdf::lang::Lang;
@@ -21,9 +20,12 @@ use srdf::Object;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref XSD_STRING: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string");
-    static ref RDF_LANG_STRING: IriS =
-        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
+    static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/2001/XMLSchema#string"
+    ));
+    static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+    ));
 }
 
 #[derive(Debug)]
@@ -85,21 +87,19 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn id_to_shape_label<'a>(&self, id: &Ref) -> CResult<ShapeLabel> {
+    fn id_to_shape_label<'a>(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
         match id {
-           Ref::IriRef { value }  => {
-            let shape_label = iri_ref_2_shape_label(value)?;
-            Ok(shape_label)
-           },
-           Ref::BNode { value}  => {
-             Ok(ShapeLabel::BNode(value.clone()))
-           }
+            ShapeExprLabel::IriRef { value } => {
+                let shape_label = iri_ref_2_shape_label(value)?;
+                Ok(shape_label)
+            }
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
         }
     }
 
     fn get_shape_label_idx(
         &self,
-        id: &Ref,
+        id: &ShapeExprLabel,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         let label = self.id_to_shape_label(id)?;
@@ -117,7 +117,7 @@ impl SchemaJsonCompiler {
 
     fn ref2idx(
         &self,
-        sref: &ast::Ref,
+        sref: &ast::ShapeExprLabel,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
         let idx = self.get_shape_label_idx(sref, compiled_schema)?;
@@ -294,6 +294,7 @@ impl SchemaJsonCompiler {
             }
             ast::TripleExpr::TripleConstraint {
                 id: _,
+                negated: _,
                 inverse: _,
                 predicate,
                 value_expr,
@@ -383,7 +384,7 @@ impl SchemaJsonCompiler {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok(mk_cond_ref(idx))
                 }
-                ast::ShapeExpr::Shape { .. } => todo("valueexpr2match_cond: Shape"),
+                ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
@@ -430,20 +431,20 @@ fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
 }
 
 fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
-    let iri = cnv_iri_ref(datatype)?;
-    Ok(mk_cond_datatype(iri))
+    //let iri = cnv_iri_ref(datatype)?;
+    Ok(mk_cond_datatype(datatype))
 }
 
 fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
     let mut conds = Vec::new();
     for xs_facet in xs_facets {
-      conds.push(xs_facet2match_cond(xs_facet))
+        conds.push(xs_facet2match_cond(xs_facet))
     }
     MatchCond::And(conds)
 }
 
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
-   todo!()
+    todo!()
 }
 
 fn valueset2match_cond(vs: ValueSet) -> Cond {
@@ -470,18 +471,17 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     )
 }
 
-fn mk_cond_datatype(datatype: IriS) -> Cond {
+fn mk_cond_datatype(datatype: &IriRef) -> Cond {
+    let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype{datatype}").as_str())
-            .with_cond(
-                move |value: &Node| match check_node_datatype(value, &datatype) {
-                    Ok(_) => Ok(Pending::new()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("Datatype error: {err}"),
-                    }),
-                },
-            ),
+            .with_name(format!("datatype{dt}").as_str())
+            .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("Datatype error: {err}"),
+                }),
+            }),
     )
 }
 
@@ -503,9 +503,10 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError { 
-            prefix: prefix.clone(), 
-            local: local.clone() })
+        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError {
+            prefix: prefix.clone(),
+            local: local.clone(),
+        }),
     }
 }
 
@@ -541,7 +542,7 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(&ovw.ov)?;
+            let ov = cnv_object_value(&ovw)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -553,9 +554,10 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
         ast::ValueSetValue::LiteralStemRange {
             stem, exclusions, ..
         } => {
-            let stem = cnv_string_or_wildcard(&stem)?;
+            todo!()
+            /*let stem = cnv_string_or_wildcard(&stem)?;
             let exclusions = cnv_opt_vec(&exclusions, cnv_string_or_literalstem)?;
-            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
+            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })*/
         }
         _ => todo!(),
     }
@@ -625,19 +627,18 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
 
 fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
-        ast::ObjectValue::IriRef(ir) => {
+        ast::ObjectValue::Iri(ir) => {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
-        ast::ObjectValue::ObjectLiteral {
-            value, language, ..
-        } => {
-            let language = cnv_opt(language, cnv_lang)?;
-            Ok(ObjectValue::ObjectLiteral {
-                value: value.to_string(),
-                language,
-            })
-        }
+        ast::ObjectValue::Literal(n) => {
+            todo!()
+        } /*ast::ObjectValue::ObjectLiteral {
+              value, language, ..
+          } => Ok(ObjectValue::ObjectLiteral {
+              value: value.to_string(),
+              language: language.clone(),
+          })*/
     }
 }
 
@@ -670,14 +671,14 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     }
 }
 
-fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriS>) -> CResult<()> {
+fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<()> {
     match datatype {
         None => Ok(()),
         Some(dt) => check_node_datatype(node, dt),
     }
 }
 
-fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
+fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
     debug!("check_node_datatype: {node:?} datatype: {dt}");
     match node.as_object() {
         Object::Literal(Literal::DatatypeLiteral {

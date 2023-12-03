@@ -1,9 +1,10 @@
 use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ast::IriRef, ast::Ref, ast::Schema as SchemaJson, internal::ObjectValue,
-    internal::ValueSetValue, CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
+    ast, ShapeExprLabel, ast::Schema as SchemaJson, internal::ObjectValue, internal::ValueSetValue,
+    CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
+use prefixmap::IriRef;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
@@ -182,15 +183,15 @@ impl CompiledSchema {
         }
     }
 
-    pub fn find_ref(&mut self, se_ref: &Ref) -> CResult<ShapeLabelIdx> {
+    pub fn find_ref(&mut self, se_ref: &ShapeExprLabel) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
-            Ref::IriRef { value } => {
+            ShapeExprLabel::IriRef { value } => {
                 let iri_s: IriS = (*value).clone().into();
                 let label = ShapeLabel::iri(iri_s);
                 Ok::<ShapeLabel, CompiledSchemaError>(label)
             }
-            Ref::BNode { value } => {
-                let label = ShapeLabel::from_bnode_str((*value).clone());
+            ShapeExprLabel::BNode { value } => {
+                let label = ShapeLabel::from_bnode((*value).clone());
                 Ok(label)
             }
         }?;

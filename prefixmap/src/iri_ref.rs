@@ -1,10 +1,10 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, path::Prefix, str::FromStr};
 
-use iri_s::{IriS, IriSError};
-use prefixmap::PrefixMap;
-use serde_derive::{Deserialize, Serialize};
-use void::Void;
+use crate::PrefixMap;
 use crate::{Deref, DerefError};
+use iri_s::{IriS, IriSError};
+use serde_derive::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "&str", into = "String")]
@@ -13,7 +13,23 @@ pub enum IriRef {
     Prefixed { prefix: String, local: String },
 }
 
+#[derive(Debug, Error)]
+#[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
+pub struct Underef {
+    prefix: String,
+    local: String,
+}
+
 impl IriRef {
+    pub fn get_iri(&self) -> Result<IriS, Underef> {
+        match self {
+            IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::Prefixed { prefix, local } => Err(Underef {
+                prefix: prefix.clone(),
+                local: local.clone(),
+            }),
+        }
+    }
     pub fn prefixed(prefix: &str, local: &str) -> IriRef {
         IriRef::Prefixed {
             prefix: prefix.to_string(),
@@ -27,13 +43,12 @@ impl IriRef {
 
     pub fn to_string(&self) -> String {
         match self {
-            IriRef::Iri(iri) => iri.to_string(),
+            IriRef::Iri(iri) => iri.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => {
                 format!("{prefix}:{local}")
             }
         }
     }
-
 }
 
 impl Deref for IriRef {
@@ -50,25 +65,32 @@ impl Deref for IriRef {
                     Ok(IriRef::Iri(iri))
                 }
             },
-            IriRef::Prefixed { prefix, local } => {
-                match prefixmap {
-                    None => Err(DerefError::NoPrefixMapPrefixedName { 
-                        prefix: prefix.clone(), 
-                        local: local.clone() }
-                    ),
-                    Some(prefixmap) => {
-                        let iri = prefixmap.resolve_prefix_local(prefix, local)?;
-                        Ok(IriRef::Iri(iri))
-                    }
+            IriRef::Prefixed { prefix, local } => match prefixmap {
+                None => Err(DerefError::NoPrefixMapPrefixedName {
+                    prefix: prefix.clone(),
+                    local: local.clone(),
+                }),
+                Some(prefixmap) => {
+                    let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+                    Ok(IriRef::Iri(iri))
                 }
-            }
+            },
         }
     }
 }
 
 impl TryFrom<&str> for IriRef {
     type Error = IriSError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        FromStr::from_str(value)
+    }
+}
+
+impl FromStr for IriRef {
+    type Err = IriSError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_s = IriS::from_str(s)?;
         Ok(IriRef::Iri(iri_s))
     }
@@ -94,7 +116,7 @@ impl From<IriS> for IriRef {
 impl Into<String> for IriRef {
     fn into(self) -> String {
         match self {
-            IriRef::Iri(i) => i.to_string(),
+            IriRef::Iri(i) => i.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => format!("{prefix}:{local}"),
         }
     }
@@ -103,7 +125,7 @@ impl Into<String> for IriRef {
 impl Display for IriRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IriRef::Iri(i) => write!(f, "<{}>", i.to_string())?,
+            IriRef::Iri(i) => write!(f, "{}", i.to_string())?,
             IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}")?,
         }
         Ok(())

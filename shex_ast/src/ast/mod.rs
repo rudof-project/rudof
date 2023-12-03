@@ -1,14 +1,13 @@
 pub mod annotation;
 pub mod bnode;
+pub mod exclusion;
 pub mod iri;
-pub mod iri_ref;
 pub mod iri_ref_or_wildcard;
-pub mod deref;
+pub mod lang_or_wildcard;
 pub mod node_constraint;
 pub mod node_kind;
-pub mod numeric_literal;
 pub mod object_value;
-pub mod ref_;
+// pub mod ref_;
 pub mod schema;
 pub mod schema_json_compiler;
 pub mod schema_json_error;
@@ -17,6 +16,7 @@ pub mod serde_string_or_struct;
 pub mod shape;
 pub mod shape_decl;
 pub mod shape_expr;
+pub mod shape_expr_label;
 pub mod start_action;
 pub mod string_or_iri_stem;
 pub mod string_or_literal_stem;
@@ -27,23 +27,23 @@ pub mod value_set_value;
 pub mod xs_facet;
 
 use crate::ast::serde_string_or_struct::*;
+pub use crate::exclusion::*;
 pub use annotation::*;
 pub use bnode::*;
 pub use iri::*;
-pub use iri_ref::*;
 pub use iri_ref_or_wildcard::*;
-pub use crate::deref::*;
+pub use lang_or_wildcard::*;
 pub use node_constraint::*;
 pub use node_kind::*;
-pub use numeric_literal::*;
 pub use object_value::*;
-pub use ref_::*;
+// pub use ref_::*;
 pub use schema::*;
 pub use schema_json_error::*;
 pub use sem_act::*;
 pub use shape::*;
 pub use shape_decl::*;
 pub use shape_expr::*;
+pub use shape_expr_label::*;
 pub use start_action::*;
 pub use string_or_iri_stem::*;
 pub use string_or_literal_stem::*;
@@ -56,6 +56,11 @@ pub use xs_facet::*;
 #[derive(Debug, Clone)]
 struct ClosedError;
 
+const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
+const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
+const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
+
 #[derive(Debug, Clone)]
 pub struct FromStrRefError;
 
@@ -65,6 +70,7 @@ mod tests {
     use std::str::FromStr;
 
     use iri_s::IriS;
+    use prefixmap::IriRef;
 
     use super::*;
 
@@ -81,6 +87,7 @@ mod tests {
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
+                negated: None,
                 inverse: None,
                 predicate: IriS::new_unchecked("http://a.example/p1").into(),
                 value_expr: None,
@@ -107,9 +114,10 @@ mod tests {
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
+                negated: None,
                 inverse: None,
                 predicate: IriS::new_unchecked("http://a.example/p1").into(),
-                value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+                value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
                     value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
                 }))),
                 min: None,
@@ -133,9 +141,10 @@ mod tests {
         let S5 = IriS::from_str("http://all.example/S5").unwrap();
         let expected = TripleExpr::TripleConstraint {
             id: None,
+            negated: None,
             inverse: None,
             predicate: p1.into(),
-            value_expr: Some(Box::new(ShapeExpr::Ref(Ref::IriRef {
+            value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
                 value: IriRef::iri(S5),
             }))),
             max: None,

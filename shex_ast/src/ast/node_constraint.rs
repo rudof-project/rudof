@@ -1,16 +1,16 @@
 use std::{fmt, result};
 
+use log::debug;
+use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
 use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
+use srdf::numeric_literal::NumericLiteral;
 
 use super::ValueSetValue;
-use crate::{
-    IriRef, NodeKind, NumericFacet, NumericLiteral, Pattern, StringFacet, ValueSetValueWrapper,
-    XsFacet, Deref, DerefError,
-};
+use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};
 use serde::ser::SerializeMap;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -25,7 +25,7 @@ pub struct NodeConstraint {
     xs_facet: Option<Vec<XsFacet>>,
 
     // #[serde(default, skip_serializing_if = "Option::is_none")]
-    values: Option<Vec<ValueSetValueWrapper>>,
+    values: Option<Vec<ValueSetValue>>,
 }
 
 impl NodeConstraint {
@@ -57,7 +57,11 @@ impl NodeConstraint {
     }
 
     pub fn with_xsfacets(mut self, facets: Vec<XsFacet>) -> Self {
-        self.xs_facet = Some(facets);
+        self.xs_facet = if facets.is_empty() {
+            None
+        } else {
+            Some(facets)
+        };
         self
     }
 
@@ -126,46 +130,50 @@ impl NodeConstraint {
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
-        let mut vs: Vec<ValueSetValueWrapper> = Vec::with_capacity(values.len());
+        let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
         for v in values {
-            vs.push(ValueSetValueWrapper::new(v));
+            vs.push(v);
         }
         self.values = Some(vs);
         self
     }
 
-    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
+    /*    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
         self.values = Some(values);
         self
-    }
+    } */
 
     pub fn values(&self) -> Option<Vec<ValueSetValue>> {
         match &self.values {
             None => None,
-            Some(values) => {
-                let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
-                for v in values {
-                    vs.push(v.value());
+            Some(vs) => {
+                let mut r = Vec::new();
+                for v in vs {
+                    r.push((*v).clone())
                 }
-                Some(vs)
+                Some(r)
             }
         }
     }
 }
 
 impl Deref for NodeConstraint {
-    fn deref(&self, 
-        base: &Option<iri_s::IriS>, 
-        prefixmap: &Option<prefixmap::PrefixMap>
-    ) -> Result<Self, DerefError> where Self: Sized {
-       let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
-       let values = <ValueSetValueWrapper as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
-       Ok(NodeConstraint {
-        node_kind: self.node_kind.clone(),
-        datatype,
-        xs_facet: self.xs_facet.clone(),
-        values
-       })
+    fn deref(
+        &self,
+        base: &Option<iri_s::IriS>,
+        prefixmap: &Option<prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
+    where
+        Self: Sized,
+    {
+        let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
+        let values = <ValueSetValue as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
+        Ok(NodeConstraint {
+            node_kind: self.node_kind.clone(),
+            datatype,
+            xs_facet: self.xs_facet.clone(),
+            values,
+        })
     }
 }
 
@@ -181,8 +189,9 @@ impl Serialize for NodeConstraint {
                 xs_facet,
                 values,
             } => {
+                debug!("Serializing NodeConstraint: {self:?}");
                 let mut map = serializer.serialize_map(None)?;
-                // debug!("Adding type = NodeConstraint");
+
                 // map.serialize_entry("type", "NodeConstraint")?;
                 match node_kind {
                     None => (),
@@ -208,7 +217,9 @@ impl Serialize for NodeConstraint {
                         for f in facets {
                             match f {
                                 XsFacet::StringFacet(sf) => match sf {
-                                    StringFacet::Length(l) => map.serialize_entry("length", l)?,
+                                    StringFacet::Length(len) => {
+                                        map.serialize_entry("length", len)?
+                                    }
                                     StringFacet::MinLength(ml) => {
                                         map.serialize_entry("minlength", ml)?
                                     }
@@ -226,7 +237,26 @@ impl Serialize for NodeConstraint {
                                         map.serialize_entry("flags", fs)?;
                                     }
                                 },
-                                XsFacet::NumericFacet(_) => todo!(),
+                                XsFacet::NumericFacet(nf) => match nf {
+                                    NumericFacet::FractionDigits(fd) => {
+                                        map.serialize_entry("fractiondigits", fd)?
+                                    }
+                                    NumericFacet::TotalDigits(td) => {
+                                        map.serialize_entry("totaldigits", td)?
+                                    }
+                                    NumericFacet::MaxExclusive(me) => {
+                                        map.serialize_entry("maxexclusive", me)?
+                                    }
+                                    NumericFacet::MaxInclusive(mi) => {
+                                        map.serialize_entry("maxinclusive", mi)?
+                                    }
+                                    NumericFacet::MinInclusive(mi) => {
+                                        map.serialize_entry("mininclusive", mi)?
+                                    }
+                                    NumericFacet::MinExclusive(me) => {
+                                        map.serialize_entry("minexclusive", me)?
+                                    }
+                                },
                             }
                         }
                     }
@@ -332,7 +362,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 let mut totaldigits: Option<usize> = None;
                 let mut fractiondigits: Option<usize> = None;
                 let mut flags: Option<String> = None;
-                let mut values: Option<Vec<ValueSetValueWrapper>> = None;
+                let mut values: Option<Vec<ValueSetValue>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::NodeKind => {
@@ -363,7 +393,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             if values.is_some() {
                                 return Err(de::Error::duplicate_field("values"));
                             }
-                            let vs: Vec<ValueSetValueWrapper> = map.next_value()?;
+                            let vs: Vec<ValueSetValue> = map.next_value()?;
                             values = Some(vs)
                         }
                         Field::Pattern => {
@@ -464,7 +494,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                     nc = nc.with_datatype(datatype)
                 }
                 if let Some(values) = values {
-                    nc = nc.with_values_wrapped(values)
+                    nc = nc.with_values(values)
                 }
                 if let Some(minlength) = minlength {
                     nc = nc.with_minlength(minlength)

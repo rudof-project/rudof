@@ -22,6 +22,26 @@ impl IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
+    pub fn xsd() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#")
+    }
+
+    pub fn xsd_integer() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")
+    }
+
+    pub fn xsd_decimal() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal")
+    }
+
+    pub fn xsd_double() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#double")
+    }
+
+    pub fn xsd_boolean() -> IriS {
+        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#boolean")
+    }
+
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
         IriS { iri }
@@ -60,7 +80,7 @@ impl IriS {
 
 impl fmt::Display for IriS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.iri)
+        write!(f, "{}", self.iri.as_str())
     }
 }
 

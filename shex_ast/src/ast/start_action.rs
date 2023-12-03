@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use super::iri_ref::IriRef;
+use prefixmap::IriRef;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct StartAction {

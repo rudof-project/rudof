@@ -1,5 +1,6 @@
 use iri_s::IriS;
-use shex_ast::{IriRef, Ref, ShapeExpr, SemAct};
+use prefixmap::IriRef;
+use shex_ast::{SemAct, ShapeExpr, ShapeExprLabel};
 
 #[derive(Debug, PartialEq)]
 pub enum ShExStatement<'a> {
@@ -14,13 +15,14 @@ pub enum ShExStatement<'a> {
         iri: IriS,
     },
     StartActions {
-        actions: Vec<SemAct>
+        actions: Vec<SemAct>,
     },
     StartDecl {
         shape_expr: ShapeExpr,
     },
     ShapeDecl {
-        shape_label: Ref,
+        is_abstract: bool,
+        shape_label: ShapeExprLabel,
         shape_expr: ShapeExpr,
     },
 }
@@ -29,9 +31,11 @@ pub enum ShExStatement<'a> {
 pub enum Qualifier {
     Closed,
     Extra(Vec<IriRef>),
+    Extends(ShapeExprLabel),
 }
 
-pub struct Cardinality {
+#[derive(PartialEq, Debug)]
+pub(crate) struct Cardinality {
     min: Option<i32>,
     max: Option<i32>,
 }
@@ -65,6 +69,27 @@ impl Cardinality {
         }
     }
 
+    pub fn exact(n: i32) -> Cardinality {
+        Cardinality {
+            min: Some(n),
+            max: Some(n),
+        }
+    }
+
+    pub fn only_min(n: i32) -> Cardinality {
+        Cardinality {
+            min: Some(n),
+            max: None,
+        }
+    }
+
+    pub fn min_max(min: i32, max: i32) -> Cardinality {
+        Cardinality {
+            min: Some(min),
+            max: Some(max),
+        }
+    }
+
     pub fn min(&self) -> Option<i32> {
         self.min
     }
@@ -80,5 +105,28 @@ impl Default for Cardinality {
             min: Some(1),
             max: Some(1),
         }
+    }
+}
+
+pub(crate) enum NumericLength {
+    TotalDigits,
+    FractionDigits,
+}
+
+pub(crate) enum NumericRange {
+    MinInclusive,
+    MinExclusive,
+    MaxInclusive,
+    MaxExclusive,
+}
+
+pub(crate) struct SenseFlags {
+    pub(crate) inverse: Option<bool>,
+    pub(crate) negated: Option<bool>,
+}
+
+impl SenseFlags {
+    pub(crate) fn extract(&self) -> (Option<bool>, Option<bool>) {
+        (self.negated, self.inverse)
     }
 }

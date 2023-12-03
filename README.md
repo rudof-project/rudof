@@ -46,7 +46,7 @@ Validate a specific node with a shape:
 sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
 ```
 
-#### Debuggin information
+#### Debugging information
 
 It is possible to change the debug level information with:
 
@@ -55,9 +55,6 @@ export RUST_LOG=value
 ```
 
 where `value` can be `debug` to show more verbose information or `info` to show basic information.
-
-
-
 
 ## Command line usage
 
@@ -136,10 +133,15 @@ The repo is divided in the following modules:
 - [srdf](https://github.com/weso/shex-rs/tree/master/srdf) simple RDF model which will be used for validation.
 - [srdf_oxgraph](https://github.com/weso/shex-rs/tree/master/srdf_oxgraph) simple RDF model implementation based on [RIO](https://github.com/oxigraph/oxigraph)
 - [prefixmap](https://github.com/weso/shex-rs/tree/master/prefixmap) Prefix maps implementation.
+- [shapemap](https://github.com/weso/shex-rs/tree/master/shapemap) ShapeMap implementation.
 - [shex_ast](https://github.com/weso/shex-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
-- [shex_pest](https://github.com/weso/shex-rs/tree/master/shex_pest) defines a compact syntax parser using [PEST](https://pest.rs/)
-- [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained.
+- [shex_compact]<https://github.com/weso/shex-rs/tree/master/shex_compact>) contains the code required to handle ShEx compact syntax.
 - [shex_testsuite](https://github.com/weso/shex-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
+
+The following modules are simple proof of concepts and can be ignored.
+
+- [shex_pest](https://github.com/weso/shex-rs/tree/master/shex_pest) tries to define a compact syntax parser using [PEST](https://pest.rs/). It is no longer maintained.
+- [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained.
 
 ## Publishing the crates
 
@@ -223,8 +225,20 @@ Licensed under either of
 
 at your option.
 
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
+Unless you explicitly state otherwise,
+any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
 additional terms or conditions.
