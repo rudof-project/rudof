@@ -9,8 +9,8 @@ license.workspace = true
 
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.3" }
-prefixmap = { path = "../prefixmap", version = "0.0.3" }
+iri_s = { path = "../iri_s", version = "0.0.4" }
+prefixmap = { path = "../prefixmap", version = "0.0.4" }
 async-trait = "0.1.68"
 hashbag = "0.1.11"
 serde = "1.0"
