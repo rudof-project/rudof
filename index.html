@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>ShEx-rs</title>
+
+    <!-- From bootstrap template -->
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">ShEx-rs</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+            <ul class="navbar-nav ml-auto">
+                <a class="nav-link" href="https://www.weso.es/">
+                    <img class="logo" src="img/logo-weso.png" alt="WESO" width="100" />
+                </a>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>ShEx implementation in Rust</h1>
+        <p>ShEx-rs is a <a href="https://shex.io/">ShEx</a> implementation written in <a
+                href="https://www.rust-lang.org/">Rust</a></p>
+        <p>The library can be run as a command line tool or can be embedded as a library.</p>
+        <p>It can be used to validate RDF data in different syntaxes like Turtle, NTriples, etc. as well as RDF data
+            queriable from SPARQL endpoints.</p>
+        <ul>
+            <li>We publish binaries in Linux, Windows and Apple. They can be downloaded <a
+                    href="https://github.com/weso/shex-rs/releases/">here</a>.
+            </li>
+            <li>Source code: <a href="https://github.com/weso/shex-rs">https://github.com/weso/shex-rs</a></li>
+        </ul>
+
+        <h2>Modules</h2>
+        <ul>
+            <!--<li><a href="https://docs.rs/shex_cli/">ShEx cli</a>: Command line interface</li>-->
+            <li><a href="https://docs.rs/shex_testsuite/">ShEx testsuite</a>: Code that checks the <a
+                    href="https://shexspec.github.io/test-suite/">ShEx testsuite</a></li>
+            <li><a href="https://docs.rs/shex_validation/">ShEx validator</a>: ShEx Validator</li>
+            <li><a href="https://docs.rs/shex_compact">ShEx compact</a>: ShEx Compact syntax parser that
+                follows <a href="https://shex.io/shex-semantics/index.html#shexc">ShEx compact grammar</a></li>
+            <li><a href="https://docs.rs/shex_ast">ShEx ast</a>: Represents <a
+                    href="https://shex.io/shex-semantics/index.html#shape-expressions-shexj">ShEx Abstract
+                    syntax</a> based on ShExJ (JSON-LD)</li>
+            <li><a href="https://docs.rs/shapemap/">ShapeMap</a>: <a
+                    href="https://shexspec.github.io/shape-map/">ShapeMap</a> implementation.</li>
+            <li><a href="https://docs.rs/srdf">SRDF</a>: Simple RDF interface</li>
+            <li><a href="https://docs.rs/srdf_graph">SRDF Graph</a>: Simple RDF Interface implementation
+                based on RDF graphs as represented by <a href="https://crates.io/crates/oxrdf">Oxigraph</a></li>
+            <li><a href="https://docs.rs/srdf_sparql">SRDF SPARQL</a>: Simple RDF Interface implementation
+                based on SPARQL</li>
+            <li><a href="https://docs.rs/prefixmap">PrefixMap</a>: Turtle based prefixMap representation
+            </li>
+            <li><a href="https://docs.rs/rbe">RBE</a>: Regular Bag Expressions
+            </li>
+        </ul>
+        </li>
+        </ul>
+        <h2>Related projects</h2>
+        <ul>
+            <li><a href="https://www.weso.es/shex-s/">ShEx-s</a>: Scala implementation of ShEx. This project started as
+                a
+                re-implementation of ShEx-s in Rust</li>
+            <li><a href="https://github.com/shexjs/shex.js">ShEx.js</a>: Javascript implementation of ShEx.</li>
+            <li><a href="https://github.com/oxigraph/oxigraph">Oxigraph</a>: SPARQL implementation in Rust which also
+                contains RDF libraries.</li>
+            <li><a href="https://github.com/knowsys/nemo">Nemo</a>: An in-memory rule engile which also contains some
+                nom
+                parsers.</li>
+        </ul>
+
+        <h2>Contributors</h2>
+        <ul>
+            <li><a href="http://labra.weso.es/">Jose Emilio Labra Gayo</a></li>
+            <li><a href="https://angelip2303.github.io/">Ángel Iglesias Préstamo</a></li>
+        </ul>
+        </p>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
