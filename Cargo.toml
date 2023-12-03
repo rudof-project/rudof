@@ -4,8 +4,8 @@ version = "0.0.4"
 description = "ShEx implementation in Rust"
 license = "GPL-3.0-or-later"
 authors = [ 
+    "Jose Emilio Labra Gayo",
     "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", 
-    "Jose Emilio Labra Gayo" 
 ]
 
 [[bin]]
@@ -46,7 +46,6 @@ description = "Rust implementation of ShEx"
 repository = "https://github.com/weso/shex_rs"
 readme = "./README.md"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"] 
-documentation = "https://weso.es/shex_rs"
 categories = ["rdf"]
 
 [workspace.dependencies]
