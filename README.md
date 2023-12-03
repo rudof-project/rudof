@@ -225,8 +225,20 @@ Licensed under either of
 
 at your option.
 
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
+Unless you explicitly state otherwise,
+any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
 additional terms or conditions.
