@@ -38,7 +38,7 @@ members = [
 #]
 
 [workspace.package]
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Jose Emilio Labra Gayo <labra@uniovi.es>"]
@@ -50,21 +50,20 @@ documentation = "https://weso.es/shex_rs"
 categories = ["rdf"]
 
 [workspace.dependencies]
-rbe = { version = "0.0.3", path = "./rbe" }
-rbe_testsuite = { version = "0.0.3", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.3", path = "./iri_s" }
-prefixmap = { version = "0.0.3", path = "./prefixmap" }
-srdf = { version = "0.0.3", path = "./srdf" }
-srdf_graph = { version = "0.0.3", path = "./srdf_graph" }
-srdf_sparql = { version = "0.0.3", path = "./srdf_sparql" }
-shex_ast = { version = "0.0.3", path = "./shex_ast" }
-# shex_antlr = { version = "0.0.3", path = "./shex_antlr" }
-shex_testsuite = { version = "0.0.3", path = "./shex_testsuite" }
-shex_validation = { version = "0.0.3", path = "./shex_validation" }
-shex_compact = { version = "0.0.3", path = "./shex_compact" }
-shapemap = { version = "0.0.3", path = "./shapemap" }
-shapemap_oxgraph = { version = "0.0.3", path = "./shapemap_oxgraph" }
-validation_oxgraph = { version = "0.0.3", path = "./validation_oxgraph" }
+rbe = { version = "0.0.4", path = "./rbe" }
+rbe_testsuite = { version = "0.0.4", path = "./rbe_testsuite" }
+iri_s = { version = "0.0.4", path = "./iri_s" }
+prefixmap = { version = "0.0.4", path = "./prefixmap" }
+srdf = { version = "0.0.4", path = "./srdf" }
+srdf_graph = { version = "0.0.4", path = "./srdf_graph" }
+srdf_sparql = { version = "0.0.4", path = "./srdf_sparql" }
+shex_ast = { version = "0.0.4", path = "./shex_ast" }
+shex_testsuite = { version = "0.0.4", path = "./shex_testsuite" }
+shex_validation = { version = "0.0.4", path = "./shex_validation" }
+shex_compact = { version = "0.0.4", path = "./shex_compact" }
+shapemap = { version = "0.0.4", path = "./shapemap" }
+shapemap_oxgraph = { version = "0.0.4", path = "./shapemap_oxgraph" }
+validation_oxgraph = { version = "0.0.4", path = "./validation_oxgraph" }
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }

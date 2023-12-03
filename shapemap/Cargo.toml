@@ -1,6 +1,6 @@
 [package]
 name = "shapemap"
-version = "0.0.3"
+version = "0.0.4"
 authors.workspace = true
 description.workspace = true
 documentation.workspace = true
@@ -8,8 +8,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.3" }
-prefixmap = { path = "../prefixmap", version = "0.0.3" }
+iri_s = { path = "../iri_s", version = "0.0.4" }
+prefixmap = { path = "../prefixmap", version = "0.0.4" }
 thiserror = "1.0"
 nom = "7"
 nom_locate = "4"
