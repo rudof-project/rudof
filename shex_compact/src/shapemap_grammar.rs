@@ -1,6 +1,4 @@
-use std::cell::RefCell;
-use std::fmt::Debug;
-use std::marker::PhantomData;
+/*use std::fmt::Debug;
 use iri_s::IriS;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, is_not};
@@ -36,11 +34,11 @@ pub type ParseResult<'a, T> = Result<T, LocatedParseError>;
 
 /// A [`ParseError`] at a certain location
 #[derive(Debug, Error)]
-#[error("Parse error on line {}, column {}: {}\nat {}{}", 
-  .line, 
-  .column, 
-  .source, 
-  .fragment, 
+#[error("Parse error on line {}, column {}: {}\nat {}{}",
+  .line,
+  .column,
+  .source,
+  .fragment,
   format_parse_error_context(.context))]
 pub struct LocatedParseError {
     #[source]
@@ -93,7 +91,7 @@ impl nom::error::ParseError<Span<'_>> for LocatedParseError {
 pub enum ParseError {
     #[error("Syntax error: {0}")]
     SyntaxError(String),
-   
+
     #[error("Expected further input: {0}")]
     MissingInput(String),
 
@@ -153,7 +151,7 @@ pub fn parse_shapemap(input: impl AsRef<str>) -> Result<InputShapeMap, LocatedPa
 #[derive(Debug, PartialEq, Clone)]
 
 pub struct Association {
-    node: NodeSelector, 
+    node: NodeSelector,
     shape: ShapeMapLabel
 }
 
@@ -161,7 +159,7 @@ impl Association {
     fn new(node: NodeSelector, shape: ShapeMapLabel) -> Self {
         Association { node, shape }
     }
-    
+
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -238,11 +236,11 @@ impl ShapeMapParser {
     }
 
     pub fn parse_shapemap<'a>(&self) -> impl FnMut(Span<'a>) -> IntermediateResult<'a, InputShapeMap> {
-        traced("parse_shapemap", 
+        traced("parse_shapemap",
             move |i| {
             let (i, _) = tws0(i)?;
             let (i, _) = tuple(
-                (shape_association(), 
+                (shape_association(),
                  many0(comma_shape_association())
                 ))(i)?;
 
@@ -361,7 +359,7 @@ pub fn map_error<'a, T: 'a>(
         })
     }
 }
-  
+
 
 /// A combinator to add tracing to the parser.
 /// [fun] is an identifier for the parser and [parser] is the actual parser.
@@ -437,4 +435,4 @@ mod tests {
         assert_eq!(shape_map, expected);
     } */
 
-}
+}*/

@@ -3,7 +3,7 @@ use prefixmap::IriRef;
 use shex_ast::{SemAct, ShapeExpr, ShapeExprLabel};
 
 #[derive(Debug, PartialEq)]
-pub enum ShExStatement<'a> {
+pub(crate) enum ShExStatement<'a> {
     PrefixDecl {
         alias: &'a str,
         iri: IriS,
@@ -28,7 +28,7 @@ pub enum ShExStatement<'a> {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum Qualifier {
+pub(crate) enum Qualifier {
     Closed,
     Extra(Vec<IriRef>),
     Extends(ShapeExprLabel),

@@ -7,10 +7,10 @@ use prefixmap::Deref;
 use shex_ast::Iri;
 use shex_ast::Schema;
 
+use crate::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
 use crate::ParseError;
-use crate::ShExStatement;
 use crate::Span;
 
 // This code is inspired from:
@@ -25,10 +25,13 @@ pub struct ShExParser<'a> {
 }
 
 impl<'a> ShExParser<'a> {
-    pub fn parse(src: String, base: Option<IriS>) -> Result<Schema> {
+    /// Parse a ShEx schema that uses [ShEx compact syntax](https://shex.io/shex-semantics/index.html#shexc)
+    ///
+    /// `base` is an optional IRI that acts as the base for relative IRIs
+    pub fn parse(src: &str, base: Option<IriS>) -> Result<Schema> {
         let mut schema = Schema::new();
         let mut parser = ShExParser {
-            shex_statement_iterator: StatementIterator::new(Span::new(src.as_str()))?,
+            shex_statement_iterator: StatementIterator::new(Span::new(src))?,
             // state: ParserState::default(),
             // done: false,
         };
@@ -76,7 +79,7 @@ impl<'a> ShExParser<'a> {
 
     pub fn parse_buf(path_buf: &PathBuf, base: Option<IriS>) -> Result<Schema> {
         let data = fs::read_to_string(&path_buf.as_path())?;
-        let schema = ShExParser::parse(data, base)?;
+        let schema = ShExParser::parse(&data, base)?;
         Ok(schema)
     }
 }
@@ -165,7 +168,7 @@ mod tests {
  prefix e: <http://example.org/>
  e:S {}
  "#;
-        let schema = ShExParser::parse(str.to_string(), None).unwrap();
+        let schema = ShExParser::parse(str, None).unwrap();
         let mut expected = Schema::new();
         expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
         expected.add_shape(

@@ -9,10 +9,11 @@ license.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.5" }
+srdf = { path = "../srdf", version = "0.0.5" }
 prefixmap = { path = "../prefixmap", version = "0.0.5" }
+shex_ast = { path = "../shex_ast", version = "0.0.5" }
+indexmap = "2.1"
 thiserror = "1.0"
-nom = "7"
-nom_locate = "4"
 log = "0.4"
 
 

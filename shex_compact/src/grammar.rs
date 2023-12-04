@@ -1,11 +1,11 @@
 use iri_s::IriS;
 use colored::*;
-use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}, result, collections::VecDeque};
+use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}, collections::VecDeque};
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1, is_not},
     character::complete::{char, digit1, one_of, satisfy, multispace1, alpha1, alphanumeric1, none_of, digit0},
-    combinator::{fail, map_res, opt, recognize, value, cut, map},
+    combinator::{map_res, opt, recognize, value, cut, map},
     error::{ErrorKind, FromExternalError},
     error_position,
     multi::{fold_many0, many0, many1, count},
@@ -20,26 +20,28 @@ use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
 use log;
 use thiserror::Error;
+use crate::shex_parser_error::ParseError as ShExParseError;
 
-use crate::{Cardinality, Qualifier, ShExStatement, ParseError as ShExParseError, NumericLength, NumericRange, SenseFlags};
+use crate::grammar_structs::{Cardinality, Qualifier, ShExStatement, NumericLength, NumericRange, SenseFlags};
+
 use nom_locate::LocatedSpan;
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 use prefixmap::IriRef;
 
 // Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
 
-pub type IRes<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
+pub(crate) type IRes<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
 
 /// A [`LocatedSpan`] over the input.
-pub type Span<'a> = LocatedSpan<&'a str>;
+pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 
-/// Create a [`Span`][nom_locate::LocatedSpan] over the input.
-pub fn span_from_str(input: &str) -> Span<'_> {
+// Create a [`Span`][nom_locate::LocatedSpan] over the input.
+/* fn span_from_str(input: &str) -> Span<'_> {
     Span::new(input)
-}
+}*/
 
-/// The result of a parse
-pub type ParseResult<'a, T> = Result<T, LocatedParseError>;
+// The result of a parse
+// type ParseResult<'a, T> = Result<T, LocatedParseError>;
 
 
 /// A [`ParseError`] at a certain location
@@ -60,7 +62,7 @@ pub struct LocatedParseError {
 
 impl LocatedParseError {
     /// Append another [`LocatedParseError`] as context to this error.
-    pub fn append(&mut self, other: LocatedParseError) {
+    pub(crate) fn append(&mut self, other: LocatedParseError) {
         self.context.push(other)
     }
 }
@@ -96,7 +98,7 @@ impl nom::error::ParseError<Span<'_>> for LocatedParseError {
 }
 
 /// A combinator that modifies the associated error.
-pub fn map_error<'a, T: 'a>(
+fn map_error<'a, T: 'a>(
     mut parser: impl FnMut(Span<'a>) -> IRes<'a, T> + 'a,
     mut error: impl FnMut() -> ShExParseError + 'a,
 ) -> impl FnMut(Span<'a>) -> IRes<'a, T> + 'a {
@@ -147,7 +149,7 @@ where
 
 /// A combinator that recognises a comment, starting at a `#`
 /// character and ending at the end of the line.
-pub fn comment(input: Span) -> IRes<()> {
+fn comment(input: Span) -> IRes<()> {
     alt((
         value((), pair(tag("#"), is_not("\n\r"))),
         // a comment that immediately precedes the end of the line –
@@ -157,30 +159,30 @@ pub fn comment(input: Span) -> IRes<()> {
     ))(input)
 }
 
-pub fn multi_comment(i: Span) -> IRes<()> {
+fn multi_comment(i: Span) -> IRes<()> {
     value((), delimited(tag("/*"), is_not("*/"), tag("*/")))(i)
 }
 
 /// A combinator that recognises an arbitrary amount of whitespace and
 /// comments.
-pub fn tws0(input: Span) -> IRes<()> {
+pub(crate) fn tws0(input: Span) -> IRes<()> {
     value((), many0(alt((value((), multispace1), comment))))(input)
 }
 
 /// A combinator that recognises any non-empty amount of whitespace
 /// and comments.
-pub fn tws1(input: Span) -> IRes<()> {
+fn tws1(input: Span) -> IRes<()> {
     value((), many1(alt((value((), multispace1), comment))))(input)
 }
 
 /// A combinator that creates a parser for a specific token.
-pub fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
     map_error(tag(token), || ShExParseError::ExpectedToken(token.to_string()))
 }
 
 /// A combinator that creates a parser for a specific token,
 /// surrounded by trailing whitespace or comments.
-pub fn token_tws<'a>(
+fn token_tws<'a>(
     token: &'a str,
 ) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
     map_error(
@@ -191,7 +193,7 @@ pub fn token_tws<'a>(
 
 /// A combinator that creates a parser for a case insensitive tag,
 /// surrounded by trailing whitespace or comments.
-pub fn tag_no_case_tws<'a>(
+fn tag_no_case_tws<'a>(
     token: &'a str,
 ) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
     map_error(
@@ -201,8 +203,9 @@ pub fn tag_no_case_tws<'a>(
 }
 
 
+
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
-pub fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
+pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
     traced("shex_statement", 
     move |i| {
     let (i, (ds, _, maybe_sts)) = tuple((directives, tws0, opt(rest_shex_statements)))(i)?;
@@ -219,14 +222,14 @@ pub fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatemen
 }
 
 /// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
-pub fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
+fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
     let (i, (s, _, ss, _)) = tuple((alt((not_start_action, start_actions)), tws0, statements, tws0))(i)?;
     let mut rs = vec![s];
     rs.extend(ss);
     Ok((i, rs))
 }
 
-pub fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
+fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
     let (i, vs) = many0(tuple((directive, tws1)))(i)?;
     let mut rs = Vec::new();
     for v in vs {
@@ -236,12 +239,12 @@ pub fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
     Ok((i, rs))
 }
 
-pub fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
+fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
     many0(statement)(i)
 }
 
 /// `[2] directive	   ::=   	baseDecl | prefixDecl | importDecl`
-pub fn directive(i: Span) -> IRes<ShExStatement> {
+fn directive(i: Span) -> IRes<ShExStatement> {
     alt((
         base_decl(),
         prefix_decl(),
@@ -829,7 +832,7 @@ fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
     let mut extra = Vec::new();
     for q in qualifiers {
         match q {
-            Qualifier::Extends(labels) => {
+            Qualifier::Extends(_) => {
                 todo!()
             }
             Qualifier::Closed => {}
@@ -1376,7 +1379,7 @@ fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
 }
 
 /// `[16t]   	numericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE`
-pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
+fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     alt((
         map(double, |n| NumericLiteral::double(n)), 
         decimal,
@@ -1387,7 +1390,7 @@ pub fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
 /// raw_numeric_literal obtains a numeric literal as a JSON
 /// `[16t]   	rawnumericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE
 /// `
-pub fn raw_numeric_literal(i: Span) -> IRes<NumericLiteral> {
+fn raw_numeric_literal(i: Span) -> IRes<NumericLiteral> {
     alt((
         map(double, |n| NumericLiteral::decimal_from_f64(n)), 
         decimal,
@@ -1396,11 +1399,11 @@ pub fn raw_numeric_literal(i: Span) -> IRes<NumericLiteral> {
 }
 
 
-pub fn boolean_literal(i: Span) -> IRes<Literal> {
+fn boolean_literal(i: Span) -> IRes<Literal> {
     map(boolean_value, |b| Literal::boolean(b))(i)
 }
 
-pub fn boolean_value(i: Span) -> IRes<bool> {
+fn boolean_value(i: Span) -> IRes<bool> {
     alt((map(token_tws("true"), |_| true), 
          map(token_tws("false"), |_| false)))(i)
 }
@@ -1432,7 +1435,7 @@ fn datatype_iri(i: Span) -> IRes<IriRef> {
 
 /// `[135s] string ::= STRING_LITERAL1 | STRING_LITERAL_LONG1`
 /// `                  | STRING_LITERAL2 | STRING_LITERAL_LONG2`
-pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
+fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
     traced("string", map_error(move |i| {
         alt((
             string_literal_long1,
@@ -1445,7 +1448,7 @@ pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
     ))
 }
 
-pub fn string_literal2(i: Span) -> IRes<String> {
+fn string_literal2(i: Span) -> IRes<String> {
     let (i, chars) = delimited(
         token(r#"""#),
         cut(many0(alt((
@@ -1460,7 +1463,7 @@ pub fn string_literal2(i: Span) -> IRes<String> {
 }
 
 /// `[156s] <STRING_LITERAL1> ::= "'" ([^'\\\n\r] | ECHAR | UCHAR)* "'"`
-pub fn string_literal1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
+fn string_literal1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
    traced("string_literal1", map_error(move |i| {
         let (i, chars) = delimited(
         token("'"),
@@ -1483,7 +1486,7 @@ fn single_quote_char<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, char> {
 }
 
 /// `[158s]   	<STRING_LITERAL_LONG1>	   ::=   	"'''" ( ("'" | "''")? ([^\\'\\] | ECHAR | UCHAR) )* "'''"`
-pub fn string_literal_long1(i: Span) -> IRes<String> {
+fn string_literal_long1(i: Span) -> IRes<String> {
     let (i, chars) = delimited(
         token("'''"),
         cut(many0(alt((
@@ -1498,7 +1501,7 @@ pub fn string_literal_long1(i: Span) -> IRes<String> {
 }
 
 /// `[159s]   	<STRING_LITERAL_LONG2>	   ::=   	'"""' ( ('"' | '""')? ([^\"\\] | ECHAR | UCHAR) )* '"""'`
-pub fn string_literal_long2(i: Span) -> IRes<String> {
+fn string_literal_long2(i: Span) -> IRes<String> {
     let (i, chars) = delimited(
         token(r#"""""#),
         cut(many0(alt((
@@ -1512,7 +1515,7 @@ pub fn string_literal_long2(i: Span) -> IRes<String> {
     Ok((i, str))
 }
 
-pub fn hex(input: Span) -> IRes<Span> {
+fn hex(input: Span) -> IRes<Span> {
     recognize(one_of(HEXDIGIT))(input)
 }
 
@@ -1530,7 +1533,7 @@ const REQUIRES_ESCAPE_SINGLE_QUOTE: &str = "\u{27}\u{5C}\u{0A}\u{0D}";
 
 /// `[26t] <UCHAR>	::= "\\u" HEX HEX HEX HEX`
 /// `                 | "\\U" HEX HEX HEX HEX HEX HEX HEX HEX`
-pub fn uchar(i: Span) -> IRes<char> {
+fn uchar(i: Span) -> IRes<char> {
     let (i,str) = recognize(alt((
         preceded(token(r"\u"), count(hex, 4)),
         preceded(token(r"\U"), count(hex, 8)),
@@ -1940,11 +1943,11 @@ fn double(i: Span) -> IRes<f64> {
     )(i)
 }
 
-pub fn exponent(input: Span) -> IRes<Span> {
+fn exponent(input: Span) -> IRes<Span> {
     recognize(tuple((one_of("eE"), opt(sign), digit1)))(input)
 }
 
-pub fn sign(input: Span) -> IRes<Span> {
+fn sign(input: Span) -> IRes<Span> {
     recognize(one_of("+-"))(input)
 }
 
@@ -2165,7 +2168,7 @@ fn rest_pn_chars(i: Span) -> IRes<Vec<Span>> {
     Ok((i, vs))
 }
 
-fn pn_chars_base(i: Span) -> IRes<char> {
+/*fn pn_chars_base(i: Span) -> IRes<char> {
     satisfy(is_pn_chars_base)(i)
 }
 
@@ -2174,15 +2177,15 @@ fn rest_pn_prefix(i: Span) -> IRes<&str> {
     let (i, (vs, cs)) = tuple((many0(alt((pn_chars, char_dot))), pn_chars))(i)?;
     // TODO...collect vs
     Ok((i, cs.fragment()))
-}
+}*/
 
 fn char_dot(i: Span) -> IRes<Span> {
     recognize(char('.'))(i)
 }
 
-fn pn_chars(i: Span) -> IRes<Span> {
+/*fn pn_chars(i: Span) -> IRes<Span> {
     one_if(is_pn_chars)(i)
-}
+}*/
 
 /// [164s] `<PN_CHARS_BASE>	   ::=   	   [A-Z] | [a-z]`
 ///        `                   | [#00C0-#00D6] | [#00D8-#00F6] | [#00F8-#02FF]`
@@ -2312,8 +2315,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ShExStatement;
-
+    
     /*#[test]
     fn test_comment() {
         assert_eq!(comment(Span::new("#\r\na")), Ok((Span::new("\na"), ())));

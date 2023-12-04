@@ -21,8 +21,19 @@ pub trait SRDF: SRDFComparisons {
         pred: &Self::IRI,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
 
+    /*fn get_subjects_for_predicate_any_object(
+        &self,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Subject>, Self::Err>;
+
+    fn get_objects_for_predicate_any_subject(
+        &self,
+        pred: &Self::IRI,
+    ) -> Result<HashSet<Self::Term>, Self::Err>;*/
+
     /// Get the neighbours of a term
     /// This code creates an intermediate vector and is not very efficient
+    /// TODO: return an iterator
     fn get_neighs(
         &self,
         node: &Self::Term,

@@ -8,11 +8,28 @@ use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind,
-    NumericFacet, Pattern, ShapeExprLabel, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, StringFacet,
-    TripleExpr, XsFacet,
+    NumericFacet, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
+    StringFacet, TripleExpr, XsFacet,
 };
 use srdf::{literal::Literal, numeric_literal::NumericLiteral};
 
+/// Struct that can be used to pretty print ShEx schemas
+///
+/// Example:
+/// ```
+/// use shex_compact::compact_printer::ShExFormatter;
+/// use shex_ast::{Schema, ShapeExprLabel, ShapeExpr};
+/// use iri_s::IriS;
+///
+/// let mut schema = Schema::new();
+/// schema.add_prefix("ex", &IriS::new_unchecked("http://example.org/"));
+/// schema.add_shape(ShapeExprLabel::iri_unchecked("http://example.org/S"), ShapeExpr::empty_shape(), false);
+///
+/// let expected = r#"prefix ex: <http://example.org/>
+/// ex:S  {  }"#;
+///
+/// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
+/// ```
 #[derive(Default, Debug, Clone)]
 pub struct ShExFormatter {
     keyword_color: Option<Color>,

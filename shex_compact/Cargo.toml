@@ -13,6 +13,7 @@ rbe = { path = "../rbe", version = "0.0.5" }
 iri_s = { path = "../iri_s", version = "0.0.5" }
 srdf = { path = "../srdf", version = "0.0.5" }
 prefixmap = { path = "../prefixmap", version = "0.0.5" } 
+shapemap = { path = "../shapemap", version = "0.0.5" } 
 nom = "7"
 nom_locate = "4"
 thiserror = "1"
