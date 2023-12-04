@@ -21,6 +21,12 @@ pub use internal::value_set_value::*;
 
 use srdf::Object;
 
+//! ShEx Abstract Syntax
+
+//! Ths abstract syntax follows the [ShEx abstract syntax spec](https://shex.io/)
+//! 
+//! 
+
 type CResult<T> = Result<T, CompiledSchemaError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;
 

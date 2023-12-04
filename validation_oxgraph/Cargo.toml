@@ -3,7 +3,7 @@ name = "validation_oxgraph"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
-documentation.workspace = true
+documentation = "https://docs.rs/validation_oxgraph"
 edition.workspace = true
 
 

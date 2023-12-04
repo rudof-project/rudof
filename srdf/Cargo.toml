@@ -3,7 +3,7 @@ name = "srdf"
 version = "0.0.4"
 authors.workspace = true
 description.workspace = true
-documentation.workspace = true
+documentation = "https://docs.rs/srdf"
 edition.workspace = true
 license.workspace = true
 

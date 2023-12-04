@@ -3,7 +3,7 @@ name = "shex_cli"
 version = "0.0.4"
 authors.workspace = true
 description.workspace = true
-documentation.workspace = true
+documentation = "https://www.weso.es/shex-rs/"
 edition.workspace = true
 license.workspace = true
 
