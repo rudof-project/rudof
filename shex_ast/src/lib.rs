@@ -1,3 +1,8 @@
+//! ShEx Abstract Syntax
+//!
+//! Ths abstract syntax follows the [ShEx abstract syntax spec](https://shex.io/)
+//!
+
 // #![deny(rust_2018_idioms)]
 pub mod internal;
 
@@ -6,9 +11,8 @@ pub mod pred;
 // pub mod schema_builder;
 pub mod ast;
 
-pub use internal::compiled_schema_error::*;
-use iri_s::IriS;
 pub use ast::*;
+pub use internal::compiled_schema_error::*;
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;
@@ -20,12 +24,6 @@ pub use internal::value_set::*;
 pub use internal::value_set_value::*;
 
 use srdf::Object;
-
-//! ShEx Abstract Syntax
-
-//! Ths abstract syntax follows the [ShEx abstract syntax spec](https://shex.io/)
-//! 
-//! 
 
 type CResult<T> = Result<T, CompiledSchemaError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;

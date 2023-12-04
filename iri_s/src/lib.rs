@@ -1,15 +1,26 @@
-pub mod iri;
+//! IRI simple wrapper
+//!
+//! This module contains a simple wrapper to work with IRIs
+//! The main goal is that we can use a simple interface to work with IRIs
+//! which could be adapted to different implementations in the future if needed.
+//!
+//! At this moment the implementation leverages on [`oxrdf::NamedNode`](https://docs.rs/oxrdf/latest/oxrdf/struct.NamedNode.html)
+//!
+//! Example
+//!
+//! ```
+//! use iri_s::IriS;
+//! use str::str::FromStr;
+//!
+//! let iri = IriS::from_str("http://example.org/").unwrap();
+//!
+//! asswer_eq!(iri.as_str(), "http://example.org/")
+//! ```
+//!
+
+// pub mod iri;
 pub mod iris;
 pub mod iris_error;
-
-
-//! IRI simple wrapper
-//! 
-//! This module contains a simple wrapper to work with IRIs
-//! The main goal is that we can use a simple interface to work with IRIs 
-//! which could be adapted to different implementations in the future if needed.
-//! 
-//! At this moment the implementation leverages on [`oxrdf::NamedNode`](https://docs.rs/oxrdf/latest/oxrdf/struct.NamedNode.html)
 
 // pub use iri::*;
 pub use iris::*;
