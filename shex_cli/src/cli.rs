@@ -75,27 +75,34 @@ pub enum Command {
         )]
         schema_format: ShExFormat,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
+        #[arg(
+            short = 'm', 
+            long = "shapemap", 
+            value_name = "ShapeMap file name", 
+            group = "shapemap_group"
+        )]
         shapemap: PathBuf,
 
         #[arg(
             long = "shapemap-format",
             value_name = "ShapeMap format",
-            default_value_t = ShapeMapFormat::Compact
+            default_value_t = ShapeMapFormat::Compact,
+            group = "shapemap_group"
         )]
         shapemap_format: ShapeMapFormat,
 
         #[arg(
             long = "result-shapemap-format",
             value_name = "Result shapemap format",
-            default_value_t = ShapeMapFormat::Compact
+            default_value_t = ShapeMapFormat::Compact,
+            group = "shapemap_group"
         )]
         result_shapemap_format: ShapeMapFormat,
 
-        #[arg(short = 'n', long = "node")]
+        #[arg(short = 'n', long = "node", group = "node_shape")]
         node: String,
 
-        #[arg(short = 'l', long = "shape", value_name = "shape label")]
+        #[arg(short = 'l', long = "shape", value_name = "shape label", group = "node_shape")]
         shape: String,
 
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
@@ -110,7 +117,6 @@ pub enum Command {
         data_format: DataFormat,
 
         #[arg(
-            short = 'm',
             long = "max-steps",
             value_name = "max steps to run",
             default_value_t = 100
