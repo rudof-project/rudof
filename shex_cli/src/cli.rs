@@ -23,6 +23,25 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    Shapemap {
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
+        shapemap: PathBuf,
+
+        #[arg(
+            long = "shapemap-format",
+            value_name = "ShapeMap format",
+            default_value_t = ShapeMapFormat::Compact
+        )]
+        shapemap_format: ShapeMapFormat,
+
+        #[arg(
+            long = "result-shapemap-format",
+            value_name = "Result shapemap format",
+            default_value_t = ShapeMapFormat::Compact
+        )]
+        result_shapemap_format: ShapeMapFormat,
+    },
+
     Schema {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
@@ -55,6 +74,23 @@ pub enum Command {
             default_value_t = ShExFormat::ShExC
         )]
         schema_format: ShExFormat,
+
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
+        shapemap: PathBuf,
+
+        #[arg(
+            long = "shapemap-format",
+            value_name = "ShapeMap format",
+            default_value_t = ShapeMapFormat::Compact
+        )]
+        shapemap_format: ShapeMapFormat,
+
+        #[arg(
+            long = "result-shapemap-format",
+            value_name = "Result shapemap format",
+            default_value_t = ShapeMapFormat::Compact
+        )]
+        result_shapemap_format: ShapeMapFormat,
 
         #[arg(short = 'n', long = "node")]
         node: String,
@@ -126,6 +162,22 @@ impl Display for ShExFormat {
             ShExFormat::Internal => write!(dest, "internal"),
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ShapeMapFormat {
+    Compact,
+    Internal,
+}
+
+impl Display for ShapeMapFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShapeMapFormat::Compact => write!(dest, "compact"),
+            ShapeMapFormat::Internal => write!(dest, "internal"),
         }
     }
 }

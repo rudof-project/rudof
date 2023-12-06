@@ -171,6 +171,16 @@ pub enum ParseError {
 
     #[error("Parse f64 error for str {str}: {err}")]
     ParseFloatError { str: String, err: ParseFloatError },
+
+    #[error("Expected ShapeSpec: IRIREF, BNode or START")]
+    ExpectedShapeSpec,
+
+    #[error("Expected ShapeMap association")]
+    ExpectedShapeMapAssociation,
+
+    #[error("Expected node selector specification")]
+    ExpectedNodeSpec,
+
 }
 
 impl ParseError {

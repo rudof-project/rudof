@@ -627,7 +627,7 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
 
 fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
-        ast::ObjectValue::Iri(ir) => {
+        ast::ObjectValue::IriRef(ir) => {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }

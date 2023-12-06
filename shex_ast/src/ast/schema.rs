@@ -4,7 +4,6 @@ use iri_s::IriS;
 use log::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 

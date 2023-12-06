@@ -1,14 +1,15 @@
 use iri_s::IriS;
-use shex_ast::Node;
+use prefixmap::IriRef;
+use shex_ast::{object_value::ObjectValue, Node};
 use srdf::shacl_path::SHACLPath;
 use srdf::SRDF;
 use thiserror::Error;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
 ///
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum NodeSelector {
-    Node(Node),
+    Node(ObjectValue),
     TriplePattern {
         subject: Pattern,
         pred: IriS,
@@ -26,6 +27,20 @@ pub enum NodeSelector {
         iri: IriS,
         param: String,
     },
+}
+
+impl NodeSelector {
+    pub fn iri_unchecked(str: &str) -> NodeSelector {
+        NodeSelector::Node(ObjectValue::iri(IriS::new_unchecked(str)))
+    }
+
+    pub fn iri_ref(iri: IriRef) -> NodeSelector {
+        NodeSelector::Node(ObjectValue::iri_ref(iri))
+    }
+
+    pub fn prefixed(alias: &str, local: &str) -> NodeSelector {
+        NodeSelector::Node(ObjectValue::prefixed(alias, local))
+    }
 }
 
 #[derive(Debug, Error)]
@@ -63,7 +78,7 @@ impl NodeSelect for NodeSelector {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 
 pub enum Pattern {
     Node(Node),

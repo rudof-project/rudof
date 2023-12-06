@@ -4,7 +4,6 @@ use crate::ast::serialize_string_or_struct;
 use crate::ShapeExprLabel;
 use prefixmap::Deref;
 use prefixmap::DerefError;
-use prefixmap::IriRef;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

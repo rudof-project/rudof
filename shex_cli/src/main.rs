@@ -5,6 +5,7 @@ extern crate log;
 extern crate oxrdf;
 extern crate regex;
 extern crate serde_json;
+extern crate shapemap;
 extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
@@ -16,8 +17,9 @@ use clap::Parser;
 use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
+use shapemap::query_shape_map::QueryShapeMap;
 use shex_ast::Node;
-use shex_compact::{ShExFormatter, ShExParser};
+use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
@@ -46,6 +48,9 @@ fn main() -> Result<()> {
             node,
             shape,
             max_steps,
+            shapemap,
+            shapemap_format,
+            result_shapemap_format,
         }) => run_validate(
             schema,
             schema_format,
@@ -62,6 +67,11 @@ fn main() -> Result<()> {
             data_format,
             node,
         }) => run_node(data, data_format, node, cli.debug),
+        Some(Command::Shapemap {
+            shapemap,
+            shapemap_format,
+            result_shapemap_format,
+        }) => run_shapemap(shapemap, shapemap_format, result_shapemap_format),
         None => {
             println!("Command not specified");
             Ok(())
@@ -145,6 +155,25 @@ fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: 
     Ok(())
 }
 
+fn run_shapemap(
+    shapemap: &PathBuf,
+    shapemap_format: &ShapeMapFormat,
+    result_format: &ShapeMapFormat,
+) -> Result<()> {
+    let shapemap = parse_shapemap(shapemap, shapemap_format)?;
+    match result_format {
+        ShapeMapFormat::Compact => {
+            let str = ShapemapFormatter::default().format_shapemap(&shapemap);
+            println!("{str}");
+            Ok(())
+        }
+        ShapeMapFormat::Internal => {
+            println!("{shapemap:?}");
+            Ok(())
+        }
+    }
+}
+
 fn node_to_subject(node: &Object) -> Result<Subject> {
     match node {
         Object::BlankNode(bn) => Ok(Subject::BlankNode(BlankNode::new_unchecked(bn.as_str()))),
@@ -157,6 +186,19 @@ fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
     let data = parse_data(data, data_format, debug)?;
     println!("Data\n{data:?}\n");
     Ok(())
+}
+
+fn parse_shapemap(
+    shapemap_path: &PathBuf,
+    shapemap_format: &ShapeMapFormat,
+) -> Result<QueryShapeMap> {
+    match shapemap_format {
+        ShapeMapFormat::Internal => Err(anyhow!("Cannot read internal ShapeMap format yet")),
+        ShapeMapFormat::Compact => {
+            let shapemap = ShapeMapParser::parse_buf(shapemap_path, &None, &None)?;
+            Ok(shapemap)
+        }
+    }
 }
 
 fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<SchemaJson> {

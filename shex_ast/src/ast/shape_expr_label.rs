@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use iri_s::{IriSError, IriS};
+use iri_s::{IriS, IriSError};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 
@@ -17,21 +17,26 @@ pub enum ShapeExprLabel {
 }
 
 impl ShapeExprLabel {
-    pub fn iri_unchecked(s: &str) -> ShapeExprLabel {
+    pub fn iri_unchecked(s: &str) -> Self {
         ShapeExprLabel::IriRef {
             value: IriS::new_unchecked(s).into(),
         }
     }
 
-    pub fn iri_ref(i: IriRef) -> ShapeExprLabel {
+    pub fn iri_ref(i: IriRef) -> Self {
         ShapeExprLabel::IriRef { value: i }
     }
 
-    pub fn bnode(bn: BNode) -> ShapeExprLabel {
+    pub fn bnode(bn: BNode) -> Self {
         ShapeExprLabel::BNode { value: bn }
     }
-}
 
+    pub fn prefixed(alias: &str, local: &str) -> Self {
+        ShapeExprLabel::IriRef {
+            value: IriRef::prefixed(alias, local),
+        }
+    }
+}
 
 impl Deref for ShapeExprLabel {
     fn deref(
@@ -53,7 +58,6 @@ impl Deref for ShapeExprLabel {
         }
     }
 }
-
 
 impl TryFrom<&str> for ShapeExprLabel {
     type Error = RefError;

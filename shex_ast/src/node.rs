@@ -12,6 +12,12 @@ pub struct Node {
 }
 
 impl Node {
+    pub fn iri(iri: IriS) -> Node {
+        Node {
+            node: Object::iri(iri),
+        }
+    }
+
     pub fn as_object(&self) -> &Object {
         &self.node
     }

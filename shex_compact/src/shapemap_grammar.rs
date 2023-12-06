@@ -1,3 +1,110 @@
+use crate::{
+    grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
+    iri,
+    shex_grammar::shape_expr_label,
+    IRes, ParseError, Span,
+};
+use nom::{
+    branch::alt,
+    character::complete::char,
+    combinator::{all_consuming, map, opt},
+    multi::many0,
+    sequence::tuple,
+};
+use shapemap::{NodeSelector, ShapeSelector};
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum ShapeMapStatement {
+    Association {
+        node_selector: NodeSelector,
+        shape_selector: ShapeSelector,
+    },
+}
+
+pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShapeMapStatement>> {
+    traced(
+        "shapemap_statement",
+        map_error(
+            move |i| {
+                let (i, (a, _, ass, _, _)) = all_consuming(tuple((
+                    association,
+                    tws0,
+                    rest_associations,
+                    tws0,
+                    opt(char(',')),
+                )))(i)?;
+                let mut rs = vec![a];
+                for a in ass {
+                    rs.push(a);
+                }
+                Ok((i, rs))
+            },
+            || ParseError::ExpectedShapeMapAssociation,
+        ),
+    )
+}
+
+/// `association ::= node_spec @ shape_spec`
+fn association(i: Span) -> IRes<ShapeMapStatement> {
+    let (i, (ns, _, sl)) = tuple((node_spec(), token_tws("@"), shape_spec()))(i)?;
+    let s = ShapeMapStatement::Association {
+        node_selector: ns,
+        shape_selector: sl,
+    };
+    Ok((i, s))
+}
+
+fn rest_associations(i: Span) -> IRes<Vec<ShapeMapStatement>> {
+    let (i, ass) = many0(tuple((token_tws(","), tws0, association)))(i)?;
+    let r = ass.into_iter().map(|(_, _, a)| a).collect();
+    Ok((i, r))
+}
+
+fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector> {
+    traced(
+        "shape_spec",
+        map_error(
+            move |i| {
+                alt((
+                    map(shape_expr_label, |sl| ShapeSelector::Label(sl)),
+                    map(tag_no_case_tws("START"), |_| ShapeSelector::Start),
+                ))(i)
+            },
+            || ParseError::ExpectedShapeSpec,
+        ),
+    )
+}
+
+fn node_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelector> {
+    traced(
+        "node_spec",
+        map_error(move |i| subject_term(i), || ParseError::ExpectedNodeSpec),
+    )
+}
+
+fn subject_term(i: Span) -> IRes<NodeSelector> {
+    let (i, iri) = iri(i)?;
+    Ok((i, NodeSelector::iri_ref(iri)))
+}
+
+/// A combinator that makes sure all input has been consumed.
+/*pub fn all_input_consumed<'a, T: 'a>(
+    parser: impl FnMut(Span<'a>) -> IRes<'a, T> + 'a,
+) -> impl FnMut(&'a str) -> Result<T, LocatedParseError> + 'a {
+    let mut p = all_consuming(parser);
+    move |input| {
+        let input = Span::new(input);
+        p(input).map(|(_, result)| result).map_err(|e| match e {
+            Err::Incomplete(e) => ParseError::MissingInput(match e {
+                nom::Needed::Unknown => "expected an unknown amount of further input".to_string(),
+                nom::Needed::Size(size) => format!("expected at least {size} more bytes"),
+            })
+            .at(input),
+            Err::Error(e) | Err::Failure(e) => e,
+        })
+    }
+}*/
+
 /*use std::fmt::Debug;
 use iri_s::IriS;
 use nom::branch::alt;
@@ -413,26 +520,29 @@ impl InputShapeMap {
         self
     }
 }
-
+*/
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use test_log::test;
+    use shapemap::ShapeSelector;
 
-    #[test_log::test]
-    fn example_shapemap () {
-        let input = Span::new(":a@label");
-        let shape_map = parse_shapemap(input).unwrap();
-        let expected = InputShapeMap::new();
+    use super::*;
+
+    #[test]
+    fn example_shapemap() {
+        let input = Span::new(":a@:label");
+        let (_, shape_map) = association(input).unwrap();
+        let expected = ShapeMapStatement::Association {
+            node_selector: NodeSelector::prefixed("", "a"),
+            shape_selector: ShapeSelector::prefixed("", "label"),
+        };
         assert_eq!(shape_map, expected);
     }
 
-/*    #[test_log::test]
+    /*    #[test_log::test]
     fn example_shapemap_failed () {
         let input = Span::new("\n @START \n # Comment \n@STRT\n");
         let shape_map = parse_shapemap(input).unwrap();
         let expected = InputShapeMap::new();
         assert_eq!(shape_map, expected);
     } */
-
-}*/
+}

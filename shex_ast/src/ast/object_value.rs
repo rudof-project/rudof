@@ -1,4 +1,4 @@
-use iri_s::IriSError;
+use iri_s::{IriS, IriSError};
 use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::de::Unexpected;
@@ -19,7 +19,7 @@ use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
-    Iri(IriRef),
+    IriRef(IriRef),
     Literal(Literal),
 }
 
@@ -46,9 +46,21 @@ impl ObjectValue {
 
     pub fn lexical_form(&self) -> String {
         match self {
-            ObjectValue::Iri(iri) => iri.to_string(),
+            ObjectValue::IriRef(iri) => iri.to_string(),
             ObjectValue::Literal(lit) => lit.lexical_form(),
         }
+    }
+
+    pub fn iri(iri: IriS) -> Self {
+        ObjectValue::IriRef(IriRef::iri(iri))
+    }
+
+    pub fn iri_ref(iri: IriRef) -> Self {
+        ObjectValue::IriRef(iri)
+    }
+
+    pub fn prefixed(alias: &str, local: &str) -> Self {
+        ObjectValue::IriRef(IriRef::prefixed(alias, local))
     }
 }
 
@@ -59,9 +71,9 @@ impl Deref for ObjectValue {
         prefixmap: &Option<prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
-            ObjectValue::Iri(iri_ref) => {
+            ObjectValue::IriRef(iri_ref) => {
                 let new_iri_ref = iri_ref.deref(base, prefixmap)?;
-                Ok(ObjectValue::Iri(new_iri_ref))
+                Ok(ObjectValue::IriRef(new_iri_ref))
             }
             ObjectValue::Literal(lit) => {
                 let new_lit = lit.deref(base, prefixmap)?;
@@ -76,7 +88,7 @@ impl FromStr for ObjectValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(ObjectValue::Iri(iri_ref))
+        Ok(ObjectValue::IriRef(iri_ref))
     }
 }
 
@@ -99,7 +111,7 @@ impl Serialize for ObjectValue {
                 map.serialize_entry("value", &num.to_string())?;
                 map.end()
             }
-            ObjectValue::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
+            ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
             ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
                 match lang {
@@ -327,7 +339,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                 let iri_ref = IriRef::from_str(s).map_err(|e| {
                     de::Error::custom(format!("Cannot convert string `{s}` to Iri: {e}"))
                 })?;
-                Ok(ObjectValue::Iri(iri_ref))
+                Ok(ObjectValue::IriRef(iri_ref))
             }
         }
 

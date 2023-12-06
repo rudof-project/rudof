@@ -1,4 +1,4 @@
-use crate::{ast::serde_string_or_struct::*, LangOrWildcard};
+use crate::LangOrWildcard;
 use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriSError;
 use prefixmap::{Deref, DerefError, IriRef};
@@ -50,7 +50,7 @@ pub enum ValueSetValue {
 
 impl ValueSetValue {
     pub fn iri(iri: IriRef) -> ValueSetValue {
-        ValueSetValue::ObjectValue(ObjectValue::Iri(iri))
+        ValueSetValue::ObjectValue(ObjectValue::iri_ref(iri))
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
@@ -151,7 +151,7 @@ impl FromStr for ValueSetValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(ValueSetValue::ObjectValue(ObjectValue::Iri(iri_ref)))
+        Ok(ValueSetValue::ObjectValue(ObjectValue::iri_ref(iri_ref)))
     }
 }
 
@@ -271,15 +271,13 @@ enum Stem {
 
 #[derive(Debug, Error)]
 enum StemError {
-    #[error("Stem is no string or wildcard: {stem:?}")]
-    NoStringOrWildCard { stem: Stem },
-
+    //#[error("Stem is no string or wildcard: {stem:?}")]
+    //NoStringOrWildCard { stem: Stem },
     #[error("Stem is no IriRef or wildcard. Stem: {stem:?}, IriError: {err}")]
     NoIriRefOrWildCard { stem: Stem, err: IriSError },
 
-    #[error("Stem is no lang or wildcard: {stem:?}")]
-    NoLangOrWildcard { stem: Stem },
-
+    //#[error("Stem is no lang or wildcard: {stem:?}")]
+    //NoLangOrWildcard { stem: Stem },
     #[error("Stem should be IriRef but is wildcard")]
     StemAsIriRefIsWildcard,
 
@@ -445,7 +443,7 @@ impl<'de> Deserialize<'de> for Stem {
 }
 
 enum StemType {
-    Str,
+    // Str,
     Wildcard,
 }
 
@@ -624,7 +622,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         Some(stem) => match exclusions {
                             Some(excs) => {
                                 let lang_excs = Exclusion::parse_language_exclusions(excs).map_err(|e| {
-                                    de::Error::custom("LanguageStemRange: some exclusions are not Lang exclusions: {e:?}")
+                                    de::Error::custom(format!("LanguageStemRange: some exclusions are not Lang exclusions: {e:?}"))
                                 })?;
                                 let stem = stem.as_lang_or_wildcard().map_err(|e| {
                                     de::Error::custom(format!("LanguageStemRange: stem is not lang or wildcard. stem `{stem:?}`: {e:?}"))
@@ -642,7 +640,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         Some(stem) => match exclusions {
                             Some(excs) => {
                                 let iri_excs = Exclusion::parse_iri_exclusions(excs).map_err(|e| {
-                                    de::Error::custom("IriStemRange: some exclusions are not IRI exclusions: {e:?}")
+                                    de::Error::custom(format!("IriStemRange: some exclusions are not IRI exclusions: {e:?}"))
                                 })?;
                                 let stem = stem.as_iri_or_wildcard().map_err(|e| {
                                     de::Error::custom(format!("IriStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
@@ -659,7 +657,9 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::LiteralStem) => match stem {
                         Some(stem) => {
                             let stem = stem.as_string().map_err(|e| {
-                                de::Error::custom("LiteralStem: value of stem must be a string")
+                                de::Error::custom(format!(
+                                    "LiteralStem: value of stem must be a string"
+                                ))
                             })?;
                             Ok(ValueSetValue::LiteralStem { stem: stem })
                         }
@@ -668,7 +668,9 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::LanguageStem) => match stem {
                         Some(stem) => {
                             let stem = stem.as_language().map_err(|e| {
-                                de::Error::custom("LanguageStem: stem is not a language")
+                                de::Error::custom(format!(
+                                    "LanguageStem: stem is not a language: {e:?}"
+                                ))
                             })?;
                             Ok(ValueSetValue::LanguageStem {
                                 stem: Lang::new(&stem),

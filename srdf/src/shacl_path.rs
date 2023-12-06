@@ -3,7 +3,7 @@ use iri_s::IriS;
 /// SHACL paths follow the [SHACL property paths spec](https://www.w3.org/TR/shacl/#property-paths)
 /// which are a subset of SPARQL property paths
 ///
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum SHACLPath {
     Predicate { pred: IriS },
     Alternative { paths: Vec<SHACLPath> },
