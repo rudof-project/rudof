@@ -111,18 +111,46 @@ Options:
 
 ### Validating an RDF node against some data
 
+Example: Assuming there a ShEx file in `examples/user.shex` and an RDF turtle file in `examples/user.ttl` we can ask to validate node `:a` with shape label `:User` using:
+
 ```
-Usage: sx validate [OPTIONS] --schema <Schema file name> --node <NODE> --shape <shape label> --data <RDF data path>
+sx validate -s examples/user.shex -d examples/user.ttl -n :a -l :User
+```
+
+If there is a shapemap in `examples/user.sm`, we can validate using:
+
+```
+sx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
+```
+
+The full help for the `validate` subcommand is:
+
+```
+Usage: sx validate [OPTIONS] --schema <Schema file name> --data <RDF data path>
 
 Options:
-  -s, --schema <Schema file name>      
-  -f, --schema-format <Schema format>  [default: shexj] [possible values: internal, shexc, shexj]
-  -n, --node <NODE>                    
-  -l, --shape <shape label>            
-  -d, --data <RDF data path>           
-  -t, --data-format <RDF Data format>  [default: turtle] [possible values: turtle]
-  -m, --max-steps <max steps to run>   [default: 100]
-  -h, --help                           Print help
+  -s, --schema <Schema file name>
+          
+  -f, --schema-format <Schema format>
+          [default: shexc] [possible values: internal, shexc, shexj]
+  -m, --shapemap <ShapeMap file name>
+          
+      --shapemap-format <ShapeMap format>
+          [default: compact] [possible values: compact, internal]
+      --result-shapemap-format <Result shapemap format>
+          [default: compact] [possible values: compact, internal]
+  -n, --node <NODE>
+          
+  -l, --shape-label <shape label (default = START)>
+          
+  -d, --data <RDF data path>
+          
+  -t, --data-format <RDF Data format>
+          [default: turtle] [possible values: turtle]
+      --max-steps <max steps to run>
+          [default: 100]
+  -h, --help
+          Print help
 ```
 
 ## Main modules
