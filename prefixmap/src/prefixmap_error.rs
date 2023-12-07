@@ -8,7 +8,7 @@ pub enum PrefixMapError {
     #[error(transparent)]
     IriSError(#[from] IriSError),
 
-    #[error("Prefix {prefix} not found in PrefixMap {prefixmap}")]
+    #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
     PrefixNotFound {
         prefix: String,
         prefixmap: PrefixMap

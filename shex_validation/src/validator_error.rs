@@ -1,5 +1,6 @@
+use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use shex_ast::{CompiledSchemaError, Node, Pred, ShapeLabel, ShapeLabelIdx};
+use shex_ast::{CompiledSchemaError, Node, Pred, ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
 use srdf::Object;
 use thiserror::Error;
 
@@ -22,4 +23,14 @@ pub enum ValidatorError {
 
     #[error(transparent)]
     RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx>),
+
+    #[error(transparent)]
+    PrefixMapError(#[from] PrefixMapError),
+
+    #[error("ShapeLabel not found {shape_label:?}: {err}")]
+    ShapeLabelNotFoundError {
+        shape_label: ShapeExprLabel,
+        err: CompiledSchemaError
+    },
+
 }

@@ -4,7 +4,7 @@ use crate::{
     CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
@@ -21,6 +21,7 @@ pub struct CompiledSchema {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
     shape_label_counter: ShapeLabelIdx,
+    prefixmap: PrefixMap
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
@@ -101,7 +102,12 @@ impl CompiledSchema {
             shape_labels_map: HashMap::new(),
             shape_label_counter: ShapeLabelIdx::default(),
             shapes: HashMap::new(),
+            prefixmap: PrefixMap::new()
         }
+    }
+
+    pub fn set_prefixmap(&mut self, prefixmap: Option<PrefixMap>) {
+        self.prefixmap = prefixmap.clone().unwrap_or_else(|| PrefixMap::new());
     }
 
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
@@ -186,9 +192,23 @@ impl CompiledSchema {
     pub fn find_ref(&mut self, se_ref: &ShapeExprLabel) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             ShapeExprLabel::IriRef { value } => {
-                let iri_s: IriS = (*value).clone().into();
-                let label = ShapeLabel::iri(iri_s);
-                Ok::<ShapeLabel, CompiledSchemaError>(label)
+                match value {
+                    IriRef::Iri(iri) => {
+                        let label = ShapeLabel::iri(iri.clone());
+                        Ok::<ShapeLabel, CompiledSchemaError>(label)
+                    },
+                    IriRef::Prefixed { prefix, local } => {
+                        let iri = self.prefixmap.resolve_prefix_local(prefix, local).map_err(|err| {
+                            println!("find_ref...error!");
+                            CompiledSchemaError::PrefixedNotFound { 
+                                prefix: prefix.clone(), 
+                                local: local.clone(),
+                                err
+                            }
+                        })?;
+                        Ok::<ShapeLabel, CompiledSchemaError>(ShapeLabel::iri(iri))
+                    },
+                }
             }
             ShapeExprLabel::BNode { value } => {
                 let label = ShapeLabel::from_bnode((*value).clone());
@@ -198,7 +218,7 @@ impl CompiledSchema {
         match self.shape_labels_map.get(&shape_label) {
             Some(idx) => Ok(*idx),
             None => {
-                todo!()
+                Err(CompiledSchemaError::LabelNotFound{ shape_label })
             }
         }
     }

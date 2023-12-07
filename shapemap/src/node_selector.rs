@@ -41,6 +41,14 @@ impl NodeSelector {
     pub fn prefixed(alias: &str, local: &str) -> NodeSelector {
         NodeSelector::Node(ObjectValue::prefixed(alias, local))
     }
+
+    pub fn iter_node<S>(&self, rdf: &S) -> impl Iterator<Item=&ObjectValue> 
+    where S: SRDF {
+        match self {
+            NodeSelector::Node(value) => std::iter::once(value),
+            _ => todo!()
+        }
+    }
 }
 
 #[derive(Debug, Error)]

@@ -30,4 +30,11 @@ impl ShapeSelector {
     pub fn prefixed(alias: &str, local: &str) -> Self {
         ShapeSelector::Label(ShapeExprLabel::prefixed(alias, local))
     }
+
+    pub fn iter_shape(&self) -> impl Iterator<Item=&ShapeExprLabel> {
+        match self {
+            ShapeSelector::Label(label) => std::iter::once(label),
+            _ => todo!()
+        }
+    }
 }

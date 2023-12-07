@@ -79,15 +79,13 @@ pub enum Command {
             short = 'm', 
             long = "shapemap", 
             value_name = "ShapeMap file name", 
-            group = "shapemap_group"
         )]
-        shapemap: PathBuf,
+        shapemap: Option<PathBuf>,
 
         #[arg(
             long = "shapemap-format",
             value_name = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
-            group = "shapemap_group"
         )]
         shapemap_format: ShapeMapFormat,
 
@@ -95,15 +93,14 @@ pub enum Command {
             long = "result-shapemap-format",
             value_name = "Result shapemap format",
             default_value_t = ShapeMapFormat::Compact,
-            group = "shapemap_group"
         )]
         result_shapemap_format: ShapeMapFormat,
 
-        #[arg(short = 'n', long = "node", group = "node_shape")]
-        node: String,
+        #[arg(short = 'n', long = "node")]
+        node: Option<String>,
 
-        #[arg(short = 'l', long = "shape", value_name = "shape label", group = "node_shape")]
-        shape: String,
+        #[arg(short = 'l', long = "shape-label", value_name = "shape label (default = START)", group = "node_shape")]
+        shape: Option<String>,
 
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
         data: PathBuf,

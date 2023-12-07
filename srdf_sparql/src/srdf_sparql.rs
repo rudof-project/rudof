@@ -186,6 +186,10 @@ impl SRDFComparisons for SRDFSPARQL {
     fn iri2iri_s(iri: Self::IRI) -> IriS {
         IriS::from_named_node(iri)
     }
+
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, prefixmap::PrefixMapError> {
+        todo!()
+    }
 }
 
 #[async_trait]

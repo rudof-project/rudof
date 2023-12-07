@@ -16,7 +16,7 @@ use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use prefixmap::{prefixmap::*, IriRef};
+use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
@@ -294,6 +294,11 @@ impl SRDFComparisons for SRDFGraph {
                 iri: Self::iri2iri_s(iri),
             },
         }
+    }
+
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
+        let iri = self.pm.resolve_prefix_local(prefix, local)?;
+        Ok(iri.clone())
     }
 }
 

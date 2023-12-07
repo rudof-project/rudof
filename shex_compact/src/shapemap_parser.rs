@@ -1,10 +1,13 @@
 use crate::shapemap_grammar::shapemap_statement;
+use crate::shapemap_grammar::{shape_spec, node_spec};
 use crate::shapemap_grammar::ShapeMapStatement;
 use crate::tws0;
 use crate::ParseError;
 use crate::Span;
 use nom::Err;
 use prefixmap::PrefixMap;
+use shapemap::NodeSelector;
+use shapemap::ShapeSelector;
 use shapemap::query_shape_map::QueryShapeMap;
 use std::fs;
 use std::path::PathBuf;
@@ -59,6 +62,31 @@ impl<'a> ShapeMapParser<'a> {
         let query_shapemap = ShapeMapParser::parse(&data, nodes_prefixmap, shapes_prefixmap)?;
         Ok(query_shapemap)
     }
+
+    pub fn parse_shape_selector(str: &str) -> Result<ShapeSelector> {
+        let span = Span::new(str);
+        let (_,ss) = shape_spec()(span).map_err(|e| {
+            match e {
+                Err::Incomplete(s) => ParseError::Custom { msg: format!("Incomplete input: needed {s:?}") },
+                Err::Error(e) => ParseError::NomError { err: Box::new(e) },
+                Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
+            }
+        })?;
+        Ok(ss)
+    }
+
+    pub fn parse_node_selector(str: &str) -> Result<NodeSelector> {
+        let span = Span::new(str);
+        let (_,ns) = node_spec()(span).map_err(|e| {
+            match e {
+                Err::Incomplete(s) => ParseError::Custom { msg: format!("Incomplete input: needed {s:?}") },
+                Err::Error(e) => ParseError::NomError { err: Box::new(e) },
+                Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
+            }
+        })?;
+        Ok(ns)
+    }
+
 }
 
 struct ShapeMapStatementIterator<'a> {

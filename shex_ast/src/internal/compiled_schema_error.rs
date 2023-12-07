@@ -1,5 +1,5 @@
 use iri_s::{IriS, IriSError};
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMapError};
 use srdf::lang::Lang;
 //use srdf::Object;
 use thiserror::Error;
@@ -70,6 +70,12 @@ pub enum CompiledSchemaError {
 
     #[error("Can't convert prefixed name {prefix}:{local} to shape label")]
     IriRef2ShapeLabelError { prefix: String, local: String },
+
+    #[error("Can't find prefixed name {prefix}:{local} in prefixmap: {err}")]
+    PrefixedNotFound { prefix: String, local: String, err: PrefixMapError },
+
+    #[error("Label not found: {shape_label}")]
+    LabelNotFound { shape_label: ShapeLabel },
 
     #[error("Internal: {msg}")]
     Internal { msg: String },

@@ -46,6 +46,7 @@ impl SchemaJsonCompiler {
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<()> {
         debug!("Compiling schema_json: {compiled_schema:?}");
+        compiled_schema.set_prefixmap(schema_json.prefixmap());
         self.collect_shape_labels(schema_json, compiled_schema)?;
         self.collect_shape_exprs(schema_json, compiled_schema)?;
         Ok(())

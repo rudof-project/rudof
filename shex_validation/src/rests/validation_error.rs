@@ -29,6 +29,7 @@ where
 
     #[error("JoinError: {je:?}")]
     JoinError { je: JoinError },
+
 }
 
 impl<'a, SL> From<JoinError> for ValidationError<'a, SL>

@@ -1,5 +1,7 @@
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
+use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
+use srdf::SRDF;
 
 #[derive(Debug, PartialEq)]
 pub struct QueryShapeMap {
@@ -43,4 +45,11 @@ impl QueryShapeMap {
     pub fn iter(&self) -> impl Iterator<Item = &Association> + '_ {
         self.associations.iter()
     }
+
+    pub fn iter_node_shape<'a, S>(&'a self, 
+        rdf: &'a S) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
+    where S: SRDF {
+        self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
+    }
 }
+

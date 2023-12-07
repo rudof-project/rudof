@@ -4,11 +4,15 @@ use crate::validator_error::*;
 use crate::validator_runner::ValidatorRunner;
 use crate::ResultValue;
 use log::debug;
+use prefixmap::IriRef;
 use prefixmap::PrefixMap;
+use shapemap::query_shape_map::QueryShapeMap;
+use shex_ast::ShapeExprLabel;
 use shex_ast::internal::*;
 use shex_ast::Node;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ShapeLabel;
+use shex_ast::object_value::ObjectValue;
 use srdf::SRDF;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -35,6 +39,47 @@ impl Validator {
         let idx = self.get_idx(shape)?;
         self.runner.add_pending(node.clone(), idx);
         debug!("Before while loop: ${}@{}", node, idx);
+        self.loop_validating(rdf)?;
+        Ok(())
+    }
+
+    fn get_shape_expr_label(&mut self, label: &ShapeExprLabel) -> Result<ShapeLabelIdx> {
+        self.schema.find_ref(label).map_err(|e| ValidatorError::ShapeLabelNotFoundError {
+            shape_label: label.clone(),
+            err: e
+        })
+    }
+
+    pub fn validate_shapemap<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()> 
+    where S: SRDF {
+        self.fill_pending(shapemap, rdf)?;
+        self.loop_validating(rdf)?;
+        Ok(())
+    }
+
+    fn fill_pending<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()> 
+    where S: SRDF {
+        for (node_value, label) in shapemap.iter_node_shape(rdf) {
+            let idx = self.get_shape_expr_label(label)?;
+            let node = self.node_from_object_value(node_value, rdf)?;
+            self.runner.add_pending(node.clone(), idx);
+        };
+        Ok(())
+    }
+
+    fn node_from_object_value<S>(&mut self, value: &ObjectValue, rdf: &S) -> Result<Node> 
+    where S: SRDF {
+        match value {
+            ObjectValue::IriRef(IriRef::Iri(iri)) => Ok(Node::iri(iri.clone())),
+            ObjectValue::IriRef(IriRef::Prefixed { prefix, local }) => {
+                let iri = rdf.resolve_prefix_local(prefix, local)?;
+                Ok(Node::iri(iri.clone()))
+            }
+            ObjectValue::Literal(lit) => todo!(),
+        }
+    }
+
+    fn loop_validating<S>(&mut self, rdf: &S) -> Result<()> where S: SRDF {
         while self.runner.no_end_steps() && self.runner.more_pending() {
             self.runner.new_step();
             let atom = self.runner.pop_pending().unwrap();

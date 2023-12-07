@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
+use prefixmap::IriRef;
 use shex_ast::Iri;
 use shex_ast::Schema;
 
@@ -82,6 +83,7 @@ impl<'a> ShExParser<'a> {
         let schema = ShExParser::parse(&data, base)?;
         Ok(schema)
     }
+
 }
 
 struct StatementIterator<'a> {

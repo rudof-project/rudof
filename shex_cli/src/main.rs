@@ -17,8 +17,8 @@ use clap::Parser;
 use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
-use shapemap::query_shape_map::QueryShapeMap;
-use shex_ast::Node;
+use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
+use shex_ast::{Node, object_value::ObjectValue, ShapeExprLabel};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
@@ -47,10 +47,10 @@ fn main() -> Result<()> {
             data_format,
             node,
             shape,
-            max_steps,
             shapemap,
             shapemap_format,
-            result_shapemap_format,
+            max_steps,
+            result_shapemap_format
         }) => run_validate(
             schema,
             schema_format,
@@ -58,6 +58,8 @@ fn main() -> Result<()> {
             data_format,
             node,
             shape,
+            shapemap,
+            shapemap_format,
             max_steps,
             cli.debug,
         ),
@@ -108,8 +110,10 @@ fn run_validate(
     schema_format: &ShExFormat,
     data: &PathBuf,
     data_format: &DataFormat,
-    node_str: &str,
-    shape_str: &str,
+    maybe_node: &Option<String>,
+    maybe_shape: &Option<String>,
+    shapemap: &Option<PathBuf>,
+    shapemap_format: &ShapeMapFormat,
     max_steps: &usize,
     debug: u8,
 ) -> Result<()> {
@@ -117,11 +121,34 @@ fn run_validate(
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
     let data = parse_data(data, data_format, debug)?;
-    let node = parse_node(node_str, &data)?;
-    let shape = parse_shape_label(shape_str)?;
+    let mut shapemap = match shapemap {
+        None => {
+            QueryShapeMap::new()
+        },
+        Some(shapemap_buf) => {
+            parse_shapemap(shapemap_buf, shapemap_format)?
+        }
+    };
+    match (maybe_node, maybe_shape) {
+        (None, None) => {
+            // Nothing to do in this case
+        }
+        (Some(node_str), None) => {
+            let node_selector = parse_node_selector(node_str)?;
+            shapemap.add_association(node_selector, start())
+        }
+        (Some(node_str), Some(shape_str)) => {
+            let node_selector = parse_node_selector(node_str)?;
+            let shape_selector = parse_shape_label(shape_str)?;
+            shapemap.add_association(node_selector, shape_selector)
+        }
+        (None, Some(shape_str)) => {
+            debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
+        }
+    };
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     debug!("Validating with max_steps: {}", max_steps);
-    match validator.validate_node_shape(&node, &shape, &data) {
+    match validator.validate_shapemap(&shapemap, &data) {
         Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
             Result::Ok(result_map) => {
                 println!("Result:\n{}", result_map);
@@ -137,6 +164,24 @@ fn run_validate(
         }
     }
 }
+
+fn make_node_selector(node: Node) -> Result<NodeSelector> {
+    let object = node.as_object();
+    match object {
+        Object::Iri { iri } => Ok(NodeSelector::Node(ObjectValue::iri(iri.clone()))),
+        Object::BlankNode(_) => bail!("Blank nodes can not be used as node selectors to validate"),
+        Object::Literal(lit) => Ok(NodeSelector::Node(ObjectValue::Literal(lit.clone()))),
+    }
+}
+
+fn make_shape_selector(shape_label: ShapeExprLabel) -> ShapeSelector {
+    ShapeSelector::Label(shape_label)
+}
+
+fn start() -> ShapeSelector {
+    ShapeSelector::start()
+}
+
 
 fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: u8) -> Result<()> {
     let data = parse_data(data, data_format, debug)?;
@@ -253,7 +298,13 @@ fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     }
 }
 
-fn parse_shape_label(label_str: &str) -> Result<ShapeLabel> {
-    let iri = IriS::from_str(label_str)?;
-    Ok(ShapeLabel::Iri(iri))
+fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
+    let ns = ShapeMapParser::parse_node_selector(node_str)?;
+    Ok(ns)
+}
+
+
+fn parse_shape_label(label_str: &str) -> Result<ShapeSelector> {
+    let selector = ShapeMapParser::parse_shape_selector(label_str)?;
+    Ok(selector)
 }

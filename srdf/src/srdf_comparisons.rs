@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
+use prefixmap::PrefixMapError;
 
 use crate::Object;
 
@@ -36,4 +37,6 @@ pub trait SRDFComparisons {
 
     fn term2object(term: Self::Term) -> Object;
     fn iri2iri_s(iri: Self::IRI) -> IriS;
+
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 }
