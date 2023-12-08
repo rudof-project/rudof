@@ -11,6 +11,8 @@ extern crate shex_compact;
 extern crate shex_validation;
 extern crate srdf;
 extern crate srdf_graph;
+extern crate srdf_sparql;
+extern crate prefixmap;
 
 use anyhow::*;
 use clap::Parser;
@@ -23,12 +25,16 @@ use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter}
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
+use srdf_sparql::SRDFSparql;
 use std::{path::PathBuf, str::FromStr};
 
 pub mod cli;
-pub use cli::*;
+pub mod data;
 
-use shex_ast::{ast::Schema as SchemaJson, internal::CompiledSchema, ShapeLabel};
+pub use cli::*;
+pub use data::*;
+
+use shex_ast::{ast::Schema as SchemaJson, internal::CompiledSchema};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -45,6 +51,7 @@ fn main() -> Result<()> {
             schema_format,
             data,
             data_format,
+            endpoint,
             node,
             shape,
             shapemap,
@@ -56,6 +63,7 @@ fn main() -> Result<()> {
             schema_format,
             data,
             data_format,
+            endpoint,
             node,
             shape,
             shapemap,
@@ -108,8 +116,9 @@ fn run_schema(
 fn run_validate(
     schema_path: &PathBuf,
     schema_format: &ShExFormat,
-    data: &PathBuf,
+    data: &Option<PathBuf>,
     data_format: &DataFormat,
+    endpoint: &Option<String>,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
     shapemap: &Option<PathBuf>,
@@ -120,7 +129,17 @@ fn run_validate(
     let schema_json = parse_schema(schema_path, schema_format)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
-    let data = parse_data(data, data_format, debug)?;
+    let data = match (data, endpoint) {
+       (None, None) => bail!("None of `data` or `endpoint` parameters have been specified for validation"),
+       (Some(data), None) => {
+        let data = parse_data(data, data_format, debug)?;
+        Data::RDFData(data)
+       },
+       (None, Some(endpoint)) => {
+        Data::Endpoint(SRDFSparql::new(endpoint))
+       },
+       (Some(data), Some(endpoint)) => bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
+    };
     let mut shapemap = match shapemap {
         None => {
             QueryShapeMap::new()
@@ -148,8 +167,12 @@ fn run_validate(
     };
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     debug!("Validating with max_steps: {}", max_steps);
-    match validator.validate_shapemap(&shapemap, &data) {
-        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
+    let result = match data {
+        Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, &endpoint),
+        Data::RDFData(data) => validator.validate_shapemap(&shapemap, &data),
+    };
+    match result {
+        Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
             Result::Ok(result_map) => {
                 println!("Result:\n{}", result_map);
                 Ok(())

@@ -13,53 +13,31 @@ use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader};
 use srdf::{AsyncSRDF, SRDFComparisons, SRDF};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum SRDFSPARQLError {
-    #[error("HTTP Request error: {e:?}")]
-    HTTPRequestError { e: reqwest::Error },
+use crate::SRDFSparqlError;
 
-    #[error("URL parser error: {e:?}")]
-    URLParseError { e: url::ParseError },
 
-    #[error("SPARQL Results parser: {e:?}")]
-    SPAResults { e: sparesults::ParseError },
-
-    #[error(transparent)]
-    IriParseError {
-        #[from]
-        err: IriParseError,
-    },
-}
-
-impl From<reqwest::Error> for SRDFSPARQLError {
-    fn from(e: reqwest::Error) -> SRDFSPARQLError {
-        SRDFSPARQLError::HTTPRequestError { e: e }
-    }
-}
-
-impl From<url::ParseError> for SRDFSPARQLError {
-    fn from(e: url::ParseError) -> SRDFSPARQLError {
-        SRDFSPARQLError::URLParseError { e: e }
-    }
-}
-
-impl From<sparesults::ParseError> for SRDFSPARQLError {
-    fn from(e: sparesults::ParseError) -> SRDFSPARQLError {
-        SRDFSPARQLError::SPAResults { e: e }
-    }
-}
-
-struct SRDFSPARQL {
+/// Implements SRDF interface as a SPARQL endpoint
+pub struct SRDFSparql {
     endpoint_iri: String,
 }
 
-impl SRDFComparisons for SRDFSPARQL {
+impl SRDFSparql {
+    pub fn new(endpoint_iri: &str) -> SRDFSparql {
+      SRDFSparql { endpoint_iri: endpoint_iri.to_string() }
+    }
+
+    pub fn wikidata() -> SRDFSparql {
+        SRDFSparql::new("https://query.wikidata.org/sparql")
+      }
+}
+
+impl SRDFComparisons for SRDFSparql {
     type IRI = NamedNode;
     type BNode = BlankNode;
     type Literal = Literal;
     type Subject = Subject;
     type Term = Term;
-    type Err = SRDFSPARQLError;
+    type Err = SRDFSparqlError;
 
     fn subject2iri(&self, subject: &Subject) -> Option<NamedNode> {
         match subject {
@@ -142,9 +120,9 @@ impl SRDFComparisons for SRDFSPARQL {
         literal.datatype().into_owned()
     }
 
-    /*fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSPARQLError>  {
+    /*fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSparqlError>  {
         NamedNode::new(str)
-        .map_err(|err| {SRDFSPARQLError::IriParseError { err }})
+        .map_err(|err| {SRDFSparqlError::IriParseError { err }})
     }*/
 
     fn iri_as_term(iri: NamedNode) -> Term {
@@ -193,18 +171,18 @@ impl SRDFComparisons for SRDFSPARQL {
 }
 
 #[async_trait]
-impl AsyncSRDF for SRDFSPARQL {
+impl AsyncSRDF for SRDFSparql {
     type IRI = NamedNode;
     type BNode = BlankNode;
     type Literal = Literal;
     type Subject = Subject;
     type Term = Term;
-    type Err = SRDFSPARQLError;
+    type Err = SRDFSparqlError;
 
     async fn get_predicates_subject(
         &self,
         subject: &Subject,
-    ) -> Result<HashSet<NamedNode>, SRDFSPARQLError> {
+    ) -> Result<HashSet<NamedNode>, SRDFSparqlError> {
         let mut results = HashSet::new();
         let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
         let mut headers = header::HeaderMap::new();
@@ -251,7 +229,7 @@ impl AsyncSRDF for SRDFSPARQL {
         &self,
         subject: &Subject,
         pred: &NamedNode,
-    ) -> Result<HashSet<Term>, SRDFSPARQLError> {
+    ) -> Result<HashSet<Term>, SRDFSparqlError> {
         todo!();
     }
 
@@ -259,16 +237,16 @@ impl AsyncSRDF for SRDFSPARQL {
         &self,
         object: &Term,
         pred: &NamedNode,
-    ) -> Result<HashSet<Subject>, SRDFSPARQLError> {
+    ) -> Result<HashSet<Subject>, SRDFSparqlError> {
         todo!();
     }
 }
 
-impl SRDF for SRDFSPARQL {
+impl SRDF for SRDFSparql {
     fn get_predicates_for_subject(
         &self,
         subject: &Subject,
-    ) -> Result<HashSet<NamedNode>, SRDFSPARQLError> {
+    ) -> Result<HashSet<NamedNode>, SRDFSparqlError> {
         let mut results = HashSet::new();
         let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
         let mut headers = header::HeaderMap::new();
@@ -315,7 +293,7 @@ impl SRDF for SRDFSPARQL {
         &self,
         subject: &Subject,
         pred: &NamedNode,
-    ) -> Result<HashSet<Term>, SRDFSPARQLError> {
+    ) -> Result<HashSet<Term>, SRDFSparqlError> {
         todo!();
     }
 
@@ -323,7 +301,7 @@ impl SRDF for SRDFSPARQL {
         &self,
         object: &Term,
         pred: &NamedNode,
-    ) -> Result<HashSet<Subject>, SRDFSPARQLError> {
+    ) -> Result<HashSet<Subject>, SRDFSparqlError> {
         todo!();
     }
 }
@@ -337,9 +315,7 @@ mod tests {
 
     #[test]
     fn check_sparql() {
-        let wikidata = SRDFSPARQL {
-            endpoint_iri: "https://query.wikidata.org/sparql".to_string(),
-        };
+        let wikidata = SRDFSparql::wikidata();
         let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
             "http://www.wikidata.org/entity/Q80".to_string(),
         ));
