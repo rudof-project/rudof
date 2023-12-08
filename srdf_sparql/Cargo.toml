@@ -19,6 +19,10 @@ reqwest = { version = "0.11.18", features = ["blocking", "json"] }
 url = "2.2.2"
 tokio = { version = "1", features = ["full"] }
 thiserror = "1.0"
+colored = "2"
+log = "0.4"
+env_logger = "0.10"
+regex = "1.10"
 
 
 

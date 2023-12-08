@@ -5,7 +5,7 @@ use iri_s::IriS;
 use oxiri::Iri;
 use srdf::async_srdf::AsyncSRDF;
 use srdf::{SRDFComparisons, SRDF};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -51,7 +51,8 @@ impl SRDFGraph {
             graph.insert(triple_ref);
             Ok(()) as Result<(), TurtleError>
         })?;
-        let pm = PrefixMap::from_hashmap(turtle_parser.prefixes())?;
+        let prefixes: HashMap<&str, &str> = turtle_parser.prefixes().iter().map(|(key, value)| (key.as_str(), value.as_str())).collect();
+        let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph { graph: graph, pm })
     }
 
@@ -60,17 +61,6 @@ impl SRDFGraph {
         Ok(Self::cnv_iri(r))
     }
 
-    pub fn qualify_named_node(&self, node: &OxNamedNode) -> String {
-        let iri = IriS::from_str(node.as_str()).unwrap();
-        self.pm.qualify(&iri)
-    }
-
-    pub fn qualify_subject(&self, subj: &OxSubject) -> String {
-        match subj {
-            OxSubject::BlankNode(bn) => self.show_blanknode(bn),
-            OxSubject::NamedNode(n) => self.qualify_named_node(n),
-        }
-    }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
         let str: String = format!("{}", bn);
@@ -80,14 +70,6 @@ impl SRDFGraph {
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
-    }
-
-    pub fn qualify_term(&self, term: &OxTerm) -> String {
-        match term {
-            OxTerm::BlankNode(bn) => self.show_blanknode(bn),
-            OxTerm::Literal(lit) => self.show_literal(&lit),
-            OxTerm::NamedNode(n) => self.qualify_named_node(n),
-        }
     }
 
     pub fn from_str(data: String, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
@@ -256,8 +238,8 @@ impl SRDFComparisons for SRDFGraph {
         literal.datatype().into_owned()
     }
 
-    fn iri_s2iri(iri_s: &IriS) -> &OxNamedNode {
-        iri_s.as_named_node()
+    fn iri_s2iri(iri_s: &IriS) -> OxNamedNode {
+        iri_s.as_named_node().clone()
     }
 
     fn iri_as_term(iri: OxNamedNode) -> OxTerm {
@@ -300,6 +282,29 @@ impl SRDFComparisons for SRDFGraph {
         let iri = self.pm.resolve_prefix_local(prefix, local)?;
         Ok(iri.clone())
     }
+
+    fn qualify_iri(&self, node: &OxNamedNode) -> String {
+        let iri = IriS::from_str(node.as_str()).unwrap();
+        self.pm.qualify(&iri)
+    }
+
+
+    fn qualify_subject(&self, subj: &OxSubject) -> String {
+        match subj {
+            OxSubject::BlankNode(bn) => self.show_blanknode(bn),
+            OxSubject::NamedNode(n) => self.qualify_iri(n),
+        }
+    }
+
+    
+    fn qualify_term(&self, term: &OxTerm) -> String {
+        match term {
+            OxTerm::BlankNode(bn) => self.show_blanknode(bn),
+            OxTerm::Literal(lit) => self.show_literal(&lit),
+            OxTerm::NamedNode(n) => self.qualify_iri(n),
+        }
+    }
+
 }
 
 impl SRDF for SRDFGraph {

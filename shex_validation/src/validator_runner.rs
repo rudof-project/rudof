@@ -287,7 +287,7 @@ impl ValidatorRunner {
         match node.as_object() {
             Object::Iri { iri } => {
                 let i = S::iri_s2iri(iri);
-                S::iri_as_term((*i).clone())
+                S::iri_as_term(i)
             }
             Object::BlankNode(id) => {
                 todo!()

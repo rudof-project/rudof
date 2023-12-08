@@ -1,3 +1,4 @@
+use iri_s::IriSError;
 use oxiri::IriParseError;
 use thiserror::Error;
 
@@ -16,6 +17,17 @@ pub enum SRDFSparqlError {
     IriParseError {
         #[from]
         err: IriParseError,
+    },
+
+    #[error("Unknown name for endpoint: {name}")]
+    UnknownEndpontName {
+        name: String,
+    },
+
+    #[error(transparent)]
+    IriSError {
+        #[from]
+        err: IriSError,
     },
 }
 

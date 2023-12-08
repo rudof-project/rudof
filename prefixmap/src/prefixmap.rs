@@ -9,6 +9,7 @@ use crate::PrefixMapError;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
@@ -61,7 +62,7 @@ impl PrefixMap {
         self.map.get(str)
     }
 
-    pub fn from_hashmap(hm: &HashMap<String, String>) -> Result<PrefixMap, IriSError> {
+    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, IriSError> {
         let mut pm = PrefixMap::new();
         for (a, s) in hm.iter() {
             let iri = IriS::from_str(s)?;
@@ -210,6 +211,15 @@ impl PrefixMap {
         } else {
             format!("<{iri}>")
         }
+    }
+
+    /// Default Wikidata prefixmap
+    pub fn wikidata() -> PrefixMap {
+       PrefixMap::from_hashmap(
+        &HashMap::from([
+            ("wd",  "http://www.wikidata.org/entity/"),
+            ("wdt", "http://www.wikidata.org/prop/direct/")
+       ])).unwrap()
     }
 }
 

@@ -19,6 +19,7 @@ use clap::Parser;
 use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
+use prefixmap::IriRef;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shex_ast::{Node, object_value::ObjectValue, ShapeExprLabel};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -191,7 +192,8 @@ fn get_data(data: &Option<PathBuf>,
              Ok(Data::RDFData(data))
             },
             (None, Some(endpoint)) => {
-             Ok(Data::Endpoint(SRDFSparql::new(endpoint)))
+                let endpoint = SRDFSparql::from_str(endpoint)?;
+                Ok(Data::Endpoint(endpoint))
             },
             (Some(_), Some(_)) => bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
          }
@@ -224,21 +226,27 @@ fn run_node(data: &Option<PathBuf>,
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
-        Data::Endpoint(endpoint) => show_node_info(node_selector, endpoint),
-        Data::RDFData(data) => show_node_info(node_selector, data),
+        Data::Endpoint(endpoint) => show_node_info(node_selector, &endpoint),
+        Data::RDFData(data) => show_node_info(node_selector, &data),
     }
 }
 
 fn show_node_info<S>(node_selector: NodeSelector, rdf: &S) -> Result<()> 
 where S: SRDF  {
     for node in node_selector.iter_node(rdf) {
-        let subject = node_to_subject(node)?;
-        let preds = rdf.get_predicates_for_subject(&subject)?;
+        let subject = node_to_subject(node, rdf)?;
+        let preds = match rdf.get_predicates_for_subject(&subject) {
+            Result::Ok(ps) => ps,
+            Result::Err(e) => bail!("Can't get predicates for subject {subject}: {e}")
+        };
         println!("Information about node");
         println!("{}", rdf.qualify_subject(&subject));
         for pred in preds {
-            println!("  {} {}", rdf.qualify_named_node(&pred), &pred);
-            let objs = rdf.get_objects_for_subject_predicate(&subject, &pred)?;
+            println!("  {}", rdf.qualify_iri(&pred));
+            let objs = match rdf.get_objects_for_subject_predicate(&subject, &pred) {
+                Result::Ok(os) => os,
+                Err(e) => bail!("Can't get objects for subject-predicate {subject}-{pred}: {e}")
+            };
             for o in objs {
                 println!("     {}", rdf.qualify_term(&o));
             }
@@ -266,11 +274,27 @@ fn run_shapemap(
     }
 }
 
-fn node_to_subject(node: &Object) -> Result<Subject> {
+fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject> where S: SRDF {
     match node {
-        Object::BlankNode(bn) => Ok(Subject::BlankNode(BlankNode::new_unchecked(bn.as_str()))),
-        Object::Iri { iri } => Ok(Subject::NamedNode(NamedNode::new_unchecked(iri.as_str()))),
-        Object::Literal(_lit) => Err(anyhow!("Node must be an IRI or a blank node")),
+        ObjectValue::IriRef(iri_ref) => {
+            let iri = match iri_ref {
+                IriRef::Iri(iri_s) => {
+                  let v = S::iri_s2iri(iri_s);
+                  v
+                },
+                IriRef::Prefixed { prefix, local } => {
+                  let iri_s = rdf.resolve_prefix_local(prefix, local)?;
+                  let v = S::iri_s2iri(&iri_s);
+                  v
+                }
+            };
+            let term = S::iri_as_term(iri);
+            match rdf.term_as_subject(&term) {
+                None => bail!("node_to_subject: Can't convert term {term} to subject"),
+                Some(subject) => Ok(subject)
+            }
+        },
+        ObjectValue::Literal(_lit) => Err(anyhow!("Node must be an IRI")),
     }
 }
 
