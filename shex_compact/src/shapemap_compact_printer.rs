@@ -180,7 +180,7 @@ where
 
     fn pp_shape_selector(&self, s: &ShapeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match s {
-            ShapeSelector::Label(label) => pp_label(&label, self.doc, &self.shapes_prefixmap),
+            ShapeSelector::Label(label) => pp_label(&label, self.doc, &self.shapes_prefixmap, self.keyword_color),
             ShapeSelector::Start => keyword("START", self.doc, self.keyword_color),
         }
     }

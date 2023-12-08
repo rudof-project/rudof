@@ -11,7 +11,6 @@ use reqwest::{
 };
 use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader};
 use srdf::{AsyncSRDF, SRDFComparisons, SRDF};
-use thiserror::Error;
 
 use crate::SRDFSparqlError;
 
@@ -243,6 +242,7 @@ impl AsyncSRDF for SRDFSparql {
 }
 
 impl SRDF for SRDFSparql {
+
     fn get_predicates_for_subject(
         &self,
         subject: &Subject,
@@ -254,7 +254,7 @@ impl SRDF for SRDFSparql {
             ACCEPT,
             header::HeaderValue::from_static("application/sparql-results+json"),
         );
-        headers.insert(USER_AGENT, header::HeaderValue::from_static("Rust App"));
+        headers.insert(USER_AGENT, header::HeaderValue::from_static("ShEx-rs App"));
         let client = reqwest::blocking::Client::builder()
             .default_headers(headers)
             .build()?;
@@ -294,7 +294,44 @@ impl SRDF for SRDFSparql {
         subject: &Subject,
         pred: &NamedNode,
     ) -> Result<HashSet<Term>, SRDFSparqlError> {
-        todo!();
+        let mut results = HashSet::new();
+        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            ACCEPT,
+            header::HeaderValue::from_static("application/sparql-results+json"),
+        );
+        headers.insert(USER_AGENT, header::HeaderValue::from_static("ShEx-rs App"));
+        let client = reqwest::blocking::Client::builder()
+            .default_headers(headers)
+            .build()?;
+        let query = format!(
+            r#"select ?obj where {{ 
+            {} {} ?obj . }}
+        "#,
+            subject,
+            pred
+        );
+        let url = Url::parse_with_params(&self.endpoint_iri, &[("query", query)])?;
+        println!("Url: {}", url);
+        let body = client.get(url).send()?.text()?;
+
+        if let QueryResultsReader::Solutions(solutions) =
+            json_parser.read_results(body.as_bytes())?
+        {
+            for solution in solutions {
+                let sol = solution?;
+                match sol.get("obj") {
+                    Some(v) => {
+                        results.insert(v.clone());
+                        }
+                    _ => todo!(),
+                }
+            }
+            Ok(results)
+        } else {
+            todo!()
+        }
     }
 
     fn get_subjects_for_object_predicate(
@@ -309,8 +346,6 @@ impl SRDF for SRDFSparql {
 #[cfg(test)]
 mod tests {
     use oxrdf::{NamedNode, Subject};
-    use srdf::AsyncSRDF;
-
     use super::*;
 
     #[test]

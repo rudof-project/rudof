@@ -142,7 +142,7 @@ pub enum Command {
         node: String,
 
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: PathBuf,
+        data: Option<PathBuf>,
 
         #[arg(
             short = 't',
@@ -151,6 +151,10 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
     },
 }
 

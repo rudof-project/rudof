@@ -34,10 +34,12 @@ pub(crate) fn pp_label<'a, A>(
     label: &ShapeExprLabel,
     doc: &'a Arena<'a, A>,
     prefixmap: &PrefixMap,
+    keyword_color: Option<Color>
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match label {
         ShapeExprLabel::BNode { value } => pp_bnode(value, doc),
         ShapeExprLabel::IriRef { value } => pp_iri_ref(value, doc, prefixmap),
+        ShapeExprLabel::Start => keyword("START", doc, keyword_color)
     }
 }
 
@@ -87,7 +89,7 @@ where
     U: Into<Cow<'a, str>>,
 {
     if let Some(color) = color {
-        use std::borrow::Borrow;
+        // use std::borrow::Borrow;
         let data: Cow<str> = s.into();
         let s: String = match data {
             Cow::Owned(t) => t,

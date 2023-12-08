@@ -34,7 +34,7 @@ impl ShapeSelector {
     pub fn iter_shape(&self) -> impl Iterator<Item=&ShapeExprLabel> {
         match self {
             ShapeSelector::Label(label) => std::iter::once(label),
-            _ => todo!()
+            ShapeSelector::Start  => std::iter::once(&ShapeExprLabel::Start)
         }
     }
 }

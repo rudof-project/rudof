@@ -14,6 +14,7 @@ use super::bnode::BNode;
 pub enum ShapeExprLabel {
     IriRef { value: IriRef },
     BNode { value: BNode },
+    Start
 }
 
 impl ShapeExprLabel {
@@ -36,6 +37,10 @@ impl ShapeExprLabel {
             value: IriRef::prefixed(alias, local),
         }
     }
+
+    pub fn start() -> Self {
+        ShapeExprLabel::Start
+    }
 }
 
 impl Deref for ShapeExprLabel {
@@ -55,6 +60,7 @@ impl Deref for ShapeExprLabel {
             ShapeExprLabel::BNode { value } => Ok(ShapeExprLabel::BNode {
                 value: value.clone(),
             }),
+            ShapeExprLabel::Start => Ok(ShapeExprLabel::Start)
         }
     }
 }
@@ -90,6 +96,7 @@ impl Into<String> for ShapeExprLabel {
         match self {
             ShapeExprLabel::IriRef { value } => value.into(),
             ShapeExprLabel::BNode { value } => value.into(),
+            ShapeExprLabel::Start => "START".to_string(),
         }
     }
 }

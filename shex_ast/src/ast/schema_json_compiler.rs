@@ -95,6 +95,7 @@ impl SchemaJsonCompiler {
                 Ok(shape_label)
             }
             ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start)
         }
     }
 

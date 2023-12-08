@@ -75,8 +75,9 @@ fn main() -> Result<()> {
         Some(Command::Node {
             data,
             data_format,
+            endpoint,
             node,
-        }) => run_node(data, data_format, node, cli.debug),
+        }) => run_node(data, data_format, endpoint, node, cli.debug),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
@@ -129,17 +130,7 @@ fn run_validate(
     let schema_json = parse_schema(schema_path, schema_format)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
-    let data = match (data, endpoint) {
-       (None, None) => bail!("None of `data` or `endpoint` parameters have been specified for validation"),
-       (Some(data), None) => {
-        let data = parse_data(data, data_format, debug)?;
-        Data::RDFData(data)
-       },
-       (None, Some(endpoint)) => {
-        Data::Endpoint(SRDFSparql::new(endpoint))
-       },
-       (Some(data), Some(endpoint)) => bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
-    };
+    let data = get_data(data, data_format, endpoint, debug)?;
     let mut shapemap = match shapemap {
         None => {
             QueryShapeMap::new()
@@ -167,9 +158,9 @@ fn run_validate(
     };
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
     debug!("Validating with max_steps: {}", max_steps);
-    let result = match data {
-        Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, &endpoint),
-        Data::RDFData(data) => validator.validate_shapemap(&shapemap, &data),
+    let result = match &data {
+        Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
+        Data::RDFData(data) => validator.validate_shapemap(&shapemap, data),
     };
     match result {
         Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
@@ -187,6 +178,25 @@ fn run_validate(
         }
     }
 }
+
+fn get_data(data: &Option<PathBuf>,
+    data_format: &DataFormat,
+    endpoint: &Option<String>,
+    debug: u8
+) -> Result<Data> {
+    match (data, endpoint) {
+            (None, None) => bail!("None of `data` or `endpoint` parameters have been specified for validation"),
+            (Some(data), None) => {
+             let data = parse_data(data, data_format, debug)?;
+             Ok(Data::RDFData(data))
+            },
+            (None, Some(endpoint)) => {
+             Ok(Data::Endpoint(SRDFSparql::new(endpoint)))
+            },
+            (Some(_), Some(_)) => bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
+         }
+}
+
 
 fn make_node_selector(node: Node) -> Result<NodeSelector> {
     let object = node.as_object();
@@ -206,18 +216,32 @@ fn start() -> ShapeSelector {
 }
 
 
-fn run_node(data: &PathBuf, data_format: &DataFormat, node_str: &String, debug: u8) -> Result<()> {
-    let data = parse_data(data, data_format, debug)?;
-    let node = parse_node(node_str, &data)?;
-    let subject = node_to_subject(node.as_object())?;
-    let preds = data.get_predicates_for_subject(&subject)?;
-    println!("Information about node");
-    println!("{}", data.qualify_subject(&subject));
-    for pred in preds {
-        println!("  {} {}", data.qualify_named_node(&pred), &pred);
-        let objs = data.get_objects_for_subject_predicate(&subject, &pred)?;
-        for o in objs {
-            println!("     {}", data.qualify_term(&o));
+fn run_node(data: &Option<PathBuf>, 
+    data_format: &DataFormat, 
+    endpoint: &Option<String>, 
+    node_str: &String, 
+    debug: u8) -> Result<()> {
+    let data = get_data(data, data_format, endpoint, debug)?;
+    let node_selector = parse_node_selector(node_str)?;
+    match data {
+        Data::Endpoint(endpoint) => show_node_info(node_selector, endpoint),
+        Data::RDFData(data) => show_node_info(node_selector, data),
+    }
+}
+
+fn show_node_info<S>(node_selector: NodeSelector, rdf: &S) -> Result<()> 
+where S: SRDF  {
+    for node in node_selector.iter_node(rdf) {
+        let subject = node_to_subject(node)?;
+        let preds = rdf.get_predicates_for_subject(&subject)?;
+        println!("Information about node");
+        println!("{}", rdf.qualify_subject(&subject));
+        for pred in preds {
+            println!("  {} {}", rdf.qualify_named_node(&pred), &pred);
+            let objs = rdf.get_objects_for_subject_predicate(&subject, &pred)?;
+            for o in objs {
+                println!("     {}", rdf.qualify_term(&o));
+            }
         }
     }
     Ok(())
@@ -295,7 +319,7 @@ fn parse_data(data: &PathBuf, data_format: &DataFormat, _debug: u8) -> Result<SR
     }
 }
 
-fn parse_node(node_str: &str, data: &SRDFGraph) -> Result<Node> {
+fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     use regex::Regex;
     use std::result::Result::Ok;
     let iri_r = Regex::new("<(.*)>")?;

@@ -213,7 +213,8 @@ impl CompiledSchema {
             ShapeExprLabel::BNode { value } => {
                 let label = ShapeLabel::from_bnode((*value).clone());
                 Ok(label)
-            }
+            },
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start)
         }?;
         match self.shape_labels_map.get(&shape_label) {
             Some(idx) => Ok(*idx),

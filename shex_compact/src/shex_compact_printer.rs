@@ -537,6 +537,7 @@ where
         match ref_ {
             ShapeExprLabel::BNode { value } => self.pp_bnode(value),
             ShapeExprLabel::IriRef { value } => self.pp_iri_ref(value),
+            ShapeExprLabel::Start => self.keyword("START")
         }
     }
 

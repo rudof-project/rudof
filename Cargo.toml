@@ -73,6 +73,7 @@ anyhow = "1.0"
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
 shex_compact = { path = "./shex_compact" }
+prefixmap = { path = "./prefixmap" }
 shapemap = { path = "./shapemap" }
 srdf = { path = "./srdf" }
 srdf_graph = { path = "./srdf_graph" }
