@@ -1,5 +1,7 @@
 use iri_s::IriSError;
 use oxiri::IriParseError;
+use oxrdf::Term;
+use sparesults::QuerySolution;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -23,6 +25,20 @@ pub enum SRDFSparqlError {
     UnknownEndpontName {
         name: String,
     },
+
+    #[error("Error parsing body: {body}")]
+    ParsingBody { body: String },
+
+    #[error("SPARQL solutions error: Expected IRI, got {value}")]
+    SPARQLSolutionErrorNoIRI { value: Term }, 
+
+    #[error("SPARQL solutions error: Expected Subject, got {value}")]
+    SPARQLSolutionErrorNoSubject { value: Term }, 
+
+
+    #[error("SPARQL solutions error: Not found value for {value} in {solution:?}")]
+    NotFoundInSolution { value: String, solution: String },
+
 
     #[error(transparent)]
     IriSError {

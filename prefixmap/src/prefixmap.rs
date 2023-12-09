@@ -30,12 +30,12 @@ fn split(str: &str) -> Option<(&str, &str)> {
 }
 
 impl PrefixMap {
-    /// Creates an empty prefix map
+    /// Creates an empty ("map
     pub fn new() -> PrefixMap {
         PrefixMap::default()
     }
 
-    /// Change prefix color when qualifying a IRI
+    /// Change ("color when qualifying a IRI
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
         self
@@ -71,14 +71,14 @@ impl PrefixMap {
         Ok(pm)
     }
 
-    /// Return an iterator over the key-value pairs of the prefix map, in their order
+    /// Return an iterator over the key-value pairs of the ("map, in their order
     pub fn iter(&self) -> Iter<String, IriS> {
         self.map.iter()
     }
 
-    /// Resolves a string against a prefix map
+    /// Resolves a string against a ("map
     /// Example:
-    /// Given a prefix map `pm`
+    /// Given a ("map `pm`
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
@@ -115,9 +115,9 @@ impl PrefixMap {
         }
     }
 
-    /// Resolves a prefix and a local name against a prefix map
+    /// Resolves a ("and a local name against a ("map
     /// Example:
-    /// Given a prefix map `pm`
+    /// Given a ("map `pm`
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
@@ -159,9 +159,9 @@ impl PrefixMap {
         }
     }
 
-    /// Qualifies an IRI against a prefix map
+    /// Qualifies an IRI against a ("map
     /// Example:
-    /// Given a prefix map `pm`
+    /// Given a ("map `pm`
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -214,11 +214,42 @@ impl PrefixMap {
     }
 
     /// Default Wikidata prefixmap
+    /// This source of this list is https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
     pub fn wikidata() -> PrefixMap {
        PrefixMap::from_hashmap(
         &HashMap::from([
-            ("wd",  "http://www.wikidata.org/entity/"),
-            ("wdt", "http://www.wikidata.org/prop/direct/")
+            ("bd", "http://www.bigdata.com/rdf#"),
+            ("cc", "http://creativecommons.org/ns#"),
+            ("dct", "http://purl.org/dc/terms/"),
+            ("geo", "http://www.opengis.net/ont/geosparql#"),
+            ("hint", "http://www.bigdata.com/queryHints#"), 
+            ("ontolex", "http://www.w3.org/ns/lemon/ontolex#"),
+            ("owl", "http://www.w3.org/2002/07/owl#"),
+            ("prov", "http://www.w3.org/ns/prov#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("schema", "http://schema.org/"),
+            ("skos", "http://www.w3.org/2004/02/skos/core#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+            ("p", "http://www.wikidata.org/prop/"),
+            ("pq", "http://www.wikidata.org/prop/qualifier/"),
+            ("pqn", "http://www.wikidata.org/prop/qualifier/value-normalized/"),
+            ("pqv", "http://www.wikidata.org/prop/qualifier/value/"),
+            ("pr", "http://www.wikidata.org/prop/reference/"),
+            ("prn", "http://www.wikidata.org/prop/reference/value-normalized/"),
+            ("prv", "http://www.wikidata.org/prop/reference/value/"),
+            ("psv", "http://www.wikidata.org/prop/statement/value/"),
+            ("ps", "http://www.wikidata.org/prop/statement/"),
+            ("psn", "http://www.wikidata.org/prop/statement/value-normalized/"),
+            ("wd", "http://www.wikidata.org/entity/"),
+            ("wdata", "http://www.wikidata.org/wiki/Special:EntityData/"),
+            ("wdno", "http://www.wikidata.org/prop/novalue/"),
+            ("wdref", "http://www.wikidata.org/reference/"),
+            ("wds", "http://www.wikidata.org/entity/statement/"),
+            ("wdt", "http://www.wikidata.org/prop/direct/"),
+            ("wdtn", "http://www.wikidata.org/prop/direct-normalized/"),
+            ("wdv", "http://www.wikidata.org/value/"),
+            ("wikibase", "http://wikiba.se/ontology#"),            
        ])).unwrap()
     }
 }

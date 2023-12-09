@@ -8,13 +8,14 @@ use oxrdf::*;
 use prefixmap::{IriRef, PrefixMap};
 use reqwest::{
     header::{self, ACCEPT, USER_AGENT},
-    Url,
+    Url, blocking::Client,
 };
-use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader};
+use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader, QuerySolution};
 use srdf::{AsyncSRDF, SRDFComparisons, SRDF};
 use log::debug;
 use crate::SRDFSparqlError;
 
+type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
 /// Implements SRDF interface as a SPARQL endpoint
 pub struct SRDFSparql {
@@ -30,7 +31,7 @@ impl SRDFSparql {
       }
     }
 
-    pub fn from_str(s: &str) -> Result<SRDFSparql, SRDFSparqlError> {
+    pub fn from_str(s: &str) -> Result<SRDFSparql> {
         let re_iri = Regex::new(r"<(.*)>").unwrap();
         if let Some(iri_str) = re_iri.captures(s) {
           let iri_s = IriS::from_str(&iri_str[1])?;
@@ -137,11 +138,7 @@ impl SRDFComparisons for SRDFSparql {
     }
 
     fn term_as_subject(&self, object: &Self::Term) -> Option<Subject> {
-        match object {
-            Term::NamedNode(n) => Some(Subject::NamedNode(n.clone())),
-            Term::BlankNode(b) => Some(Subject::BlankNode(b.clone())),
-            _ => None,
-        }
+        term_as_subject(object)
     }
 
     fn lexical_form(&self, literal: &Literal) -> String {
@@ -153,11 +150,6 @@ impl SRDFComparisons for SRDFSparql {
     fn datatype(&self, literal: &Literal) -> NamedNode {
         literal.datatype().into_owned()
     }
-
-    /*fn iri_from_str(str: &str) -> Result<NamedNode,SRDFSparqlError>  {
-        NamedNode::new(str)
-        .map_err(|err| {SRDFSparqlError::IriParseError { err }})
-    }*/
 
     fn iri_as_term(iri: NamedNode) -> Term {
         Term::NamedNode(iri)
@@ -199,8 +191,8 @@ impl SRDFComparisons for SRDFSparql {
         IriS::from_named_node(iri)
     }
 
-    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, prefixmap::PrefixMapError> {
-        todo!()
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> std::result::Result<IriS, prefixmap::PrefixMapError> {
+        self.prefixmap.resolve_prefix_local(prefix, local)
     }
 
     fn qualify_iri(&self, node: &NamedNode) -> String {
@@ -239,54 +231,23 @@ impl AsyncSRDF for SRDFSparql {
     async fn get_predicates_subject(
         &self,
         subject: &Subject,
-    ) -> Result<HashSet<NamedNode>, SRDFSparqlError> {
+    ) -> Result<HashSet<NamedNode>> {
+        let client = sparql_client()?;
+        let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
+        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
-        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            ACCEPT,
-            header::HeaderValue::from_static("application/sparql-results+json"),
-        );
-        headers.insert(USER_AGENT, header::HeaderValue::from_static("Rust App"));
-        let client = reqwest::blocking::Client::builder()
-            .default_headers(headers)
-            .build()?;
-        let query = format!(
-            r#"select ?pred where {{ 
-            {} ?pred ?obj . }}
-        "#,
-            subject
-        );
-        let url = Url::parse_with_params(&self.endpoint_iri.to_string(), &[("query", query)])?;
-        debug!("Url: {}", url);
-        let body = client.get(url).send()?.text()?;
-
-        if let QueryResultsReader::Solutions(solutions) =
-            json_parser.read_results(body.as_bytes())?
-        {
-            for solution in solutions {
-                let sol = solution?;
-                match sol.get("pred") {
-                    Some(v) => match v {
-                        Term::NamedNode(n) => {
-                            results.insert(n.clone());
-                        }
-                        _ => todo!(),
-                    },
-                    _ => todo!(),
-                }
-            }
-            Ok(results)
-        } else {
-            todo!()
+        for solution in solutions {
+            let n = get_iri_solution(solution, "pred")?;
+            results.insert(n.clone());
         }
+        Ok(results)
     }
 
     async fn get_objects_for_subject_predicate(
         &self,
         subject: &Subject,
         pred: &NamedNode,
-    ) -> Result<HashSet<Term>, SRDFSparqlError> {
+    ) -> Result<HashSet<Term>> {
         todo!();
     }
 
@@ -294,7 +255,7 @@ impl AsyncSRDF for SRDFSparql {
         &self,
         object: &Term,
         pred: &NamedNode,
-    ) -> Result<HashSet<Subject>, SRDFSparqlError> {
+    ) -> Result<HashSet<Subject>> {
         todo!();
     }
 }
@@ -304,102 +265,125 @@ impl SRDF for SRDFSparql {
     fn get_predicates_for_subject(
         &self,
         subject: &Subject,
-    ) -> Result<HashSet<NamedNode>, SRDFSparqlError> {
+    ) -> Result<HashSet<NamedNode>> {
+        let client = sparql_client()?;
+        let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#,subject);
+        debug!("SPARQL query (get predicates for subject {subject}): {}", query);
+        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
-        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            ACCEPT,
-            header::HeaderValue::from_static("application/sparql-results+json"),
-        );
-        headers.insert(USER_AGENT, header::HeaderValue::from_static("ShEx-rs App"));
-        let client = reqwest::blocking::Client::builder()
-            .default_headers(headers)
-            .build()?;
-        let query = format!(
-            r#"select ?pred where {{ 
-            {} ?pred ?obj . }}
-        "#,
-            subject
-        );
-        let url = Url::parse_with_params(&self.endpoint_iri.to_string(), &[("query", query)])?;
-        debug!("Url: {}", url);
-        let body = client.get(url).send()?.text()?;
-
-        if let QueryResultsReader::Solutions(solutions) =
-            json_parser.read_results(body.as_bytes())?
-        {
-            for solution in solutions {
-                let sol = solution?;
-                match sol.get("pred") {
-                    Some(v) => match v {
-                        Term::NamedNode(n) => {
-                            results.insert(n.clone());
-                        }
-                        _ => todo!(),
-                    },
-                    _ => todo!(),
-                }
-            }
-            Ok(results)
-        } else {
-            todo!()
+        for solution in solutions {
+            let n = get_iri_solution(solution, "pred")?; 
+            results.insert(n.clone());
         }
+        Ok(results)
     }
 
     fn get_objects_for_subject_predicate(
         &self,
         subject: &Subject,
         pred: &NamedNode,
-    ) -> Result<HashSet<Term>, SRDFSparqlError> {
+    ) -> Result<HashSet<Term>> {
+        let client = sparql_client()?;
+        let query = format!(r#"select ?obj where {{ {} {} ?obj . }}"#, subject, pred);
+        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
-        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            ACCEPT,
-            header::HeaderValue::from_static("application/sparql-results+json"),
-        );
-        headers.insert(USER_AGENT, header::HeaderValue::from_static("ShEx-rs App"));
-        let client = reqwest::blocking::Client::builder()
-            .default_headers(headers)
-            .build()?;
-        let query = format!(
-            r#"select ?obj where {{ 
-            {} {} ?obj . }}
-        "#,
-            subject,
-            pred
-        );
-        let url = Url::parse_with_params(&self.endpoint_iri.to_string(), &[("query", query)])?;
-        debug!("Url: {}", url);
-        let body = client.get(url).send()?.text()?;
-
-        if let QueryResultsReader::Solutions(solutions) =
-            json_parser.read_results(body.as_bytes())?
-        {
-            for solution in solutions {
-                let sol = solution?;
-                match sol.get("obj") {
-                    Some(v) => {
-                        results.insert(v.clone());
-                        }
-                    _ => todo!(),
-                }
-            }
-            Ok(results)
-        } else {
-            todo!()
+        for solution in solutions {
+            let n = get_object_solution(solution, "obj")?; 
+            results.insert(n.clone());
         }
+        Ok(results)
     }
 
     fn get_subjects_for_object_predicate(
         &self,
         object: &Term,
         pred: &NamedNode,
-    ) -> Result<HashSet<Subject>, SRDFSparqlError> {
-        todo!();
+    ) -> Result<HashSet<Subject>> {
+        let client = sparql_client()?;
+        let query = format!(r#"select ?subj where {{ ?subj {} {} . }}"#, pred, object);
+        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
+        let mut results = HashSet::new();
+        for solution in solutions {
+            let n = get_subject_solution(solution, "subj")?; 
+            results.insert(n.clone());
+        }
+        Ok(results)
     }
 }
+
+fn sparql_client() -> Result<Client> {
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        ACCEPT,
+        header::HeaderValue::from_static("application/sparql-results+json"),
+    );
+    headers.insert(USER_AGENT, header::HeaderValue::from_static("Rust App"));
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    Ok(client)
+}
+
+fn make_sparql_query(query: &str, client: &Client, endpoint: &IriS) -> Result<Vec<QuerySolution>> {
+    let url = Url::parse_with_params(endpoint.as_str(), &[("query", query)])?;
+    debug!("SPARQL query: {}", url);
+    let body = client.get(url).send()?.text()?;
+    let mut results = Vec::new();
+    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())?  {
+        for solution in solutions {
+            let sol = solution?;
+            results.push(sol)
+        }
+        Ok(results)
+    } else {
+        Err(SRDFSparqlError::ParsingBody{ body })
+    }
+}
+
+fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<NamedNode> {
+    match solution.get(name) {
+        Some(v) => match v {
+           Term::NamedNode(n) => {
+              Ok(n.clone())
+           }
+           _ => Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
+          }
+         None => {
+             Err(SRDFSparqlError::NotFoundInSolution { value: name.to_string(), solution: format!("{solution:?}") })
+         } 
+     }
+}
+
+fn get_object_solution(solution: QuerySolution, name: &str) -> Result<Term> {
+    match solution.get(name) {
+        Some(v) => Ok(v.clone()),
+        None => {
+             Err(SRDFSparqlError::NotFoundInSolution { value: name.to_string(), solution: format!("{solution:?}") })
+         } 
+     }
+}
+
+fn get_subject_solution(solution: QuerySolution, name: &str) -> Result<Subject> {
+    match solution.get(name) {
+        Some(v) => match term_as_subject(v) {
+            Some(s) => Ok(s),
+            None => Err(SRDFSparqlError::SPARQLSolutionErrorNoSubject { value: v.clone() })
+        },
+        None => {
+             Err(SRDFSparqlError::NotFoundInSolution { value: name.to_string(), solution: format!("{solution:?}") })
+         } 
+     }
+}
+
+fn term_as_subject(object: &Term) -> Option<Subject> {
+    match object {
+        Term::NamedNode(n) => Some(Subject::NamedNode(n.clone())),
+        Term::BlankNode(b) => Some(Subject::BlankNode(b.clone())),
+        _ => None,
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
