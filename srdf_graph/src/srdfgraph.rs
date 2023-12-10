@@ -5,6 +5,7 @@ use iri_s::IriS;
 use oxiri::Iri;
 use srdf::async_srdf::AsyncSRDF;
 use srdf::{SRDFComparisons, SRDF};
+use std::collections::hash_map::Entry;
 use std::collections::{HashSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -340,6 +341,26 @@ impl SRDF for SRDFGraph {
     ) -> Result<HashSet<Self::Subject>, Self::Err> {
         todo!()
     }
+
+    fn outgoing_arcs(&self, 
+        subject: &Self::Subject
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
+        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
+        for triple in self.graph.triples_for_subject(subject) {
+            let pred = triple.predicate.into_owned();
+            let term = triple.object.into_owned();
+            match results.entry(pred) {
+                Entry::Occupied(mut vs) => {
+                    vs.get_mut().insert(term.clone());
+                }
+                Entry::Vacant(vacant) => {
+                    vacant.insert(HashSet::from([term.clone()]));
+                }
+            }
+        }
+        Ok(results)
+    }
+ 
 }
 
 #[async_trait]

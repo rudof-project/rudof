@@ -4,6 +4,8 @@ use oxrdf::Term;
 use sparesults::QuerySolution;
 use thiserror::Error;
 
+use crate::SparqlVars;
+
 #[derive(Error, Debug)]
 pub enum SRDFSparqlError {
     #[error("HTTP Request error: {e:?}")]
@@ -31,6 +33,9 @@ pub enum SRDFSparqlError {
 
     #[error("SPARQL solutions error: Expected IRI, got {value}")]
     SPARQLSolutionErrorNoIRI { value: Term }, 
+
+    #[error("SPARQL solutions error: Not found vars {vars} in solution {solution:?}")]
+    NotFoundVarsInSolution { vars: SparqlVars, solution: String }, 
 
     #[error("SPARQL solutions error: Expected Subject, got {value}")]
     SPARQLSolutionErrorNoSubject { value: Term }, 

@@ -235,20 +235,20 @@ fn show_node_info<S>(node_selector: NodeSelector, rdf: &S) -> Result<()>
 where S: SRDF  {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
-        let preds = match rdf.get_predicates_for_subject(&subject) {
-            Result::Ok(ps) => ps,
-            Result::Err(e) => bail!("Can't get predicates for subject {subject}: {e}")
-        };
         println!("Information about node");
+        let map = match rdf.outgoing_arcs(&subject) {
+            Result::Ok(m) => m,
+            Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
+        };
         println!("{}", rdf.qualify_subject(&subject));
-        for pred in preds {
+        for pred in map.keys() {
             println!("  {}", rdf.qualify_iri(&pred));
-            let objs = match rdf.get_objects_for_subject_predicate(&subject, &pred) {
-                Result::Ok(os) => os,
-                Err(e) => bail!("Can't get objects for subject-predicate {subject}-{pred}: {e}")
-            };
-            for o in objs {
-                println!("     {}", rdf.qualify_term(&o));
+            if let Some(objs) = map.get(pred) {
+                for o in objs {
+                    println!("      {}", rdf.qualify_term(&o));
+                }
+            } else {
+                bail!("Not found values for {pred} in map")
             }
         }
     }

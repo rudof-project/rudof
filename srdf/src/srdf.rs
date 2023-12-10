@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 //use std::hash::Hash;
 
 use crate::SRDFComparisons;
@@ -51,6 +51,9 @@ pub trait SRDF: SRDFComparisons {
             }
         }
     }
+
+    fn outgoing_arcs(&self, subject: &Self::Subject) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err>;
+
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::{HashSet, HashMap, hash_map::Entry}, str::FromStr, fmt::Display};
 use colored::*;
 use regex::Regex;
 use async_trait::async_trait;
@@ -20,32 +20,37 @@ type Result<A> = std::result::Result<A, SRDFSparqlError>;
 /// Implements SRDF interface as a SPARQL endpoint
 pub struct SRDFSparql {
     endpoint_iri: IriS,
-    prefixmap: PrefixMap
+    prefixmap: PrefixMap,
+    client: Client
 }
 
 impl SRDFSparql {
-    pub fn new(iri: &IriS) -> SRDFSparql {
-      SRDFSparql { 
-        endpoint_iri: iri.clone(),
-        prefixmap: PrefixMap::new()
-      }
+    pub fn new(iri: &IriS) -> Result<SRDFSparql> {
+        let client = sparql_client()?;
+        Ok(SRDFSparql { 
+         endpoint_iri: iri.clone(),
+         prefixmap: PrefixMap::new(),
+         client: client
+        })
     }
 
     pub fn from_str(s: &str) -> Result<SRDFSparql> {
         let re_iri = Regex::new(r"<(.*)>").unwrap();
         if let Some(iri_str) = re_iri.captures(s) {
           let iri_s = IriS::from_str(&iri_str[1])?;
-          Ok(SRDFSparql { endpoint_iri: iri_s, prefixmap: PrefixMap::new() })
+          let client = sparql_client()?;
+          Ok(SRDFSparql { endpoint_iri: iri_s, prefixmap: PrefixMap::new(), client })
         } else {
             match s.to_lowercase().as_str() {
-              "wikidata" => Ok(SRDFSparql::wikidata()),
+              "wikidata" => SRDFSparql::wikidata(),
               name => Err(SRDFSparqlError::UnknownEndpontName { name: name.to_string() })
             } 
         }
     }
 
-    pub fn wikidata() -> SRDFSparql {
-        SRDFSparql::new(&IriS::new_unchecked("https://query.wikidata.org/sparql")).with_prefixmap(PrefixMap::wikidata())
+    pub fn wikidata() -> Result<SRDFSparql> {
+        let endpoint = SRDFSparql::new(&IriS::new_unchecked("https://query.wikidata.org/sparql"))?;
+        Ok(endpoint.with_prefixmap(PrefixMap::wikidata()))
     }
 
     pub fn with_prefixmap(mut self, pm: PrefixMap) -> SRDFSparql {
@@ -232,9 +237,8 @@ impl AsyncSRDF for SRDFSparql {
         &self,
         subject: &Subject,
     ) -> Result<HashSet<NamedNode>> {
-        let client = sparql_client()?;
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
-        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {
             let n = get_iri_solution(solution, "pred")?;
@@ -266,10 +270,9 @@ impl SRDF for SRDFSparql {
         &self,
         subject: &Subject,
     ) -> Result<HashSet<NamedNode>> {
-        let client = sparql_client()?;
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#,subject);
         debug!("SPARQL query (get predicates for subject {subject}): {}", query);
-        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {
             let n = get_iri_solution(solution, "pred")?; 
@@ -283,9 +286,8 @@ impl SRDF for SRDFSparql {
         subject: &Subject,
         pred: &NamedNode,
     ) -> Result<HashSet<Term>> {
-        let client = sparql_client()?;
         let query = format!(r#"select ?obj where {{ {} {} ?obj . }}"#, subject, pred);
-        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {
             let n = get_object_solution(solution, "obj")?; 
@@ -299,15 +301,20 @@ impl SRDF for SRDFSparql {
         object: &Term,
         pred: &NamedNode,
     ) -> Result<HashSet<Subject>> {
-        let client = sparql_client()?;
         let query = format!(r#"select ?subj where {{ ?subj {} {} . }}"#, pred, object);
-        let solutions = make_sparql_query(query.as_str(), &client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {
             let n = get_subject_solution(solution, "subj")?; 
             results.insert(n.clone());
         }
         Ok(results)
+    }
+
+    fn outgoing_arcs(&self, 
+        subject: &Self::Subject
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>> {
+        outgoing_neighs(subject.to_string().as_str(), &self.client, &self.endpoint_iri)
     }
 }
 
@@ -324,8 +331,8 @@ fn sparql_client() -> Result<Client> {
     Ok(client)
 }
 
-fn make_sparql_query(query: &str, client: &Client, endpoint: &IriS) -> Result<Vec<QuerySolution>> {
-    let url = Url::parse_with_params(endpoint.as_str(), &[("query", query)])?;
+fn make_sparql_query(query: &str, client: &Client, endpoint_iri: &IriS) -> Result<Vec<QuerySolution>> {
+    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
     debug!("SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
@@ -334,6 +341,65 @@ fn make_sparql_query(query: &str, client: &Client, endpoint: &IriS) -> Result<Ve
         for solution in solutions {
             let sol = solution?;
             results.push(sol)
+        }
+        Ok(results)
+    } else {
+        Err(SRDFSparqlError::ParsingBody{ body })
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct SparqlVars { 
+values: Vec<String> 
+}
+
+impl SparqlVars {
+    pub(crate) fn new(vs: Vec<String>) -> SparqlVars {
+        SparqlVars { values: vs }
+    }
+}
+
+impl Display for SparqlVars {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.values.join(", ").as_str())
+    }
+}
+
+fn outgoing_neighs(subject: &str, client: &Client, endpoint_iri: &IriS) -> Result<HashMap<NamedNode, HashSet<Term>>> {
+    let pred = "pred";
+    let obj = "obj";
+    let query = format!("select ?{pred} ?{obj} where {{ {subject} ?{pred} ?{obj} }}");
+    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
+    let body = client.get(url).send()?.text()?;
+    let mut results: HashMap<NamedNode, HashSet<Term>> = HashMap::new();
+    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())?  {
+        for solution in solutions {
+            let sol = solution?;
+            match (sol.get(pred), sol.get(obj)) {
+                (Some(p), Some(v)) => match p {
+                   Term::NamedNode(iri) => {
+                      match results.entry(iri.clone()) {
+                        Entry::Occupied(mut vs) => {
+                            vs.get_mut().insert(v.clone());
+                        }
+                        Entry::Vacant(vacant) => {
+                            vacant.insert(HashSet::from([v.clone()]));
+                        }
+                      }
+                   },
+                   _ => return Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: p.clone() }),        
+                },
+                (None,None) => {
+                     return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![pred.to_string(), obj.to_string()]), solution: format!("{sol:?}") })
+                 } 
+                 (None,Some(_)) => {
+                    return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![pred.to_string()]), solution: format!("{sol:?}") })
+                } 
+                (Some(_), None) => {
+                    return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![obj.to_string()]), solution: format!("{sol:?}") })
+                } 
+            }
         }
         Ok(results)
     } else {
@@ -392,7 +458,7 @@ mod tests {
 
     #[test]
     fn check_sparql() {
-        let wikidata = SRDFSparql::wikidata();
+        let wikidata = SRDFSparql::wikidata().unwrap();
         let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
             "http://www.wikidata.org/entity/Q80".to_string(),
         ));
