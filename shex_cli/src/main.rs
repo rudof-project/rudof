@@ -78,7 +78,9 @@ fn main() -> Result<()> {
             data_format,
             endpoint,
             node,
-        }) => run_node(data, data_format, endpoint, node, cli.debug),
+            show_node_mode
+        }) => run_node(data, data_format, endpoint, node, 
+                       show_node_mode, cli.debug),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
@@ -222,35 +224,73 @@ fn run_node(data: &Option<PathBuf>,
     data_format: &DataFormat, 
     endpoint: &Option<String>, 
     node_str: &String, 
+    show_node_mode: &ShowNodeMode,
     debug: u8) -> Result<()> {
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
-        Data::Endpoint(endpoint) => show_node_info(node_selector, &endpoint),
-        Data::RDFData(data) => show_node_info(node_selector, &data),
+        Data::Endpoint(endpoint) => show_node_info(node_selector, &endpoint, &show_node_mode),
+        Data::RDFData(data) => show_node_info(node_selector, &data, &show_node_mode),
     }
 }
 
-fn show_node_info<S>(node_selector: NodeSelector, rdf: &S) -> Result<()> 
+fn show_node_info<S>(node_selector: NodeSelector, rdf: &S, show_node_mode: &ShowNodeMode) -> Result<()> 
 where S: SRDF  {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
         println!("Information about node");
-        let map = match rdf.outgoing_arcs(&subject) {
-            Result::Ok(m) => m,
-            Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
-        };
-        println!("{}", rdf.qualify_subject(&subject));
-        for pred in map.keys() {
-            println!("  {}", rdf.qualify_iri(&pred));
-            if let Some(objs) = map.get(pred) {
-                for o in objs {
-                    println!("      {}", rdf.qualify_term(&o));
+
+        // Show outgoing arcs
+        match show_node_mode {
+            ShowNodeMode::Outgoing | ShowNodeMode::Both => {
+                println!("Outgoing arcs");
+                let map = match rdf.outgoing_arcs(&subject) {
+                    Result::Ok(m) => m,
+                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
+                };
+                println!("{}", rdf.qualify_subject(&subject));
+                for pred in map.keys() {
+                    println!(" -{}-> ", rdf.qualify_iri(&pred));
+                    if let Some(objs) = map.get(pred) {
+                        for o in objs {
+                            println!("      {}", rdf.qualify_term(&o));
+                        }
+                    } else {
+                        bail!("Not found values for {pred} in map")
+                    }
                 }
-            } else {
-                bail!("Not found values for {pred} in map")
-            }
+            },
+            _ => {
+                // Nothing to do
+            },
         }
+
+        // Show incoming arcs
+        match show_node_mode {
+            ShowNodeMode::Incoming | ShowNodeMode::Both => {
+                println!("Incoming arcs");
+                let object = rdf.subject_as_term(&subject);
+                let map = match rdf.incoming_arcs(&object) {
+                    Result::Ok(m) => m,
+                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
+                };
+                println!("{}", rdf.qualify_term(&object));
+                for pred in map.keys() {
+                    println!("  <-{}-", rdf.qualify_iri(&pred));
+                    if let Some(subjs) = map.get(pred) {
+                        for s in subjs {
+                            println!("      {}", rdf.qualify_subject(&s));
+                        }
+                    } else {
+                        bail!("Not found values for {pred} in map")
+                    }
+                }
+            },
+            _ => {
+                // Nothing to do
+            },
+        }
+
     }
     Ok(())
 }

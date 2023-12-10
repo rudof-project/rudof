@@ -155,8 +155,35 @@ pub enum Command {
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
 
+        #[arg(
+            short = 'm',
+            long = "show-node-mode",
+            value_name = "Show Node Mode",
+            default_value_t = ShowNodeMode::Outgoing
+        )]
+        show_node_mode: ShowNodeMode,
+
     },
 }
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ShowNodeMode {
+    Outgoing,
+    Incoming,
+    Both,
+}
+
+impl Display for ShowNodeMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShowNodeMode::Outgoing => write!(dest, "outgoing"),
+            ShowNodeMode::Incoming => write!(dest, "incoming"),
+            ShowNodeMode::Both => write!(dest, "both"),
+        }
+    }
+}
+
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]

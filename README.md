@@ -105,12 +105,18 @@ This command can be useful to obtain the neighbourhood of a node.
 Usage: sx node [OPTIONS] --node <NODE>
 
 Options:
-  -n, --node <NODE>                        
-  -d, --data <RDF data path>               
-  -t, --data-format <RDF Data format>      [default: turtle] [possible values: turtle]
-  -e, --endpoint <Endpoint with RDF data>  
-  -h, --help                               Print help
-  ```
+  -n, --node <NODE>
+          
+  -d, --data <RDF data path>
+          
+  -t, --data-format <RDF Data format>
+          [default: turtle] [possible values: turtle]
+  -e, --endpoint <Endpoint with RDF data>
+          
+  -m, --show-node-mode <Show Node Mode>
+          [default: outgoing] [possible values: outgoing, incoming, both]
+  -h, --help
+          Print help  ```
 
 For examples, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
 

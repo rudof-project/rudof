@@ -27,6 +27,7 @@ pub trait SRDFComparisons {
     fn object_is_literal(&self, object: &Self::Term) -> bool;
 
     fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject>;
+    fn subject_as_term(&self, subject: &Self::Subject) -> Self::Term;
 
     fn lexical_form(&self, literal: &Self::Literal) -> String;
     fn lang(&self, literal: &Self::Literal) -> Option<String>;

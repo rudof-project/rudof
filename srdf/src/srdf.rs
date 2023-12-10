@@ -53,6 +53,9 @@ pub trait SRDF: SRDFComparisons {
     }
 
     fn outgoing_arcs(&self, subject: &Self::Subject) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err>;
+    fn incoming_arcs(&self, object: &Self::Term) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err>;
+
+    fn outgoing_arcs_from_list(&self, subject: &Self::Subject, preds: Vec<Self::IRI>) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err>;
 
 }
 

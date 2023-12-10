@@ -44,6 +44,8 @@ pub enum SRDFSparqlError {
     #[error("SPARQL solutions error: Not found value for {value} in {solution:?}")]
     NotFoundInSolution { value: String, solution: String },
 
+    #[error("Expected term {term} to be a subject")]
+    NoSubject { term: Term },
 
     #[error(transparent)]
     IriSError {

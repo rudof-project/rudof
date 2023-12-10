@@ -219,6 +219,14 @@ impl SRDFComparisons for SRDFGraph {
         }
     }
 
+    fn subject_as_term(&self, subject: &Self::Subject) -> Self::Term {
+        match subject {
+            OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
+            OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
+        }
+    }
+
+
     fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject> {
         match object {
             OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
@@ -306,6 +314,7 @@ impl SRDFComparisons for SRDFGraph {
         }
     }
 
+
 }
 
 impl SRDF for SRDFGraph {
@@ -360,6 +369,46 @@ impl SRDF for SRDFGraph {
         }
         Ok(results)
     }
+
+    fn incoming_arcs(&self, 
+        object: &Self::Term
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
+        let mut results: HashMap<Self::IRI, HashSet<Self::Subject>> = HashMap::new();
+        for triple in self.graph.triples_for_object(object) {
+            let pred = triple.predicate.into_owned();
+            let subj = triple.subject.into_owned();
+            match results.entry(pred) {
+                Entry::Occupied(mut vs) => {
+                    vs.get_mut().insert(subj.clone());
+                }
+                Entry::Vacant(vacant) => {
+                    vacant.insert(HashSet::from([subj.clone()]));
+                }
+            }
+        }
+        Ok(results)
+    }
+
+    fn outgoing_arcs_from_list(&self, subject: &Self::Subject, preds: Vec<Self::IRI>) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
+        // TODO: We may optimize this function using graph.triples_for_subject_predicate ?
+        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
+        for triple in self.graph.triples_for_subject(subject) {
+            let pred = triple.predicate.into_owned();
+            let term = triple.object.into_owned();
+            if preds.contains(&pred) {
+                match results.entry(pred) {
+                    Entry::Occupied(mut vs) => {
+                        vs.get_mut().insert(term.clone());
+                    }
+                    Entry::Vacant(vacant) => {
+                        vacant.insert(HashSet::from([term.clone()]));
+                    }
+                }
+            }
+        }
+        Ok(results)
+    }
+
  
 }
 

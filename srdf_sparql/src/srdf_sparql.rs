@@ -146,6 +146,11 @@ impl SRDFComparisons for SRDFSparql {
         term_as_subject(object)
     }
 
+    fn subject_as_term(&self, subject: &Self::Subject) -> Term {
+        subject_as_term(subject)
+    }
+
+
     fn lexical_form(&self, literal: &Literal) -> String {
         literal.to_string()
     }
@@ -316,6 +321,17 @@ impl SRDF for SRDFSparql {
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>> {
         outgoing_neighs(subject.to_string().as_str(), &self.client, &self.endpoint_iri)
     }
+
+    fn incoming_arcs(&self, 
+        object: &Self::Term
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>> {
+        incoming_neighs(object.to_string().as_str(), &self.client, &self.endpoint_iri)
+    }
+
+    fn outgoing_arcs_from_list(&self, subject: &Self::Subject, preds: Vec<Self::IRI>) -> std::prelude::v1::Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
+        outgoing_neighs_from_list(&subject, preds, &self.client, &self.endpoint_iri)
+    }
+
 }
 
 fn sparql_client() -> Result<Client> {
@@ -407,6 +423,54 @@ fn outgoing_neighs(subject: &str, client: &Client, endpoint_iri: &IriS) -> Resul
     }
 }
 
+fn outgoing_neighs_from_list(subject: &Subject, preds: Vec<NamedNode>, client: &Client, endpoint_iri: &IriS) -> Result<HashMap<NamedNode, HashSet<Term>>> {
+    todo!()
+}
+
+fn incoming_neighs(object: &str, client: &Client, endpoint_iri: &IriS) -> Result<HashMap<NamedNode, HashSet<Subject>>> {
+    let pred = "pred";
+    let subj = "subj";
+    let query = format!("select ?{pred} ?{subj} where {{ ?{subj} ?{pred} {object} }}");
+    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
+    let body = client.get(url).send()?.text()?;
+    let mut results: HashMap<NamedNode, HashSet<Subject>> = HashMap::new();
+    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())?  {
+        for solution in solutions {
+            let sol = solution?;
+            match (sol.get(pred), sol.get(subj)) {
+                (Some(p), Some(v)) => match p {
+                   Term::NamedNode(iri) => match term_as_subject(v) {
+                    Some(subj) => match results.entry(iri.clone()) {
+                        Entry::Occupied(mut vs) => {
+                            vs.get_mut().insert(subj.clone());
+                        }
+                        Entry::Vacant(vacant) => {
+                            vacant.insert(HashSet::from([subj.clone()]));
+                        }
+                      },
+                     None => return Err(SRDFSparqlError::NoSubject { term: v.clone() } )
+                   },
+                   _ => return Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: p.clone() }),        
+                },
+                (None,None) => {
+                     return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![pred.to_string(), subj.to_string()]), solution: format!("{sol:?}") })
+                 } 
+                 (None,Some(_)) => {
+                    return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![pred.to_string()]), solution: format!("{sol:?}") })
+                } 
+                (Some(_), None) => {
+                    return Err(SRDFSparqlError::NotFoundVarsInSolution { vars: SparqlVars::new(vec![subj.to_string()]), solution: format!("{sol:?}") })
+                } 
+            }
+        }
+        Ok(results)
+    } else {
+        Err(SRDFSparqlError::ParsingBody{ body })
+    }
+}
+
+
 fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<NamedNode> {
     match solution.get(name) {
         Some(v) => match v {
@@ -449,6 +513,14 @@ fn term_as_subject(object: &Term) -> Option<Subject> {
         _ => None,
     }
 }
+
+fn subject_as_term(subject: &Subject) -> Term {
+    match subject {
+        Subject::NamedNode(n) => Term::NamedNode(n.clone()),
+        Subject::BlankNode(b) => Term::BlankNode(b.clone()),
+    }
+}
+
 
 
 #[cfg(test)]
