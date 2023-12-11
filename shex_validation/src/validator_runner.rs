@@ -223,6 +223,9 @@ impl ValidatorRunner {
                         }
                     }
                 }
+                if !found {
+                    println!("No value found for node/shape where node = {node}, err: {current_err:?}")
+                }
                 Ok(found)
             }
             ShapeExpr::Empty => Ok(true),
