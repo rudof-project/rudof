@@ -75,11 +75,7 @@ pub enum Command {
         )]
         schema_format: ShExFormat,
 
-        #[arg(
-            short = 'm', 
-            long = "shapemap", 
-            value_name = "ShapeMap file name", 
-        )]
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
         shapemap: Option<PathBuf>,
 
         #[arg(
@@ -99,7 +95,12 @@ pub enum Command {
         #[arg(short = 'n', long = "node")]
         node: Option<String>,
 
-        #[arg(short = 'l', long = "shape-label", value_name = "shape label (default = START)", group = "node_shape")]
+        #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "shape label (default = START)",
+            group = "node_shape"
+        )]
         shape: Option<String>,
 
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
@@ -163,6 +164,11 @@ pub enum Command {
         )]
         show_node_mode: ShowNodeMode,
 
+        #[arg(long = "show hyperlinks")]
+        show_hyperlinks: bool,
+
+        #[arg(short = 'p', long = "predicates")]
+        predicates: Vec<String>,
     },
 }
 
@@ -183,7 +189,6 @@ impl Display for ShowNodeMode {
         }
     }
 }
-
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]

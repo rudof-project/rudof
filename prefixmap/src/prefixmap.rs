@@ -9,7 +9,6 @@ use crate::PrefixMapError;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
-
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
@@ -23,6 +22,9 @@ pub struct PrefixMap {
 
     #[serde(skip)]
     qualify_semicolon_color: Option<Color>,
+
+    #[serde(skip)]
+    hyperlink: bool,
 }
 
 fn split(str: &str) -> Option<(&str, &str)> {
@@ -194,7 +196,7 @@ impl PrefixMap {
             })
             .collect();
         founds.sort_by_key(|(_, iri)| iri.len());
-        if let Some((alias, rest)) = founds.first() {
+        let str = if let Some((alias, rest)) = founds.first() {
             let prefix_colored = match self.qualify_prefix_color {
                 Some(color) => alias.color(color),
                 None => ColoredString::from(alias.as_str()),
@@ -210,19 +212,27 @@ impl PrefixMap {
             format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored)
         } else {
             format!("<{iri}>")
+        };
+        if self.hyperlink {
+            format!(
+                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+                iri.as_str(),
+                str
+            )
+        } else {
+            str
         }
     }
 
     /// Default Wikidata prefixmap
     /// This source of this list is https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
     pub fn wikidata() -> PrefixMap {
-       PrefixMap::from_hashmap(
-        &HashMap::from([
+        PrefixMap::from_hashmap(&HashMap::from([
             ("bd", "http://www.bigdata.com/rdf#"),
             ("cc", "http://creativecommons.org/ns#"),
             ("dct", "http://purl.org/dc/terms/"),
             ("geo", "http://www.opengis.net/ont/geosparql#"),
-            ("hint", "http://www.bigdata.com/queryHints#"), 
+            ("hint", "http://www.bigdata.com/queryHints#"),
             ("ontolex", "http://www.w3.org/ns/lemon/ontolex#"),
             ("owl", "http://www.w3.org/2002/07/owl#"),
             ("prov", "http://www.w3.org/ns/prov#"),
@@ -233,14 +243,23 @@ impl PrefixMap {
             ("xsd", "http://www.w3.org/2001/XMLSchema#"),
             ("p", "http://www.wikidata.org/prop/"),
             ("pq", "http://www.wikidata.org/prop/qualifier/"),
-            ("pqn", "http://www.wikidata.org/prop/qualifier/value-normalized/"),
+            (
+                "pqn",
+                "http://www.wikidata.org/prop/qualifier/value-normalized/",
+            ),
             ("pqv", "http://www.wikidata.org/prop/qualifier/value/"),
             ("pr", "http://www.wikidata.org/prop/reference/"),
-            ("prn", "http://www.wikidata.org/prop/reference/value-normalized/"),
+            (
+                "prn",
+                "http://www.wikidata.org/prop/reference/value-normalized/",
+            ),
             ("prv", "http://www.wikidata.org/prop/reference/value/"),
             ("psv", "http://www.wikidata.org/prop/statement/value/"),
             ("ps", "http://www.wikidata.org/prop/statement/"),
-            ("psn", "http://www.wikidata.org/prop/statement/value-normalized/"),
+            (
+                "psn",
+                "http://www.wikidata.org/prop/statement/value-normalized/",
+            ),
             ("wd", "http://www.wikidata.org/entity/"),
             ("wdata", "http://www.wikidata.org/wiki/Special:EntityData/"),
             ("wdno", "http://www.wikidata.org/prop/novalue/"),
@@ -249,8 +268,30 @@ impl PrefixMap {
             ("wdt", "http://www.wikidata.org/prop/direct/"),
             ("wdtn", "http://www.wikidata.org/prop/direct-normalized/"),
             ("wdv", "http://www.wikidata.org/value/"),
-            ("wikibase", "http://wikiba.se/ontology#"),            
-       ])).unwrap()
+            ("wikibase", "http://wikiba.se/ontology#"),
+        ]))
+        .unwrap()
+        .without_default_colors()
+        .with_hyperlink(true)
+    }
+
+    pub fn without_colors(mut self) -> Self {
+        self.qualify_localname_color = None;
+        self.qualify_prefix_color = None;
+        self.qualify_semicolon_color = None;
+        self
+    }
+
+    pub fn without_default_colors(mut self) -> Self {
+        self.qualify_localname_color = Some(Color::Black);
+        self.qualify_prefix_color = Some(Color::Blue);
+        self.qualify_semicolon_color = Some(Color::Red);
+        self
+    }
+
+    pub fn with_hyperlink(mut self, hyperlink: bool) -> Self {
+        self.hyperlink = hyperlink;
+        self
     }
 }
 
