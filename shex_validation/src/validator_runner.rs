@@ -8,11 +8,11 @@ use iri_s::IriS;
 use log::debug;
 use rbe::MatchTableIter;
 use rbe::Pending;
+use shex_ast::internal::ShapeLabelIdx;
 use shex_ast::internal::*;
 use shex_ast::Node;
 use shex_ast::Pred;
-use shex_ast::internal::ShapeLabelIdx;
-use shex_ast::{ShapeLabel};
+use shex_ast::ShapeLabel;
 use srdf::literal::Literal;
 use srdf::NeighsIterator;
 use srdf::{Object, SRDFComparisons, SRDF};
@@ -250,7 +250,7 @@ impl ValidatorRunner {
     where
         S: SRDF,
     {
-        let node = self.get_rdf_node(&node, rdf);
+        /*let node = self.get_rdf_node(&node, rdf);
         if let Some(subject) = rdf.term_as_subject(&node) {
             let preds = rdf
                 .get_predicates_for_subject(&subject)
@@ -265,6 +265,23 @@ impl ValidatorRunner {
                 for o in objects {
                     let object = self.cnv_object::<S>(o);
                     result.push((iri.clone(), object));
+                }
+            }
+            Ok(result)
+        } else {
+            todo!()
+        }*/
+        let node = self.get_rdf_node(&node, rdf);
+        if let Some(subject) = rdf.term_as_subject(&node) {
+            let outgoing_arcs = rdf
+                .outgoing_arcs(&subject)
+                .map_err(|e| self.cnv_err::<S>(e))?;
+            let mut result = Vec::new();
+            for (pred, values) in outgoing_arcs.into_iter() {
+                for obj in values.into_iter() {
+                    let iri = self.cnv_iri::<S>(pred.clone());
+                    let object = self.cnv_object::<S>(obj);
+                    result.push((iri.clone(), object))
                 }
             }
             Ok(result)

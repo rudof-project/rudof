@@ -1,14 +1,16 @@
 use crate::shapemap_grammar::shapemap_statement;
-use crate::shapemap_grammar::{shape_spec, node_spec};
 use crate::shapemap_grammar::ShapeMapStatement;
+use crate::shapemap_grammar::{node_spec, shape_spec};
+use crate::shex_grammar::iri;
 use crate::tws0;
 use crate::ParseError;
 use crate::Span;
 use nom::Err;
+use prefixmap::IriRef;
 use prefixmap::PrefixMap;
+use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::NodeSelector;
 use shapemap::ShapeSelector;
-use shapemap::query_shape_map::QueryShapeMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -65,28 +67,39 @@ impl<'a> ShapeMapParser<'a> {
 
     pub fn parse_shape_selector(str: &str) -> Result<ShapeSelector> {
         let span = Span::new(str);
-        let (_,ss) = shape_spec()(span).map_err(|e| {
-            match e {
-                Err::Incomplete(s) => ParseError::Custom { msg: format!("Incomplete input: needed {s:?}") },
-                Err::Error(e) => ParseError::NomError { err: Box::new(e) },
-                Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
-            }
+        let (_, ss) = shape_spec()(span).map_err(|e| match e {
+            Err::Incomplete(s) => ParseError::Custom {
+                msg: format!("Incomplete input: needed {s:?}"),
+            },
+            Err::Error(e) => ParseError::NomError { err: Box::new(e) },
+            Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
         })?;
         Ok(ss)
     }
 
     pub fn parse_node_selector(str: &str) -> Result<NodeSelector> {
         let span = Span::new(str);
-        let (_,ns) = node_spec()(span).map_err(|e| {
-            match e {
-                Err::Incomplete(s) => ParseError::Custom { msg: format!("Incomplete input: needed {s:?}") },
-                Err::Error(e) => ParseError::NomError { err: Box::new(e) },
-                Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
-            }
+        let (_, ns) = node_spec()(span).map_err(|e| match e {
+            Err::Incomplete(s) => ParseError::Custom {
+                msg: format!("Incomplete input: needed {s:?}"),
+            },
+            Err::Error(e) => ParseError::NomError { err: Box::new(e) },
+            Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
         })?;
         Ok(ns)
     }
 
+    pub fn parse_iri_ref(str: &str) -> Result<IriRef> {
+        let span = Span::new(str);
+        let (_, iri_ref) = iri(span).map_err(|e| match e {
+            Err::Incomplete(s) => ParseError::Custom {
+                msg: format!("Incomplete input: needed {s:?}"),
+            },
+            Err::Error(e) => ParseError::NomError { err: Box::new(e) },
+            Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
+        })?;
+        Ok(iri_ref)
+    }
 }
 
 struct ShapeMapStatementIterator<'a> {

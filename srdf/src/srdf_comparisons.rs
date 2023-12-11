@@ -32,7 +32,7 @@ pub trait SRDFComparisons {
     fn lexical_form(&self, literal: &Self::Literal) -> String;
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
-    
+
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
 
@@ -42,7 +42,6 @@ pub trait SRDFComparisons {
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
-    fn qualify_subject(&self, subj: &Self::Subject) -> String ;
-    fn qualify_term(&self, subj: &Self::Term) -> String ;
-
+    fn qualify_subject(&self, subj: &Self::Subject) -> String;
+    fn qualify_term(&self, subj: &Self::Term) -> String;
 }

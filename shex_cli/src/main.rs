@@ -3,6 +3,7 @@ extern crate clap;
 extern crate iri_s;
 extern crate log;
 extern crate oxrdf;
+extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
 extern crate shapemap;
@@ -12,7 +13,6 @@ extern crate shex_validation;
 extern crate srdf;
 extern crate srdf_graph;
 extern crate srdf_sparql;
-extern crate prefixmap;
 
 use anyhow::*;
 use clap::Parser;
@@ -21,7 +21,7 @@ use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
 use prefixmap::IriRef;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
-use shex_ast::{Node, object_value::ObjectValue, ShapeExprLabel};
+use shex_ast::{object_value::ObjectValue, Node, ShapeExprLabel};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
-            result_shapemap_format
+            result_shapemap_format,
         }) => run_validate(
             schema,
             schema_format,
@@ -78,9 +78,19 @@ fn main() -> Result<()> {
             data_format,
             endpoint,
             node,
-            show_node_mode
-        }) => run_node(data, data_format, endpoint, node, 
-                       show_node_mode, cli.debug),
+            predicates,
+            show_node_mode,
+            show_hyperlinks,
+        }) => run_node(
+            data,
+            data_format,
+            endpoint,
+            node,
+            predicates,
+            show_node_mode,
+            show_hyperlinks,
+            cli.debug,
+        ),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
@@ -135,12 +145,8 @@ fn run_validate(
     schema.from_schema_json(&schema_json)?;
     let data = get_data(data, data_format, endpoint, debug)?;
     let mut shapemap = match shapemap {
-        None => {
-            QueryShapeMap::new()
-        },
-        Some(shapemap_buf) => {
-            parse_shapemap(shapemap_buf, shapemap_format)?
-        }
+        None => QueryShapeMap::new(),
+        Some(shapemap_buf) => parse_shapemap(shapemap_buf, shapemap_format)?,
     };
     match (maybe_node, maybe_shape) {
         (None, None) => {
@@ -182,25 +188,29 @@ fn run_validate(
     }
 }
 
-fn get_data(data: &Option<PathBuf>,
+fn get_data(
+    data: &Option<PathBuf>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
-    debug: u8
+    debug: u8,
 ) -> Result<Data> {
     match (data, endpoint) {
-            (None, None) => bail!("None of `data` or `endpoint` parameters have been specified for validation"),
-            (Some(data), None) => {
-             let data = parse_data(data, data_format, debug)?;
-             Ok(Data::RDFData(data))
-            },
-            (None, Some(endpoint)) => {
-                let endpoint = SRDFSparql::from_str(endpoint)?;
-                Ok(Data::Endpoint(endpoint))
-            },
-            (Some(_), Some(_)) => bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
-         }
+        (None, None) => {
+            bail!("None of `data` or `endpoint` parameters have been specified for validation")
+        }
+        (Some(data), None) => {
+            let data = parse_data(data, data_format, debug)?;
+            Ok(Data::RDFData(data))
+        }
+        (None, Some(endpoint)) => {
+            let endpoint = SRDFSparql::from_str(endpoint)?;
+            Ok(Data::Endpoint(endpoint))
+        }
+        (Some(_), Some(_)) => {
+            bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
+        }
+    }
 }
-
 
 fn make_node_selector(node: Node) -> Result<NodeSelector> {
     let object = node.as_object();
@@ -219,23 +229,46 @@ fn start() -> ShapeSelector {
     ShapeSelector::start()
 }
 
-
-fn run_node(data: &Option<PathBuf>, 
-    data_format: &DataFormat, 
-    endpoint: &Option<String>, 
-    node_str: &String, 
+fn run_node(
+    data: &Option<PathBuf>,
+    data_format: &DataFormat,
+    endpoint: &Option<String>,
+    node_str: &String,
+    predicates: &Vec<String>,
     show_node_mode: &ShowNodeMode,
-    debug: u8) -> Result<()> {
+    show_hyperlinks: &bool,
+    debug: u8,
+) -> Result<()> {
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
-        Data::Endpoint(endpoint) => show_node_info(node_selector, &endpoint, &show_node_mode),
-        Data::RDFData(data) => show_node_info(node_selector, &data, &show_node_mode),
+        Data::Endpoint(endpoint) => show_node_info(
+            node_selector,
+            predicates,
+            &endpoint,
+            &show_node_mode,
+            show_hyperlinks,
+        ),
+        Data::RDFData(data) => show_node_info(
+            node_selector,
+            predicates,
+            &data,
+            &show_node_mode,
+            show_hyperlinks,
+        ),
     }
 }
 
-fn show_node_info<S>(node_selector: NodeSelector, rdf: &S, show_node_mode: &ShowNodeMode) -> Result<()> 
-where S: SRDF  {
+fn show_node_info<S>(
+    node_selector: NodeSelector,
+    predicates: &Vec<String>,
+    rdf: &S,
+    show_node_mode: &ShowNodeMode,
+    show_hyperlinks: &bool,
+) -> Result<()>
+where
+    S: SRDF,
+{
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
         println!("Information about node");
@@ -244,9 +277,15 @@ where S: SRDF  {
         match show_node_mode {
             ShowNodeMode::Outgoing | ShowNodeMode::Both => {
                 println!("Outgoing arcs");
-                let map = match rdf.outgoing_arcs(&subject) {
+                let results = if predicates.is_empty() {
+                    rdf.outgoing_arcs(&subject)
+                } else {
+                    let preds = cnv_predicates(predicates, rdf)?;
+                    rdf.outgoing_arcs_from_list(&subject, preds)
+                };
+                let map = match results {
                     Result::Ok(m) => m,
-                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
+                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
                 };
                 println!("{}", rdf.qualify_subject(&subject));
                 for pred in map.keys() {
@@ -259,10 +298,10 @@ where S: SRDF  {
                         bail!("Not found values for {pred} in map")
                     }
                 }
-            },
+            }
             _ => {
                 // Nothing to do
-            },
+            }
         }
 
         // Show incoming arcs
@@ -272,7 +311,7 @@ where S: SRDF  {
                 let object = rdf.subject_as_term(&subject);
                 let map = match rdf.incoming_arcs(&object) {
                     Result::Ok(m) => m,
-                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}")
+                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
                 };
                 println!("{}", rdf.qualify_term(&object));
                 for pred in map.keys() {
@@ -285,14 +324,32 @@ where S: SRDF  {
                         bail!("Not found values for {pred} in map")
                     }
                 }
-            },
+            }
             _ => {
                 // Nothing to do
-            },
+            }
         }
-
     }
     Ok(())
+}
+
+fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
+where
+    S: SRDF,
+{
+    let mut vs = Vec::new();
+    for s in predicates {
+        let iri_ref = parse_iri_ref(s)?;
+        let iri_s = match iri_ref {
+            IriRef::Prefixed { prefix, local } => {
+                rdf.resolve_prefix_local(prefix.as_str(), local.as_str())?
+            }
+            IriRef::Iri(iri) => iri,
+        };
+        let iri = S::iri_s2iri(&iri_s);
+        vs.push(iri)
+    }
+    Ok(vs)
 }
 
 fn run_shapemap(
@@ -314,26 +371,29 @@ fn run_shapemap(
     }
 }
 
-fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject> where S: SRDF {
+fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
+where
+    S: SRDF,
+{
     match node {
         ObjectValue::IriRef(iri_ref) => {
             let iri = match iri_ref {
                 IriRef::Iri(iri_s) => {
-                  let v = S::iri_s2iri(iri_s);
-                  v
-                },
+                    let v = S::iri_s2iri(iri_s);
+                    v
+                }
                 IriRef::Prefixed { prefix, local } => {
-                  let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-                  let v = S::iri_s2iri(&iri_s);
-                  v
+                    let iri_s = rdf.resolve_prefix_local(prefix, local)?;
+                    let v = S::iri_s2iri(&iri_s);
+                    v
                 }
             };
             let term = S::iri_as_term(iri);
             match rdf.term_as_subject(&term) {
                 None => bail!("node_to_subject: Can't convert term {term} to subject"),
-                Some(subject) => Ok(subject)
+                Some(subject) => Ok(subject),
             }
-        },
+        }
         ObjectValue::Literal(_lit) => Err(anyhow!("Node must be an IRI")),
     }
 }
@@ -414,8 +474,12 @@ fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     Ok(ns)
 }
 
-
 fn parse_shape_label(label_str: &str) -> Result<ShapeSelector> {
     let selector = ShapeMapParser::parse_shape_selector(label_str)?;
     Ok(selector)
+}
+
+fn parse_iri_ref(iri: &str) -> Result<IriRef> {
+    let iri = ShapeMapParser::parse_iri_ref(iri)?;
+    Ok(iri)
 }
