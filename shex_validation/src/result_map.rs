@@ -1,7 +1,8 @@
+use colored::*;
 use prefixmap::PrefixMap;
 use rbe::Pending;
-use shex_ast::Node;
 use shex_ast::compiled::shape_label::ShapeLabel;
+use shex_ast::Node;
 use srdf::Object;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;
@@ -10,26 +11,20 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use crate::ResultValue;
+use crate::{ResultValue, ValidatorError};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ResultMap {
     nodes_prefixmap: PrefixMap,
     schema_prefixmap: PrefixMap,
     ok_map: HashMap<Node, HashSet<ShapeLabel>>,
-    fail_map: HashMap<Node, HashSet<ShapeLabel>>,
+    fail_map: HashMap<Node, HashMap<ShapeLabel, Vec<ValidatorError>>>,
     pending: HashMap<Node, HashSet<ShapeLabel>>,
 }
 
 impl ResultMap {
     pub fn new() -> ResultMap {
-        ResultMap {
-            nodes_prefixmap: PrefixMap::new(),
-            schema_prefixmap: PrefixMap::new(),
-            ok_map: HashMap::new(),
-            fail_map: HashMap::new(),
-            pending: HashMap::new(),
-        }
+        ResultMap::default()
     }
 
     pub fn add_ok(&mut self, n: Node, s: ShapeLabel) {
@@ -43,13 +38,22 @@ impl ResultMap {
         }
     }
 
-    pub fn add_fail(&mut self, n: Node, s: ShapeLabel) {
+    pub fn add_fail(&mut self, n: Node, s: ShapeLabel, maybe_err: Option<ValidatorError>) {
         match self.fail_map.entry(n) {
-            Entry::Occupied(mut v) => {
-                v.get_mut().insert(s);
-            }
+            Entry::Occupied(mut v) => match v.get_mut().entry(s) {
+                Entry::Occupied(mut es) => {
+                    if let Some(err) = maybe_err {
+                        es.get_mut().push(err)
+                    }
+                }
+                Entry::Vacant(vacant) => {
+                    let vs = maybe_err.map_or_else(|| vec![], |e| vec![e]);
+                    vacant.insert(vs);
+                }
+            },
             Entry::Vacant(vacant) => {
-                vacant.insert(HashSet::from([s]));
+                let vs = maybe_err.map_or_else(|| vec![], |e| vec![e]);
+                vacant.insert(HashMap::from([(s, vs)]));
             }
         }
     }
@@ -97,7 +101,7 @@ impl ResultMap {
 
     pub fn is_failed(&self, node: &Node, shape: &ShapeLabel) -> bool {
         if let Some(hs) = self.fail_map.get(node) {
-            hs.contains(shape)
+            hs.contains_key(shape)
         } else {
             false
         }
@@ -138,9 +142,16 @@ impl Display for ResultMap {
         }
         writeln!(dest)?;
         for (n, hs) in &self.fail_map {
-            write!(dest, "{}->NOT |", show_node(n, &self.nodes_prefixmap))?;
-            for s in hs {
-                write!(dest, "{}|", show_shapelabel(s, &self.schema_prefixmap))?;
+            for (s, errs) in hs.iter() {
+                let s = format!(
+                    "{}-> NOT {}",
+                    show_node(n, &self.nodes_prefixmap),
+                    show_shapelabel(s, &self.schema_prefixmap)
+                );
+                write!(dest, "{}", s.red())?;
+                for e in errs {
+                    writeln!(dest, "  Err:{e}")?;
+                }
             }
             writeln!(dest)?;
         }
