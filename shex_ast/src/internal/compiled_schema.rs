@@ -1,7 +1,7 @@
 use crate::ast::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ShapeExprLabel, ast::Schema as SchemaJson, internal::ObjectValue, internal::ValueSetValue,
-    CResult, CompiledSchemaError, Cond, Node, ShapeLabel, ShapeLabelIdx,
+    ast, ShapeExprLabel, ast::Schema as SchemaJson, 
+    CResult, CompiledSchemaError, Cond, Node, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -14,6 +14,9 @@ use log::debug;
 use rbe::{MatchCond, RbeTable};
 use std::fmt::Display;
 
+use super::shape_expr::ShapeExpr;
+use super::shape_label::ShapeLabel;
+
 type Result<A> = std::result::Result<A, CompiledSchemaError>;
 
 #[derive(Debug)]
@@ -22,78 +25,6 @@ pub struct CompiledSchema {
     shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
     shape_label_counter: ShapeLabelIdx,
     prefixmap: PrefixMap
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
-pub struct TripleExprIdx(usize);
-impl TripleExprIdx {
-    pub fn incr(&mut self) {
-        self.0 += 1;
-    }
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-pub enum NodeKind {
-    Iri,
-    BNode,
-    NonLiteral,
-    Literal,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ShapeExpr {
-    ShapeOr {
-        exprs: Vec<ShapeExpr>,
-    },
-    ShapeAnd {
-        exprs: Vec<ShapeExpr>,
-    },
-    ShapeNot {
-        expr: Box<ShapeExpr>,
-    },
-    NodeConstraint {
-        node_kind: Option<NodeKind>,
-        datatype: Option<IriS>,
-        xs_facet: Option<Vec<XsFacet>>,
-        values: Option<Vec<ValueSetValue>>,
-        cond: Cond,
-    },
-    Shape {
-        closed: bool,
-        extra: Vec<IriS>,
-        rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
-        sem_acts: Vec<SemAct>,
-        annotations: Vec<Annotation>,
-    },
-    External {},
-    Ref {
-        idx: ShapeLabelIdx,
-    },
-    Empty,
-}
-
-impl ShapeExpr {
-    pub fn mk_ref(idx: ShapeLabelIdx) -> ShapeExpr {
-        ShapeExpr::Ref { idx }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum XsFacet {
-    StringFacet,
-    NumericFacet,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct SemAct {
-    name: IriS,
-    code: Option<String>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Annotation {
-    predicate: IriS,
-    object: ObjectValue,
 }
 
 impl CompiledSchema {
@@ -470,7 +401,7 @@ impl Display for CompiledSchema {
 #[cfg(test)]
 mod tests {
     use crate::ast::Schema as SchemaJson;
-    use crate::internal::CompiledSchema;
+    use super::CompiledSchema;
 
     #[test]
     fn test_find_component() {

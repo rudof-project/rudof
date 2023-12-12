@@ -1,13 +1,22 @@
-use crate::internal::{NodeKind, ShapeExpr, XsFacet};
 use crate::ShapeExprLabel;
+use crate::internal::annotation::Annotation;
+use crate::internal::compiled_schema::CompiledSchema;
+use crate::internal::node_kind::NodeKind;
+use crate::internal::object_value::ObjectValue;
+use crate::internal::sem_act::SemAct;
+use crate::internal::shape::Shape;
+use crate::internal::shape_expr::ShapeExpr;
+use crate::internal::shape_label::ShapeLabel;
+use crate::internal::value_set::ValueSet;
+use crate::internal::value_set_value::{ValueSetValue, StringOrWildcard, StringOrLiteralStem};
+use crate::internal::xs_facet::XsFacet;
 use crate::{
-    ast, ast::Schema as SchemaJson, internal::Annotation, internal::CompiledSchema,
-    internal::SemAct, internal::ValueSetValue, CompiledSchemaError, ShapeLabel, ShapeLabelIdx,
+    ast, ast::Schema as SchemaJson, 
+    CompiledSchemaError, ShapeLabelIdx,
 };
 use crate::{
-    internal::ObjectValue, internal::StringOrLiteralStem, internal::StringOrWildcard, CResult,
-    Cond, Node, Pred, ValueSet,
-};
+    CResult,
+    Cond, Node, Pred};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::IriRef;
@@ -157,7 +166,7 @@ impl SchemaJsonCompiler {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
             }
-            ast::ShapeExpr::Shape(shape) => {
+            s@ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra)?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
@@ -168,13 +177,9 @@ impl SchemaJsonCompiler {
                         table
                     }
                 };
-                Ok(ShapeExpr::Shape {
-                    closed: Self::cnv_closed(&shape.closed),
-                    extra: new_extra,
-                    rbe_table,
-                    sem_acts: Self::cnv_sem_acts(&shape.sem_acts),
-                    annotations: Self::cnv_annotations(&shape.annotations),
-                })
+                let preds = Self::get_preds_shape(shape);
+                let shape = Shape::new(Self::cnv_closed(&shape.closed), new_extra, rbe_table, Self::cnv_sem_acts(&shape.sem_acts), Self::cnv_annotations(&shape.annotations), preds);
+                Ok(ShapeExpr::Shape(shape))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
                 let node_kind_cnv: Option<NodeKind> = cnv_opt(&nc.node_kind(), cnv_node_kind)?;
@@ -405,6 +410,38 @@ impl SchemaJsonCompiler {
     ) -> CResult<Cond> {
         todo("shape_expr2match_cond")
     }*/
+
+    fn get_preds_shape(shape: &ast::Shape) -> Vec<IriS> {
+       match shape.triple_expr() {
+         None => Vec::new(),
+         Some(te)  => Self::get_preds_triple_expr(&te)
+       }
+    }
+
+    fn get_preds_triple_expr(te: &ast::TripleExpr) -> Vec<IriS> {
+       match te {
+        ast::TripleExpr::EachOf { expressions, .. } => {
+            expressions.iter().map(|te| Self::get_preds_triple_expr(&te.te)).flatten().collect()
+        },
+        ast::TripleExpr::OneOf { expressions, .. } => {
+            expressions.iter().map(|te| Self::get_preds_triple_expr(&te.te)).flatten().collect()
+        },
+        ast::TripleExpr::TripleConstraint { predicate, .. } => {
+            let pred = iri_ref2iri_s(predicate);
+            vec![pred]
+        },
+        ast::TripleExpr::TripleExprRef(_) => todo!(),
+    }
+    }
+}
+
+fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
+    match iri_ref {
+        IriRef::Iri(iri) => iri.clone(),
+        IriRef::Prefixed { prefix, local } => {
+            panic!("Compiling schema...found prefixed iri: {prefix}:{local}")
+        }
+    }
 }
 
 fn node_constraint2match_cond(

@@ -13,6 +13,7 @@ use crate::Pending;
 use crate::RbeError;
 use crate::Ref;
 use crate::Value;
+use crate::candidate::Candidate;
 // use crate::RbeError;
 use crate::rbe::Rbe;
 use crate::rbe1::Rbe as Rbe1;
@@ -83,14 +84,14 @@ where
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
         for (key, value) in &values {
-            let conds = self.key_components.get(key).unwrap_or_else(|| &cs_empty);
+            let components = self.key_components.get(key).unwrap_or_else(|| &cs_empty);
             let mut pairs = Vec::new();
-            for c in conds {
+            for component in components {
                 // TODO: Add some better error control to replace unwrap()?
                 //  This should mark an internal error anyway
-                let cond = self.component_cond.get(c).unwrap();
+                let cond = self.component_cond.get(component).unwrap();
                 pairs_found += 1;
-                pairs.push((key.clone(), value.clone(), c.clone(), cond.clone()));
+                pairs.push((key.clone(), value.clone(), component.clone(), cond.clone()));
             }
             candidates.push(pairs);
         }
@@ -107,6 +108,9 @@ where
             }))
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
+            let _: Vec<_> = candidates.iter().zip(0..).map(|(candidate, n)| { 
+                debug!("Candidate {n}: {candidate:?}"); 
+            }).collect();
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -158,8 +162,14 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            MatchTableIter::Empty(ref mut e) => e.next(),
-            MatchTableIter::NonEmpty(ref mut cp) => cp.next(),
+            MatchTableIter::Empty(ref mut e) => {
+                debug!("MatchTableIter::Empty");
+                e.next()
+            },
+            MatchTableIter::NonEmpty(ref mut cp) => {
+                debug!("MatchTableIter::NonEmpty");
+                cp.next()
+            },
         }
     }
 }
@@ -188,10 +198,12 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
+        debug!("state in IterCartesianProduct {:?}", self.state);
         match next_state {
             None => {
                 if self.is_first {
                     debug!("Should be internal error? No more candidates");
+                    debug!("RBE: {}", self.rbe);
                     None
                 } else {
                     debug!("No more candidates");

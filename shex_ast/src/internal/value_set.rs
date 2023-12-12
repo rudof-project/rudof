@@ -1,7 +1,7 @@
 use srdf::Object;
 use std::fmt::Display;
 
-use crate::internal::ValueSetValue;
+use super::value_set_value::ValueSetValue;
 
 #[derive(Clone, Debug)]
 pub struct ValueSet {

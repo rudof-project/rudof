@@ -1,6 +1,7 @@
 use prefixmap::PrefixMap;
 use rbe::Pending;
-use shex_ast::{Node, ShapeLabel};
+use shex_ast::Node;
+use shex_ast::internal::shape_label::ShapeLabel;
 use srdf::Object;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;

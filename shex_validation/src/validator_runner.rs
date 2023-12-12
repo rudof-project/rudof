@@ -8,11 +8,13 @@ use iri_s::IriS;
 use log::debug;
 use rbe::MatchTableIter;
 use rbe::Pending;
-use shex_ast::internal::ShapeLabelIdx;
+use shex_ast::ShapeLabelIdx;
 use shex_ast::internal::*;
 use shex_ast::Node;
 use shex_ast::Pred;
-use shex_ast::ShapeLabel;
+use shex_ast::internal::shape::Shape;
+use shex_ast::internal::shape_label::ShapeLabel;
+use shex_ast::internal::shape_expr::ShapeExpr;
 use srdf::literal::Literal;
 use srdf::NeighsIterator;
 use srdf::{Object, SRDFComparisons, SRDF};
@@ -181,56 +183,60 @@ impl ValidatorRunner {
                 }
                 Ok(false)
             }
-            ShapeExpr::Shape {
-                closed,
-                extra,
-                rbe_table,
-                sem_acts,
-                annotations,
-            } => {
-                let values = self.neighs(node, rdf)?;
-                let mut result_iter = rbe_table.matches(values)?;
-                let mut current_err = None;
-                let counter = self.step_counter;
-                // let next_result = result_iter.next();
-                let mut found = false;
-
-                // Search for the first result which is not an err
-                while let Some(next_result) = result_iter.next() {
-                    match next_result {
-                        Ok(pending_values) => {
-                            for (p, v) in pending_values.iter() {
-                                debug!("Step {counter}: Value in pending: {p}/{v}");
-                                let atom = Atom::pos(((*p).clone(), *v));
-                                if self.is_processing(&atom) {
-                                    let pred = p.clone();
-                                    debug!(
-                                        "Step {counter} Adding ok: {}/{v} because it was already processed",
-                                        &pred
-                                    );
-                                    self.add_ok(pred, *v);
-                                } else {
-                                    self.insert_pending(&atom);
-                                }
-                            }
-                            // We keep alternative match iterators which will be recovered in case of failure
-                            self.alternative_match_iterators.push(result_iter);
-                            found = true;
-                            break;
-                        }
-                        Err(err) => {
-                            current_err = Some(err);
-                        }
-                    }
-                }
-                if !found {
-                    println!("No value found for node/shape where node = {node}, err: {current_err:?}")
-                }
-                Ok(found)
-            }
+            ShapeExpr::Shape(shape) => self.check_node_shape(node, shape, rdf),
             ShapeExpr::Empty => Ok(true),
             ShapeExpr::External {} => Ok(true),
         }
+    }
+
+    fn check_node_shape<S>(&mut self, 
+        node: &Node,
+        shape: &Shape,
+        rdf: &S) -> Result<bool> 
+        where S: SRDF {
+        let values = self.neighs(node, shape.preds(), rdf)?;
+        debug!("Neighs of {node}: {values:?}");
+        let mut result_iter = shape.rbe_table().matches(values)?;
+        let mut current_err = None;
+        let counter = self.step_counter;
+        let mut found = false;
+        let mut iter_count = 0;
+
+        // Search for the first result which is not an err
+        while let Some(next_result) = result_iter.next() {
+            iter_count += 1;
+            match next_result {
+                Ok(pending_values) => {
+                    debug!("Found result, iteration {iter_count}");
+                    for (p, v) in pending_values.iter() {
+                        debug!("Step {counter}: Value in pending: {p}/{v}");
+                        let atom = Atom::pos(((*p).clone(), *v));
+                        if self.is_processing(&atom) {
+                            let pred = p.clone();
+                            debug!(
+                                "Step {counter} Adding ok: {}/{v} because it was already processed",
+                                &pred
+                            );
+                            self.add_ok(pred, *v);
+                        } else {
+                            self.insert_pending(&atom);
+                        }
+                    }
+                    // We keep alternative match iterators which will be recovered in case of failure
+                    self.alternative_match_iterators.push(result_iter);
+                    found = true;
+                    break;
+                }
+                Err(err) => {
+                    debug!("Result with error {err} at iteration {iter_count}");
+                    current_err = Some(err);
+                }
+            }
+        }
+        if !found {
+            println!("No value found for node/shape where node = {node}, err: {current_err:?}")
+        }
+        Ok(found)
     }
 
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
@@ -249,35 +255,15 @@ impl ValidatorRunner {
         Node::from(object)
     }
 
-    fn neighs<S>(&self, node: &Node, rdf: &S) -> Result<Vec<(Pred, Node)>>
+    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Vec<(Pred, Node)>>
     where
         S: SRDF,
     {
-        /*let node = self.get_rdf_node(&node, rdf);
-        if let Some(subject) = rdf.term_as_subject(&node) {
-            let preds = rdf
-                .get_predicates_for_subject(&subject)
-                .map_err(|e| self.cnv_err::<S>(e))?;
-            let mut result = Vec::new();
-            for p in &preds {
-                let objects = rdf
-                    .get_objects_for_subject_predicate(&subject, &p)
-                    .map_err(|e| self.cnv_err::<S>(e))?;
-                let iri = self.cnv_iri::<S>(p.clone());
-                debug!("neighs...iri: {iri:?} p: {:?}", p.to_string());
-                for o in objects {
-                    let object = self.cnv_object::<S>(o);
-                    result.push((iri.clone(), object));
-                }
-            }
-            Ok(result)
-        } else {
-            todo!()
-        }*/
         let node = self.get_rdf_node(&node, rdf);
+        let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
         if let Some(subject) = rdf.term_as_subject(&node) {
             let outgoing_arcs = rdf
-                .outgoing_arcs(&subject)
+                .outgoing_arcs_from_list(&subject, list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
             for (pred, values) in outgoing_arcs.into_iter() {

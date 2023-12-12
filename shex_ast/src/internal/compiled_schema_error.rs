@@ -5,7 +5,9 @@ use srdf::lang::Lang;
 use thiserror::Error;
 
 use crate::ast::TripleExprLabel;
-use crate::{ast, Node, ShapeLabel};
+use crate::{ast, Node};
+
+use super::shape_label::ShapeLabel;
 
 #[derive(Error, Debug)]
 pub enum CompiledSchemaError {

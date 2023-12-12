@@ -15,6 +15,7 @@ pub mod max;
 pub mod min;
 pub mod rbe;
 pub mod values;
+pub mod candidate;
 
 pub mod component;
 pub mod deriv_n;

@@ -18,12 +18,11 @@ pub use pred::*;
 use rbe::MatchCond;
 pub use schema::*;
 // pub use schema_builder::*;
-pub use internal::shape_label::*;
+// pub use internal::shape_label::*;
 pub use internal::shape_label_idx::*;
-pub use internal::value_set::*;
-pub use internal::value_set_value::*;
+// pub use internal::value_set::*;
+// pub use internal::value_set_value::*;
 
-use srdf::Object;
 
 type CResult<T> = Result<T, CompiledSchemaError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;

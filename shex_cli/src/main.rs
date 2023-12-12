@@ -35,7 +35,7 @@ pub mod data;
 pub use cli::*;
 pub use data::*;
 
-use shex_ast::{ast::Schema as SchemaJson, internal::CompiledSchema};
+use shex_ast::{ast::Schema as SchemaJson, internal::compiled_schema::CompiledSchema};
 
 fn main() -> Result<()> {
     env_logger::init();

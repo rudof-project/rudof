@@ -1,6 +1,6 @@
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use shex_ast::{CompiledSchemaError, Node, Pred, ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
+use shex_ast::{CompiledSchemaError, Node, Pred, internal::shape_label::ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
 use srdf::Object;
 use thiserror::Error;
 
