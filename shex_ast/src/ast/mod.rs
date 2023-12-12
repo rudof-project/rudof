@@ -9,7 +9,6 @@ pub mod node_kind;
 pub mod object_value;
 // pub mod ref_;
 pub mod schema;
-pub mod schema_json_compiler;
 pub mod schema_json_error;
 pub mod sem_act;
 pub mod serde_string_or_struct;

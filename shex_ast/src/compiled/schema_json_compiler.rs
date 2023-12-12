@@ -1,15 +1,15 @@
 use crate::ShapeExprLabel;
-use crate::internal::annotation::Annotation;
-use crate::internal::compiled_schema::CompiledSchema;
-use crate::internal::node_kind::NodeKind;
-use crate::internal::object_value::ObjectValue;
-use crate::internal::sem_act::SemAct;
-use crate::internal::shape::Shape;
-use crate::internal::shape_expr::ShapeExpr;
-use crate::internal::shape_label::ShapeLabel;
-use crate::internal::value_set::ValueSet;
-use crate::internal::value_set_value::{ValueSetValue, StringOrWildcard, StringOrLiteralStem};
-use crate::internal::xs_facet::XsFacet;
+use crate::compiled::annotation::Annotation;
+use crate::compiled::compiled_schema::CompiledSchema;
+use crate::compiled::node_kind::NodeKind;
+use crate::compiled::object_value::ObjectValue;
+use crate::compiled::sem_act::SemAct;
+use crate::compiled::shape::Shape;
+use crate::compiled::shape_expr::ShapeExpr;
+use crate::compiled::shape_label::ShapeLabel;
+use crate::compiled::value_set::ValueSet;
+use crate::compiled::value_set_value::{ValueSetValue, StringOrWildcard, StringOrLiteralStem};
+use crate::compiled::xs_facet::XsFacet;
 use crate::{
     ast, ast::Schema as SchemaJson, 
     CompiledSchemaError, ShapeLabelIdx,

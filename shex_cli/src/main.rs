@@ -35,7 +35,7 @@ pub mod data;
 pub use cli::*;
 pub use data::*;
 
-use shex_ast::{ast::Schema as SchemaJson, internal::compiled_schema::CompiledSchema};
+use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -277,15 +277,17 @@ where
         match show_node_mode {
             ShowNodeMode::Outgoing | ShowNodeMode::Both => {
                 println!("Outgoing arcs");
-                let results = if predicates.is_empty() {
-                    rdf.outgoing_arcs(&subject)
+                let map = if predicates.is_empty() {
+                    match rdf.outgoing_arcs(&subject) {
+                        Result::Ok(rs) => rs,
+                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}")
+                    }
                 } else {
                     let preds = cnv_predicates(predicates, rdf)?;
-                    rdf.outgoing_arcs_from_list(&subject, preds)
-                };
-                let map = match results {
-                    Result::Ok(m) => m,
-                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
+                    match rdf.outgoing_arcs_from_list(&subject, preds) {
+                      Result::Ok((rs, _)) => rs,
+                      Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}")
+                    }
                 };
                 println!("{}", rdf.qualify_subject(&subject));
                 for pred in map.keys() {

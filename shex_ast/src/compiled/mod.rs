@@ -13,4 +13,6 @@ pub mod object_value;
 pub mod xs_facet;
 pub mod triple_expr_idx;
 pub mod shape;
+pub mod preds;
+pub mod schema_json_compiler;
 

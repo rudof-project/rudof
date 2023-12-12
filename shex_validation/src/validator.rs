@@ -10,9 +10,9 @@ use shapemap::query_shape_map::QueryShapeMap;
 use shex_ast::ShapeExprLabel;
 use shex_ast::Node;
 use shex_ast::ShapeLabelIdx;
-use shex_ast::internal::compiled_schema::CompiledSchema;
-use shex_ast::internal::shape_expr::ShapeExpr;
-use shex_ast::internal::shape_label::ShapeLabel;
+use shex_ast::compiled::compiled_schema::CompiledSchema;
+use shex_ast::compiled::shape_expr::ShapeExpr;
+use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::object_value::ObjectValue;
 use srdf::SRDF;
 

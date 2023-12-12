@@ -347,7 +347,7 @@ impl SRDF for SRDFSparql {
         &self,
         subject: &Self::Subject,
         preds: Vec<Self::IRI>,
-    ) -> std::prelude::v1::Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
+    ) -> std::prelude::v1::Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         outgoing_neighs_from_list(&subject, preds, &self.client, &self.endpoint_iri)
     }
 }
@@ -463,20 +463,22 @@ fn outgoing_neighs_from_list(
     preds: Vec<NamedNode>,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<HashMap<NamedNode, HashSet<Term>>> {
+) -> Result<(HashMap<NamedNode, HashSet<Term>>, Vec<NamedNode>)> {
     // This is not an efficient way to obtain the neighbours related with a set of predicates
     // At this moment, it obtains all neighbours and them removes the ones that are not in the list
+    let mut remainder = Vec::new();
     let mut all_results = outgoing_neighs(subject.to_string().as_str(), client, endpoint_iri)?;
     let mut remove_keys = Vec::new();
     for key in all_results.keys() {
         if !preds.contains(key) {
+            remainder.push(key.clone());
             remove_keys.push(key.clone());
-        }
+        } 
     }
     for key in remove_keys {
         all_results.remove(&key);
     }
-    Ok(all_results)
+    Ok((all_results, remainder))
 }
 
 fn incoming_neighs(

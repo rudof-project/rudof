@@ -389,9 +389,11 @@ impl SRDF for SRDFGraph {
         Ok(results)
     }
 
-    fn outgoing_arcs_from_list(&self, subject: &Self::Subject, preds: Vec<Self::IRI>) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        // TODO: We may optimize this function using graph.triples_for_subject_predicate ?
+    fn outgoing_arcs_from_list(&self, 
+        subject: &Self::Subject, 
+        preds: Vec<Self::IRI>) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
+        let mut remainder = Vec::new();
         for triple in self.graph.triples_for_subject(subject) {
             let pred = triple.predicate.into_owned();
             let term = triple.object.into_owned();
@@ -404,9 +406,11 @@ impl SRDF for SRDFGraph {
                         vacant.insert(HashSet::from([term.clone()]));
                     }
                 }
+            } else {
+                remainder.push(pred)
             }
         }
-        Ok(results)
+        Ok((results, remainder))
     }
 
  

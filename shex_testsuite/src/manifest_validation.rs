@@ -7,8 +7,8 @@ use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::internal::compiled_schema::CompiledSchema;
-use shex_ast::internal::shape_label::ShapeLabel;
+use shex_ast::compiled::compiled_schema::CompiledSchema;
+use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::{
     ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node 
 };

@@ -21,6 +21,7 @@ where
     #[error("Compiling schema: {error:?}")]
     CompilingSchema { error: CompiledSchemaError },
 
+
     #[error("SRDF Error {error:?}")]
     SRDFError { error: String },
 

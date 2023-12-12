@@ -55,7 +55,14 @@ pub trait SRDF: SRDFComparisons {
     fn outgoing_arcs(&self, subject: &Self::Subject) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err>;
     fn incoming_arcs(&self, object: &Self::Term) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err>;
 
-    fn outgoing_arcs_from_list(&self, subject: &Self::Subject, preds: Vec<Self::IRI>) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err>;
+    /// get outgoing arcs from a `node`` taking into account only a controlled list of `preds`
+    /// It resutns a HashMap with the outgoing arcs and their values and a list of the predicates that have values and are not in the controlled list.
+    fn outgoing_arcs_from_list(&self, 
+        subject: &Self::Subject, 
+        preds: Vec<Self::IRI>) -> Result<
+            (HashMap<Self::IRI, HashSet<Self::Term>>,Vec<Self::IRI>), 
+            Self::Err
+            >;
 
 }
 

@@ -9,12 +9,12 @@ use log::debug;
 use rbe::MatchTableIter;
 use rbe::Pending;
 use shex_ast::ShapeLabelIdx;
-use shex_ast::internal::*;
+use shex_ast::compiled::*;
 use shex_ast::Node;
 use shex_ast::Pred;
-use shex_ast::internal::shape::Shape;
-use shex_ast::internal::shape_label::ShapeLabel;
-use shex_ast::internal::shape_expr::ShapeExpr;
+use shex_ast::compiled::shape::Shape;
+use shex_ast::compiled::shape_label::ShapeLabel;
+use shex_ast::compiled::shape_expr::ShapeExpr;
 use srdf::literal::Literal;
 use srdf::NeighsIterator;
 use srdf::{Object, SRDFComparisons, SRDF};
@@ -103,6 +103,11 @@ impl ValidatorRunner {
     pub fn add_ok(&mut self, n: Node, s: ShapeLabelIdx) {
         self.checked.insert(Atom::pos((n, s)));
     }
+
+    pub fn add_failed(&mut self, n: Node, s: ShapeLabelIdx, reason: ValidatorError ) {
+        self.checked.insert(Atom::neg((n, s)));
+    }
+
 
     pub fn more_pending(&self) -> bool {
         !self.pending.is_empty()
@@ -194,7 +199,14 @@ impl ValidatorRunner {
         shape: &Shape,
         rdf: &S) -> Result<bool> 
         where S: SRDF {
-        let values = self.neighs(node, shape.preds(), rdf)?;
+        let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
+        if shape.is_closed() && !remainder.is_empty() {
+            /*self.add_failed(node, ValidatorError::ClosedShapeWithRemainderPreds { 
+                remainder: remainder.clone(), 
+                declared: shape.preds() }
+            );*/
+            return Ok(false)
+        };
         debug!("Neighs of {node}: {values:?}");
         let mut result_iter = shape.rbe_table().matches(values)?;
         let mut current_err = None;
@@ -255,14 +267,14 @@ impl ValidatorRunner {
         Node::from(object)
     }
 
-    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Vec<(Pred, Node)>>
+    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<(Vec<(Pred, Node)>, Vec<Pred>)>
     where
         S: SRDF,
     {
         let node = self.get_rdf_node(&node, rdf);
         let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
         if let Some(subject) = rdf.term_as_subject(&node) {
-            let outgoing_arcs = rdf
+            let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
@@ -273,7 +285,12 @@ impl ValidatorRunner {
                     result.push((iri.clone(), object))
                 }
             }
-            Ok(result)
+            let mut remainder_preds = Vec::new();
+            for r in remainder {
+                let iri_r = self.cnv_iri::<S>(r.clone());
+                remainder_preds.push(iri_r)
+            }
+            Ok((result, remainder_preds))
         } else {
             todo!()
         }

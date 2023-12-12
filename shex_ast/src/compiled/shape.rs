@@ -42,4 +42,8 @@ impl Shape {
     pub fn rbe_table(&self) -> &RbeTable<Pred, Node, ShapeLabelIdx> {
         &self.rbe_table
     }
+
+    pub fn is_closed(&self) -> bool {
+        self.closed
+    }
 }

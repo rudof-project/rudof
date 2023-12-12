@@ -1,6 +1,7 @@
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use shex_ast::{CompiledSchemaError, Node, Pred, internal::shape_label::ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
+use shex_ast::{CompiledSchemaError, Node, Pred, compiled::shape_label::ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
+use shex_ast::compiled::preds::Preds;
 use srdf::Object;
 use thiserror::Error;
 
@@ -20,6 +21,9 @@ pub enum ValidatorError {
 
     #[error("Failed regular expression")]
     RbeFailed(),
+
+    #[error("Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}")]
+    ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]
     RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx>),

@@ -1,4 +1,4 @@
-use crate::ast::schema_json_compiler::SchemaJsonCompiler;
+use crate::compiled::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
     ast, ShapeExprLabel, ast::Schema as SchemaJson, 
     CResult, CompiledSchemaError, Cond, Node, ShapeLabelIdx,
