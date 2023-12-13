@@ -10,7 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::{
-    ast::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node 
+    compiled::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node 
 };
 use shex_validation::ResultValue;
 use shex_validation::Validator;
