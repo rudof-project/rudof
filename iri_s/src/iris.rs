@@ -61,15 +61,24 @@ impl IriS {
 
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
-        let iri = NamedNode::new(extended_str)?;
+        let iri = NamedNode::new(extended_str)
+            .map_err(|e| IriSError::IriParseError { err: e.to_string() })?;
         Ok(IriS { iri })
     }
 
     pub fn resolve(&self, other: IriS) -> Result<Self, IriSError> {
-        let base = Iri::parse(self.iri.as_str())?;
+        let base = Iri::parse(self.iri.as_str())
+            .map_err(|e| IriSError::IriParseError { err: e.to_string() })?;
         let other_str = other.as_str();
-        let resolved = base.resolve(other_str)?;
-        let iri = NamedNode::new(resolved.as_str())?;
+        let resolved = base
+            .resolve(other_str)
+            .map_err(|e| IriSError::IriResolveError {
+                err: e.to_string(),
+                base: self.clone(),
+                other: other.clone(),
+            })?;
+        let iri = NamedNode::new(resolved.as_str())
+            .map_err(|e| IriSError::IriParseError { err: e.to_string() })?;
         Ok(IriS { iri })
     }
 
@@ -97,7 +106,7 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri = NamedNode::new(s)?;
+        let iri = NamedNode::new(s).map_err(|e| IriSError::IriParseError { err: e.to_string() })?;
         Ok(IriS { iri })
     }
 }

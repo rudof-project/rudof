@@ -15,4 +15,5 @@ pub mod triple_expr_idx;
 pub mod shape;
 pub mod preds;
 pub mod schema_json_compiler;
+pub mod node_constraint;
 

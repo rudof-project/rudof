@@ -1,4 +1,3 @@
-use crate::ShapeExprLabel;
 use crate::compiled::annotation::Annotation;
 use crate::compiled::compiled_schema::CompiledSchema;
 use crate::compiled::node_kind::NodeKind;
@@ -8,15 +7,11 @@ use crate::compiled::shape::Shape;
 use crate::compiled::shape_expr::ShapeExpr;
 use crate::compiled::shape_label::ShapeLabel;
 use crate::compiled::value_set::ValueSet;
-use crate::compiled::value_set_value::{ValueSetValue, StringOrWildcard, StringOrLiteralStem};
+use crate::compiled::value_set_value::{StringOrLiteralStem, StringOrWildcard, ValueSetValue};
 use crate::compiled::xs_facet::XsFacet;
-use crate::{
-    ast, ast::Schema as SchemaJson, 
-    CompiledSchemaError, ShapeLabelIdx,
-};
-use crate::{
-    CResult,
-    Cond, Node, Pred};
+use crate::ShapeExprLabel;
+use crate::{ast, ast::Schema as SchemaJson, CompiledSchemaError, ShapeLabelIdx};
+use crate::{CResult, Cond, Node, Pred};
 use iri_s::IriS;
 use log::debug;
 use prefixmap::IriRef;
@@ -27,6 +22,8 @@ use srdf::literal::Literal;
 use srdf::Object;
 
 use lazy_static::lazy_static;
+
+use super::node_constraint::NodeConstraint;
 
 lazy_static! {
     static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
@@ -104,7 +101,7 @@ impl SchemaJsonCompiler {
                 Ok(shape_label)
             }
             ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
-            ShapeExprLabel::Start => Ok(ShapeLabel::Start)
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }
     }
 
@@ -166,7 +163,7 @@ impl SchemaJsonCompiler {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
             }
-            s@ast::ShapeExpr::Shape(shape) => {
+            s @ ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra)?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
@@ -178,14 +175,23 @@ impl SchemaJsonCompiler {
                     }
                 };
                 let preds = Self::get_preds_shape(shape);
-                let shape = Shape::new(Self::cnv_closed(&shape.closed), new_extra, rbe_table, Self::cnv_sem_acts(&shape.sem_acts), Self::cnv_annotations(&shape.annotations), preds);
+                let display = "Shape".to_string();
+                let shape = Shape::new(
+                    Self::cnv_closed(&shape.closed),
+                    new_extra,
+                    rbe_table,
+                    Self::cnv_sem_acts(&shape.sem_acts),
+                    Self::cnv_annotations(&shape.annotations),
+                    preds,
+                    display
+                );
                 Ok(ShapeExpr::Shape(shape))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
-                let node_kind_cnv: Option<NodeKind> = cnv_opt(&nc.node_kind(), cnv_node_kind)?;
-                let datatype_cnv = cnv_opt(&nc.datatype(), cnv_iri_ref)?;
-                let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
-                let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
+                // let node_kind_cnv: Option<NodeKind> = cnv_opt(&nc.node_kind(), cnv_node_kind)?;
+                // let datatype_cnv = cnv_opt(&nc.datatype(), cnv_iri_ref)?;
+                // let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
+                // let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
                 let cond = Self::cnv_node_constraint(
                     &self,
                     &nc.node_kind(),
@@ -193,13 +199,8 @@ impl SchemaJsonCompiler {
                     &nc.xs_facet(),
                     &nc.values(),
                 )?;
-                Ok(ShapeExpr::NodeConstraint {
-                    node_kind: node_kind_cnv,
-                    datatype: datatype_cnv,
-                    xs_facet: xs_facet_cnv,
-                    values: values_cnv,
-                    cond,
-                })
+                let node_constraint = NodeConstraint::new(nc.clone(), cond);
+                Ok(ShapeExpr::NodeConstraint(node_constraint))
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }
@@ -412,26 +413,30 @@ impl SchemaJsonCompiler {
     }*/
 
     fn get_preds_shape(shape: &ast::Shape) -> Vec<IriS> {
-       match shape.triple_expr() {
-         None => Vec::new(),
-         Some(te)  => Self::get_preds_triple_expr(&te)
-       }
+        match shape.triple_expr() {
+            None => Vec::new(),
+            Some(te) => Self::get_preds_triple_expr(&te),
+        }
     }
 
     fn get_preds_triple_expr(te: &ast::TripleExpr) -> Vec<IriS> {
-       match te {
-        ast::TripleExpr::EachOf { expressions, .. } => {
-            expressions.iter().map(|te| Self::get_preds_triple_expr(&te.te)).flatten().collect()
-        },
-        ast::TripleExpr::OneOf { expressions, .. } => {
-            expressions.iter().map(|te| Self::get_preds_triple_expr(&te.te)).flatten().collect()
-        },
-        ast::TripleExpr::TripleConstraint { predicate, .. } => {
-            let pred = iri_ref2iri_s(predicate);
-            vec![pred]
-        },
-        ast::TripleExpr::TripleExprRef(_) => todo!(),
-    }
+        match te {
+            ast::TripleExpr::EachOf { expressions, .. } => expressions
+                .iter()
+                .map(|te| Self::get_preds_triple_expr(&te.te))
+                .flatten()
+                .collect(),
+            ast::TripleExpr::OneOf { expressions, .. } => expressions
+                .iter()
+                .map(|te| Self::get_preds_triple_expr(&te.te))
+                .flatten()
+                .collect(),
+            ast::TripleExpr::TripleConstraint { predicate, .. } => {
+                let pred = iri_ref2iri_s(predicate);
+                vec![pred]
+            }
+            ast::TripleExpr::TripleExprRef(_) => todo!(),
+        }
     }
 }
 
@@ -681,16 +686,16 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     }
 }
 
-fn cnv_lang(lang: &String) -> CResult<Lang> {
+/*fn cnv_lang(lang: &String) -> CResult<Lang> {
     Ok(Lang::new(lang.as_str()))
-}
+}*/
 
-fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<ast::NodeKind>) -> CResult<()> {
+/*fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<ast::NodeKind>) -> CResult<()> {
     match nodekind {
         None => Ok(()),
         Some(nk) => check_node_node_kind(node, &nk),
     }
-}
+}*/
 
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {

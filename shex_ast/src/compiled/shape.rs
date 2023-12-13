@@ -1,10 +1,10 @@
 use iri_s::IriS;
 use rbe::RbeTable;
+use std::fmt::Display;
 
-use crate::{Pred, Node, ShapeLabelIdx};
+use crate::{Node, Pred, ShapeLabelIdx};
 
-use super::{sem_act::SemAct, annotation::Annotation};
-
+use super::{annotation::Annotation, sem_act::SemAct};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {
@@ -13,26 +13,29 @@ pub struct Shape {
     rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
     sem_acts: Vec<SemAct>,
     annotations: Vec<Annotation>,
-    preds: Vec<IriS>
+    preds: Vec<IriS>,
+    display: String,
 }
 
 impl Shape {
-
     pub fn new(
-        closed: bool, 
-        extra: Vec<IriS>, 
-        rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>, 
-        sem_acts: Vec<SemAct>, 
-        annotations: Vec<Annotation>, 
-        preds: Vec<IriS>) -> Self {
-       Shape {
-         closed,
-         extra,
-         rbe_table,
-         sem_acts,
-         annotations,
-         preds
-       }
+        closed: bool,
+        extra: Vec<IriS>,
+        rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
+        sem_acts: Vec<SemAct>,
+        annotations: Vec<Annotation>,
+        preds: Vec<IriS>,
+        display: String,
+    ) -> Self {
+        Shape {
+            closed,
+            extra,
+            rbe_table,
+            sem_acts,
+            annotations,
+            preds,
+            display,
+        }
     }
 
     pub fn preds(&self) -> Vec<IriS> {
@@ -45,5 +48,11 @@ impl Shape {
 
     pub fn is_closed(&self) -> bool {
         self.closed
+    }
+}
+
+impl Display for Shape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Shape: {}", self.display)
     }
 }

@@ -6,6 +6,7 @@ use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
 
+/// Represents a max cardinality which can be a fixed integer or `Unbounded`
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum Max {
     Unbounded,

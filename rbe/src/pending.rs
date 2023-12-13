@@ -2,6 +2,7 @@ use indexmap::{map::Entry, IndexMap, IndexSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
+/// Indicates a map of values `V` that depend on some references `R`
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Pending<V, R>
 where
@@ -46,7 +47,7 @@ where
 
     pub fn contains(&self, v: &V, r: &R) -> bool {
         if let Some(rs) = self.pending_map.get(v) {
-           rs.contains(r) 
+            rs.contains(r)
         } else {
             false
         }

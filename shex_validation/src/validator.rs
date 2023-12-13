@@ -1,8 +1,12 @@
+use crate::atom;
 use crate::result_map::*;
 use crate::solver;
 use crate::validator_error::*;
 use crate::validator_runner::ValidatorRunner;
+use crate::PosAtom;
+use crate::Reason;
 use crate::ResultValue;
+use either::Either;
 use log::debug;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
@@ -17,7 +21,7 @@ use shex_ast::ShapeLabelIdx;
 use srdf::SRDF;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
-type Atom = solver::Atom<(Node, ShapeLabelIdx)>;
+type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 
 pub struct Validator {
     schema: CompiledSchema,
@@ -99,16 +103,23 @@ impl Validator {
             self.runner.add_processing(&atom);
             let passed = self.check_node_atom(&atom, rdf)?;
             self.runner.remove_processing(&atom);
-            if passed {
-                self.runner.add_checked(&atom);
-            } else {
-                self.runner.add_checked(&atom.negated());
+            match passed {
+                Either::Right(reasons) => {
+                    self.runner.add_checked_pos(atom, reasons);
+                }
+                Either::Left(errors) => {
+                    self.runner.add_checked_neg(atom.negated(), errors);
+                }
             }
         }
         Ok(())
     }
 
-    pub fn check_node_atom<S>(&mut self, atom: &Atom, rdf: &S) -> Result<bool>
+    pub fn check_node_atom<S>(
+        &mut self,
+        atom: &Atom,
+        rdf: &S,
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
         S: SRDF,
     {
@@ -117,6 +128,7 @@ impl Validator {
         match atom {
             Atom::Pos { .. } => self.runner.check_node_shape_expr(node, se, rdf),
             Atom::Neg { .. } => {
+                // Check if a node doesn't conform to a shape expr
                 todo!()
             }
         }
@@ -124,7 +136,8 @@ impl Validator {
 
     pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {
         if let Some(idx) = self.schema.find_shape_label_idx(shape) {
-            let atom = Atom::pos((node.clone(), idx.clone()));
+            let pos_atom = PosAtom::new((node.clone(), idx.clone()));
+            let atom = Atom::pos(&pos_atom);
             Ok(self.runner.get_result(&atom))
         } else {
             Err(ValidatorError::NotFoundShapeLabel {
@@ -161,8 +174,14 @@ impl Validator {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
             match atom {
-                Atom::Pos { .. } => result.add_ok((*node).clone(), label.clone()),
-                Atom::Neg { .. } => result.add_fail((*node).clone(), label.clone(), None),
+                Atom::Pos(pa) => {
+                    let reasons = self.runner.find_reasons(pa);
+                    result.add_ok((*node).clone(), label.clone(), reasons)
+                }
+                Atom::Neg(na) => {
+                    let errors = self.runner.find_errors(na);
+                    result.add_fail((*node).clone(), label.clone(), errors)
+                }
             }
         }
         for atom in &self.runner.pending() {

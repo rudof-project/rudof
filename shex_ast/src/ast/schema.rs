@@ -116,12 +116,12 @@ impl Schema {
             let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
                 SchemaJsonError::ReadingPathError {
                     path_name: path_buf.display().to_string(),
-                    error: e,
+                    error: e.to_string(),
                 }
             })?;
             serde_json::from_str::<Schema>(&schema_str).map_err(|e| SchemaJsonError::JsonError {
                 path_name: path_buf.display().to_string(),
-                error: e,
+                error: e.to_string(),
             })?
         };
         debug!("SchemaJson parsed: {:?}", schema);

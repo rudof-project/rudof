@@ -6,6 +6,8 @@ use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::hash::Hasher;
 
+/// A `MatchCond` represents a matching condition
+/// It can be a single condition or a combination of the logical operators `And`, `Or` and `Not`
 #[derive(PartialEq, Eq, Hash, Clone, Serialize, Debug, Deserialize)]
 pub enum MatchCond<K, V, R>
 where

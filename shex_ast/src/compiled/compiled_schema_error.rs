@@ -9,7 +9,7 @@ use crate::{ast, Node};
 
 use super::shape_label::ShapeLabel;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum CompiledSchemaError {
     #[error("Parsing {str:?} as IRI")]
     Str2IriError { str: String },
@@ -74,7 +74,11 @@ pub enum CompiledSchemaError {
     IriRef2ShapeLabelError { prefix: String, local: String },
 
     #[error("Can't find prefixed name {prefix}:{local} in prefixmap: {err}")]
-    PrefixedNotFound { prefix: String, local: String, err: PrefixMapError },
+    PrefixedNotFound {
+        prefix: String,
+        local: String,
+        err: PrefixMapError,
+    },
 
     #[error("Label not found: {shape_label}")]
     LabelNotFound { shape_label: ShapeLabel },

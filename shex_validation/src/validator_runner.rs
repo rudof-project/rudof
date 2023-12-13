@@ -1,23 +1,30 @@
+use crate::atom;
 use crate::result_map::*;
+use crate::rule;
 use crate::solver;
 use crate::validator_error::*;
+use crate::Reason;
 use crate::ResultValue;
+use crate::Validator;
 use crate::MAX_STEPS;
+use either::Either;
 use indexmap::IndexSet;
 use iri_s::IriS;
 use log::debug;
 use rbe::MatchTableIter;
 use rbe::Pending;
-use shex_ast::ShapeLabelIdx;
+use shex_ast::compiled::preds::Preds;
+use shex_ast::compiled::shape::Shape;
+use shex_ast::compiled::shape_expr::ShapeExpr;
+use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::compiled::*;
 use shex_ast::Node;
 use shex_ast::Pred;
-use shex_ast::compiled::shape::Shape;
-use shex_ast::compiled::shape_label::ShapeLabel;
-use shex_ast::compiled::shape_expr::ShapeExpr;
+use shex_ast::ShapeLabelIdx;
 use srdf::literal::Literal;
 use srdf::NeighsIterator;
 use srdf::{Object, SRDFComparisons, SRDF};
+use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::{
@@ -26,18 +33,23 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, ValidatorError>;
-type Atom = solver::Atom<(Node, ShapeLabelIdx)>;
+type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
+type NegAtom = atom::NegAtom<(Node, ShapeLabelIdx)>;
+type PosAtom = atom::PosAtom<(Node, ShapeLabelIdx)>;
+type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug)]
 pub struct ValidatorRunner {
     checked: IndexSet<Atom>,
     processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
-    rules: IndexSet<solver::Rule<Atom>>,
+    rules: Vec<Rule>,
     alternative_match_iterators: Vec<MatchTableIter<Pred, Node, ShapeLabelIdx>>,
     // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
     step_counter: usize,
+    reasons: HashMap<PosAtom, Vec<Reason>>,
+    errors: HashMap<NegAtom, Vec<ValidatorError>>,
 }
 
 impl ValidatorRunner {
@@ -46,11 +58,12 @@ impl ValidatorRunner {
             checked: IndexSet::new(),
             processing: IndexSet::new(),
             pending: IndexSet::new(),
-            rules: IndexSet::new(),
+            rules: Vec::new(),
             alternative_match_iterators: Vec::new(),
-            // alternatives: Vec::new(),
             max_steps: MAX_STEPS,
             step_counter: 0,
+            reasons: HashMap::new(),
+            errors: HashMap::new(),
         }
     }
 
@@ -62,12 +75,52 @@ impl ValidatorRunner {
         self.processing.remove(atom);
     }
 
-    pub(crate) fn add_checked(&mut self, atom: &Atom) {
-        self.checked.insert((*atom).clone());
+    pub(crate) fn add_checked_pos(&mut self, atom: Atom, reasons: Vec<Reason>) {
+        let new_atom = atom.clone();
+        match atom {
+            Atom::Pos(pa) => {
+                self.checked.insert(new_atom);
+                self.add_reasons(pa, reasons)
+            }
+            Atom::Neg(na) => {
+                todo!()
+            }
+        }
+    }
+
+    pub(crate) fn add_checked_neg(&mut self, atom: Atom, errors: Vec<ValidatorError>) {
+        let new_atom = atom.clone();
+        match atom {
+            Atom::Neg(na) => {
+                self.checked.insert(new_atom);
+                self.add_errors(na, errors)
+            }
+            Atom::Pos(na) => {
+                todo!()
+            }
+        }
     }
 
     pub(crate) fn checked(&self) -> IndexSet<Atom> {
         self.checked.clone()
+    }
+
+    fn add_reasons(&mut self, pa: PosAtom, rs: Vec<Reason>) {
+        match self.reasons.entry(pa) {
+            Entry::Occupied(mut vs) => vs.get_mut().extend(rs),
+            Entry::Vacant(vac) => {
+                vac.insert(rs);
+            }
+        }
+    }
+
+    fn add_errors(&mut self, na: NegAtom, es: Vec<ValidatorError>) {
+        match self.errors.entry(na) {
+            Entry::Occupied(mut vs) => vs.get_mut().extend(es),
+            Entry::Vacant(vac) => {
+                vac.insert(es);
+            }
+        }
     }
 
     pub(crate) fn pending(&self) -> IndexSet<Atom> {
@@ -101,13 +154,20 @@ impl ValidatorRunner {
     }
 
     pub fn add_ok(&mut self, n: Node, s: ShapeLabelIdx) {
-        self.checked.insert(Atom::pos((n, s)));
+        let pa = PosAtom::new((n, s));
+        self.checked.insert(Atom::pos(&pa));
     }
 
-    pub fn add_failed(&mut self, n: Node, s: ShapeLabelIdx, reason: ValidatorError ) {
-        self.checked.insert(Atom::neg((n, s)));
+    pub fn add_failed(&mut self, n: Node, s: ShapeLabelIdx, err: ValidatorError) {
+        let atom = NegAtom::new((n, s));
+        self.checked.insert(Atom::neg(&atom));
+        match self.errors.entry(atom) {
+            Entry::Occupied(mut es) => es.get_mut().push(err),
+            Entry::Vacant(vacant) => {
+                vacant.insert(vec![err]);
+            }
+        }
     }
-
 
     pub fn more_pending(&self) -> bool {
         !self.pending.is_empty()
@@ -115,7 +175,8 @@ impl ValidatorRunner {
 
     pub fn add_pending(&mut self, n: Node, s: ShapeLabelIdx) {
         // self.result_map.add_pending(n, s);
-        self.pending.insert(Atom::pos((n, s)));
+        let pos_atom = PosAtom::new((n, s));
+        self.pending.insert(Atom::pos(&pos_atom));
     }
 
     pub fn pop_pending(&mut self) -> Option<Atom> {
@@ -135,12 +196,26 @@ impl ValidatorRunner {
         self.steps() < self.max_steps()
     }
 
+    pub(crate) fn find_errors(&self, na: &NegAtom) -> Vec<ValidatorError> {
+        match self.errors.get(na) {
+            Some(vs) => vs.to_vec(),
+            None => Vec::new(),
+        }
+    }
+
+    pub(crate) fn find_reasons(&self, pa: &PosAtom) -> Vec<Reason> {
+        match self.reasons.get(pa) {
+            Some(vs) => vs.to_vec(),
+            None => Vec::new(),
+        }
+    }
+
     pub(crate) fn check_node_shape_expr<S>(
         &mut self,
         node: &Node,
         se: &ShapeExpr,
         rdf: &S,
-    ) -> Result<bool>
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
         S: SRDF,
     {
@@ -149,15 +224,16 @@ impl ValidatorRunner {
             self.step_counter
         );
         match se {
-            ShapeExpr::NodeConstraint {
-                node_kind,
-                datatype,
-                xs_facet,
-                values,
-                cond,
-            } => match cond.matches(node) {
-                Ok(_) => Ok(true),
-                Err(_) => Ok(false),
+            ShapeExpr::NodeConstraint(nc) => match nc.cond().matches(node) {
+                Ok(_pending) => {
+                    // TODO: Add pending to pending nodes
+                    // I think this is not needed because node constraints will not generate pending nodes
+                    Ok(Either::Right(vec![Reason::NodeConstraintPassed {
+                        node: node.clone(),
+                        nc: nc.clone(),
+                    }]))
+                }
+                Err(err) => Ok(Either::Left(vec![ValidatorError::RbeError(err)])),
             },
             ShapeExpr::Ref { idx } => {
                 todo!()
@@ -165,47 +241,73 @@ impl ValidatorRunner {
             ShapeExpr::ShapeAnd { exprs } => {
                 for e in exprs {
                     let result = self.check_node_shape_expr(node, e, rdf)?;
-                    if !result {
-                        return Ok(false);
+                    if let Some(errors) = result.left() {
+                        return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
+                            shape_expr: e.clone(),
+                            node: node.clone(),
+                            errors: ValidatorErrors::new(errors),
+                        }]));
                     }
                 }
-                Ok(true)
+                Ok(Either::Right(vec![Reason::ShapeAndPassed {
+                    node: node.clone(),
+                    se: se.clone(),
+                }]))
             }
             ShapeExpr::ShapeNot { expr } => {
                 let result = self.check_node_shape_expr(node, expr, rdf)?;
-                if !result {
-                    Ok(true)
-                } else {
-                    Ok(false)
+                match result {
+                    Either::Left(errors) => {
+                        todo!()
+                    }
+                    Either::Right(errors) => {
+                        todo!()
+                    }
                 }
             }
             ShapeExpr::ShapeOr { exprs } => {
-                for e in exprs {
+                todo!()
+                /*for e in exprs {
                     let result = self.check_node_shape_expr(node, e, rdf)?;
                     if result {
                         return Ok(true);
                     }
                 }
-                Ok(false)
+                Ok(false)*/
             }
             ShapeExpr::Shape(shape) => self.check_node_shape(node, shape, rdf),
-            ShapeExpr::Empty => Ok(true),
-            ShapeExpr::External {} => Ok(true),
+            ShapeExpr::Empty => Ok(Either::Right(Vec::new())),
+            ShapeExpr::External {} => Ok(Either::Right(Vec::new())),
         }
     }
 
-    fn check_node_shape<S>(&mut self, 
+    fn check_node_shape<S>(
+        &mut self,
         node: &Node,
         shape: &Shape,
-        rdf: &S) -> Result<bool> 
-        where S: SRDF {
+        rdf: &S,
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
+    where
+        S: SRDF,
+    {
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
-            /*self.add_failed(node, ValidatorError::ClosedShapeWithRemainderPreds { 
-                remainder: remainder.clone(), 
-                declared: shape.preds() }
+            let errs = vec![ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(remainder),
+                declared: Preds::new(
+                    shape
+                        .preds()
+                        .iter()
+                        .map(|iri| {
+                            let new_iri = iri.clone();
+                            Pred::from(new_iri)
+                        })
+                        .collect(),
+                ),
+            }];
+            /*self.add_failed(node,
             );*/
-            return Ok(false)
+            return Ok(Either::Left(errs));
         };
         debug!("Neighs of {node}: {values:?}");
         let mut result_iter = shape.rbe_table().matches(values)?;
@@ -222,7 +324,8 @@ impl ValidatorRunner {
                     debug!("Found result, iteration {iter_count}");
                     for (p, v) in pending_values.iter() {
                         debug!("Step {counter}: Value in pending: {p}/{v}");
-                        let atom = Atom::pos(((*p).clone(), *v));
+                        let pos_atom = PosAtom::new(((*p).clone(), *v));
+                        let atom = Atom::pos(&pos_atom);
                         if self.is_processing(&atom) {
                             let pred = p.clone();
                             debug!(
@@ -246,9 +349,20 @@ impl ValidatorRunner {
             }
         }
         if !found {
-            println!("No value found for node/shape where node = {node}, err: {current_err:?}")
+            let errs = match current_err {
+                Some(rbe_err) => vec![ValidatorError::RbeError(rbe_err)],
+                None => {
+                    debug!("No value found for node/shape where node ={node}, shape = {shape:?}. Current_err = empty");
+                    Vec::new()
+                }
+            };
+            Ok(Either::Left(errs))
+        } else {
+            Ok(Either::Right(vec![Reason::ShapePassed {
+                node: node.clone(),
+                shape: shape.clone(),
+            }]))
         }
-        Ok(found)
     }
 
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
@@ -267,7 +381,12 @@ impl ValidatorRunner {
         Node::from(object)
     }
 
-    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<(Vec<(Pred, Node)>, Vec<Pred>)>
+    fn neighs<S>(
+        &self,
+        node: &Node,
+        preds: Vec<IriS>,
+        rdf: &S,
+    ) -> Result<(Vec<(Pred, Node)>, Vec<Pred>)>
     where
         S: SRDF,
     {

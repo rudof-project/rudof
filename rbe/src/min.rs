@@ -7,6 +7,7 @@ use serde::Serializer;
 use serde::de;
 use serde::de::Visitor;
 
+/// Represents a min cardinality which must be a 0 or positive integer.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Debug, Clone, Copy)]
 pub struct Min{ 
     pub value: usize 

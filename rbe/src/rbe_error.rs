@@ -10,6 +10,7 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use thiserror::Error;
 
+/// Represents a regular bag expression error.
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RbeError<K, V, R>
 where

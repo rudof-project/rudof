@@ -6,5 +6,5 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 start = @<human>
 
 <human> {
-  wdt:P31  [ wd:Q50 ];
+  wdt:P31  [ wd:Q5 ];
 }

@@ -1,11 +1,15 @@
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use shex_ast::{CompiledSchemaError, Node, Pred, compiled::shape_label::ShapeLabel, ShapeLabelIdx, ShapeExprLabel};
 use shex_ast::compiled::preds::Preds;
+use shex_ast::compiled::shape_expr::ShapeExpr;
+use shex_ast::{
+    compiled::shape_label::ShapeLabel, CompiledSchemaError, Node, Pred, ShapeExprLabel,
+    ShapeLabelIdx,
+};
 use srdf::Object;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
     #[error("SRDF Error: {error}")]
     SRDFError { error: String },
@@ -34,7 +38,24 @@ pub enum ValidatorError {
     #[error("ShapeLabel not found {shape_label:?}: {err}")]
     ShapeLabelNotFoundError {
         shape_label: ShapeExprLabel,
-        err: CompiledSchemaError
+        err: CompiledSchemaError,
     },
 
+    #[error("And error: shape expression {shape_expr:?} failed for node {node}: {errors:?}")]
+    ShapeAndError {
+        shape_expr: ShapeExpr,
+        node: Node,
+        errors: ValidatorErrors,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatorErrors {
+    errs: Vec<ValidatorError>,
+}
+
+impl ValidatorErrors {
+    pub fn new(errs: Vec<ValidatorError>) -> ValidatorErrors {
+        ValidatorErrors { errs }
+    }
 }
