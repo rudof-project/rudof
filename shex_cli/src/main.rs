@@ -21,7 +21,7 @@ use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
 use prefixmap::IriRef;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
-use shex_ast::{object_value::ObjectValue, Node, ShapeExprLabel};
+use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node, ShapeExprLabel};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
@@ -124,6 +124,10 @@ fn run_schema(
             println!("{str}");
             Ok(())
         }
+        ShExFormat::Turtle => {
+            println!("Not implemented conversion to Turtle yet");
+            todo!()
+        }
     }
 }
 
@@ -199,7 +203,7 @@ fn get_data(
             bail!("None of `data` or `endpoint` parameters have been specified for validation")
         }
         (Some(data), None) => {
-            let data = parse_data(data, data_format, debug)?;
+            let data = parse_data(data, data_format)?;
             Ok(Data::RDFData(data))
         }
         (None, Some(endpoint)) => {
@@ -280,13 +284,13 @@ where
                 let map = if predicates.is_empty() {
                     match rdf.outgoing_arcs(&subject) {
                         Result::Ok(rs) => rs,
-                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}")
+                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
                 } else {
                     let preds = cnv_predicates(predicates, rdf)?;
                     match rdf.outgoing_arcs_from_list(&subject, preds) {
-                      Result::Ok((rs, _)) => rs,
-                      Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}")
+                        Result::Ok((rs, _)) => rs,
+                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
                 };
                 println!("{}", rdf.qualify_subject(&subject));
@@ -310,7 +314,7 @@ where
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
                 println!("Incoming arcs");
-                let object = rdf.subject_as_term(&subject);
+                let object = S::subject_as_term(&subject);
                 let map = match rdf.incoming_arcs(&object) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
@@ -391,7 +395,7 @@ where
                 }
             };
             let term = S::iri_as_term(iri);
-            match rdf.term_as_subject(&term) {
+            match S::term_as_subject(&term) {
                 None => bail!("node_to_subject: Can't convert term {term} to subject"),
                 Some(subject) => Ok(subject),
             }
@@ -401,7 +405,7 @@ where
 }
 
 fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
-    let data = parse_data(data, data_format, debug)?;
+    let data = parse_data(data, data_format)?;
     println!("Data\n{data:?}\n");
     Ok(())
 }
@@ -433,10 +437,15 @@ fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<Sch
             // Ok((&schema_json, &schema))
             Ok(schema_json)
         }
+        ShExFormat::Turtle => {
+            let rdf = parse_data(schema_path, &DataFormat::Turtle)?;
+            let schema = ShExRParser::new(rdf).parse()?;
+            Ok(schema)
+        }
     }
 }
 
-fn parse_data(data: &PathBuf, data_format: &DataFormat, _debug: u8) -> Result<SRDFGraph> {
+fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
     match data_format {
         DataFormat::Turtle => {
             let graph = SRDFGraph::from_path(data, None)?;

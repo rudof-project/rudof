@@ -196,6 +196,7 @@ pub enum ShExFormat {
     Internal,
     ShExC,
     ShExJ,
+    Turtle,
 }
 
 impl Display for ShExFormat {
@@ -204,6 +205,7 @@ impl Display for ShExFormat {
             ShExFormat::Internal => write!(dest, "internal"),
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
+            ShExFormat::Turtle => write!(dest, "turtle"),
         }
     }
 }

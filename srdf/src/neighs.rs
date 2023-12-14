@@ -41,7 +41,7 @@ where
     S: SRDF,
 {
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
-        match rdf.term_as_subject(&term) {
+        match S::term_as_subject(&term) {
             None => {
                 todo!()
             }

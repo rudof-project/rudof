@@ -8,6 +8,8 @@ trait RDF {
     fn parse(format: RDFFormat) -> Self;
 }
 
+
+
 pub enum RDFFormat {
     Turtle,
     NTriples,

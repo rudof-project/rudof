@@ -83,7 +83,6 @@ impl<'a> ShExParser<'a> {
         let schema = ShExParser::parse(&data, base)?;
         Ok(schema)
     }
-
 }
 
 struct StatementIterator<'a> {

@@ -6,7 +6,7 @@ use oxiri::Iri;
 use srdf::async_srdf::AsyncSRDF;
 use srdf::{SRDFComparisons, SRDF};
 use std::collections::hash_map::Entry;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -52,7 +52,11 @@ impl SRDFGraph {
             graph.insert(triple_ref);
             Ok(()) as Result<(), TurtleError>
         })?;
-        let prefixes: HashMap<&str, &str> = turtle_parser.prefixes().iter().map(|(key, value)| (key.as_str(), value.as_str())).collect();
+        let prefixes: HashMap<&str, &str> = turtle_parser
+            .prefixes()
+            .iter()
+            .map(|(key, value)| (key.as_str(), value.as_str()))
+            .collect();
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph { graph: graph, pm })
     }
@@ -61,7 +65,6 @@ impl SRDFGraph {
         let r = self.pm.resolve(str)?;
         Ok(Self::cnv_iri(r))
     }
-
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
         let str: String = format!("{}", bn);
@@ -156,78 +159,80 @@ impl SRDFComparisons for SRDFGraph {
     type Subject = OxSubject;
     type Term = OxTerm;
     type Err = SRDFGraphError;
-    fn subject2iri(&self, subject: &OxSubject) -> Option<OxNamedNode> {
+
+    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
         match subject {
             OxSubject::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn subject2bnode(&self, subject: &OxSubject) -> Option<OxBlankNode> {
+    fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
         match subject {
             OxSubject::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn subject_is_iri(&self, subject: &OxSubject) -> bool {
+    fn subject_is_iri(subject: &OxSubject) -> bool {
         match subject {
             OxSubject::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn subject_is_bnode(&self, subject: &OxSubject) -> bool {
+    fn subject_is_bnode(subject: &OxSubject) -> bool {
         match subject {
             OxSubject::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object2iri(&self, object: &OxTerm) -> Option<OxNamedNode> {
+    fn object_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
         match object {
             OxTerm::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn object2bnode(&self, object: &OxTerm) -> Option<OxBlankNode> {
+    fn object_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
         match object {
             OxTerm::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn object2literal(&self, object: &OxTerm) -> Option<OxLiteral> {
+
+    fn object_as_literal(object: &OxTerm) -> Option<OxLiteral> {
         match object {
             OxTerm::Literal(l) => Some(l.clone()),
             _ => None,
         }
     }
-    fn object_is_iri(&self, object: &OxTerm) -> bool {
+
+    fn object_is_iri(object: &OxTerm) -> bool {
         match object {
             OxTerm::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn object_is_bnode(&self, object: &OxTerm) -> bool {
+    fn object_is_bnode(object: &OxTerm) -> bool {
         match object {
             OxTerm::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_literal(&self, object: &OxTerm) -> bool {
+    fn object_is_literal(object: &OxTerm) -> bool {
         match object {
             OxTerm::Literal(_) => true,
             _ => false,
         }
     }
 
-    fn subject_as_term(&self, subject: &Self::Subject) -> Self::Term {
+    fn subject_as_term(subject: &Self::Subject) -> Self::Term {
         match subject {
             OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
             OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
         }
     }
 
-
-    fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject> {
+    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
         match object {
             OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
             OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
@@ -297,7 +302,6 @@ impl SRDFComparisons for SRDFGraph {
         self.pm.qualify(&iri)
     }
 
-
     fn qualify_subject(&self, subj: &OxSubject) -> String {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
@@ -305,7 +309,6 @@ impl SRDFComparisons for SRDFGraph {
         }
     }
 
-    
     fn qualify_term(&self, term: &OxTerm) -> String {
         match term {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
@@ -313,8 +316,6 @@ impl SRDFComparisons for SRDFGraph {
             OxTerm::NamedNode(n) => self.qualify_iri(n),
         }
     }
-
-
 }
 
 impl SRDF for SRDFGraph {
@@ -343,16 +344,24 @@ impl SRDF for SRDFGraph {
         Ok(result)
     }
 
-    fn get_subjects_for_object_predicate(
+    fn subjects_with_predicate_object(
         &self,
-        _object: &Self::Term,
-        _pred: &Self::IRI,
+        pred: &Self::IRI,
+        object: &Self::Term,
     ) -> Result<HashSet<Self::Subject>, Self::Err> {
-        todo!()
+        let mut result = HashSet::new();
+        for subj in self
+            .graph
+            .subjects_for_predicate_object(pred.as_ref(), object.as_ref())
+        {
+            result.insert(subj.into_owned());
+        }
+        Ok(result)
     }
 
-    fn outgoing_arcs(&self, 
-        subject: &Self::Subject
+    fn outgoing_arcs(
+        &self,
+        subject: &Self::Subject,
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
         for triple in self.graph.triples_for_subject(subject) {
@@ -370,8 +379,9 @@ impl SRDF for SRDFGraph {
         Ok(results)
     }
 
-    fn incoming_arcs(&self, 
-        object: &Self::Term
+    fn incoming_arcs(
+        &self,
+        object: &Self::Term,
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Subject>> = HashMap::new();
         for triple in self.graph.triples_for_object(object) {
@@ -389,9 +399,11 @@ impl SRDF for SRDFGraph {
         Ok(results)
     }
 
-    fn outgoing_arcs_from_list(&self, 
-        subject: &Self::Subject, 
-        preds: Vec<Self::IRI>) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
+    fn outgoing_arcs_from_list(
+        &self,
+        subject: &Self::Subject,
+        preds: Vec<Self::IRI>,
+    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
         let mut remainder = Vec::new();
         for triple in self.graph.triples_for_subject(subject) {
@@ -412,8 +424,6 @@ impl SRDF for SRDFGraph {
         }
         Ok((results, remainder))
     }
-
- 
 }
 
 #[async_trait]

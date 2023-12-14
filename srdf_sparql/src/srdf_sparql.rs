@@ -88,74 +88,76 @@ impl SRDFComparisons for SRDFSparql {
     type Term = Term;
     type Err = SRDFSparqlError;
 
-    fn subject2iri(&self, subject: &Subject) -> Option<NamedNode> {
+    fn subject_as_iri(subject: &Subject) -> Option<NamedNode> {
         match subject {
             Subject::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn subject2bnode(&self, subject: &Subject) -> Option<BlankNode> {
+    fn subject_as_bnode(subject: &Subject) -> Option<BlankNode> {
         match subject {
             Subject::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn subject_is_iri(&self, subject: &Subject) -> bool {
+    fn subject_is_iri(subject: &Subject) -> bool {
         match subject {
             Subject::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn subject_is_bnode(&self, subject: &Subject) -> bool {
+    fn subject_is_bnode(subject: &Subject) -> bool {
         match subject {
             Subject::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object2iri(&self, object: &Term) -> Option<NamedNode> {
+    fn object_as_iri(object: &Term) -> Option<NamedNode> {
         match object {
             Term::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn object2bnode(&self, object: &Term) -> Option<BlankNode> {
+    fn object_as_bnode(object: &Term) -> Option<BlankNode> {
         match object {
             Term::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn object2literal(&self, object: &Term) -> Option<Literal> {
+    fn object_as_literal(object: &Term) -> Option<Literal> {
         match object {
             Term::Literal(l) => Some(l.clone()),
             _ => None,
         }
     }
-    fn object_is_iri(&self, object: &Term) -> bool {
+
+    fn object_is_iri(object: &Term) -> bool {
         match object {
             Term::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn object_is_bnode(&self, object: &Term) -> bool {
+
+    fn object_is_bnode(object: &Term) -> bool {
         match object {
             Term::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_literal(&self, object: &Term) -> bool {
+    fn object_is_literal(object: &Term) -> bool {
         match object {
             Term::Literal(_) => true,
             _ => false,
         }
     }
 
-    fn term_as_subject(&self, object: &Self::Term) -> Option<Subject> {
+    fn term_as_subject(object: &Self::Term) -> Option<Subject> {
         term_as_subject(object)
     }
 
-    fn subject_as_term(&self, subject: &Self::Subject) -> Term {
+    fn subject_as_term(subject: &Self::Subject) -> Term {
         subject_as_term(subject)
     }
 
@@ -306,10 +308,10 @@ impl SRDF for SRDFSparql {
         Ok(results)
     }
 
-    fn get_subjects_for_object_predicate(
+    fn subjects_with_predicate_object(
         &self,
-        object: &Term,
         pred: &NamedNode,
+        object: &Term,
     ) -> Result<HashSet<Subject>> {
         let query = format!(r#"select ?subj where {{ ?subj {} {} . }}"#, pred, object);
         let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
@@ -347,7 +349,10 @@ impl SRDF for SRDFSparql {
         &self,
         subject: &Self::Subject,
         preds: Vec<Self::IRI>,
-    ) -> std::prelude::v1::Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
+    ) -> std::prelude::v1::Result<
+        (HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>),
+        Self::Err,
+    > {
         outgoing_neighs_from_list(&subject, preds, &self.client, &self.endpoint_iri)
     }
 }
@@ -473,7 +478,7 @@ fn outgoing_neighs_from_list(
         if !preds.contains(key) {
             remainder.push(key.clone());
             remove_keys.push(key.clone());
-        } 
+        }
     }
     for key in remove_keys {
         all_results.remove(&key);

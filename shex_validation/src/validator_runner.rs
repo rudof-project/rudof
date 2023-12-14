@@ -390,7 +390,7 @@ impl ValidatorRunner {
     {
         let node = self.get_rdf_node(&node, rdf);
         let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
-        if let Some(subject) = rdf.term_as_subject(&node) {
+        if let Some(subject) = S::term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, list)
                 .map_err(|e| self.cnv_err::<S>(e))?;

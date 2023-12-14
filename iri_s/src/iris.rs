@@ -66,6 +66,11 @@ impl IriS {
         &self.iri
     }
 
+    pub fn add_unchecked(iri: IriS, str: &str) -> IriS {
+        let new_str = format!("{}{}", iri.as_str(), str);
+        IriS::new_unchecked(new_str.as_str())
+    }
+
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
         let iri = NamedNode::new(extended_str)

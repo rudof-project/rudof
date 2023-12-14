@@ -9,25 +9,27 @@ use crate::Object;
 pub trait SRDFComparisons {
     type Subject: Debug + Display;
     type IRI: Debug + Display + Hash + Eq + Clone;
-    type BNode: Debug + Display;
-    type Literal: Debug + Display;
-    type Term: Debug + Display;
+    type BNode: Debug + Display + PartialEq;
+    type Literal: Debug + Display + PartialEq;
+    type Term: Debug + Display + PartialEq;
     type Err: Display;
 
-    fn subject2iri(&self, subject: &Self::Subject) -> Option<Self::IRI>;
-    fn subject2bnode(&self, subject: &Self::Subject) -> Option<Self::BNode>;
-    fn subject_is_iri(&self, subject: &Self::Subject) -> bool;
-    fn subject_is_bnode(&self, subject: &Self::Subject) -> bool;
+    fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
+    fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>;
+    fn subject_is_iri(subject: &Self::Subject) -> bool;
+    fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
-    fn object2iri(&self, object: &Self::Term) -> Option<Self::IRI>;
-    fn object2bnode(&self, object: &Self::Term) -> Option<Self::BNode>;
-    fn object2literal(&self, object: &Self::Term) -> Option<Self::Literal>;
-    fn object_is_iri(&self, object: &Self::Term) -> bool;
-    fn object_is_bnode(&self, object: &Self::Term) -> bool;
-    fn object_is_literal(&self, object: &Self::Term) -> bool;
+    fn object_as_iri(object: &Self::Term) -> Option<Self::IRI>;
+    fn object_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
+    fn object_as_literal(object: &Self::Term) -> Option<Self::Literal>;
 
-    fn term_as_subject(&self, object: &Self::Term) -> Option<Self::Subject>;
-    fn subject_as_term(&self, subject: &Self::Subject) -> Self::Term;
+    fn object_is_iri(object: &Self::Term) -> bool;
+    fn object_is_bnode(object: &Self::Term) -> bool;
+    fn object_is_literal(object: &Self::Term) -> bool;
+
+    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
+
+    fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
     fn lexical_form(&self, literal: &Self::Literal) -> String;
     fn lang(&self, literal: &Self::Literal) -> Option<String>;
