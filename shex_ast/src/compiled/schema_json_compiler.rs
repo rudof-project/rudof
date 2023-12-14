@@ -17,7 +17,6 @@ use log::debug;
 use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::Object;
 
@@ -67,7 +66,7 @@ impl SchemaJsonCompiler {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
-                    let label = self.id_to_shape_label(&sd.id)?;
+                    let label = self.shape_expr_label_to_shape_label(&sd.id)?;
                     compiled_schema.add_shape(label, ShapeExpr::Empty);
                     self.shape_decls_counter += 1;
                 }
@@ -94,7 +93,7 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn id_to_shape_label<'a>(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
+    fn shape_expr_label_to_shape_label<'a>(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
         match id {
             ShapeExprLabel::IriRef { value } => {
                 let shape_label = iri_ref_2_shape_label(value)?;
@@ -110,7 +109,7 @@ impl SchemaJsonCompiler {
         id: &ShapeExprLabel,
         compiled_schema: &mut CompiledSchema,
     ) -> CResult<ShapeLabelIdx> {
-        let label = self.id_to_shape_label(id)?;
+        let label = self.shape_expr_label_to_shape_label(id)?;
         compiled_schema.get_shape_label_idx(&label)
     }
 
@@ -149,7 +148,15 @@ impl SchemaJsonCompiler {
                     let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                     cnv.push(se);
                 }
-                Ok(ShapeExpr::ShapeOr { exprs: cnv })
+                let display = match compiled_schema.find_shape_idx(idx) {
+                    None => "internal OR".to_string(),
+                    Some((label, _)) => compiled_schema.show_label(label),
+                };
+
+                Ok(ShapeExpr::ShapeOr {
+                    exprs: cnv,
+                    display,
+                })
             }
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
@@ -157,13 +164,27 @@ impl SchemaJsonCompiler {
                     let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                     cnv.push(se);
                 }
-                Ok(ShapeExpr::ShapeAnd { exprs: cnv })
+                let display = match compiled_schema.find_shape_idx(idx) {
+                    None => "internal AND".to_string(),
+                    Some((label, _)) => compiled_schema.show_label(label),
+                };
+                Ok(ShapeExpr::ShapeAnd {
+                    exprs: cnv,
+                    display,
+                })
             }
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                Ok(ShapeExpr::ShapeNot { expr: Box::new(se) })
+                let display = match compiled_schema.find_shape_idx(idx) {
+                    None => "internal NOT".to_string(),
+                    Some((label, _)) => compiled_schema.show_label(label),
+                };
+                Ok(ShapeExpr::ShapeNot {
+                    expr: Box::new(se),
+                    display,
+                })
             }
-            s @ ast::ShapeExpr::Shape(shape) => {
+            ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra)?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
@@ -175,7 +196,12 @@ impl SchemaJsonCompiler {
                     }
                 };
                 let preds = Self::get_preds_shape(shape);
-                let display = "Shape".to_string();
+
+                let display = match compiled_schema.find_shape_idx(idx) {
+                    None => "internal".to_string(),
+                    Some((label, _)) => compiled_schema.show_label(label),
+                };
+
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
                     new_extra,
@@ -183,7 +209,7 @@ impl SchemaJsonCompiler {
                     Self::cnv_sem_acts(&shape.sem_acts),
                     Self::cnv_annotations(&shape.annotations),
                     preds,
-                    display
+                    display,
                 );
                 Ok(ShapeExpr::Shape(shape))
             }
@@ -199,7 +225,11 @@ impl SchemaJsonCompiler {
                     &nc.xs_facet(),
                     &nc.values(),
                 )?;
-                let node_constraint = NodeConstraint::new(nc.clone(), cond);
+                let display = match compiled_schema.find_shape_idx(idx) {
+                    None => "internal NodeConstraint".to_string(),
+                    Some((label, _)) => compiled_schema.show_label(label),
+                };
+                let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),

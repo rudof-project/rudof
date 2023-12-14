@@ -238,7 +238,7 @@ impl ValidatorRunner {
             ShapeExpr::Ref { idx } => {
                 todo!()
             }
-            ShapeExpr::ShapeAnd { exprs } => {
+            ShapeExpr::ShapeAnd { exprs, .. } => {
                 for e in exprs {
                     let result = self.check_node_shape_expr(node, e, rdf)?;
                     if let Some(errors) = result.left() {
@@ -254,7 +254,7 @@ impl ValidatorRunner {
                     se: se.clone(),
                 }]))
             }
-            ShapeExpr::ShapeNot { expr } => {
+            ShapeExpr::ShapeNot { expr, .. } => {
                 let result = self.check_node_shape_expr(node, expr, rdf)?;
                 match result {
                     Either::Left(errors) => {
@@ -265,7 +265,7 @@ impl ValidatorRunner {
                     }
                 }
             }
-            ShapeExpr::ShapeOr { exprs } => {
+            ShapeExpr::ShapeOr { exprs, .. } => {
                 todo!()
                 /*for e in exprs {
                     let result = self.check_node_shape_expr(node, e, rdf)?;
@@ -305,8 +305,6 @@ impl ValidatorRunner {
                         .collect(),
                 ),
             }];
-            /*self.add_failed(node,
-            );*/
             return Ok(Either::Left(errs));
         };
         debug!("Neighs of {node}: {values:?}");
@@ -352,7 +350,7 @@ impl ValidatorRunner {
             let errs = match current_err {
                 Some(rbe_err) => vec![ValidatorError::RbeError(rbe_err)],
                 None => {
-                    debug!("No value found for node/shape where node ={node}, shape = {shape:?}. Current_err = empty");
+                    debug!("No value found for node/shape where node = {node}, shape = {shape:?}. Current_err = empty");
                     Vec::new()
                 }
             };

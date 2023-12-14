@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
 use shex_ast::compiled::preds::Preds;
@@ -41,7 +43,7 @@ pub enum ValidatorError {
         err: CompiledSchemaError,
     },
 
-    #[error("And error: shape expression {shape_expr:?} failed for node {node}: {errors:?}")]
+    #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
         shape_expr: ShapeExpr,
         node: Node,
@@ -57,5 +59,14 @@ pub struct ValidatorErrors {
 impl ValidatorErrors {
     pub fn new(errs: Vec<ValidatorError>) -> ValidatorErrors {
         ValidatorErrors { errs }
+    }
+}
+
+impl Display for ValidatorErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for err in self.errs.iter() {
+            writeln!(f, "  {err}")?;
+        }
+        Ok(())
     }
 }

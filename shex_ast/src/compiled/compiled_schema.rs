@@ -1,7 +1,7 @@
 use crate::compiled::schema_json_compiler::SchemaJsonCompiler;
 use crate::{
-    ast, ShapeExprLabel, ast::Schema as SchemaJson, 
-    CResult, CompiledSchemaError, Cond, Node, ShapeLabelIdx,
+    ast, ast::Schema as SchemaJson, CResult, CompiledSchemaError, Cond, Node, ShapeExprLabel,
+    ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -24,7 +24,7 @@ pub struct CompiledSchema {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
     shape_label_counter: ShapeLabelIdx,
-    prefixmap: PrefixMap
+    prefixmap: PrefixMap,
 }
 
 impl CompiledSchema {
@@ -33,7 +33,7 @@ impl CompiledSchema {
             shape_labels_map: HashMap::new(),
             shape_label_counter: ShapeLabelIdx::default(),
             shapes: HashMap::new(),
-            prefixmap: PrefixMap::new()
+            prefixmap: PrefixMap::new(),
         }
     }
 
@@ -62,12 +62,12 @@ impl CompiledSchema {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    /*#[allow(dead_code)]
     fn shape_decl_to_shape_expr<'a>(&mut self, sd: &ast::ShapeDecl) -> CResult<ShapeExpr> {
         self.cnv_shape_expr(&sd.shape_expr)
-    }
+    }*/
 
-    fn cnv_shape_expr<'a>(&mut self, se: &ast::ShapeExpr) -> CResult<ShapeExpr> {
+    /*fn cnv_shape_expr<'a>(&mut self, se: &ast::ShapeExpr) -> CResult<ShapeExpr> {
         match se {
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
@@ -118,40 +118,39 @@ impl CompiledSchema {
             } */
             _ => todo!(),
         }
-    }
+    }*/
 
     pub fn find_ref(&mut self, se_ref: &ShapeExprLabel) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
-            ShapeExprLabel::IriRef { value } => {
-                match value {
-                    IriRef::Iri(iri) => {
-                        let label = ShapeLabel::iri(iri.clone());
-                        Ok::<ShapeLabel, CompiledSchemaError>(label)
-                    },
-                    IriRef::Prefixed { prefix, local } => {
-                        let iri = self.prefixmap.resolve_prefix_local(prefix, local).map_err(|err| {
-                            println!("find_ref...error!");
-                            CompiledSchemaError::PrefixedNotFound { 
-                                prefix: prefix.clone(), 
-                                local: local.clone(),
-                                err
-                            }
-                        })?;
-                        Ok::<ShapeLabel, CompiledSchemaError>(ShapeLabel::iri(iri))
-                    },
+            ShapeExprLabel::IriRef { value } => match value {
+                IriRef::Iri(iri) => {
+                    let label = ShapeLabel::iri(iri.clone());
+                    Ok::<ShapeLabel, CompiledSchemaError>(label)
                 }
-            }
+                IriRef::Prefixed { prefix, local } => {
+                    let iri =
+                        self.prefixmap
+                            .resolve_prefix_local(prefix, local)
+                            .map_err(|err| {
+                                println!("find_ref...error!");
+                                CompiledSchemaError::PrefixedNotFound {
+                                    prefix: prefix.clone(),
+                                    local: local.clone(),
+                                    err,
+                                }
+                            })?;
+                    Ok::<ShapeLabel, CompiledSchemaError>(ShapeLabel::iri(iri))
+                }
+            },
             ShapeExprLabel::BNode { value } => {
                 let label = ShapeLabel::from_bnode((*value).clone());
                 Ok(label)
-            },
-            ShapeExprLabel::Start => Ok(ShapeLabel::Start)
+            }
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }?;
         match self.shape_labels_map.get(&shape_label) {
             Some(idx) => Ok(*idx),
-            None => {
-                Err(CompiledSchemaError::LabelNotFound{ shape_label })
-            }
+            None => Err(CompiledSchemaError::LabelNotFound { shape_label }),
         }
     }
 
@@ -385,6 +384,14 @@ impl CompiledSchema {
     pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
         self.shapes.entry(*idx).and_modify(|(label, s)| *s = se);
     }
+
+    pub fn show_label(&self, label: &ShapeLabel) -> String {
+        match label {
+            ShapeLabel::Iri(iri) => self.prefixmap.qualify(&iri),
+            ShapeLabel::BNode(bnode) => format!("{bnode}"),
+            ShapeLabel::Start => "START".to_string(),
+        }
+    }
 }
 
 impl Display for CompiledSchema {
@@ -400,8 +407,8 @@ impl Display for CompiledSchema {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Schema as SchemaJson;
     use super::CompiledSchema;
+    use crate::ast::Schema as SchemaJson;
 
     #[test]
     fn test_find_component() {

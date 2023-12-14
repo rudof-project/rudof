@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use prefixmap::PrefixMap;
 use shex_ast::{
     compiled::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
     Node,
@@ -17,7 +18,7 @@ impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Reason::NodeConstraintPassed { node, nc } => {
-                write!(f, "Node constraint passed for node {node}: {nc}")
+                write!(f, "Node constraint passed for node {node}: {nc}",)
             }
             Reason::ShapeAndPassed { node, se } => {
                 write!(f, "AND passed for node {node}: {se}")

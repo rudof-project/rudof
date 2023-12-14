@@ -153,7 +153,7 @@ impl Display for ResultMap {
                 );
                 write!(dest, "{}", s.red())?;
                 for e in errs {
-                    writeln!(dest, "  Err:{e}")?;
+                    writeln!(dest, " {e}")?;
                 }
             }
             writeln!(dest)?;

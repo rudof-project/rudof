@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use oxiri::Iri;
 use oxrdf::NamedNode;
 use serde::de;
@@ -14,6 +15,12 @@ use crate::IriSError;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IriS {
     iri: NamedNode,
+}
+
+// TODO: I would like to define the rest of values in terms of the following ones...
+lazy_static! {
+    pub static ref XSD: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#");
+    pub static ref RDF: IriS = IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 }
 
 impl IriS {

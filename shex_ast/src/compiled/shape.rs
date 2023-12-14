@@ -53,6 +53,6 @@ impl Shape {
 
 impl Display for Shape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Shape: {}", self.display)
+        write!(f, "{}", self.display)
     }
 }

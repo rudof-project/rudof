@@ -1,21 +1,21 @@
-use std::fmt::Display;
-
-use iri_s::IriS;
-
 use crate::{ast::NodeConstraint as AstNodeConstraint, Cond};
-
-use super::{node_kind::NodeKind, value_set_value::ValueSetValue, xs_facet::XsFacet};
+use std::fmt::Display;
 
 /// Represents compiled node constraints
 #[derive(Debug, PartialEq, Clone)]
 pub struct NodeConstraint {
     source: AstNodeConstraint,
     cond: Cond,
+    display: String,
 }
 
 impl NodeConstraint {
-    pub fn new(nc: AstNodeConstraint, cond: Cond) -> Self {
-        NodeConstraint { source: nc, cond }
+    pub fn new(nc: AstNodeConstraint, cond: Cond, display: String) -> Self {
+        NodeConstraint {
+            source: nc,
+            cond,
+            display,
+        }
     }
 
     pub fn cond(&self) -> Cond {
@@ -25,6 +25,6 @@ impl NodeConstraint {
 
 impl Display for NodeConstraint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "NodeConstraint: {self:?}")
+        write!(f, "{}", self.display)
     }
 }

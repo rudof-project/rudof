@@ -5,6 +5,7 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 
 start = @<human>
 
-<human> {
+<human> IRI {
   wdt:P31  [ wd:Q5 ];
+  wdt:P19  . *
 }

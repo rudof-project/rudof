@@ -1,27 +1,27 @@
+use super::{node_constraint::NodeConstraint, shape::Shape};
+use crate::ShapeLabelIdx;
 use std::fmt::Display;
-
-use iri_s::IriS;
-use rbe::RbeTable;
-
-use crate::{Cond, Node, Pred, ShapeLabelIdx};
-
-use super::annotation::Annotation;
-use super::node_constraint::NodeConstraint;
-use super::node_kind::NodeKind;
-use super::sem_act::SemAct;
-use super::shape::Shape;
-use super::value_set_value::ValueSetValue;
-use super::xs_facet::XsFacet;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ShapeExpr {
-    ShapeOr { exprs: Vec<ShapeExpr> },
-    ShapeAnd { exprs: Vec<ShapeExpr> },
-    ShapeNot { expr: Box<ShapeExpr> },
+    ShapeOr {
+        exprs: Vec<ShapeExpr>,
+        display: String,
+    },
+    ShapeAnd {
+        exprs: Vec<ShapeExpr>,
+        display: String,
+    },
+    ShapeNot {
+        expr: Box<ShapeExpr>,
+        display: String,
+    },
     NodeConstraint(NodeConstraint),
     Shape(Shape),
     External {},
-    Ref { idx: ShapeLabelIdx },
+    Ref {
+        idx: ShapeLabelIdx,
+    },
     Empty,
 }
 
@@ -33,6 +33,15 @@ impl ShapeExpr {
 
 impl Display for ShapeExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ShapeExpr: {self:?}")
+        match self {
+            ShapeExpr::ShapeOr { display, .. } => write!(f, "{display}"),
+            ShapeExpr::ShapeAnd { exprs, display } => write!(f, "{display}"),
+            ShapeExpr::ShapeNot { display, .. } => write!(f, "{display}"),
+            ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),
+            ShapeExpr::Shape(shape) => write!(f, "{shape}"),
+            ShapeExpr::External {} => write!(f, "External"),
+            ShapeExpr::Ref { idx } => todo!(),
+            ShapeExpr::Empty => write!(f, "<Empty>"),
+        }
     }
 }
