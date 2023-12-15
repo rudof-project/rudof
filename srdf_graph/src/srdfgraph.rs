@@ -260,32 +260,37 @@ impl SRDFComparisons for SRDFGraph {
         OxTerm::NamedNode(iri)
     }
 
-    fn iri2iri_s(iri: OxNamedNode) -> IriS {
+    fn iri2iri_s(iri: &OxNamedNode) -> IriS {
         IriS::from_named_node(iri)
     }
 
-    fn term2object(term: OxTerm) -> srdf::Object {
+    fn term_as_object(term: &OxTerm) -> srdf::Object {
         match term {
             OxTerm::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
-            OxTerm::Literal(lit) => match lit.destruct() {
-                (s, None, None) => srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
-                    lexical_form: s,
-                    lang: None,
-                }),
-                (s, None, Some(lang)) => {
-                    srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: Some(srdf::lang::Lang::new(lang.as_str())),
-                    })
+            OxTerm::Literal(lit) => {
+                let lit = lit.to_owned();
+                match lit.destruct() {
+                    (s, None, None) => {
+                        srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                            lexical_form: s,
+                            lang: None,
+                        })
+                    }
+                    (s, None, Some(lang)) => {
+                        srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                            lexical_form: s,
+                            lang: Some(srdf::lang::Lang::new(lang.as_str())),
+                        })
+                    }
+                    (s, Some(datatype), _) => {
+                        let iri_s = Self::iri2iri_s(&datatype);
+                        srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
+                            lexical_form: s,
+                            datatype: IriRef::Iri(iri_s),
+                        })
+                    }
                 }
-                (s, Some(datatype), _) => {
-                    let iri_s = Self::iri2iri_s(datatype);
-                    srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
-                        lexical_form: s,
-                        datatype: IriRef::Iri(iri_s),
-                    })
-                }
-            },
+            }
             OxTerm::NamedNode(iri) => srdf::Object::Iri {
                 iri: Self::iri2iri_s(iri),
             },

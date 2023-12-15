@@ -58,8 +58,8 @@ impl IriS {
         self.iri.as_str()
     }
 
-    pub fn from_named_node(iri: NamedNode) -> IriS {
-        IriS { iri }
+    pub fn from_named_node(iri: &NamedNode) -> IriS {
+        IriS { iri: iri.clone() }
     }
 
     pub fn as_named_node(&self) -> &NamedNode {
@@ -190,15 +190,15 @@ mod tests {
     #[test]
     fn extending_iri() {
         let base = NamedNode::new("http://example.org/").unwrap();
-        let base_iri = IriS::from_named_node(base);
+        let base_iri = IriS::from_named_node(&base);
         let extended = base_iri.extend("knows").unwrap();
         assert_eq!(extended.as_str(), "http://example.org/knows");
     }
 
     #[test]
     fn comparing_iris() {
-        let iri1 = IriS::from_named_node(NamedNode::new_unchecked("http://example.org/name"));
-        let iri2 = IriS::from_named_node(NamedNode::new_unchecked("http://example.org/name"));
+        let iri1 = IriS::from_named_node(&NamedNode::new_unchecked("http://example.org/name"));
+        let iri2 = IriS::from_named_node(&NamedNode::new_unchecked("http://example.org/name"));
         assert_eq!(iri1, iri2);
     }
 }

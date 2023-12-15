@@ -179,10 +179,10 @@ impl SRDFComparisons for SRDFSparql {
         iri_s.as_named_node().clone()
     }
 
-    fn term2object(term: Self::Term) -> srdf::Object {
+    fn term_as_object(term: &Self::Term) -> srdf::Object {
         match term {
             Self::Term::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
-            Self::Term::Literal(lit) => match lit.destruct() {
+            Self::Term::Literal(lit) => match lit.to_owned().destruct() {
                 (s, None, None) => srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
                     lexical_form: s,
                     lang: None,
@@ -194,7 +194,7 @@ impl SRDFComparisons for SRDFSparql {
                     })
                 }
                 (s, Some(datatype), _) => {
-                    let iri_s = Self::iri2iri_s(datatype);
+                    let iri_s = Self::iri2iri_s(&datatype);
                     srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
                         lexical_form: s,
                         datatype: IriRef::Iri(iri_s),
@@ -207,7 +207,7 @@ impl SRDFComparisons for SRDFSparql {
         }
     }
 
-    fn iri2iri_s(iri: Self::IRI) -> IriS {
+    fn iri2iri_s(iri: &Self::IRI) -> IriS {
         IriS::from_named_node(iri)
     }
 

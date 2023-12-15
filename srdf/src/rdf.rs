@@ -4,12 +4,11 @@ use crate::literal::Literal;
 use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 
-trait RDF {
+/*trait RDF {
     fn parse(format: RDFFormat) -> Self;
-}
+}*/
 
-
-
+/// Decclares RDF formats
 pub enum RDFFormat {
     Turtle,
     NTriples,
@@ -42,11 +41,9 @@ impl Object {
         Object::BlankNode(str)
     }
 
-    
     pub fn literal(lit: Literal) -> Object {
         Object::Literal(lit)
     }
-
 }
 
 impl From<IriS> for Object {

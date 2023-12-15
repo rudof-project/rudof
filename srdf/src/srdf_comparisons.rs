@@ -11,7 +11,7 @@ pub trait SRDFComparisons {
     type IRI: Debug + Display + Hash + Eq + Clone;
     type BNode: Debug + Display + PartialEq;
     type Literal: Debug + Display + PartialEq;
-    type Term: Debug + Display + PartialEq;
+    type Term: Debug + Clone + Display + PartialEq;
     type Err: Display;
 
     fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
@@ -38,8 +38,8 @@ pub trait SRDFComparisons {
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
 
-    fn term2object(term: Self::Term) -> Object;
-    fn iri2iri_s(iri: Self::IRI) -> IriS;
+    fn term_as_object(term: &Self::Term) -> Object;
+    fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 

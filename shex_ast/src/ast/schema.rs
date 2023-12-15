@@ -94,6 +94,11 @@ impl Schema {
         self
     }
 
+    pub fn with_shapes(mut self, shapes: Option<Vec<ShapeDecl>>) -> Self {
+        self.shapes = shapes;
+        self
+    }
+
     pub fn add_shape(
         &mut self,
         shape_label: ShapeExprLabel,

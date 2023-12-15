@@ -14,7 +14,7 @@ use super::bnode::BNode;
 pub enum ShapeExprLabel {
     IriRef { value: IriRef },
     BNode { value: BNode },
-    Start
+    Start,
 }
 
 impl ShapeExprLabel {
@@ -26,6 +26,12 @@ impl ShapeExprLabel {
 
     pub fn iri_ref(i: IriRef) -> Self {
         ShapeExprLabel::IriRef { value: i }
+    }
+
+    pub fn iri(iri: IriS) -> Self {
+        ShapeExprLabel::IriRef {
+            value: IriRef::iri(iri),
+        }
     }
 
     pub fn bnode(bn: BNode) -> Self {
@@ -60,7 +66,7 @@ impl Deref for ShapeExprLabel {
             ShapeExprLabel::BNode { value } => Ok(ShapeExprLabel::BNode {
                 value: value.clone(),
             }),
-            ShapeExprLabel::Start => Ok(ShapeExprLabel::Start)
+            ShapeExprLabel::Start => Ok(ShapeExprLabel::Start),
         }
     }
 }

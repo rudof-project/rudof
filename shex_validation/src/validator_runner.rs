@@ -367,15 +367,15 @@ impl ValidatorRunner {
     where
         S: SRDF,
     {
-        let iri = S::iri2iri_s(iri);
+        let iri = S::iri2iri_s(&iri);
         Pred::from(iri)
     }
 
-    fn cnv_object<S>(&self, term: S::Term) -> Node
+    fn cnv_object<S>(&self, term: &S::Term) -> Node
     where
         S: SRDF,
     {
-        let object = S::term2object(term);
+        let object = S::term_as_object(term);
         Node::from(object)
     }
 
@@ -398,7 +398,7 @@ impl ValidatorRunner {
             for (pred, values) in outgoing_arcs.into_iter() {
                 for obj in values.into_iter() {
                     let iri = self.cnv_iri::<S>(pred.clone());
-                    let object = self.cnv_object::<S>(obj);
+                    let object = self.cnv_object::<S>(&obj);
                     result.push((iri.clone(), object))
                 }
             }
