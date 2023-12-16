@@ -49,6 +49,11 @@ where
     }
 
     #[inline]
+    fn sx_values() -> RDF::IRI {
+        RDFParser::<RDF>::iri_unchecked(SX_VALUES)
+    }
+
+    #[inline]
     fn sx_shape_exprs() -> RDF::IRI {
         RDFParser::<RDF>::iri_unchecked(SX_SHAPE_EXPRS)
     }
@@ -173,8 +178,15 @@ where
     }
 
     fn parse_value_set(&self, node: &RDF::Subject) -> Result<Option<Vec<ValueSetValue>>> {
-        // TODO
-        Ok(None)
+        match self
+            .rdf_parser
+            .parse_list_for_predicate(node, &Self::sx_values())
+        {
+            Ok(values) => {
+                todo!()
+            }
+            Err(_) => Ok(None),
+        }
     }
 
     fn parse_xs_facet(&self, node: &RDF::Subject) -> Result<Option<Vec<XsFacet>>> {

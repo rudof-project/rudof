@@ -39,4 +39,10 @@ pub enum RDFParseError {
 
     #[error("Expected IRI but found Literal {lit}")]
     ExpectedIRIFoundLiteral { lit: Literal },
+
+    #[error("Condition {condition_name} failed for node {node}")]
+    NodeDoesntSatisfyCondition {
+        condition_name: String,
+        node: String,
+    },
 }

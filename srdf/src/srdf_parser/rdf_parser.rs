@@ -1,33 +1,143 @@
 use iri_s::IriS;
 
 use super::rdf_parser_error::RDFParseError;
-use crate::{Object, Vocab, RDF_TYPE, SRDF};
-use std::{collections::VecDeque, error::Error, fmt::Display};
+use crate::{Object, Vocab, RDF_NIL, RDF_TYPE, SRDF};
+use std::{collections::VecDeque, error::Error, fmt::Display, marker::PhantomData};
 
-trait RDFParse<RDF: SRDF> {
+/// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
+/// Some parts of this code are inspired by [Combine]()
+pub trait RDFParse<RDF: SRDF> {
     /// The type which is returned if the parser is successful.    
     type Output;
 
     fn parse(&mut self, rdf: RDF) -> Result<Self::Output, RDF::Err>;
 }
 
-trait RDFNodeParse<RDF: SRDF> {
+pub trait RDFNodeParse<RDF: SRDF> {
     type Output;
 
-    fn parse_subject(&mut self, node: RDF::Subject, rdf: RDF) -> Result<Self::Output, RDF::Err>;
+    fn parse(&mut self, node: &RDF::Subject, rdf: &RDF) -> Result<Self::Output, RDFParseError> {
+        self.parse_impl(node, rdf).into()
+    }
+
+    fn parse_impl(
+        &mut self,
+        node: &RDF::Subject,
+        rdf: &RDF,
+    ) -> ParseResult<Self::Output, RDFParseError>;
 }
 
-/*fn parse_list_for_predicate<RDF>(
-    node: RDF::Subject,
-    pred: RDF::IRI,
-    rdf: RDF,
-) -> Result<Vec<RDF::Term>, RDF::Err>
+#[derive(Copy, Clone)]
+pub struct Map<P, F>(P, F);
+impl<RDF, A, B, P, F> RDFNodeParse<RDF> for Map<P, F>
+where
+    RDF: SRDF,
+    P: RDFNodeParse<RDF, Output = A>,
+    F: FnMut(A) -> B,
+{
+    type Output = B;
+
+    fn parse_impl(
+        &mut self,
+        node: &RDF::Subject,
+        rdf: &RDF,
+    ) -> ParseResult<Self::Output, RDFParseError> {
+        match self.0.parse_impl(node, rdf) {
+            ParseResult::CommitOk(a) => ParseResult::CommitOk((self.1)(a)),
+            ParseResult::PeekOk(a) => ParseResult::PeekOk((self.1)(a)),
+            ParseResult::CommitErr(e) => ParseResult::CommitErr(e),
+            ParseResult::PeekErr(e) => ParseResult::PeekErr(e),
+        }
+    }
+}
+
+pub fn map<RDF, P, F, B>(p: P, f: F) -> Map<P, F>
+where
+    RDF: SRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(P::Output) -> B,
+{
+    Map(p, f)
+}
+
+pub fn parse_rdf_nil<RDF>() -> impl RDFNodeParse<RDF, Output = ()>
 where
     RDF: SRDF,
 {
-    let object = predicate_value(node, pred, rdf)?;
-    let rest = parse_list_for_predicate_visited(object, pred, rdf, Vec::new())?;
-}*/
+    satisfy(
+        |node: &RDF::Subject| match RDF::subject_as_iri(node) {
+            Some(iri) => {
+                let iri_s = RDF::iri2iri_s(&iri);
+                iri_s.as_str() == RDF_NIL
+            }
+            None => false,
+        },
+        "rdf_nil",
+    )
+}
+
+pub fn satisfy<RDF, P>(predicate: P, predicate_name: &str) -> Satisfy<RDF, P>
+where
+    RDF: SRDF,
+    P: FnMut(&RDF::Subject) -> bool,
+{
+    Satisfy {
+        predicate,
+        predicate_name: predicate_name.to_string(),
+        _marker: PhantomData,
+    }
+}
+
+#[derive(Clone)]
+pub struct Satisfy<RDF, P> {
+    predicate: P,
+    predicate_name: String,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF, P> RDFNodeParse<RDF> for Satisfy<RDF, P>
+where
+    RDF: SRDF,
+    P: FnMut(&RDF::Subject) -> bool,
+{
+    type Output = ();
+
+    fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> ParseResult<(), RDFParseError> {
+        if (self.predicate)(node) {
+            ParseResult::CommitOk(())
+        } else {
+            ParseResult::PeekErr(RDFParseError::NodeDoesntSatisfyCondition {
+                condition_name: self.predicate_name.clone(),
+                node: format!("{node}"),
+            })
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug, Copy)]
+pub enum ParseResult<T, E> {
+    /// The parser has succeeded and has committed to this parse.
+    /// If a parser after this fails, other parser alternatives will not be attempted (`CommitErr` will be returned)
+    CommitOk(T),
+    /// The parser has succeeded and has not committed to this parse.
+    /// If a parser after this fails, other parser alternatives will be attempted (`PeekErr` will be returned)
+    PeekOk(T),
+    /// The parser failed other parse alternatives will not be attempted.
+    CommitErr(E),
+    /// The parser failed but other parse alternatives may be attempted.
+    PeekErr(E),
+}
+
+impl<T, E> Into<Result<T, E>> for ParseResult<T, E> {
+    fn into(self) -> Result<T, E> {
+        match self {
+            ParseResult::CommitOk(t) => Ok(t),
+            ParseResult::PeekOk(t) => Ok(t),
+            ParseResult::CommitErr(e) => Err(e),
+            ParseResult::PeekErr(e) => Err(e),
+        }
+    }
+}
 
 pub struct RDFParser<RDF>
 where
