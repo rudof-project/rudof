@@ -76,7 +76,7 @@ impl SRDFGraph {
         format!("{}", str.red())
     }
 
-    pub fn from_str(data: String, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
+    pub fn from_str(data: &str, base: Option<Iri<String>>) -> Result<SRDFGraph, SRDFGraphError> {
         Self::from_reader(std::io::Cursor::new(&data), base)
     }
 
@@ -258,6 +258,10 @@ impl SRDFComparisons for SRDFGraph {
 
     fn iri_as_term(iri: OxNamedNode) -> OxTerm {
         OxTerm::NamedNode(iri)
+    }
+
+    fn iri_as_subject(iri: OxNamedNode) -> OxSubject {
+        OxSubject::NamedNode(iri)
     }
 
     fn iri2iri_s(iri: &OxNamedNode) -> IriS {
@@ -485,6 +489,7 @@ impl AsyncSRDF for SRDFGraph {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -528,7 +533,7 @@ mod tests {
                    schema:knows :bob, :carol ;
                    :age  23 .
          "#;
-        let parsed_graph = SRDFGraph::from_str(s.to_string(), None).unwrap();
+        let parsed_graph = SRDFGraph::from_str(s, None).unwrap();
         let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
         let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
         let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();

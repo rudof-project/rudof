@@ -22,3 +22,5 @@ const_format = "0.2"
 
 [dev-dependencies]
 serde_json = "1"
+srdf_graph = { path = "../srdf_graph", version = "0.0.5" }
+oxrdf = "0.1.6"

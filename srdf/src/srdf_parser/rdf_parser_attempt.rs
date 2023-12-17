@@ -27,16 +27,20 @@ pub trait RDFParse<RDF: SRDF> {
 pub trait RDFNodeParse<RDF: SRDF> {
     type Output;
 
-    fn parse(&mut self, node: &IriS, rdf: &RDF) -> Result<Self::Output, RDFParseError> {
-        let subject = RDF::iri_as_subject(RDF::iri_s2iri(node));
-        self.parse_impl(&subject, rdf)
+    fn focus(&self) -> RDF::Subject;
+
+    fn parse(&mut self, rdf: &RDF) -> Result<Self::Output, RDFParseError> {
+        self.parse_impl(rdf)
     }
 
-    fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> PResult<Self::Output>;
+    fn parse_impl(&mut self, rdf: &RDF) -> PResult<Self::Output>;
 }
 
 #[derive(Copy, Clone)]
-pub struct Map<P, F>(P, F);
+pub struct Map<P, F> {
+    parser: P,
+    f: F,
+}
 impl<RDF, A, B, P, F> RDFNodeParse<RDF> for Map<P, F>
 where
     RDF: SRDF,
@@ -45,21 +49,25 @@ where
 {
     type Output = B;
 
-    fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> PResult<Self::Output> {
-        match self.0.parse_impl(node, rdf) {
-            Ok(a) => Ok((self.1)(a)),
+    fn parse_impl(&mut self, rdf: &RDF) -> PResult<Self::Output> {
+        match self.parser.parse_impl(rdf) {
+            Ok(a) => Ok((self.f)(a)),
             Err(e) => Err(e),
         }
     }
+
+    fn focus(&self) -> <RDF>::Subject {
+        self.parser.focus()
+    }
 }
 
-pub fn map<RDF, P, F, B>(p: P, f: F) -> Map<P, F>
+pub fn map<RDF, P, F, B>(parser: P, f: F) -> Map<P, F>
 where
     RDF: SRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> B,
 {
-    Map(p, f)
+    Map { parser, f }
 }
 
 pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
@@ -87,14 +95,18 @@ where
 {
     type Output = O;
 
-    fn parse_impl(&mut self, node: &<RDF>::Subject, rdf: &RDF) -> PResult<Self::Output> {
-        match self.parser.parse_impl(node, rdf) {
+    fn parse_impl(&mut self, rdf: &RDF) -> PResult<Self::Output> {
+        match self.parser.parse(rdf) {
             Ok(value) => match (self.function)(value) {
                 Ok(result) => Ok(result),
                 Err(e) => Err(e.into()),
             },
             Err(err) => Err(err),
         }
+    }
+
+    fn focus(&self) -> <RDF>::Subject {
+        self.parser.focus()
     }
 }
 
@@ -121,14 +133,18 @@ where
 {
     type Output = O;
 
-    fn parse_impl(&mut self, node: &<RDF>::Subject, rdf: &RDF) -> PResult<Self::Output> {
-        match self.parser.parse_impl(node, rdf) {
+    fn parse_impl(&mut self, rdf: &RDF) -> PResult<Self::Output> {
+        match self.parser.parse(rdf) {
             Ok(value) => match (self.function)(value) {
                 Ok(result) => Ok(result),
                 Err(err) => Err(err),
             },
             Err(err) => Err(err),
         }
+    }
+
+    fn focus(&self) -> <RDF>::Subject {
+        self.parser.focus()
     }
 }
 
@@ -254,6 +270,7 @@ where
     )
 } */
 
+/*
 pub struct RDFParser<RDF>
 where
     RDF: SRDF,
@@ -448,6 +465,7 @@ where
         }
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -458,8 +476,6 @@ mod tests {
 
     #[test]
     fn test_rdf_nil() {
-        use crate::srdf::SRDF;
-
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         
@@ -469,8 +485,5 @@ mod tests {
         let graph = SRDFGraph::from_str(s, None).unwrap();
         let p = IriS::new_unchecked("http://example.org/p");
         let x = IriS::new_unchecked("http://example.org/p");
-        // let rs = graph.get_objects_for_subject_predicate(x, p);
-        // let mut parser = property_values(&p);
-        // let result = parser.parse(&x, &graph).unwrap();
     }
 }

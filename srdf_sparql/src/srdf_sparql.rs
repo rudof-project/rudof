@@ -238,6 +238,10 @@ impl SRDFComparisons for SRDFSparql {
             Term::NamedNode(n) => self.qualify_iri(n),
         }
     }
+
+    fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
+        Subject::NamedNode(iri)
+    }
 }
 
 #[async_trait]

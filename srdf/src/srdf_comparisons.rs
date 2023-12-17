@@ -36,7 +36,12 @@ pub trait SRDFComparisons {
     fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
 
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
+    fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
+        Self::iri_as_subject(Self::iri_s2iri(iri_s))
+    }
+
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
+    fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
     fn term_as_object(term: &Self::Term) -> Object;
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
