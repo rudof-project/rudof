@@ -489,7 +489,6 @@ impl AsyncSRDF for SRDFGraph {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -544,5 +543,24 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(alice_knows.contains(&bob), true);
+    }
+
+    #[test]
+    fn test_rdf_nil() {
+        use srdf::SRDFComparisons;
+        use srdf::SRDF;
+
+        let s = r#"prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        
+        :x :p rdf:nil .
+        "#;
+
+        let graph = SRDFGraph::from_str(s, None).unwrap();
+        let p = <srdfgraph::SRDFGraph as SRDFComparisons>::iri_s2iri(&IriS::new_unchecked("http://example.org/p"));
+        let x:  = SRDFComparisons::iri_as_subject(IriS::new_unchecked("http://example.org/x"));
+        let rs = SRDF::get_objects_for_subject_predicate(&graph, x, p);
+        // let mut parser = property_values(&p);
+        // let result = parser.parse(&x, &graph).unwrap();
     }
 }

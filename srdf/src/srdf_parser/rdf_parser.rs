@@ -449,28 +449,3 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::srdf::SRDF;
-    use crate::srdf_comparisons::SRDFComparisons;
-    use srdf_graph::SRDFGraph;
-
-    #[test]
-    fn test_rdf_nil() {
-        use crate::srdf::SRDF;
-
-        let s = r#"prefix : <http://example.org/>
-        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
-        :x :p rdf:nil .
-        "#;
-
-        let graph = SRDFGraph::from_str(s, None).unwrap();
-        let p = IriS::new_unchecked("http://example.org/p");
-        let x = IriS::new_unchecked("http://example.org/p");
-        // let rs = graph.get_objects_for_subject_predicate(x, p);
-        // let mut parser = property_values(&p);
-        // let result = parser.parse(&x, &graph).unwrap();
-    }
-}
