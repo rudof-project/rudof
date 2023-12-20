@@ -196,7 +196,7 @@ where
     }
 }
 
-struct PropertyValues<RDF: SRDF> {
+pub struct PropertyValues<RDF: SRDF> {
     property: RDF::IRI,
     _marker: PhantomData<RDF>,
 }
@@ -217,18 +217,36 @@ where
     }
 }
 
-/*
-fn f<RDF>(p: &RDF::IRI) -> impl FnMut(HashSet<RDF::Term>) -> PResult<RDF::Term> + '_
+fn property_value<RDF>(property: &IriS) -> PropertyValue<RDF>
 where
     RDF: SRDF,
 {
-    move |values| {
-        let mut values_iter = values.into_iter();
+    let iri = RDF::iri_s2iri(property);
+    PropertyValue {
+        property: iri,
+        _marker: PhantomData,
+    }
+}
+
+pub struct PropertyValue<RDF: SRDF> {
+    property: RDF::IRI,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for PropertyValue<RDF>
+where
+    RDF: SRDF,
+{
+    type Output = RDF::Term;
+
+    fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> PResult<RDF::Term> {
+        let mut p = property_values(&self.property);
+        let mut values_iter = p.parse_impl(node, rdf)?.into_iter();
         if let Some(value1) = values_iter.next() {
             if let Some(value2) = values_iter.next() {
                 Err(RDFParseError::MoreThanOneValuePredicate {
-                    // node: format!("{node}"),
-                    pred: format!("{p}"),
+                    node: format!("{node}"),
+                    pred: format!("{}", self.property),
                     value1: format!("{value1:?}"),
                     value2: format!("{value2:?}"),
                 })
@@ -237,23 +255,86 @@ where
             }
         } else {
             Err(RDFParseError::NoValuesPredicate {
-                // node: format!("{node}"),
-                pred: format!("{p}"),
+                node: format!("{node}"),
+                pred: format!("{}", self.property),
             })
         }
     }
 }
 
-pub fn property_value<RDF>(property: &RDF::IRI) -> impl RDFNodeParse<RDF, Output = RDF::Term>
+fn parse_list_for_property<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output=Vec<RDF::Term>> 
+where RDF: SRDF {
+
+    flat_map(property_value(property), |value| Ok(rdf_list()))
+//    let value = property_value(property).parse_impl(node, rdf)?;
+
+}
+
+/// Parses a node as an RDF List
+fn rdf_list<RDF>() -> RDFList<RDF>
 where
     RDF: SRDF,
 {
-    and_then::<RDF, PropertyValues<RDF>, _, RDF::Term, RDFParseError>(
-        property_values(property),
-        f::<RDF>(property),
-    )
-} */
+    RDFList {
+        _marker: PhantomData,
+    }
+}
 
+pub struct RDFList<RDF: SRDF> {
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for RDFList<RDF>
+where
+    RDF: SRDF,
+{
+    type Output = Vec<RDF::Term>;
+
+    fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> PResult<Vec<RDF::Term>> {
+        let mut visited = vec![RDF::subject_as_term(node)];
+        parse_list(node, visited, rdf)
+    }
+}
+
+fn parse_list<RDF>(
+    list_node: &RDF::Subject,
+    mut visited: Vec<RDF::Term>,
+    rdf: &RDF
+) -> Result<Vec<RDF::Term>, RDFParseError> 
+where RDF: SRDF {
+    if node_is_rdf_nil::<RDF>(&list_node) {
+        Ok(Vec::new())
+    } else {
+        let value = property_value(&Vocab::rdf_first()).parse_impl(list_node, rdf)?;
+        let rest = property_value(&Vocab::rdf_rest()).parse_impl(list_node, rdf)?;
+        if visited.contains(&rest) {
+            Err(RDFParseError::RecursiveRDFList {
+                node: format!("{rest}"),
+            })
+        } else {
+            visited.push(rest.clone());
+            let rest_subj = RDF::term_as_subject(&rest).ok_or_else(|| {
+                RDFParseError::ExpectedSubject { node: format!("{rest}") }
+            })?;
+            let mut rest = Vec::new();
+            rest.push(value);
+            rest.extend(parse_list(&rest_subj, visited, rdf)?);
+            Ok(rest)
+        }
+    }
+}
+
+fn node_is_rdf_nil<RDF>(node: &RDF::Subject) -> bool where RDF: SRDF {
+    if let Some(iri) = RDF::subject_as_iri(&node) {
+        RDF::iri2iri_s(&iri) == Vocab::rdf_nil() 
+    } else {
+        false
+    }
+}
+
+
+
+/// Implements a concrete RDF parser
 pub struct RDFParser<RDF>
 where
     RDF: SRDF,
@@ -280,21 +361,6 @@ where
     #[inline]
     fn rdf_type() -> RDF::IRI {
         RDF::iri_s2iri(&Vocab::rdf_type())
-    }
-
-    #[inline]
-    fn rdf_first() -> RDF::IRI {
-        RDF::iri_s2iri(&Vocab::rdf_first())
-    }
-
-    #[inline]
-    fn rdf_rest() -> RDF::IRI {
-        RDF::iri_s2iri(&Vocab::rdf_rest())
-    }
-
-    #[inline]
-    fn rdf_nil() -> RDF::IRI {
-        RDF::iri_s2iri(&Vocab::rdf_nil())
     }
 
     pub fn instances_of(
@@ -328,61 +394,28 @@ where
         }
     }
 
-    pub fn predicate_values(
-        &self,
+    pub fn predicate_values(&self,
         node: &RDF::Subject,
         pred: &RDF::IRI,
-    ) -> Result<impl Iterator<Item = RDF::Term>, RDFParseError>
-    where
-        RDF: SRDF,
-    {
-        let values = self
-            .rdf
-            .get_objects_for_subject_predicate(&node, &pred)
-            .map_err(|e| RDFParseError::SRDFError {
-                err: format!("{e}"),
-            })?;
-        Ok(values.into_iter())
+    ) -> Result<HashSet<RDF::Term>, RDFParseError> {
+        let mut p = property_values(pred);
+        let vs = p.parse_impl(node, &self.rdf)?;
+        Ok(vs)
     }
 
     pub fn predicate_value(
         &self,
         node: &RDF::Subject,
-        pred: &RDF::IRI,
+        pred: &IriS,
     ) -> Result<RDF::Term, RDFParseError>
     where
         RDF: SRDF,
     {
-        let mut values = self.predicate_values(&node, &pred)?;
-        if let Some(value1) = values.next() {
-            if let Some(value2) = values.next() {
-                Err(RDFParseError::MoreThanOneValuePredicate {
-                    node: format!("{node}"),
-                    pred: format!("{pred}"),
-                    value1: format!("{value1:?}"),
-                    value2: format!("{value2:?}"),
-                })
-            } else {
-                Ok(value1)
-            }
-        } else {
-            /* Debug in case no value found */
-            println!("Not found value for property {pred}");
-            let preds = self.rdf.get_predicates_for_subject(&node);
-            for pred in preds.iter() {
-                println!("Other predicates: {pred:?}");
-            }
-            /* end debug */
-
-            Err(RDFParseError::NoValuesPredicate {
-                node: format!("{node}"),
-                pred: format!("{pred}"),
-            })
-        }
+        property_value(pred).parse_impl(node, &self.rdf)
     }
 
     pub fn get_rdf_type(&self, node: &RDF::Subject) -> Result<RDF::Term, RDFParseError> {
-        let value = self.predicate_value(node, &Self::rdf_type())?;
+        let value = self.predicate_value(node, &Vocab::rdf_type())?;
         Ok(value)
     }
 
@@ -407,45 +440,14 @@ where
     pub fn parse_list_for_predicate(
         &self,
         node: &RDF::Subject,
-        pred: &RDF::IRI,
+        pred: &IriS,
     ) -> Result<Vec<RDF::Term>, RDFParseError> {
-        let list_node = self.predicate_value(&node, &pred)?;
+        let list_node = self.predicate_value(&node, pred)?;
         let list_node_subj = Self::term_as_subject(&list_node)?;
-        let values = self.parse_list(&list_node_subj, vec![list_node])?;
+        let values = rdf_list().parse_impl(&list_node_subj, &self.rdf)?;
         Ok(values)
     }
 
-    fn parse_list(
-        &self,
-        list_node: &RDF::Subject,
-        mut visited: Vec<RDF::Term>,
-    ) -> Result<Vec<RDF::Term>, RDFParseError> {
-        if Self::node_is_rdf_nil(&list_node) {
-            Ok(Vec::new())
-        } else {
-            let value = self.predicate_value(&list_node, &Self::rdf_first())?;
-            let rest = self.predicate_value(&list_node, &Self::rdf_rest())?;
-            if visited.contains(&&rest) {
-                Err(RDFParseError::RecursiveRDFList {
-                    node: format!("{rest}"),
-                })
-            } else {
-                visited.push(rest.clone());
-                let rest_subj = Self::term_as_subject(&rest)?;
-                let mut rest = Vec::new();
-                rest.push(value);
-                rest.extend(self.parse_list(&rest_subj, visited)?);
-                Ok(rest)
-            }
-        }
-    }
-
-    fn node_is_rdf_nil(node: &RDF::Subject) -> bool {
-        if let Some(iri) = RDF::subject_as_iri(&node) {
-            iri == Self::rdf_nil()
-        } else {
-            false
-        }
-    }
+    
 }
 

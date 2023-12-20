@@ -39,28 +39,28 @@ where
     }
 
     #[inline]
-    fn sx_shapes() -> RDF::IRI {
-        RDFParser::<RDF>::iri_unchecked(SX_SHAPES)
+    fn sx_shapes() -> IriS {
+        IriS::new_unchecked(SX_SHAPES)
     }
 
     #[inline]
-    fn sx_shape_expr() -> RDF::IRI {
-        RDFParser::<RDF>::iri_unchecked(SX_SHAPE_EXPR)
+    fn sx_shape_expr() -> IriS {
+        IriS::new_unchecked(SX_SHAPE_EXPR)
     }
 
     #[inline]
-    fn sx_values() -> RDF::IRI {
-        RDFParser::<RDF>::iri_unchecked(SX_VALUES)
+    fn sx_values() -> IriS {
+        IriS::new_unchecked(SX_VALUES)
     }
 
     #[inline]
-    fn sx_shape_exprs() -> RDF::IRI {
-        RDFParser::<RDF>::iri_unchecked(SX_SHAPE_EXPRS)
+    fn sx_shape_exprs() -> IriS {
+        IriS::new_unchecked(SX_SHAPE_EXPRS)
     }
 
     #[inline]
-    fn sx_node_kind() -> RDF::IRI {
-        RDFParser::<RDF>::iri_unchecked(SX_NODEKIND)
+    fn sx_node_kind() -> IriS {
+        IriS::new_unchecked(SX_NODEKIND)
     }
 
     pub fn parse(&self) -> Result<Schema> {
