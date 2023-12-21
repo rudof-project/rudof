@@ -28,7 +28,7 @@ pub enum RDFParseError {
         value2: String,
     },
 
-    #[error("Expected node to be as subject: {node}")]
+    #[error("Expected node to act as subject: {node}")]
     ExpectedSubject { node: String },
 
     #[error("Error parsing RDF list. Value: {node} has already been visited")]

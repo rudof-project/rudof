@@ -11,6 +11,19 @@ use std::{
 
 type PResult<A> = Result<A, RDFParseError>;
 
+pub trait FocusRDF: SRDF {
+    fn set_focus(&mut self, focus: Self::Term);
+
+    fn get_focus(&self) -> &Self::Term;
+
+    fn get_focus_as_subject(&self) -> Result<Self::Subject, RDFParseError> {
+        let focus_term = self.get_focus();
+        Self::term_as_subject(&focus_term).ok_or_else(|| RDFParseError::ExpectedSubject {
+            node: format!("{focus_term}"),
+        })
+    }
+}
+
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
@@ -24,7 +37,7 @@ pub trait RDFParse<RDF: SRDF> {
 }
 
 /// Represents a parser of RDF data from a pointed node in the graph
-pub trait RDFNodeParse<RDF: SRDF> {
+pub trait RDFNodeParse<RDF: FocusRDF> {
     type Output;
 
     fn parse(&mut self, node: &IriS, rdf: &RDF) -> Result<Self::Output, RDFParseError> {
@@ -39,7 +52,7 @@ pub trait RDFNodeParse<RDF: SRDF> {
 pub struct Map<P, F>(P, F);
 impl<RDF, A, B, P, F> RDFNodeParse<RDF> for Map<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF, Output = A>,
     F: FnMut(A) -> B,
 {
@@ -55,7 +68,7 @@ where
 
 pub fn map<RDF, P, F, B>(p: P, f: F) -> Map<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> B,
 {
@@ -64,7 +77,7 @@ where
 
 pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> Result<O, E>,
     E: Into<RDFParseError>,
@@ -80,7 +93,7 @@ pub struct AndThen<P, F> {
 
 impl<RDF, P, F, O, E> RDFNodeParse<RDF> for AndThen<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> Result<O, E>,
     E: Into<RDFParseError>,
@@ -100,7 +113,7 @@ where
 
 pub fn flat_map<RDF, P, F, O>(parser: P, function: F) -> FlatMap<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> PResult<O>,
 {
@@ -115,7 +128,7 @@ pub struct FlatMap<P, F> {
 
 impl<RDF, P, F, O> RDFNodeParse<RDF> for FlatMap<P, F>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> PResult<O>,
 {
@@ -134,7 +147,7 @@ where
 
 pub fn parse_rdf_nil<RDF>() -> impl RDFNodeParse<RDF, Output = ()>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     satisfy(
         |node: &RDF::Subject| match RDF::subject_as_iri(node) {
@@ -169,7 +182,7 @@ pub struct Satisfy<RDF, P> {
 
 impl<RDF, P> RDFNodeParse<RDF> for Satisfy<RDF, P>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
     P: FnMut(&RDF::Subject) -> bool,
 {
     type Output = ();
@@ -203,7 +216,7 @@ pub struct PropertyValues<RDF: SRDF> {
 
 impl<RDF> RDFNodeParse<RDF> for PropertyValues<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     type Output = HashSet<RDF::Term>;
 
@@ -235,7 +248,7 @@ pub struct PropertyValue<RDF: SRDF> {
 
 impl<RDF> RDFNodeParse<RDF> for PropertyValue<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     type Output = RDF::Term;
 
@@ -262,13 +275,13 @@ where
     }
 }
 
-fn parse_list_for_property<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output=Vec<RDF::Term>> 
-where RDF: SRDF {
-
+/*fn parse_list_for_property<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>>
+where
+    RDF: SRDF,
+{
     flat_map(property_value(property), |value| Ok(rdf_list()))
-//    let value = property_value(property).parse_impl(node, rdf)?;
-
-}
+    //    let value = property_value(property).parse_impl(node, rdf)?;
+}*/
 
 /// Parses a node as an RDF List
 fn rdf_list<RDF>() -> RDFList<RDF>
@@ -286,7 +299,7 @@ pub struct RDFList<RDF: SRDF> {
 
 impl<RDF> RDFNodeParse<RDF> for RDFList<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     type Output = Vec<RDF::Term>;
 
@@ -299,9 +312,11 @@ where
 fn parse_list<RDF>(
     list_node: &RDF::Subject,
     mut visited: Vec<RDF::Term>,
-    rdf: &RDF
-) -> Result<Vec<RDF::Term>, RDFParseError> 
-where RDF: SRDF {
+    rdf: &RDF,
+) -> Result<Vec<RDF::Term>, RDFParseError>
+where
+    RDF: FocusRDF,
+{
     if node_is_rdf_nil::<RDF>(&list_node) {
         Ok(Vec::new())
     } else {
@@ -313,9 +328,10 @@ where RDF: SRDF {
             })
         } else {
             visited.push(rest.clone());
-            let rest_subj = RDF::term_as_subject(&rest).ok_or_else(|| {
-                RDFParseError::ExpectedSubject { node: format!("{rest}") }
-            })?;
+            let rest_subj =
+                RDF::term_as_subject(&rest).ok_or_else(|| RDFParseError::ExpectedSubject {
+                    node: format!("{rest}"),
+                })?;
             let mut rest = Vec::new();
             rest.push(value);
             rest.extend(parse_list(&rest_subj, visited, rdf)?);
@@ -324,27 +340,28 @@ where RDF: SRDF {
     }
 }
 
-fn node_is_rdf_nil<RDF>(node: &RDF::Subject) -> bool where RDF: SRDF {
+fn node_is_rdf_nil<RDF>(node: &RDF::Subject) -> bool
+where
+    RDF: SRDF,
+{
     if let Some(iri) = RDF::subject_as_iri(&node) {
-        RDF::iri2iri_s(&iri) == Vocab::rdf_nil() 
+        RDF::iri2iri_s(&iri) == Vocab::rdf_nil()
     } else {
         false
     }
 }
 
-
-
 /// Implements a concrete RDF parser
 pub struct RDFParser<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     rdf: RDF,
 }
 
 impl<RDF> RDFParser<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     pub fn new(rdf: RDF) -> RDFParser<RDF> {
         RDFParser { rdf }
@@ -394,7 +411,8 @@ where
         }
     }
 
-    pub fn predicate_values(&self,
+    pub fn predicate_values(
+        &self,
         node: &RDF::Subject,
         pred: &RDF::IRI,
     ) -> Result<HashSet<RDF::Term>, RDFParseError> {
@@ -447,7 +465,4 @@ where
         let values = rdf_list().parse_impl(&list_node_subj, &self.rdf)?;
         Ok(values)
     }
-
-    
 }
-

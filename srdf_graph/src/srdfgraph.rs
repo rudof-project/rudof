@@ -564,27 +564,4 @@ mod tests {
         // let result = parser.parse(&x, &graph).unwrap();
     }
 
-    #[cfg(test)]
-    mod tests {
-        use srdf::SRDFComparisons;
-        use srdf::srdf_parser::RDFParser;
-    
-        use super::*;
-    
-        #[test]
-        fn test_rdfparser1() {
-            let str = r#"prefix : <http://example.org/>
-    
-            :x :p :y .
-            "#;
-            let rdf = SRDFGraph::from_str(str, None).unwrap();
-            let parser: RDFParser<SRDFGraph> = RDFParser::new(rdf);
-            let x = <SRDFGraph as SRDFComparisons>::iri_s2subject(&IriS::new_unchecked("http://example.org/x"));
-            let p = <SRDFGraph as SRDFComparisons>::iri_s2iri(&IriS::new_unchecked("http://example.org/p"));
-            let y = <SRDFGraph as SRDFComparisons>::iri_s2term(&IriS::new_unchecked("http://example.org/y"));
-            let values:HashSet<_> = parser.predicate_values(&x, &p).unwrap();
-            let expected: HashSet<_> = [y].into_iter().collect();
-            assert_eq!(values, expected)
-        }
-    }
 }

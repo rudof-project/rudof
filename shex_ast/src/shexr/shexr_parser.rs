@@ -10,7 +10,7 @@ use crate::{
 use iri_s::IriS;
 use prefixmap::IriRef;
 use srdf::srdf_parser::RDFParseError;
-use srdf::SRDF;
+use srdf::{FocusRDF, SRDF};
 use srdf::{Object, RDFParser};
 use std::marker::PhantomData;
 
@@ -18,14 +18,14 @@ type Result<A> = std::result::Result<A, ShExRError>;
 
 pub struct ShExRParser<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     rdf_parser: RDFParser<RDF>,
 }
 
 impl<RDF> ShExRParser<RDF>
 where
-    RDF: SRDF,
+    RDF: FocusRDF,
 {
     pub fn new(rdf: RDF) -> ShExRParser<RDF> {
         ShExRParser {
