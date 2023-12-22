@@ -242,6 +242,10 @@ impl SRDFComparisons for SRDFSparql {
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
         Subject::NamedNode(iri)
     }
+
+    fn prefixmap(&self) -> Option<PrefixMap> { 
+        Some(self.prefixmap.clone())
+    }
 }
 
 #[async_trait]

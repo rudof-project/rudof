@@ -2,10 +2,11 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
-use prefixmap::PrefixMapError;
+use prefixmap::{PrefixMapError, PrefixMap};
 
 use crate::Object;
 
+/// Trait that contains comparisons and conversions between nodes in RDF graphs
 pub trait SRDFComparisons {
     type Subject: Debug + Display;
     type IRI: Debug + Display + Hash + Eq + Clone;
@@ -50,9 +51,11 @@ pub trait SRDFComparisons {
     fn term_as_object(term: &Self::Term) -> Object;
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
-    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
-
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;
     fn qualify_term(&self, subj: &Self::Term) -> String;
+
+    fn prefixmap(&self) -> Option<PrefixMap>;
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
+
 }

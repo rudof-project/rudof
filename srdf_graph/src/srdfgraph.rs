@@ -331,6 +331,10 @@ impl SRDFComparisons for SRDFGraph {
             OxTerm::NamedNode(n) => self.qualify_iri(n),
         }
     }
+
+    fn prefixmap(&self) -> Option<prefixmap::PrefixMap> { 
+        Some(self.pm.clone())
+    }
 }
 
 impl SRDF for SRDFGraph {

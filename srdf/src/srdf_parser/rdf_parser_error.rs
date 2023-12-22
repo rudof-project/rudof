@@ -4,6 +4,10 @@ use crate::literal::Literal;
 
 #[derive(Debug, Error)]
 pub enum RDFParseError {
+
+    #[error("No focus node")]
+    NoFocusNode, 
+    
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
 
@@ -33,6 +37,9 @@ pub enum RDFParseError {
 
     #[error("Error parsing RDF list. Value: {node} has already been visited")]
     RecursiveRDFList { node: String },
+
+    #[error("Expected IRI, but found {term}")]
+    ExpectedIRI { term: String },
 
     #[error("Expected IRI but found BNode {bnode}")]
     ExpectedIRIFoundBNode { bnode: String },

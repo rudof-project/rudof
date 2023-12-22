@@ -3,7 +3,11 @@ use std::collections::{HashMap, HashSet};
 
 use crate::SRDFComparisons;
 
+/// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
+/// 
+/// 
 pub trait SRDF: SRDFComparisons {
+
     fn get_predicates_for_subject(
         &self,
         subject: &Self::Subject,
