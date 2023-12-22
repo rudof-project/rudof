@@ -4,7 +4,7 @@ use iri_s::IriS;
 // use log::debug;
 use oxiri::Iri;
 use srdf::async_srdf::AsyncSRDF;
-use srdf::{SRDFComparisons, SRDF};
+use srdf::{FocusRDF, SRDFComparisons, SRDF};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -24,6 +24,7 @@ use rio_turtle::*;
 
 #[derive(Debug)]
 pub struct SRDFGraph {
+    focus: Option<OxTerm>,
     graph: Graph,
     pm: PrefixMap,
 }
@@ -31,6 +32,7 @@ pub struct SRDFGraph {
 impl SRDFGraph {
     pub fn new() -> SRDFGraph {
         SRDFGraph {
+            focus: None,
             graph: Graph::new(),
             pm: PrefixMap::new(),
         }
@@ -58,7 +60,11 @@ impl SRDFGraph {
             .map(|(key, value)| (key.as_str(), value.as_str()))
             .collect();
         let pm = PrefixMap::from_hashmap(&prefixes)?;
-        Ok(SRDFGraph { graph: graph, pm })
+        Ok(SRDFGraph {
+            focus: None,
+            graph: graph,
+            pm,
+        })
     }
 
     pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
@@ -489,6 +495,16 @@ impl AsyncSRDF for SRDFGraph {
     }
 }
 
+impl FocusRDF for SRDFGraph {
+    fn set_focus(&mut self, focus: &Self::Term) {
+        self.focus = Some(focus.clone())
+    }
+
+    fn get_focus(&self) -> &Option<Self::Term> {
+        &self.focus
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -563,5 +579,4 @@ mod tests {
         // let mut parser = property_values(&p);
         // let result = parser.parse(&x, &graph).unwrap();
     }
-
 }
