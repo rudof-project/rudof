@@ -50,7 +50,49 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         map(self, f)
     }
 
+    /// Parses with `self` followed by `p`.
+    /// Succeeds if both parsers succeed, otherwise fails.
+    /// Returns a tuple with both values on success.
+    ///
+    fn and<P2>(self, p: P2) -> (Self, P2)
+    where
+        Self: Sized,
+        P2: RDFNodeParse<RDF>,
+    {
+        (self, p)
+    }
+
+    /// Parses using `self` and then passes the value to `f` which returns a parser used to parse
+    /// the rest of the input.
+    fn then<N, F>(self, f: F) -> Then<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Output) -> N,
+        N: RDFNodeParse<RDF>,
+    {
+        then(self, f)
+    }
 }
+
+impl<RDF, P1, P2, A, B> RDFNodeParse<RDF> for (P1,P2) 
+where RDF: FocusRDF,
+      P1: RDFNodeParse<RDF, Output = A>,
+      P2: RDFNodeParse<RDF, Output = B>,
+{
+type Output = (A, B);
+
+fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+    match self.0.parse_impl(rdf) {
+        Ok(a) => match self.1.parse_impl(rdf) {
+            Ok(b) => Ok((a,b)),
+            Err(e) => Err(e)
+        },
+        Err(e) => Err(e),
+    }
+}
+}
+
+
 
 #[derive(Copy, Clone)]
 pub struct Map<P, F> {
@@ -153,6 +195,62 @@ where
     }
 }
 
+pub fn optional<RDF, P>(parser: P) -> Optional<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+{
+    Optional { parser }
+}
+
+#[derive(Copy, Clone)]
+pub struct Optional<P>{ parser: P }
+
+impl<RDF, P> RDFNodeParse<RDF> for Optional<P>
+where RDF: FocusRDF, P: RDFNodeParse<RDF> {
+    type Output = Option<P::Output>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.parser.parse_impl(rdf) {
+            Ok(value) => Ok(Some(value)),
+            Err(_err) => Ok(None),
+        }
+    }
+}
+
+pub fn then<RDF, P, F, N>(parser: P, function: F) -> Then<P, F>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(P::Output) -> N,
+    N: RDFNodeParse<RDF>
+{
+    Then { parser, function }
+}
+
+#[derive(Copy, Clone)]
+pub struct Then<P, F> {
+    parser: P,
+    function: F,
+}
+
+impl<RDF, P, F, N> RDFNodeParse<RDF> for Then<P, F>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(P::Output) -> N,
+    N: RDFNodeParse<RDF>
+{
+    type Output = N::Output;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.parser.parse_impl(rdf) {
+            Ok(value) => (self.function)(value).parse_impl(rdf),
+            Err(err) => Err(err),
+        }
+    }
+}
+
 pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS> 
 where RDF: FocusRDF {
    term().flat_map(|ref t| {
@@ -187,6 +285,11 @@ where
             None => Err(RDFParseError::NoFocusNode),
         }
     }
+}
+
+pub fn property_list<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>> 
+where RDF: FocusRDF {
+    property_value(prop).and(rdf_list()).map(|(_,ls)| { ls })
 }
 
 pub fn parse_rdf_nil<RDF>() -> impl RDFNodeParse<RDF, Output = ()>
@@ -356,20 +459,52 @@ where
     type Output = Vec<RDF::Term>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<RDF::Term>> {
-        match rdf.get_focus() {
-            Some(focus) => {
-                let focus = rdf.get_focus_as_term()?;
-                let mut visited = vec![focus.clone()];
-                parse_list(visited, rdf)
-            }
-            None => {
-                todo!()
-            }
-        }
+        let focus = rdf.get_focus_as_term()?;
+        let visited = vec![focus.clone()];
+        parse_list(visited, rdf)
     }
 }
 
-// Auziliary function to parse a node as an RDF list checking that the RDF list if non-cyclic 
+/// Parses a node as an RDF List applying each element of the list a parser
+pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
+where
+    RDF: SRDF,
+{
+    ParseRDFList {
+        parser
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct ParseRDFList<P> {
+    parser: P,
+}
+
+impl<RDF, P, A> RDFNodeParse<RDF> for ParseRDFList<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output= A>
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<A>> {
+        let focus = rdf.get_focus_as_term()?;
+        let visited = vec![focus.clone()];
+        parse_list(visited, rdf).and_then(|nodes| {
+            let mut result = Vec::new();
+            for node in nodes {
+                rdf.set_focus(&node);
+                match self.parser.parse_impl(rdf) {
+                    Ok(a) => result.push(a),
+                    Err(e) => return Err(e)
+                }
+            }
+            Ok(result)
+        })
+    }
+}
+
+// Auxiliary function to parse a node as an RDF list checking that the RDF list if non-cyclic 
 // by collecting a vector of visited terms
 fn parse_list<RDF>(
     mut visited: Vec<RDF::Term>,

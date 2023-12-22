@@ -130,18 +130,13 @@ impl NodeConstraint {
     }
 
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
-        let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
+        /*let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
         for v in values {
             vs.push(v);
-        }
-        self.values = Some(vs);
+        }*/
+        self.values =Some(values);
         self
     }
-
-    /*    pub fn with_values_wrapped(mut self, values: Vec<ValueSetValueWrapper>) -> Self {
-        self.values = Some(values);
-        self
-    } */
 
     pub fn values(&self) -> Option<Vec<ValueSetValue>> {
         match &self.values {
@@ -493,8 +488,8 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 if let Some(datatype) = datatype {
                     nc = nc.with_datatype(datatype)
                 }
-                if let Some(values) = values {
-                    nc = nc.with_values(values)
+                if let Some(vs) = values {
+                    nc = nc.with_values(vs)
                 }
                 if let Some(minlength) = minlength {
                     nc = nc.with_minlength(minlength)

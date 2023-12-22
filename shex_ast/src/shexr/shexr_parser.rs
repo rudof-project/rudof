@@ -8,7 +8,7 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use srdf::FocusRDF;
 use srdf::{Object, RDFParser};
-use srdf::srdf_parser::RDFNodeParse;
+use srdf::srdf_parser::{RDFNodeParse, iri, property_value, optional, parse_rdf_list};
 type Result<A> = std::result::Result<A, ShExRError>;
 
 pub struct ShExRParser<RDF>
@@ -178,31 +178,25 @@ where
         Ok(None)
     }
 
-    fn parse_value_set(&mut self) -> Result<Option<Vec<ValueSetValue>>> {
-        match self
-            .rdf_parser
-            .parse_list_for_predicate(&Self::sx_values())
-        {
-            Ok(values) => {
-                let mut result = Vec::new();
-                for v in values {
-                    self.set_focus(&v);
-                    let value = self.parse_value()?;
-                    result.push(value);
-                }
-                Ok(Some(result))
+    fn parse_value_set(&mut self) -> impl RDFNodeParse<RDF, Output = Option<Vec<ValueSetValue>>> + '_ {
+        optional(
+            property_value(&Self::sx_values()).then(|ref node| {
+                self.rdf_parser.set_focus(node);
+                parse_rdf_list::<RDF, _>(self.parse_value())
             }
-            Err(_) => Ok(None),
-        }
+            )
+        )
     }
 
-    fn parse_value(&mut self) -> Result<ValueSetValue> {
+    fn parse_value(&mut self) -> impl RDFNodeParse<RDF, Output = ValueSetValue> {
         //firstOf(objectValue, )
-        self.object_value()
+        self.object_value().map(|ov| ValueSetValue::ObjectValue(ov))
     }
 
     fn object_value(&mut self) -> impl RDFNodeParse<RDF, Output = ObjectValue> {
-        
+        iri().map(|ref iri| { 
+            ObjectValue::IriRef(IriRef::Iri(iri.clone()))
+        })
     }
 
     fn parse_xs_facet(&self) -> Result<Option<Vec<XsFacet>>> {

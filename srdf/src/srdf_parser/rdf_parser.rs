@@ -28,7 +28,7 @@ pub struct RDFParser<RDF>
 where
     RDF: FocusRDF,
 {
-    rdf: RDF,
+    pub rdf: RDF,
 }
 
 impl<RDF> RDFParser<RDF>
