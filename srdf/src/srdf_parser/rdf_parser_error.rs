@@ -52,4 +52,15 @@ pub enum RDFParseError {
         condition_name: String,
         node: String,
     },
+
+    #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
+    FailedOr { err1: Box<RDFParseError>, err2: Box<RDFParseError> },
+
+    #[error("Error obtaining subjects whose value for property {property} is {value}: {err}")]
+    ErrorSubjectsPredicateObject{ property: String, value: String, err: String },
+
+    #[error("{msg}")]
+    Custom { msg: String }
+
+
 }

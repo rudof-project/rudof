@@ -117,4 +117,19 @@ impl ShExRVocab {
     pub fn sx_iri() -> IriS {
         IriS::new_unchecked(SX_IRI)
     }
+
+    #[inline]
+    pub fn sx_literal() -> IriS {
+        IriS::new_unchecked(SX_LITERAL)
+    }
+
+    #[inline]
+    pub fn sx_bnode() -> IriS {
+        IriS::new_unchecked(SX_BNODE)
+    }
+
+    #[inline]
+    pub fn sx_nonliteral() -> IriS {
+        IriS::new_unchecked(SX_NONLITERAL)
+    }
 }

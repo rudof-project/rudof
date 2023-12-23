@@ -44,7 +44,6 @@ pub trait SRDFComparisons {
         Self::iri_as_term(Self::iri_s2iri(iri_s))
     }
 
-
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
