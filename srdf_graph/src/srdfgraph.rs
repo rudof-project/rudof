@@ -586,31 +586,22 @@ mod tests {
 
     #[cfg(test)]
     mod tests {
-    use srdf::{RDFParser, rdf_parser, RDF};
+    use srdf::{RDFNodeParse, rdf_parser, ok};
 
     use super::*;
 
     #[test]
     fn test_parser() {
         rdf_parser!{
-            fn my_ok[A](value: &A)(RDF) -> A
+            fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
             where [
                 A: Clone
-            ] { ok(value.clone()) }
+            ] { ok(&value.clone()) }
         }
-        let s = r#"prefix : <http://example.org/>
-        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
-        :x :p rdf:nil .
-        "#;
-
-        let graph = SRDFGraph::from_str(s, None).unwrap();
-        let mut rdf = RDFParser::new(graph);
+        let s = r#"prefix : <http://example.org/>"#;
+        let mut graph = SRDFGraph::from_str(s, None).unwrap();
         let x = IriS::new_unchecked("http://example.org/x");
-        rdf.set_focus_iri(&x);
-        let result = my_ok(&x).parse_impl(&rdf)?;
-        assert_eq!(result, x)
-
+        assert_eq!(my_ok(&3).parse(&x, &mut graph).unwrap(), 3)
     } 
 }
 
