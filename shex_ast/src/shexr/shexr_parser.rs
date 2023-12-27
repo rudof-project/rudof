@@ -32,7 +32,6 @@ where
         }
     }
 
-
     pub fn parse(&mut self) -> Result<Schema> {
         let schema = Self::schema_parser().parse_impl(&mut self.rdf_parser.rdf).map_err(|e| {
             ShExRError::RDFParseError { err: e }
@@ -82,15 +81,6 @@ where
         })
     }
 
-    fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject> {
-        let subj = RDFParser::<RDF>::term_as_subject(term)?;
-        Ok(subj)
-    }
-
-    fn set_focus(&mut self, focus: &RDF::Term) {
-        self.rdf_parser.set_focus(focus)
-    }
-
 }
 
 
@@ -109,7 +99,7 @@ where RDF: FocusRDF {
 
 fn shape<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
 where RDF: FocusRDF {
-    has_type(sx_shape()).then(move |_| {
+    has_type(sx_shape()).with({
         let closed = None; // TODO
         let extra = None; // TODO
         let expression = None; // TODO
@@ -119,12 +109,12 @@ where RDF: FocusRDF {
 
 rdf_parser! {
     pub fn shape_and[RDF]()(RDF) -> ShapeExpr where [] {
-        has_type(sx_shape_and()).and(
+        has_type(sx_shape_and()).with(
         property_value(&sx_shape_exprs()).then(|ref node| {
             set_focus(node).and(
                    parse_rdf_list::<RDF, _>(shape_expr())
                  ).map(|(_,vs)| { ShapeExpr::and(vs) }) 
-           })).map(|(_,vs)| { vs })
+           }))
     }
 }
 

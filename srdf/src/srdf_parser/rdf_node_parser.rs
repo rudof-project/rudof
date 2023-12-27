@@ -88,6 +88,15 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         set_focus(node)
     }
 
+    /// Discards the value of the current parser and returns the value of `parser`
+    /// 
+    fn with<P, A>(self, parser: P) -> With<Self, P>
+    where
+        Self: Sized,
+        P: RDFNodeParse<RDF, Output = A>,
+    {
+        with(self, parser)
+    }
 
 }
 
@@ -144,6 +153,7 @@ where
         }
     }
 }
+
 
 
 pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
@@ -955,6 +965,43 @@ where
         match self.values.get_mut(&iri_type) {
             Some(p) => p.parse_impl(rdf),
             None => self.default.parse_impl(rdf),
+        }
+    }
+}
+
+/// Discards the value of the first parser and returns the value of the second parser
+/// 
+pub fn with<RDF, P1, P2>(parser1: P1, parser2: P2) -> With<P1, P2>
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF>,
+    P2: RDFNodeParse<RDF>,
+{
+    With { parser1, parser2 }
+}
+
+
+#[derive(Copy, Clone)]
+pub struct With<P1, P2> {
+    parser1: P1,
+    parser2: P2,
+}
+
+impl<RDF, A, B, P1, P2> RDFNodeParse<RDF> for With<P1, P2>
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = A>,
+    P2: RDFNodeParse<RDF, Output = B>,
+{
+    type Output = B;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.parser1.parse_impl(rdf) {
+            Ok(a) => match self.parser2.parse_impl(rdf) {
+                Ok(b) => Ok(b),
+                Err(e) => Err(e)
+            },
+            Err(e) => Err(e),
         }
     }
 }
