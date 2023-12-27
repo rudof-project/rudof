@@ -583,4 +583,36 @@ mod tests {
         // let mut parser = property_values(&p);
         // let result = parser.parse(&x, &graph).unwrap();
     }
+
+    #[cfg(test)]
+    mod tests {
+    use srdf::{RDFParser, rdf_parser, RDF};
+
+    use super::*;
+
+    #[test]
+    fn test_parser() {
+        rdf_parser!{
+            fn my_ok[A](value: &A)(RDF) -> A
+            where [
+                A: Clone
+            ] { ok(value.clone()) }
+        }
+        let s = r#"prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        
+        :x :p rdf:nil .
+        "#;
+
+        let graph = SRDFGraph::from_str(s, None).unwrap();
+        let mut rdf = RDFParser::new(graph);
+        let x = IriS::new_unchecked("http://example.org/x");
+        rdf.set_focus_iri(&x);
+        let result = my_ok(&x).parse_impl(&rdf)?;
+        assert_eq!(result, x)
+
+    } 
+}
+
+
 }
