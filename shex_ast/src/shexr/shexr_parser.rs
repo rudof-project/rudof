@@ -241,23 +241,12 @@ where
 
 fn shape_expr_<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
 where RDF: FocusRDF {
-    rdf_type().then(|type_term: RDF::Term| {
+    shape_and().or(node_constraint())
+    /*rdf_type().then(|type_term: RDF::Term| {
       term_as_iri(type_term).then(|iri| { 
-        let iri_c = iri.clone();
-        parse_shape_expr_iri(&iri_c) 
+        parse_shape_expr_iri(iri.clone())
       })
-    })
-}
-
-rdf_parser!{
-    fn parse_shape_expr_iri['a, RDF](iri: &'a IriS)(RDF) -> ShapeExpr where [] 
-    {
-        match iri.as_str() {
-            SX_SHAPE_AND => shape_and(),
-            SX_NODECONSTRAINT => todo!(), // node_constraint(),
-            _ => todo!()
-        }
-    }
+    })*/
 }
 
 rdf_parser! {
@@ -268,14 +257,14 @@ rdf_parser! {
 
 rdf_parser! {
     pub fn shape_and[RDF]()(RDF) -> ShapeExpr where [] {
+        has_type(sx_shape_and()).and(
         property_value(&sx_shape_exprs()).then(|ref node| {
             set_focus(node).and(
                    parse_rdf_list::<RDF, _>(shape_expr())
                  ).map(|(_,vs)| { ShapeExpr::and(vs) }) 
-           })
+           })).map(|(_,vs)| { vs })
     }
 }
-
 
 rdf_parser!{
     pub fn shape_expr[RDF]()(RDF) -> ShapeExpr where [] {
@@ -312,4 +301,8 @@ fn sx_shape_exprs() -> IriS {
 #[inline]
 fn sx_node_kind() -> IriS {
     IriS::new_unchecked(SX_NODEKIND)
+}
+
+fn sx_shape_and() -> IriS {
+    IriS::new_unchecked(SX_SHAPE_AND)
 }

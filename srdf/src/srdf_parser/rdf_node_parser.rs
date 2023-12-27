@@ -2,7 +2,7 @@ use std::{marker::PhantomData, collections::HashSet};
 
 use iri_s::IriS;
 
-use crate::{FocusRDF, RDFParseError, RDF_NIL, SRDF, Vocab, rdf_parser, PResult};
+use crate::{FocusRDF, RDFParseError, RDF_NIL, SRDF, Vocab, rdf_parser, PResult, RDFParse};
 
 /// Represents a parser of RDF data from a pointed node in the graph
 pub trait RDFNodeParse<RDF: FocusRDF> {
@@ -111,6 +111,16 @@ fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
 
 }
 
+/// Applies a function `f` on the result of a parser
+/// 
+pub fn map<RDF, P, F, B>(parser: P, f: F) -> Map<P, F>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(P::Output) -> B,
+{
+    Map { parser, f }
+}
 
 
 #[derive(Copy, Clone)]
@@ -135,14 +145,6 @@ where
     }
 }
 
-pub fn map<RDF, P, F, B>(parser: P, f: F) -> Map<P, F>
-where
-    RDF: FocusRDF,
-    P: RDFNodeParse<RDF>,
-    F: FnMut(P::Output) -> B,
-{
-    Map { parser, f }
-}
 
 pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
 where
@@ -653,7 +655,7 @@ where RDF: FocusRDF,
    )    
 }
 
-/// Returns the node that is an instances of the expected IRI in the RDF data
+/// Returns the node that is an instance of the expected IRI in the RDF data
 /// It moves the focus to point to that node
 pub fn instance_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = RDF::Subject> 
 where RDF: FocusRDF {
@@ -704,6 +706,8 @@ where RDF: FocusRDF,
     Ok { value: value.clone() }
 }
 
+
+
 #[derive(Debug, Clone)]
 struct Ok<A> 
 {
@@ -721,6 +725,63 @@ where
         Ok(self.value.clone())
     }
 }
+
+/// Fails with a given massage
+pub fn fail_msg<RDF>(msg: String) -> impl RDFNodeParse<RDF, Output = ()> 
+where RDF: FocusRDF {
+    Fail { msg: msg.clone() }
+}
+
+#[derive(Debug, Clone)]
+struct Fail
+{
+    msg: String,
+}
+
+impl<RDF> RDFNodeParse<RDF> for Fail
+where
+    RDF: FocusRDF,
+{
+    type Output = ();
+
+    fn parse_impl(&mut self, _rdf: &mut RDF) -> PResult<Self::Output> {
+        Err(RDFParseError::Custom { msg: self.msg.clone() })
+    }
+}
+
+/// Applies a function and returns its result
+/// 
+/// 
+pub fn cond<RDF, A>(value: &A, pred: impl FnMut(&A) -> bool, fail_msg: String) -> impl RDFNodeParse<RDF, Output = ()> 
+where RDF: FocusRDF,
+      A: Clone {
+    Cond { value: value.clone(), pred, fail_msg: fail_msg.clone() }
+}
+
+#[derive(Debug, Clone)]
+struct Cond<A, P> 
+{
+    value: A,
+    pred: P,
+    fail_msg: String,
+}
+
+impl <RDF, A, P> RDFNodeParse<RDF> for Cond<A, P>
+where
+    RDF: FocusRDF,
+    P: FnMut(&A) -> bool,
+    A: Clone
+{
+    type Output = ();
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match (self.pred)(&self.value) {
+            true => Ok(()),
+            false => Err(RDFParseError::Custom { msg: self.fail_msg.clone() }),
+        }
+    }
+}
+
 
 /// Applies a function and returns its result
 pub fn apply<RDF, A, B>(value: &A, function: impl FnMut(&A) -> Result<B, RDFParseError>) -> impl RDFNodeParse<RDF, Output = B> 
@@ -792,6 +853,27 @@ where RDF: FocusRDF {
     property_value(&Vocab::rdf_type())
 }
 
+pub fn has_type<RDF>(expected: IriS) -> impl RDFNodeParse<RDF, Output = ()> 
+where RDF: FocusRDF {
+      rdf_type().flat_map(move |ref term| {
+        let iri = term_as_iri_s::<RDF>(term)?;
+        if iri == expected {
+          Ok(()) 
+        } else {
+          Err(RDFParseError::Custom { 
+            msg: format!("Current focus node has no type: {expected}. It has type: {term}")
+          })
+        }
+      })
+}
+
+fn term_as_iri_s<RDF>(term:&RDF::Term) -> PResult<IriS> 
+where RDF: FocusRDF {
+    let iri = RDF::object_as_iri(term).ok_or_else(|| RDFParseError::Custom { msg: "Expected IRI".to_string()})?;
+    let iri_s = RDF::iri2iri_s(&iri);
+    Ok(iri_s)
+}
+
 /// Returns all nodes that are instances of the expected IRI in the RDF data
 pub fn subjects_with_property_value<RDF>(property: &IriS, value: &RDF::Term) -> SubjectsPropertyValue<RDF> 
 where RDF: FocusRDF {
@@ -830,7 +912,6 @@ where
         Ok(result)
     }
 }
-
 
 rdf_parser!{
     /// Parses the value of `property` as an RDF list
