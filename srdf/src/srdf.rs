@@ -72,6 +72,7 @@ pub trait SRDF: SRDFComparisons {
         subject: &Self::Subject,
         preds: Vec<Self::IRI>,
     ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err>;
+
 }
 
 #[cfg(test)]

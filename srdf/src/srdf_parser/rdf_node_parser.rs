@@ -2,9 +2,7 @@ use std::{marker::PhantomData, collections::HashSet};
 
 use iri_s::IriS;
 
-use crate::{FocusRDF, RDFParseError, RDF_NIL, SRDF, Vocab};
-
-use super::PResult;
+use crate::{FocusRDF, RDFParseError, RDF_NIL, SRDF, Vocab, rdf_parser, PResult};
 
 /// Represents a parser of RDF data from a pointed node in the graph
 pub trait RDFNodeParse<RDF: FocusRDF> {
@@ -89,6 +87,8 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     {
         set_focus(node)
     }
+
+
 }
 
 impl<RDF, P1, P2, A, B> RDFNodeParse<RDF> for (P1,P2) 
@@ -395,6 +395,7 @@ where
         match rdf.get_focus() {
             Some(term) => {
                 if (self.predicate)(term) {
+                    println!("Comparison with name: {} for term: {term}", self.predicate_name);
                     Ok(())
                 } else {
                     Err(RDFParseError::NodeDoesntSatisfyCondition {
@@ -830,3 +831,16 @@ where
     }
 }
 
+
+rdf_parser!{
+    /// Parses the value of `property` as an RDF list
+    pub fn parse_property_value_as_list['a, RDF](property: &'a IriS)(RDF) -> Vec<RDF::Term>
+        where [
+        ] { 
+            property_value(&property)
+            .then(|node| 
+                set_focus(&node).then(|_| 
+                    rdf_list())
+             )
+        }
+    }

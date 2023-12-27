@@ -8,4 +8,4 @@ pub use rdf_parser::*;
 pub use rdf_node_parser::*;
 pub use rdf_parser_error::*;
 
-type PResult<A> = Result<A, RDFParseError>;
+pub type PResult<A> = Result<A, RDFParseError>;
