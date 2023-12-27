@@ -34,16 +34,16 @@ where
 
 
     pub fn parse(&mut self) -> Result<Schema> {
-        // let schema_node = self.rdf_parser.instance_of(&Self::sx_schema())?;
-        // self.parse_schema(&schema_node)
-        Self::schema_parser().parse_impl(&mut self.rdf_parser.rdf).map_err(|e| {
+        let schema = Self::schema_parser().parse_impl(&mut self.rdf_parser.rdf).map_err(|e| {
             ShExRError::RDFParseError { err: e }
-        })
+        })?;
+        let prefixmap = self.rdf_parser.prefixmap();
+        Ok(schema.with_prefixmap(prefixmap))
+
     }
 
     pub fn schema_parser() -> impl RDFNodeParse<RDF, Output = Schema> {
         instance_of(&ShExRVocab::sx_schema()).then(|node| {
-            println!("Node for schema {node}");
             set_focus_subject(node).then(|_| Self::schema())
         })
     }
@@ -82,26 +82,6 @@ where
         })
     }
 
-
-    /*fn parse_schema(&mut self, node: &RDF::Subject) -> Result<Schema> {
-        let mut shapes = Vec::new();
-        self.rdf_parser.set_focus(&RDF::subject_as_term(node));
-        let shape_nodes = self
-            .rdf_parser
-            .parse_list_for_predicate(&Self::sx_shapes())?;
-        for shape_decl_node in shape_nodes {
-            let (label, shape_expr, is_abstract) = self.parse_shape_decl(&shape_decl_node)?;
-            shapes.push(ShapeDecl::new(label, shape_expr, is_abstract))
-        }
-        let maybe_shapes = if shapes.is_empty() {
-            None
-        } else {
-            Some(shapes)
-        };
-        let prefixmap = self.rdf_parser.prefixmap();
-        Ok(Schema::new().with_shapes(maybe_shapes).with_prefixmap(prefixmap))
-    }*/
-
     fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject> {
         let subj = RDFParser::<RDF>::term_as_subject(term)?;
         Ok(subj)
@@ -111,148 +91,30 @@ where
         self.rdf_parser.set_focus(focus)
     }
 
-    /*fn parse_shape_decl(&mut self, node: &RDF::Term) -> Result<(ShapeExprLabel, ShapeExpr, bool)> {
-        let label = Self::term_to_shape_label(node)?;
-        self.set_focus(node);
-        let shape_expr_node = self
-            .rdf_parser
-            .predicate_value(&Self::sx_shape_expr())?;
-        self.set_focus(&shape_expr_node);
-        let shape_expr = self.parse_shape_expr()?;
-        let is_abstract = false;
-        Ok((label, shape_expr, is_abstract))
-    }
-
-    fn parse_shape_expr(&mut self) -> Result<ShapeExpr> {
-        let shape_expr_type = self.rdf_parser.get_rdf_type()?;
-        let iri_type = RDFParser::<RDF>::term_as_iri(&shape_expr_type)?;
-        match iri_type.as_str() {
-            SX_SHAPE_AND => {
-                let mut shape_exprs = Vec::new();
-                let ls_nodes = self
-                    .rdf_parser
-                    .parse_list_for_predicate(&Self::sx_shape_exprs())?;
-                for shape_expr_node in ls_nodes.iter() {
-                    self.set_focus(&shape_expr_node);
-                    let shape_expr = self.parse_shape_expr()?;
-                    shape_exprs.push(shape_expr)
-                }
-                Ok(ShapeExpr::and(shape_exprs))
-            }
-            SX_NODECONSTRAINT => {
-                let nc = self.parse_node_constraint()?;
-                Ok(ShapeExpr::NodeConstraint(nc))
-            }
-            SX_SHAPE => {
-                let shape = self.parse_shape()?;
-                Ok(ShapeExpr::Shape(shape))
-            }
-            _ => todo!(),
-        }
-    }*/
-
-    fn parse_node_constraint(&mut self) -> Result<NodeConstraint> {
-        let mut nc = NodeConstraint::new();
-        if let Some(node_kind) = Self::parse_nodekind().parse_impl(&mut self.rdf_parser.rdf)? {
-            nc = nc.with_node_kind(node_kind)
-        };
-        if let Some(datatype) = self.parse_datatype()? {
-            nc = nc.with_datatype(datatype)
-        };
-        if let Some(value_set) = Self::parse_value_set().parse_impl(&mut self.rdf_parser.rdf)? {
-            nc = nc.with_values(value_set)
-        };
-        if let Some(xs_facets) = self.parse_xs_facet()? {
-            nc = nc.with_xsfacets(xs_facets)
-        }
-        Ok(nc)
-    }
-
-    fn parse_nodekind() -> impl RDFNodeParse<RDF, Output = Option<NodeKind>> {
-        optional(
-            property_value(&sx_node_kind()).then(|ref node| {
-                set_focus(node).and(Self::nodekind()
-                ).map(|(_,vs)| { vs })
-            })
-        )
-    }
-
-    fn nodekind() -> impl RDFNodeParse<RDF, Output = NodeKind> {
-        Self::iri_kind().or(
-            Self::literal_kind()).or(
-                Self::bnode_kind()).or(
-                    Self::nonliteral_kind())
-    }
-
-    fn iri_kind() -> impl RDFNodeParse<RDF, Output = NodeKind> {
-        is_iri(ShExRVocab::sx_iri()).map(|_| NodeKind::Iri)
-    }
-
-    fn literal_kind() -> impl RDFNodeParse<RDF, Output = NodeKind> {
-        is_iri(ShExRVocab::sx_literal()).map(|_| NodeKind::Literal)
-    }
-
-    fn bnode_kind() -> impl RDFNodeParse<RDF, Output = NodeKind> {
-        is_iri(ShExRVocab::sx_bnode()).map(|_| NodeKind::BNode)
-    }
-
-    fn nonliteral_kind() -> impl RDFNodeParse<RDF, Output = NodeKind> {
-        is_iri(ShExRVocab::sx_nonliteral()).map(|_| NodeKind::NonLiteral)
-    }
-
-
-    fn parse_datatype(&self) -> Result<Option<IriRef>> {
-        // TODO
-        Ok(None)
-    }
-
-    fn parse_value_set() -> impl RDFNodeParse<RDF, Output = Option<Vec<ValueSetValue>>> {
-        optional(
-            property_value(&sx_values()).then(|ref node| {
-                set_focus(node).and(
-                    parse_rdf_list::<RDF, _>(Self::parse_value())).map(|(_,vs)| { vs })
-            })
-        )
-    }
-
-    fn parse_value() -> impl RDFNodeParse<RDF, Output = ValueSetValue> {
-        //firstOf(objectValue, )
-        Self::object_value().map(|ov| ValueSetValue::ObjectValue(ov))
-    }
-
-    fn object_value() -> impl RDFNodeParse<RDF, Output = ObjectValue> {
-        iri().map(|ref iri| { 
-            ObjectValue::IriRef(IriRef::Iri(iri.clone()))
-        })
-    }
-
-    fn parse_xs_facet(&self) -> Result<Option<Vec<XsFacet>>> {
-        // TODO
-        Ok(None)
-    }
-
-    fn parse_shape(&self) -> Result<Shape> {
-        let closed = None; // TODO
-        let extra = None; // TODO
-        let expression = None; // TODO
-        Ok(Shape::new(closed, extra, expression))
-    }
 }
+
+
 
 fn shape_expr_<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
 where RDF: FocusRDF {
-    shape_and().or(node_constraint())
-    /*rdf_type().then(|type_term: RDF::Term| {
-      term_as_iri(type_term).then(|iri| { 
-        parse_shape_expr_iri(iri.clone())
-      })
-    })*/
+   // I would like the following code to work...but it doesn't yet...
+   /*parse_by_type(vec![
+    (sx_shape_and(), shape_and()),
+    . . .
+    (sx_node_constraint(), node_constraint())
+   ], default) */
+
+   shape_and().or(shape()).or(node_constraint())
 }
 
-rdf_parser! {
-    fn node_constraint[RDF]()(RDF) -> ShapeExpr where [] {
-        ok(&ShapeExpr::node_constraint(NodeConstraint::new()))
-    }
+fn shape<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
+where RDF: FocusRDF {
+    has_type(sx_shape()).then(move |_| {
+        let closed = None; // TODO
+        let extra = None; // TODO
+        let expression = None; // TODO
+        ok(&ShapeExpr::shape(Shape::new(closed, extra, expression)))
+    })
 }
 
 rdf_parser! {
@@ -294,6 +156,12 @@ fn sx_values() -> IriS {
 }
 
 #[inline]
+fn sx_shape() -> IriS {
+    IriS::new_unchecked(SX_SHAPE)
+}
+
+
+#[inline]
 fn sx_shape_exprs() -> IriS {
     IriS::new_unchecked(SX_SHAPE_EXPRS)
 }
@@ -306,3 +174,101 @@ fn sx_node_kind() -> IriS {
 fn sx_shape_and() -> IriS {
     IriS::new_unchecked(SX_SHAPE_AND)
 }
+
+fn sx_node_constraint() -> IriS {
+    IriS::new_unchecked(SX_NODECONSTRAINT)
+}
+
+rdf_parser!{
+ fn node_constraint[RDF]()(RDF) -> ShapeExpr 
+ where [] {
+    parse_nodekind().then(|maybe_nodekind|
+        parse_value_set().then(move |maybe_valueset| {
+           let mut nc = NodeConstraint::new();
+           if let Some(nk) = &maybe_nodekind {
+              nc = nc.with_node_kind(nk.clone());
+           }
+           if let Some(vs) = &maybe_valueset {
+              nc = nc.with_values(vs.clone())
+           }
+           ok(&ShapeExpr::node_constraint(nc))
+         }
+        )
+    )
+  }
+}
+
+fn parse_nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = Option<NodeKind>> 
+where RDF: FocusRDF {
+    optional(
+        property_value(&sx_node_kind()).then(|ref node| {
+            set_focus(node).and(nodekind()
+            ).map(|(_,vs)| { vs })
+        })
+    )
+}
+
+fn nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind> 
+where RDF: FocusRDF {
+    iri_kind().or(
+        literal_kind()).or(
+            bnode_kind()).or(
+                nonliteral_kind())
+}
+
+fn iri_kind<RDF> () -> impl RDFNodeParse<RDF, Output = NodeKind> 
+where RDF: FocusRDF {
+    is_iri(ShExRVocab::sx_iri()).map(|_| NodeKind::Iri)
+}
+
+fn literal_kind<RDF> () -> impl RDFNodeParse<RDF, Output = NodeKind> 
+where RDF: FocusRDF {
+    is_iri(ShExRVocab::sx_literal()).map(|_| NodeKind::Literal)
+}
+
+fn bnode_kind<RDF> () -> impl RDFNodeParse<RDF, Output = NodeKind> 
+where RDF: FocusRDF {
+    is_iri(ShExRVocab::sx_bnode()).map(|_| NodeKind::BNode)
+}
+
+fn nonliteral_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind> 
+where RDF: FocusRDF {
+    is_iri(ShExRVocab::sx_nonliteral()).map(|_| NodeKind::NonLiteral)
+}
+
+
+fn parse_datatype<RDF>() -> Result<Option<IriRef>> 
+where RDF: FocusRDF {
+    // TODO
+    Ok(None)
+}
+
+fn parse_value_set<RDF>() -> impl RDFNodeParse<RDF, Output = Option<Vec<ValueSetValue>>> 
+where RDF: FocusRDF {
+    optional(
+        property_value(&sx_values()).then(|ref node| {
+            set_focus(node).and(
+                parse_rdf_list::<RDF, _>(parse_value())).map(|(_,vs)| { vs })
+        })
+    )
+}
+
+fn parse_value<RDF>() -> impl RDFNodeParse<RDF, Output = ValueSetValue> 
+where RDF: FocusRDF {
+    //firstOf(objectValue, )
+    object_value().map(|ov| ValueSetValue::ObjectValue(ov))
+}
+
+fn object_value<RDF>() -> impl RDFNodeParse<RDF, Output = ObjectValue> 
+where RDF: FocusRDF {
+    iri().map(|ref iri| { 
+        ObjectValue::IriRef(IriRef::Iri(iri.clone()))
+    })
+}
+
+fn parse_xs_facet<RDF>() -> Result<Option<Vec<XsFacet>>> 
+where RDF: FocusRDF {
+    // TODO
+    Ok(None)
+}
+

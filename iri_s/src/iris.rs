@@ -17,36 +17,10 @@ pub struct IriS {
     iri: NamedNode,
 }
 
-// TODO: I would like to define the rest of values in terms of the following ones...
-lazy_static! {
-    pub static ref XSD: IriS = IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#");
-    pub static ref RDF: IriS = IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-}
-
 impl IriS {
-    // TODO: Maybe define this one as const...
+
     pub fn rdf_type() -> IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-    }
-
-    pub fn xsd() -> IriS {
-        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#")
-    }
-
-    pub fn xsd_integer() -> IriS {
-        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")
-    }
-
-    pub fn xsd_decimal() -> IriS {
-        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal")
-    }
-
-    pub fn xsd_double() -> IriS {
-        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#double")
-    }
-
-    pub fn xsd_boolean() -> IriS {
-        IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#boolean")
     }
 
     pub fn new_unchecked(str: &str) -> IriS {
@@ -66,11 +40,9 @@ impl IriS {
         &self.iri
     }
 
-    pub fn add_unchecked(iri: IriS, str: &str) -> IriS {
-        let new_str = format!("{}{}", iri.as_str(), str);
-        IriS::new_unchecked(new_str.as_str())
-    }
-
+    /// Extend an IRI with a new string 
+    /// 
+    /// This function is safe as it checks for possible errors
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
         let iri = NamedNode::new(extended_str)
@@ -78,6 +50,15 @@ impl IriS {
         Ok(IriS { iri })
     }
 
+    /// Extend an IRI with a new string without checking for possible syntactic errors
+    /// 
+    pub fn extend_unchecked(&self, str: &str) -> Self {
+        let extended_str = format!("{}{}", self.iri.as_str(), str);
+        let iri = NamedNode::new_unchecked(extended_str);
+        IriS { iri }
+    }
+
+    /// Resolve the IRI `other` with this IRI
     pub fn resolve(&self, other: IriS) -> Result<Self, IriSError> {
         let base = Iri::parse(self.iri.as_str())
             .map_err(|e| IriSError::IriParseError { err: e.to_string() })?;
@@ -165,11 +146,6 @@ impl<'de> Deserialize<'de> for IriS {
     }
 }
 
-/*impl PartialEq for IriS {
-    fn eq(&self, other: &Self) -> bool {
-        self.iri.as_str() == other.iri.as_str()
-    }
-}*/
 
 #[cfg(test)]
 mod tests {

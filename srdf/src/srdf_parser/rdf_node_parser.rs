@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, collections::HashSet};
+use std::{marker::PhantomData, collections::{HashSet, HashMap}};
 
 use iri_s::IriS;
 
@@ -397,7 +397,6 @@ where
         match rdf.get_focus() {
             Some(term) => {
                 if (self.predicate)(term) {
-                    println!("Comparison with name: {} for term: {term}", self.predicate_name);
                     Ok(())
                 } else {
                     Err(RDFParseError::NodeDoesntSatisfyCondition {
@@ -923,5 +922,39 @@ rdf_parser!{
                 set_focus(&node).then(|_| 
                     rdf_list())
              )
+    }
+}
+
+/// Apply a parser to an RDF node associated with the value of it's `rdf:type` property
+pub fn parse_by_type<'a, RDF, P, A>(values: Vec<(IriS, P)>, default: P) -> impl RDFNodeParse<RDF, Output = A> 
+where RDF: FocusRDF,
+      P: RDFNodeParse<RDF, Output= A> {
+   ParseByType { values: HashMap::from_iter(values.into_iter()), default }
+}
+
+pub struct ParseByType<I, P> {
+    values: HashMap<I, P>,
+    default: P
+}
+
+impl<RDF, P, A> RDFNodeParse<RDF> for ParseByType<IriS, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output= A>  
+{
+    type Output = A;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        let rdf_type = rdf_type().parse_impl(rdf)?;
+        let iri_type = match RDF::object_as_iri(&rdf_type) {
+            Some(iri) => RDF::iri2iri_s(&iri),
+            None => {
+                return Err(RDFParseError::ExpectedIRI { term: format!("{rdf_type}") })
+            }
+        };
+        match self.values.get_mut(&iri_type) {
+            Some(p) => p.parse_impl(rdf),
+            None => self.default.parse_impl(rdf),
         }
     }
+}

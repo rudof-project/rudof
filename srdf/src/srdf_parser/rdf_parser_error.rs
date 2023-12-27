@@ -1,3 +1,4 @@
+use iri_s::IriS;
 use thiserror::Error;
 
 use crate::literal::Literal;
@@ -58,6 +59,9 @@ pub enum RDFParseError {
 
     #[error("Error obtaining subjects whose value for property {property} is {value}: {err}")]
     ErrorSubjectsPredicateObject{ property: String, value: String, err: String },
+
+    #[error("Error parsing by type. Unknown type: {iri_type}")]
+    UnknownType { iri_type: IriS },
 
     #[error("{msg}")]
     Custom { msg: String }
