@@ -99,7 +99,7 @@ where
 
     pub fn predicate_values(
         &mut self,
-        pred: &RDF::IRI,
+        pred: &IriS,
     ) -> Result<HashSet<RDF::Term>, RDFParseError> {
         let mut p = property_values(pred);
         let vs = p.parse_impl(&mut self.rdf)?;
