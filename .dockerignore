@@ -6,7 +6,8 @@
 !/srdf
 !/shex_ast
 !/shex_compact
-!/shex_cli
+!/sx_cli
+!/shacl_ast
 !/srdf_graph
 !/srdf_sparql
 !/shex_testsuite

@@ -14,7 +14,6 @@ use srdf::rdf_parser;
 
 type Result<A> = std::result::Result<A, ShExRError>;
 
-
 pub struct ShExRParser<RDF>
 where
     RDF: FocusRDF,
@@ -94,17 +93,25 @@ where RDF: FocusRDF {
     (sx_node_constraint(), node_constraint())
    ], default) */
 
-   shape_and().or(shape()).or(node_constraint())
+   shape_and().or(shape_or()).or(shape()).or(node_constraint())
 }
 
 fn shape<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
 where RDF: FocusRDF {
     has_type(sx_shape()).with({
-        let closed = None; // TODO
-        let extra = None; // TODO
-        let expression = None; // TODO
-        ok(&ShapeExpr::shape(Shape::new(closed, extra, expression)))
+        closed().then(|maybe_closed| {
+            println!("Value of closed: {maybe_closed:?}");
+            let extra = None; // TODO
+            let expression = None; // TODO
+            ok(&ShapeExpr::shape(Shape::new(maybe_closed, extra, expression)))
+        }
+        )
     })
+}
+
+fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = Option<bool>> 
+where RDF: FocusRDF {
+    optional(property_bool(&sx_closed()))
 }
 
 rdf_parser! {
@@ -117,6 +124,18 @@ rdf_parser! {
            }))
     }
 }
+
+rdf_parser! {
+    pub fn shape_or[RDF]()(RDF) -> ShapeExpr where [] {
+        has_type(sx_shape_or()).with(
+        property_value(&sx_shape_exprs()).then(|ref node| {
+            set_focus(node).and(
+                   parse_rdf_list::<RDF, _>(shape_expr())
+                 ).map(|(_,vs)| { ShapeExpr::or(vs) }) 
+           }))
+    }
+}
+
 
 rdf_parser!{
     pub fn shape_expr[RDF]()(RDF) -> ShapeExpr where [] {
@@ -135,10 +154,14 @@ fn sx_shapes() -> IriS {
     IriS::new_unchecked(SX_SHAPES)
 }
 
-#[inline]
 fn sx_shape_expr() -> IriS {
     IriS::new_unchecked(SX_SHAPE_EXPR)
 }
+
+fn sx_closed() -> IriS {
+    IriS::new_unchecked(SX_CLOSED)
+}
+
 
 #[inline]
 fn sx_values() -> IriS {
@@ -164,6 +187,11 @@ fn sx_node_kind() -> IriS {
 fn sx_shape_and() -> IriS {
     IriS::new_unchecked(SX_SHAPE_AND)
 }
+
+fn sx_shape_or() -> IriS {
+    IriS::new_unchecked(SX_SHAPE_OR)
+}
+
 
 fn sx_node_constraint() -> IriS {
     IriS::new_unchecked(SX_NODECONSTRAINT)

@@ -39,7 +39,7 @@ use crate::grammar_structs::{
 
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, Vocab};
+use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE, RDF_TYPE_STR};
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
@@ -1779,7 +1779,8 @@ fn integer_or_star(i: Span) -> IRes<i32> {
 /// `[69]   	<RDF_TYPE>	   ::=   	"a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag_no_case("a")(i)?;
-    Ok((i, Vocab::rdf_type().into()))
+    let rdf_type: IriRef = IriRef::iri(IriS::new_unchecked(RDF_TYPE_STR));
+    Ok((i, rdf_type))
 }
 
 /// `[70]   	<ATPNAME_NS>	   ::=   	"@" PNAME_NS`

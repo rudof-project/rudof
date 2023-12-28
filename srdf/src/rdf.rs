@@ -8,7 +8,7 @@ use serde_derive::{Deserialize, Serialize};
     fn parse(format: RDFFormat) -> Self;
 }*/
 
-/// Decclares RDF formats
+/// Posible RDF formats
 pub enum RDFFormat {
     Turtle,
     NTriples,
@@ -25,6 +25,8 @@ pub struct Triple {
     pub predicate: IriS,
     pub object: Object,
 }
+
+pub type RDFNode = Object;
 
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {

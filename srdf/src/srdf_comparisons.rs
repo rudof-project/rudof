@@ -23,6 +23,21 @@ pub trait SRDFComparisons {
     fn object_as_iri(object: &Self::Term) -> Option<Self::IRI>;
     fn object_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
     fn object_as_literal(object: &Self::Term) -> Option<Self::Literal>;
+    fn object_as_boolean(object: &Self::Term) -> Option<bool> {
+        let literal = Self::object_as_literal(object)?;
+        Self::literal_as_boolean(&literal)
+    }
+
+    fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
+        match &Self::datatype_str(&literal) {
+            RDF_BOOLEAN => match Self::lexical_form(literal) {
+               "true" => Some(true),
+               "false" => Some(false),
+               _ => None
+             },
+            _ => None
+        } 
+    }
 
     fn object_is_iri(object: &Self::Term) -> bool;
     fn object_is_bnode(object: &Self::Term) -> bool;
@@ -32,9 +47,14 @@ pub trait SRDFComparisons {
 
     fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
-    fn lexical_form(&self, literal: &Self::Literal) -> String;
-    fn lang(&self, literal: &Self::Literal) -> Option<String>;
-    fn datatype(&self, literal: &Self::Literal) -> Self::IRI;
+    fn lexical_form(literal: &Self::Literal) -> &str;
+    fn lang(literal: &Self::Literal) -> Option<String>;
+    fn datatype(literal: &Self::Literal) -> Self::IRI;
+    
+    fn datatype_str(literal: &Self::Literal) -> String {
+        let iri = Self::datatype(literal);
+        Self::iri2iri_s(&iri).to_string()
+    }
 
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
     fn iri_s2subject(iri_s: &IriS) -> Self::Subject {

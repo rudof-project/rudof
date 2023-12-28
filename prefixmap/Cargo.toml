@@ -6,6 +6,8 @@ description.workspace = true
 documentation = "https://docs.rs/prefixmap"
 edition.workspace = true 
 license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.6" }

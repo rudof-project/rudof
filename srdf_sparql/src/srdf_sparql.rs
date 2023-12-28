@@ -161,13 +161,13 @@ impl SRDFComparisons for SRDFSparql {
         subject_as_term(subject)
     }
 
-    fn lexical_form(&self, literal: &Literal) -> String {
-        literal.to_string()
+    fn lexical_form(literal: &Literal) -> &str {
+        literal.value()
     }
-    fn lang(&self, literal: &Literal) -> Option<String> {
+    fn lang(literal: &Literal) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }
-    fn datatype(&self, literal: &Literal) -> NamedNode {
+    fn datatype(literal: &Literal) -> NamedNode {
         literal.datatype().into_owned()
     }
 

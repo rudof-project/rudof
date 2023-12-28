@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use super::rdf_parser_error::RDFParseError;
-use crate::{Object, Vocab, RDF_NIL, RDF_TYPE, SRDF, FocusRDF};
+use crate::{Object, SRDF, FocusRDF, RDF_TYPE};
 use std::{
     collections::{HashSet, VecDeque},
     error::Error,
@@ -63,7 +63,7 @@ where
 
     #[inline]
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&Vocab::rdf_type())
+        RDF::iri_s2iri(&RDF_TYPE)
     }
 
     pub fn instances_of(
@@ -114,7 +114,7 @@ where
     }
 
     pub fn get_rdf_type(&mut self) -> Result<RDF::Term, RDFParseError> {
-        let value = self.predicate_value(&Vocab::rdf_type())?;
+        let value = self.predicate_value(&RDF_TYPE)?;
         Ok(value)
     }
 

@@ -246,15 +246,15 @@ impl SRDFComparisons for SRDFGraph {
         }
     }
 
-    fn lexical_form(&self, literal: &OxLiteral) -> String {
-        literal.to_string()
+    fn lexical_form(literal: &OxLiteral) -> &str {
+        literal.value()
     }
 
-    fn lang(&self, literal: &OxLiteral) -> Option<String> {
+    fn lang(literal: &OxLiteral) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }
 
-    fn datatype(&self, literal: &OxLiteral) -> OxNamedNode {
+    fn datatype(literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
     }
 

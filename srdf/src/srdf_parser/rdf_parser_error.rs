@@ -8,6 +8,10 @@ pub enum RDFParseError {
 
     #[error("No focus node")]
     NoFocusNode, 
+
+    #[error("Expected focus node to be boolean but found: {term}")]
+    ExpectedBoolean { term: String }, 
+
     
     #[error("RDF Error: {err}")]
     SRDFError { err: String },

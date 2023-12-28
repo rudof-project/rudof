@@ -6,6 +6,8 @@ description.workspace = true
 documentation = "https://docs.rs/iri_s"
 edition.workspace = true
 license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 oxrdf = "0.1.6"

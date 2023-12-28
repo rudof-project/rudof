@@ -170,6 +170,29 @@ pub enum Command {
         #[arg(short = 'p', long = "predicates")]
         predicates: Vec<String>,
     },
+
+    Shacl {
+        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
+        shapes: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "shapes-format",
+            value_name = "Shapes file format",
+            default_value_t = ShaclFormat::Turtle
+        )]
+        shapes_format: ShaclFormat,
+
+        #[arg(
+            short = 'r',
+            long = "result-shapes-format",
+            value_name = "Result shapes format",
+            default_value_t = ShaclFormat::Internal
+        )]
+        result_shapes_format: ShaclFormat,
+
+    },
+
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -236,6 +259,23 @@ impl Display for DataFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             DataFormat::Turtle => write!(dest, "turtle"),
+        }
+    }
+}
+
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ShaclFormat {
+    Internal,
+    Turtle,
+}
+
+impl Display for ShaclFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShaclFormat::Internal => write!(dest, "internal"),
+            ShaclFormat::Turtle => write!(dest, "turtle"),
         }
     }
 }

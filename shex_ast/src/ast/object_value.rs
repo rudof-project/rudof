@@ -15,8 +15,6 @@ use std::{result, str::FromStr};
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
-// use super::serde_string_or_struct::SerializeStringOrStruct;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
     IriRef(IriRef),

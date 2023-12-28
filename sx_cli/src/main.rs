@@ -13,6 +13,7 @@ extern crate shex_validation;
 extern crate srdf;
 extern crate srdf_graph;
 extern crate srdf_sparql;
+extern crate shacl_ast;
 
 use anyhow::*;
 use clap::Parser;
@@ -22,12 +23,13 @@ use oxrdf::{BlankNode, NamedNode, Subject};
 use prefixmap::IriRef;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node, ShapeExprLabel};
+use shacl_ast::{Schema as ShaclSchema, ShaclParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
 use srdf_sparql::SRDFSparql;
-use std::{path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr, result};
 
 pub mod cli;
 pub mod data;
@@ -96,6 +98,12 @@ fn main() -> Result<()> {
             shapemap_format,
             result_shapemap_format,
         }) => run_shapemap(shapemap, shapemap_format, result_shapemap_format),
+        Some(Command::Shacl {
+            shapes,
+            shapes_format,
+            result_shapes_format 
+        }) => run_shacl(shapes, shapes_format, result_shapes_format),
+        
         None => {
             println!("Command not specified");
             Ok(())
@@ -191,6 +199,25 @@ fn run_validate(
         }
     }
 }
+
+fn run_shacl(
+    shapes_buf: &PathBuf,
+    shapes_format: &ShaclFormat,
+    result_shapes_format: &ShaclFormat,
+) -> Result<()> {
+    let shacl_schema = parse_shacl(shapes_buf, shapes_format)?;
+    match result_shapes_format {
+        ShaclFormat::Internal => {
+            println!("{shacl_schema:?}");
+            Ok(())
+        }
+        ShaclFormat::Turtle => {
+            println!("Not implemented conversion to Turtle yet");
+            todo!()
+        }
+    }
+}
+
 
 fn get_data(
     data: &Option<PathBuf>,
@@ -444,6 +471,18 @@ fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<Sch
         }
     }
 }
+
+fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<ShaclSchema> {
+    match shapes_format {
+        ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
+        ShaclFormat::Turtle => {
+            let rdf = parse_data(shapes_path, &DataFormat::Turtle)?;
+            let schema = ShaclParser::new(rdf).parse()?;
+            Ok(schema)
+        }
+    }
+}
+
 
 fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
     match data_format {

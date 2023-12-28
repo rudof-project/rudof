@@ -31,8 +31,6 @@ pub use vocab::*;
 /// ```
 /// 
 /// #[macro_use]
-/// extern crate srdf;
-/// extern crate srdf_graph;
 /// use iri_s::IriS;
 /// use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf_graph::SRDFGraph;

@@ -23,7 +23,7 @@ use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 
-/// A [`ParseError`] at a certain location
+/// A [`ShExParseError`] at a certain location
 #[derive(Debug, Error)]
 #[error("Parse error on line {}, column {}: {}\nat {}{}", 
   .line, .column, 

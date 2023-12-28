@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use oxiri::Iri;
 use oxrdf::NamedNode;
 use serde::de;
