@@ -12,6 +12,8 @@ pub enum RDFParseError {
     #[error("Expected focus node to be boolean but found: {term}")]
     ExpectedBoolean { term: String }, 
 
+    #[error("Expected focus node to be integer but found: {term}")]
+    ExpectedInteger { term: String }, 
     
     #[error("RDF Error: {err}")]
     SRDFError { err: String },

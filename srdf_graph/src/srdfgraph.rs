@@ -584,14 +584,12 @@ mod tests {
         // let result = parser.parse(&x, &graph).unwrap();
     }
 
-    #[cfg(test)]
-    mod tests {
-    use srdf::{RDFNodeParse, rdf_parser, ok};
-
-    use super::*;
 
     #[test]
     fn test_parser() {
+        use srdf::{RDFNodeParse, rdf_parser, ok};
+        use super::*;
+
         rdf_parser!{
             fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
             where [
@@ -603,7 +601,36 @@ mod tests {
         let x = IriS::new_unchecked("http://example.org/x");
         assert_eq!(my_ok(&3).parse(&x, &mut graph).unwrap(), 3)
     } 
-}
 
+    #[test]
+    fn test_parser_property_integers() {
+        use srdf::{RDFNodeParse, property_integers};
+        use super::*;
+        let s = r#"prefix : <http://example.org/>
+          :x :p 1, 2, 3, 2 .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, None).unwrap();
+        let x = IriS::new_unchecked("http://example.org/x");
+        let p = IriS::new_unchecked("http://example.org/p");
+        let mut parser = property_integers(&p);
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3]))
+    }
+
+    #[test]
+    fn test_parser_then_mut() {
+        use srdf::{RDFNodeParse, ok, property_integers};
+        use super::*;
+        let s = r#"prefix : <http://example.org/>
+          :x :p 1, 2, 3 .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, None).unwrap();
+        let x = IriS::new_unchecked("http://example.org/x");
+        let p = IriS::new_unchecked("http://example.org/p");
+        let mut parser = property_integers(&p).then_mut(move |ns| {
+            ns.extend(vec![4, 5]);
+            ok(ns)
+         });
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
+    }
 
 }

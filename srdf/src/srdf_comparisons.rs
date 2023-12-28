@@ -28,6 +28,10 @@ pub trait SRDFComparisons {
         Self::literal_as_boolean(&literal)
     }
 
+    fn term_as_literal(term: &Self::Term) -> Option<Self::Literal> {
+        Self::object_as_literal(term)
+    }
+
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
         match &Self::datatype_str(&literal) {
             RDF_BOOLEAN => match Self::lexical_form(literal) {
@@ -38,6 +42,21 @@ pub trait SRDFComparisons {
             _ => None
         } 
     }
+
+    fn literal_as_integer(literal: &Self::Literal) -> Option<isize> {
+        match &Self::datatype_str(&literal) {
+            RDF_INTEGER => match Self::lexical_form(literal).parse() {
+               Ok(n) => Some(n),
+               _ => None
+            },
+            _ => None
+        } 
+    }
+
+    fn term_as_integer(term: &Self::Term) -> Option<isize> {
+        Self::term_as_literal(term).and_then(|l| Self::literal_as_integer(&l))
+    }
+
 
     fn object_is_iri(object: &Self::Term) -> bool;
     fn object_is_bnode(object: &Self::Term) -> bool;

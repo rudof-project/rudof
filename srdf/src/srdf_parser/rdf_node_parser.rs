@@ -7,7 +7,7 @@ use iri_s::IriS;
 
 use crate::{
     rdf_parser, FocusRDF, PResult, RDFParseError, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST,
-    RDF_TYPE, SRDF,
+    RDF_TYPE, SRDF, SRDFComparisons,
 };
 
 /// Represents a parser of RDF data from a pointed node in the graph
@@ -93,30 +93,22 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, property_values, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
     /// # use srdf_graph::SRDFGraph;
     /// # use oxrdf::Term;
     /// # use std::collections::HashSet;
-    /// let s = r#"prefix : <http://example.org/>
-    ///            :x :p 1 ;
-    ///               :q 2 .
-    /// "#;
-    /// let mut graph = SRDFGraph::from_str(s, None).unwrap();
-    /// let p = IriS::new_unchecked("http://example.org/p");
-    /// let q = IriS::new_unchecked("http://example.org/q");
-    /// let x = IriS::new_unchecked("http://example.org/x");
-    /// let mut parser = property_values(&p).then_mut(|ps| {
-    ///     ok(ps) 
-    ///     // property_values(&q).then( |qs| { ok(&ps.extend(qs))} )
-    ///     });
-    /// let result: HashSet<Term> = parser.parse(&x, &mut graph).unwrap();
-    /// let expected = HashSet::new();
-    /// assert_eq!(
-    ///   result,
-    ///   expected
-    /// )
+    /// use srdf::{RDFNodeParse, ok, property_integers};
+    ///       let s = r#"prefix : <http://example.org/>
+    ///       :x :p 1, 2, 3 .
+    ///     "#;
+    ///     let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    ///     let x = IriS::new_unchecked("http://example.org/x");
+    ///     let p = IriS::new_unchecked("http://example.org/p");
+    ///     let mut parser = property_integers(&p).then_mut(move |ns| {
+    ///         ns.extend(vec![4, 5]);
+    ///         ok(ns)
+    ///      });
+    ///     assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
     /// ```
-
     fn then_mut<N, F>(self, f: F) -> ThenMut<Self, F>
     where
         Self: Sized,
@@ -686,6 +678,34 @@ where
         }
     }
 }
+
+/// Returns the integer values of `property` for the focus node
+///
+/// If there is no value, it returns an empty set
+pub fn property_integers<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<isize>>   
+where RDF: FocusRDF,
+{
+    property_values(&property).flat_map(|terms| {
+        let is = terms_to_ints::<RDF>(terms)?;
+        Ok(is)
+    })
+}
+
+fn terms_to_ints<RDF>(terms: HashSet<RDF::Term>) -> Result<HashSet<isize>, RDFParseError> 
+where RDF: SRDFComparisons {
+  let ints: HashSet<_> = terms.iter().flat_map(|t| term_to_int::<RDF>(t)).collect();
+  Ok(ints)
+}
+
+fn term_to_int<RDF>(term: &RDF::Term) -> Result<isize, RDFParseError> 
+where RDF: SRDFComparisons {
+    let n = RDF::term_as_integer(term).ok_or_else(|| 
+        RDFParseError::ExpectedInteger { term: format!("{term}")}
+    )?;
+    Ok(n)
+
+}
+
 
 /// Combines the results of parsers that return vectors of values
 ///
@@ -1400,3 +1420,4 @@ where
         Ok(results)
     }
 }
+
