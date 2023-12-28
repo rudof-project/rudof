@@ -633,4 +633,37 @@ mod tests {
         assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
     }
 
+    #[test]
+    fn test_parser_or() {
+        use srdf::{RDFNodeParse, property_bool};
+        use super::*;
+        let s = r#"prefix : <http://example.org/>
+          :x :p 1, 2 ;
+             :q true .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, None).unwrap();
+        let x = IriS::new_unchecked("http://example.org/x");
+        let p = IriS::new_unchecked("http://example.org/p");
+        let q = IriS::new_unchecked("http://example.org/q");
+        let mut parser = property_bool(&p).or(property_bool(&q));
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), true)
+    }
+
+    #[test]
+    fn test_parser_and() {
+        use srdf::{RDFNodeParse, property_bool, property_integer};
+        use super::*;
+        let s = r#"prefix : <http://example.org/>
+          :x :p true ;
+             :q 1    .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, None).unwrap();
+        let x = IriS::new_unchecked("http://example.org/x");
+        let p = IriS::new_unchecked("http://example.org/p");
+        let q = IriS::new_unchecked("http://example.org/q");
+        let mut parser = property_bool(&p).and(property_integer(&q));
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), (true, 1))
+    }
+
+
 }

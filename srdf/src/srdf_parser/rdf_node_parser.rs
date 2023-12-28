@@ -54,10 +54,25 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         map(self, f)
     }
 
-    /// Parses with `self` followed by `p`.
+    /// Parses `self` followed by `p`.
     /// Succeeds if both parsers succeed, otherwise fails.
     /// Returns a tuple with both values on success.
     ///
+    /// ```
+    /// # use iri_s::IriS;
+    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::{RDFNodeParse, property_bool, property_integer};
+    /// let s = r#"prefix : <http://example.org/>
+    ///       :x :p true ;
+    ///          :q 1    .
+    ///     "#;
+    /// let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    /// let x = IriS::new_unchecked("http://example.org/x");
+    /// let p = IriS::new_unchecked("http://example.org/p");
+    /// let q = IriS::new_unchecked("http://example.org/q");
+    /// let mut parser = property_bool(&p).and(property_integer(&q));
+    /// assert_eq!(parser.parse(&x, &mut graph).unwrap(), (true, 1))
+    /// ```
     fn and<P2>(self, parser: P2) -> (Self, P2)
     where
         Self: Sized,
@@ -119,6 +134,23 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     }
 
     /// Returns a parser which attempts to parse using `self`. If `self` fails then it attempts `parser`.
+    ///         
+    /// ```
+    /// # use iri_s::IriS;
+    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::{RDFNodeParse, property_bool};
+    /// # use std::collections::HashSet;
+    ///  let s = r#"prefix : <http://example.org/>
+    ///       :x :p 1, 2 ;
+    ///          :q true .
+    ///     "#;
+    ///  let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    ///  let x = IriS::new_unchecked("http://example.org/x");
+    ///  let p = IriS::new_unchecked("http://example.org/p");
+    ///  let q = IriS::new_unchecked("http://example.org/q");
+    ///  let mut parser = property_bool(&p).or(property_bool(&q));
+    ///  assert_eq!(parser.parse(&x, &mut graph).unwrap(), true)
+    /// ```
     fn or<P2>(self, parser: P2) -> Or<Self, P2>
     where
         Self: Sized,
@@ -160,7 +192,9 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     {
         with(self, parser)
     }
+
 }
+
 
 impl<RDF, P1, P2, A, B> RDFNodeParse<RDF> for (P1, P2)
 where
@@ -346,7 +380,7 @@ where
                 Err(err2) => Err(RDFParseError::FailedOr {
                     err1: Box::new(err1),
                     err2: Box::new(err2),
-                }),
+                })
             },
         }
     }
@@ -690,6 +724,18 @@ where RDF: FocusRDF,
         Ok(is)
     })
 }
+
+/// Returns the integer value of `property` for the focus node
+///
+pub fn property_integer<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = isize>   
+where RDF: FocusRDF,
+{
+    property_value(&property).flat_map(|term| {
+        let i = term_to_int::<RDF>(&term)?;
+        Ok(i)
+    })
+}
+
 
 fn terms_to_ints<RDF>(terms: HashSet<RDF::Term>) -> Result<HashSet<isize>, RDFParseError> 
 where RDF: SRDFComparisons {
