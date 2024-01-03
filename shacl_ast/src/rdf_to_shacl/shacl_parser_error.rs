@@ -1,3 +1,4 @@
+use crate::ShaclError;
 use srdf::RDFParseError;
 use thiserror::Error;
 
@@ -10,6 +11,11 @@ pub enum ShaclParserError {
     },
 
     #[error("Expected RDFNode parsing node shape, found: {term}")]
-    ExpectedRDFNodeNodeShape{ term: String }
+    ExpectedRDFNodeNodeShape { term: String },
 
+    #[error("SHACL error: {err}")]
+    ShaclError {
+        #[from]
+        err: ShaclError,
+    },
 }

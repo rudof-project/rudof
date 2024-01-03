@@ -8,12 +8,12 @@
 // The recursion limit is increased because the default one (128) is not enough for the big lazy_static declaration in the SHACL vocabulary definition
 #![recursion_limit = "256"]
 pub mod ast;
-pub mod vocab;
+pub mod shacl_vocab;
 pub mod rdf_to_shacl;
 
 pub use ast::*;
 pub use rdf_to_shacl::*;
-pub use vocab::*;
+pub use shacl_vocab::*;
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,9 @@
-use prefixmap::IriRef;
-use srdf::{RDFNode, SHACLPath, numeric_literal::NumericLiteral};
+use std::fmt::Display;
 
-use crate::{component::Component, target::Target, message_map::MessageMap, severity::Severity};
+use prefixmap::IriRef;
+use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath};
+
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 
 #[derive(Debug, Clone)]
 pub struct PropertyShape {
@@ -19,9 +21,15 @@ pub struct PropertyShape {
     description: MessageMap,
 
     // SHACL spec says that the values of sh:order should be decimals but in the examples they use integers. `NumericLiteral` also includes doubles.
-    order: Option<NumericLiteral>, 
+    order: Option<NumericLiteral>,
 
     group: Option<RDFNode>,
     source_iri: Option<IriRef>,
-    annotations: Vec<(IriRef, RDFNode)>
+    annotations: Vec<(IriRef, RDFNode)>,
+}
+
+impl Display for PropertyShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }

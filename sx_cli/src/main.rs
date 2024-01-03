@@ -6,6 +6,7 @@ extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
+extern crate shacl_ast;
 extern crate shapemap;
 extern crate shex_ast;
 extern crate shex_compact;
@@ -13,7 +14,6 @@ extern crate shex_validation;
 extern crate srdf;
 extern crate srdf_graph;
 extern crate srdf_sparql;
-extern crate shacl_ast;
 
 use anyhow::*;
 use clap::Parser;
@@ -21,15 +21,15 @@ use iri_s::*;
 use log::debug;
 use oxrdf::{BlankNode, NamedNode, Subject};
 use prefixmap::IriRef;
+use shacl_ast::{Schema as ShaclSchema, ShaclParser};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node, ShapeExprLabel};
-use shacl_ast::{Schema as ShaclSchema, ShaclParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
 use srdf_graph::SRDFGraph;
 use srdf_sparql::SRDFSparql;
-use std::{path::PathBuf, str::FromStr, result};
+use std::{path::PathBuf, result, str::FromStr};
 
 pub mod cli;
 pub mod data;
@@ -101,9 +101,9 @@ fn main() -> Result<()> {
         Some(Command::Shacl {
             shapes,
             shapes_format,
-            result_shapes_format 
+            result_shapes_format,
         }) => run_shacl(shapes, shapes_format, result_shapes_format),
-        
+
         None => {
             println!("Command not specified");
             Ok(())
@@ -208,7 +208,7 @@ fn run_shacl(
     let shacl_schema = parse_shacl(shapes_buf, shapes_format)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
-            println!("{shacl_schema:?}");
+            println!("{shacl_schema}");
             Ok(())
         }
         ShaclFormat::Turtle => {
@@ -217,7 +217,6 @@ fn run_shacl(
         }
     }
 }
-
 
 fn get_data(
     data: &Option<PathBuf>,
@@ -482,7 +481,6 @@ fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<Sha
         }
     }
 }
-
 
 fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
     match data_format {
