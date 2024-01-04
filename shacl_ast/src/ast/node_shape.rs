@@ -50,13 +50,27 @@ impl NodeShape {
         self.id.clone()
     }
 
-    pub fn add_target(&mut self, target: Target) {
-        self.targets.push(target)
+    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+        self.targets = targets;
+        self
+    }
+
+    pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
+        self.property_shapes = property_shapes;
+        self
     }
 }
 
 impl Display for NodeShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{}}")
+        writeln!(f, "{{")?;
+        for target in self.targets.iter() {
+            writeln!(f, "       {target}")?
+        }
+        for property in self.property_shapes.iter() {
+            writeln!(f, "       Property {property}")?
+        }
+        write!(f, "}}")?;
+        Ok(())
     }
 }

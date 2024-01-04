@@ -1,8 +1,14 @@
-use std::{marker::PhantomData, collections::{HashSet, HashMap}};
+use std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+};
 
 use iri_s::IriS;
 
-use crate::{FocusRDF, RDFParseError, RDF_NIL, SRDF, rdf_parser, PResult, RDF_TYPE, RDF_NIL_STR, RDF_FIRST, RDF_REST};
+use crate::{
+    rdf_parser, FocusRDF, PResult, RDFParseError, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST,
+    RDF_TYPE, SRDF,
+};
 
 /// Represents a parser of RDF data from a pointed node in the graph
 pub trait RDFNodeParse<RDF: FocusRDF> {
@@ -16,13 +22,13 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output>;
 
-
     /// Uses `f` to map over the output of `self`. If `f` returns an error the parser fails.
     ///
     fn flat_map<F, O>(self, f: F) -> FlatMap<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Output) -> PResult<O> {
+        F: FnMut(Self::Output) -> PResult<O>,
+    {
         flat_map(self, f)
     }
 
@@ -33,8 +39,8 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     where
         Self: Sized,
         F: FnMut(Self::Output) -> Result<O, E>,
-        E: Into<RDFParseError>
-        {
+        E: Into<RDFParseError>,
+    {
         and_then(self, f)
     }
 
@@ -71,11 +77,22 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         then(self, f)
     }
 
+    /// Parses using `self` and then passes a reference to the value to `f` which returns a parser used to parse
+    /// the rest of the input.
+    fn then_ref<N, F>(self, f: F) -> ThenRef<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Output) -> N,
+        N: RDFNodeParse<RDF>,
+    {
+        then_ref(self, f)
+    }
+
     /// Returns a parser which attempts to parse using `self`. If `self` fails then it attempts `parser`.
     fn or<P2>(self, parser: P2) -> Or<Self, P2>
     where
         Self: Sized,
-        P2: RDFNodeParse<RDF, Output = Self::Output>
+        P2: RDFNodeParse<RDF, Output = Self::Output>,
     {
         or(self, parser)
     }
@@ -89,7 +106,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     }
 
     /// Discards the value of the current parser and returns the value of `parser`
-    /// 
+    ///
     /// ```
     /// # use iri_s::IriS;
     /// # use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
@@ -102,9 +119,9 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// assert_eq!(
     ///   property_value(&p).with(ok(&1))
-    ///   .parse(&x, &mut graph).unwrap(), 
+    ///   .parse(&x, &mut graph).unwrap(),
     ///   1
-    /// ) 
+    /// )
     /// ```
     fn with<P, A>(self, parser: P) -> With<Self, P>
     where
@@ -113,31 +130,29 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     {
         with(self, parser)
     }
-
 }
 
-impl<RDF, P1, P2, A, B> RDFNodeParse<RDF> for (P1,P2) 
-where RDF: FocusRDF,
-      P1: RDFNodeParse<RDF, Output = A>,
-      P2: RDFNodeParse<RDF, Output = B>,
+impl<RDF, P1, P2, A, B> RDFNodeParse<RDF> for (P1, P2)
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = A>,
+    P2: RDFNodeParse<RDF, Output = B>,
 {
-type Output = (A, B);
+    type Output = (A, B);
 
-fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
-    match self.0.parse_impl(rdf) {
-        Ok(a) => match self.1.parse_impl(rdf) {
-            Ok(b) => Ok((a,b)),
-            Err(e) => Err(e)
-        },
-        Err(e) => Err(e),
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.0.parse_impl(rdf) {
+            Ok(a) => match self.1.parse_impl(rdf) {
+                Ok(b) => Ok((a, b)),
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
-
-}
-
 /// Applies a function `f` on the result of a parser
-/// 
+///
 pub fn map<RDF, P, F, B>(parser: P, f: F) -> Map<P, F>
 where
     RDF: FocusRDF,
@@ -146,7 +161,6 @@ where
 {
     Map { parser, f }
 }
-
 
 #[derive(Copy, Clone)]
 pub struct Map<P, F> {
@@ -169,8 +183,6 @@ where
         }
     }
 }
-
-
 
 pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
 where
@@ -251,10 +263,15 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Optional<P>{ parser: P }
+pub struct Optional<P> {
+    parser: P,
+}
 
 impl<RDF, P> RDFNodeParse<RDF> for Optional<P>
-where RDF: FocusRDF, P: RDFNodeParse<RDF> {
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+{
     type Output = Option<P::Output>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
@@ -266,39 +283,41 @@ where RDF: FocusRDF, P: RDFNodeParse<RDF> {
 }
 
 /// Equivalent to [`parser1.or(parser2)`].
-/// 
+///
 /// /// [`parser1.or(parser2)`]: trait.RDFNodeParse.html#method.or
 pub fn or<RDF, P1, P2>(parser1: P1, parser2: P2) -> Or<P1, P2>
 where
     RDF: FocusRDF,
     P1: RDFNodeParse<RDF>,
-    P2: RDFNodeParse<RDF>
+    P2: RDFNodeParse<RDF>,
 {
     Or { parser1, parser2 }
 }
 
 #[derive(Copy, Clone)]
-pub struct Or<P1, P2>{ parser1: P1, parser2: P2 }
+pub struct Or<P1, P2> {
+    parser1: P1,
+    parser2: P2,
+}
 
 impl<RDF, P1, P2, O> RDFNodeParse<RDF> for Or<P1, P2>
-where RDF: FocusRDF, 
-      P1: RDFNodeParse<RDF, Output = O>, 
-      P2: RDFNodeParse<RDF, Output = O>
-      {
-
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = O>,
+    P2: RDFNodeParse<RDF, Output = O>,
+{
     type Output = O;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match self.parser1.parse_impl(rdf) {
             Ok(value) => Ok(value),
             Err(err1) => match self.parser2.parse_impl(rdf) {
-               Ok(value) => Ok(value),
-               Err(err2) => Err(
-                RDFParseError::FailedOr { 
-                    err1: Box::new(err1), 
-                    err2: Box::new(err2) 
-                })
-            }
+                Ok(value) => Ok(value),
+                Err(err2) => Err(RDFParseError::FailedOr {
+                    err1: Box::new(err1),
+                    err2: Box::new(err2),
+                }),
+            },
         }
     }
 }
@@ -311,7 +330,7 @@ where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> N,
-    N: RDFNodeParse<RDF>
+    N: RDFNodeParse<RDF>,
 {
     Then { parser, function }
 }
@@ -327,7 +346,7 @@ where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> N,
-    N: RDFNodeParse<RDF>
+    N: RDFNodeParse<RDF>,
 {
     type Output = N::Output;
 
@@ -339,25 +358,65 @@ where
     }
 }
 
-pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS> 
-where RDF: FocusRDF {
-   term().flat_map(|ref t| {
-      match RDF::object_as_iri(t) {
-        None => Err(RDFParseError::ExpectedIRI { term: format!("{t}") }),
-        Some(v) => Ok(RDF::iri2iri_s(&v))
-      }
-   })
+/// Equivalent to [`p.then_ref(f)`].
+///
+/// [`p.then_ref(f)`]: trait.RDFNodeParse.html#method.then_ref
+pub fn then_ref<RDF, P, F, N>(parser: P, function: F) -> ThenRef<P, F>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(&P::Output) -> N,
+    N: RDFNodeParse<RDF>,
+{
+    ThenRef { parser, function }
 }
 
-/// Creates a parser that returns the current focus node as a term
-/// 
-/// This is equivalent to [`get_focus`]
-pub fn term<RDF>() -> Term<RDF> 
+#[derive(Copy, Clone)]
+pub struct ThenRef<P, F> {
+    parser: P,
+    function: F,
+}
+
+impl<RDF, P, F, N> RDFNodeParse<RDF> for ThenRef<P, F>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(&P::Output) -> N,
+    N: RDFNodeParse<RDF>,
+{
+    type Output = N::Output;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.parser.parse_impl(rdf) {
+            Ok(value) => (self.function)(&value).parse_impl(rdf),
+            Err(err) => Err(err),
+        }
+    }
+}
+
+pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where
     RDF: FocusRDF,
 {
-   Term { _marker: PhantomData }
-} 
+    term().flat_map(|ref t| match RDF::object_as_iri(t) {
+        None => Err(RDFParseError::ExpectedIRI {
+            term: format!("{t}"),
+        }),
+        Some(v) => Ok(RDF::iri2iri_s(&v)),
+    })
+}
+
+/// Creates a parser that returns the current focus node as a term
+///
+/// This is equivalent to [`get_focus`]
+pub fn term<RDF>() -> Term<RDF>
+where
+    RDF: FocusRDF,
+{
+    Term {
+        _marker: PhantomData,
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Term<RDF> {
@@ -379,25 +438,28 @@ where
 }
 
 /// Parses the RDF list linked from the value of property `prop` at focus node
-/// 
-pub fn property_list<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>> 
-where RDF: FocusRDF {
-    property_value(prop).and(rdf_list()).map(|(_,ls)| { ls })
+///
+pub fn property_list<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>>
+where
+    RDF: FocusRDF,
+{
+    property_value(prop).and(rdf_list()).map(|(_, ls)| ls)
 }
 
 /// Created a parser that returns the boolean associated with the current focus node for `property`
-/// 
+///
 /// It doesn't move the current focus node
-pub fn property_bool<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = bool> 
-where RDF: FocusRDF {
-    property_value(prop).flat_map(|ref term| {
-        match RDF::object_as_boolean(term) {
-            None => Err(RDFParseError::ExpectedBoolean { term: format!("{term}") }),
-            Some(b) => Ok(b)
-        }
+pub fn property_bool<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = bool>
+where
+    RDF: FocusRDF,
+{
+    property_value(prop).flat_map(|ref term| match RDF::object_as_boolean(term) {
+        None => Err(RDFParseError::ExpectedBoolean {
+            term: format!("{term}"),
+        }),
+        Some(b) => Ok(b),
     })
 }
-
 
 pub fn parse_rdf_nil<RDF>() -> impl RDFNodeParse<RDF, Output = ()>
 where
@@ -416,7 +478,7 @@ where
 }
 
 /// Creates a parser that checks if the current node satisfies a predicate
-/// 
+///
 /// The `predicate_name` argument is useful in case of failure to know which condition has failed
 pub fn satisfy<RDF, P>(predicate: P, predicate_name: &str) -> Satisfy<RDF, P>
 where
@@ -461,6 +523,9 @@ where
     }
 }
 
+/// Returns the values of `property` for the focus node
+///
+/// If there is no value, it returns an empty set
 pub fn property_values<RDF>(property: &RDF::IRI) -> PropertyValues<RDF>
 where
     RDF: FocusRDF,
@@ -494,7 +559,7 @@ where
 }
 
 /// Creates a parser that returns the value associated with the current focus node for `property`
-/// 
+///
 /// It doesn't move the current focus node
 pub fn property_value<RDF>(property: &IriS) -> PropertyValue<RDF>
 where
@@ -547,8 +612,47 @@ where
     }
 }
 
+/// Combines the results of parsers that return vectors of values
+///
+pub fn combine_vec<RDF, P1, P2, A>(parser1: P1, parser2: P2) -> CombineVec<P1, P2>
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = Vec<A>>,
+    P2: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    CombineVec { parser1, parser2 }
+}
+
+pub struct CombineVec<P1, P2> {
+    parser1: P1,
+    parser2: P2,
+}
+
+impl<RDF, P1, P2, A> RDFNodeParse<RDF> for CombineVec<P1, P2>
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = Vec<A>>,
+    P2: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<A>> {
+        match self.parser1.parse_impl(rdf) {
+            Err(e) => Err(e),
+            Ok(vs1) => match self.parser2.parse_impl(rdf) {
+                Err(e) => Err(e),
+                Ok(vs2) => {
+                    let mut result = vs1;
+                    result.extend(vs2);
+                    Ok(result)
+                }
+            },
+        }
+    }
+}
+
 /// Parses a node as a bool
-/// 
+///
 pub fn bool<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
 where
     RDF: FocusRDF,
@@ -559,10 +663,12 @@ where
             Some(b) => {
                 println!("Checking bool ok: {}", &term);
                 Ok(b)
-            },
+            }
             None => {
                 println!("Checking bool failed: {}", &term);
-                Err(RDFParseError::ExpectedBoolean { term: format!("{term}") })
+                Err(RDFParseError::ExpectedBoolean {
+                    term: format!("{term}"),
+                })
             }
         }
     })
@@ -578,15 +684,21 @@ where
     }
 }
 
-/// Creates a parser that returns the focus node 
-pub fn get_focus<RDF>() -> GetFocus<RDF> where RDF: FocusRDF {
+/// Creates a parser that returns the focus node
+pub fn get_focus<RDF>() -> GetFocus<RDF>
+where
+    RDF: FocusRDF,
+{
     GetFocus {
-        _marker: PhantomData
+        _marker: PhantomData,
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct GetFocus<RDF> where RDF: FocusRDF {
+pub struct GetFocus<RDF>
+where
+    RDF: FocusRDF,
+{
     _marker: PhantomData<RDF>,
 }
 
@@ -599,22 +711,27 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::Term> {
         match rdf.get_focus() {
             Some(focus) => Ok(focus.clone()),
-            None => Err(RDFParseError::NoFocusNode)
+            None => Err(RDFParseError::NoFocusNode),
         }
     }
 }
 
-
-/// Creates a parser that sets the focus node and returns `()` 
-pub fn set_focus<RDF>(node: &RDF::Term) -> SetFocus<RDF> where RDF: FocusRDF {
+/// Creates a parser that sets the focus node and returns `()`
+pub fn set_focus<RDF>(node: &RDF::Term) -> SetFocus<RDF>
+where
+    RDF: FocusRDF,
+{
     SetFocus {
-        node: node.clone(), 
-        _marker: PhantomData
+        node: node.clone(),
+        _marker: PhantomData,
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct SetFocus<RDF> where RDF: FocusRDF {
+pub struct SetFocus<RDF>
+where
+    RDF: FocusRDF,
+{
     node: RDF::Term,
     _marker: PhantomData<RDF>,
 }
@@ -648,10 +765,10 @@ where
     }
 }
 
-/* I would like the following code to work but it complains that: 
-cannot move out of `parser`, a captured variable in an `FnMut` closure 
-pub fn parse_rdf_list_for_property<RDF, P, A>(property: IriS, parser: P) -> impl RDFNodeParse<RDF, Output = Vec<A>> 
-where 
+/* I would like the following code to work but it complains that:
+cannot move out of `parser`, a captured variable in an `FnMut` closure
+pub fn parse_rdf_list_for_property<RDF, P, A>(property: IriS, parser: P) -> impl RDFNodeParse<RDF, Output = Vec<A>>
+where
    RDF: FocusRDF,
    P: RDFNodeParse<RDF, Output = A> + Clone
 {
@@ -667,9 +784,7 @@ pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
 where
     RDF: SRDF,
 {
-    ParseRDFList {
-        parser
-    }
+    ParseRDFList { parser }
 }
 
 #[derive(Copy, Clone)]
@@ -680,7 +795,7 @@ pub struct ParseRDFList<P> {
 impl<RDF, P, A> RDFNodeParse<RDF> for ParseRDFList<P>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF, Output= A>
+    P: RDFNodeParse<RDF, Output = A>,
 {
     type Output = Vec<A>;
 
@@ -693,7 +808,7 @@ where
                 rdf.set_focus(&node);
                 match self.parser.parse_impl(rdf) {
                     Ok(a) => result.push(a),
-                    Err(e) => return Err(e)
+                    Err(e) => return Err(e),
                 }
             }
             Ok(result)
@@ -701,7 +816,7 @@ where
     }
 }
 
-// Auxiliary function to parse a node as an RDF list checking that the RDF list if non-cyclic 
+// Auxiliary function to parse a node as an RDF list checking that the RDF list if non-cyclic
 // by collecting a vector of visited terms
 fn parse_list<RDF>(
     mut visited: Vec<RDF::Term>,
@@ -743,83 +858,114 @@ where
 
 /// Succeeds if current term is the expected IRI
 pub fn is_iri<RDF>(expected_iri: IriS) -> impl RDFNodeParse<RDF, Output = ()>
-where RDF: FocusRDF,
- {
+where
+    RDF: FocusRDF,
+{
     let name = format!("Is {}", expected_iri.as_str());
     satisfy(
-      move |node: &RDF::Term| match RDF::object_as_iri(node) {
-        Some(iri) => {
-            let iri_s = RDF::iri2iri_s(&iri);
-            iri_s == expected_iri
-        }
-        None => false,
-    }, name.as_str()
-   )    
+        move |node: &RDF::Term| match RDF::object_as_iri(node) {
+            Some(iri) => {
+                let iri_s = RDF::iri2iri_s(&iri);
+                iri_s == expected_iri
+            }
+            None => false,
+        },
+        name.as_str(),
+    )
 }
 
 /// Returns the node that is an instance of the expected IRI in the RDF data
 /// It moves the focus to point to that node
-pub fn instance_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = RDF::Subject> 
-where RDF: FocusRDF {
+pub fn instance_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = RDF::Subject>
+where
+    RDF: FocusRDF,
+{
     instances_of(expected).flat_map(|vs| {
         let mut values = vs.into_iter();
         match values.next() {
             Some(value) => match values.next() {
                 Some(_other_value) => todo!(),
-                None => {
-                    Ok(value)
-                }
+                None => Ok(value),
             },
-            None => todo!()
+            None => todo!(),
         }
     })
 }
 
-pub fn set_focus_subject<RDF>(subject: RDF::Subject) -> impl RDFNodeParse<RDF, Output = ()> 
-where RDF: FocusRDF {
-   ApplyRDF {
-    function: move |rdf: &mut RDF| {
-        let term = RDF::subject_as_term(&subject);
-        rdf.set_focus(&term);
-        Ok(())
+pub fn set_focus_subject<RDF>(subject: RDF::Subject) -> impl RDFNodeParse<RDF, Output = ()>
+where
+    RDF: FocusRDF,
+{
+    ApplyRDF {
+        function: move |rdf: &mut RDF| {
+            let term = RDF::subject_as_term(&subject);
+            rdf.set_focus(&term);
+            Ok(())
+        },
     }
-   }
 }
 
-pub fn term_as_iri<RDF>(term: RDF::Term) -> impl RDFNodeParse<RDF, Output = IriS> 
-where RDF: FocusRDF {
+/*pub fn term_as_iri<RDF>(term: RDF::Term) -> impl RDFNodeParse<RDF, Output = IriS>
+where
+    RDF: FocusRDF,
+{
     ApplyRDF {
-        function: move |_: &mut RDF| {
-            match RDF::object_as_iri(&term) {
-                Some(iri) => {
-                    let iri_s = RDF::iri2iri_s(&iri);
-                    Ok(iri_s)
-                }
-                None => todo!()
+        function: move |_: &mut RDF| match RDF::object_as_iri(&term) {
+            Some(iri) => {
+                let iri_s = RDF::iri2iri_s(&iri);
+                Ok(iri_s)
             }
-        }
+            None => todo!(),
+        },
     }
+}*/
+
+pub fn term_as_iri<RDF>(term: &RDF::Term) -> impl RDFNodeParse<RDF, Output = IriS>
+where
+    RDF: FocusRDF,
+{
+    apply(term, |term| match &RDF::object_as_iri(term) {
+        Some(iri) => {
+            let iri_s = RDF::iri2iri_s(&iri);
+            Ok(iri_s)
+        }
+        None => Err(RDFParseError::ExpectedIRI {
+            term: format!("{term}"),
+        }),
+    })
 }
+
+/*fn term_as_iri_s<RDF>(term: &RDF::Term) -> PResult<IriS>
+where
+    RDF: FocusRDF,
+{
+    let iri = RDF::object_as_iri(term).ok_or_else(|| RDFParseError::Custom {
+        msg: "Expected IRI".to_string(),
+    })?;
+    let iri_s = RDF::iri2iri_s(&iri);
+    Ok(iri_s)
+}*/
 
 /// Succeeds with a given value
-pub fn ok<RDF, A>(value: &A) -> impl RDFNodeParse<RDF, Output = A> 
-where RDF: FocusRDF,
-      A: Clone {
-    Ok { value: value.clone() }
+pub fn ok<RDF, A>(value: &A) -> impl RDFNodeParse<RDF, Output = A>
+where
+    RDF: FocusRDF,
+    A: Clone,
+{
+    Ok {
+        value: value.clone(),
+    }
 }
 
-
-
 #[derive(Debug, Clone)]
-struct Ok<A> 
-{
+struct Ok<A> {
     value: A,
 }
 
 impl<RDF, A> RDFNodeParse<RDF> for Ok<A>
 where
     RDF: FocusRDF,
-    A: Clone
+    A: Clone,
 {
     type Output = A;
 
@@ -829,102 +975,129 @@ where
 }
 
 /// Fails with a given massage
-pub fn fail_msg<RDF>(msg: String) -> impl RDFNodeParse<RDF, Output = ()> 
-where RDF: FocusRDF {
-    Fail { msg: msg.clone() }
-}
-
-#[derive(Debug, Clone)]
-struct Fail
-{
-    msg: String,
-}
-
-impl<RDF> RDFNodeParse<RDF> for Fail
+pub fn fail_msg<A, RDF>(msg: String) -> impl RDFNodeParse<RDF, Output = A>
 where
     RDF: FocusRDF,
 {
-    type Output = ();
+    Fail {
+        msg: msg.clone(),
+        _marker: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Fail<A> {
+    msg: String,
+    _marker: PhantomData<A>,
+}
+
+impl<A, RDF> RDFNodeParse<RDF> for Fail<A>
+where
+    RDF: FocusRDF,
+{
+    type Output = A;
 
     fn parse_impl(&mut self, _rdf: &mut RDF) -> PResult<Self::Output> {
-        Err(RDFParseError::Custom { msg: self.msg.clone() })
+        Err(RDFParseError::Custom {
+            msg: self.msg.clone(),
+        })
     }
 }
 
 /// Applies a function and returns its result
-/// 
-/// 
-pub fn cond<RDF, A>(value: &A, pred: impl FnMut(&A) -> bool, fail_msg: String) -> impl RDFNodeParse<RDF, Output = ()> 
-where RDF: FocusRDF,
-      A: Clone {
-    Cond { value: value.clone(), pred, fail_msg: fail_msg.clone() }
+///
+///
+pub fn cond<RDF, A>(
+    value: &A,
+    pred: impl FnMut(&A) -> bool,
+    fail_msg: String,
+) -> impl RDFNodeParse<RDF, Output = ()>
+where
+    RDF: FocusRDF,
+    A: Clone,
+{
+    Cond {
+        value: value.clone(),
+        pred,
+        fail_msg: fail_msg.clone(),
+    }
 }
 
 #[derive(Debug, Clone)]
-struct Cond<A, P> 
-{
+struct Cond<A, P> {
     value: A,
     pred: P,
     fail_msg: String,
 }
 
-impl <RDF, A, P> RDFNodeParse<RDF> for Cond<A, P>
+impl<RDF, A, P> RDFNodeParse<RDF> for Cond<A, P>
 where
     RDF: FocusRDF,
     P: FnMut(&A) -> bool,
-    A: Clone
+    A: Clone,
 {
     type Output = ();
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match (self.pred)(&self.value) {
             true => Ok(()),
-            false => Err(RDFParseError::Custom { msg: self.fail_msg.clone() }),
+            false => Err(RDFParseError::Custom {
+                msg: self.fail_msg.clone(),
+            }),
         }
     }
 }
 
-
 /// Applies a function and returns its result
-pub fn apply<RDF, A, B>(value: &A, function: impl FnMut(&A) -> Result<B, RDFParseError>) -> impl RDFNodeParse<RDF, Output = B> 
-where RDF: FocusRDF,
-      A: Clone {
-    Apply { value: value.clone(), function }
+pub fn apply<RDF, A, B>(
+    value: &A,
+    function: impl FnMut(&A) -> Result<B, RDFParseError>,
+) -> impl RDFNodeParse<RDF, Output = B>
+where
+    RDF: FocusRDF,
+    A: Clone,
+{
+    Apply {
+        value: value.clone(),
+        function,
+    }
 }
 
 #[derive(Debug, Clone)]
-struct Apply<A, F> 
-{
+struct Apply<A, F> {
     value: A,
-    function: F
+    function: F,
 }
 
 impl<RDF, A, B, F> RDFNodeParse<RDF> for Apply<A, F>
 where
     RDF: FocusRDF,
     F: FnMut(&A) -> Result<B, RDFParseError>,
-    A: Clone
+    A: Clone,
 {
     type Output = B;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match (self.function)(&self.value) {
             Ok(b) => Ok(b),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 }
 
-
 /// Applies a function over the RDF graph and returns the result of that function
-pub fn apply_rdf<RDF, A>(function: impl FnMut(&mut RDF) -> Result<A, RDFParseError>) -> impl RDFNodeParse<RDF, Output = A> 
-where RDF: FocusRDF {
+pub fn apply_rdf<RDF, A>(
+    function: impl FnMut(&mut RDF) -> Result<A, RDFParseError>,
+) -> impl RDFNodeParse<RDF, Output = A>
+where
+    RDF: FocusRDF,
+{
     ApplyRDF { function }
 }
 
 #[derive(Debug, Clone)]
 struct ApplyRDF<F> {
-    function: F
+    function: F,
 }
 
 impl<RDF, A, F> RDFNodeParse<RDF> for ApplyRDF<F>
@@ -937,54 +1110,60 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match (self.function)(rdf) {
             Ok(a) => Ok(a),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 }
 
-
 /// Returns all nodes that are instances of the expected IRI in the RDF data
-pub fn instances_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Subject>> 
-where RDF: FocusRDF {
+pub fn instances_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Subject>>
+where
+    RDF: FocusRDF,
+{
     let term = RDF::iri_s2term(expected);
     subjects_with_property_value(&RDF_TYPE, &term)
 }
 
-pub fn parse_rdf_type<RDF>() -> impl RDFNodeParse<RDF, Output = RDF::Term> 
-where RDF: FocusRDF {
+pub fn parse_rdf_type<RDF>() -> impl RDFNodeParse<RDF, Output = RDF::Term>
+where
+    RDF: FocusRDF,
+{
     property_value(&RDF_TYPE)
 }
 
-pub fn has_type<RDF>(expected: IriS) -> impl RDFNodeParse<RDF, Output = ()> 
-where RDF: FocusRDF {
-      parse_rdf_type().flat_map(move |ref term| {
-        let iri = term_as_iri_s::<RDF>(term)?;
-        if iri == expected {
-          Ok(()) 
-        } else {
-          Err(RDFParseError::Custom { 
-            msg: format!("Current focus node has no type: {expected}. It has type: {term}")
-          })
-        }
-      })
+pub fn has_type<RDF>(expected: IriS) -> impl RDFNodeParse<RDF, Output = ()>
+where
+    RDF: FocusRDF,
+{
+    parse_rdf_type().then(move |term: RDF::Term| equals(term.clone(), RDF::iri_s2term(&expected)))
 }
 
-fn term_as_iri_s<RDF>(term:&RDF::Term) -> PResult<IriS> 
-where RDF: FocusRDF {
-    let iri = RDF::object_as_iri(term).ok_or_else(|| RDFParseError::Custom { msg: "Expected IRI".to_string()})?;
-    let iri_s = RDF::iri2iri_s(&iri);
-    Ok(iri_s)
+pub fn equals<RDF>(term: RDF::Term, expected: RDF::Term) -> impl RDFNodeParse<RDF, Output = ()>
+where
+    RDF: FocusRDF,
+{
+    let expected_str = format!("{expected}");
+    cond(
+        &term,
+        move |ref t| RDF::term_as_object(*t) == RDF::term_as_object(&expected),
+        format!("Term {term} not equals {}", expected_str),
+    )
 }
 
 /// Returns all nodes that are instances of the expected IRI in the RDF data
-pub fn subjects_with_property_value<RDF>(property: &IriS, value: &RDF::Term) -> SubjectsPropertyValue<RDF> 
-where RDF: FocusRDF {
-  let iri = RDF::iri_s2iri(property);
-  SubjectsPropertyValue {
-    property: iri,
-    value: value.clone(),
-    _marker: PhantomData
-  }
+pub fn subjects_with_property_value<RDF>(
+    property: &IriS,
+    value: &RDF::Term,
+) -> SubjectsPropertyValue<RDF>
+where
+    RDF: FocusRDF,
+{
+    let iri = RDF::iri_s2iri(property);
+    SubjectsPropertyValue {
+        property: iri,
+        value: value.clone(),
+        _marker: PhantomData,
+    }
 }
 
 pub struct SubjectsPropertyValue<RDF: SRDF> {
@@ -1000,13 +1179,13 @@ where
     type Output = Vec<RDF::Subject>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<RDF::Subject>> {
-        let subjects = rdf.subjects_with_predicate_object(&self.property, &self.value).map_err(|e| {
-           RDFParseError::ErrorSubjectsPredicateObject {
-             property: format!("{}", self.property),
-             value: format!("{}", self.value),
-             err: e.to_string()
-           }
-        })?;
+        let subjects = rdf
+            .subjects_with_predicate_object(&self.property, &self.value)
+            .map_err(|e| RDFParseError::ErrorSubjectsPredicateObject {
+                property: format!("{}", self.property),
+                value: format!("{}", self.value),
+                err: e.to_string(),
+            })?;
         let mut result = Vec::new();
         for s in subjects {
             result.push(s)
@@ -1015,35 +1194,43 @@ where
     }
 }
 
-rdf_parser!{
+rdf_parser! {
     /// Parses the value of `property` as an RDF list
     pub fn parse_property_value_as_list['a, RDF](property: &'a IriS)(RDF) -> Vec<RDF::Term>
         where [
-        ] { 
+        ] {
             property_value(&property)
-            .then(|node| 
-                set_focus(&node).then(|_| 
+            .then(|node|
+                set_focus(&node).then(|_|
                     rdf_list())
              )
     }
 }
 
 /// Apply a parser to an RDF node associated with the value of it's `rdf:type` property
-pub fn parse_by_type<'a, RDF, P, A>(values: Vec<(IriS, P)>, default: P) -> impl RDFNodeParse<RDF, Output = A> 
-where RDF: FocusRDF,
-      P: RDFNodeParse<RDF, Output= A> {
-   ParseByType { values: HashMap::from_iter(values.into_iter()), default }
+pub fn parse_by_type<'a, RDF, P, A>(
+    values: Vec<(IriS, P)>,
+    default: P,
+) -> impl RDFNodeParse<RDF, Output = A>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = A>,
+{
+    ParseByType {
+        values: HashMap::from_iter(values.into_iter()),
+        default,
+    }
 }
 
 pub struct ParseByType<I, P> {
     values: HashMap<I, P>,
-    default: P
+    default: P,
 }
 
 impl<RDF, P, A> RDFNodeParse<RDF> for ParseByType<IriS, P>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF, Output= A>  
+    P: RDFNodeParse<RDF, Output = A>,
 {
     type Output = A;
 
@@ -1052,7 +1239,9 @@ where
         let iri_type = match RDF::object_as_iri(&rdf_type) {
             Some(iri) => RDF::iri2iri_s(&iri),
             None => {
-                return Err(RDFParseError::ExpectedIRI { term: format!("{rdf_type}") })
+                return Err(RDFParseError::ExpectedIRI {
+                    term: format!("{rdf_type}"),
+                })
             }
         };
         match self.values.get_mut(&iri_type) {
@@ -1063,9 +1252,9 @@ where
 }
 
 /// Equivalent to [`parser1.with(parser2)`]
-/// 
+///
 /// Discards the value of the first parser and returns the value of the second parser
-/// 
+///
 pub fn with<RDF, P1, P2>(parser1: P1, parser2: P2) -> With<P1, P2>
 where
     RDF: FocusRDF,
@@ -1074,7 +1263,6 @@ where
 {
     With { parser1, parser2 }
 }
-
 
 #[derive(Copy, Clone)]
 pub struct With<P1, P2> {
@@ -1094,7 +1282,7 @@ where
         match self.parser1.parse_impl(rdf) {
             Ok(a) => match self.parser2.parse_impl(rdf) {
                 Ok(b) => Ok(b),
-                Err(e) => Err(e)
+                Err(e) => Err(e),
             },
             Err(e) => Err(e),
         }
@@ -1102,7 +1290,7 @@ where
 }
 
 /// Applies a parser over a list of nodes and returns the list of values
-/// 
+///
 pub fn parse_nodes<RDF, P>(nodes: Vec<RDF::Term>, parser: P) -> ParserNodes<RDF, P>
 where
     RDF: FocusRDF,
@@ -1111,10 +1299,11 @@ where
     ParserNodes { nodes, parser }
 }
 
-
 #[derive(Clone)]
-pub struct ParserNodes<RDF, P> 
-where RDF: FocusRDF {
+pub struct ParserNodes<RDF, P>
+where
+    RDF: FocusRDF,
+{
     nodes: Vec<RDF::Term>,
     parser: P,
 }
