@@ -121,9 +121,10 @@ Options:
   -m, --show-node-mode <Show Node Mode>
           [default: outgoing] [possible values: outgoing, incoming, both]
   -h, --help
-          Print help  ```
+          Print help  
+```
 
-For examples, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
+For example, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
 
 ```
 sx node -e wikidata -n wd:Q80
