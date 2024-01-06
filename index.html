@@ -34,14 +34,14 @@
     </nav>
 
     <div class="container">
-        <h1>ShEx implementation in Rust</h1>
-        <p>ShEx-rs is a <a href="https://shex.io/">ShEx</a> implementation written in <a
+        <h1>RDF data shapes library in Rust</h1>
+        <p>Shapes-rs is a library that implements <a href="https://shex.io/">Shape Expressions (ShEx)</a> and <a href="SHACL">https://www.w3.org/TR/shacl/</a> written in <a
                 href="https://www.rust-lang.org/">Rust</a></p>
         <p>The library can be run as a command line tool or can be embedded as a library.</p>
         <p>It can be used to validate RDF data in different syntaxes like Turtle, NTriples, etc. as well as RDF data
             queriable from SPARQL endpoints.</p>
         <ul>
-            <li>We publish binaries in Linux, Windows and Apple. They can be downloaded <a
+            <li>We publish binaries in Linux, Windows and Apple which can be downloaded <a
                     href="https://github.com/weso/shex-rs/releases/">here</a>.
             </li>
             <li>Source code: <a href="https://github.com/weso/shex-rs">https://github.com/weso/shex-rs</a></li>
@@ -62,14 +62,12 @@
                     syntax</a> based on ShExJ (JSON-LD)</li>
             <li><a href="https://docs.rs/shapemap/">ShapeMap</a>: <a
                     href="https://shexspec.github.io/shape-map/">ShapeMap</a> implementation.</li>
-            <li><a href="https://docs.rs/srdf">SRDF</a>: Simple RDF interface</li>
-            <li><a href="https://docs.rs/srdf_graph">SRDF Graph</a>: Simple RDF Interface implementation
-                based on RDF graphs as represented by <a href="https://crates.io/crates/oxrdf">Oxigraph</a></li>
-            <li><a href="https://docs.rs/srdf_sparql">SRDF SPARQL</a>: Simple RDF Interface implementation
-                based on SPARQL</li>
+                    <li><a href="https://docs.rs/srdf">SRDF</a>: Simple RDF interface</li>
             <li><a href="https://docs.rs/prefixmap">PrefixMap</a>: Turtle based prefixMap representation
             </li>
-            <li><a href="https://docs.rs/rbe">RBE</a>: Regular Bag Expressions
+            <li><a href="https://docs.rs/shacl_ast">SHACL ast</a>: Represents <a
+                href="https://www.w3.org/TR/shacl">SHACL core abstract syntax</a></li>
+        <li><a href="https://docs.rs/rbe">RBE</a>: Regular Bag Expressions
             </li>
         </ul>
         </li>
@@ -79,12 +77,12 @@
             <li><a href="https://www.weso.es/shex-s/">ShEx-s</a>: Scala implementation of ShEx. This project started as
                 a
                 re-implementation of ShEx-s in Rust</li>
-            <li><a href="https://github.com/shexjs/shex.js">ShEx.js</a>: Javascript implementation of ShEx.</li>
+                <li><a href="https://www.weso.es/shacl-s/">SHACL-s</a>: Scala implementation of SHACL. </li>
+                <li><a href="https://github.com/shexjs/shex.js">ShEx.js</a>: Javascript implementation of ShEx.</li>
             <li><a href="https://github.com/oxigraph/oxigraph">Oxigraph</a>: SPARQL implementation in Rust which also
                 contains RDF libraries.</li>
             <li><a href="https://github.com/knowsys/nemo">Nemo</a>: An in-memory rule engile which also contains some
-                nom
-                parsers.</li>
+                nom parsers.</li>
         </ul>
 
         <h2>Contributors</h2>
