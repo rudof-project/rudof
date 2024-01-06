@@ -34,7 +34,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::{IriS, iri};
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::SRDFGraph;
     /// use srdf::{RDFNodeParse, RDFParseError, property_string, PResult};
     ///     let s = r#"prefix : <http://example.org/>
     ///     :x :p "1" .
@@ -61,7 +61,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::{IriS, iri};
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// use srdf::{RDFNodeParse, RDFParseError, property_string};
     /// let s = r#"prefix : <http://example.org/>
     ///        :x :p "1" .
@@ -99,7 +99,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::{IriS, iri};
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// use srdf::{RDFNodeParse, property_integer};
     /// let s = r#"prefix : <http://example.org/>
     ///          :x :p 1 . 
@@ -123,7 +123,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// # use srdf::{RDFNodeParse, property_bool, property_integer};
     /// let s = r#"prefix : <http://example.org/>
     ///       :x :p true ;
@@ -171,7 +171,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// # use oxrdf::Term;
     /// # use std::collections::HashSet;
     /// use srdf::{RDFNodeParse, ok, property_integers};
@@ -200,7 +200,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///         
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// # use srdf::{RDFNodeParse, property_bool};
     /// # use std::collections::HashSet;
     ///  let s = r#"prefix : <http://example.org/>
@@ -235,7 +235,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::IriS;
     /// # use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
-    /// # use srdf_graph::SRDFGraph;
+    /// # use srdf::srdf_graph::SRDFGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
     /// "#;

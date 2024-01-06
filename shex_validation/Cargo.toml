@@ -30,6 +30,5 @@ either = "1"
 
 
 [dev-dependencies]
-srdf_graph = { path = "../srdf_graph", version = "0.0.7" }
 oxrdf = "0.1.6"
 

@@ -8,7 +8,6 @@
 !/shex_compact
 !/sx_cli
 !/shacl_ast
-!/srdf_graph
 !/srdf_sparql
 !/shex_testsuite
 !/shex_validation

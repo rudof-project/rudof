@@ -25,8 +25,6 @@ members = [
     "shex_ast",
     "shex_compact",
     "sx_cli",
-    "srdf_graph",
-    "srdf_sparql",
     "shex_testsuite",
     "shex_validation",
     "shapemap",
@@ -62,8 +60,6 @@ rbe_testsuite = { version = "0.0.6", path = "./rbe_testsuite" }
 iri_s = { version = "0.0.6", path = "./iri_s" }
 prefixmap = { version = "0.0.6", path = "./prefixmap" }
 srdf = { version = "0.0.6", path = "./srdf" }
-srdf_graph = { version = "0.0.6", path = "./srdf_graph" }
-srdf_sparql = { version = "0.0.6", path = "./srdf_sparql" }
 shex_ast = { version = "0.0.6", path = "./shex_ast" }
 shex_testsuite = { version = "0.0.6", path = "./shex_testsuite" }
 shex_validation = { version = "0.0.6", path = "./shex_validation" }
@@ -83,8 +79,6 @@ shex_compact = { path = "./shex_compact" }
 prefixmap = { path = "./prefixmap" }
 shapemap = { path = "./shapemap" }
 srdf = { path = "./srdf" }
-srdf_graph = { path = "./srdf_graph" }
-srdf_sparql = { path = "./srdf_sparql" }
 iri_s = { path = "./iri_s" }
 shacl_ast = { path = "./shacl_ast" }
 oxrdf = "0.1.6"

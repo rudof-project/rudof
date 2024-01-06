@@ -1,3 +1,4 @@
+//! Implementation of the SRDF traits using [OxRDF](https://crates.io/crates/oxrdf).
 pub mod srdfgraph;
 pub mod srdfgraph_error;
 

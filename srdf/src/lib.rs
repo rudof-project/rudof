@@ -16,6 +16,8 @@ pub mod shacl_path;
 pub mod srdf;
 pub mod srdf_comparisons;
 pub mod srdf_parser;
+pub mod srdf_graph;
+pub mod srdf_sparql;
 pub mod vocab;
 
 pub use crate::async_srdf::*;
@@ -26,6 +28,8 @@ pub use bnode::*;
 pub use rdf::*;
 pub use shacl_path::*;
 pub use srdf_parser::*;
+pub use srdf_graph::*;
+pub use srdf_sparql::*;
 pub use vocab::*;
 
 /// Declares a named RDF parser which can be reused.
@@ -40,7 +44,7 @@ pub use vocab::*;
 /// #[macro_use]
 /// use iri_s::IriS;
 /// use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
-/// use srdf_graph::SRDFGraph;
+/// use srdf::srdf_graph::SRDFGraph;
 /// 
 /// rdf_parser!{
 ///       fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()

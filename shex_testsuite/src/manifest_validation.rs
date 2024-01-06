@@ -16,7 +16,7 @@ use shex_validation::ResultValue;
 use shex_validation::Validator;
 use srdf::literal::Literal;
 use srdf::rdf::Object;
-use srdf_graph::SRDFGraph;
+use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;

@@ -1,10 +1,9 @@
-use crate::SRDFSparqlError;
+use crate::{SRDFSparqlError, Object, literal::Literal, lang::Lang};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use log::debug;
-use oxrdf::Literal;
-use oxrdf::*;
+use oxrdf::{Literal as OxLiteral, Term as OxTerm, Subject as OxSubject, BlankNode, NamedNode as OxNamedNode};
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
 use reqwest::{
@@ -13,7 +12,7 @@ use reqwest::{
     Url,
 };
 use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader, QuerySolution};
-use srdf::{AsyncSRDF, SRDFBasic, SRDF};
+use crate::{AsyncSRDF, SRDFBasic, SRDF};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt::Display,
@@ -74,134 +73,135 @@ impl SRDFSparql {
         format!("{}", str.green())
     }
 
-    pub fn show_literal(&self, lit: &Literal) -> String {
+    pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
     }
 }
 
 impl SRDFBasic for SRDFSparql {
-    type IRI = NamedNode;
+    type IRI = OxNamedNode;
     type BNode = BlankNode;
-    type Literal = Literal;
-    type Subject = Subject;
-    type Term = Term;
+    type Literal = OxLiteral;
+    type Subject = OxSubject;
+    type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn subject_as_iri(subject: &Subject) -> Option<NamedNode> {
+    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
         match subject {
-            Subject::NamedNode(n) => Some(n.clone()),
+            OxSubject::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn subject_as_bnode(subject: &Subject) -> Option<BlankNode> {
+    fn subject_as_bnode(subject: &OxSubject) -> Option<BlankNode> {
         match subject {
-            Subject::BlankNode(b) => Some(b.clone()),
+            OxSubject::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn subject_is_iri(subject: &Subject) -> bool {
+    fn subject_is_iri(subject: &OxSubject) -> bool {
         match subject {
-            Subject::NamedNode(_) => true,
+            OxSubject::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn subject_is_bnode(subject: &Subject) -> bool {
+    fn subject_is_bnode(subject: &OxSubject) -> bool {
         match subject {
-            Subject::BlankNode(_) => true,
+            OxSubject::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_as_iri(object: &Term) -> Option<NamedNode> {
+    fn object_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
         match object {
-            Term::NamedNode(n) => Some(n.clone()),
+            OxTerm::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn object_as_bnode(object: &Term) -> Option<BlankNode> {
+    fn object_as_bnode(object: &OxTerm) -> Option<BlankNode> {
         match object {
-            Term::BlankNode(b) => Some(b.clone()),
+            OxTerm::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn object_as_literal(object: &Term) -> Option<Literal> {
+    fn object_as_literal(object: &OxTerm) -> Option<OxLiteral> {
         match object {
-            Term::Literal(l) => Some(l.clone()),
+            OxTerm::Literal(l) => Some(l.clone()),
             _ => None,
         }
     }
 
-    fn object_is_iri(object: &Term) -> bool {
+    fn object_is_iri(object: &OxTerm) -> bool {
         match object {
-            Term::NamedNode(_) => true,
+            OxTerm::NamedNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_bnode(object: &Term) -> bool {
+    fn object_is_bnode(object: &OxTerm) -> bool {
         match object {
-            Term::BlankNode(_) => true,
+            OxTerm::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_literal(object: &Term) -> bool {
+    fn object_is_literal(object: &OxTerm) -> bool {
         match object {
-            Term::Literal(_) => true,
+            OxTerm::Literal(_) => true,
             _ => false,
         }
     }
 
-    fn term_as_subject(object: &Self::Term) -> Option<Subject> {
+    fn term_as_subject(object: &Self::Term) -> Option<OxSubject> {
         term_as_subject(object)
     }
 
-    fn subject_as_term(subject: &Self::Subject) -> Term {
+    fn subject_as_term(subject: &Self::Subject) -> OxTerm {
         subject_as_term(subject)
     }
 
-    fn lexical_form(literal: &Literal) -> &str {
+    fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }
-    fn lang(literal: &Literal) -> Option<String> {
+    fn lang(literal: &OxLiteral) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }
-    fn datatype(literal: &Literal) -> NamedNode {
+    fn datatype(literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
     }
 
-    fn iri_as_term(iri: NamedNode) -> Term {
-        Term::NamedNode(iri)
+    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
+        OxTerm::NamedNode(iri)
     }
 
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI {
         iri_s.as_named_node().clone()
     }
 
-    fn term_as_object(term: &Self::Term) -> srdf::Object {
+    fn term_as_object(term: &Self::Term) -> Object {
         match term {
-            Self::Term::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
+            Self::Term::BlankNode(bn) => Object::BlankNode(bn.to_string()),
             Self::Term::Literal(lit) => match lit.to_owned().destruct() {
-                (s, None, None) => srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                (s, None, None) => Object::Literal(
+                    Literal::StringLiteral {
                     lexical_form: s,
                     lang: None,
                 }),
                 (s, None, Some(lang)) => {
-                    srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                    Object::Literal(Literal::StringLiteral {
                         lexical_form: s,
-                        lang: Some(srdf::lang::Lang::new(lang.as_str())),
+                        lang: Some(Lang::new(lang.as_str())),
                     })
                 }
                 (s, Some(datatype), _) => {
                     let iri_s = Self::iri2iri_s(&datatype);
-                    srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
+                    Object::Literal(Literal::DatatypeLiteral {
                         lexical_form: s,
                         datatype: IriRef::Iri(iri_s),
                     })
                 }
             },
-            Self::Term::NamedNode(iri) => srdf::Object::Iri {
+            Self::Term::NamedNode(iri) => Object::Iri {
                 iri: Self::iri2iri_s(iri),
             },
         }
@@ -219,28 +219,28 @@ impl SRDFBasic for SRDFSparql {
         self.prefixmap.resolve_prefix_local(prefix, local)
     }
 
-    fn qualify_iri(&self, node: &NamedNode) -> String {
+    fn qualify_iri(&self, node: &OxNamedNode) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
         self.prefixmap.qualify(&iri)
     }
 
-    fn qualify_subject(&self, subj: &Subject) -> String {
+    fn qualify_subject(&self, subj: &OxSubject) -> String {
         match subj {
-            Subject::BlankNode(bn) => self.show_blanknode(bn),
-            Subject::NamedNode(n) => self.qualify_iri(n),
+            OxSubject::BlankNode(bn) => self.show_blanknode(bn),
+            OxSubject::NamedNode(n) => self.qualify_iri(n),
         }
     }
 
-    fn qualify_term(&self, term: &Term) -> String {
+    fn qualify_term(&self, term: &OxTerm) -> String {
         match term {
-            Term::BlankNode(bn) => self.show_blanknode(bn),
-            Term::Literal(lit) => self.show_literal(&lit),
-            Term::NamedNode(n) => self.qualify_iri(n),
+            OxTerm::BlankNode(bn) => self.show_blanknode(bn),
+            OxTerm::Literal(lit) => self.show_literal(&lit),
+            OxTerm::NamedNode(n) => self.qualify_iri(n),
         }
     }
 
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
-        Subject::NamedNode(iri)
+        OxSubject::NamedNode(iri)
     }
 
     fn prefixmap(&self) -> Option<PrefixMap> { 
@@ -250,14 +250,14 @@ impl SRDFBasic for SRDFSparql {
 
 #[async_trait]
 impl AsyncSRDF for SRDFSparql {
-    type IRI = NamedNode;
+    type IRI = OxNamedNode;
     type BNode = BlankNode;
-    type Literal = Literal;
-    type Subject = Subject;
-    type Term = Term;
+    type Literal = OxLiteral;
+    type Subject = OxSubject;
+    type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    async fn get_predicates_subject(&self, subject: &Subject) -> Result<HashSet<NamedNode>> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
@@ -270,23 +270,23 @@ impl AsyncSRDF for SRDFSparql {
 
     async fn get_objects_for_subject_predicate(
         &self,
-        subject: &Subject,
-        pred: &NamedNode,
-    ) -> Result<HashSet<Term>> {
+        subject: &OxSubject,
+        pred: &OxNamedNode,
+    ) -> Result<HashSet<OxTerm>> {
         todo!();
     }
 
     async fn get_subjects_for_object_predicate(
         &self,
-        object: &Term,
-        pred: &NamedNode,
-    ) -> Result<HashSet<Subject>> {
+        object: &OxTerm,
+        pred: &OxNamedNode,
+    ) -> Result<HashSet<OxSubject>> {
         todo!();
     }
 }
 
 impl SRDF for SRDFSparql {
-    fn get_predicates_for_subject(&self, subject: &Subject) -> Result<HashSet<NamedNode>> {
+    fn get_predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         debug!(
             "SPARQL query (get predicates for subject {subject}): {}",
@@ -303,9 +303,9 @@ impl SRDF for SRDFSparql {
 
     fn get_objects_for_subject_predicate(
         &self,
-        subject: &Subject,
-        pred: &NamedNode,
-    ) -> Result<HashSet<Term>> {
+        subject: &OxSubject,
+        pred: &OxNamedNode,
+    ) -> Result<HashSet<OxTerm>> {
         let query = format!(r#"select ?obj where {{ {} {} ?obj . }}"#, subject, pred);
         let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
@@ -318,9 +318,9 @@ impl SRDF for SRDFSparql {
 
     fn subjects_with_predicate_object(
         &self,
-        pred: &NamedNode,
-        object: &Term,
-    ) -> Result<HashSet<Subject>> {
+        pred: &OxNamedNode,
+        object: &OxTerm,
+    ) -> Result<HashSet<OxSubject>> {
         let query = format!(r#"select ?subj where {{ ?subj {} {} . }}"#, pred, object);
         let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
@@ -420,20 +420,20 @@ fn outgoing_neighs(
     subject: &str,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<HashMap<NamedNode, HashSet<Term>>> {
+) -> Result<HashMap<OxNamedNode, HashSet<OxTerm>>> {
     let pred = "pred";
     let obj = "obj";
     let query = format!("select ?{pred} ?{obj} where {{ {subject} ?{pred} ?{obj} }}");
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
     let body = client.get(url).send()?.text()?;
-    let mut results: HashMap<NamedNode, HashSet<Term>> = HashMap::new();
+    let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
     if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(obj)) {
                 (Some(p), Some(v)) => match p {
-                    Term::NamedNode(iri) => match results.entry(iri.clone()) {
+                    OxTerm::NamedNode(iri) => match results.entry(iri.clone()) {
                         Entry::Occupied(mut vs) => {
                             vs.get_mut().insert(v.clone());
                         }
@@ -472,11 +472,11 @@ fn outgoing_neighs(
 }
 
 fn outgoing_neighs_from_list(
-    subject: &Subject,
-    preds: Vec<NamedNode>,
+    subject: &OxSubject,
+    preds: Vec<OxNamedNode>,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<(HashMap<NamedNode, HashSet<Term>>, Vec<NamedNode>)> {
+) -> Result<(HashMap<OxNamedNode, HashSet<OxTerm>>, Vec<OxNamedNode>)> {
     // This is not an efficient way to obtain the neighbours related with a set of predicates
     // At this moment, it obtains all neighbours and them removes the ones that are not in the list
     let mut remainder = Vec::new();
@@ -498,20 +498,20 @@ fn incoming_neighs(
     object: &str,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<HashMap<NamedNode, HashSet<Subject>>> {
+) -> Result<HashMap<OxNamedNode, HashSet<OxSubject>>> {
     let pred = "pred";
     let subj = "subj";
     let query = format!("select ?{pred} ?{subj} where {{ ?{subj} ?{pred} {object} }}");
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
     let body = client.get(url).send()?.text()?;
-    let mut results: HashMap<NamedNode, HashSet<Subject>> = HashMap::new();
+    let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
     if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(subj)) {
                 (Some(p), Some(v)) => match p {
-                    Term::NamedNode(iri) => match term_as_subject(v) {
+                    OxTerm::NamedNode(iri) => match term_as_subject(v) {
                         Some(subj) => match results.entry(iri.clone()) {
                             Entry::Occupied(mut vs) => {
                                 vs.get_mut().insert(subj.clone());
@@ -552,10 +552,10 @@ fn incoming_neighs(
     }
 }
 
-fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<NamedNode> {
+fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<OxNamedNode> {
     match solution.get(name) {
         Some(v) => match v {
-            Term::NamedNode(n) => Ok(n.clone()),
+            OxTerm::NamedNode(n) => Ok(n.clone()),
             _ => Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
         },
         None => Err(SRDFSparqlError::NotFoundInSolution {
@@ -565,7 +565,7 @@ fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<NamedNode> {
     }
 }
 
-fn get_object_solution(solution: QuerySolution, name: &str) -> Result<Term> {
+fn get_object_solution(solution: QuerySolution, name: &str) -> Result<OxTerm> {
     match solution.get(name) {
         Some(v) => Ok(v.clone()),
         None => Err(SRDFSparqlError::NotFoundInSolution {
@@ -575,7 +575,7 @@ fn get_object_solution(solution: QuerySolution, name: &str) -> Result<Term> {
     }
 }
 
-fn get_subject_solution(solution: QuerySolution, name: &str) -> Result<Subject> {
+fn get_subject_solution(solution: QuerySolution, name: &str) -> Result<OxSubject> {
     match solution.get(name) {
         Some(v) => match term_as_subject(v) {
             Some(s) => Ok(s),
@@ -588,18 +588,18 @@ fn get_subject_solution(solution: QuerySolution, name: &str) -> Result<Subject> 
     }
 }
 
-fn term_as_subject(object: &Term) -> Option<Subject> {
+fn term_as_subject(object: &OxTerm) -> Option<OxSubject> {
     match object {
-        Term::NamedNode(n) => Some(Subject::NamedNode(n.clone())),
-        Term::BlankNode(b) => Some(Subject::BlankNode(b.clone())),
+        OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
+        OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
         _ => None,
     }
 }
 
-fn subject_as_term(subject: &Subject) -> Term {
+fn subject_as_term(subject: &OxSubject) -> OxTerm {
     match subject {
-        Subject::NamedNode(n) => Term::NamedNode(n.clone()),
-        Subject::BlankNode(b) => Term::BlankNode(b.clone()),
+        OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
+        OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
     }
 }
 

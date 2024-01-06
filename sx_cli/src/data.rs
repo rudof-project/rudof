@@ -1,5 +1,5 @@
-use srdf_graph::SRDFGraph;
-use srdf_sparql::SRDFSparql;
+use srdf::srdf_graph::SRDFGraph;
+use srdf::srdf_sparql::SRDFSparql;
 use prefixmap::PrefixMap;
 
 pub enum Data {

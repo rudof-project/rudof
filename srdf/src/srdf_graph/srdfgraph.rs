@@ -3,8 +3,9 @@ use colored::*;
 use iri_s::{IriS, iri};
 // use log::debug;
 use oxiri::Iri;
-use srdf::async_srdf::AsyncSRDF;
-use srdf::{FocusRDF, SRDFBasic, SRDF};
+use crate::async_srdf::AsyncSRDF;
+use crate::{FocusRDF, SRDFBasic, SRDF};
+use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -12,13 +13,15 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use crate::Object;
+use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
+    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef
 };
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
-use rio_api::model::{Literal, NamedNode, Subject, Term, Triple};
+use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple};
 use rio_api::parser::*;
 use rio_turtle::*;
 
@@ -104,13 +107,13 @@ impl SRDFGraph {
         OxNamedNode::new_unchecked(s.iri)
     }
 
-    fn cnv_literal(l: Literal) -> OxLiteral {
+    fn cnv_literal(l: RioLiteral) -> OxLiteral {
         match l {
-            Literal::Simple { value } => OxLiteral::new_simple_literal(value.to_string()),
-            Literal::LanguageTaggedString { value, language } => {
+            RioLiteral::Simple { value } => OxLiteral::new_simple_literal(value.to_string()),
+            RioLiteral::LanguageTaggedString { value, language } => {
                 OxLiteral::new_language_tagged_literal_unchecked(value, language)
             }
-            Literal::Typed { value, datatype } => {
+            RioLiteral::Typed { value, datatype } => {
                 OxLiteral::new_typed_literal(value, Self::cnv_named_node(datatype))
             }
         }
@@ -274,34 +277,34 @@ impl SRDFBasic for SRDFGraph {
         IriS::from_named_node(iri)
     }
 
-    fn term_as_object(term: &OxTerm) -> srdf::Object {
+    fn term_as_object(term: &OxTerm) -> Object {
         match term {
-            OxTerm::BlankNode(bn) => srdf::Object::BlankNode(bn.to_string()),
+            OxTerm::BlankNode(bn) => Object::BlankNode(bn.to_string()),
             OxTerm::Literal(lit) => {
                 let lit = lit.to_owned();
                 match lit.destruct() {
                     (s, None, None) => {
-                        srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                        Object::Literal(Literal::StringLiteral {
                             lexical_form: s,
                             lang: None,
                         })
                     }
                     (s, None, Some(lang)) => {
-                        srdf::Object::Literal(srdf::literal::Literal::StringLiteral {
+                        Object::Literal(Literal::StringLiteral {
                             lexical_form: s,
-                            lang: Some(srdf::lang::Lang::new(lang.as_str())),
+                            lang: Some(Lang::new(lang.as_str())),
                         })
                     }
                     (s, Some(datatype), _) => {
                         let iri_s = Self::iri2iri_s(&datatype);
-                        srdf::Object::Literal(srdf::literal::Literal::DatatypeLiteral {
+                        Object::Literal(Literal::DatatypeLiteral {
                             lexical_form: s,
                             datatype: IriRef::Iri(iri_s),
                         })
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => srdf::Object::Iri {
+            OxTerm::NamedNode(iri) => Object::Iri {
                 iri: Self::iri2iri_s(iri),
             },
         }
@@ -515,7 +518,7 @@ mod tests {
     use crate::SRDFGraph;
     use oxrdf::{Graph, SubjectRef};
     use rio_api::model::{Literal, Subject};
-    use srdf::SRDF;
+    use crate::SRDF;
 
     #[test]
     fn parse_turtle() {
@@ -567,8 +570,8 @@ mod tests {
 
     #[test]
     fn test_rdf_nil() {
-        use srdf::SRDFBasic;
-        use srdf::SRDF;
+        use crate::SRDFBasic;
+        use crate::SRDF;
 
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -587,7 +590,7 @@ mod tests {
 
     #[test]
     fn test_parser() {
-        use srdf::{RDFNodeParse, rdf_parser, ok};
+        use crate::{RDFNodeParse, rdf_parser, ok};
         rdf_parser!{
             fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
             where [
@@ -602,7 +605,7 @@ mod tests {
 
     #[test]
     fn test_parser_property_integers() {
-        use srdf::{RDFNodeParse, property_integers};
+        use crate::{RDFNodeParse, property_integers};
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3, 2 .
         "#;
@@ -615,7 +618,7 @@ mod tests {
 
     #[test]
     fn test_parser_then_mut() {
-        use srdf::{RDFNodeParse, ok, property_integers};
+        use crate::{RDFNodeParse, ok, property_integers};
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3 .
         "#;
@@ -631,7 +634,7 @@ mod tests {
 
     #[test]
     fn test_parser_or() {
-        use srdf::{RDFNodeParse, property_bool};
+        use crate::{RDFNodeParse, property_bool};
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2 ;
              :q true .
@@ -646,7 +649,7 @@ mod tests {
 
     #[test]
     fn test_parser_and() {
-        use srdf::{RDFNodeParse, property_bool, property_integer};
+        use crate::{RDFNodeParse, property_bool, property_integer};
         let s = r#"prefix : <http://example.org/>
           :x :p true ;
              :q 1    .
@@ -661,7 +664,7 @@ mod tests {
 
     #[test]
     fn test_parser_map() {
-        use srdf::{RDFNodeParse, property_integer};
+        use crate::{RDFNodeParse, property_integer};
         let s = r#"prefix : <http://example.org/>
           :x :p 1 . 
         "#;
@@ -674,7 +677,7 @@ mod tests {
 
     #[test]
     fn test_parser_and_then() {
-        use srdf::{RDFNodeParse, RDFParseError, property_string};
+        use crate::{RDFNodeParse, RDFParseError, property_string};
         let s = r#"prefix : <http://example.org/>
           :x :p "1" .
         "#;
@@ -698,7 +701,7 @@ mod tests {
 
     #[test]
     fn test_parser_flat_map() {
-        use srdf::{RDFNodeParse, RDFParseError, property_string, PResult};
+        use crate::{RDFNodeParse, RDFParseError, property_string, PResult};
         let s = r#"prefix : <http://example.org/>
           :x :p "1" .
         "#;
@@ -719,7 +722,7 @@ mod tests {
     fn test_rdf_parser_macro() {
         use iri_s::{IriS, iri};
         use crate::SRDFGraph;
-        use srdf::{SRDFBasic, rdf_parser, satisfy, RDFNodeParse};
+        use crate::{SRDFBasic, rdf_parser, satisfy, RDFNodeParse};
         
         rdf_parser! {
               fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()

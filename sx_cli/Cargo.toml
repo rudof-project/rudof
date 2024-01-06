@@ -14,8 +14,6 @@ shex_ast = { path = "../shex_ast", version = "0.0.7" }
 shex_validation = { path = "../shex_validation", version = "0.0.7" }
 srdf = { path = "../srdf", version = "0.0.7" }
 prefixmap = { path = "../prefixmap", version = "0.0.7" }
-srdf_graph = { path = "../srdf_graph", version = "0.0.7" }
-srdf_sparql = { path = "../srdf_sparql", version = "0.0.7" }
 iri_s = { path = "../iri_s", version = "0.0.7" }
 shapemap = { path = "../shapemap", version = "0.0.7" }
 shex_compact = { path = "../shex_compact", version = "0.0.7" }

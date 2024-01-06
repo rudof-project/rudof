@@ -2,7 +2,7 @@ use iri_s::IriSError;
 use shex_ast::{ast::SchemaJsonError, CompiledSchemaError, Schema};
 use shex_compact::ParseError;
 use shex_validation::{ResultValue, ValidatorError};
-use srdf_graph::SRDFGraphError;
+use srdf::srdf_graph::SRDFGraphError;
 use std::{ffi::OsString, io, path::Path};
 use thiserror::Error;
 

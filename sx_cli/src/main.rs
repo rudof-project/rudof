@@ -12,14 +12,11 @@ extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
 extern crate srdf;
-extern crate srdf_graph;
-extern crate srdf_sparql;
 
 use anyhow::*;
 use clap::Parser;
 use iri_s::*;
 use log::debug;
-use oxrdf::{BlankNode, NamedNode, Subject};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
@@ -27,9 +24,9 @@ use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
 use srdf::{Object, SRDF};
-use srdf_graph::SRDFGraph;
-use srdf_sparql::SRDFSparql;
-use std::{path::PathBuf, result, str::FromStr};
+use srdf::srdf_graph::SRDFGraph;
+use srdf::srdf_sparql::SRDFSparql;
+use std::{path::PathBuf, str::FromStr};
 
 pub mod cli;
 pub mod data;
