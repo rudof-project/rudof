@@ -1,9 +1,14 @@
-# shex-rs
+# SHAPES-rs
 
-This repo is a Rust implementation of [ShEx](http://shex.io/). At this moment, the implementation only supports ShEx-JsonLD syntax and a simple command line tool.
+This repo contains an RDF data shapes library implemented in Rust. 
+The implementation supports both [ShEx](http://shex.io/) and [SHACL](https://www.w3.org/TR/shacl/). 
+
 We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shex-rs/releases)).
 
-The development roadmap is using [GitHub milestones](https://github.com/weso/shex-rs/milestones).
+- [List of issues](https://github.com/weso/shex-rs)
+- [Discussion](https://github.com/weso/shex-rs/discussions/landing)
+- [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
+- [How to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides)
 
 ### Installation
 
