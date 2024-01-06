@@ -1,6 +1,6 @@
 [package]
 name = "shex_testsuite"
-version = "0.0.6"
+version = "0.0.7"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_testsuite"
@@ -10,13 +10,13 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.6" }
-prefixmap = { path = "../prefixmap", version = "0.0.6" }
-srdf = { path = "../srdf", version = "0.0.6" }
-srdf_graph = { path = "../srdf_graph", version = "0.0.6" }
-shex_ast = { path = "../shex_ast", version = "0.0.6" }
-shex_compact = { path = "../shex_compact", version = "0.0.6" }
-shex_validation = { path = "../shex_validation", version = "0.0.6" }
+iri_s = { path = "../iri_s", version = "0.0.7" }
+prefixmap = { path = "../prefixmap", version = "0.0.7" }
+srdf = { path = "../srdf", version = "0.0.7" }
+srdf_graph = { path = "../srdf_graph", version = "0.0.7" }
+shex_ast = { path = "../shex_ast", version = "0.0.7" }
+shex_compact = { path = "../shex_compact", version = "0.0.7" }
+shex_validation = { path = "../shex_validation", version = "0.0.7" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"

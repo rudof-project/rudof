@@ -1,6 +1,6 @@
 [package]
 name = "iri_s"
-version = "0.0.6"
+version = "0.0.7"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/iri_s"

@@ -1,6 +1,6 @@
 [package]
 name = "srdf_sparql"
-version = "0.0.6"
+version = "0.0.7"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf_sparql"
@@ -10,9 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.6" }
-prefixmap = { path = "../prefixmap", version = "0.0.6" }
-srdf = { path = "../srdf", version = "0.0.6" }
+iri_s = { path = "../iri_s", version = "0.0.7" }
+prefixmap = { path = "../prefixmap", version = "0.0.7" }
+srdf = { path = "../srdf", version = "0.0.7" }
 oxrdf = "0.1.6"
 oxiri = "0.2"
 async-trait = "0.1.68"
