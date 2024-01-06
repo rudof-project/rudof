@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value};
+use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value};
 use srdf_graph::SRDFGraph;
 
 

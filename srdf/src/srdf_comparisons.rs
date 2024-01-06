@@ -6,18 +6,38 @@ use prefixmap::{PrefixMapError, PrefixMap};
 
 use crate::Object;
 
-/// Trait that contains comparisons and conversions between nodes in RDF graphs
-pub trait SRDFComparisons {
+/// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
+/// 
+pub trait SRDFBasic {
+
+    /// RDF subjects 
     type Subject: Debug + Display;
+
+    /// RDF predicates
     type IRI: Debug + Display + Hash + Eq + Clone;
+
+    /// Blannk nodes
     type BNode: Debug + Display + PartialEq;
+
+    /// RDF Literals
     type Literal: Debug + Display + PartialEq;
+
+    /// RDF terms
     type Term: Debug + Clone + Display + PartialEq;
+
+    /// RDF errors
     type Err: Display;
 
+    /// Returns the RDF subject as an IRI if it is an IRI, None if it isn't
     fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
+
+    /// Returns the RDF subject as a Blank Node if it is a blank node, None if it isn't
     fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>;
+
+    /// Returns `true` if the subject is an IRI
     fn subject_is_iri(subject: &Self::Subject) -> bool;
+    
+    /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
     fn object_as_iri(object: &Self::Term) -> Option<Self::IRI>;
@@ -53,10 +73,20 @@ pub trait SRDFComparisons {
         } 
     }
 
+    fn literal_as_string(literal: &Self::Literal) -> Option<String> {
+        match &Self::datatype_str(&literal) {
+            RDF_STRING => Some(Self::lexical_form(literal).to_string()),
+            _ => None
+        } 
+    }
+
     fn term_as_integer(term: &Self::Term) -> Option<isize> {
         Self::term_as_literal(term).and_then(|l| Self::literal_as_integer(&l))
     }
 
+    fn term_as_string(term: &Self::Term) -> Option<String> {
+        Self::term_as_literal(term).and_then(|l| Self::literal_as_string(&l))
+    }
 
     fn object_is_iri(object: &Self::Term) -> bool;
     fn object_is_bnode(object: &Self::Term) -> bool;

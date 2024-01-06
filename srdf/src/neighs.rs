@@ -1,6 +1,6 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::{SRDFComparisons, SRDF};
+use crate::{SRDFBasic, SRDF};
 
 pub enum Neigh<S>
 where

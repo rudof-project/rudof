@@ -1,3 +1,10 @@
+//! This crate contains a _Simple_ RDF wrapper which can be useful to work with RDF data
+//! 
+//! It contains several traits that handle RDF data:
+//! - [`SRDFBasic`]: Basic comparisons on RDF nodes
+//! - [`SRDF`]: Definitions on RDF graphs
+//! - [`FocusRDF`]: RDF graphs with a focus node
+//! - [`RDFNodeParse`]: RDF graphs that can be parsed
 pub mod async_srdf;
 pub mod bnode;
 pub mod lang;
@@ -32,7 +39,7 @@ pub use vocab::*;
 /// 
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf_graph::SRDFGraph;
 /// 
 /// rdf_parser!{
@@ -49,7 +56,7 @@ pub use vocab::*;
 /// "#;
 /// let mut graph = SRDFGraph::from_str(s, None).unwrap();
 /// let x = IriS::new_unchecked("http://example.org/x");
-/// let term = <SRDFGraph as SRDFComparisons>::iri_s2term(&x);
+/// let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
 /// assert_eq!(is_term(&term).parse(&x, &mut graph).unwrap(), ()) 
 /// ````
 #[macro_export]

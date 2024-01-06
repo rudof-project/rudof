@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::SRDFComparisons;
+use crate::SRDFBasic;
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 /// 
 /// 
-pub trait SRDF: SRDFComparisons {
+pub trait SRDF: SRDFBasic {
 
     fn get_predicates_for_subject(
         &self,

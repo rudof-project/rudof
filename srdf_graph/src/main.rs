@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list};
+use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 use srdf_graph::SRDFGraph;
 
 
@@ -24,7 +24,7 @@ fn main() {
     let y = IriS::new_unchecked("http://example.org/y");
     let p = IriS::new_unchecked("http://example.org/p");
     
-    let term = <SRDFGraph as SRDFComparisons>::iri_s2term(&y);
+    let term = <SRDFGraph as SRDFBasic>::iri_s2term(&y);
     let value = my_ok_(&term).parse(&x, &mut graph);
     println!("SRDFGraph. Result of parser: {value:?}");
     let values = parse_property_value_as_list(&p).parse(&x, &mut graph);

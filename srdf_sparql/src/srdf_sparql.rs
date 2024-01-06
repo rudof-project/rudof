@@ -13,7 +13,7 @@ use reqwest::{
     Url,
 };
 use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader, QuerySolution};
-use srdf::{AsyncSRDF, SRDFComparisons, SRDF};
+use srdf::{AsyncSRDF, SRDFBasic, SRDF};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt::Display,
@@ -80,7 +80,7 @@ impl SRDFSparql {
     }
 }
 
-impl SRDFComparisons for SRDFSparql {
+impl SRDFBasic for SRDFSparql {
     type IRI = NamedNode;
     type BNode = BlankNode;
     type Literal = Literal;

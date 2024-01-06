@@ -471,7 +471,7 @@ where
 mod tests {
     use super::*;
     use crate::srdf::SRDF;
-    use crate::srdf_comparisons::SRDFComparisons;
+    use crate::srdf_comparisons::SRDFBasic;
     use srdf_graph::SRDFGraph;
 
     #[test]

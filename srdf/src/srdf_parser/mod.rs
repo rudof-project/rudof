@@ -1,6 +1,6 @@
+mod rdf_node_parser;
 mod rdf_parser;
 mod rdf_parser_error;
-mod rdf_node_parser;
 mod focus_rdf;
 
 pub use focus_rdf::*;

@@ -79,8 +79,7 @@ fn property_shapes<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>>
 where
     RDF: FocusRDF,
 {
-    let property = RDF::iri_s2iri(&SH_PROPERTY);
-    property_values(&property).flat_map(|ts| {
+    property_values(&SH_PROPERTY).flat_map(|ts| {
         let nodes = ts.iter().map(|t| RDF::term_as_object(t)).collect();
         Ok(nodes)
     })
@@ -97,8 +96,7 @@ fn targets_class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    let target_class_property = RDF::iri_s2iri(&SH_TARGET_CLASS);
-    property_values(&target_class_property).flat_map(move |ts| {
+    property_values(&SH_TARGET_CLASS).flat_map(move |ts| {
         let result = ts
             .iter()
             .map(|t| {
@@ -114,8 +112,7 @@ fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    let target_class_property = RDF::iri_s2iri(&SH_TARGET_NODE);
-    property_values(&target_class_property).flat_map(move |ts| {
+    property_values(&SH_TARGET_NODE).flat_map(move |ts| {
         let result = ts
             .iter()
             .map(|t| {

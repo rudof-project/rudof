@@ -23,7 +23,7 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use srdf::literal::Literal;
 use srdf::NeighsIterator;
-use srdf::{Object, SRDFComparisons, SRDF};
+use srdf::{Object, SRDFBasic, SRDF};
 use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::hash::Hash;

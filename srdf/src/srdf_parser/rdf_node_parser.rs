@@ -7,23 +7,47 @@ use iri_s::IriS;
 
 use crate::{
     rdf_parser, FocusRDF, PResult, RDFParseError, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST,
-    RDF_TYPE, SRDF, SRDFComparisons,
+    RDF_TYPE, SRDF, SRDFBasic,
 };
 
-/// Represents a parser of RDF data from a pointed node in the graph
+/// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node. 
+/// RDF data with a focus node have to implement the [`FocusRDF`] trait.
 pub trait RDFNodeParse<RDF: FocusRDF> {
+
+    /// The type which is returned if the parser is successful.
     type Output;
 
+
+    /// Entry point to the parser. It moves the focus node of `rdf` to `node` and runs the parser.
+    /// 
+    /// Returns the parsed result if the parser succeeds, or an error otherwise.
     fn parse(&mut self, node: &IriS, rdf: &mut RDF) -> Result<Self::Output, RDFParseError> {
         let focus = RDF::iri_as_term(RDF::iri_s2iri(node));
         rdf.set_focus(&focus);
         self.parse_impl(rdf)
     }
 
+    /// It parses the current focus node
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output>;
 
     /// Uses `f` to map over the output of `self`. If `f` returns an error the parser fails.
     ///
+    /// ```
+    /// # use iri_s::{IriS, iri};
+    /// # use srdf_graph::SRDFGraph;
+    /// use srdf::{RDFNodeParse, RDFParseError, property_string, PResult};
+    ///     let s = r#"prefix : <http://example.org/>
+    ///     :x :p "1" .
+    ///   "#;
+    ///   let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    ///   let x = iri!("http://example.org/x");
+    ///   let p = iri!("http://example.org/p");
+    ///   fn cnv_int(s: String) -> PResult<isize> {
+    ///      s.parse().map_err(|_| RDFParseError::Custom{ msg: format!("Error converting {s}")})
+    ///   }
+    ///   let mut parser = property_string(&p).flat_map(cnv_int);
+    ///   assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+    /// ```
     fn flat_map<F, O>(self, f: F) -> FlatMap<Self, F>
     where
         Self: Sized,
@@ -35,6 +59,33 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// Parses with `self` and applies `f` on the result if `self` parses successfully.
     /// `f` may optionally fail with an error which is automatically converted to a `RDFParseError`.
     ///
+    /// ```
+    /// # use iri_s::{IriS, iri};
+    /// # use srdf_graph::SRDFGraph;
+    /// use srdf::{RDFNodeParse, RDFParseError, property_string};
+    /// let s = r#"prefix : <http://example.org/>
+    ///        :x :p "1" .
+    ///   "#;
+    /// let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    /// let x = iri!("http://example.org/x");
+    /// let p = iri!("http://example.org/p");
+    /// 
+    /// 
+    /// struct IntConversionError(String);
+    /// 
+    /// fn cnv_int(s: String) -> Result<isize, IntConversionError> {
+    ///    s.parse().map_err(|_| IntConversionError(s))
+    /// }
+    /// 
+    /// impl Into<RDFParseError> for IntConversionError {
+    ///     fn into(self) -> RDFParseError {
+    ///         RDFParseError::Custom { msg: format!("Int conversion error: {}", self.0)}
+    ///     }
+    /// }
+    /// 
+    /// let mut parser = property_string(&p).and_then(cnv_int);
+    /// assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+    /// ```
     fn and_then<F, O, E>(self, f: F) -> AndThen<Self, F>
     where
         Self: Sized,
@@ -46,6 +97,18 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
 
     /// Uses `f` to map over the parsed value.
     ///
+    /// ```
+    /// # use iri_s::{IriS, iri};
+    /// # use srdf_graph::SRDFGraph;
+    /// use srdf::{RDFNodeParse, property_integer};
+    /// let s = r#"prefix : <http://example.org/>
+    ///          :x :p 1 . 
+    ///  "#;
+    /// let mut graph = SRDFGraph::from_str(s, None).unwrap();
+    /// let p = iri!("http://example.org/p");
+    /// let mut parser = property_integer(&p).map(|n| n + 1);
+    /// assert_eq!(parser.parse(&iri!("http://example.org/x"), &mut graph).unwrap(), 2)
+    /// ```
     fn map<F, B>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -171,7 +234,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFComparisons, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
+    /// # use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
     /// # use srdf_graph::SRDFGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
@@ -736,17 +799,36 @@ where RDF: FocusRDF,
     })
 }
 
+/// Returns the string value of `property` for the focus node
+///
+pub fn property_string<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = String>   
+where RDF: FocusRDF,
+{
+    property_value(&property).flat_map(|term| {
+        let i = term_to_string::<RDF>(&term)?;
+        Ok(i)
+    })
+}
 
 fn terms_to_ints<RDF>(terms: HashSet<RDF::Term>) -> Result<HashSet<isize>, RDFParseError> 
-where RDF: SRDFComparisons {
+where RDF: SRDFBasic {
   let ints: HashSet<_> = terms.iter().flat_map(|t| term_to_int::<RDF>(t)).collect();
   Ok(ints)
 }
 
 fn term_to_int<RDF>(term: &RDF::Term) -> Result<isize, RDFParseError> 
-where RDF: SRDFComparisons {
+where RDF: SRDFBasic {
     let n = RDF::term_as_integer(term).ok_or_else(|| 
         RDFParseError::ExpectedInteger { term: format!("{term}")}
+    )?;
+    Ok(n)
+
+}
+
+fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError> 
+where RDF: SRDFBasic {
+    let n = RDF::term_as_string(term).ok_or_else(|| 
+        RDFParseError::ExpectedString { term: format!("{term}")}
     )?;
     Ok(n)
 

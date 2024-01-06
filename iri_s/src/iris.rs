@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn creating_iris() {
         let iri = IriS::from_str("http://example.org/").unwrap();
-        assert_eq!(iri.to_string(), "<http://example.org/>");
+        assert_eq!(iri.to_string(), "http://example.org/");
     }
 
     #[test]
