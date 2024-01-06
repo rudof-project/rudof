@@ -180,12 +180,14 @@ The repo is divided in the following modules:
 
 - [iri_s](https://github.com/weso/shex-rs/tree/master/iri_s) defines simple IRIs.
 - [srdf](https://github.com/weso/shex-rs/tree/master/srdf) simple RDF model which will be used for validation.
-- [srdf_oxgraph](https://github.com/weso/shex-rs/tree/master/srdf_oxgraph) simple RDF model implementation based on [RIO](https://github.com/oxigraph/oxigraph)
 - [prefixmap](https://github.com/weso/shex-rs/tree/master/prefixmap) Prefix maps implementation.
 - [shapemap](https://github.com/weso/shex-rs/tree/master/shapemap) ShapeMap implementation.
 - [shex_ast](https://github.com/weso/shex-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
-- [shex_compact]<https://github.com/weso/shex-rs/tree/master/shex_compact>) contains the code required to handle ShEx compact syntax.
+- [shex_compact](https://github.com/weso/shex-rs/tree/master/shex_compact) contains the code required to handle ShEx compact syntax.
+- [shex_validation](https://github.com/weso/shex-rs/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
 - [shex_testsuite](https://github.com/weso/shex-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
+- [shacl_ast](https://github.com/weso/shex-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
+
 
 The following modules are simple proof of concepts and can be ignored.
 
