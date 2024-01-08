@@ -23,6 +23,12 @@ impl Schema {
         self
     }
 
+    pub fn with_shapes(mut self, shapes: HashMap<IriRef, Shape>) -> Self {
+        self.shapes = shapes;
+        self
+    }
+
+
     pub fn add_node_shapes(&mut self, ns: Vec<NodeShape>) -> Result<(), ShaclError> {
         for node_shape in ns.iter() {
             let id = node_shape.id();

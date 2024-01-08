@@ -1,7 +1,7 @@
-use std::ops::Deref;
+use std::{ops::Deref, collections::HashMap};
 
 use iri_s::IriS;
-use prefixmap::PrefixMap;
+use prefixmap::{PrefixMap, IriRef};
 use srdf::{
     combine_vec, has_type, instances_of, ok, optional, parse_nodes, property_value,
     property_values, term, FocusRDF, RDFNode, RDFNodeParse, RDFParseError, RDFParser,
@@ -11,7 +11,7 @@ use crate::{
     node_shape::NodeShape,
     schema::Schema,
     target::{self, Target},
-    SH_NODE_SHAPE, SH_PROPERTY, SH_TARGET_CLASS, SH_TARGET_NODE,
+    SH_NODE_SHAPE, SH_PROPERTY, SH_TARGET_CLASS, SH_TARGET_NODE, shape::Shape,
 };
 
 use super::shacl_parser_error::ShaclParserError;
@@ -23,6 +23,8 @@ where
     RDF: FocusRDF,
 {
     rdf_parser: RDFParser<RDF>,
+    shapes: HashMap<IriRef, Shape>,
+    pending: Vec<IriRef>
 }
 
 impl<RDF> ShaclParser<RDF>
@@ -32,24 +34,42 @@ where
     pub fn new(rdf: RDF) -> ShaclParser<RDF> {
         ShaclParser {
             rdf_parser: RDFParser::new(rdf),
+            shapes: HashMap::new(),
+            pending: Vec::new()
         }
     }
 
     pub fn parse(&mut self) -> Result<Schema> {
-        let schema = Self::schema_parser()
+        /*let schema = Self::schema_parser()
             .parse_impl(&mut self.rdf_parser.rdf)
-            .map_err(|e| ShaclParserError::RDFParseError { err: e })?;
+            .map_err(|e| ShaclParserError::RDFParseError { err: e })?; */
         let prefixmap: PrefixMap = self
             .rdf_parser
             .prefixmap()
             .unwrap_or_else(|| PrefixMap::new());
-        Ok(schema.with_prefixmap(prefixmap))
+        let mut pending = self.shapes_candidates()?;
+        while let Some(node) = pending.pop() {
+            if !self.shapes.contains_key(&node) {
+                let shape = Self::shape().parse_impl(&mut self.rdf_parser.rdf).map_err(|e| ShaclParserError::RDFParseError { err: e })?;
+                self.shapes.insert(node, shape);
+            }
+        }
+        Ok(Schema::new().with_prefixmap(prefixmap).with_shapes(self.shapes.clone()))
     }
 
-    pub fn schema_parser() -> impl RDFNodeParse<RDF, Output = Schema> {
+    fn shapes_candidates(&self) -> Result<Vec<IriRef>> {
+        let result = Vec::new();
+        // subjects with type `sh:NodeShape`
+        // subjects with type `sh:PropertyShape`
+        // subjects with type `sh:Shape`
+        // subjects with property `sh:property`
+        Ok(result)
+    }
+
+    /*pub fn schema_parser() -> impl RDFNodeParse<RDF, Output = Schema> {
         instances_of(&SH_NODE_SHAPE).then(|vs| {
             let terms: Vec<_> = vs.iter().map(|s| RDF::subject_as_term(s)).collect();
-            parse_nodes(terms, node_shape()).flat_map(|ns| {
+            parse_nodes(terms, Self::node_shape()).flat_map(|ns| {
                 let mut schema = Schema::new();
                 schema
                     .add_node_shapes(ns)
@@ -59,21 +79,30 @@ where
                 Ok(schema)
             })
         })
+    }*/
+
+    fn shape() -> impl RDFNodeParse<RDF, Output = Shape>
+    where
+        RDF: FocusRDF,
+    {
+        Self::node_shape().then(move |ns| { ok(&Shape::NodeShape(ns))})
     }
+
+    fn node_shape() -> impl RDFNodeParse<RDF, Output = NodeShape>
+    where
+        RDF: FocusRDF,
+    {
+        has_type(SH_NODE_SHAPE.clone())
+            .with(term().then(move |t: RDF::Term| {
+                let id = RDF::term_as_object(&t.clone());
+                ok(&NodeShape::new(id))
+            }))
+            .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
+            .then(|ns| property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps))))
+    }
+        
 }
 
-fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape>
-where
-    RDF: FocusRDF,
-{
-    has_type(SH_NODE_SHAPE.clone())
-        .with(term().then(move |t: RDF::Term| {
-            let id = RDF::term_as_object(&t.clone());
-            ok(&NodeShape::new(id))
-        }))
-        .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-        .then(|ns| property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps))))
-}
 
 fn property_shapes<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>>
 where
