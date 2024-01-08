@@ -2,15 +2,14 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
-use prefixmap::{PrefixMapError, PrefixMap};
+use prefixmap::{PrefixMap, PrefixMapError};
 
 use crate::Object;
 
 /// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
-/// 
+///
 pub trait SRDFBasic {
-
-    /// RDF subjects 
+    /// RDF subjects
     type Subject: Debug + Display;
 
     /// RDF predicates
@@ -36,7 +35,7 @@ pub trait SRDFBasic {
 
     /// Returns `true` if the subject is an IRI
     fn subject_is_iri(subject: &Self::Subject) -> bool;
-    
+
     /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
@@ -48,6 +47,14 @@ pub trait SRDFBasic {
         Self::literal_as_boolean(&literal)
     }
 
+    fn object_as_term(obj: &Object) -> Self::Term {
+        match obj {
+            Object::Iri { iri } => Self::iri_s2term(iri),
+            Object::BlankNode(bn) => todo!(), //Self::bnode2term(bn),
+            Object::Literal(lit) => todo!(),
+        }
+    }
+
     fn term_as_literal(term: &Self::Term) -> Option<Self::Literal> {
         Self::object_as_literal(term)
     }
@@ -55,29 +62,29 @@ pub trait SRDFBasic {
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
         match &Self::datatype_str(&literal) {
             RDF_BOOLEAN => match Self::lexical_form(literal) {
-               "true" => Some(true),
-               "false" => Some(false),
-               _ => None
-             },
-            _ => None
-        } 
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
     fn literal_as_integer(literal: &Self::Literal) -> Option<isize> {
         match &Self::datatype_str(&literal) {
             RDF_INTEGER => match Self::lexical_form(literal).parse() {
-               Ok(n) => Some(n),
-               _ => None
+                Ok(n) => Some(n),
+                _ => None,
             },
-            _ => None
-        } 
+            _ => None,
+        }
     }
 
     fn literal_as_string(literal: &Self::Literal) -> Option<String> {
         match &Self::datatype_str(&literal) {
             RDF_STRING => Some(Self::lexical_form(literal).to_string()),
-            _ => None
-        } 
+            _ => None,
+        }
     }
 
     fn term_as_integer(term: &Self::Term) -> Option<isize> {
@@ -96,10 +103,14 @@ pub trait SRDFBasic {
 
     fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
+    fn subject_as_object(subject: &Self::Subject) -> Object {
+        Self::term_as_object(&Self::subject_as_term(&subject))
+    }
+
     fn lexical_form(literal: &Self::Literal) -> &str;
     fn lang(literal: &Self::Literal) -> Option<String>;
     fn datatype(literal: &Self::Literal) -> Self::IRI;
-    
+
     fn datatype_str(literal: &Self::Literal) -> String {
         let iri = Self::datatype(literal);
         Self::iri2iri_s(&iri).to_string()
@@ -125,5 +136,4 @@ pub trait SRDFBasic {
 
     fn prefixmap(&self) -> Option<PrefixMap>;
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
-
 }

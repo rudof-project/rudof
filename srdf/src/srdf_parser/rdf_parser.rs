@@ -1,14 +1,14 @@
+use super::rdf_node_parser::*;
+use super::rdf_parser_error::RDFParseError;
+use crate::{FocusRDF, Object, RDF_TYPE, SRDF};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use super::rdf_parser_error::RDFParseError;
-use crate::{Object, SRDF, FocusRDF, RDF_TYPE};
 use std::{
     collections::{HashSet, VecDeque},
     error::Error,
     fmt::Display,
     marker::PhantomData,
 };
-use super::rdf_node_parser::*;
 
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
@@ -21,7 +21,6 @@ pub trait RDFParse<RDF: SRDF> {
 
     fn parse(&mut self, rdf: RDF) -> Result<Self::Output, RDF::Err>;
 }
-
 
 /// Implements a concrete RDF parser
 pub struct RDFParser<RDF>
@@ -55,7 +54,6 @@ where
         let term = RDF::iri_s2term(iri);
         self.rdf.set_focus(&term)
     }
-
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
         RDF::iri_as_term(Self::iri_unchecked(str))
@@ -97,10 +95,7 @@ where
         }
     }
 
-    pub fn predicate_values(
-        &mut self,
-        pred: &IriS,
-    ) -> Result<HashSet<RDF::Term>, RDFParseError> {
+    pub fn predicate_values(&mut self, pred: &IriS) -> Result<HashSet<RDF::Term>, RDFParseError> {
         let mut p = property_values(pred);
         let vs = p.parse_impl(&mut self.rdf)?;
         Ok(vs)
@@ -136,11 +131,13 @@ where
         }
     }
 
-    pub fn parse_list_for_predicate(&mut self, pred: &IriS) -> Result<Vec<RDF::Term>, RDFParseError> {
+    pub fn parse_list_for_predicate(
+        &mut self,
+        pred: &IriS,
+    ) -> Result<Vec<RDF::Term>, RDFParseError> {
         let list_node = self.predicate_value(pred)?;
         self.rdf.set_focus(&list_node);
         let values = rdf_list().parse_impl(&mut self.rdf)?;
         Ok(values)
     }
 }
-

@@ -18,4 +18,7 @@ pub enum ShaclParserError {
         #[from]
         err: ShaclError,
     },
+
+    #[error("Custom error: {msg}")]
+    Custom { msg: String },
 }

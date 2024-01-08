@@ -3,13 +3,13 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{node_shape::NodeShape, shape::Shape, ShaclError};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use srdf::Object;
+use srdf::{Object, RDFNode};
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
     imports: Vec<IriS>,
     entailments: Vec<IriS>,
-    shapes: HashMap<IriRef, Shape>,
+    shapes: HashMap<RDFNode, Shape>,
     prefixmap: PrefixMap,
 }
 
@@ -23,24 +23,9 @@ impl Schema {
         self
     }
 
-    pub fn with_shapes(mut self, shapes: HashMap<IriRef, Shape>) -> Self {
+    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape>) -> Self {
         self.shapes = shapes;
         self
-    }
-
-
-    pub fn add_node_shapes(&mut self, ns: Vec<NodeShape>) -> Result<(), ShaclError> {
-        for node_shape in ns.iter() {
-            let id = node_shape.id();
-            match id {
-                Object::Iri { iri } => {
-                    self.shapes
-                        .insert(IriRef::Iri(iri), Shape::NodeShape(node_shape.clone()));
-                }
-                _ => return Err(ShaclError::NodeShapeIdNotIri { id }),
-            }
-        }
-        Ok(())
     }
 }
 
