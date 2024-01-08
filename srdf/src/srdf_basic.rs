@@ -10,7 +10,7 @@ use crate::Object;
 ///
 pub trait SRDFBasic {
     /// RDF subjects
-    type Subject: Debug + Display;
+    type Subject: Debug + Display + PartialEq + Clone + Eq + Hash;
 
     /// RDF predicates
     type IRI: Debug + Display + Hash + Eq + Clone;
@@ -22,7 +22,7 @@ pub trait SRDFBasic {
     type Literal: Debug + Display + PartialEq;
 
     /// RDF terms
-    type Term: Debug + Clone + Display + PartialEq;
+    type Term: Debug + Clone + Display + PartialEq + Eq + Hash;
 
     /// RDF errors
     type Err: Display;
@@ -39,24 +39,20 @@ pub trait SRDFBasic {
     /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
-    fn object_as_iri(object: &Self::Term) -> Option<Self::IRI>;
-    fn object_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
-    fn object_as_literal(object: &Self::Term) -> Option<Self::Literal>;
-    fn object_as_boolean(object: &Self::Term) -> Option<bool> {
-        let literal = Self::object_as_literal(object)?;
+    fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>;
+    fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
+    fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>;
+    fn term_as_boolean(object: &Self::Term) -> Option<bool> {
+        let literal = Self::term_as_literal(object)?;
         Self::literal_as_boolean(&literal)
     }
 
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
             Object::Iri { iri } => Self::iri_s2term(iri),
-            Object::BlankNode(bn) => todo!(), //Self::bnode2term(bn),
+            Object::BlankNode(bn) => Self::bnode_id2term(bn),
             Object::Literal(lit) => todo!(),
         }
-    }
-
-    fn term_as_literal(term: &Self::Term) -> Option<Self::Literal> {
-        Self::object_as_literal(term)
     }
 
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
@@ -95,9 +91,9 @@ pub trait SRDFBasic {
         Self::term_as_literal(term).and_then(|l| Self::literal_as_string(&l))
     }
 
-    fn object_is_iri(object: &Self::Term) -> bool;
-    fn object_is_bnode(object: &Self::Term) -> bool;
-    fn object_is_literal(object: &Self::Term) -> bool;
+    fn term_is_iri(object: &Self::Term) -> bool;
+    fn term_is_bnode(object: &Self::Term) -> bool;
+    fn term_is_literal(object: &Self::Term) -> bool;
 
     fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
 
@@ -117,14 +113,21 @@ pub trait SRDFBasic {
     }
 
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
+    fn bnode_id2bnode(id: &str) -> Self::BNode;
+
     fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
         Self::iri_as_subject(Self::iri_s2iri(iri_s))
     }
     fn iri_s2term(iri_s: &IriS) -> Self::Term {
         Self::iri_as_term(Self::iri_s2iri(iri_s))
     }
+    fn bnode_id2term(id: &str) -> Self::Term {
+        Self::bnode_as_term(Self::bnode_id2bnode(id))
+    }
+
 
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
+    fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
     fn term_as_object(term: &Self::Term) -> Object;

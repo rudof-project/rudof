@@ -4,7 +4,7 @@ use iri_s::{IriS, iri};
 // use log::debug;
 use oxiri::Iri;
 use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, SRDFBasic, SRDF};
+use crate::{FocusRDF, SRDFBasic, SRDF, Triple as STriple};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -21,7 +21,7 @@ use oxrdf::{
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef
 };
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
-use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple};
+use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, BlankNode};
 use rio_api::parser::*;
 use rio_turtle::*;
 
@@ -194,40 +194,40 @@ impl SRDFBasic for SRDFGraph {
         }
     }
 
-    fn object_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
+    fn term_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
         match object {
             OxTerm::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn object_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
+    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
         match object {
             OxTerm::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
 
-    fn object_as_literal(object: &OxTerm) -> Option<OxLiteral> {
+    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
         match object {
             OxTerm::Literal(l) => Some(l.clone()),
             _ => None,
         }
     }
 
-    fn object_is_iri(object: &OxTerm) -> bool {
+    fn term_is_iri(object: &OxTerm) -> bool {
         match object {
             OxTerm::NamedNode(_) => true,
             _ => false,
         }
     }
-    fn object_is_bnode(object: &OxTerm) -> bool {
+    fn term_is_bnode(object: &OxTerm) -> bool {
         match object {
             OxTerm::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_literal(object: &OxTerm) -> bool {
+    fn term_is_literal(object: &OxTerm) -> bool {
         match object {
             OxTerm::Literal(_) => true,
             _ => false,
@@ -338,6 +338,14 @@ impl SRDFBasic for SRDFGraph {
     fn prefixmap(&self) -> Option<prefixmap::PrefixMap> { 
         Some(self.pm.clone())
     }
+
+    fn bnode_id2bnode(id: &str) -> Self::BNode {
+        OxBlankNode::new_unchecked(id)
+    }
+
+    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
+        OxTerm::BlankNode(bnode)
+    }
 }
 
 impl SRDF for SRDFGraph {
@@ -398,6 +406,7 @@ impl SRDF for SRDFGraph {
                 }
             }
         }
+        println!("Outgoing arcs for {subject:?} = {results:?}");
         Ok(results)
     }
 
@@ -445,6 +454,20 @@ impl SRDF for SRDFGraph {
             }
         }
         Ok((results, remainder))
+    }
+
+    fn triples_with_predicate(
+        &self,
+        pred: &Self::IRI
+    ) -> Result<Vec<crate::Triple<Self>>, Self::Err> {
+        let mut result = Vec::new();
+        for triple in self.graph.triples_for_predicate(pred) {
+           let subj = triple.subject.into_owned();
+           let pred = triple.predicate.into_owned();
+           let obj = triple.object.into_owned();
+           result.push(STriple::new(subj,pred,obj))
+        }
+        Ok(result)
     }
 }
 

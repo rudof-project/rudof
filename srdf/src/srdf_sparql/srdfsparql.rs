@@ -3,7 +3,10 @@ use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use log::debug;
-use oxrdf::{Literal as OxLiteral, Term as OxTerm, Subject as OxSubject, BlankNode, NamedNode as OxNamedNode};
+use oxrdf::{Literal as OxLiteral, Term as OxTerm, Subject as OxSubject, 
+     BlankNode as OxBlankNode, 
+     NamedNode as OxNamedNode
+};
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
 use reqwest::{
@@ -68,7 +71,7 @@ impl SRDFSparql {
         self
     }
 
-    fn show_blanknode(&self, bn: &BlankNode) -> String {
+    fn show_blanknode(&self, bn: &OxBlankNode) -> String {
         let str: String = format!("{}", bn);
         format!("{}", str.green())
     }
@@ -81,7 +84,7 @@ impl SRDFSparql {
 
 impl SRDFBasic for SRDFSparql {
     type IRI = OxNamedNode;
-    type BNode = BlankNode;
+    type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
@@ -93,7 +96,7 @@ impl SRDFBasic for SRDFSparql {
             _ => None,
         }
     }
-    fn subject_as_bnode(subject: &OxSubject) -> Option<BlankNode> {
+    fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
         match subject {
             OxSubject::BlankNode(b) => Some(b.clone()),
             _ => None,
@@ -112,40 +115,40 @@ impl SRDFBasic for SRDFSparql {
         }
     }
 
-    fn object_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
+    fn term_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
         match object {
             OxTerm::NamedNode(n) => Some(n.clone()),
             _ => None,
         }
     }
-    fn object_as_bnode(object: &OxTerm) -> Option<BlankNode> {
+    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
         match object {
             OxTerm::BlankNode(b) => Some(b.clone()),
             _ => None,
         }
     }
-    fn object_as_literal(object: &OxTerm) -> Option<OxLiteral> {
+    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
         match object {
             OxTerm::Literal(l) => Some(l.clone()),
             _ => None,
         }
     }
 
-    fn object_is_iri(object: &OxTerm) -> bool {
+    fn term_is_iri(object: &OxTerm) -> bool {
         match object {
             OxTerm::NamedNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_bnode(object: &OxTerm) -> bool {
+    fn term_is_bnode(object: &OxTerm) -> bool {
         match object {
             OxTerm::BlankNode(_) => true,
             _ => false,
         }
     }
 
-    fn object_is_literal(object: &OxTerm) -> bool {
+    fn term_is_literal(object: &OxTerm) -> bool {
         match object {
             OxTerm::Literal(_) => true,
             _ => false,
@@ -246,12 +249,20 @@ impl SRDFBasic for SRDFSparql {
     fn prefixmap(&self) -> Option<PrefixMap> { 
         Some(self.prefixmap.clone())
     }
+
+    fn bnode_id2bnode(id: &str) -> Self::BNode {
+        OxBlankNode::new_unchecked(id)
+    }
+
+    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
+        OxTerm::BlankNode(bnode)
+    }
 }
 
 #[async_trait]
 impl AsyncSRDF for SRDFSparql {
     type IRI = OxNamedNode;
-    type BNode = BlankNode;
+    type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
@@ -362,6 +373,13 @@ impl SRDF for SRDFSparql {
         Self::Err,
     > {
         outgoing_neighs_from_list(&subject, preds, &self.client, &self.endpoint_iri)
+    }
+
+    fn triples_with_predicate(
+        &self,
+        _pred: &Self::IRI
+    ) -> std::prelude::v1::Result<Vec<crate::Triple<Self>>, Self::Err> {
+        todo!()
     }
 }
 

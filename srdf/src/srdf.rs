@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::SRDFBasic;
+use crate::{SRDFBasic, Triple};
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 /// 
@@ -24,6 +24,11 @@ pub trait SRDF: SRDFBasic {
         pred: &Self::IRI,
         object: &Self::Term,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
+
+    fn triples_with_predicate(
+        &self,
+        pred: &Self::IRI
+    ) -> Result<Vec<Triple<Self>>, Self::Err>;
 
     /*fn get_subjects_for_predicate_any_object(
         &self,

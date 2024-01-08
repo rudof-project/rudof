@@ -20,11 +20,11 @@ pub enum Subject {
     BlankNode(String),
 }
 
-pub struct Triple {
+/*pub struct Triple {
     pub subject: Subject,
     pub predicate: IriS,
     pub object: Object,
-}
+}*/
 
 pub type RDFNode = Object;
 

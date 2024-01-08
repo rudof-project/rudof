@@ -21,10 +21,13 @@ pub enum RDFParseError {
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
 
-    #[error("Node has no value for predicate {pred}")]
+    #[error("Node {node} has no value for predicate {pred}")]
     NoValuesPredicate { node: String, pred: String },
 
-    #[error("Node has more than one value for predicate {pred}: {value1}, {value2}")]
+    #[error("Node {node} has no value for predicate {pred}. Outgoing arcs: {outgoing_arcs}")]
+    NoValuesPredicateDebug { node: String, pred: String, outgoing_arcs: String },
+
+    #[error("Node {node} has more than one value for predicate {pred}: {value1}, {value2}")]
     MoreThanOneValuePredicate {
         node: String,
         pred: String,
@@ -53,6 +56,10 @@ pub enum RDFParseError {
 
     #[error("Expected IRI but found BNode {bnode}")]
     ExpectedIRIFoundBNode { bnode: String },
+
+    #[error("Expected focus to act as subject, found {focus}")]
+    ExpectedFocusAsSubject { focus: String },
+
 
     #[error("Expected IRI but found Literal {lit}")]
     ExpectedIRIFoundLiteral { lit: Literal },

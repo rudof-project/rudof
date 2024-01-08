@@ -4,6 +4,7 @@ use std::{
 };
 
 use iri_s::IriS;
+use std::fmt::Debug;
 
 use crate::{
     rdf_parser, FocusRDF, PResult, RDFParseError, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST,
@@ -562,7 +563,7 @@ pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where
     RDF: FocusRDF,
 {
-    term().flat_map(|ref t| match RDF::object_as_iri(t) {
+    term().flat_map(|ref t| match RDF::term_as_iri(t) {
         None => Err(RDFParseError::ExpectedIRI {
             term: format!("{t}"),
         }),
@@ -617,7 +618,7 @@ pub fn property_bool<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = bool>
 where
     RDF: FocusRDF,
 {
-    property_value(prop).flat_map(|ref term| match RDF::object_as_boolean(term) {
+    property_value(prop).flat_map(|ref term| match RDF::term_as_boolean(term) {
         None => Err(RDFParseError::ExpectedBoolean {
             term: format!("{term}"),
         }),
@@ -630,7 +631,7 @@ where
     RDF: FocusRDF,
 {
     satisfy(
-        |node: &RDF::Term| match RDF::object_as_iri(node) {
+        |node: &RDF::Term| match RDF::term_as_iri(node) {
             Some(iri) => {
                 let iri_s = RDF::iri2iri_s(&iri);
                 iri_s.as_str() == RDF_NIL_STR
@@ -776,6 +777,116 @@ where
     }
 }
 
+/// Creates a parser that returns the value associated with the current focus node for `property`
+///
+/// It doesn't move the current focus node
+/// 
+/// This method can be used to debug the parser, because it is less efficient as in case that it fails, 
+/// it shows the neighbourhood of the current node
+pub fn property_value_debug<RDF>(property: &IriS) -> PropertyValueDebug<RDF>
+where
+    RDF: SRDF,
+{
+    let property = RDF::iri_s2iri(property);
+    PropertyValueDebug {
+        property,
+        _marker: PhantomData,
+    }
+}
+
+pub struct PropertyValueDebug<RDF: SRDF> {
+    property: RDF::IRI,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for PropertyValueDebug<RDF>
+where
+    RDF: FocusRDF + Debug,
+{
+    type Output = RDF::Term;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::Term> {
+        let mut p: Neighs<RDF> = neighs();
+        println!("property_value_debug: {rdf:?}");
+        let focus_node_str = match rdf.get_focus() {
+            None => "No focus node".to_string(),
+            Some(focus_node) => {
+                format!("{focus_node:?}")
+            }
+        };
+        let outgoing_arcs = p.parse_impl(rdf)?;
+        if let Some(values) = outgoing_arcs.get(&self.property) {
+            let mut values_iter = values.into_iter();
+            if let Some(value1) = values_iter.next() {
+                if let Some(value2) = values_iter.next() {
+                    Err(RDFParseError::MoreThanOneValuePredicate {
+                        node: format!("{focus_node_str}",),
+                        pred: format!("{}", self.property),
+                        value1: format!("{value1:?}"),
+                        value2: format!("{value2:?}"),
+                    })
+                } else {
+                    Ok(value1.clone())
+                }
+            } else {
+                panic!("Internal error: Node {} has no value for predicate {}...but this case should be handled in the outer else...", focus_node_str, self.property)
+            }
+        }
+        else {
+            Err(RDFParseError::NoValuesPredicateDebug {
+                node: format!("{focus_node_str}"),
+                pred: format!("{}", self.property),
+                outgoing_arcs: format!("{outgoing_arcs:?}")
+            })
+        }
+    }
+}
+
+/// Creates a parser that returns the value associated with the current focus node for `property`
+///
+/// It doesn't move the current focus node
+/// 
+/// This method can be used to debug the parser, because it is less efficient as in case that it fails, 
+/// it shows the neighbourhood of the current node
+pub fn neighs<RDF>() -> Neighs<RDF>
+where
+    RDF: SRDF,
+{
+    Neighs {
+        _marker: PhantomData,
+    }
+}
+
+pub struct Neighs<RDF: SRDF> {
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for Neighs<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = HashMap<RDF::IRI, HashSet<RDF::Term>>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashMap<RDF::IRI, HashSet<RDF::Term>>> {
+        match rdf.get_focus() {
+            Some(focus) => {
+                let subj = RDF::term_as_subject(&focus).ok_or_else(|| 
+                    RDFParseError::ExpectedFocusAsSubject { 
+                        focus: format!("{focus}") 
+                    })?;
+                rdf.outgoing_arcs(&subj).map_err(|e| {
+                  RDFParseError::Custom { 
+                    msg: format!("Error obtaining outgoing arcs from {focus}: {e}") 
+                  }
+            })
+            },
+            None => todo!(),
+        }
+    }
+}
+
+
+
 /// Returns the integer values of `property` for the focus node
 ///
 /// If there is no value, it returns an empty set
@@ -882,7 +993,7 @@ where
 {
     get_focus().flat_map(|ref term| {
         println!("Checking bool: {}", &term);
-        match RDF::object_as_boolean(term) {
+        match RDF::term_as_boolean(term) {
             Some(b) => {
                 println!("Checking bool ok: {}", &term);
                 Ok(b)
@@ -1072,7 +1183,7 @@ fn node_is_rdf_nil<RDF>(node: &RDF::Term) -> bool
 where
     RDF: SRDF,
 {
-    if let Some(iri) = RDF::object_as_iri(node) {
+    if let Some(iri) = RDF::term_as_iri(node) {
         RDF::iri2iri_s(&iri) == *RDF_NIL
     } else {
         false
@@ -1086,7 +1197,7 @@ where
 {
     let name = format!("Is {}", expected_iri.as_str());
     satisfy(
-        move |node: &RDF::Term| match RDF::object_as_iri(node) {
+        move |node: &RDF::Term| match RDF::term_as_iri(node) {
             Some(iri) => {
                 let iri_s = RDF::iri2iri_s(&iri);
                 iri_s == expected_iri
@@ -1147,7 +1258,7 @@ pub fn term_as_iri<RDF>(term: &RDF::Term) -> impl RDFNodeParse<RDF, Output = Iri
 where
     RDF: FocusRDF,
 {
-    apply(term, |term| match &RDF::object_as_iri(term) {
+    apply(term, |term| match &RDF::term_as_iri(term) {
         Some(iri) => {
             let iri_s = RDF::iri2iri_s(&iri);
             Ok(iri_s)
@@ -1459,7 +1570,7 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         let rdf_type = parse_rdf_type().parse_impl(rdf)?;
-        let iri_type = match RDF::object_as_iri(&rdf_type) {
+        let iri_type = match RDF::term_as_iri(&rdf_type) {
             Some(iri) => RDF::iri2iri_s(&iri),
             None => {
                 return Err(RDFParseError::ExpectedIRI {
