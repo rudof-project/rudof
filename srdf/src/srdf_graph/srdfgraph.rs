@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 use colored::*;
 use iri_s::{IriS, iri};
+use lazy_static::lazy_static;
 // use log::debug;
 use oxiri::Iri;
 use rust_decimal::Decimal;
 use crate::async_srdf::AsyncSRDF;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, SRDFBasic, SRDF, Triple as STriple};
+use crate::{FocusRDF, SRDFBasic, SRDF, SRDFBuilder, Triple as STriple, RDF_TYPE_STR};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -28,11 +29,14 @@ use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, Bl
 use rio_api::parser::*;
 use rio_turtle::*;
 
+
+
 #[derive(Debug)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
     graph: Graph,
     pm: PrefixMap,
+    base: Option<IriS>
 }
 
 impl SRDFGraph {
@@ -41,6 +45,7 @@ impl SRDFGraph {
             focus: None,
             graph: Graph::new(),
             pm: PrefixMap::new(),
+            base: None
         }
     }
 
@@ -52,7 +57,7 @@ impl SRDFGraph {
         reader: R,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        let mut turtle_parser = TurtleParser::new(reader, base);
+        let mut turtle_parser = TurtleParser::new(reader, base.clone());
         let mut graph = Graph::default();
         turtle_parser.parse_all(&mut |triple| {
             let ox_triple = Self::cnv(triple);
@@ -65,11 +70,13 @@ impl SRDFGraph {
             .iter()
             .map(|(key, value)| (key.as_str(), value.as_str()))
             .collect();
+        let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph {
             focus: None,
             graph: graph,
             pm,
+            base
         })
     }
 
@@ -577,6 +584,48 @@ impl FocusRDF for SRDFGraph {
     fn get_focus(&self) -> &Option<Self::Term> {
         &self.focus
     }
+}
+
+impl SRDFBuilder for SRDFGraph {
+    fn add_base(&mut self, base: &Self::IRI) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_prefix(&mut self, alias: &str, iri: &Self::IRI) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_triple(&mut self, subj: &Self::Subject, pred: &Self::IRI, obj: &Self::Term) -> Result<(), Self::Err> {
+       let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+       self.graph.insert(&triple);
+       Ok(())
+    }
+
+    fn remove_triple(&mut self, subj: &Self::Subject, pred: &Self::IRI, obj: &Self::Term) -> Result<(), Self::Err> {
+        let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+        self.graph.remove(&triple);
+        Ok(())
+    }
+
+    fn add_type(&mut self, node: &crate::RDFNode, type_: Self::Term) -> Result<(), Self::Err> {
+        match Self::object_as_subject(&node) {
+            Some(subj) => {
+                let triple = OxTriple::new(subj, rdf_type(), type_.clone());
+                self.graph.insert(&triple);
+                Ok(())
+
+            },
+            None => panic!("Error adding type to {node} because it can't be converted to a subject")
+        }
+    }
+}
+
+fn rdf_type() -> OxNamedNode {
+ OxNamedNode::new_unchecked(RDF_TYPE_STR)
 }
 
 #[cfg(test)]

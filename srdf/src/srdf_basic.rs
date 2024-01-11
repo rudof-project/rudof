@@ -48,6 +48,10 @@ pub trait SRDFBasic {
     }
 
     fn object_as_term(obj: &Object) -> Self::Term;
+    fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
+        let term = Self::object_as_term(&obj);
+        Self::term_as_subject(&term)
+    }
     
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
         match &Self::datatype_str(&literal) {
