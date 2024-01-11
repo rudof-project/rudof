@@ -30,5 +30,5 @@ either = "1"
 
 
 [dev-dependencies]
-oxrdf = "0.1.6"
+oxrdf = "0.1.7"
 

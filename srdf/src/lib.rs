@@ -34,6 +34,17 @@ pub use srdf_sparql::*;
 pub use vocab::*;
 pub use triple::*;
 
+/// Creates an integer literal
+/// 
+#[macro_export]
+macro_rules! int {
+    (
+        $n: tt
+      ) => {
+         crate::literal::Literal::integer($n)
+      }
+}
+
 /// Declares a named RDF parser which can be reused.
 ///
 /// The expression which creates the parser should have no side effects as it may be called

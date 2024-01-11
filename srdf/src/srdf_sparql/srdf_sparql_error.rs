@@ -1,7 +1,7 @@
 use iri_s::IriSError;
 use oxiri::IriParseError;
 use oxrdf::Term;
-use sparesults::QuerySolution;
+//use sparesults::QuerySolution;
 use thiserror::Error;
 
 use crate::SparqlVars;

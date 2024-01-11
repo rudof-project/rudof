@@ -3,7 +3,9 @@ use colored::*;
 use iri_s::{IriS, iri};
 // use log::debug;
 use oxiri::Iri;
+use rust_decimal::Decimal;
 use crate::async_srdf::AsyncSRDF;
+use crate::numeric_literal::NumericLiteral;
 use crate::{FocusRDF, SRDFBasic, SRDF, Triple as STriple};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
@@ -18,8 +20,9 @@ use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef
+    Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef, 
 };
+use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, BlankNode};
 use rio_api::parser::*;
@@ -279,7 +282,7 @@ impl SRDFBasic for SRDFGraph {
 
     fn term_as_object(term: &OxTerm) -> Object {
         match term {
-            OxTerm::BlankNode(bn) => Object::BlankNode(bn.to_string()),
+            OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),
             OxTerm::Literal(lit) => {
                 let lit = lit.to_owned();
                 match lit.destruct() {
@@ -346,10 +349,52 @@ impl SRDFBasic for SRDFGraph {
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
         OxTerm::BlankNode(bnode)
     }
+
+    fn object_as_term(obj: &Object) -> Self::Term {
+       match obj {
+         Object::Iri { iri } => Self::iri_s2term(iri),
+         Object::BlankNode(bn) => Self::bnode_id2term(bn),
+         Object::Literal(lit) => {
+          let literal: OxLiteral = match lit {
+            Literal::StringLiteral { lexical_form, lang } => match lang {
+                Some(lang) => OxLiteral::new_language_tagged_literal_unchecked(lexical_form, lang.to_string()),
+                None => OxLiteral::new_simple_literal(lexical_form),
+            },
+            Literal::DatatypeLiteral { lexical_form, datatype } => OxLiteral::new_typed_literal(lexical_form, cnv_iri_ref(datatype)),
+            Literal::NumericLiteral(n) => match n {
+                NumericLiteral::Integer(n) => {
+                    let n: i128 = *n as i128;
+                    OxLiteral::from(n)
+                },
+                NumericLiteral::Decimal(d) => {
+                    let decimal = cnv_decimal(d);
+                    OxLiteral::from(decimal)
+                },
+                NumericLiteral::Double(d) => OxLiteral::from(*d),
+            },
+            Literal::BooleanLiteral(b) => OxLiteral::from(*b),
+        };
+        OxTerm::Literal(literal)
+       }
+    }
+  }
+
+    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
+        OxSubject::BlankNode(bnode)
+    }
+}
+
+fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
+    todo!()
+}
+
+fn cnv_decimal(d: &Decimal) -> OxDecimal {
+    todo!()
 }
 
 impl SRDF for SRDFGraph {
-    fn get_predicates_for_subject(
+
+    fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
     ) -> Result<HashSet<Self::IRI>, Self::Err> {
@@ -361,7 +406,7 @@ impl SRDF for SRDFGraph {
         Ok(ps)
     }
 
-    fn get_objects_for_subject_predicate(
+    fn objects_for_subject_predicate(
         &self,
         subject: &Self::Subject,
         pred: &Self::IRI,
@@ -406,7 +451,6 @@ impl SRDF for SRDFGraph {
                 }
             }
         }
-        println!("Outgoing arcs for {subject:?} = {results:?}");
         Ok(results)
     }
 
@@ -538,7 +582,7 @@ impl FocusRDF for SRDFGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SRDFGraph;
+    use crate::{SRDFGraph, srdf, int};
     use oxrdf::{Graph, SubjectRef};
     use rio_api::model::{Literal, Subject};
     use crate::SRDF;
@@ -592,24 +636,43 @@ mod tests {
     }
 
     #[test]
-    fn test_rdf_nil() {
-        use crate::SRDFBasic;
-        use crate::SRDF;
-
+    fn test_outgoing_arcs() {
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         
-        :x :p rdf:nil .
+        :x :p [ :p 1 ].
         "#;
 
         let graph = SRDFGraph::from_str(s, None).unwrap();
-        // let p = SRDFBasic::iri_s2iri(&iri!("http://example.org/p"));
-        // let x = SRDFBasic::iri_as_subject(iri!("http://example.org/x"));
-        // let rs = SRDF::get_objects_for_subject_predicate(&graph, x, p);
-        // let mut parser = property_values(&p);
-        // let result = parser.parse(&x, &graph).unwrap();
+        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
+        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
+        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let term = terms.iter().next().unwrap().clone();
+        let subject = <SRDFGraph as SRDFBasic>::term_as_subject(&term).unwrap();
+        let outgoing = graph.outgoing_arcs(&subject).unwrap();
+        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
+        assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
     }
 
+    #[test]
+    fn test_outgoing_arcs_bnode() {
+        let s = r#"prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        
+        :x :p [ :p 1 ].
+        "#;
+
+        let graph = SRDFGraph::from_str(s, None).unwrap();
+        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
+        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
+        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let term = terms.iter().next().unwrap().clone();
+        let bnode = <SRDFGraph as SRDFBasic>::term_as_bnode(&term).unwrap();
+        let subject = <SRDFGraph as SRDFBasic>::bnode_id2subject(bnode.as_str());
+        let outgoing = graph.outgoing_arcs(&subject).unwrap();
+        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
+        assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
+    }
 
     #[test]
     fn test_parser() {

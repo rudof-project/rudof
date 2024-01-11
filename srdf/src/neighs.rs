@@ -46,7 +46,7 @@ where
                 todo!()
             }
             Some(subject) => {
-                let preds: HashSet<S::IRI> = rdf.get_predicates_for_subject(&subject)?;
+                let preds: HashSet<S::IRI> = rdf.predicates_for_subject(&subject)?;
                 let qs = preds.into_iter();
                 /*let vv = qs.flat_map(|p| {
                     let objs = rdf.get_objects_for_subject_predicate(&subject, &p)?;

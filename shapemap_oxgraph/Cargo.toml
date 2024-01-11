@@ -8,7 +8,7 @@ edition.workspace = true
 
 [dependencies]
 shapemap = { path = "../shapemap" }
-oxrdf = "0.1.6"
+oxrdf = "0.1.7"
 thiserror = "1.0"
 
 

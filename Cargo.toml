@@ -81,6 +81,6 @@ shapemap = { path = "./shapemap" }
 srdf = { path = "./srdf" }
 iri_s = { path = "./iri_s" }
 shacl_ast = { path = "./shacl_ast" }
-oxrdf = "0.1.6"
+oxrdf = "0.1.7"
 serde_json = "1.0"
 regex = "1"

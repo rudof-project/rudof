@@ -39,7 +39,6 @@ pub use iris_error::*;
 /// assert_eq!(iri.as_str(), "http://example.org/")
 /// ```
 ///
-
 #[macro_export]
 macro_rules! iri {
  (

@@ -257,6 +257,14 @@ impl SRDFBasic for SRDFSparql {
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
         OxTerm::BlankNode(bnode)
     }
+
+    fn object_as_term(obj: &Object) -> Self::Term {
+        todo!()
+    }
+
+    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
+        todo!()
+    }
 }
 
 #[async_trait]
@@ -297,7 +305,7 @@ impl AsyncSRDF for SRDFSparql {
 }
 
 impl SRDF for SRDFSparql {
-    fn get_predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
+    fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         debug!(
             "SPARQL query (get predicates for subject {subject}): {}",
@@ -312,7 +320,7 @@ impl SRDF for SRDFSparql {
         Ok(results)
     }
 
-    fn get_objects_for_subject_predicate(
+    fn objects_for_subject_predicate(
         &self,
         subject: &OxSubject,
         pred: &OxNamedNode,
@@ -632,7 +640,7 @@ mod tests {
         let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
             "http://www.wikidata.org/entity/Q80".to_string(),
         ));
-        let maybe_data = wikidata.get_predicates_for_subject(&q80);
+        let maybe_data = wikidata.predicates_for_subject(&q80);
         let data = maybe_data.unwrap();
         let p19: NamedNode =
             NamedNode::new_unchecked("http://www.wikidata.org/prop/P19".to_string());

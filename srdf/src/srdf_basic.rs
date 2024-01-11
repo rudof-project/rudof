@@ -47,14 +47,8 @@ pub trait SRDFBasic {
         Self::literal_as_boolean(&literal)
     }
 
-    fn object_as_term(obj: &Object) -> Self::Term {
-        match obj {
-            Object::Iri { iri } => Self::iri_s2term(iri),
-            Object::BlankNode(bn) => Self::bnode_id2term(bn),
-            Object::Literal(lit) => todo!(),
-        }
-    }
-
+    fn object_as_term(obj: &Object) -> Self::Term;
+    
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
         match &Self::datatype_str(&literal) {
             RDF_BOOLEAN => match Self::lexical_form(literal) {
@@ -121,15 +115,23 @@ pub trait SRDFBasic {
     fn iri_s2term(iri_s: &IriS) -> Self::Term {
         Self::iri_as_term(Self::iri_s2iri(iri_s))
     }
+
     fn bnode_id2term(id: &str) -> Self::Term {
         Self::bnode_as_term(Self::bnode_id2bnode(id))
     }
 
+    fn bnode_id2subject(id: &str) -> Self::Subject {
+        Self::bnode_as_subject(Self::bnode_id2bnode(id))
+    }
+
+
 
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
+    fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
+    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
+    
     fn term_as_object(term: &Self::Term) -> Object;
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 

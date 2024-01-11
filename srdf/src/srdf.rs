@@ -8,12 +8,13 @@ use crate::{SRDFBasic, Triple};
 /// 
 pub trait SRDF: SRDFBasic {
 
-    fn get_predicates_for_subject(
+
+    fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
     ) -> Result<HashSet<Self::IRI>, Self::Err>;
 
-    fn get_objects_for_subject_predicate(
+    fn objects_for_subject_predicate(
         &self,
         subject: &Self::Subject,
         pred: &Self::IRI,
@@ -43,7 +44,7 @@ pub trait SRDF: SRDFBasic {
     /// Get the neighbours of a term
     /// This code creates an intermediate vector and is not very efficient
     /// TODO: return an iterator
-    fn get_neighs(
+    fn neighs(
         &self,
         node: &Self::Term,
     ) -> Result<Vec<(Self::IRI, HashSet<Self::Term>)>, Self::Err> {
@@ -51,9 +52,9 @@ pub trait SRDF: SRDFBasic {
             None => Ok(Vec::new()),
             Some(subject) => {
                 let mut result = Vec::new();
-                let preds = self.get_predicates_for_subject(&subject)?;
+                let preds = self.predicates_for_subject(&subject)?;
                 for pred in preds {
-                    let objs = self.get_objects_for_subject_predicate(&subject, &pred)?;
+                    let objs = self.objects_for_subject_predicate(&subject, &pred)?;
                     result.push((pred.clone(), objs));
                 }
                 Ok(result)

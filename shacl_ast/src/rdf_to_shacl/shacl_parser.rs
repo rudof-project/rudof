@@ -53,7 +53,6 @@ where
             .prefixmap()
             .unwrap_or_else(|| PrefixMap::new());
         let mut pending = self.shapes_candidates()?;
-        println!("First candidates: {pending:?}");
         while let Some(node) = pending.pop() {
             if !self.shapes.contains_key(&node) {
                 let term = RDF::object_as_term(&node);

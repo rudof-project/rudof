@@ -716,7 +716,7 @@ where
         let subject = rdf.get_focus_as_subject()?;
         let pred = RDF::iri_s2iri(&self.property);
         let values = rdf
-            .get_objects_for_subject_predicate(&subject, &pred)
+            .objects_for_subject_predicate(&subject, &pred)
             .map_err(|e| RDFParseError::SRDFError {
                 err: format!("{e}"),
             })?;
@@ -807,7 +807,6 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::Term> {
         let mut p: Neighs<RDF> = neighs();
-        println!("property_value_debug: {rdf:?}");
         let focus_node_str = match rdf.get_focus() {
             None => "No focus node".to_string(),
             Some(focus_node) => {
@@ -992,14 +991,11 @@ where
     RDF: FocusRDF,
 {
     get_focus().flat_map(|ref term| {
-        println!("Checking bool: {}", &term);
         match RDF::term_as_boolean(term) {
             Some(b) => {
-                println!("Checking bool ok: {}", &term);
                 Ok(b)
             }
             None => {
-                println!("Checking bool failed: {}", &term);
                 Err(RDFParseError::ExpectedBoolean {
                     term: format!("{term}"),
                 })

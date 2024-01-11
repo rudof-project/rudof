@@ -26,7 +26,7 @@ void = "1"
 clap = { version = "4.2.1", features = ["derive"] }
 rio_api = "0.8.2"
 rio_turtle = "0.8.2"
-oxrdf = "0.1.6"
+oxrdf = "0.1.7"
 oxiri = "0.2"
 log = "0.4"
 env_logger = "0.10"
