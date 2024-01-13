@@ -1,9 +1,9 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{node_shape::NodeShape, shape::Shape, ShaclError};
+use crate::shape::Shape;
 use iri_s::IriS;
-use prefixmap::{IriRef, PrefixMap};
-use srdf::{Object, RDFNode};
+use prefixmap::PrefixMap;
+use srdf::RDFNode;
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
@@ -35,6 +35,10 @@ impl Schema {
 
     pub fn base(&self) -> Option<IriS> {
         self.base.clone()
+    }
+
+    pub fn iter(&self)  -> impl Iterator<Item=(&RDFNode, &Shape)> {
+        self.shapes.iter()
     }
 
 }

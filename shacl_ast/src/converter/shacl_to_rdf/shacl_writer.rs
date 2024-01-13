@@ -1,27 +1,42 @@
-use srdf::{SRDFBuilder, RDFFormat};
+use srdf::{SRDFBuilder, RDFFormat, SRDFBasic};
+use std::io::Write;
 
-use crate::Schema;
+use crate::{Schema, shape::Shape, SH_NODE_SHAPE, SH_PROPERTY_SHAPE};
 
 
-struct SHACLWriter<RDF>
+pub struct ShaclWriter<RDF>
 where RDF: SRDFBuilder {
     rdf: RDF
 }
 
-impl<RDF> SHACLWriter<RDF> where RDF: SRDFBuilder {
-    pub fn new() -> SHACLWriter<RDF> {
-        SHACLWriter {
+impl<RDF> ShaclWriter<RDF> where RDF: SRDFBuilder {
+    pub fn new() -> ShaclWriter<RDF> {
+        ShaclWriter {
             rdf: RDF::empty()
         }
     }
 
-    pub fn write(&mut self, shacl: Schema) -> Result<(), RDF::Err> {
-        self.rdf.add_prefix_map(shacl.prefix_map())?;
-        self.rdf.add_base(&shacl.base())?;
+    pub fn write(&mut self, schema: &Schema) -> Result<(), RDF::Err> {
+        self.rdf.add_prefix_map(schema.prefix_map())?;
+        self.rdf.add_base(&schema.base())?;
+        for (node, shape) in schema.iter() {
+           match shape {
+            Shape::NodeShape(_) => self.rdf.add_type(&node, node_shape::<RDF>())?,
+            Shape::PropertyShape(_) => self.rdf.add_type(&node, property_shape::<RDF>())?,
+           }
+        }
         Ok(())
     }
 
-    pub fn serialize(&self, format: RDFFormat) -> Result<(), RDF::Err> {
-        todo!()
+    pub fn serialize<W: Write>(&self, format: RDFFormat, writer: W) -> Result<(), RDF::Err> {
+        self.rdf.serialize(format, writer)
     }
 }
+
+fn node_shape<RDF>() -> RDF::Term where RDF: SRDFBasic {
+  RDF::iri_s2term(&SH_NODE_SHAPE)
+}
+
+fn property_shape<RDF>() -> RDF::Term where RDF: SRDFBasic {
+    RDF::iri_s2term(&SH_PROPERTY_SHAPE)
+  }

@@ -14,6 +14,7 @@ use shex_ast::{
 };
 use shex_validation::ResultValue;
 use shex_validation::Validator;
+use srdf::RDFFormat;
 use srdf::literal::Literal;
 use srdf::rdf::Object;
 use srdf::srdf_graph::SRDFGraph;
@@ -175,7 +176,7 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(&self.action.data, base)?;
+        let graph = SRDFGraph::parse_data(&self.action.data, &RDFFormat::Turtle, base)?;
         debug!("Data obtained from: {}", self.action.data);
 
         let schema = parse_schema(&self.action.schema, base, &self.name)?;

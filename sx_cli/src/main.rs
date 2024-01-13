@@ -18,14 +18,17 @@ use clap::Parser;
 use iri_s::*;
 use log::debug;
 use prefixmap::IriRef;
-use shacl_ast::{Schema as ShaclSchema, ShaclParser};
+use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node, ShapeExprLabel};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
-use srdf::{Object, SRDF};
+use srdf::{Object, SRDF, RDFFormat};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
+use std::fs::File;
+use std::io::{self, Write, Stdout, BufWriter};
+use std::result;
 use std::{path::PathBuf, str::FromStr};
 
 pub mod cli;
@@ -99,7 +102,8 @@ fn main() -> Result<()> {
             shapes,
             shapes_format,
             result_shapes_format,
-        }) => run_shacl(shapes, shapes_format, result_shapes_format),
+            output
+        }) => run_shacl(shapes, shapes_format, result_shapes_format, output),
 
         None => {
             println!("Command not specified");
@@ -201,16 +205,36 @@ fn run_shacl(
     shapes_buf: &PathBuf,
     shapes_format: &ShaclFormat,
     result_shapes_format: &ShaclFormat,
+    output: &Option<PathBuf>
 ) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let shacl_schema = parse_shacl(shapes_buf, shapes_format)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
-            println!("{shacl_schema}");
+            writeln!(writer, "{shacl_schema}")?;
             Ok(())
         }
-        ShaclFormat::Turtle => {
-            println!("Not implemented conversion to Turtle yet");
-            todo!()
+        _ => {
+            let data_format = shacl_format_to_data_format(result_shapes_format)?;
+            let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+            shacl_writer.write(&shacl_schema)?;
+            shacl_writer.serialize(data_format.into(), writer)?;
+            Ok(())
+        }
+    }
+}
+
+fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {
+    match output {
+        None => {
+            let stdout = io::stdout();
+            let handle = stdout.lock();
+            Ok(Box::new(handle))
+        },
+        Some(path) => {
+            let file = File::create(path)?;
+            let writer = BufWriter::new(file);
+            Ok(Box::new(writer))
         }
     }
 }
@@ -471,20 +495,35 @@ fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<Sch
 fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<ShaclSchema> {
     match shapes_format {
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
-        ShaclFormat::Turtle => {
-            let rdf = parse_data(shapes_path, &DataFormat::Turtle)?;
+        _ => {
+            let data_format = shacl_format_to_data_format(shapes_format)?;
+            let rdf = parse_data(shapes_path, &data_format)?;
             let schema = ShaclParser::new(rdf).parse()?;
             Ok(schema)
         }
     }
 }
 
+fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat> {
+    match shacl_format {
+        ShaclFormat::Turtle => Ok(DataFormat::Turtle),
+        ShaclFormat::RDFXML => Ok(DataFormat::RDFXML),
+        ShaclFormat::NTriples => Ok(DataFormat::NTriples),
+        ShaclFormat::TriG => Ok(DataFormat::TriG),
+        ShaclFormat::N3 => Ok(DataFormat::N3),
+        ShaclFormat::NQuads => Ok(DataFormat::NQuads),    
+        ShaclFormat::Internal => bail!("Cannot convert internal SHACL format to RDF data format"),
+    }
+}
+
 fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
     match data_format {
         DataFormat::Turtle => {
-            let graph = SRDFGraph::from_path(data, None)?;
+            let rdf_format = (*data_format).into();
+            let graph = SRDFGraph::from_path(data, &rdf_format, None)?;
             Ok(graph)
         }
+        _ => bail!("Not implemented reading from other RDF formats yet...")
     }
 }
 

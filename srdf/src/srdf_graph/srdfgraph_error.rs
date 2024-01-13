@@ -3,6 +3,7 @@ use oxiri::IriParseError;
 use prefixmap::PrefixMapError;
 use oxttl::ParseError;
 use std::io;
+use std::io::Error as IOError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -14,6 +15,12 @@ pub enum SRDFGraphError {
     ErrorReadingTurtle {
         #[from]
         err: ParseError,
+    },
+
+    #[error(transparent)]
+    IOError {
+        #[from]
+        err: IOError
     },
 
     #[error("Turtle error: {turtle_error:?} str: {data:?}")]

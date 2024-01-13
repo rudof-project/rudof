@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
 
 use clap::{Parser, Subcommand, ValueEnum};
+use srdf::RDFFormat;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -191,6 +192,9 @@ pub enum Command {
         )]
         result_shapes_format: ShaclFormat,
 
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
 }
@@ -253,12 +257,35 @@ impl Display for ShapeMapFormat {
 #[clap(rename_all = "lower")]
 pub enum DataFormat {
     Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads
+}
+
+impl Into<RDFFormat> for DataFormat {
+    fn into(self) -> RDFFormat {
+        match self {
+            DataFormat::Turtle => RDFFormat::Turtle,
+            DataFormat::NTriples => RDFFormat::NTriples,
+            DataFormat::RDFXML => RDFFormat::RDFXML,
+            DataFormat::TriG => RDFFormat::TriG,
+            DataFormat::N3 => RDFFormat::N3,
+            DataFormat::NQuads => RDFFormat::NQuads,
+        }
+    }
 }
 
 impl Display for DataFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             DataFormat::Turtle => write!(dest, "turtle"),
+            DataFormat::NTriples => write!(dest, "ntriples"),
+            DataFormat::RDFXML => write!(dest, "rdfxml"),
+            DataFormat::TriG => write!(dest, "trig"),
+            DataFormat::N3 => write!(dest, "n3"),
+            DataFormat::NQuads => write!(dest, "nquads"),
         }
     }
 }
@@ -269,6 +296,11 @@ impl Display for DataFormat {
 pub enum ShaclFormat {
     Internal,
     Turtle,
+    NTriples,
+    RDFXML, 
+    TriG,
+    N3,
+    NQuads,
 }
 
 impl Display for ShaclFormat {
@@ -276,6 +308,11 @@ impl Display for ShaclFormat {
         match self {
             ShaclFormat::Internal => write!(dest, "internal"),
             ShaclFormat::Turtle => write!(dest, "turtle"),
+            ShaclFormat::NTriples => write!(dest, "NTriples"),
+            ShaclFormat::RDFXML => write!(dest, "rdfxml"),
+            ShaclFormat::TriG => write!(dest, "trig"),
+            ShaclFormat::N3 => write!(dest, "n3"),
+            ShaclFormat::NQuads => write!(dest, "nquads"),
         }
     }
 }
