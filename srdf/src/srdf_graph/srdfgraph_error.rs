@@ -1,7 +1,7 @@
 use iri_s::IriSError;
 use oxiri::IriParseError;
 use prefixmap::PrefixMapError;
-use rio_turtle::TurtleError;
+use oxttl::ParseError;
 use std::io;
 use thiserror::Error;
 
@@ -13,13 +13,13 @@ pub enum SRDFGraphError {
     #[error(transparent)]
     ErrorReadingTurtle {
         #[from]
-        err: TurtleError,
+        err: ParseError,
     },
 
     #[error("Turtle error: {turtle_error:?} str: {data:?}")]
     TurtleError {
         data: String,
-        turtle_error: TurtleError,
+        turtle_error: ParseError,
     },
 
     #[error(transparent)]

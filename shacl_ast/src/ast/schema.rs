@@ -11,6 +11,7 @@ pub struct Schema {
     entailments: Vec<IriS>,
     shapes: HashMap<RDFNode, Shape>,
     prefixmap: PrefixMap,
+    base: Option<IriS>
 }
 
 impl Schema {
@@ -27,6 +28,15 @@ impl Schema {
         self.shapes = shapes;
         self
     }
+
+    pub fn prefix_map(&self) -> PrefixMap {
+        self.prefixmap.clone()
+    }
+
+    pub fn base(&self) -> Option<IriS> {
+        self.base.clone()
+    }
+
 }
 
 impl Display for Schema {

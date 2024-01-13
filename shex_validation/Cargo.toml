@@ -28,7 +28,5 @@ indexmap = { version = "2", feature = "serde" }
 colored = "2"
 either = "1"
 
-
 [dev-dependencies]
-oxrdf = "0.1.7"
-
+oxrdf = "0.2.0-alpha.1"

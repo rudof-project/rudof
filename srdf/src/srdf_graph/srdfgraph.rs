@@ -4,15 +4,16 @@ use iri_s::{IriS, iri};
 use lazy_static::lazy_static;
 // use log::debug;
 use oxiri::Iri;
+use oxrdfio::{RdfFormat, RdfSerializer};
 use rust_decimal::Decimal;
 use crate::async_srdf::AsyncSRDF;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, SRDFBasic, SRDF, SRDFBuilder, Triple as STriple, RDF_TYPE_STR};
+use crate::{FocusRDF, SRDFBasic, SRDF, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, RDFFormat};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -25,11 +26,10 @@ use oxrdf::{
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
-use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, BlankNode};
-use rio_api::parser::*;
-use rio_turtle::*;
-
-
+use oxttl::TurtleParser;
+// use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, BlankNode};
+// use rio_api::parser::*;
+// use rio_turtle::*;
 
 #[derive(Debug)]
 pub struct SRDFGraph {
@@ -54,22 +54,25 @@ impl SRDFGraph {
     }
 
     pub fn from_reader<R: BufRead>(
-        reader: R,
+        read: R,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        let mut turtle_parser = TurtleParser::new(reader, base.clone());
+        let turtle_parser = match base {
+            None => TurtleParser::new(),
+            Some(ref iri) => {
+                TurtleParser::new().with_base_iri(iri.as_str())?
+            }
+        };
         let mut graph = Graph::default();
-        turtle_parser.parse_all(&mut |triple| {
-            let ox_triple = Self::cnv(triple);
-            let triple_ref: TripleRef = ox_triple.as_ref();
-            graph.insert(triple_ref);
-            Ok(()) as Result<(), TurtleError>
-        })?;
-        let prefixes: HashMap<&str, &str> = turtle_parser
-            .prefixes()
-            .iter()
-            .map(|(key, value)| (key.as_str(), value.as_str()))
-            .collect();
+        let mut reader = turtle_parser.parse_read(read);
+        while let Some(triple_result) = reader.next() {
+            graph.insert(triple_result?.as_ref());
+        }
+        let prefixes: HashMap<&str, &str> = reader
+        .prefixes()
+        .iter()
+        .map(|(key, value)| (key.as_str(), value.as_str()))
+        .collect(); 
         let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph {
@@ -103,7 +106,7 @@ impl SRDFGraph {
         OxNamedNode::new_unchecked(iri.as_str())
     }
 
-    fn cnv_subject(s: Subject) -> OxSubject {
+    /*fn cnv_subject(s: Subject) -> OxSubject {
         match s {
             Subject::NamedNode(n) => {
                 OxSubject::NamedNode(OxNamedNode::new_unchecked(n.iri.to_string()))
@@ -143,7 +146,7 @@ impl SRDFGraph {
             Self::cnv_named_node(t.predicate),
             Self::cnv_object(t.object),
         )
-    }
+    }*/
 
     pub fn from_path(
         path: &PathBuf,
@@ -587,16 +590,20 @@ impl FocusRDF for SRDFGraph {
 }
 
 impl SRDFBuilder for SRDFGraph {
-    fn add_base(&mut self, base: &Self::IRI) -> Result<(), Self::Err> {
-        todo!()
+
+    fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
+        self.base = base.clone();
+        Ok(())
     }
 
-    fn add_prefix(&mut self, alias: &str, iri: &Self::IRI) -> Result<(), Self::Err> {
-        todo!()
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
+        self.pm.insert(alias, iri);
+        Ok(())
     }
 
     fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
-        todo!()
+        self.pm = prefix_map.clone();
+        Ok(())
     }
 
     fn add_triple(&mut self, subj: &Self::Subject, pred: &Self::IRI, obj: &Self::Term) -> Result<(), Self::Err> {
@@ -622,6 +629,27 @@ impl SRDFBuilder for SRDFGraph {
             None => panic!("Error adding type to {node} because it can't be converted to a subject")
         }
     }
+
+    fn empty() -> Self {
+        SRDFGraph {
+            focus: None,
+            graph: Graph::new(),
+            pm: PrefixMap::new(),
+            base: None
+        }
+    }
+
+    fn serialize<W: Write>(&self, format: RDFFormat, write: W) -> Result<(), Self::Err> {
+        let serializer = RdfSerializer::from_format(cnv_rdf_format(format));
+        let mut writer = serializer.serialize_to_write(write);
+        writer.finish();
+        Ok(())
+    }
+}
+
+
+fn cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
+   todo!()
 }
 
 fn rdf_type() -> OxNamedNode {
@@ -632,33 +660,8 @@ fn rdf_type() -> OxNamedNode {
 mod tests {
     use super::*;
     use crate::{SRDFGraph, srdf, int};
-    use oxrdf::{Graph, SubjectRef};
-    use rio_api::model::{Literal, Subject};
+    use oxrdf::Graph;
     use crate::SRDF;
-
-    #[test]
-    fn parse_turtle() {
-        let mut graph = Graph::default();
-        let s = r#"PREFIX : <http://example.org/>
-           :alice :name "Alice" ;
-                  :knows [ :name "Bob" ], _:1 .
-           _:1    :name "Carol" . 
-         "#;
-        let mut count = 0;
-        let mut parser = TurtleParser::new(std::io::Cursor::new(&s), None);
-
-        let res = parser.parse_all(&mut |triple| {
-            count += 1;
-            let t = SRDFGraph::cnv(triple);
-            graph.insert(t.as_ref());
-            Ok(()) as Result<(), TurtleError>
-        });
-        assert!(res.is_ok());
-        assert_eq!(graph.len(), 5);
-        let alice = OxNamedNode::new_unchecked("http://example.org/alice");
-        assert_eq!(graph.triples_for_subject(alice.as_ref()).count(), 3);
-        assert_eq!(count, 5)
-    }
 
     #[tokio::test]
     async fn parse_get_predicates() {

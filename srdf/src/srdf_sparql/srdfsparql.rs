@@ -14,7 +14,7 @@ use reqwest::{
     header::{self, ACCEPT, USER_AGENT},
     Url,
 };
-use sparesults::{QueryResultsFormat, QueryResultsParser, QueryResultsReader, QuerySolution};
+use sparesults::{QueryResultsFormat, QueryResultsParser, QuerySolution, FromReadQueryResultsReader};
 use crate::{AsyncSRDF, SRDFBasic, SRDF};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
@@ -414,7 +414,7 @@ fn make_sparql_query(
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             results.push(sol)
@@ -454,7 +454,7 @@ fn outgoing_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(obj)) {
@@ -532,7 +532,7 @@ fn incoming_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let QueryResultsReader::Solutions(solutions) = json_parser.read_results(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(subj)) {

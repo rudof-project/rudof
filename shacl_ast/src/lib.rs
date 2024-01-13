@@ -9,10 +9,10 @@
 #![recursion_limit = "256"]
 pub mod ast;
 pub mod shacl_vocab;
-pub mod rdf_to_shacl;
+pub mod converter;
 
 pub use ast::*;
-pub use rdf_to_shacl::*;
+pub use converter::*;
 pub use shacl_vocab::*;
 
 #[cfg(test)]

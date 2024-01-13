@@ -4,36 +4,27 @@ use crate::literal::Literal;
 use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 
-/*trait RDF {
-    fn parse(format: RDFFormat) -> Self;
-}*/
 
-/// Posible RDF formats
-pub enum RDFFormat {
-    Turtle,
-    NTriples,
-    RDFXML,
-}
-
+/// Concrete representation of RDF subjects, which can be IRIs or Blank nodes
 pub enum Subject {
     Iri { iri: IriS },
     BlankNode(String),
 }
 
-/*pub struct Triple {
-    pub subject: Subject,
-    pub predicate: IriS,
-    pub object: Object,
-}*/
-
+/// Concrete representation of RDF nodes, which are equivalent to objects
 pub type RDFNode = Object;
 
+/// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
+/// 
+/// Note: We plan to support triple terms as in RDF-star in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
     Iri { iri: IriS },
     BlankNode(String),
     Literal(Literal),
 }
+
+
 impl Object {
     pub fn iri(iri: IriS) -> Object {
         Object::Iri { iri }
