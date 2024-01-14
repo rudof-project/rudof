@@ -5,8 +5,8 @@ use std::{
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
-    combine_vec, has_type, instances_of, ok, optional, parse_nodes, property_value,
-    property_values, property_values_int, term, FocusRDF, RDFNode, RDFNodeParse, RDFParseError, RDFParser, RDF_TYPE, SHACLPath, Object, Triple, property_value_debug, combine_parsers, property_values_iri, SRDFBasic,
+    combine_vec, has_type, instances_of, ok, optional, parse_nodes, property_value, then,
+    property_values, property_values_int, term, FocusRDF, RDFNode, RDFNodeParse, RDFParseError, RDFParser, RDF_TYPE, SHACLPath, Object, Triple, property_value_debug, combine_parsers, property_values_iri, SRDFBasic, set_focus, parse_rdf_list, rdf_list,
 };
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     schema::Schema,
     shape::Shape,
     target::{self, Target},
-    SH_NODE_SHAPE, SH_PROPERTY, SH_TARGET_CLASS, SH_TARGET_NODE, SH_PROPERTY_SHAPE, property_shape::PropertyShape, SH_PATH, component::Component, SH_MIN_COUNT, SH_MAX_COUNT, SH_DATATYPE, SH_CLASS, SH_NODE_KIND, node_kind::NodeKind, SH_IRI_STR,
+    SH_NODE_SHAPE, SH_PROPERTY, SH_TARGET_CLASS, SH_TARGET_NODE, SH_PROPERTY_SHAPE, property_shape::PropertyShape, SH_PATH, component::Component, SH_MIN_COUNT, SH_MAX_COUNT, SH_DATATYPE, SH_CLASS, SH_NODE_KIND, node_kind::NodeKind, SH_IRI_STR, SH_LITERAL_STR, SH_BLANKNODE_STR, SH_BLANK_NODE_OR_IRI_STR, SH_BLANK_NODE_OR_LITERAL_STR, SH_IRI_OR_LITERAL_STR, SH_IN, value::Value,
 };
 use std::fmt::Debug;
 
@@ -283,6 +283,27 @@ where
    })
 }
 
+fn in_component<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    property_values(&SH_IN).and(term()).then(|(nodes, focus)| {
+      let result: Vec<Component> = Vec::new();
+      for node in nodes {
+        // let ls = parse_values(node)?;
+      };
+      set_focus(&focus).with(ok(&result))
+    })
+}
+
+fn parse_values<RDF>(node: RDFNode) -> Result<Vec<Value>> 
+where
+    RDF: FocusRDF,
+{
+    let term = RDF::object_as_term(&node);
+    let parser = set_focus::<RDF>(&term).with(rdf_list());
+    todo!(); // parser.parse_impl()
+} 
 
 fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind> 
 where RDF: SRDFBasic {
@@ -291,10 +312,12 @@ where RDF: SRDFBasic {
            let iri_s = RDF::iri2iri_s(&iri);
            match iri_s.as_str() {
              SH_IRI_STR => Ok(NodeKind::Iri),
-             _ => {
-                println!("Unknown nodekind!!!! {term}");
-                Err(ShaclParserError::UnknownNodeKind { term: format!("{term}")})
-             }
+             SH_LITERAL_STR => Ok(NodeKind::Literal),
+             SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
+             SH_BLANK_NODE_OR_IRI_STR => Ok(NodeKind::BlankNodeOrIri),
+             SH_BLANK_NODE_OR_LITERAL_STR => Ok(NodeKind::BlankNodeOrLiteral),
+             SH_IRI_OR_LITERAL_STR => Ok(NodeKind::IRIOrLiteral),
+             _ => Err(ShaclParserError::UnknownNodeKind { term: format!("{term}")})
            }
         },
         None => Err(ShaclParserError::ExpectedNodeKind { term: format!("{term}")})
