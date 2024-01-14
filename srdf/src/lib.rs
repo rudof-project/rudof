@@ -163,3 +163,12 @@ macro_rules! combine_rdf_parser_impl {
 }
 
 
+#[macro_export]
+macro_rules! combine_parsers {
+    ($first : expr) => {
+        $first
+    };
+    ($first : expr, $($rest : expr),+) => {
+        combine_vec($first, combine_parsers!($($rest),+))
+    }
+}

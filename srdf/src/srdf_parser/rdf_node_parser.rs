@@ -688,6 +688,42 @@ where
     }
 }
 
+/// Return the integer values of `property` for the focus node
+/// 
+/// If some value is not an integer it fails, if there is no value returns an empty set
+pub fn property_values_int<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<isize>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let ints: Vec<_> = values.iter().flat_map(|t| {
+            let i = term_to_int::<RDF>(t)?;
+            Ok::<isize, RDFParseError>(i)
+        }
+        ).collect();
+        Ok(ints)
+    })
+}
+
+/// Return the IRI values of `property` for the focus node
+/// 
+/// If some value is not an IRI it fails, if there is no value returns an empty set
+pub fn property_values_iri<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<IriS>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let ints: Vec<_> = values.iter().flat_map(|t| {
+            let iri = term_to_iri::<RDF>(t)?;
+            Ok::<IriS, RDFParseError>(iri)
+        }
+        ).collect();
+        Ok(ints)
+    })
+}
+
+
+
 /// Returns the values of `property` for the focus node
 ///
 /// If there is no value, it returns an empty set
@@ -932,7 +968,14 @@ where RDF: SRDFBasic {
         RDFParseError::ExpectedInteger { term: format!("{term}")}
     )?;
     Ok(n)
+}
 
+fn term_to_iri<RDF>(term: &RDF::Term) -> Result<IriS, RDFParseError> 
+where RDF: SRDFBasic {
+    let iri = RDF::term_as_iri(term).ok_or_else(|| 
+        RDFParseError::ExpectedIRI { term: format!("{term}")}
+    )?;
+    Ok(RDF::iri2iri_s(&iri))
 }
 
 fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError> 

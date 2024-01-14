@@ -13,6 +13,12 @@ pub enum ShaclParserError {
     #[error("Expected RDFNode parsing node shape, found: {term}")]
     ExpectedRDFNodeNodeShape { term: String },
 
+    #[error("Expected NodeKind, found: {term}")]
+    ExpectedNodeKind { term: String },
+
+    #[error("Unknown NodeKind, found: {term}")]
+    UnknownNodeKind { term: String },
+
     #[error("SHACL error: {err}")]
     ShaclError {
         #[from]

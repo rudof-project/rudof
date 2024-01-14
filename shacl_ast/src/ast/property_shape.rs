@@ -59,18 +59,26 @@ impl PropertyShape {
         self.property_shapes = property_shapes;
         self
     }
+
+    pub fn with_components(mut self, components: Vec<Component>) -> Self {
+        self.components = components;
+        self
+    }
 }
 
 impl Display for PropertyShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             writeln!(f, "{{")?;
-            writeln!(f, "       PropertyShape");
-            writeln!(f, "       path: {}", self.path);
+            writeln!(f, "       PropertyShape")?;
+            writeln!(f, "       path: {}", self.path)?;
             for target in self.targets.iter() {
                 writeln!(f, "       {target}")?
             }
             for property in self.property_shapes.iter() {
                 writeln!(f, "       Property {property}")?
+            }
+            for component in self.components.iter() {
+                writeln!(f, "       {component}")?
             }
             write!(f, "}}")?;
             Ok(())
