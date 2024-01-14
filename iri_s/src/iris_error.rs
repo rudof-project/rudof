@@ -1,5 +1,5 @@
-use oxiri::Iri;
-use oxrdf::IriParseError;
+// use oxiri::Iri;
+// use oxrdf::IriParseError;
 use thiserror::Error;
 
 use crate::IriS;

@@ -41,6 +41,10 @@ pub enum Command {
             default_value_t = ShapeMapFormat::Compact
         )]
         result_shapemap_format: ShapeMapFormat,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
     Schema {
@@ -62,6 +66,10 @@ pub enum Command {
             default_value_t = ShExFormat::ShExJ
         )]
         result_schema_format: ShExFormat,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
     Validate {
@@ -85,13 +93,6 @@ pub enum Command {
             default_value_t = ShapeMapFormat::Compact,
         )]
         shapemap_format: ShapeMapFormat,
-
-        #[arg(
-            long = "result-shapemap-format",
-            value_name = "Result shapemap format",
-            default_value_t = ShapeMapFormat::Compact,
-        )]
-        result_shapemap_format: ShapeMapFormat,
 
         #[arg(short = 'n', long = "node")]
         node: Option<String>,
@@ -124,6 +125,10 @@ pub enum Command {
             default_value_t = 100
         )]
         max_steps: usize,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
     Data {
@@ -137,6 +142,10 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
     Node {
@@ -170,6 +179,10 @@ pub enum Command {
 
         #[arg(short = 'p', long = "predicates")]
         predicates: Vec<String>,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
     },
 
     Shacl {

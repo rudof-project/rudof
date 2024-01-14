@@ -15,21 +15,19 @@ extern crate srdf;
 
 use anyhow::*;
 use clap::Parser;
-use iri_s::*;
 use log::debug;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
-use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser, Node, ShapeExprLabel};
+use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
-use srdf::{Object, SRDF, RDFFormat};
+use srdf::SRDF;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
 use std::fs::File;
-use std::io::{self, Write, Stdout, BufWriter};
-use std::result;
-use std::{path::PathBuf, str::FromStr};
+use std::io::{self, Write, BufWriter};
+use std::path::PathBuf;
 
 pub mod cli;
 pub mod data;
@@ -48,7 +46,8 @@ fn main() -> Result<()> {
             schema,
             schema_format,
             result_schema_format,
-        }) => run_schema(schema, schema_format, result_schema_format),
+            output
+        }) => run_schema(schema, schema_format, result_schema_format, output),
         Some(Command::Validate {
             schema,
             schema_format,
@@ -60,7 +59,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
-            result_shapemap_format,
+            output
         }) => run_validate(
             schema,
             schema_format,
@@ -73,8 +72,12 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             cli.debug,
+            output
         ),
-        Some(Command::Data { data, data_format }) => run_data(data, data_format, cli.debug),
+        Some(Command::Data { 
+            data, 
+            data_format, 
+            output }) => run_data(data, data_format, cli.debug, output),
         Some(Command::Node {
             data,
             data_format,
@@ -83,6 +86,7 @@ fn main() -> Result<()> {
             predicates,
             show_node_mode,
             show_hyperlinks,
+            output
         }) => run_node(
             data,
             data_format,
@@ -92,18 +96,30 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             cli.debug,
+            output
         ),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
             result_shapemap_format,
-        }) => run_shapemap(shapemap, shapemap_format, result_shapemap_format),
+            output
+        }) => run_shapemap(
+            shapemap, 
+            shapemap_format, 
+            result_shapemap_format,
+            output
+        ),
         Some(Command::Shacl {
             shapes,
             shapes_format,
             result_shapes_format,
             output
-        }) => run_shacl(shapes, shapes_format, result_shapes_format, output),
+        }) => run_shacl(
+            shapes, 
+            shapes_format, 
+            result_shapes_format, 
+            output
+        ),
 
         None => {
             println!("Command not specified");
@@ -116,25 +132,27 @@ fn run_schema(
     schema_buf: &PathBuf,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
+    output: &Option<PathBuf>
 ) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let schema_json = parse_schema(schema_buf, schema_format)?;
     match result_schema_format {
         ShExFormat::Internal => {
-            println!("{schema_json:?}");
+            writeln!(writer, "{schema_json:?}")?;
             Ok(())
         }
         ShExFormat::ShExC => {
             let str = ShExFormatter::default().format_schema(&schema_json);
-            println!("{str}");
+            writeln!(writer, "{str}")?;
             Ok(())
         }
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema_json)?;
-            println!("{str}");
+            writeln!(writer, "{str}")?;
             Ok(())
         }
         ShExFormat::Turtle => {
-            println!("Not implemented conversion to Turtle yet");
+            writeln!(writer, "Not implemented conversion to Turtle yet")?;
             todo!()
         }
     }
@@ -152,7 +170,9 @@ fn run_validate(
     shapemap_format: &ShapeMapFormat,
     max_steps: &usize,
     debug: u8,
+    output: &Option<PathBuf>
 ) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
@@ -187,7 +207,7 @@ fn run_validate(
     match result {
         Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
             Result::Ok(result_map) => {
-                println!("Result:\n{}", result_map);
+                writeln!(writer, "Result:\n{}", result_map)?;
                 Ok(())
             }
             Err(err) => {
@@ -243,7 +263,7 @@ fn get_data(
     data: &Option<PathBuf>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
-    debug: u8,
+    _debug: u8,
 ) -> Result<Data> {
     match (data, endpoint) {
         (None, None) => {
@@ -263,7 +283,7 @@ fn get_data(
     }
 }
 
-fn make_node_selector(node: Node) -> Result<NodeSelector> {
+/*fn make_node_selector(node: Node) -> Result<NodeSelector> {
     let object = node.as_object();
     match object {
         Object::Iri { iri } => Ok(NodeSelector::Node(ObjectValue::iri(iri.clone()))),
@@ -275,6 +295,7 @@ fn make_node_selector(node: Node) -> Result<NodeSelector> {
 fn make_shape_selector(shape_label: ShapeExprLabel) -> ShapeSelector {
     ShapeSelector::Label(shape_label)
 }
+*/
 
 fn start() -> ShapeSelector {
     ShapeSelector::start()
@@ -289,7 +310,9 @@ fn run_node(
     show_node_mode: &ShowNodeMode,
     show_hyperlinks: &bool,
     debug: u8,
+    output: &Option<PathBuf>
 ) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
@@ -299,6 +322,7 @@ fn run_node(
             &endpoint,
             &show_node_mode,
             show_hyperlinks,
+            &mut writer
         ),
         Data::RDFData(data) => show_node_info(
             node_selector,
@@ -306,28 +330,30 @@ fn run_node(
             &data,
             &show_node_mode,
             show_hyperlinks,
+            &mut writer
         ),
     }
 }
 
-fn show_node_info<S>(
+fn show_node_info<S, W: Write>(
     node_selector: NodeSelector,
     predicates: &Vec<String>,
     rdf: &S,
     show_node_mode: &ShowNodeMode,
-    show_hyperlinks: &bool,
+    _show_hyperlinks: &bool,
+    writer: &mut W
 ) -> Result<()>
 where
     S: SRDF,
 {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
-        println!("Information about node");
+        writeln!(writer, "Information about node")?;
 
         // Show outgoing arcs
         match show_node_mode {
             ShowNodeMode::Outgoing | ShowNodeMode::Both => {
-                println!("Outgoing arcs");
+                writeln!(writer, "Outgoing arcs")?;
                 let map = if predicates.is_empty() {
                     match rdf.outgoing_arcs(&subject) {
                         Result::Ok(rs) => rs,
@@ -340,12 +366,12 @@ where
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
                 };
-                println!("{}", rdf.qualify_subject(&subject));
+                writeln!(writer, "{}", rdf.qualify_subject(&subject))?;
                 for pred in map.keys() {
-                    println!(" -{}-> ", rdf.qualify_iri(&pred));
+                    writeln!(writer, " -{}-> ", rdf.qualify_iri(&pred))?;
                     if let Some(objs) = map.get(pred) {
                         for o in objs {
-                            println!("      {}", rdf.qualify_term(&o));
+                            writeln!(writer, "      {}", rdf.qualify_term(&o))?;
                         }
                     } else {
                         bail!("Not found values for {pred} in map")
@@ -360,18 +386,18 @@ where
         // Show incoming arcs
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
-                println!("Incoming arcs");
+                writeln!(writer, "Incoming arcs")?;
                 let object = S::subject_as_term(&subject);
                 let map = match rdf.incoming_arcs(&object) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
                 };
-                println!("{}", rdf.qualify_term(&object));
+                writeln!(writer, "{}", rdf.qualify_term(&object))?;
                 for pred in map.keys() {
-                    println!("  <-{}-", rdf.qualify_iri(&pred));
+                    writeln!(writer, "  <-{}-", rdf.qualify_iri(&pred))?;
                     if let Some(subjs) = map.get(pred) {
                         for s in subjs {
-                            println!("      {}", rdf.qualify_subject(&s));
+                            writeln!(writer, "      {}", rdf.qualify_subject(&s))?;
                         }
                     } else {
                         bail!("Not found values for {pred} in map")
@@ -409,16 +435,18 @@ fn run_shapemap(
     shapemap: &PathBuf,
     shapemap_format: &ShapeMapFormat,
     result_format: &ShapeMapFormat,
+    output: &Option<PathBuf>
 ) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let shapemap = parse_shapemap(shapemap, shapemap_format)?;
     match result_format {
         ShapeMapFormat::Compact => {
             let str = ShapemapFormatter::default().format_shapemap(&shapemap);
-            println!("{str}");
+            writeln!(writer, "{str}")?;
             Ok(())
         }
         ShapeMapFormat::Internal => {
-            println!("{shapemap:?}");
+            writeln!(writer, "{shapemap:?}")?;
             Ok(())
         }
     }
@@ -451,9 +479,14 @@ where
     }
 }
 
-fn run_data(data: &PathBuf, data_format: &DataFormat, debug: u8) -> Result<()> {
+fn run_data(data: &PathBuf, 
+    data_format: &DataFormat, 
+    _debug: u8, 
+    output: &Option<PathBuf>
+) -> Result<()> {
+    let mut writer = get_writer(output)?;
     let data = parse_data(data, data_format)?;
-    println!("Data\n{data:?}\n");
+    writeln!(writer, "Data\n{data:?}\n")?;
     Ok(())
 }
 
@@ -527,7 +560,7 @@ fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
     }
 }
 
-fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
+/*fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
     use regex::Regex;
     use std::result::Result::Ok;
     let iri_r = Regex::new("<(.*)>")?;
@@ -551,7 +584,7 @@ fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
             }
         },
     }
-}
+}*/
 
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     let ns = ShapeMapParser::parse_node_selector(node_str)?;
