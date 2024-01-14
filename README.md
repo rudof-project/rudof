@@ -188,12 +188,6 @@ The repo is divided in the following modules:
 - [shex_testsuite](https://github.com/weso/shex-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
 - [shacl_ast](https://github.com/weso/shex-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
 
-
-The following modules are simple proof of concepts and can be ignored.
-
-- [shex_pest](https://github.com/weso/shex-rs/tree/master/shex_pest) tries to define a compact syntax parser using [PEST](https://pest.rs/). It is no longer maintained.
-- [shex_antlr](https://github.com/weso/shex-rs/tree/master/shex_antlr) attempt to define ShEx compact grammar parser based on ANTLR. This is no longer maintained.
-
 ## Publishing the crates
 
 ```sh
