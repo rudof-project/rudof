@@ -60,6 +60,9 @@ pub enum RDFParseError {
     #[error("Expected focus to act as subject, found {focus}")]
     ExpectedFocusAsSubject { focus: String },
 
+    #[error("Unexpected Blank Node: {term}")]
+    UnexpectedBNode { term: String },
+
 
     #[error("Expected IRI but found Literal {lit}")]
     ExpectedIRIFoundLiteral { lit: Literal },

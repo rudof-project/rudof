@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use iri_s::IriS;
 use prefixmap::IriRef;
 use srdf::literal::Literal;
 
@@ -7,6 +8,16 @@ use srdf::literal::Literal;
 pub enum Value {
     Iri(IriRef),
     Literal(Literal)
+}
+
+impl Value {
+    pub fn iri(iri: IriS) -> Value {
+        Value::Iri(IriRef::iri(iri))
+    }
+
+    pub fn literal(literal: Literal) -> Value {
+        Value::Literal(literal)
+    }
 }
 
 impl Display for Value {

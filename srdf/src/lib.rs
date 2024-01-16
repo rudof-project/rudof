@@ -60,7 +60,7 @@ macro_rules! int {
 /// 
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf::srdf_graph::SRDFGraph;
 /// 
 /// rdf_parser!{
@@ -75,7 +75,7 @@ macro_rules! int {
 /// let s = r#"prefix : <http://example.org/>
 ///            :x :p 1.
 /// "#;
-/// let mut graph = SRDFGraph::from_str(s, None).unwrap();
+/// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
 /// let x = IriS::new_unchecked("http://example.org/x");
 /// let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
 /// assert_eq!(is_term(&term).parse(&x, &mut graph).unwrap(), ()) 
@@ -121,7 +121,7 @@ macro_rules! combine_rdf_parser_impl {
              $($where_clause)*
         {
             $(pub $arg : $arg_type,)*
-            __marker: ::std::marker::PhantomData<$input_type>
+            __marker: ::std::marker::PhantomData<$input_type>,
         }
 
         impl <$($type_params)*> $crate::RDFNodeParse<$input_type> for $type_name<$($type_params)*>
@@ -141,7 +141,6 @@ macro_rules! combine_rdf_parser_impl {
                 let $type_name { $( $arg: ref mut $arg,)* .. } = *self;
                 let r = $parser.parse_impl(input)?;
                 Ok(r)
-
             }
         }
 
@@ -156,7 +155,7 @@ macro_rules! combine_rdf_parser_impl {
         {
             $type_name {
                 $($arg,)*
-                __marker: ::std::marker::PhantomData
+                __marker: ::std::marker::PhantomData,
             }
         }
     }

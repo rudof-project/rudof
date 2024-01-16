@@ -82,8 +82,6 @@ where
 
 }
 
-
-
 fn shape_expr_<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
 where RDF: FocusRDF {
    // I would like the following code to work...but it doesn't yet...
@@ -97,7 +95,8 @@ where RDF: FocusRDF {
 }
 
 fn shape<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr> 
-where RDF: FocusRDF {
+where RDF: FocusRDF,
+{
     has_type(sx_shape()).with({
         closed().then(|maybe_closed| {
             println!("Value of closed: {maybe_closed:?}");
@@ -217,7 +216,9 @@ rdf_parser!{
 }
 
 fn parse_nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = Option<NodeKind>> 
-where RDF: FocusRDF {
+where 
+ RDF: FocusRDF,
+{
     optional(
         property_value(&sx_node_kind()).then(|ref node| {
             set_focus(node).and(nodekind()
@@ -227,11 +228,13 @@ where RDF: FocusRDF {
 }
 
 fn nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind> 
-where RDF: FocusRDF {
-    iri_kind().or(
-        literal_kind()).or(
+where 
+ RDF: FocusRDF,
+{
+    iri_kind().or(literal_kind())
+        .or(
             bnode_kind()).or(
-                nonliteral_kind())
+                nonliteral_kind()) 
 }
 
 fn iri_kind<RDF> () -> impl RDFNodeParse<RDF, Output = NodeKind> 
@@ -253,7 +256,6 @@ fn nonliteral_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where RDF: FocusRDF {
     is_iri(ShExRVocab::sx_nonliteral()).map(|_| NodeKind::NonLiteral)
 }
-
 
 fn parse_datatype<RDF>() -> Result<Option<IriRef>> 
 where RDF: FocusRDF {

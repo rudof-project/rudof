@@ -4,6 +4,7 @@ use prefixmap::IriRef;
 use srdf::{RDFNode, literal::Literal, lang::Lang};
 
 use crate::{node_kind::NodeKind, value::Value};
+use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub enum Component {
@@ -36,7 +37,6 @@ pub enum Component {
     QualifiedValueShape { shape: RDFNode, qualified_min_count: Option<isize>, qualified_max_count: Option<isize>, qualified_value_shapes_disjoint: Option<bool>}
 }
 
-
 impl Display for Component {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -61,14 +61,20 @@ impl Display for Component {
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
             Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
             Component::LessThanOrEquals(lte) => write!(f, "uniqueLang({lte})"),
-            Component::Or { shapes } => todo!(), // write!(f, "or({shapes})"),
+            Component::Or { shapes } => {
+                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                write!(f, "or [{str}]")
+            },
             Component::And { shapes } => todo!(),
             Component::Not { shape } => todo!(),
             Component::Xone { shapes } => todo!(),
             Component::Closed { is_closed, ignored_properties } => todo!(),
             Component::Node { shape } => write!(f, "node({shape})"),
             Component::HasValue { value } => write!(f, "hasValue({value})"),
-            Component::In { values } => todo!(),
+            Component::In { values } => {
+                let str = values.iter().map(|v| format!("{v}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                write!(f,"In [{str}]")
+            },
             Component::QualifiedValueShape { shape, qualified_min_count, qualified_max_count, qualified_value_shapes_disjoint } => todo!(),
         }
     }

@@ -55,6 +55,11 @@ impl NodeShape {
         self
     }
 
+    pub fn set_targets(&mut self, targets: Vec<Target>) {
+        self.targets = targets;
+    }
+
+
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
         self.property_shapes = property_shapes;
         self

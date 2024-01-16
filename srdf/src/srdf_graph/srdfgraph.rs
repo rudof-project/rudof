@@ -756,6 +756,49 @@ mod tests {
     }
 
     #[test]
+    fn test_parser_or_enum_1() {
+
+        #[derive(Debug, PartialEq)]
+        enum A {
+            Int(isize),
+            Bool(bool)
+        }
+        use crate::{RDFNodeParse, property_bool, property_integer};
+        let s = r#"prefix : <http://example.org/>
+          :x :p 1 .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let x = iri!("http://example.org/x");
+        let p = iri!("http://example.org/p");
+        let parser_a_bool = property_bool(&p).map(|b| A::Bool(b));
+        let parser_a_int = property_integer(&p).map(|n| A::Int(n));
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), A::Int(1))
+    }
+
+    #[test]
+    fn test_parser_or_enum_2() {
+
+        #[derive(Debug, PartialEq)]
+        enum A {
+            Int(isize),
+            Bool(bool)
+        }
+        use crate::{RDFNodeParse, property_bool, property_integer};
+        let s = r#"prefix : <http://example.org/>
+          :x :p true .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let x = iri!("http://example.org/x");
+        let p = iri!("http://example.org/p");
+        let parser_a_bool = property_bool(&p).map(|b| A::Bool(b));
+        let parser_a_int = property_integer(&p).map(|n| A::Int(n));
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, &mut graph).unwrap(), A::Bool(true))
+    }
+
+
+    #[test]
     fn test_parser_and() {
         use crate::{RDFNodeParse, property_bool, property_integer};
         let s = r#"prefix : <http://example.org/>
@@ -849,5 +892,43 @@ mod tests {
         let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
         assert_eq!(is_term(&term).parse(&x, &mut graph).unwrap(), ()) 
     }
+
+/*    #[test]
+    fn test_parser_state() {
+        use iri_s::{IriS, iri};
+        use crate::SRDFGraph;
+        use crate::{ok, get_state, set_state, property_integer, RDFNodeParse};
+
+        #[derive(Debug, Default, Clone, PartialEq)]
+        struct State {
+            count: isize
+        } 
+
+        impl State {
+            fn increment(&mut self, m: isize) -> Self {
+                self.count += m;
+                self.clone()
+            }
+
+            fn set(&mut self, value: isize) -> () {
+                self.count = value;
+            }
+        }
+        
+        let s = r#"prefix : <http://example.org/>
+                   :x :p 10; :q 20 .
+        "#;
+        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let x = iri!("http://example.org/x");
+        let p = iri!("http://example.org/p");
+        let q = iri!("http://example.org/q");
+        fn parser_count(p: &IriS) -> impl RDFNodeParse<SRDFGraph, Output = State> {
+            get_state::<SRDFGraph, State>().then(|s: State| {
+                property_integer::<SRDFGraph, State>(&p).then(|n| 
+                   set_state(s.set(n))).with(ok::<SRDFGraph, State, State>(&State::default()))
+                })
+        }
+        assert_eq!(parser_count(&p).with(parser_count(&q)).parse(&x, &mut graph).unwrap(), State { count: 1});
+    } */
 
 }

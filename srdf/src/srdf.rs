@@ -8,7 +8,6 @@ use crate::{SRDFBasic, Triple};
 /// 
 pub trait SRDF: SRDFBasic {
 
-
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
