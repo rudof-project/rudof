@@ -196,6 +196,16 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         then_mut(self, f)
     }
 
+    fn then_state<'a, N, F, S>(self, state: &'a mut S, f: F) -> ThenState<'a, Self, F, S>
+    where
+        Self: Sized,
+        F: FnMut(&'a mut S, Self::Output) -> N,
+        N: RDFNodeParse<RDF>,
+    {
+        then_state(self, f, state)
+    }
+
+
     /// Returns a parser which attempts to parse using `self`. If `self` fails then it attempts `parser`.
     ///         
     /// ```
@@ -556,6 +566,43 @@ where
         }
     }
 }
+
+/// Equivalent to [`p.then(f)`].
+///
+/// [`p.then(f)`]: trait.RDFNodeParse.html#method.then
+pub fn then_state<'a, RDF, P, F, N, S>(parser: P, function: F, state: &'a mut S) -> ThenState<'a, P, F, S>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(&'a mut S, P::Output) -> N,
+    N: RDFNodeParse<RDF>,
+{
+    ThenState { parser, function, state }
+}
+
+pub struct ThenState<'a, P, F, S> {
+    parser: P,
+    function: F,
+    state: &'a mut S
+}
+
+impl <'a, RDF, P, F, N, S> RDFNodeParse<RDF> for ThenState<'a, P, F, S>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+    F: FnMut(&mut S, P::Output) -> N,
+    N: RDFNodeParse<RDF>,
+{
+    type Output = N::Output;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match self.parser.parse_impl(rdf) {
+            Ok(value) => (self.function)(self.state, value).parse_impl(rdf),
+            Err(err) => Err(err),
+        }
+    }
+}
+
 
 pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where

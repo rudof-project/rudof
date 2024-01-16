@@ -5,7 +5,8 @@ use std::{
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
-    combine_vec, has_type, instances_of, ok, optional, parse_nodes, property_value, then,
+    rdf_parser,
+    combine_vec, has_type, instances_of, ok, optional, parse_nodes, property_value, then, then_state, 
     property_values, property_values_int, term, FocusRDF, RDFNode, RDFNodeParse, RDFParseError, RDFParser, RDF_TYPE, SHACLPath, Object, Triple, property_value_debug, combine_parsers, property_values_iri, SRDFBasic, set_focus, parse_rdf_list, rdf_list, PResult,
 };
 
@@ -163,17 +164,18 @@ where
         obj
     }
 
-    fn shape(state: &mut State) -> impl RDFNodeParse<RDF, Output = Shape> 
+    fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a
     where
-        RDF: FocusRDF,
+        RDF: FocusRDF + 'a,
     {
         node_shape().then(move |ns| ok(&Shape::NodeShape(ns))).
-        or(property_shape().then(move |ps| ok(&Shape::PropertyShape(ps))))
+        or(property_shape(state).then( |ps| ok(&Shape::PropertyShape(ps))))
     }
 
 }
 
-fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> 
+fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where RDF: FocusRDF
 {
   combine_parsers!(
     min_count(), 
@@ -186,10 +188,9 @@ fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>
   )
 }
 
-
-fn property_shape<RDF>() -> impl RDFNodeParse<RDF, Output = PropertyShape> 
+fn property_shape<'a, RDF>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = PropertyShape> + 'a
 where
-    RDF: FocusRDF,
+    RDF: FocusRDF + 'a,
 {
     optional(has_type(SH_PROPERTY_SHAPE.clone()))
         .with(id().and(path()).then(move |(id, path)| {
@@ -200,12 +201,17 @@ where
             property_shapes().flat_map(move |prop_shapes| 
                 Ok(ps.clone().with_property_shapes(prop_shapes)
             ))
-        }).then(|ps| 
-            components().flat_map(move |cs| 
-                Ok(ps.clone().with_components(cs))
-            ))
+        }).then(move |ps| 
+            property_shape_components(ps))
 }
 
+fn property_shape_components<RDF>(ps: PropertyShape) -> impl RDFNodeParse<RDF, Output = PropertyShape> 
+  where RDF: FocusRDF
+  {
+    components().flat_map(move |cs| 
+        Ok(ps.clone().with_components(cs))
+    )
+  }
 
 fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape>
 where
@@ -347,9 +353,14 @@ where RDF: SRDFBasic {
 
 fn or<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> 
 where RDF: FocusRDF {
-    property_values(&SH_OR).then(move |node_set| {
-        let nodes: Vec<_> = node_set.into_iter().collect();
-        parse_nodes(nodes, parse_or_values())
+    property_values(&SH_OR).then(move |terms_set| {
+        let terms: Vec<_> = terms_set.into_iter().collect();
+        let nodes: Vec<_> = terms.iter().map(|term| RDF::term_as_object(term)).collect();
+        /*for node in nodes {
+            // TODO...check that it doesn't appear in hashset
+            state.pending.push(node)
+        }*/
+        parse_nodes(terms, parse_or_values())
     })
 }
 
