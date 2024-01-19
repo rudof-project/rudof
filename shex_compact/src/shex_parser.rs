@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::PathBuf;
-
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
@@ -35,6 +34,7 @@ impl<'a> ShExParser<'a> {
             // state: ParserState::default(),
             // done: false,
         };
+        let mut shapes_counter = 0;
         while let Some(ss) = parser.shex_statement_iterator.next() {
             let statements = ss?;
             for s in statements {
@@ -58,6 +58,8 @@ impl<'a> ShExParser<'a> {
                     } => {
                         let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                         let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
+                        shapes_counter += 1;
+                        log::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                         schema.add_shape(shape_label, shape_expr, is_abstract);
                     }
                     ShExStatement::StartActions { actions } => {
@@ -144,6 +146,7 @@ impl<'a> Iterator for StatementIterator<'a> {
                 msg: format!("trailing bytes {}", self.src),
             }));
         }
+        log::debug!("ShEx statement...");
         r
     }
 }

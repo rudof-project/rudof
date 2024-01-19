@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use iri_s::{IriS, IriSError};
 use regex::Regex;
@@ -6,6 +6,8 @@ use serde_derive::{Deserialize, Serialize};
 
 use prefixmap::{Deref, DerefError, IriRef};
 use thiserror::Error;
+
+use crate::ShapeExpr;
 
 use super::bnode::BNode;
 
@@ -122,4 +124,14 @@ pub enum RefError {
 
     #[error("Cannot parse as Iri or BNode: {str}")]
     BadRef { str: String },
+}
+
+impl Display for ShapeExprLabel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShapeExprLabel::IriRef { value } => write!(f,"{value}"),
+            ShapeExprLabel::BNode { value } => write!(f,"{value}"),
+            ShapeExprLabel::Start => write!(f,"Start"),
+        }
+    }
 }

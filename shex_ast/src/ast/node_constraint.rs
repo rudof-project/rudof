@@ -184,7 +184,6 @@ impl Serialize for NodeConstraint {
                 xs_facet,
                 values,
             } => {
-                debug!("Serializing NodeConstraint: {self:?}");
                 let mut map = serializer.serialize_map(None)?;
 
                 // map.serialize_entry("type", "NodeConstraint")?;
