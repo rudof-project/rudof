@@ -28,6 +28,7 @@ use srdf::srdf_sparql::SRDFSparql;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
+use std::time::Instant;
 
 pub mod cli;
 pub mod data;
@@ -46,8 +47,9 @@ fn main() -> Result<()> {
             schema,
             schema_format,
             result_schema_format,
-            output
-        }) => run_schema(schema, schema_format, result_schema_format, output),
+            output,
+            show_time
+        }) => run_schema(schema, schema_format, result_schema_format, output, *show_time),
         Some(Command::Validate {
             schema,
             schema_format,
@@ -132,30 +134,34 @@ fn run_schema(
     schema_buf: &PathBuf,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
+    show_time: bool
 ) -> Result<()> {
+    let begin = Instant::now();
     let mut writer = get_writer(output)?;
     let schema_json = parse_schema(schema_buf, schema_format)?;
     match result_schema_format {
         ShExFormat::Internal => {
             writeln!(writer, "{schema_json:?}")?;
-            Ok(())
         }
         ShExFormat::ShExC => {
             let str = ShExFormatter::default().format_schema(&schema_json);
             writeln!(writer, "{str}")?;
-            Ok(())
         }
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema_json)?;
             writeln!(writer, "{str}")?;
-            Ok(())
         }
         ShExFormat::Turtle => {
             writeln!(writer, "Not implemented conversion to Turtle yet")?;
             todo!()
         }
+    };
+    if show_time {
+        let elapsed = begin.elapsed();
+        let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
+    Ok(())
 }
 
 fn run_validate(

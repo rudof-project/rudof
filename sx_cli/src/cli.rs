@@ -67,6 +67,14 @@ pub enum Command {
         )]
         result_schema_format: ShExFormat,
 
+        #[arg(
+            short = 't',
+            long = "show elapsed time",
+            default_value_t = false
+        )]
+        show_time: bool,
+
+
         #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
         output: Option<PathBuf>,
 

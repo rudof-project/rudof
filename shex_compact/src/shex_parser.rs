@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
-use prefixmap::IriRef;
 use shex_ast::Iri;
 use shex_ast::Schema;
 
@@ -41,19 +40,15 @@ impl<'a> ShExParser<'a> {
             for s in statements {
                 match s {
                     ShExStatement::BaseDecl { iri } => {
-                        log::debug!("ShEx statement: BaseDecl: {iri:?}");
                         schema = schema.with_base(Some(iri));
                     }
                     ShExStatement::PrefixDecl { alias, iri } => {
-                        log::debug!("ShEx statement: PrefixDecl: {alias:?} {iri:?}");
                         schema.add_prefix(alias, &iri);
                     }
                     ShExStatement::StartDecl { shape_expr } => {
-                        log::debug!("ShEx statement: StartDecl {shape_expr:?}");
                         schema = schema.with_start(Some(shape_expr))
                     }
                     ShExStatement::ImportDecl { iri } => {
-                        log::debug!("ShEx statement: ImportDecl {iri:?}");
                         schema = schema.with_import(Iri::new(iri.as_str()));
                     }
                     ShExStatement::ShapeDecl {
@@ -63,13 +58,9 @@ impl<'a> ShExParser<'a> {
                     } => {
                         let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                         let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                        log::debug!(
-                            "ShEx statement: ShapeDecl after deref: {shape_label:?} {shape_expr:?}"
-                        );
                         schema.add_shape(shape_label, shape_expr, is_abstract);
                     }
                     ShExStatement::StartActions { actions } => {
-                        log::debug!("ShEx statement: StartActions {actions:?}");
                         schema = schema.with_start_actions(Some(actions));
                     }
                 }
