@@ -1,6 +1,6 @@
 [package]
 name = "shex-rs"
-version = "0.0.7"
+version = "0.0.8"
 description = "ShEx implementation in Rust"
 license = "GPL-3.0-or-later"
 authors = [ 

@@ -1,6 +1,6 @@
 [package]
 name = "shex_ast"
-version = "0.0.7"
+version = "0.0.8"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
@@ -10,10 +10,10 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.0.7" }
-iri_s = { path = "../iri_s", version = "0.0.7" }
-rbe = { path = "../rbe", version = "0.0.7" }
-prefixmap = { path = "../prefixmap", version = "0.0.7" }
+srdf = { path = "../srdf", version = "0.0.8" }
+iri_s = { path = "../iri_s", version = "0.0.8" }
+rbe = { path = "../rbe", version = "0.0.8" }
+prefixmap = { path = "../prefixmap", version = "0.0.8" }
 serde = "1"
 serde_derive = "1"
 void = "1"
