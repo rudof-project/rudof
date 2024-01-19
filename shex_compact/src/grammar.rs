@@ -5,23 +5,13 @@ use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, tag_no_case},
     character::complete::multispace1,
-    combinator::{cut, map, map_res, opt, recognize, value},
-    error::{ErrorKind, FromExternalError},
-    error_position,
-    multi::{count, fold_many0, many0, many1},
-    sequence::{delimited, pair, preceded, tuple},
-    Err, IResult, InputTake,
+    combinator::value,
+    multi::{many0, many1},
+    sequence::{delimited, pair},
+    Err
 };
 use std::fmt::Debug;
-use thiserror::Error;
 
-use crate::grammar_structs::{
-    Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
-};
-
-use nom_locate::LocatedSpan;
-use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 
 // Create a [`Span`][nom_locate::LocatedSpan] over the input.
 /* fn span_from_str(input: &str) -> Span<'_> {

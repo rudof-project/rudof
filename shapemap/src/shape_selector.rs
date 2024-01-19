@@ -1,10 +1,5 @@
-use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::ShapeExprLabel;
-use shex_ast::{object_value::ObjectValue, Node};
-use srdf::shacl_path::SHACLPath;
-use srdf::SRDF;
-use thiserror::Error;
 
 /// A ShapeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select shape expressions to validate
 ///

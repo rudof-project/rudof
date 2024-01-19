@@ -190,8 +190,8 @@ mod tests {
             .with_shapes_prefixmap(&shapes_prefixmap);
 
         expected.add_association(
-            NodeSelector::iri_unchecked("http://example.org/a"),
-            ShapeSelector::iri_unchecked("http://example.org/shapes/S"),
+            NodeSelector::prefixed("", "a"),
+            ShapeSelector::prefixed("", "S"),
         );
         assert_eq!(parsed_shapemap, expected)
     }

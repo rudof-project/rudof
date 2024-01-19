@@ -2,21 +2,20 @@ use crate::{
     map_error, shex_parser_error::ParseError as ShExParseError, tag_no_case_tws, token, token_tws,
     traced, tws0, tws1, IRes, Span,
 };
-use colored::*;
 use iri_s::IriS;
 use log;
 use nom::{
     branch::alt,
-    bytes::complete::{is_not, tag, tag_no_case, take_while, take_while1},
+    bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{
-        alpha1, alphanumeric1, char, digit0, digit1, multispace1, none_of, one_of, satisfy,
+        alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy,
     },
-    combinator::{cut, map, map_res, opt, recognize, value},
-    error::{ErrorKind, FromExternalError},
+    combinator::{cut, map, map_res, opt, recognize},
+    error::ErrorKind,
     error_position,
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
-    Err, IResult, InputTake,
+    Err, InputTake,
 };
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
@@ -29,7 +28,7 @@ use shex_ast::{
 use std::{
     collections::VecDeque,
     fmt::Debug,
-    num::{ParseFloatError, ParseIntError},
+    num::ParseIntError,
 };
 use thiserror::Error;
 
@@ -158,7 +157,7 @@ fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
                 tws0,
                 cut(char('=')),
                 tws0,
-                cut(inline_shape_expression),
+                cut(inline_shape_expression()),
             ))(i)?;
             Ok((i, ShExStatement::StartDecl { shape_expr: se }))
         },
@@ -225,8 +224,13 @@ fn shape_expression(i: Span) -> IRes<ShapeExpr> {
 }
 
 /// `[11]   	inlineShapeExpression	   ::=   	inlineShapeOr`
-fn inline_shape_expression(i: Span) -> IRes<ShapeExpr> {
-    inline_shape_or(i)
+fn inline_shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+    traced("inline_shape_expr", map_error(move |i| {
+        inline_shape_or(i)
+    },
+    || ShExParseError::ExpectedInlineShapeExpr,
+    )
+  )
 }
 
 /// `[12]   	shapeOr	   ::=   	shapeAnd ("OR" shapeAnd)*`
@@ -278,7 +282,7 @@ fn shape_not(i: Span) -> IRes<ShapeExpr> {
 /// `[17]   	inlineShapeNot	   ::=   	"NOT"? inlineShapeAtom`
 fn inline_shape_not(i: Span) -> IRes<ShapeExpr> {
     let (i, maybe) = opt(symbol("NOT"))(i)?;
-    let (i, se) = inline_shape_atom(i)?;
+    let (i, se) = inline_shape_atom()(i)?;
     match maybe {
         None => Ok((i, se)),
         Some(_) => Ok((i, ShapeExpr::not(se))),
@@ -297,7 +301,7 @@ fn shape_atom<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
             move |i| {
                 alt((
                     non_lit_opt_shape_or_ref(),
-                    lit_node_constraint_shape_expr,
+                    lit_node_constraint_shape_expr(),
                     shape_opt_non_lit,
                     paren_shape_expr,
                     dot,
@@ -351,18 +355,22 @@ fn shape_opt_non_lit(i: Span) -> IRes<ShapeExpr> {
 /// `                      | inlineShapeOrRef nonLitNodeConstraint?`
 /// `                      | '(' shapeExpression ')'`
 /// `                      | '.'`
-fn inline_shape_atom(i: Span) -> IRes<ShapeExpr> {
-    alt((
-        non_lit_inline_opt_shape_or_ref,
-        lit_node_constraint_shape_expr,
+fn inline_shape_atom<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+  traced("inline_shape_atom", 
+    map_error(move |i| { 
+       alt((
+        non_lit_inline_opt_shape_or_ref(),
+        lit_node_constraint_shape_expr(),
         inline_shape_or_ref_opt_non_lit,
         paren_shape_expr,
         dot,
     ))(i)
+   }, || ShExParseError::ExpectedInlineShapeAtom,))
 }
 
 /// From [20] `non_lit_inline_opt_shape_or_ref = nonLitNodeConstraint inlineShapeOrRef?`
-fn non_lit_inline_opt_shape_or_ref(i: Span) -> IRes<ShapeExpr> {
+fn non_lit_inline_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+   traced("non_lit_inline_nodeConstraint InlineShapeOr?", map_error(move |i| {
     let (i, (non_lit, _, maybe_se)) =
         tuple((non_lit_node_constraint, tws0, opt(inline_shape_or_ref)))(i)?;
     let nc = ShapeExpr::node_constraint(non_lit);
@@ -371,6 +379,7 @@ fn non_lit_inline_opt_shape_or_ref(i: Span) -> IRes<ShapeExpr> {
         Some(se) => make_shape_and(vec![nc, se]),
     };
     Ok((i, se_result))
+   }, || ShExParseError::NonLitInlineNodeConstraintOptShapeOrRef))
 }
 
 /// `from [20] `inline_shape_or_ref_opt_non_lit ::= inlineShapeOrRef nonLitNodeConstraint?`
@@ -383,9 +392,11 @@ fn inline_shape_or_ref_opt_non_lit(i: Span) -> IRes<ShapeExpr> {
     }
 }
 
-fn lit_node_constraint_shape_expr(i: Span) -> IRes<ShapeExpr> {
+fn lit_node_constraint_shape_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+ traced("lit_node_constraint", map_error(move |i| {
     let (i, nc) = lit_node_constraint()(i)?;
     Ok((i, ShapeExpr::NodeConstraint(nc)))
+  }, || ShExParseError::LitNodeConstraint))
 }
 
 fn paren_shape_expr(i: Span) -> IRes<ShapeExpr> {
@@ -443,7 +454,7 @@ fn lit_node_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint>
             move |i| {
                 alt((
                     literal_facets(),
-                    datatype_facets,
+                    datatype_facets(),
                     value_set_facets(),
                     numeric_facets,
                 ))(i)
@@ -465,9 +476,12 @@ fn literal_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
     })
 }
 
-fn datatype_facets(i: Span) -> IRes<NodeConstraint> {
-    let (i, (dt, _, facets)) = tuple((datatype, tws1, facets()))(i)?;
-    Ok((i, dt.with_xsfacets(facets)))
+fn datatype_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
+    traced("datatype_facets", 
+     map_error(move |i| {
+       let (i, (dt, _, facets)) = tuple((datatype, tws0, facets()))(i)?;
+       Ok((i, dt.with_xsfacets(facets)))
+     }, || ShExParseError::DatatypeFacets))
 }
 
 fn value_set_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
@@ -953,7 +967,7 @@ fn bracketed_triple_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     )
 }
 
-/// `[45]   	tripleConstraint	   ::=   	senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
+/// `[45] tripleConstraint ::=  senseFlags? predicate inlineShapeExpression cardinality? annotation* semanticActions`
 fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     traced(
         "triple_constraint",
@@ -979,9 +993,9 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
                     tws0,
                     predicate,
                     tws0,
-                    cut(inline_shape_expression),
+                    inline_shape_expression(),
                     tws0,
-                    cut(opt(cardinality())),
+                    opt(cardinality()),
                     tws0,
                     annotations,
                     tws0,
@@ -2355,7 +2369,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
     /*#[test]
     fn test_comment() {
         assert_eq!(comment(Span::new("#\r\na")), Ok((Span::new("\na"), ())));
@@ -2570,10 +2587,27 @@ mod tests {
 
     #[test]
     fn test_shape_atom_node_constraint() {
-        let (_, result) = lit_node_constraint_shape_expr(Span::new("[ 'a' ]")).unwrap();
+        let (_, result) = lit_node_constraint_shape_expr()(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![ValueSetValue::string_literal("a", None)];
         let expected =
             ShapeExpr::NodeConstraint(NodeConstraint::new().with_values(expected_values));
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_triple_constraint() {
+        let (_, result) = triple_constraint()(Span::new(":p xsd:int")).unwrap();
+        let expected =
+            TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), None, None, None);
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_inline_shape_expr() {
+        init();
+        let (_, result) = inline_shape_expression()(Span::new(":p")).unwrap();
+        let expected =
+            ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("","p")));
         assert_eq!(result, expected)
     }
 

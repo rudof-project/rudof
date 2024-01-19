@@ -73,6 +73,15 @@ pub enum ParseError {
     #[error("Expected non literal node constraint followed by optional shape or shape reference")]
     NonLitNodeConstraintOptShapeOrRef,
 
+    #[error("Expected non literal inline node constraint followed by optional shape or shape reference")]
+    NonLitInlineNodeConstraintOptShapeOrRef,
+
+    #[error("Expected inline shape atom")]
+    ExpectedInlineShapeAtom,
+
+    #[error("Expected datatype with optional xs_facets")]
+    DatatypeFacets,
+
     #[error("Expected prefixed name")]
     ExpectedPrefixedName,
 
@@ -99,6 +108,9 @@ pub enum ParseError {
 
     #[error("Expected rest of cardinality declaration after comma")]
     ExpectedRestRepeatRange,
+
+    #[error("Expected inline shape expr")]
+    ExpectedInlineShapeExpr,
 
     #[error("Expected IRI or Literal")]
     ExpectedIriOrLiteral,
