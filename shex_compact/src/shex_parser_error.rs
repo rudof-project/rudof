@@ -184,6 +184,15 @@ pub enum ParseError {
     #[error("Parse f64 error for str {str}: {err}")]
     ParseFloatError { str: String, err: ParseFloatError },
 
+    #[error("Expected numeric literal")]
+    NumericLiteral,
+
+    #[error("Expected integer literal")]
+    IntegerLiteral,
+
+    #[error("Expected integer")]
+    Integer,
+
     #[error("Expected ShapeSpec: IRIREF, BNode or START")]
     ExpectedShapeSpec,
 

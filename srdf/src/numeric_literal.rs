@@ -48,6 +48,11 @@ impl NumericLiteral {
         NumericLiteral::Decimal(d)
     }
 
+    pub fn decimal_from_i128(d: i128) -> NumericLiteral {
+        let d: Decimal = Decimal::from_i128(d).unwrap();
+        NumericLiteral::Decimal(d)
+    }
+
     pub fn decimal_from_u64(d: u64) -> NumericLiteral {
         let d: Decimal = Decimal::from_u64(d).unwrap();
         NumericLiteral::Decimal(d)

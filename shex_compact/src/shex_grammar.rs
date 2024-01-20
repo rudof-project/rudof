@@ -70,7 +70,7 @@ fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
 }
 
 fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, vs) = many0(tuple((directive, tws1)))(i)?;
+    let (i, vs) = many0(tuple((directive, tws0)))(i)?;
     let mut rs = Vec::new();
     for v in vs {
         let (d, _) = v;
@@ -559,12 +559,12 @@ fn string_length(i: Span) -> IRes<XsFacet> {
 }
 
 fn min_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = tuple((tag_no_case("MINLENGTH"), tws1, pos_integer))(i)?;
+    let (i, (_, _, n)) = tuple((tag_no_case("MINLENGTH"), tws0, pos_integer))(i)?;
     Ok((i, XsFacet::min_length(n)))
 }
 
 fn max_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = tuple((tag_no_case("MAXLENGTH"), tws1, pos_integer))(i)?;
+    let (i, (_, _, n)) = tuple((tag_no_case("MAXLENGTH"), tws0, pos_integer))(i)?;
     Ok((i, XsFacet::max_length(n)))
 }
 
@@ -574,7 +574,7 @@ fn length(i: Span) -> IRes<XsFacet> {
 }
 
 fn pos_integer(i: Span) -> IRes<usize> {
-    let (i, n) = integer(i)?;
+    let (i, n) = integer()(i)?;
     let u: usize;
     if n < 0 {
         Err(Err::Error(error_position!(i, ErrorKind::Digit)))
@@ -595,7 +595,7 @@ fn numeric_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 /// `From [30] numeric_range_lit = numericRange numericLiteral``
 fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
     traced("numeric_range", move |i| {
-        let (i, (n_range, v)) = tuple((numeric_range, cut(raw_numeric_literal)))(i)?;
+        let (i, (n_range, v)) = tuple((numeric_range, cut(raw_numeric_literal())))(i)?;
         let v = match n_range {
             NumericRange::MinInclusive => XsFacet::NumericFacet(NumericFacet::MinInclusive(v)),
             NumericRange::MinExclusive => XsFacet::NumericFacet(NumericFacet::MinExclusive(v)),
@@ -609,7 +609,7 @@ fn numeric_range_lit<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 /// `From [30] numericLength INTEGER`
 fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
     traced("numeric_length_int", move |i| {
-        let (i, (numeric_length, n)) = tuple((numeric_length, integer))(i)?;
+        let (i, (numeric_length, n)) = tuple((numeric_length, integer()))(i)?;
         let nm = match numeric_length {
             NumericLength::FractionDigits => {
                 XsFacet::NumericFacet(NumericFacet::FractionDigits(n as usize))
@@ -1440,19 +1440,27 @@ fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
     alt((
         map(double, |n| NumericLiteral::double(n)),
         decimal,
-        map(integer, |n| NumericLiteral::Integer(n)),
+        integer_literal(),
     ))(i)
 }
 
 /// raw_numeric_literal obtains a numeric literal as a JSON
 /// `[16t]   	rawnumericLiteral	   ::=   	INTEGER | DECIMAL | DOUBLE
 /// `
-fn raw_numeric_literal(i: Span) -> IRes<NumericLiteral> {
-    alt((
+fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
+   map_error(move |i| { 
+     alt((
         map(double, |n| NumericLiteral::decimal_from_f64(n)),
         decimal,
-        map(integer, |n| NumericLiteral::decimal_from_isize(n)),
+        integer_literal(), 
     ))(i)
+   }, || ShExParseError::NumericLiteral)
+}
+
+fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
+  map_error(move |i| {
+    map(integer(), |n| NumericLiteral::decimal_from_i128(n))(i)
+  }, || ShExParseError::IntegerLiteral)
 }
 
 fn boolean_literal(i: Span) -> IRes<Literal> {
@@ -1755,7 +1763,7 @@ fn repeat_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Cardinality> {
         map_error(
             move |i| {
                 let (i, (_, min, maybe_rest_range, _)) =
-                    tuple((token("{"), integer, opt(rest_range()), cut(token("}"))))(i)?;
+                    tuple((token("{"), integer(), opt(rest_range()), cut(token("}"))))(i)?;
                 let cardinality = match maybe_rest_range {
                     None => Cardinality::exact(min as i32),
                     Some(maybe_max) => match maybe_max {
@@ -1787,7 +1795,7 @@ fn rest_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<i32>> {
 
 /// From rest_range, integer_or_star = INTEGER | "*"
 fn integer_or_star(i: Span) -> IRes<i32> {
-    alt((map(integer, |n| n as i32), (map(token_tws("*"), |_| (-1)))))(i)
+    alt((map(integer(), |n| n as i32), (map(token_tws("*"), |_| (-1)))))(i)
 }
 
 /// `[69]   	<RDF_TYPE>	   ::=   	"a"`
@@ -1976,7 +1984,8 @@ fn blank_node_label3(i: Span) -> IRes<Span> {
 }
 
 /// `[19t]   	<INTEGER>	   ::=   	[+-]? [0-9]+`
-fn integer(i: Span) -> IRes<isize> {
+fn integer<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, i128> {
+  map_error(move |i| {  
     let (i, (maybe_sign, digits)) = tuple((opt(one_of("+-")), digits))(i)?;
     let n = match maybe_sign {
         None => digits,
@@ -1985,6 +1994,7 @@ fn integer(i: Span) -> IRes<isize> {
         _ => panic!("Internal parser error, Strange maybe_sign: {maybe_sign:?}"),
     };
     Ok((i, n))
+  }, || ShExParseError::Integer)
 }
 
 /// `[20t]   	<DECIMAL>	   ::=   	[+-]? [0-9]* "." [0-9]+`
@@ -2026,8 +2036,8 @@ fn sign(input: Span) -> IRes<Span> {
     recognize(one_of("+-"))(input)
 }
 
-fn digits(i: Span) -> IRes<isize> {
-    map_res(digit1, |number: Span| number.parse::<isize>())(i)
+fn digits(i: Span) -> IRes<i128> {
+    map_res(digit1, |number: Span| number.parse::<i128>())(i)
 }
 
 /// `[141s]   	<PNAME_LN>	   ::=   	PNAME_NS PN_LOCAL`
