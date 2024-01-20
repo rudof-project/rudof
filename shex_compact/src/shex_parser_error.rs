@@ -196,6 +196,9 @@ pub enum ParseError {
     #[error("Expected ShapeSpec: IRIREF, BNode or START")]
     ExpectedShapeSpec,
 
+    #[error("Expected ShEx statement")]
+    ExpectedStatement,
+
     #[error("Expected ShapeMap association")]
     ExpectedShapeMapAssociation,
 

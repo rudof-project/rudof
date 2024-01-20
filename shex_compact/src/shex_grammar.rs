@@ -41,7 +41,23 @@ use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE, RDF_TYPE_STR};
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
-pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
+pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+    traced("shex_statement", map_error(move |i| {
+        alt((directive, 
+            not_start_action, 
+            start_actions,
+            empty
+        ))(i)
+        }, || ShExParseError::ExpectedStatement)
+    )
+}
+
+fn empty(i: Span) -> IRes<ShExStatement> {
+    let (i, _) = tws0(i)?; 
+    Ok((i, ShExStatement::Empty))
+}
+
+/*pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
     traced("shex_statement", move |i| {
         let (i, (ds, _, maybe_sts)) = tuple((directives, tws0, opt(rest_shex_statements)))(i)?;
         let mut result = Vec::new();
@@ -54,7 +70,7 @@ pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExS
         }
         Ok((i, result))
     })
-}
+}*/
 
 /// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
 fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
@@ -143,12 +159,12 @@ fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
     )
 }
 
-/// `[5]   	notStartAction	   ::=   	start | shapeExprDecl`
+/// `[5] notStartAction	::= start | shapeExprDecl`
 fn not_start_action(i: Span) -> IRes<ShExStatement> {
     alt((start(), shape_expr_decl()))(i)
 }
 
-/// `[6]   	start	   ::=   	"start" '=' inlineShapeExpression`
+/// `[6] start	::= "start" '=' inlineShapeExpression`
 fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
     map_error(
         move |i| {
@@ -2558,12 +2574,12 @@ mod tests {
         );
     }*/
 
-    #[test]
+    /*#[test]
     fn test_empty_shex_statement() {
         let (_, result) = shex_statement()(Span::new("")).unwrap();
         let expected = Vec::new();
         assert_eq!(result, expected)
-    }
+    }*/
 
     #[test]
     fn test_string_literal() {

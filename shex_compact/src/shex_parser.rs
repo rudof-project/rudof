@@ -35,10 +35,11 @@ impl<'a> ShExParser<'a> {
             // done: false,
         };
         let mut shapes_counter = 0;
-        while let Some(ss) = parser.shex_statement_iterator.next() {
-            let statements = ss?;
-            for s in statements {
-                match s {
+        while let Some(s) = parser.shex_statement_iterator.next() {
+            //let statements = ss?;
+            //for s in statements {
+                match s? {
+                    ShExStatement::Empty => {}
                     ShExStatement::BaseDecl { iri } => {
                         schema = schema.with_base(Some(iri));
                     }
@@ -66,7 +67,7 @@ impl<'a> ShExParser<'a> {
                         schema = schema.with_start_actions(Some(actions));
                     }
                 }
-            }
+            //}
         }
         Ok(schema)
     }
@@ -99,6 +100,59 @@ impl<'a> StatementIterator<'a> {
 }
 
 impl<'a> Iterator for StatementIterator<'a> {
+    type Item = Result<ShExStatement<'a>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        let mut r;
+        match shex_statement()(self.src) {
+            Ok((left, s)) => {
+                if s.is_empty() {
+                   r = None;
+                } else {
+                    r = Some(Ok(s));
+                }
+                self.src = left;
+            }
+            Err(Err::Incomplete(_)) => {
+                println!("Incomplete! shex_statement");
+                self.done = true;
+                r = None;
+            }
+            Err(Err::Error(e)) | Err(Err::Failure(e)) => {
+                r = Some(Err(ParseError::NomError { err: Box::new(e) }));
+                self.done = true;
+            }
+        }
+
+        match tws0(self.src) {
+            Ok((left, _)) => {
+                self.src = left;
+            }
+            Err(Err::Incomplete(_)) => {
+                println!("Incomplete! tws");
+                self.done = true;
+            }
+            Err(e) => {
+                r = Some(Err(ParseError::Custom {
+                    msg: format!("error parsing whitespace. Error: {}", e),
+                }));
+                self.done = true;
+            }
+        }
+        if r.is_none() && !self.src.is_empty() {
+            r = Some(Err(ParseError::Custom {
+                msg: format!("trailing bytes {}", self.src),
+            }));
+        }
+        log::debug!("ShEx statement...");
+        r
+    }
+}
+
+/*impl<'a> Iterator for StatementIterator<'a> {
     type Item = Result<Vec<ShExStatement<'a>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -149,7 +203,7 @@ impl<'a> Iterator for StatementIterator<'a> {
         log::debug!("ShEx statement...");
         r
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {
