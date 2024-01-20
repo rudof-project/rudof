@@ -147,7 +147,6 @@ impl<'a> Iterator for StatementIterator<'a> {
                 msg: format!("trailing bytes {}", self.src),
             }));
         }
-        log::debug!("ShEx statement...");
         r
     }
 }
