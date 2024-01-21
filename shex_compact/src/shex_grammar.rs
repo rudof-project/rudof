@@ -6,8 +6,8 @@ use iri_s::IriS;
 use log;
 use nom::{
     branch::alt,
-    bytes::complete::{tag, tag_no_case, take_while, take_while1},
-    character::complete::{
+    bytes::streaming::{tag, tag_no_case, take_while, take_while1},
+    character::streaming::{
         alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy,
     },
     combinator::{cut, map, map_res, opt, recognize},
