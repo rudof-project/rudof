@@ -36,7 +36,8 @@ impl<'a> ShExParser<'a> {
         };
         let mut shapes_counter = 0;
         while let Some(s) = parser.shex_statement_iterator.next() {
-                match s? {
+            log::debug!("Statement: {s:?}");
+            match s? {
                     ShExStatement::Empty => {}
                     ShExStatement::BaseDecl { iri } => {
                         schema = schema.with_base(Some(iri));
@@ -108,7 +109,7 @@ impl<'a> Iterator for StatementIterator<'a> {
             Ok((left, s)) => {
                 if s.is_empty() {
                    r = None;
-                } else {
+                } else { 
                     r = Some(Ok(s));
                 }
                 self.src = left;
@@ -141,11 +142,11 @@ impl<'a> Iterator for StatementIterator<'a> {
             }
         }
 
-        if r.is_none() && !self.src.is_empty() {
+        /*if r.is_none() && !self.src.is_empty() {
             r = Some(Err(ParseError::Custom {
                 msg: format!("trailing bytes {}", self.src),
             }));
-        }
+        }*/
         r
     }
 }

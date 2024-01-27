@@ -6,8 +6,8 @@ use iri_s::IriS;
 use log;
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while, take_while1},
-    character::streaming::{
+    bytes::complete::{tag, tag_no_case, take_while, take_while1},
+    character::complete::{
         alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy,
     },
     combinator::{cut, map, map_res, opt, recognize},
@@ -44,9 +44,9 @@ use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TY
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
     traced("shex_statement", map_error(move |i| {
         alt((directive, 
-            not_start_action, 
-            start_actions,
-            empty
+             start(),
+             shape_expr_decl(),
+             start_actions
         ))(i)
         }, || ShExParseError::ExpectedStatement)
     )
@@ -86,13 +86,19 @@ fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
 }
 
 fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, vs) = many0(tuple((directive, tws0)))(i)?;
-    let mut rs = Vec::new();
-    for v in vs {
+    let (i, vs) = many1(
+        //tuple((
+            directive
+        //    , 
+        //    tws0
+        //))
+    )(i)?;
+    // let mut rs = Vec::new();
+    /*for v in vs {
         let (d, _) = v;
         rs.push(d);
-    }
-    Ok((i, rs))
+    }*/
+    Ok((i, vs))
 }
 
 fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
@@ -224,7 +230,7 @@ fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 
 fn shape_expr_or_external<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
     map_error(
-        move |i| alt((shape_expression, external))(i),
+        move |i| alt((shape_expression(), external))(i),
         || ShExParseError::ShapeExprOrExternal,
     )
 }
@@ -235,8 +241,10 @@ fn external(i: Span) -> IRes<ShapeExpr> {
 }
 
 /// `[10] shapeExpression ::= shapeOr`
-fn shape_expression(i: Span) -> IRes<ShapeExpr> {
-    shape_or(i)
+fn shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+    traced("ShapeExpr", map_error(move |i| {
+        shape_or(i)
+    }, || ShExParseError::ExpectedShapeExpr))
 }
 
 /// `[11]   	inlineShapeExpression	   ::=   	inlineShapeOr`
@@ -416,7 +424,7 @@ fn lit_node_constraint_shape_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Shap
 }
 
 fn paren_shape_expr(i: Span) -> IRes<ShapeExpr> {
-    let (i, (_, _, se, _, _)) = tuple((char('('), tws0, shape_expression, tws0, char(')')))(i)?;
+    let (i, (_, _, se, _, _)) = tuple((char('('), tws0, shape_expression(), tws0, char(')')))(i)?;
     Ok((i, se))
 }
 
