@@ -2435,14 +2435,8 @@ mod tests {
 
     #[test]
     fn test_tws_statement() {
-        let s = shex_statement()(Span::new(" ")).unwrap();
-        assert_eq!(
-            s.1,
-            ShExStatement::ShapeDecl { 
-                is_abstract: false, 
-                shape_label: ShapeExprLabel::prefixed("", "S"), 
-                shape_expr: ShapeExpr::empty_shape() 
-            } 
+        assert!(
+            shex_statement()(Span::new(" ")).is_err()
         );
     }
 
