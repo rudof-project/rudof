@@ -1,7 +1,7 @@
 [package]
 name = "shex-rs"
-version = "0.0.9"
-description = "ShEx implementation in Rust"
+version = "0.0.10"
+description = "RDF Data shapes implementation in Rust"
 license = "GPL-3.0-or-later"
 authors = [ 
     "Jose Emilio Labra Gayo",
@@ -55,17 +55,17 @@ keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["rdf"]
 
 [workspace.dependencies]
-rbe = { version = "0.0.9", path = "./rbe" }
-rbe_testsuite = { version = "0.0.9", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.9", path = "./iri_s" }
-prefixmap = { version = "0.0.9", path = "./prefixmap" }
-srdf = { version = "0.0.9", path = "./srdf" }
-shex_ast = { version = "0.0.9", path = "./shex_ast" }
-shex_testsuite = { version = "0.0.9", path = "./shex_testsuite" }
-shex_validation = { version = "0.0.9", path = "./shex_validation" }
-shex_compact = { version = "0.0.9", path = "./shex_compact" }
-shapemap = { version = "0.0.9", path = "./shapemap" }
-shacl_ast = { version = "0.0.9", path = "./shacl_ast" }
+rbe = { version = "0.0.10", path = "./rbe" }
+rbe_testsuite = { version = "0.0.10", path = "./rbe_testsuite" }
+iri_s = { version = "0.0.10", path = "./iri_s" }
+prefixmap = { version = "0.0.10", path = "./prefixmap" }
+srdf = { version = "0.0.10", path = "./srdf" }
+shex_ast = { version = "0.0.10", path = "./shex_ast" }
+shex_testsuite = { version = "0.0.10", path = "./shex_testsuite" }
+shex_validation = { version = "0.0.10", path = "./shex_validation" }
+shex_compact = { version = "0.0.10", path = "./shex_compact" }
+shapemap = { version = "0.0.10", path = "./shapemap" }
+shacl_ast = { version = "0.0.10", path = "./shacl_ast" }
 
 
 [dependencies]
