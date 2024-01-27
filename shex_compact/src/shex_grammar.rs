@@ -2407,31 +2407,46 @@ mod tests {
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
     }
-    /*#[test]
-    fn test_comment() {
-        assert_eq!(comment(Span::new("#\r\na")), Ok((Span::new("\na"), ())));
-        assert_eq!(comment("#\n\ra"), Ok((("\ra"), (""))));
-        // assert_eq!(comment(""), Err(Err::Error(("".as_ref(), ErrorKind::Char))));
-        assert_eq!(comment("#"), Ok(("", "")));
-        assert_eq!(comment("#abc"), Ok(("", "abc")));
-        assert_eq!(comment("#\n\n"), Ok(("\n", "")));
-    }
 
     #[test]
     fn test_prefix_id_with_dots() {
+        let s = shex_statement()(Span::new("prefix a.b.c: <urn>")).unwrap();
         assert_eq!(
-            prefix_decl("prefix a.b.c: <urn>"),
-            Ok((
-                "",
-                ShExStatement::PrefixDecl {
+            s.1,
+            ShExStatement::PrefixDecl {
                     alias: "a.b.c",
                     iri: IriS::new_unchecked("urn")
                 }
-            ))
         );
     }
 
     #[test]
+    fn test_basic_shape_decl() {
+        let s = shex_statement()(Span::new(":S {}")).unwrap();
+        assert_eq!(
+            s.1,
+            ShExStatement::ShapeDecl { 
+                is_abstract: false, 
+                shape_label: ShapeExprLabel::prefixed("", "S"), 
+                shape_expr: ShapeExpr::empty_shape() 
+            } 
+        );
+    }
+
+    #[test]
+    fn test_tws_statement() {
+        let s = shex_statement()(Span::new(" ")).unwrap();
+        assert_eq!(
+            s.1,
+            ShExStatement::ShapeDecl { 
+                is_abstract: false, 
+                shape_label: ShapeExprLabel::prefixed("", "S"), 
+                shape_expr: ShapeExpr::empty_shape() 
+            } 
+        );
+    }
+
+    /*#[test]
     fn test_prefix_id() {
         assert_eq!(
             prefix_decl("prefix a: <urn>"),
@@ -2631,8 +2646,9 @@ mod tests {
     #[test]
     fn test_triple_constraint() {
         let (_, result) = triple_constraint()(Span::new(":p xsd:int")).unwrap();
+        let nc = ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("xsd", "int")));
         let expected =
-            TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), None, None, None);
+            TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), Some(nc), None, None);
         assert_eq!(result, expected)
     }
 

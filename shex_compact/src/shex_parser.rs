@@ -28,11 +28,9 @@ impl<'a> ShExParser<'a> {
     ///
     /// `base` is an optional IRI that acts as the base for relative IRIs
     pub fn parse(src: &str, base: Option<IriS>) -> Result<Schema> {
-        let mut schema = Schema::new();
+        let mut schema = Schema::new().with_base(base);
         let mut parser = ShExParser {
             shex_statement_iterator: StatementIterator::new(Span::new(src))?,
-            // state: ParserState::default(),
-            // done: false,
         };
         let mut shapes_counter = 0;
         while let Some(s) = parser.shex_statement_iterator.next() {
@@ -105,13 +103,13 @@ impl<'a> Iterator for StatementIterator<'a> {
             return None;
         }
         let mut r;
+        if self.src.is_empty() {
+            self.done = true;
+            return None
+        }
         match shex_statement()(self.src) {
             Ok((left, s)) => {
-                if s.is_empty() {
-                   r = None;
-                } else { 
-                    r = Some(Ok(s));
-                }
+                r = Some(Ok(s));
                 self.src = left;
             }
             Err(Err::Incomplete(needed)) => {
