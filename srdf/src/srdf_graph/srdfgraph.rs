@@ -69,11 +69,10 @@ impl SRDFGraph {
         while let Some(triple_result) = reader.next() {
             graph.insert(triple_result?.as_ref());
         }
-        let prefixes: HashMap<&str, &str> = reader
+        let prefixes_iter = reader
         .prefixes()
-        .iter()
-        .map(|(key, value)| (key.as_str(), value.as_str()))
-        .collect(); 
+        .iter();
+        let prefixes: HashMap<&str, &str> = prefixes_iter.map(|(key, value)| (key.as_str(), value.as_str())).collect(); 
         let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph {
