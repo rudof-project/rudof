@@ -25,7 +25,7 @@ use oxrdf::{
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
-use oxttl::{TurtleParser, TurtlePrefixesIter};
+use oxttl::TurtleParser;
 
 #[derive(Debug)]
 pub struct SRDFGraph {
@@ -66,10 +66,7 @@ impl SRDFGraph {
         while let Some(triple_result) = reader.next() {
             graph.insert(triple_result?.as_ref());
         }
-        let prefixes_iter = reader
-        .prefixes()
-        .iter();
-        let prefixes: HashMap<&str, &str> = prefixes_iter.map(|(key, value)| (key.as_str(), value.as_str())).collect(); 
+        let prefixes: HashMap<&str, &str> = reader.prefixes().collect(); 
         let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph {
