@@ -29,4 +29,4 @@ colored = "2"
 either = "1"
 
 [dev-dependencies]
-oxrdf = "0.2.0-alpha.1"
+oxrdf = "0.2.0-alpha.2"
