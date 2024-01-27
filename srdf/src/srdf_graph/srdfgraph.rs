@@ -25,10 +25,7 @@ use oxrdf::{
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
-use oxttl::TurtleParser;
-// use rio_api::model::{Literal as RioLiteral, NamedNode, Subject, Term, Triple, BlankNode};
-// use rio_api::parser::*;
-// use rio_turtle::*;
+use oxttl::{TurtleParser, TurtlePrefixesIter};
 
 #[derive(Debug)]
 pub struct SRDFGraph {
