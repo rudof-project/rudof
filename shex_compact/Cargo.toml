@@ -1,6 +1,6 @@
 [package]
 name = "shex_compact"
-version = "0.0.9"
+version = "0.0.10"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_compact"
@@ -10,12 +10,12 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-shex_ast = { path = "../shex_ast", version = "0.0.9" }
-rbe = { path = "../rbe", version = "0.0.9" }
-iri_s = { path = "../iri_s", version = "0.0.9" }
-srdf = { path = "../srdf", version = "0.0.9" }
-prefixmap = { path = "../prefixmap", version = "0.0.9" } 
-shapemap = { path = "../shapemap", version = "0.0.9" } 
+shex_ast = { path = "../shex_ast", version = "0.0.10" }
+rbe = { path = "../rbe", version = "0.0.10" }
+iri_s = { path = "../iri_s", version = "0.0.10" }
+srdf = { path = "../srdf", version = "0.0.10" }
+prefixmap = { path = "../prefixmap", version = "0.0.10" } 
+shapemap = { path = "../shapemap", version = "0.0.10" } 
 nom = "7"
 nom_locate = "4"
 thiserror = "1"

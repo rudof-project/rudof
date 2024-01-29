@@ -109,6 +109,9 @@ pub enum ParseError {
     #[error("Expected rest of cardinality declaration after comma")]
     ExpectedRestRepeatRange,
 
+    #[error("Expected shape expr")]
+    ExpectedShapeExpr,
+
     #[error("Expected inline shape expr")]
     ExpectedInlineShapeExpr,
 

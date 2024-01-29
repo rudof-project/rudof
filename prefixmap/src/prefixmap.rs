@@ -91,8 +91,8 @@ impl PrefixMap {
     ///
     /// let pm: PrefixMap = PrefixMap::from_hashmap(
     ///   &HashMap::from([
-    ///     ("".to_string(), "http://example.org/".to_string()),
-    ///     ("schema".to_string(), "http://schema.org/".to_string())])
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = pm.resolve(":a")?;
     /// let a_resolved = IriS::from_str("http://example.org/a")?;
@@ -130,9 +130,9 @@ impl PrefixMap {
     ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
-    ///     ("".to_string(), "http://example.org/".to_string()),
-    ///     ("schema".to_string(), "http://schema.org/".to_string()),
-    ///     ("xsd".to_string(), "http://www.w3.org/2001/XMLSchema#".to_string())
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/"),
+    ///     ("xsd", "http://www.w3.org/2001/XMLSchema#")
     /// ]))?;
     ///
     /// let a = pm.resolve_prefix_local("", "a")?;
@@ -172,8 +172,8 @@ impl PrefixMap {
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
-    ///     ("".to_string(), "http://example.org/".to_string()),
-    ///     ("schema".to_string(), "http://schema.org/".to_string())])
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
     /// assert_eq!(pm.qualify(&a), ":a");

@@ -44,9 +44,9 @@ use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TY
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
     traced("shex_statement", map_error(move |i| {
         alt((directive, 
-            not_start_action, 
-            start_actions,
-            empty
+             start(),
+             shape_expr_decl(),
+             start_actions
         ))(i)
         }, || ShExParseError::ExpectedStatement)
     )
@@ -86,13 +86,19 @@ fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
 }
 
 fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, vs) = many0(tuple((directive, tws0)))(i)?;
-    let mut rs = Vec::new();
-    for v in vs {
+    let (i, vs) = many1(
+        //tuple((
+            directive
+        //    , 
+        //    tws0
+        //))
+    )(i)?;
+    // let mut rs = Vec::new();
+    /*for v in vs {
         let (d, _) = v;
         rs.push(d);
-    }
-    Ok((i, rs))
+    }*/
+    Ok((i, vs))
 }
 
 fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
@@ -224,7 +230,7 @@ fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 
 fn shape_expr_or_external<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
     map_error(
-        move |i| alt((shape_expression, external))(i),
+        move |i| alt((shape_expression(), external))(i),
         || ShExParseError::ShapeExprOrExternal,
     )
 }
@@ -235,8 +241,10 @@ fn external(i: Span) -> IRes<ShapeExpr> {
 }
 
 /// `[10] shapeExpression ::= shapeOr`
-fn shape_expression(i: Span) -> IRes<ShapeExpr> {
-    shape_or(i)
+fn shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+    traced("ShapeExpr", map_error(move |i| {
+        shape_or(i)
+    }, || ShExParseError::ExpectedShapeExpr))
 }
 
 /// `[11]   	inlineShapeExpression	   ::=   	inlineShapeOr`
@@ -416,7 +424,7 @@ fn lit_node_constraint_shape_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Shap
 }
 
 fn paren_shape_expr(i: Span) -> IRes<ShapeExpr> {
-    let (i, (_, _, se, _, _)) = tuple((char('('), tws0, shape_expression, tws0, char(')')))(i)?;
+    let (i, (_, _, se, _, _)) = tuple((char('('), tws0, shape_expression(), tws0, char(')')))(i)?;
     Ok((i, se))
 }
 
@@ -2399,31 +2407,40 @@ mod tests {
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
     }
-    /*#[test]
-    fn test_comment() {
-        assert_eq!(comment(Span::new("#\r\na")), Ok((Span::new("\na"), ())));
-        assert_eq!(comment("#\n\ra"), Ok((("\ra"), (""))));
-        // assert_eq!(comment(""), Err(Err::Error(("".as_ref(), ErrorKind::Char))));
-        assert_eq!(comment("#"), Ok(("", "")));
-        assert_eq!(comment("#abc"), Ok(("", "abc")));
-        assert_eq!(comment("#\n\n"), Ok(("\n", "")));
-    }
 
     #[test]
     fn test_prefix_id_with_dots() {
+        let s = shex_statement()(Span::new("prefix a.b.c: <urn>")).unwrap();
         assert_eq!(
-            prefix_decl("prefix a.b.c: <urn>"),
-            Ok((
-                "",
-                ShExStatement::PrefixDecl {
+            s.1,
+            ShExStatement::PrefixDecl {
                     alias: "a.b.c",
                     iri: IriS::new_unchecked("urn")
                 }
-            ))
         );
     }
 
     #[test]
+    fn test_basic_shape_decl() {
+        let s = shex_statement()(Span::new(":S {}")).unwrap();
+        assert_eq!(
+            s.1,
+            ShExStatement::ShapeDecl { 
+                is_abstract: false, 
+                shape_label: ShapeExprLabel::prefixed("", "S"), 
+                shape_expr: ShapeExpr::empty_shape() 
+            } 
+        );
+    }
+
+    #[test]
+    fn test_tws_statement() {
+        assert!(
+            shex_statement()(Span::new(" ")).is_err()
+        );
+    }
+
+    /*#[test]
     fn test_prefix_id() {
         assert_eq!(
             prefix_decl("prefix a: <urn>"),
@@ -2623,8 +2640,9 @@ mod tests {
     #[test]
     fn test_triple_constraint() {
         let (_, result) = triple_constraint()(Span::new(":p xsd:int")).unwrap();
+        let nc = ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("xsd", "int")));
         let expected =
-            TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), None, None, None);
+            TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), Some(nc), None, None);
         assert_eq!(result, expected)
     }
 
