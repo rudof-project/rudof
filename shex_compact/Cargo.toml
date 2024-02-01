@@ -27,4 +27,8 @@ pretty = "0.12.3"
 
 [dev-dependencies]
 env_logger = "0.10"
+criterion = "0.5"
 
+[[bench]]
+name = "my_benchmark"
+harness = false
