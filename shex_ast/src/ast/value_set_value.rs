@@ -6,8 +6,10 @@ use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
-    Deserialize, Serialize, Serializer,
+    Deserialize, Serialize as SerializeTrait, Serializer,
 };
+use serde_derive::Serialize;
+
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use std::{fmt, result, str::FromStr};
@@ -206,7 +208,7 @@ impl ValueSetValueType {
 //const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
 //const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
-impl Serialize for ValueSetValue {
+impl SerializeTrait for ValueSetValue {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
