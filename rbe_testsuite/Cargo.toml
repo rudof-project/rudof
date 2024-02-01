@@ -18,6 +18,6 @@ log = "0.4"
 
 [dev-dependencies]
 indoc = "2"
-env_logger = "0.10"
+env_logger = "0.11"
 test-log = "0.2.12"
 

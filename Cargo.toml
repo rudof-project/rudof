@@ -71,7 +71,6 @@ shacl_ast = { version = "0.0.10", path = "./shacl_ast" }
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
 log = "0.4"
-env_logger = "0.10"
 anyhow = "1.0"
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
@@ -83,4 +82,5 @@ iri_s = { path = "./iri_s" }
 shacl_ast = { path = "./shacl_ast" }
 oxrdf = "0.2.0-alpha.2"
 serde_json = "1.0"
-regex = "1"
+regex = "^1"
+env_logger = "0.11"

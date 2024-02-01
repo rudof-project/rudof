@@ -12,6 +12,7 @@ extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
 extern crate srdf;
+extern crate env_logger;
 
 use anyhow::*;
 use clap::Parser;
