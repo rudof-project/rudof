@@ -6,7 +6,7 @@ use log::debug;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Serialize;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::{

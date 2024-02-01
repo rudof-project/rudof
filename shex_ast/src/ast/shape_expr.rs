@@ -4,7 +4,7 @@ use std::str::FromStr;
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;

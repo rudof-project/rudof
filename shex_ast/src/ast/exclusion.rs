@@ -4,7 +4,6 @@ use std::{fmt, result};
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{de, Deserialize, Serialize, Serializer};
-use serde_derive::Deserialize;
 use srdf::lang::Lang;
 
 use prefixmap::IriRef;

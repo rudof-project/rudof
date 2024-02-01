@@ -1,7 +1,6 @@
 use std::{result, str::FromStr};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
 use srdf::lang::Lang;
 use void::Void;
 

@@ -6,10 +6,9 @@ use std::path::{Path, PathBuf};
 
 use crate::context_entry_value::ContextEntryValue;
 use iri_s::IriS;
-use log::debug;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Serialize;
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;
 use url::Url;

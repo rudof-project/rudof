@@ -3,7 +3,7 @@ use std::{result, str::FromStr};
 use crate::ast::serde_string_or_struct::*;
 
 use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 use void::Void;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;

@@ -8,7 +8,6 @@ use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
 };
-use serde_derive::Serialize;
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use std::{fmt, result, str::FromStr};

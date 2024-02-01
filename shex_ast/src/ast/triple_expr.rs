@@ -3,7 +3,7 @@ use std::{result, str::FromStr};
 use iri_s::{IriS, IriSError};
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 
 use crate::ast::serde_string_or_struct::*;
 
