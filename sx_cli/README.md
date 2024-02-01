@@ -1,2 +1,2 @@
-# CLI for ShEx-rs validator
+# CLI for shapes-rs validator
 

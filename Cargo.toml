@@ -1,5 +1,5 @@
 [package]
-name = "shex-rs"
+name = "shapes-rs"
 version = "0.0.10"
 description = "RDF Data shapes implementation in Rust"
 license = "GPL-3.0-or-later"

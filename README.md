@@ -6,10 +6,10 @@
 This repo contains an RDF data shapes library implemented in Rust. 
 The implementation supports both [ShEx](http://shex.io/) and [SHACL](https://www.w3.org/TR/shacl/). 
 
-We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shex-rs/releases)).
+We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)).
 
-- [List of issues](https://github.com/weso/shex-rs)
-- [Discussion](https://github.com/weso/shex-rs/discussions/landing)
+- [List of issues](https://github.com/weso/shapes-rs)
+- [Discussion](https://github.com/weso/shapes-rs/discussions/landing)
 - [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
 - [How to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides)
 
@@ -20,7 +20,7 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 
 #### Official releases
 
-You can download a binary from the [latest release](https://github.com/weso/shex-rs/releases/latest) page. There you will also find the compiled packages for the installation on
+You can download a binary from the [latest release](https://github.com/weso/shapes-rs/releases/latest) page. There you will also find the compiled packages for the installation on
 your system using a package manager.
 
 ##### Ubuntu
@@ -28,13 +28,13 @@ your system using a package manager.
 Note that the example below is for version 0.0.2. For any other version, please change the X.X.X values accordingly:
 
 ```
-wget https://github.com/weso/shex-rs/releases/download/0.0.2/sx_0.0.2_amd64.deb
+wget https://github.com/weso/shapes-rs/releases/download/0.0.2/sx_0.0.2_amd64.deb
 sudo dpkg -i sx_0.0.2_amd64.deb
 ```
 
 #### Compiling from source
 
-`shex-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
+`shapes-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
 
 #### Docker
 
@@ -181,15 +181,15 @@ Options:
 
 The repo is divided in the following modules:
 
-- [iri_s](https://github.com/weso/shex-rs/tree/master/iri_s) defines simple IRIs.
-- [srdf](https://github.com/weso/shex-rs/tree/master/srdf) simple RDF model which will be used for validation.
-- [prefixmap](https://github.com/weso/shex-rs/tree/master/prefixmap) Prefix maps implementation.
-- [shapemap](https://github.com/weso/shex-rs/tree/master/shapemap) ShapeMap implementation.
-- [shex_ast](https://github.com/weso/shex-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
-- [shex_compact](https://github.com/weso/shex-rs/tree/master/shex_compact) contains the code required to handle ShEx compact syntax.
-- [shex_validation](https://github.com/weso/shex-rs/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
-- [shex_testsuite](https://github.com/weso/shex-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
-- [shacl_ast](https://github.com/weso/shex-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
+- [iri_s](https://github.com/weso/shapes-rs/tree/master/iri_s) defines simple IRIs.
+- [srdf](https://github.com/weso/shapes-rs/tree/master/srdf) simple RDF model which will be used for validation.
+- [prefixmap](https://github.com/weso/shapes-rs/tree/master/prefixmap) Prefix maps implementation.
+- [shapemap](https://github.com/weso/shapes-rs/tree/master/shapemap) ShapeMap implementation.
+- [shex_ast](https://github.com/weso/shapes-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
+- [shex_compact](https://github.com/weso/shapes-rs/tree/master/shex_compact) contains the code required to handle ShEx compact syntax.
+- [shex_validation](https://github.com/weso/shapes-rs/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
+- [shex_testsuite](https://github.com/weso/shapes-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
+- [shacl_ast](https://github.com/weso/shapes-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
 
 ## Publishing the crates
 

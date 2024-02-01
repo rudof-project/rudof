@@ -28,9 +28,9 @@ jobs:
           echo -e "\n\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" >> .cargo/config.toml
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
-      - name: Build the release version of `shex-rs` for the x86 architecture
+      - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
-      - name: Build the release version of `shex-rs` for the aarch64 architecture
+      - name: Build the release version of `shapes-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-unknown-linux-gnu
         env:
           BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
@@ -73,9 +73,9 @@ jobs:
         run: rustup update && rustup target add aarch64-apple-darwin
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
-      - name: Build the release version of `shex-rs` for the x86 architecture
+      - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
-      - name: Build the release version of `shex-rs` for the aarch64 architecture
+      - name: Build the release version of `shapes-rs` for the aarch64 architecture
         run: cargo build --release --target aarch64-apple-darwin
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
@@ -114,7 +114,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
         run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
-      - name: Build the release version of `shex-rs` for the x86 architecture
+      - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
