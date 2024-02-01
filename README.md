@@ -1,4 +1,4 @@
-[![Shapes-rs](https://github.com/weso/shapes-rs/actions/workflows/ci.yml/badge.svg)](https://sgithub.com/weso/shapes-rs/actions/workflows/ci.yml)
+[![Shapes-rs](https://github.com/weso/shapes-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/shapes-rs/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/weso/shapes-rs/status.svg)](https://deps.rs/repo/github/weso/shapes-rs)
 
 # SHAPES-rs
