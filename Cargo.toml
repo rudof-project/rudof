@@ -24,6 +24,7 @@ members = [
     "srdf",
     "shex_ast",
     "shex_compact",
+    "shex_compact_winnow",
     "sx_cli",
     "shex_testsuite",
     "shex_validation",
@@ -75,6 +76,7 @@ anyhow = "1.0"
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
 shex_compact = { path = "./shex_compact" }
+shex_compact_winnow = { path = "./shex_compact_winnow" }
 prefixmap = { path = "./prefixmap" }
 shapemap = { path = "./shapemap" }
 srdf = { path = "./srdf" }
@@ -84,3 +86,4 @@ oxrdf = "0.2.0-alpha.2"
 serde_json = "1.0"
 regex = "^1"
 env_logger = "0.11"
+

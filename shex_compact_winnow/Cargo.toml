@@ -1,5 +1,5 @@
 [package]
-name = "shex_compact"
+name = "shex_compact_winnow"
 version = "0.0.10"
 authors.workspace = true
 description.workspace = true
@@ -16,24 +16,16 @@ iri_s = { path = "../iri_s", version = "0.0.10" }
 srdf = { path = "../srdf", version = "0.0.10" }
 prefixmap = { path = "../prefixmap", version = "0.0.10" } 
 shapemap = { path = "../shapemap", version = "0.0.10" } 
-nom = "7"
-nom_locate = "4"
 thiserror = "1"
 log = "0.4"
 colored = "2"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
 pretty = "0.12.3"
+winnow = "0.5.37"
 
 [dev-dependencies]
 env_logger = "0.11"
 criterion = "0.5"
 pprof = { version = "0.13.0", features = ["criterion", "flamegraph"] }
 
-[[bench]]
-name = "shex_parse"
-harness = false
-
-[[bench]]
-name = "shex_compact_simple"
-harness = false
