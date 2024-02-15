@@ -10,7 +10,7 @@ use nom::{
     character::complete::{
         alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy,
     },
-    combinator::{cut, map, map_res, opt, recognize},
+    combinator::{cut, fail, map, map_res, opt, recognize},
     error::ErrorKind,
     error_position,
     multi::{count, fold_many0, many0, many1},
@@ -31,7 +31,7 @@ use std::{
     num::ParseIntError,
 };
 use thiserror::Error;
-
+use regex::Regex;
 use crate::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
@@ -39,6 +39,7 @@ use crate::grammar_structs::{
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE, RDF_TYPE_STR};
+use lazy_regex::{regex, Lazy, lazy_regex};
 
 /// `[1] shexDoc	   ::=   	directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
@@ -1605,9 +1606,29 @@ fn string_literal_long2(i: Span) -> IRes<String> {
     Ok((i, str))
 }
 
-fn hex(input: Span) -> IRes<Span> {
+pub fn hex(input: Span) -> IRes<Span> {
     recognize(one_of(HEXDIGIT))(input)
 }
+
+pub static HEX: &Lazy<Regex> = regex!("[0123456789ABCDEFabcdef]");
+
+pub fn hex_refactor(input: Span) -> IRes<Span> {
+    re_find(HEX)(input)
+}
+
+use nom::Slice;
+pub fn re_find<'a>(re: &'a Lazy<Regex>) -> impl Fn(Span<'a>) -> IRes<Span<'a>> {
+    move |i| {
+        let str = i.fragment();
+        if let Some(m) = re.find(str) {
+            Ok((i.slice(m.end()..), i.slice(m.start()..m.end())))
+        } else {
+            let e = ShExParseError::RegexFailed { re: re.to_string(), str: str.to_string() };
+            Err(Err::Error(e.at(i)))
+        }
+    }
+}
+
 
 /// Valid hexadecimal digits.
 const HEXDIGIT: &str = "0123456789ABCDEFabcdef";
@@ -1960,6 +1981,21 @@ fn prefixed_name<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
     )
 }
 
+/// `[137s]   	prefixedName	   ::=   	PNAME_LN | PNAME_NS`
+fn prefixed_name_refactor<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
+    traced(
+        "prefixed_name",
+        map_error(
+            move |i| {
+                let (i, iri_ref) = alt((pname_ln, pname_ns_iri_ref))(i)?;
+                Ok((i, iri_ref))
+            },
+            || ShExParseError::ExpectedPrefixedName,
+        ),
+    )
+}
+
+
 fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
     let (i, pname_ns) = pname_ns(i)?;
     Ok((i, IriRef::prefixed(pname_ns.fragment(), "")))
@@ -1969,6 +2005,9 @@ fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
 fn blank_node(i: Span) -> IRes<BNode> {
     map(blank_node_label, |str| BNode::new(str))(i)
 }
+
+//----   Terminals
+
 
 /// `[142s]   	<BLANK_NODE_LABEL>	   ::=   	"_:" (PN_CHARS_U | [0-9]) ((PN_CHARS | ".")* PN_CHARS)?`
 fn blank_node_label(i: Span) -> IRes<&str> {

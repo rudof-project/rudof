@@ -2389,6 +2389,8 @@ where
 }
 */
 
+// fn percent(s: &str)
+
 #[cfg(test)]
 mod tests {
     use super::*;

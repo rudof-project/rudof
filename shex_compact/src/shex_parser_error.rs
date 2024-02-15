@@ -5,11 +5,13 @@ use std::{
     num::{ParseFloatError, ParseIntError},
 };
 use thiserror::Error;
+use regex::Regex;
 
 use crate::{LocatedParseError, Span};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
+
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
@@ -207,6 +209,9 @@ pub enum ParseError {
 
     #[error("Expected node selector specification")]
     ExpectedNodeSpec,
+
+    #[error("Failed regular expression, str: {str} doesn't match: {re}")]
+    RegexFailed { re: String, str: String},
 
 }
 

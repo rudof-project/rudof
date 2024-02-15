@@ -1,27 +1,7 @@
 use crate::{shex_parser_error::ParseError as ShExParseError, Span};
-use colored::*;
-use log;
-use nom::{
-    branch::alt,
-    bytes::complete::{is_not, tag, tag_no_case},
-    character::complete::multispace1,
-    combinator::{cut, map, map_res, opt, recognize, value},
-    error::{ErrorKind, FromExternalError},
-    error_position,
-    multi::{count, fold_many0, many0, many1},
-    sequence::{delimited, pair, preceded, tuple},
-    Err, IResult, InputTake,
-};
+use nom::error::{ErrorKind, FromExternalError};
 use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}};
 use thiserror::Error;
-
-use crate::grammar_structs::{
-    Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
-};
-
-use nom_locate::LocatedSpan;
-use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 
 /// A [`ShExParseError`] at a certain location
 #[derive(Debug, Error)]
@@ -94,3 +74,4 @@ impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
         .at(input)
     }
 }
+

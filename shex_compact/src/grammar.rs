@@ -59,12 +59,10 @@ where
         let result = parser(input);
         match &result {
             Ok(res) => {
-                let s = format!("{fun}({input:?}) -> {res:?}");
-                log::trace!(target: "parser", "{}", s.green());
+                log::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
             }
             Err(e) => {
-                let s = format!("{fun}({input:?}) -> {e:?}");
-                log::trace!(target: "parser", "{}", s.red());
+                log::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
             }
         }
         result
