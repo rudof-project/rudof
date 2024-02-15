@@ -26,6 +26,7 @@ use shex_validation::Validator;
 use srdf::SRDF;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
+use tracing_subscriber::fmt::time::Uptime;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
@@ -38,10 +39,18 @@ pub use cli::*;
 pub use data::*;
 
 use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
+use tracing_subscriber::{fmt, filter::EnvFilter};
+use tracing_subscriber::prelude::*;
 
 fn main() -> Result<()> {
-    let subscriber = tracing_subscriber::FmtSubscriber::new();
-    tracing::subscriber::set_global_default(subscriber)?;
+
+
+    let fmt_layer = fmt::layer().with_file(true).with_target(false).with_line_number(true).without_time();
+    // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info")).unwrap();
+    tracing_subscriber::registry().with(filter_layer).with(fmt_layer).init();
+
+    tracing::info!("sx is running...");
 
 
     let cli = Cli::parse();

@@ -34,7 +34,6 @@ impl<'a> ShExParser<'a> {
         };
         let mut shapes_counter = 0;
         while let Some(s) = parser.shex_statement_iterator.next() {
-            tracing::debug!("Statement: {s:?}");
             match s? {
                     ShExStatement::Empty => {}
                     ShExStatement::BaseDecl { iri } => {
