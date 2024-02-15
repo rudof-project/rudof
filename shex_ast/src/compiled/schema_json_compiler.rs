@@ -13,7 +13,7 @@ use crate::ShapeExprLabel;
 use crate::{ast, ast::Schema as SchemaJson, CompiledSchemaError, ShapeLabelIdx};
 use crate::{CResult, Cond, Node, Pred};
 use iri_s::IriS;
-use log::debug;
+use tracing::debug;
 use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};

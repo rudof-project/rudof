@@ -1,7 +1,7 @@
 extern crate anyhow;
 extern crate clap;
 extern crate iri_s;
-extern crate log;
+extern crate tracing;
 extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
@@ -11,12 +11,12 @@ extern crate shapemap;
 extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
+extern crate tracing_subscriber;
 extern crate srdf;
-extern crate env_logger;
 
 use anyhow::*;
 use clap::Parser;
-use log::debug;
+use tracing::debug;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
@@ -40,7 +40,10 @@ pub use data::*;
 use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
 
 fn main() -> Result<()> {
-    env_logger::init();
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    tracing::subscriber::set_global_default(subscriber)?;
+
+
     let cli = Cli::parse();
 
     match &cli.command {
@@ -202,7 +205,7 @@ fn run_validate(
             shapemap.add_association(node_selector, shape_selector)
         }
         (None, Some(shape_str)) => {
-            debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
+            tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
         }
     };
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);

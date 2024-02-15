@@ -46,7 +46,7 @@ impl<'a> ShapeMapParser<'a> {
                         node_selector,
                         shape_selector,
                     } => {
-                        log::debug!("Association {node_selector:?}@{shape_selector:?}");
+                        tracing::debug!("Association {node_selector:?}@{shape_selector:?}");
                         query_shapemap.add_association(node_selector, shape_selector);
                     }
                 }

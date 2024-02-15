@@ -28,9 +28,7 @@ clap = { version = "4.2.1", features = ["derive"] }
 # rio_turtle = "0.8.2"
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
-log = "0.4"
 clippy = "0.0.302"
 url = "2.4"
 
 [dev-dependencies]
-env_logger = "0.11"

@@ -1,7 +1,7 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, ShapeExprLabel};
 use iri_s::IriS;
-use log::debug;
+use tracing::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 use std::fs;

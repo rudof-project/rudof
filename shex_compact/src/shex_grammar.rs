@@ -3,7 +3,6 @@ use crate::{
     traced, tws0, tws1, IRes, Span,
 };
 use iri_s::IriS;
-use log;
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
@@ -158,7 +157,7 @@ fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
         map_error(
             move |i| {
                 let (i, (_, _, iri_ref)) = tuple((tag_no_case("IMPORT"), tws0, cut(iri_ref)))(i)?;
-                log::debug!("grammar: Import {iri_ref:?}");
+                tracing::debug!("grammar: Import {iri_ref:?}");
                 Ok((i, ShExStatement::ImportDecl { iri: iri_ref }))
             },
             || ShExParseError::ExpectedImportDecl,
@@ -2032,7 +2031,7 @@ fn blank_node_label2(src: Span) -> IRes<()> {
                 // TODO!!: Original parser had this:
                 // But I need to see how to remove the last character of left...
                 // Ok(((&src[m.len() - 1..]), ()))
-                log::error!("This code is pending review when the last is a '.' {left}");
+                tracing::error!("This code is pending review when the last is a '.' {left}");
                 Ok((left, ()))
             } else {
                 Ok((left, ()))
@@ -2128,7 +2127,7 @@ fn pn_local2(src: Span) -> IRes<()> {
                 // TODO!!: Original parser had this:
                 // But I need to see how to remove the last character of left...
                 // Ok(((&src[m.len() - 1..]), ()))
-                log::error!("This code is pending review when the last is a '.' {left}");
+                tracing::error!("This code is pending review when the last is a '.' {left}");
                 Ok((left, ()))
             } else {
                 Ok((left, ()))
@@ -2443,10 +2442,6 @@ where
 mod tests {
     use super::*;
     
-    fn init() {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
-
     #[test]
     fn test_prefix_id_with_dots() {
         let s = shex_statement()(Span::new("prefix a.b.c: <urn>")).unwrap();
@@ -2687,7 +2682,6 @@ mod tests {
 
     #[test]
     fn test_inline_shape_expr() {
-        init();
         let (_, result) = inline_shape_expression()(Span::new(":p")).unwrap();
         let expected =
             ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("","p")));

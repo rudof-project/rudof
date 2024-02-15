@@ -17,7 +17,6 @@ srdf = { path = "../srdf", version = "0.0.10" }
 prefixmap = { path = "../prefixmap", version = "0.0.10" } 
 shapemap = { path = "../shapemap", version = "0.0.10" } 
 thiserror = "1"
-log = "0.4"
 colored = "2"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
@@ -25,7 +24,6 @@ pretty = "0.12.3"
 winnow = "0.5.37"
 
 [dev-dependencies]
-env_logger = "0.11"
 criterion = "0.5"
 pprof = { version = "0.13.0", features = ["criterion", "flamegraph"] }
 

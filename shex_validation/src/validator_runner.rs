@@ -1,32 +1,22 @@
 use crate::atom;
-use crate::result_map::*;
 use crate::rule;
-use crate::solver;
 use crate::validator_error::*;
 use crate::Reason;
 use crate::ResultValue;
-use crate::Validator;
 use crate::MAX_STEPS;
 use either::Either;
 use indexmap::IndexSet;
 use iri_s::IriS;
-use log::debug;
+use tracing::debug;
 use rbe::MatchTableIter;
-use rbe::Pending;
 use shex_ast::compiled::preds::Preds;
 use shex_ast::compiled::shape::Shape;
 use shex_ast::compiled::shape_expr::ShapeExpr;
-use shex_ast::compiled::shape_label::ShapeLabel;
-use shex_ast::compiled::*;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
-use srdf::literal::Literal;
-use srdf::NeighsIterator;
-use srdf::{Object, SRDFBasic, SRDF};
+use srdf::{Object, SRDF};
 use std::collections::hash_map::Entry;
-use std::collections::HashSet;
-use std::hash::Hash;
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},

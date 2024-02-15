@@ -21,7 +21,7 @@ nom-regex = "0.2"
 nom_locate = "4"
 regex = "1.10.3"
 thiserror = "1"
-log = "0.4"
+tracing = "0.1"
 colored = "2"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
@@ -29,8 +29,8 @@ pretty = "0.12.3"
 lazy-regex = "3.1"
 
 [dev-dependencies]
-env_logger = "0.11"
 criterion = "0.5"
+tracing-subscriber = "0.3"
 pprof = { version = "0.13.0", features = ["criterion", "flamegraph"] }
 
 [[bench]]

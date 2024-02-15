@@ -1,6 +1,5 @@
 use crate::{shex_parser_error::ParseError as ShExParseError, IRes, Span};
 use colored::*;
-use log;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, tag_no_case},
@@ -55,14 +54,14 @@ where
     P: FnMut(Span<'a>) -> IRes<'a, T>,
 {
     move |input| {
-        log::trace!(target: "parser", "{fun}({input:?})");
+        tracing::trace!(target: "parser", "{fun}({input:?})");
         let result = parser(input);
         match &result {
             Ok(res) => {
-                log::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
+                tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
             }
             Err(e) => {
-                log::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
+                tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
             }
         }
         result

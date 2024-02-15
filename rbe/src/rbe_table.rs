@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
-use log::debug;
+use tracing::debug;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::vec::IntoIter;

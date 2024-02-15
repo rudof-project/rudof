@@ -472,9 +472,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_log::test;
-
-    #[test_log::test]
+    
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
 

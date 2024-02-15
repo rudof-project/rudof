@@ -1,6 +1,5 @@
 use std::{fmt, result};
 
-use log::debug;
 use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
 use serde::{

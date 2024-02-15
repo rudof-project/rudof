@@ -1,13 +1,12 @@
 use crate::atom;
 use crate::result_map::*;
-use crate::solver;
 use crate::validator_error::*;
 use crate::validator_runner::ValidatorRunner;
 use crate::PosAtom;
 use crate::Reason;
 use crate::ResultValue;
 use either::Either;
-use log::debug;
+use tracing::debug;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use shapemap::query_shape_map::QueryShapeMap;

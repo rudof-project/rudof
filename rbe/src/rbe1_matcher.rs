@@ -1,4 +1,4 @@
-use log::debug;
+use tracing::debug;
 use std::collections::HashSet;
 
 use crate::{rbe1::Rbe, Key, Ref, Value};

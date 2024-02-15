@@ -18,9 +18,7 @@ type TestType = String;
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use log::*;
     use rbe::{rbe::Rbe, Max, Bag};
-    use test_log::test;
     use super::*;
 
     #[test]
@@ -96,7 +94,7 @@ mod tests {
         rbe_tests.load_slice("basic", data).unwrap();
         let results = rbe_tests.run();
         for t in results.failed() {
-           info!("Failed: {}: error: {}", t.name(), t.err());
+           tracing::info!("Failed: {}: error: {}", t.name(), t.err());
         }
         assert_eq!(results.count_passed(), rbe_tests.total());
         assert_eq!(results.count_failed(), 0);

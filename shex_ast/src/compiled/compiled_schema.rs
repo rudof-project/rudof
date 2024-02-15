@@ -10,7 +10,7 @@ use std::hash::Hash;
 use std::str::FromStr;
 // use std::str::FromStr;
 use crate::Pred;
-use log::debug;
+use tracing::debug;
 use rbe::{MatchCond, RbeTable};
 use std::fmt::Display;
 

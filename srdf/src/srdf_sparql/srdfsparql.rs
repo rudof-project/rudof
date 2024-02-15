@@ -2,7 +2,6 @@ use crate::{SRDFSparqlError, Object, literal::Literal, lang::Lang};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use log::debug;
 use oxrdf::{Literal as OxLiteral, Term as OxTerm, Subject as OxSubject, 
      BlankNode as OxBlankNode, 
      NamedNode as OxNamedNode
@@ -307,7 +306,7 @@ impl AsyncSRDF for SRDFSparql {
 impl SRDF for SRDFSparql {
     fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
-        debug!(
+        tracing::debug!(
             "SPARQL query (get predicates for subject {subject}): {}",
             query
         );
@@ -410,7 +409,7 @@ fn make_sparql_query(
     endpoint_iri: &IriS,
 ) -> Result<Vec<QuerySolution>> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    debug!("SPARQL query: {}", url);
+    tracing::debug!("SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
