@@ -64,6 +64,12 @@ impl NodeShape {
         self.property_shapes = property_shapes;
         self
     }
+
+    pub fn with_components(mut self, components: Vec<Component>) -> Self {
+        self.components = components;
+        self
+    }
+
 }
 
 impl Display for NodeShape {
@@ -74,6 +80,9 @@ impl Display for NodeShape {
         }
         for property in self.property_shapes.iter() {
             writeln!(f, "       Property {property}")?
+        }
+        for component in self.components.iter() {
+            writeln!(f, "       {component}")?
         }
         write!(f, "}}")?;
         Ok(())

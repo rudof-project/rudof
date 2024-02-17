@@ -7,7 +7,7 @@ use oxrdfio::{RdfFormat, RdfSerializer};
 use rust_decimal::Decimal;
 use crate::async_srdf::AsyncSRDF;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, SRDFBasic, SRDF, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, RDFFormat};
+use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Term, Triple as STriple, RDF_TYPE_STR, SRDF};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -20,8 +20,7 @@ use crate::Object;
 use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple,  
+    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, LiteralRef, NamedNode as OxNamedNode, Subject as OxSubject, Term as OxTerm, Triple as OxTriple  
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
@@ -699,9 +698,9 @@ mod tests {
             ] { ok(&value.clone()) }
         }
         let s = r#"prefix : <http://example.org/>"#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
-        assert_eq!(my_ok(&3).parse(&x, &mut graph).unwrap(), 3)
+        assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
     } 
 
     #[test]
@@ -710,11 +709,11 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3, 2 .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integers(&p);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3]))
+        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
     }
 
     #[test]
@@ -723,14 +722,14 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3 .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integers(&p).then_mut(move |ns| {
             ns.extend(vec![4, 5]);
             ok(ns)
          });
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
+        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
     }
 
     #[test]
@@ -740,12 +739,12 @@ mod tests {
           :x :p 1, 2 ;
              :q true .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let q = iri!("http://example.org/q");
         let mut parser = property_bool(&p).or(property_bool(&q));
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), true)
+        assert_eq!(parser.parse(&x, graph).unwrap(), true)
     }
 
     #[test]
@@ -760,13 +759,13 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1 .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let parser_a_bool = property_bool(&p).map(|b| A::Bool(b));
         let parser_a_int = property_integer(&p).map(|n| A::Int(n));
         let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), A::Int(1))
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
     }
 
     #[test]
@@ -781,13 +780,13 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p true .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let parser_a_bool = property_bool(&p).map(|b| A::Bool(b));
         let parser_a_int = property_integer(&p).map(|n| A::Int(n));
         let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), A::Bool(true))
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
     }
 
 
@@ -798,12 +797,12 @@ mod tests {
           :x :p true ;
              :q 1    .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let q = iri!("http://example.org/q");
         let mut parser = property_bool(&p).and(property_integer(&q));
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), (true, 1))
+        assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
     }
 
     #[test]
@@ -812,11 +811,11 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1 . 
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integer(&p).map(|n| n + 1);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), 2)
+        assert_eq!(parser.parse(&x, graph).unwrap(), 2)
     }
 
     #[test]
@@ -840,7 +839,7 @@ mod tests {
         }
         
         let mut parser = property_string(&p).and_then(cnv_int);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     }
 
     #[test]
@@ -849,7 +848,7 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p "1" .
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         
@@ -858,7 +857,7 @@ mod tests {
         }
 
         let mut parser = property_string(&p).flat_map(cnv_int);
-        assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     }
 
 
@@ -880,48 +879,61 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
                    :x :p 1.
         "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
-        assert_eq!(is_term(&term).parse(&x, &mut graph).unwrap(), ()) 
+        let mut parser = is_term(&term);
+        let result = parser.parse(&x, graph).unwrap();
+        assert_eq!(result, ()) 
     }
 
-/*    #[test]
-    fn test_parser_state() {
-        use iri_s::{IriS, iri};
-        use crate::SRDFGraph;
-        use crate::{ok, get_state, set_state, property_integer, RDFNodeParse};
+}
 
-        #[derive(Debug, Default, Clone, PartialEq)]
-        struct State {
-            count: isize
-        } 
+#[test]
+fn test_rdf_list() {
+    use iri_s::{IriS, iri};
+    use crate::SRDFGraph;
+    use crate::{property_value, then, RDFNodeParse, rdf_list, set_focus};
+    
+    let s = r#"prefix : <http://example.org/>
+               :x :p (1 2).
+    "#;
+    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    let x = iri!("http://example.org/x");
+    let p = iri!("http://example.org/p");
+    let mut parser = property_value(&p).then(move |obj| {
+        set_focus(&obj).with(rdf_list())
+    });
+    let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
+    assert_eq!(result, vec![OxTerm::from(
+        OxLiteral::from(1)), 
+        OxTerm::from(OxLiteral::from(2))
+    ]) 
+}
 
-        impl State {
-            fn increment(&mut self, m: isize) -> Self {
-                self.count += m;
-                self.clone()
-            }
 
-            fn set(&mut self, value: isize) -> () {
-                self.count = value;
-            }
-        }
-        
-        let s = r#"prefix : <http://example.org/>
-                   :x :p 10; :q 20 .
-        "#;
-        let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let q = iri!("http://example.org/q");
-        fn parser_count(p: &IriS) -> impl RDFNodeParse<SRDFGraph, Output = State> {
-            get_state::<SRDFGraph, State>().then(|s: State| {
-                property_integer::<SRDFGraph, State>(&p).then(|n| 
-                   set_state(s.set(n))).with(ok::<SRDFGraph, State, State>(&State::default()))
-                })
-        }
-        assert_eq!(parser_count(&p).with(parser_count(&q)).parse(&x, &mut graph).unwrap(), State { count: 1});
-    } */
+#[test]
+fn test_not() {
+    use iri_s::{IriS, iri};
+    use crate::SRDFGraph;
+    use crate::{property_value, not, RDFNodeParse};
+    
+    let s = r#"prefix : <http://example.org/>
+               :x :p 1 .
+    "#;
+    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    let x = iri!("http://example.org/x");
+    let q = iri!("http://example.org/q");
+    assert_eq!(not(property_value(&q)).parse(&x, graph).unwrap(), ()) 
+}
 
+#[test]
+fn test_iri() {
+    use iri_s::{IriS, iri};
+    use crate::SRDFGraph;
+    use crate::{iri, RDFNodeParse};
+    
+    let graph = SRDFGraph::new();
+    let x = iri!("http://example.org/x");
+    assert_eq!(iri().parse(&x, graph).unwrap(), x) 
 }

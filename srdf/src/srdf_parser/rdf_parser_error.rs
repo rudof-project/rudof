@@ -76,6 +76,9 @@ pub enum RDFParseError {
     #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
     FailedOr { err1: Box<RDFParseError>, err2: Box<RDFParseError> },
 
+    #[error("Not parser failed because internal parser passed with value: {value}")]
+    FailedNot { value: String },
+
     #[error("Error obtaining subjects whose value for property {property} is {value}: {err}")]
     ErrorSubjectsPredicateObject{ property: String, value: String, err: String },
 
