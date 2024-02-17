@@ -22,6 +22,8 @@ pub mod srdf_graph;
 pub mod srdf_sparql;
 pub mod vocab;
 pub mod triple;
+pub mod object;
+pub mod subject;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
@@ -37,6 +39,8 @@ pub use srdf_graph::*;
 pub use srdf_sparql::*;
 pub use vocab::*;
 pub use triple::*;
+pub use subject::*;
+pub use object::*;
 
 /// Creates an integer literal
 /// 

@@ -60,6 +60,10 @@ pub enum RDFParseError {
     #[error("Expected IRI but found BNode {bnode}")]
     ExpectedIRIFoundBNode { bnode: String },
 
+    #[error("Expected Literal, but found {term}")]
+    ExpectedLiteral { term: String },
+
+
     #[error("Expected focus to act as subject, found {focus}")]
     ExpectedFocusAsSubject { focus: String },
 

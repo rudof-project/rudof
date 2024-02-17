@@ -7,7 +7,7 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, BNode, FocusRDF, PResult, RDFParseError, SRDFBasic, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF
+    literal::Literal, Object, rdf_parser, BNode, FocusRDF, PResult, RDFParseError, SRDFBasic, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF
 };
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node. 
@@ -571,11 +571,11 @@ where
 /// ```
 /// use iri_s::{IriS, iri};
 /// use srdf::SRDFGraph;
-/// use srdf::{bnode, not, RDFFormat, RDFNodeParse};
+/// use srdf::{literal, not, RDFFormat, RDFNodeParse};
 ///    
 /// let graph = SRDFGraph::new();
 /// let x = iri!("http://example.org/x");
-/// assert_eq!(not(bnode()).parse(&x, graph).unwrap(), ()) 
+/// assert_eq!(not(literal()).parse(&x, graph).unwrap(), ()) 
 /// ```
 pub fn not<RDF, P>(parser: P) -> Not<P>
 where
@@ -629,6 +629,28 @@ where
         Some(v) => Ok(RDF::iri2iri_s(&v)),
     })
 }
+
+/// Checks if the focus node is an IRI
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::{SRDFGraph, iri, RDFNodeParse};
+///    
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(iri().parse(&x, graph).unwrap(), x) 
+/// ```
+pub fn literal<RDF>() -> impl RDFNodeParse<RDF, Output = Literal>
+where
+    RDF: FocusRDF,
+{
+    term().flat_map(|ref t| match RDF::term_as_object(t) {
+        Object::Literal(lit) => Ok(lit),
+        _ => Err(RDFParseError::ExpectedLiteral {
+            term: format!("{t}"),
+        })
+    })
+}
+
 
 /// Creates a parser that returns the current focus node as a term
 ///

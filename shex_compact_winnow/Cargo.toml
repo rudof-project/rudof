@@ -1,13 +1,6 @@
 [package]
 name = "shex_compact_winnow"
 version = "0.0.10"
-authors.workspace = true
-description.workspace = true
-documentation = "https://docs.rs/shex_compact"
-edition.workspace = true
-license.workspace = true
-homepage.workspace = true
-repository.workspace = true
 
 [dependencies]
 shex_ast = { path = "../shex_ast", version = "0.0.10" }

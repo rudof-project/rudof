@@ -1,10 +1,10 @@
-use log::debug;
+use tracing::debug;
 use std::{collections::HashMap, path::Path};
 
 use crate::{
     context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError,
 };
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestNegativeSyntaxJson")]
