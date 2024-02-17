@@ -115,7 +115,7 @@ impl ResultMap {
 
 fn show_node(node: &Node, prefixmap: &PrefixMap) -> String {
     match node.as_object() {
-        Object::Iri { iri } => prefixmap.qualify(iri),
+        Object::Iri(iri) => prefixmap.qualify(iri),
         _ => format!("{node}"),
     }
 }

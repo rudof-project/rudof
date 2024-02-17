@@ -46,6 +46,7 @@ pub trait SRDFBasic {
         let literal = Self::term_as_literal(object)?;
         Self::literal_as_boolean(&literal)
     }
+    fn term_as_object(term: &Self::Term) -> Object;
 
     fn object_as_term(obj: &Object) -> Self::Term;
     fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
@@ -136,7 +137,6 @@ pub trait SRDFBasic {
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
     fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
     
-    fn term_as_object(term: &Self::Term) -> Object;
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;

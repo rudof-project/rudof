@@ -269,9 +269,7 @@ impl SRDFBasic for SRDFGraph {
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => Object::Iri {
-                iri: Self::iri2iri_s(iri),
-            },
+            OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
         }
     }
 
@@ -314,7 +312,7 @@ impl SRDFBasic for SRDFGraph {
 
     fn object_as_term(obj: &Object) -> Self::Term {
        match obj {
-         Object::Iri { iri } => Self::iri_s2term(iri),
+         Object::Iri(iri) => Self::iri_s2term(iri),
          Object::BlankNode(bn) => Self::bnode_id2term(bn),
          Object::Literal(lit) => {
           let literal: OxLiteral = match lit {

@@ -70,11 +70,20 @@ impl NodeShape {
         self
     }
 
+    pub fn with_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
+    }
+
+
 }
 
 impl Display for NodeShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{{")?;
+        if self.closed {
+            writeln!(f, "       closed: {}", self.closed)?
+        }
         for target in self.targets.iter() {
             writeln!(f, "       {target}")?
         }

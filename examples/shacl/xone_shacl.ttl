@@ -1,0 +1,25 @@
+@prefix ex:       <http://example.org/> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+        
+ex:XoneConstraintExampleShape
+	a sh:NodeShape ;
+	sh:targetClass ex:Person ;
+	sh:xone (
+		[
+			sh:property [
+				sh:path ex:fullName ;
+				sh:minCount 1 ;
+			]
+		]
+		[
+			sh:property [
+				sh:path ex:firstName ;
+				sh:minCount 1 ;
+			] ;
+			sh:property [
+				sh:path ex:lastName ;
+				sh:minCount 1 ;
+			]
+		]
+	) .

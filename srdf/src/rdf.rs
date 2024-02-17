@@ -19,7 +19,7 @@ pub type RDFNode = Object;
 /// Note: We plan to support triple terms as in RDF-star in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
-    Iri { iri: IriS },
+    Iri(IriS),
     BlankNode(String),
     Literal(Literal),
 }
@@ -27,7 +27,7 @@ pub enum Object {
 
 impl Object {
     pub fn iri(iri: IriS) -> Object {
-        Object::Iri { iri }
+        Object::Iri(iri)
     }
 
     pub fn bnode(str: String) -> Object {
@@ -41,7 +41,7 @@ impl Object {
 
 impl From<IriS> for Object {
     fn from(iri: IriS) -> Self {
-        Object::Iri { iri }
+        Object::Iri(iri)
     }
 }
 
@@ -53,16 +53,14 @@ impl From<Literal> for Object {
 
 impl Default for Object {
     fn default() -> Self {
-        Object::Iri {
-            iri: IriS::default(),
-        }
+        Object::Iri(IriS::default())
     }
 }
 
 impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Object::Iri { iri } => write!(f, "{iri}"),
+            Object::Iri(iri) => write!(f, "{iri}"),
             Object::BlankNode(bnode) => write!(f, "_{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
         }
@@ -72,7 +70,7 @@ impl Display for Object {
 impl Debug for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Object::Iri { iri } => write!(f, "Iri {{{iri:?}}}"),
+            Object::Iri(iri) => write!(f, "Iri {{{iri:?}}}"),
             Object::BlankNode(bnode) => write!(f, "Bnode{{{bnode:?}}}"),
             Object::Literal(lit) => write!(f, "Literal{{{lit:?}}}"),
         }

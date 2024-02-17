@@ -65,9 +65,17 @@ impl Display for Component {
                 let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
                 write!(f, "or [{str}]")
             },
-            Component::And { shapes } => todo!(),
-            Component::Not { shape } => todo!(),
-            Component::Xone { shapes } => todo!(),
+            Component::And { shapes } => {
+                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                write!(f, "and [{str}]")
+            },
+            Component::Not { shape } => {
+                write!(f, "not [{shape}]")
+            },
+            Component::Xone { shapes } => {
+                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                write!(f, "xone [{str}]")
+            },
             Component::Closed { is_closed, ignored_properties } => todo!(),
             Component::Node { shape } => write!(f, "node({shape})"),
             Component::HasValue { value } => write!(f, "hasValue({value})"),

@@ -13,9 +13,14 @@ pub enum ShaclParserError {
     #[error("Expected RDFNode parsing node shape, found: {term}")]
     ExpectedRDFNodeNodeShape { term: String },
 
-    #[error("Expected Value of sh:or to be a subject, found: {term}")]
+    #[error("Expected Value of `sh:or` to be a subject, found: {term}")]
     OrValueNoSubject { term: String },
 
+    #[error("Expected Value of `sh:and` to be a subject, found: {term}")]
+    AndValueNoSubject { term: String },
+
+    #[error("Expected Value of `sh:xone` to be a subject, found: {term}")]
+    XOneValueNoSubject { term: String },
 
     #[error("Expected NodeKind, found: {term}")]
     ExpectedNodeKind { term: String },
@@ -28,6 +33,7 @@ pub enum ShaclParserError {
         #[from]
         err: ShaclError,
     },
+
 
     #[error("Custom error: {msg}")]
     Custom { msg: String },

@@ -203,9 +203,9 @@ impl SRDFBasic for SRDFSparql {
                     })
                 }
             },
-            Self::Term::NamedNode(iri) => Object::Iri {
-                iri: Self::iri2iri_s(iri),
-            },
+            Self::Term::NamedNode(iri) => Object::Iri(
+                Self::iri2iri_s(iri),
+            ),
         }
     }
 

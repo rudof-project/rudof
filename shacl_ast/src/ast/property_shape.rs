@@ -64,6 +64,12 @@ impl PropertyShape {
         self.components = components;
         self
     }
+
+    pub fn with_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
+    }
+
 }
 
 impl Display for PropertyShape {
@@ -73,6 +79,9 @@ impl Display for PropertyShape {
             writeln!(f, "       path: {}", self.path)?;
             for target in self.targets.iter() {
                 writeln!(f, "       {target}")?
+            }
+            if self.closed {
+                writeln!(f, "       closed: {}", self.closed)?
             }
             for property in self.property_shapes.iter() {
                 writeln!(f, "       Property {property}")?

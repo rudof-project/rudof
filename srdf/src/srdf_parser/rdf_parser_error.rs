@@ -17,7 +17,10 @@ pub enum RDFParseError {
 
     #[error("Expected focus node to be string but found: {term}")]
     ExpectedString { term: String }, 
-    
+
+    #[error("Expected IRI or Literal value but obtained blank node: {bnode}")]
+    BlankNodeNoValue { bnode: String }, 
+
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
 
