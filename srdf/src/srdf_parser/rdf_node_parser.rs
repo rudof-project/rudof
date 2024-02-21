@@ -7,8 +7,7 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    rdf_parser, FocusRDF, PResult, RDFParseError, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST,
-    RDF_TYPE, SRDF, SRDFBasic,
+    literal::Literal, Object, rdf_parser, BNode, FocusRDF, PResult, RDFParseError, SRDFBasic, RDF_FIRST, RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF
 };
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node. 
@@ -21,10 +20,19 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// Entry point to the parser. It moves the focus node of `rdf` to `node` and runs the parser.
     /// 
     /// Returns the parsed result if the parser succeeds, or an error otherwise.
-    fn parse(&mut self, node: &IriS, rdf: &mut RDF) -> Result<Self::Output, RDFParseError> {
+    #[inline(always)]
+    fn parse(&mut self, node: &IriS, mut rdf: RDF) -> PResult<Self::Output> {
         let focus = RDF::iri_as_term(RDF::iri_s2iri(node));
         rdf.set_focus(&focus);
-        self.parse_impl(rdf)
+        self.parse_impl(&mut rdf)
+    }
+
+    #[inline(always)]
+    fn by_ref(&mut self) -> ByRef<'_, Self>
+    where
+        Self: core::marker::Sized,
+    {
+        ByRef::new(self)
     }
 
     /// Parses the current focus node without modifying the state
@@ -46,7 +54,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///      s.parse().map_err(|_| RDFParseError::Custom{ msg: format!("Error converting {s}")})
     ///   }
     ///   let mut parser = property_string(&p).flat_map(cnv_int);
-    ///   assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+    ///   assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     /// ```
     fn flat_map<F, O>(self, f: F) -> FlatMap<Self, F>
     where
@@ -84,7 +92,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// }
     /// 
     /// let mut parser = property_string(&p).and_then(cnv_int);
-    /// assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
+    /// assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     /// ```
     fn and_then<F, O, E>(self, f: F) -> AndThen<Self, F>
     where
@@ -107,7 +115,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
     /// let p = iri!("http://example.org/p");
     /// let mut parser = property_integer(&p).map(|n| n + 1);
-    /// assert_eq!(parser.parse(&iri!("http://example.org/x"), &mut graph).unwrap(), 2)
+    /// assert_eq!(parser.parse(&iri!("http://example.org/x"), graph).unwrap(), 2)
     /// ```
     fn map<F, B>(self, f: F) -> Map<Self, F>
     where
@@ -134,7 +142,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// let p = IriS::new_unchecked("http://example.org/p");
     /// let q = IriS::new_unchecked("http://example.org/q");
     /// let mut parser = property_bool(&p).and(property_integer(&q));
-    /// assert_eq!(parser.parse(&x, &mut graph).unwrap(), (true, 1))
+    /// assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
     /// ```
     fn and<P2>(self, parser: P2) -> (Self, P2)
     where
@@ -185,7 +193,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///         ns.extend(vec![4, 5]);
     ///         ok(ns)
     ///      });
-    ///     assert_eq!(parser.parse(&x, &mut graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
+    ///     assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
     /// ```
     fn then_mut<N, F>(self, f: F) -> ThenMut<Self, F>
     where
@@ -195,16 +203,6 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     {
         then_mut(self, f)
     }
-
-    fn then_state<'a, N, F, S>(self, state: &'a mut S, f: F) -> ThenState<'a, Self, F, S>
-    where
-        Self: Sized,
-        F: FnMut(&'a mut S, Self::Output) -> N,
-        N: RDFNodeParse<RDF>,
-    {
-        then_state(self, f, state)
-    }
-
 
     /// Returns a parser which attempts to parse using `self`. If `self` fails then it attempts `parser`.
     ///         
@@ -222,7 +220,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///  let p = IriS::new_unchecked("http://example.org/p");
     ///  let q = IriS::new_unchecked("http://example.org/q");
     ///  let mut parser = property_bool(&p).or(property_bool(&q));
-    ///  assert_eq!(parser.parse(&x, &mut graph).unwrap(), true)
+    ///  assert_eq!(parser.parse(&x, graph).unwrap(), true)
     /// ```
     fn or<P2>(self, parser: P2) -> Or<Self, P2>
     where
@@ -254,7 +252,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// assert_eq!(
     ///   property_value(&p).with(ok(&1))
-    ///   .parse(&x, &mut graph).unwrap(),
+    ///   .parse(&x, graph).unwrap(),
     ///   1
     /// )
     /// ```
@@ -431,6 +429,7 @@ where
     Or { parser1, parser2 }
 }
 
+
 #[derive(Copy, Clone)]
 pub struct Or<P1, P2> {
     parser1: P1,
@@ -567,43 +566,58 @@ where
     }
 }
 
-/// Equivalent to [`p.then(f)`].
-///
-/// [`p.then(f)`]: trait.RDFNodeParse.html#method.then
-pub fn then_state<'a, RDF, P, F, N, S>(parser: P, function: F, state: &'a mut S) -> ThenState<'a, P, F, S>
+/// Not parser succeeds if the `parser` fails and viceversa
+/// Example:
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::SRDFGraph;
+/// use srdf::{literal, not, RDFFormat, RDFNodeParse};
+///    
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(not(literal()).parse(&x, graph).unwrap(), ()) 
+/// ```
+pub fn not<RDF, P>(parser: P) -> Not<P>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF>,
-    F: FnMut(&'a mut S, P::Output) -> N,
-    N: RDFNodeParse<RDF>,
+    P: RDFNodeParse<RDF>
 {
-    ThenState { parser, function, state }
+    Not { parser }
 }
 
-pub struct ThenState<'a, P, F, S> {
-    parser: P,
-    function: F,
-    state: &'a mut S
+
+#[derive(Copy, Clone)]
+pub struct Not<P> {
+    parser: P
 }
 
-impl <'a, RDF, P, F, N, S> RDFNodeParse<RDF> for ThenState<'a, P, F, S>
+impl<RDF, P, O> RDFNodeParse<RDF> for Not<P>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF>,
-    F: FnMut(&mut S, P::Output) -> N,
-    N: RDFNodeParse<RDF>,
+    P: RDFNodeParse<RDF, Output = O>,
+    O: Debug
 {
-    type Output = N::Output;
+    type Output = ();
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match self.parser.parse_impl(rdf) {
-            Ok(value) => (self.function)(self.state, value).parse_impl(rdf),
-            Err(err) => Err(err),
+            Err(_err) => Ok(()),
+            Ok(value) => Err(RDFParseError::FailedNot {
+                    value: format!("{value:?}")
+                })
         }
     }
 }
 
-
+/// Checks if the focus node is an IRI
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::{SRDFGraph, iri, RDFNodeParse};
+///    
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(iri().parse(&x, graph).unwrap(), x) 
+/// ```
 pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where
     RDF: FocusRDF,
@@ -615,6 +629,28 @@ where
         Some(v) => Ok(RDF::iri2iri_s(&v)),
     })
 }
+
+/// Checks if the focus node is an IRI
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::{SRDFGraph, iri, RDFNodeParse};
+///    
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(iri().parse(&x, graph).unwrap(), x) 
+/// ```
+pub fn literal<RDF>() -> impl RDFNodeParse<RDF, Output = Literal>
+where
+    RDF: FocusRDF,
+{
+    term().flat_map(|ref t| match RDF::term_as_object(t) {
+        Object::Literal(lit) => Ok(lit),
+        _ => Err(RDFParseError::ExpectedLiteral {
+            term: format!("{t}"),
+        })
+    })
+}
+
 
 /// Creates a parser that returns the current focus node as a term
 ///
@@ -766,6 +802,23 @@ where
         Ok(ints)
     })
 }
+
+/// Returns the values of `property` for the focus node
+///
+/// If there is no value, it returns an error
+pub fn property_values_non_empty<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<RDF::Term>>
+where
+    RDF: FocusRDF,
+{
+    property_values(&property).and_then(move |vs| {
+        if vs.is_empty() {
+           Err(RDFParseError::Custom { msg: format!("Property values are empty") })
+        } else {
+            Ok(vs)
+        }
+    })
+}
+
 
 /// Returns the values of `property` for the focus node
 ///
@@ -1090,7 +1143,26 @@ where
     })
 }
 
-/// Parses a node as an RDF List
+/// Parses the current focus node as an RDF List
+/// 
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::SRDFGraph;
+/// use srdf::{property_value, then, RDFFormat, RDFNodeParse, rdf_list, set_focus};
+/// use oxrdf::{Literal, Term};
+    
+/// let s = r#"prefix : <http://example.org/>
+///  :x :p (1 2).
+/// "#;
+/// let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+/// let x = iri!("http://example.org/x");
+/// let p = iri!("http://example.org/p");
+/// let mut parser = property_value(&p).then(move |obj| {
+///   set_focus(&obj).with(rdf_list())
+/// });
+/// assert_eq!(parser.parse(&x, graph).unwrap(), 
+///   vec![Term::from(Literal::from(1)), Term::from(Literal::from(2))]) 
+/// ````
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
     RDF: SRDF,
@@ -1745,3 +1817,27 @@ where
     }
 }
 
+/// Implementation of [`RDFNodeParse::by_ref`]
+pub struct ByRef<'p, P> {
+    p: &'p mut P,
+}
+
+impl<'p, P> ByRef<'p, P> {
+    #[inline(always)]
+    pub(crate) fn new(p: &'p mut P) -> Self {
+        Self { p }
+    }
+}
+
+impl<'p, RDF, P, O> RDFNodeParse<RDF> for ByRef<'p, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = O>,
+{
+    type Output = O;
+
+    #[inline(always)]
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        self.p.parse_impl(rdf)
+    }
+}

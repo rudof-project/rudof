@@ -116,7 +116,7 @@ where
     pub fn term_as_iri(term: &RDF::Term) -> Result<IriS, RDFParseError> {
         let obj = RDF::term_as_object(term);
         match obj {
-            Object::Iri { iri } => Ok(iri),
+            Object::Iri(iri) => Ok(iri),
             Object::BlankNode(bnode) => Err(RDFParseError::ExpectedIRIFoundBNode { bnode }),
             Object::Literal(lit) => Err(RDFParseError::ExpectedIRIFoundLiteral { lit }),
         }

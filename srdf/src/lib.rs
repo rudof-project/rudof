@@ -22,6 +22,8 @@ pub mod srdf_graph;
 pub mod srdf_sparql;
 pub mod vocab;
 pub mod triple;
+pub mod object;
+pub mod subject;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
@@ -37,6 +39,8 @@ pub use srdf_graph::*;
 pub use srdf_sparql::*;
 pub use vocab::*;
 pub use triple::*;
+pub use subject::*;
+pub use object::*;
 
 /// Creates an integer literal
 /// 
@@ -78,7 +82,7 @@ macro_rules! int {
 /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
 /// let x = IriS::new_unchecked("http://example.org/x");
 /// let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
-/// assert_eq!(is_term(&term).parse(&x, &mut graph).unwrap(), ()) 
+/// assert_eq!(is_term(&term).parse(&x, graph).unwrap(), ()) 
 /// ````
 #[macro_export]
 macro_rules! rdf_parser {

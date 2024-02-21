@@ -1,0 +1,12 @@
+@prefix ex:       <http://example.org/> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+        
+ex:PasswordExampleShape
+	a sh:NodeShape ;
+	sh:targetNode ex:Bob, ex:Alice ;
+	sh:property [
+		sh:path ex:password ;
+		sh:minLength 8 ;
+		sh:maxLength 10 ;
+	] .

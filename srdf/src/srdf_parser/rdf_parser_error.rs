@@ -17,7 +17,10 @@ pub enum RDFParseError {
 
     #[error("Expected focus node to be string but found: {term}")]
     ExpectedString { term: String }, 
-    
+
+    #[error("Expected IRI or Literal value but obtained blank node: {bnode}")]
+    BlankNodeNoValue { bnode: String }, 
+
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
 
@@ -57,6 +60,10 @@ pub enum RDFParseError {
     #[error("Expected IRI but found BNode {bnode}")]
     ExpectedIRIFoundBNode { bnode: String },
 
+    #[error("Expected Literal, but found {term}")]
+    ExpectedLiteral { term: String },
+
+
     #[error("Expected focus to act as subject, found {focus}")]
     ExpectedFocusAsSubject { focus: String },
 
@@ -75,6 +82,9 @@ pub enum RDFParseError {
 
     #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
     FailedOr { err1: Box<RDFParseError>, err2: Box<RDFParseError> },
+
+    #[error("Not parser failed because internal parser passed with value: {value}")]
+    FailedNot { value: String },
 
     #[error("Error obtaining subjects whose value for property {property} is {value}: {err}")]
     ErrorSubjectsPredicateObject{ property: String, value: String, err: String },

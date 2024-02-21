@@ -1,0 +1,11 @@
+@prefix ex:       <http://example.org/> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+        
+ex:InExampleShape
+	a sh:NodeShape ;
+	sh:targetNode ex:RainbowPony ;
+	sh:property [
+		sh:path ex:color ;
+		sh:in ( ex:Pink ex:Purple ) ;
+	] .

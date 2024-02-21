@@ -9,6 +9,7 @@
    sh:targetClass :User ;
    sh:targetClass :User2 ;
    sh:targetNode  :alice ;
+   sh:closed true ;
    sh:property [                  # Blank node 1
     sh:path     schema:name ; 
     sh:minCount 1; 

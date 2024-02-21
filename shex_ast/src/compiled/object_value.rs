@@ -17,7 +17,7 @@ impl ObjectValue {
     pub(crate) fn match_value(&self, object: &Object) -> bool {
         match self {
             ObjectValue::IriRef(iri_expected) => match object {
-                Object::Iri { iri } => iri == iri_expected,
+                Object::Iri(iri) => iri == iri_expected,
                 _ => false,
             },
             ObjectValue::ObjectLiteral { value, language } => match object {

@@ -64,16 +64,34 @@ impl NodeShape {
         self.property_shapes = property_shapes;
         self
     }
+
+    pub fn with_components(mut self, components: Vec<Component>) -> Self {
+        self.components = components;
+        self
+    }
+
+    pub fn with_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
+    }
+
+
 }
 
 impl Display for NodeShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{{")?;
+        if self.closed {
+            writeln!(f, "       closed: {}", self.closed)?
+        }
         for target in self.targets.iter() {
             writeln!(f, "       {target}")?
         }
         for property in self.property_shapes.iter() {
             writeln!(f, "       Property {property}")?
+        }
+        for component in self.components.iter() {
+            writeln!(f, "       {component}")?
         }
         write!(f, "}}")?;
         Ok(())

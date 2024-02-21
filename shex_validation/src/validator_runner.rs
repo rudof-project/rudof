@@ -415,7 +415,7 @@ impl ValidatorRunner {
         S: SRDF,
     {
         match node.as_object() {
-            Object::Iri { iri } => {
+            Object::Iri(iri) => {
                 let i = S::iri_s2iri(iri);
                 S::iri_as_term(i)
             }

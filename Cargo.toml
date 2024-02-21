@@ -24,7 +24,6 @@ members = [
     "srdf",
     "shex_ast",
     "shex_compact",
-    "shex_compact_winnow",
     "sx_cli",
     "shex_testsuite",
     "shex_validation",
@@ -34,6 +33,9 @@ members = [
     # "validation_oxgraph"
     # "shex_antlr",
     # "shex_pest",
+]
+exclude = [
+    "shex_compact_winnow"
 ]
 
 #default-members = [
@@ -75,7 +77,6 @@ anyhow = "1.0"
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
 shex_compact = { path = "./shex_compact" }
-shex_compact_winnow = { path = "./shex_compact_winnow" }
 prefixmap = { path = "./prefixmap" }
 shapemap = { path = "./shapemap" }
 srdf = { path = "./srdf" }
@@ -86,3 +87,4 @@ serde_json = "1.0"
 regex = "^1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+

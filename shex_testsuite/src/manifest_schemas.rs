@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use crate::context_entry_value::ContextEntryValue;
 use iri_s::IriS;
 use serde::de::{self};
-use serde::{Deserialize, Deserializer};
-use serde_derive::Serialize;
+use serde::{Serialize, Deserialize, Deserializer};
+// use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;
 use url::Url;
@@ -144,7 +144,7 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        log::debug!(
+        tracing::debug!(
             "Runnnig entry: {} with json: {}, shex: {}, base: {:?}",
             self.id,
             self.json,
