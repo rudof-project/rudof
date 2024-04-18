@@ -61,8 +61,9 @@ fn main() -> Result<()> {
             schema_format,
             result_schema_format,
             output,
-            show_time
-        }) => run_schema(schema, schema_format, result_schema_format, output, *show_time),
+            show_time,
+            show_statistics
+        }) => run_schema(schema, schema_format, result_schema_format, output, *show_time, *show_statistics),
         Some(Command::Validate {
             schema,
             schema_format,
@@ -148,7 +149,8 @@ fn run_schema(
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
-    show_time: bool
+    show_time: bool,
+    show_statistics: bool
 ) -> Result<()> {
     let begin = Instant::now();
     let mut writer = get_writer(output)?;
@@ -173,6 +175,13 @@ fn run_schema(
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
+    }
+    if show_statistics {
+        if let Some(shapes) = schema_json.shapes() {
+            let _ = writeln!(io::stderr(), "Shapes: {:?}", shapes.len());
+            let _ = writeln!(io::stderr(), "Shapes extends: {:?}", schema_json.count_extends());
+        }
+        let _ = writeln!(io::stderr(), "No shape declaration");
     }
     Ok(())
 }

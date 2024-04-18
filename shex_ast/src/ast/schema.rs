@@ -1,9 +1,11 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Iri, ShapeExprLabel};
+use crate::{Iri, Shape, ShapeExprLabel};
 use iri_s::IriS;
 use tracing::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -163,6 +165,42 @@ impl Schema {
     pub fn get_type(&self) -> String {
         self.type_.clone()
     }
+
+    pub fn count_extends(&self) -> Option<HashMap<usize, usize>> {
+        
+        if let Some(shapes) = self.shapes() {
+            let mut result = HashMap::new();
+            for shape in shapes {
+                let extends_counter;
+                match shape.shape_expr {
+                    ShapeExpr::Shape(Shape {extends: None, .. }) => {
+                        extends_counter = Some(0);
+                    },
+                    ShapeExpr::Shape(Shape {extends: Some(es), .. }) => {
+                        extends_counter = Some(es.len());
+                    },
+                    _ => {
+                        extends_counter = None
+                    }
+                }
+                if let Some(ec) = extends_counter {
+                    match result.entry(ec) {
+                     Entry::Occupied(mut v) => {
+                        let r = v.get_mut();
+                        *r =  *r + 1;
+                     },
+                     Entry::Vacant(vac) => {
+                        vac.insert(1);
+                     }
+                  }
+                }
+            }
+            Some(result)
+        } else {
+            None
+        }
+    }
+
 }
 
 #[cfg(test)]

@@ -54,6 +54,14 @@ where
     pub fn single(single: SingleCond<K, V, R>) -> Self {
         MatchCond::Single(single)
     }
+
+    pub fn simple(name: &str, 
+        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static,
+    ) -> Self {
+        MatchCond::single(
+            SingleCond::new().with_name(name).with_cond(cond)
+        )
+    }
 }
 
 impl<K, V, R> Display for MatchCond<K, V, R>

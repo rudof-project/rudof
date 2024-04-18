@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use crate::literal::Literal;
 use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
+use crate::numeric_literal::NumericLiteral;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
 /// 
@@ -26,6 +27,22 @@ impl Object {
 
     pub fn literal(lit: Literal) -> Object {
         Object::Literal(lit)
+    }
+
+    pub fn length(&self)  -> usize {
+        match self {
+            Object::Iri(iri) => iri.as_str().len(),
+            Object::BlankNode(bn) => bn.len(),
+            Object::Literal(lit) => lit.lexical_form().len(),
+        }
+    }
+
+    pub fn numeric_value(&self)  -> Option<NumericLiteral> {
+        match self {
+            Object::Iri(iri) => None,
+            Object::BlankNode(bn) => None,
+            Object::Literal(lit) => lit.numeric_value(),
+        }
     }
 }
 

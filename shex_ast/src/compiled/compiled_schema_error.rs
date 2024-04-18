@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::ast::TripleExprLabel;
 use crate::{ast, Node};
-
+use srdf::numeric_literal::NumericLiteral;
 use super::shape_label::ShapeLabel;
 
 #[derive(Error, Debug, Clone)]
@@ -62,6 +62,39 @@ pub enum CompiledSchemaError {
         expected: IriRef,
         lexical_form: String,
         lang: Lang,
+    },
+
+    #[error("Length of {node} = {found} doesn't match {expected}")]
+    LengthError {
+        expected: usize,
+        found: usize,
+        node: String
+    },
+
+    #[error("MinLength of {node} = {found} doesn't match {expected}")]
+    MinLengthError {
+        expected: usize,
+        found: usize,
+        node: String
+    },
+
+    #[error("MaxLength of {node} = {found} doesn't match {expected}")]
+    MaxLengthError {
+        expected: usize,
+        found: usize,
+        node: String
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match minInclusive of {expected}")]
+    MinInclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String
+    },
+
+    #[error("Node {node} is not a numeric literal")]
+    NonNumeric {
+        node: String
     },
 
     #[error("Shape label not found {shape_label}")]

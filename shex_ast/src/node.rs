@@ -3,6 +3,7 @@ use std::fmt::Display;
 use iri_s::IriS;
 use rbe::Value;
 use srdf::Object;
+use srdf::numeric_literal::NumericLiteral;
 
 impl Value for Node {}
 
@@ -12,10 +13,22 @@ pub struct Node {
 }
 
 impl Node {
+
+    /// Creates a node from an [`ÌriS`]
     pub fn iri(iri: IriS) -> Node {
         Node {
             node: Object::iri(iri),
         }
+    }
+
+    /// Returns the length of the RDF Node
+    pub fn length(&self) -> usize {
+        self.node.length()
+    }
+
+    /// Returns the numeric value of a node if it is a numeric literal
+    pub fn numeric_value(&self) -> Option<NumericLiteral> {
+       self.node.numeric_value() 
     }
 
     pub fn as_object(&self) -> &Object {

@@ -1,0 +1,24 @@
+PREFIX sx: <http://www.w3.org/ns/shex#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX : <http://example.org/>
+PREFIX schema: <http://schema.org/>
+
+:Book a sx:ShapeDecl ; sx:shapeExpr [ a sx:Shape ;
+  sx:expression [
+    a sx:EachOf ;
+    sx:expressions ([
+      a sx:TripleConstraint ;
+      sx:predicate schema:name ;
+      sx:valueExpr  [
+         a sx:NodeConstraint ;
+         sx:datatype xsd:string
+        ]
+     ] [
+      a sx:TripleConstraint ;
+      sx:predicate :related ;
+      sx:valueExpr  [
+         a sx:NodeConstraint ;
+         sx:valueExpr :Book
+        ]
+     ] ) .
+

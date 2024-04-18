@@ -70,6 +70,16 @@ impl Literal {
             Literal::BooleanLiteral(false) => "false".to_string(),
         }
     }
+
+    pub fn numeric_value(&self) -> Option<NumericLiteral> {
+        match self {
+            Literal::StringLiteral { lexical_form, .. } => None,
+            Literal::DatatypeLiteral { lexical_form, .. } => None,
+            Literal::NumericLiteral(nl) => Some(nl.clone()),
+            Literal::BooleanLiteral(true) => None,
+            Literal::BooleanLiteral(false) => None,
+        }
+    }
 }
 
 impl Default for Literal {

@@ -74,6 +74,11 @@ pub enum Command {
         )]
         show_time: bool,
 
+        #[arg(
+            long = "statistics",
+            default_value_t = false
+        )]
+        show_statistics: bool,
 
         #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
         output: Option<PathBuf>,

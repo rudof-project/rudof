@@ -19,7 +19,7 @@ use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use srdf::literal::Literal;
 use srdf::Object;
-
+use srdf::numeric_literal::NumericLiteral;
 use lazy_static::lazy_static;
 
 use super::node_constraint::NodeConstraint;
@@ -518,8 +518,46 @@ fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
 }
 
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
-    todo!()
+    match xs_facet {
+        ast::XsFacet::StringFacet(sf) => string_facet_to_match_cond(sf),
+        ast::XsFacet::NumericFacet(nf) => numeric_facet_to_match_cond(nf)
+    } 
 }
+
+fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
+    match sf {
+        ast::StringFacet::Length(len) => {
+            mk_cond_length(*len)
+        },
+        ast::StringFacet::MinLength(len) => mk_cond_min_length(*len)
+        ,
+        ast::StringFacet::MaxLength(len) => mk_cond_max_length(*len),
+        ast::StringFacet::Pattern(_) => todo!(),
+        
+    }
+}
+
+fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
+    match nf {
+        ast::NumericFacet::MinInclusive(min) => 
+           /*MatchCond::simple(
+            format!("minInclusive({min})").as_str(),
+            move |value: &Node| match check_node_min_inclusive(value, min) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("MaxLength error: {err}"),
+                }),
+            }
+          ) */
+          todo!(),
+        ast::NumericFacet::MinExclusive(_) => todo!(),
+        ast::NumericFacet::MaxInclusive(_) => todo!(),
+        ast::NumericFacet::MaxExclusive(_) => todo!(),
+        ast::NumericFacet::TotalDigits(_) => todo!(),
+        ast::NumericFacet::FractionDigits(_) => todo!(),
+    }
+}
+
 
 fn valueset2match_cond(vs: ValueSet) -> Cond {
     mk_cond_value_set(vs)
@@ -558,6 +596,47 @@ fn mk_cond_datatype(datatype: &IriRef) -> Cond {
             }),
     )
 }
+
+fn mk_cond_length(len: usize) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("length{len}").as_str())
+            .with_cond(move |value: &Node| match check_node_length(value, len) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("Length error: {err}"),
+                }),
+            }),
+    )
+}
+
+fn mk_cond_min_length(len: usize) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("minLength{len}").as_str())
+            .with_cond(move |value: &Node| match check_node_min_length(value, len) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("MinLength error: {err}"),
+                }),
+            }),
+    )
+}
+
+fn mk_cond_max_length(len: usize) -> Cond {
+   MatchCond::simple(
+    format!("maxLength{len}").as_str(),
+    move |value: &Node| match check_node_max_length(value, len) {
+        Ok(_) => Ok(Pending::new()),
+        Err(err) => Err(RbeError::MsgError {
+            msg: format!("MaxLength error: {err}"),
+        }),
+    }
+ )
+ 
+}
+
+
 
 fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
@@ -803,6 +882,67 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
             expected: dt.clone(),
             node: node.clone(),
         }),
+    }
+}
+
+fn check_node_length(node: &Node, len: usize) -> CResult<()> {
+    debug!("check_node_length: {node:?} length: {len}");
+    let node_length = node.length();
+    if node_length == len {
+        Ok(())
+    } else {
+        Err(CompiledSchemaError::LengthError {
+            expected: len,
+            found: node_length,
+            node: format!("{node}")
+        })
+    }
+}
+
+fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
+    debug!("check_node_min_length: {node:?} min_length: {len}");
+    let node_length = node.length();
+    if node_length >= len {
+        Ok(())
+    } else {
+        Err(CompiledSchemaError::MinLengthError {
+            expected: len,
+            found: node_length,
+            node: format!("{node}")
+        })
+    }
+}
+
+fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
+    debug!("check_node_max_length: {node:?} max_length: {len}");
+    let node_length = node.length();
+    if node_length <= len {
+        Ok(())
+    } else {
+        Err(CompiledSchemaError::MaxLengthError {
+            expected: len,
+            found: node_length,
+            node: format!("{node}")
+        })
+    }
+}
+
+fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
+    debug!("check_node_min_inclusive: {node:?} min: {min}");
+    if let Some(node_number) = node.numeric_value() {
+      if node_number.less_than(min) {
+        Ok(())
+      } else {
+        Err(CompiledSchemaError::MinInclusiveError {
+            expected: min.clone(),
+            found: node_number,
+            node: format!("{node}")
+        })
+      }   
+    } else {
+        Err(CompiledSchemaError::NonNumeric {
+            node: format!("{node}")
+        })
     }
 }
 
