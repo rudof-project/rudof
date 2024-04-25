@@ -42,9 +42,12 @@ pub enum Command {
         )]
         result_shapemap_format: ShapeMapFormat,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
 
     Schema {
@@ -67,22 +70,18 @@ pub enum Command {
         )]
         result_schema_format: ShExFormat,
 
-        #[arg(
-            short = 't',
-            long = "show elapsed time",
-            default_value_t = false
-        )]
+        #[arg(short = 't', long = "show elapsed time", default_value_t = false)]
         show_time: bool,
 
-        #[arg(
-            long = "statistics",
-            default_value_t = false
-        )]
+        #[arg(long = "statistics", default_value_t = false)]
         show_statistics: bool,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
 
     Validate {
@@ -139,9 +138,12 @@ pub enum Command {
         )]
         max_steps: usize,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
 
     Data {
@@ -156,9 +158,12 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
 
     Node {
@@ -193,9 +198,12 @@ pub enum Command {
         #[arg(short = 'p', long = "predicates")]
         predicates: Vec<String>,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
 
     Shacl {
@@ -218,11 +226,13 @@ pub enum Command {
         )]
         result_shapes_format: ShaclFormat,
 
-        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
         output: Option<PathBuf>,
-
     },
-
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -287,7 +297,7 @@ pub enum DataFormat {
     RDFXML,
     TriG,
     N3,
-    NQuads
+    NQuads,
 }
 
 impl Into<RDFFormat> for DataFormat {
@@ -316,14 +326,13 @@ impl Display for DataFormat {
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum ShaclFormat {
     Internal,
     Turtle,
     NTriples,
-    RDFXML, 
+    RDFXML,
     TriG,
     N3,
     NQuads,
