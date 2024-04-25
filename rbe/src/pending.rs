@@ -123,7 +123,7 @@ where
                 Some(rs) => match rs.pop() {
                     Some(r) => {
                         if rs.is_empty() {
-                            self.pending_map.remove(&v);
+                            self.pending_map.swap_remove(&v);
                         }
                         Some((v.clone(), r.clone()))
                     }

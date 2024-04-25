@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::Prefix, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 use crate::PrefixMap;
 use crate::{Deref, DerefError};

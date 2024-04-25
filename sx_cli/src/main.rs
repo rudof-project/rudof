@@ -26,7 +26,6 @@ use shex_validation::Validator;
 use srdf::SRDF;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
-use tracing_subscriber::fmt::time::Uptime;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
@@ -90,9 +89,9 @@ fn main() -> Result<()> {
             cli.debug,
             output
         ),
-        Some(Command::Data { 
-            data, 
-            data_format, 
+        Some(Command::Data {
+            data,
+            data_format,
             output }) => run_data(data, data_format, cli.debug, output),
         Some(Command::Node {
             data,
@@ -120,8 +119,8 @@ fn main() -> Result<()> {
             result_shapemap_format,
             output
         }) => run_shapemap(
-            shapemap, 
-            shapemap_format, 
+            shapemap,
+            shapemap_format,
             result_shapemap_format,
             output
         ),
@@ -131,9 +130,9 @@ fn main() -> Result<()> {
             result_shapes_format,
             output
         }) => run_shacl(
-            shapes, 
-            shapes_format, 
-            result_shapes_format, 
+            shapes,
+            shapes_format,
+            result_shapes_format,
             output
         ),
 
@@ -507,9 +506,9 @@ where
     }
 }
 
-fn run_data(data: &PathBuf, 
-    data_format: &DataFormat, 
-    _debug: u8, 
+fn run_data(data: &PathBuf,
+    data_format: &DataFormat,
+    _debug: u8,
     output: &Option<PathBuf>
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
@@ -572,7 +571,7 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
         ShaclFormat::NTriples => Ok(DataFormat::NTriples),
         ShaclFormat::TriG => Ok(DataFormat::TriG),
         ShaclFormat::N3 => Ok(DataFormat::N3),
-        ShaclFormat::NQuads => Ok(DataFormat::NQuads),    
+        ShaclFormat::NQuads => Ok(DataFormat::NQuads),
         ShaclFormat::Internal => bail!("Cannot convert internal SHACL format to RDF data format"),
     }
 }

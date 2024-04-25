@@ -22,9 +22,9 @@ rust_decimal_macros = "1.32"
 const_format = "0.2"
 lazy_static = "1"
 
-oxttl = "0.1.0-alpha.2"
-oxrdfio = "0.1.0-alpha.2"
-oxrdf = { version = "0.2.0-alpha.2", features = ["oxsdatatypes"] }
+oxttl = "0.1.0-alpha.5"
+oxrdfio = "0.1.0-alpha.5"
+oxrdf = { version = "0.2.0-alpha.4", features = ["oxsdatatypes"] }
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.1"
 sparesults = "0.2.0-alpha.1"

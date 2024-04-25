@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use colored::*;
-use iri_s::{IriS, iri};
+use iri_s::IriS;
 // use log::debug;
 use oxiri::Iri;
 use oxrdfio::{RdfFormat, RdfSerializer};
 use rust_decimal::Decimal;
 use crate::async_srdf::AsyncSRDF;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Term, Triple as STriple, RDF_TYPE_STR, SRDF};
+use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
 use crate::literal::Literal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -20,7 +20,7 @@ use crate::Object;
 use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, LiteralRef, NamedNode as OxNamedNode, Subject as OxSubject, Term as OxTerm, Triple as OxTriple  
+    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject, Term as OxTerm, Triple as OxTriple
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
@@ -53,7 +53,7 @@ impl SRDFGraph {
         format: &RDFFormat,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-         // TODO: check format and use oxrdfio... 
+         // TODO: check format and use oxrdfio...
         let turtle_parser = match base {
             None => TurtleParser::new(),
             Some(ref iri) => {
@@ -65,7 +65,7 @@ impl SRDFGraph {
         while let Some(triple_result) = reader.next() {
             graph.insert(triple_result?.as_ref());
         }
-        let prefixes: HashMap<&str, &str> = reader.prefixes().collect(); 
+        let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
         let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         Ok(SRDFGraph {
@@ -298,7 +298,7 @@ impl SRDFBasic for SRDFGraph {
         }
     }
 
-    fn prefixmap(&self) -> Option<prefixmap::PrefixMap> { 
+    fn prefixmap(&self) -> Option<prefixmap::PrefixMap> {
         Some(self.pm.clone())
     }
 
@@ -651,7 +651,7 @@ mod tests {
     fn test_outgoing_arcs() {
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
+
         :x :p [ :p 1 ].
         "#;
 
@@ -670,7 +670,7 @@ mod tests {
     fn test_outgoing_arcs_bnode() {
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
+
         :x :p [ :p 1 ].
         "#;
 
@@ -699,7 +699,7 @@ mod tests {
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
-    } 
+    }
 
     #[test]
     fn test_parser_property_integers() {
@@ -807,7 +807,7 @@ mod tests {
     fn test_parser_map() {
         use crate::{RDFNodeParse, property_integer};
         let s = r#"prefix : <http://example.org/>
-          :x :p 1 . 
+          :x :p 1 .
         "#;
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
@@ -835,7 +835,7 @@ mod tests {
                 RDFParseError::Custom { msg: format!("Int conversion error: {}", self.0)}
             }
         }
-        
+
         let mut parser = property_string(&p).and_then(cnv_int);
         assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     }
@@ -849,7 +849,7 @@ mod tests {
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
-        
+
         fn cnv_int(s: String) -> PResult<isize> {
            s.parse().map_err(|_| RDFParseError::Custom{ msg: format!("Error converting {s}")})
         }
@@ -864,16 +864,16 @@ mod tests {
         use iri_s::{IriS, iri};
         use crate::SRDFGraph;
         use crate::{SRDFBasic, rdf_parser, satisfy, RDFNodeParse};
-        
+
         rdf_parser! {
               fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
               where [
-              ] { 
+              ] {
                let name = format!("is_{term}");
-               satisfy(|t| { t == *term }, name.as_str()) 
+               satisfy(|t| { t == *term }, name.as_str())
               }
         }
-        
+
         let s = r#"prefix : <http://example.org/>
                    :x :p 1.
         "#;
@@ -882,7 +882,7 @@ mod tests {
         let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph).unwrap();
-        assert_eq!(result, ()) 
+        assert_eq!(result, ())
     }
 
 }
@@ -892,7 +892,7 @@ fn test_rdf_list() {
     use iri_s::{IriS, iri};
     use crate::SRDFGraph;
     use crate::{property_value, then, RDFNodeParse, rdf_list, set_focus};
-    
+
     let s = r#"prefix : <http://example.org/>
                :x :p (1 2).
     "#;
@@ -904,9 +904,9 @@ fn test_rdf_list() {
     });
     let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
     assert_eq!(result, vec![OxTerm::from(
-        OxLiteral::from(1)), 
+        OxLiteral::from(1)),
         OxTerm::from(OxLiteral::from(2))
-    ]) 
+    ])
 }
 
 
@@ -915,14 +915,14 @@ fn test_not() {
     use iri_s::{IriS, iri};
     use crate::SRDFGraph;
     use crate::{property_value, not, RDFNodeParse};
-    
+
     let s = r#"prefix : <http://example.org/>
                :x :p 1 .
     "#;
     let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
     let x = iri!("http://example.org/x");
     let q = iri!("http://example.org/q");
-    assert_eq!(not(property_value(&q)).parse(&x, graph).unwrap(), ()) 
+    assert_eq!(not(property_value(&q)).parse(&x, graph).unwrap(), ())
 }
 
 #[test]
@@ -930,8 +930,8 @@ fn test_iri() {
     use iri_s::{IriS, iri};
     use crate::SRDFGraph;
     use crate::{iri, RDFNodeParse};
-    
+
     let graph = SRDFGraph::new();
     let x = iri!("http://example.org/x");
-    assert_eq!(iri().parse(&x, graph).unwrap(), x) 
+    assert_eq!(iri().parse(&x, graph).unwrap(), x)
 }

@@ -13,7 +13,6 @@ use crate::Pending;
 use crate::RbeError;
 use crate::Ref;
 use crate::Value;
-use crate::candidate::Candidate;
 // use crate::RbeError;
 use crate::rbe::Rbe;
 use crate::rbe1::Rbe as Rbe1;
@@ -108,8 +107,8 @@ where
             }))
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
-            let _: Vec<_> = candidates.iter().zip(0..).map(|(candidate, n)| { 
-                debug!("Candidate {n}: {candidate:?}"); 
+            let _: Vec<_> = candidates.iter().zip(0..).map(|(candidate, n)| {
+                debug!("Candidate {n}: {candidate:?}");
             }).collect();
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
