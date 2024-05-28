@@ -163,18 +163,10 @@ where
     fn pp_node_selector(&self, ns: &NodeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match ns {
             NodeSelector::Node(v) => pp_object_value(&v, self.doc, &self.nodes_prefixmap),
-            NodeSelector::TriplePattern {
-                subject,
-                pred,
-                object,
-            } => todo!(),
-            NodeSelector::TriplePatternPath {
-                subject,
-                pred,
-                object,
-            } => todo!(),
-            NodeSelector::Sparql { query } => todo!(),
-            NodeSelector::Generic { iri, param } => todo!(),
+            NodeSelector::TriplePattern { .. } => todo!(),
+            NodeSelector::TriplePatternPath { .. } => todo!(),
+            NodeSelector::Sparql { .. } => todo!(),
+            NodeSelector::Generic { .. } => todo!(),
         }
     }
 

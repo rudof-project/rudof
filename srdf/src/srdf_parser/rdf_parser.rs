@@ -3,12 +3,7 @@ use super::rdf_parser_error::RDFParseError;
 use crate::{FocusRDF, Object, RDF_TYPE, SRDF};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use std::{
-    collections::{HashSet, VecDeque},
-    error::Error,
-    fmt::Display,
-    marker::PhantomData,
-};
+use std::collections::HashSet;
 
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
@@ -16,7 +11,7 @@ use std::{
 
 /// Represents a generic parser of RDF data
 pub trait RDFParse<RDF: SRDF> {
-    /// The type which is returned if the parser is successful.    
+    /// The type which is returned if the parser is successful.
     type Output;
 
     fn parse(&mut self, rdf: RDF) -> Result<Self::Output, RDF::Err>;

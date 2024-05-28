@@ -16,21 +16,6 @@ where
     values: Vec<(K, V, Component, MatchCond<K, V, R>)>,
 }
 
-impl<K, V, R> Candidate<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    pub(crate) fn new(values: Vec<(K, V, Component, MatchCond<K, V, R>)>) -> Candidate<K, V, R> {
-        Candidate { values }
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &(K, V, Component, MatchCond<K, V, R>)> + '_ {
-        self.values.iter()
-    }
-}
-
 impl<K, V, R> Display for Candidate<K, V, R>
 where
     K: Key + Display,

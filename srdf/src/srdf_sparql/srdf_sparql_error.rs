@@ -15,7 +15,7 @@ pub enum SRDFSparqlError {
     URLParseError { e: url::ParseError },
 
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults { e: sparesults::ParseError },
+    SPAResults { e: sparesults::QueryResultsParseError },
 
     #[error(transparent)]
     IriParseError {
@@ -32,13 +32,13 @@ pub enum SRDFSparqlError {
     ParsingBody { body: String },
 
     #[error("SPARQL solutions error: Expected IRI, got {value}")]
-    SPARQLSolutionErrorNoIRI { value: Term }, 
+    SPARQLSolutionErrorNoIRI { value: Term },
 
     #[error("SPARQL solutions error: Not found vars {vars} in solution {solution:?}")]
-    NotFoundVarsInSolution { vars: SparqlVars, solution: String }, 
+    NotFoundVarsInSolution { vars: SparqlVars, solution: String },
 
     #[error("SPARQL solutions error: Expected Subject, got {value}")]
-    SPARQLSolutionErrorNoSubject { value: Term }, 
+    SPARQLSolutionErrorNoSubject { value: Term },
 
 
     #[error("SPARQL solutions error: Not found value for {value} in {solution:?}")]
@@ -66,8 +66,8 @@ impl From<url::ParseError> for SRDFSparqlError {
     }
 }
 
-impl From<sparesults::ParseError> for SRDFSparqlError {
-    fn from(e: sparesults::ParseError) -> SRDFSparqlError {
-        SRDFSparqlError::SPAResults { e: e }
+impl From<sparesults::QueryResultsParseError> for SRDFSparqlError {
+    fn from(e: sparesults::QueryResultsParseError) -> SRDFSparqlError {
+        SRDFSparqlError::SPAResults { e }
     }
 }

@@ -262,12 +262,8 @@ where
     {
         move |te, printer| match te {
             TripleExpr::EachOf {
-                id,
                 expressions,
-                min,
-                max,
-                sem_acts,
-                annotations,
+                ..
             } => {
                 let mut docs = Vec::new();
                 for e in expressions {
@@ -278,16 +274,8 @@ where
                     .doc
                     .intersperse(docs, printer.doc.text(";").append(printer.doc.line()))
             }
-            TripleExpr::OneOf {
-                id,
-                expressions,
-                min,
-                max,
-                sem_acts,
-                annotations,
-            } => todo!(),
+            TripleExpr::OneOf {.. } => todo!(),
             TripleExpr::TripleConstraint {
-                id,
                 negated,
                 inverse,
                 predicate,
@@ -295,7 +283,7 @@ where
                 min,
                 max,
                 sem_acts,
-                annotations,
+                ..
             } => {
                 let doc_expr = match value_expr {
                     Some(se) => printer.pp_shape_expr(se),
@@ -521,14 +509,14 @@ where
 
     fn pp_value_set_value(&self, v: &ValueSetValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
-            ValueSetValue::LanguageStem { stem } => todo!(),
-            ValueSetValue::LanguageStemRange { stem, exclusions } => todo!(),
+            ValueSetValue::LanguageStem { .. } => todo!(),
+            ValueSetValue::LanguageStemRange { .. } => todo!(),
             ValueSetValue::ObjectValue(ov) => pp_object_value(&ov, self.doc, &self.prefixmap),
-            ValueSetValue::IriStem { stem } => todo!(),
-            ValueSetValue::IriStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::LiteralStem { stem } => todo!(),
-            ValueSetValue::LiteralStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::Language { language_tag } => todo!(),
+            ValueSetValue::IriStem { .. } => todo!(),
+            ValueSetValue::IriStemRange { .. } => todo!(),
+            ValueSetValue::LiteralStem { .. } => todo!(),
+            ValueSetValue::LiteralStemRange { .. } => todo!(),
+            ValueSetValue::Language { .. } => todo!(),
         }
     }
 
