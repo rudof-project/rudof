@@ -1,0 +1,13 @@
+[package]
+name = "dctap"
+version = "0.0.10"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/dctap"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = "1"
