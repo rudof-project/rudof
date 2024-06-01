@@ -186,7 +186,7 @@ impl Schema {
                 if let Some(ec) = extends_counter {
                     match result.entry(ec) {
                      Entry::Occupied(mut v) => {
-                        let r = v.get_mut();
+                        let mut r = v.get_mut();
                         *r =  *r + 1;
                      },
                      Entry::Vacant(vac) => {
