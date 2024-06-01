@@ -11,3 +11,4 @@ repository.workspace = true
 
 [dependencies]
 thiserror = "1"
+csv = "1.3"

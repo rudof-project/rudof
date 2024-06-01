@@ -24,10 +24,10 @@ lazy_static = "1"
 
 oxttl = "0.1.0-alpha.5"
 oxrdfio = "0.1.0-alpha.5"
-oxrdf = { version = "0.2.0-alpha.4", features = ["oxsdatatypes"] }
-oxiri = "0.2.3-alpha.1"
-oxsdatatypes = "0.2.0-alpha.1"
-sparesults = "0.2.0-alpha.1"
+oxrdf = { version = "0.2.0-alpha.5", features = ["oxsdatatypes"] }
+oxiri = "0.2.3"
+oxsdatatypes = "0.2.0-alpha.2"
+sparesults = "0.2.0-alpha.5"
 tokio = { version = "^1", features = ["full"] }
 colored = "2"
 reqwest = { version = "0.11.18", features = ["blocking", "json"] }
