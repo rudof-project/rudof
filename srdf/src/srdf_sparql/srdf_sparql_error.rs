@@ -15,7 +15,7 @@ pub enum SRDFSparqlError {
     URLParseError { e: url::ParseError },
 
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults { e: sparesults::QueryResultsParseError },
+    SPAResults { e: sparesults::ParseError },
 
     #[error(transparent)]
     IriParseError {
@@ -66,8 +66,8 @@ impl From<url::ParseError> for SRDFSparqlError {
     }
 }
 
-impl From<sparesults::QueryResultsParseError> for SRDFSparqlError {
-    fn from(e: sparesults::QueryResultsParseError) -> SRDFSparqlError {
+impl From<sparesults::ParseError> for SRDFSparqlError {
+    fn from(e: sparesults::ParseError) -> SRDFSparqlError {
         SRDFSparqlError::SPAResults { e }
     }
 }

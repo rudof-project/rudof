@@ -619,7 +619,8 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{SRDFGraph, srdf, int};
+    use crate::{int, srdf, SRDFGraph};
+    use iri_s::iri;
     use oxrdf::Graph;
     use crate::SRDF;
 
