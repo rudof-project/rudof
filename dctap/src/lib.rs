@@ -7,9 +7,10 @@
 //! 
 pub mod dctap;
 pub mod dctap_error;
+pub mod tap_statement_template;
 
 pub use dctap::*;
-pub use iris_error::*;
+pub use crate::tap_statement_template::*;
 
 /// ```
 /// 
