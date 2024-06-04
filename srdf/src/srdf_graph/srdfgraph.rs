@@ -620,9 +620,8 @@ fn rdf_type() -> OxNamedNode {
 mod tests {
     use super::*;
     use crate::{int, srdf, SRDFGraph};
-    // use oxrdf::Graph;
-    use crate::SRDF;
     use iri_s::iri;
+    use crate::SRDF;
 
     #[tokio::test]
     async fn parse_get_predicates() {

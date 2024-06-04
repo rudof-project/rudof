@@ -10,5 +10,5 @@ pub mod dctap_error;
 pub mod tap_statement_template;
 
 pub use dctap::*;
-pub use dctap_error::*;
+pub use crate::dctap_error::*;
 
