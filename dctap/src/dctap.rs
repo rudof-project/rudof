@@ -1,8 +1,9 @@
+use serde_derive::{Deserialize, Serialize};
 use tracing::debug;
 use std::path::PathBuf;
 use crate::dctap_error::DCTapError;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DCTap {
     version: String 
 }

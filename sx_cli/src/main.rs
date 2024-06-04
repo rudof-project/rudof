@@ -13,6 +13,7 @@ extern crate shex_compact;
 extern crate shex_validation;
 extern crate tracing_subscriber;
 extern crate srdf;
+extern crate dctap;
 
 use anyhow::*;
 use clap::Parser;
@@ -31,6 +32,7 @@ use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
 use std::time::Instant;
+use dctap::DCTap;
 
 pub mod cli;
 pub mod data;
@@ -136,7 +138,17 @@ fn main() -> Result<()> {
             result_shapes_format, 
             output
         ),
-
+        Some(Command::DCTap {
+            file,
+            format,
+            result_format,
+            output
+        }) => run_dctap(
+            file, 
+            format, 
+            result_format, 
+            output
+        ),
         None => {
             println!("Command not specified");
             Ok(())
@@ -271,6 +283,24 @@ fn run_shacl(
         }
     }
 }
+
+fn run_dctap(
+    input_buf: &PathBuf,
+    format: &DCTapFormat,
+    result_format: &DCTapResultFormat,
+    output: &Option<PathBuf>
+) -> Result<()> {
+    let mut writer = get_writer(output)?;
+    let dctap = parse_dctap(input_buf, format)?;
+    match result_format {
+        DCTapResultFormat::JSON => {
+            let str = serde_json::to_string_pretty(&dctap)?;
+            writeln!(writer, "{str}")?;
+            Ok(())
+        }
+    }
+}
+
 
 fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {
     match output {
@@ -564,6 +594,16 @@ fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<Sha
         }
     }
 }
+
+fn parse_dctap(input_buf: &PathBuf, format: &DCTapFormat) -> Result<DCTap> {
+    match format {
+        DCTapFormat::CSV => {
+            let dctap = DCTap::read_buf(input_buf)?;
+            Ok(dctap)
+        },
+    }
+}
+
 
 fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat> {
     match shacl_format {

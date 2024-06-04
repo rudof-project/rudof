@@ -223,6 +223,33 @@ pub enum Command {
 
     },
 
+    #[command(name="dctap")]
+    DCTap {
+
+        #[arg(short = 'd', long = "DCTap file", value_name = "DCTap file name")]
+        file: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "File format",
+            value_name = "DCTap file format",
+            default_value_t = DCTapFormat::CSV
+        )]
+        format: DCTapFormat,
+
+        #[arg(
+            short = 'r',
+            long = "Result format",
+            value_name = "Ouput results format",
+            default_value_t = DCTapResultFormat::JSON
+        )]
+        result_format: DCTapResultFormat,
+
+        #[arg(short = 'o', long = "output-file", value_name = "Output file name, default = terminal")]
+        output: Option<PathBuf>,
+
+    },
+
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -339,6 +366,34 @@ impl Display for ShaclFormat {
             ShaclFormat::TriG => write!(dest, "trig"),
             ShaclFormat::N3 => write!(dest, "n3"),
             ShaclFormat::NQuads => write!(dest, "nquads"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum DCTapFormat {
+    CSV,
+}
+
+impl Display for DCTapFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            DCTapFormat::CSV => write!(dest, "csv"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum DCTapResultFormat {
+    JSON,
+}
+
+impl Display for DCTapResultFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            DCTapResultFormat::JSON => write!(dest, "json"),
         }
     }
 }
