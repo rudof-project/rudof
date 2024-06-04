@@ -25,7 +25,7 @@ pub struct TapStatementTemplate {
     value_constraint_type: String, 
 
     #[serde(rename = "valueShape")]
-    value_shape: String, 
+    valueshape: String, 
 
     note: String, 
 

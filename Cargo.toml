@@ -64,7 +64,7 @@ rbe_testsuite = { version = "0.0.10", path = "./rbe_testsuite" }
 iri_s = { version = "0.0.10", path = "./iri_s" }
 prefixmap = { version = "0.0.10", path = "./prefixmap" }
 srdf = { version = "0.0.10", path = "./srdf" }
-dctap = { version = "0.0.10", path = "./dctap" }
+dctap = { version = "0.0.10", path = "./shex_ast" }
 shex_ast = { version = "0.0.10", path = "./shex_ast" }
 shex_testsuite = { version = "0.0.10", path = "./shex_testsuite" }
 shex_validation = { version = "0.0.10", path = "./shex_validation" }

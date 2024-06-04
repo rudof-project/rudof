@@ -1,6 +1,6 @@
 use tracing::debug;
 use std::path::PathBuf;
-use crate::dctap_error::*;
+use crate::dctap_error::DCTapError;
 
 #[derive(Debug)]
 pub struct DCTap {

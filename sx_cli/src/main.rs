@@ -179,7 +179,7 @@ fn run_schema(
     if show_statistics {
         if let Some(shapes) = schema_json.shapes() {
             let _ = writeln!(io::stderr(), "Shapes: {:?}", shapes.len());
-            let _ = writeln!(io::stderr(), "Shapes extends: {:?}", schema_json.count_extends());
+            let _ = writeln!(io::stderr(), "Shapes extends: {:?}", schema_json);
         }
         let _ = writeln!(io::stderr(), "No shape declaration");
     }
