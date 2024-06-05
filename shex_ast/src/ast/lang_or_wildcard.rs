@@ -1,7 +1,7 @@
-use std::{result, str::FromStr};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use srdf::lang::Lang;
+use std::{result, str::FromStr};
 use void::Void;
 
 #[derive(Debug, PartialEq, Clone)]

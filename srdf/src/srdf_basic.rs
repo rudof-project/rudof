@@ -50,36 +50,27 @@ pub trait SRDFBasic {
 
     fn object_as_term(obj: &Object) -> Self::Term;
     fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
-        let term = Self::object_as_term(&obj);
+        let term = Self::object_as_term(obj);
         Self::term_as_subject(&term)
     }
-    
+
     fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
-        match &Self::datatype_str(&literal) {
-            RDF_BOOLEAN => match Self::lexical_form(literal) {
-                "true" => Some(true),
-                "false" => Some(false),
-                _ => None,
-            },
+        match Self::lexical_form(literal) {
+            "true" => Some(true),
+            "false" => Some(false),
             _ => None,
         }
     }
 
     fn literal_as_integer(literal: &Self::Literal) -> Option<isize> {
-        match &Self::datatype_str(&literal) {
-            RDF_INTEGER => match Self::lexical_form(literal).parse() {
-                Ok(n) => Some(n),
-                _ => None,
-            },
+        match Self::lexical_form(literal).parse() {
+            Ok(n) => Some(n),
             _ => None,
         }
     }
 
     fn literal_as_string(literal: &Self::Literal) -> Option<String> {
-        match &Self::datatype_str(&literal) {
-            RDF_STRING => Some(Self::lexical_form(literal).to_string()),
-            _ => None,
-        }
+        Some(Self::lexical_form(literal).to_string())
     }
 
     fn term_as_integer(term: &Self::Term) -> Option<isize> {
@@ -99,7 +90,7 @@ pub trait SRDFBasic {
     fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
     fn subject_as_object(subject: &Self::Subject) -> Object {
-        Self::term_as_object(&Self::subject_as_term(&subject))
+        Self::term_as_object(&Self::subject_as_term(subject))
     }
 
     fn lexical_form(literal: &Self::Literal) -> &str;
@@ -129,14 +120,12 @@ pub trait SRDFBasic {
         Self::bnode_as_subject(Self::bnode_id2bnode(id))
     }
 
-
-
     fn iri_as_term(iri: Self::IRI) -> Self::Term;
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
     fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
-    
+
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;

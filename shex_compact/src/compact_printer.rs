@@ -18,15 +18,12 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(Literal::BooleanLiteral(value)) => {
+        ObjectValue::Literal(Literal::BooleanLiteral(_value)) => {
             todo!()
         }
         ObjectValue::Literal(Literal::NumericLiteral(_)) => todo!(),
-        ObjectValue::Literal(Literal::DatatypeLiteral {
-            lexical_form,
-            datatype,
-        }) => todo!(),
-        ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => todo!(),
+        ObjectValue::Literal(Literal::DatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(Literal::StringLiteral { .. }) => todo!(),
     }
 }
 
@@ -34,12 +31,12 @@ pub(crate) fn pp_label<'a, A>(
     label: &ShapeExprLabel,
     doc: &'a Arena<'a, A>,
     prefixmap: &PrefixMap,
-    keyword_color: Option<Color>
+    keyword_color: Option<Color>,
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match label {
         ShapeExprLabel::BNode { value } => pp_bnode(value, doc),
         ShapeExprLabel::IriRef { value } => pp_iri_ref(value, doc, prefixmap),
-        ShapeExprLabel::Start => keyword("START", doc, keyword_color)
+        ShapeExprLabel::Start => keyword("START", doc, keyword_color),
     }
 }
 
@@ -102,7 +99,7 @@ where
 }
 
 fn pp_iri_unqualified<'a, A>(iri: &IriS, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    let str = format!("<{}>", iri.to_string());
+    let str = format!("<{iri}>");
     doc.text(str)
 }
 
@@ -127,7 +124,7 @@ fn is_empty<'a, A>(d: &DocBuilder<'a, Arena<'a, A>, A>) -> bool {
     }
 }
 
-fn is_empty_ref<'a, A>(rd: &RefDoc<'a, A>) -> bool {
+fn is_empty_ref<A>(rd: &RefDoc<'_, A>) -> bool {
     use pretty::Doc::*;
 
     match &**rd {

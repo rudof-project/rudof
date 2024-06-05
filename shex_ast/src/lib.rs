@@ -6,9 +6,9 @@
 // #![deny(rust_2018_idioms)]
 pub mod ast;
 pub mod compiled;
-pub mod shexr;
 pub mod node;
 pub mod pred;
+pub mod shexr;
 
 pub use ast::*;
 pub use compiled::compiled_schema_error::*;
@@ -16,7 +16,6 @@ pub use compiled::shape_label_idx::*;
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;
-pub use schema::*;
 
 type CResult<T> = Result<T, CompiledSchemaError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;
@@ -46,16 +45,9 @@ mod tests {
     fn cnv(se: &SE) -> Result<SE1, SErr> {
         match se {
             SE::And { es } => {
-                let vs: Vec<Result<SE1, SErr>> = es
-                    .iter()
-                    .map(|se| {
-                        let r = cnv(se);
-                        r
-                    })
-                    .collect();
-                let r: Result<Vec<SE1>, SErr> = vs.into_iter().collect();
-                let es = r?;
-                Ok(SE1::And { es: es })
+                let es: Vec<SE1> = es.iter().map(cnv).collect::<Result<Vec<_>, SErr>>()?;
+
+                Ok(SE1::And { es })
             }
             SE::Not { e } => {
                 let e = cnv(e)?;

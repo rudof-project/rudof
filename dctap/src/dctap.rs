@@ -1,17 +1,17 @@
-use serde_derive::{Deserialize, Serialize};
-use tracing::debug;
-use std::path::PathBuf;
 use crate::dctap_error::DCTapError;
+use serde_derive::{Deserialize, Serialize};
+use std::path::PathBuf;
+use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DCTap {
-    version: String 
+    version: String,
 }
 
 impl DCTap {
     pub fn new() -> DCTap {
         DCTap {
-            version: "0.1".to_string()
+            version: "0.1".to_string(),
         }
     }
 

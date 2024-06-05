@@ -235,7 +235,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                             let value: String = map.next_value()?;
 
                             let parsed_type_ =
-                                ObjectValueType::parse(&value.as_str()).map_err(|e| {
+                                ObjectValueType::parse(value.as_str()).map_err(|e| {
                                     de::Error::custom(format!(
                                     "Error parsing ValueSetValue type, found: {value}. Error: {e}"
                                 ))
@@ -341,7 +341,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["value", "type", "languageTag"];
+        const FIELDS: &[&str] = &["value", "type", "languageTag"];
         deserializer.deserialize_any(ObjectValueVisitor)
     }
 }

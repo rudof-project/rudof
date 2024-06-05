@@ -1,11 +1,9 @@
-use std::result;
-use std::str::FromStr;
-
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Serialize as SerializeTrait, Serializer};
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
+use std::str::FromStr;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
@@ -28,14 +26,14 @@ impl Deref for ShapeExprWrapper {
         prefixmap: &Option<PrefixMap>,
     ) -> Result<Self, DerefError> {
         let se = self.se.deref(base, prefixmap)?;
-        let sew = ShapeExprWrapper { se: se };
+        let sew = ShapeExprWrapper { se };
         Ok(sew)
     }
 }
 
-impl Into<ShapeExprWrapper> for ShapeExpr {
-    fn into(self) -> ShapeExprWrapper {
-        ShapeExprWrapper { se: self }
+impl From<ShapeExpr> for ShapeExprWrapper {
+    fn from(shape_expr: ShapeExpr) -> Self {
+        Self { se: shape_expr }
     }
 }
 
@@ -44,11 +42,11 @@ impl Into<ShapeExprWrapper> for ShapeExpr {
 pub enum ShapeExpr {
     ShapeOr {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<ShapeExprWrapper>,
+        shape_exprs: Vec<Box<ShapeExprWrapper>>,
     },
     ShapeAnd {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<ShapeExprWrapper>,
+        shape_exprs: Vec<Box<ShapeExprWrapper>>,
     },
     ShapeNot {
         #[serde(rename = "shapeExpr")]
@@ -59,7 +57,7 @@ pub enum ShapeExpr {
 
     Shape(Shape),
 
-    #[serde(rename="ShapeExternal")]
+    #[serde(rename = "ShapeExternal")]
     External,
 
     Ref(ShapeExprLabel),
@@ -75,7 +73,7 @@ impl FromStr for ShapeExpr {
 }
 
 impl SerializeStringOrStruct for ShapeExpr {
-    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -95,25 +93,27 @@ impl ShapeExpr {
         ShapeExpr::External
     }
 
-    pub fn not(se: ShapeExpr) -> ShapeExpr {
+    pub fn into_shape_not(se: ShapeExpr) -> ShapeExpr {
         ShapeExpr::ShapeNot {
-            shape_expr: Box::new(se.into()),
+            shape_expr: Box::new(ShapeExprWrapper { se }),
         }
     }
 
     pub fn or(ses: Vec<ShapeExpr>) -> ShapeExpr {
-        let mut shape_exprs = Vec::new();
-        for se in ses {
-            shape_exprs.push(se.into())
-        }
+        let shape_exprs = ses
+            .into_iter()
+            .map(|shape_expression| Box::new(shape_expression.into()))
+            .collect();
+
         ShapeExpr::ShapeOr { shape_exprs }
     }
 
     pub fn and(ses: Vec<ShapeExpr>) -> ShapeExpr {
-        let mut shape_exprs = Vec::new();
-        for se in ses {
-            shape_exprs.push(se.into())
-        }
+        let shape_exprs = ses
+            .into_iter()
+            .map(|shape_expression| Box::new(shape_expression.into()))
+            .collect();
+
         ShapeExpr::ShapeAnd { shape_exprs }
     }
 
@@ -152,16 +152,14 @@ impl Deref for ShapeExpr {
     ) -> Result<Self, DerefError> {
         match self {
             ShapeExpr::External => Ok(ShapeExpr::External),
-            ShapeExpr::ShapeAnd { shape_exprs } => {
-                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
-                Ok(ShapeExpr::ShapeAnd { shape_exprs })
-            }
-            ShapeExpr::ShapeOr { shape_exprs } => {
-                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
-                Ok(ShapeExpr::ShapeOr { shape_exprs })
-            }
+            ShapeExpr::ShapeAnd { shape_exprs } => Ok(ShapeExpr::ShapeAnd {
+                shape_exprs: shape_exprs.clone(),
+            }),
+            ShapeExpr::ShapeOr { shape_exprs } => Ok(ShapeExpr::ShapeOr {
+                shape_exprs: shape_exprs.clone(),
+            }),
             ShapeExpr::ShapeNot { shape_expr } => {
-                let shape_expr = <ShapeExpr as Deref>::deref_box(shape_expr, base, prefixmap)?;
+                let shape_expr = Box::new(shape_expr.deref(base, prefixmap)?);
                 Ok(ShapeExpr::ShapeNot { shape_expr })
             }
             ShapeExpr::Shape(shape) => {

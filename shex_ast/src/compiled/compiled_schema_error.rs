@@ -1,13 +1,12 @@
-use iri_s::{IriS, IriSError};
+use iri_s::IriSError;
 use prefixmap::{IriRef, PrefixMapError};
 use srdf::lang::Lang;
-//use srdf::Object;
 use thiserror::Error;
 
+use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
 use crate::{ast, Node};
 use srdf::numeric_literal::NumericLiteral;
-use super::shape_label::ShapeLabel;
 
 #[derive(Error, Debug, Clone)]
 pub enum CompiledSchemaError {
@@ -68,34 +67,32 @@ pub enum CompiledSchemaError {
     LengthError {
         expected: usize,
         found: usize,
-        node: String
+        node: String,
     },
 
     #[error("MinLength of {node} = {found} doesn't match {expected}")]
     MinLengthError {
         expected: usize,
         found: usize,
-        node: String
+        node: String,
     },
 
     #[error("MaxLength of {node} = {found} doesn't match {expected}")]
     MaxLengthError {
         expected: usize,
         found: usize,
-        node: String
+        node: String,
     },
 
     #[error("NumericValue of {node} = {found} doesn't match minInclusive of {expected}")]
     MinInclusiveError {
         expected: NumericLiteral,
         found: NumericLiteral,
-        node: String
+        node: String,
     },
 
     #[error("Node {node} is not a numeric literal")]
-    NonNumeric {
-        node: String
-    },
+    NonNumeric { node: String },
 
     #[error("Shape label not found {shape_label}")]
     ShapeLabelNotFound { shape_label: ShapeLabel },
@@ -110,7 +107,7 @@ pub enum CompiledSchemaError {
     PrefixedNotFound {
         prefix: String,
         local: String,
-        err: PrefixMapError,
+        err: Box<PrefixMapError>,
     },
 
     #[error("Label not found: {shape_label}")]

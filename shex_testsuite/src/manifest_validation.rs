@@ -2,25 +2,25 @@ use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use iri_s::IriS;
-use tracing::debug;
 use prefixmap::IriRef;
 use serde::de::{self};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::{
-    compiled::schema_json_compiler::SchemaJsonCompiler, ast::Schema as SchemaJson, Node 
+    ast::Schema as SchemaJson, compiled::schema_json_compiler::SchemaJsonCompiler, Node,
 };
 use shex_validation::ResultValue;
 use shex_validation::Validator;
-use srdf::RDFFormat;
 use srdf::literal::Literal;
-use srdf::Object;
 use srdf::srdf_graph::SRDFGraph;
+use srdf::Object;
+use srdf::RDFFormat;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::str::FromStr;
+use tracing::debug;
 use ValidationType::*;
 
 #[derive(Deserialize, Debug)]

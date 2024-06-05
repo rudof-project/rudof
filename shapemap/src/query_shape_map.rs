@@ -3,7 +3,7 @@ use prefixmap::PrefixMap;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::SRDF;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct QueryShapeMap {
     associations: Vec<Association>,
     nodes_prefixmap: PrefixMap,
@@ -11,12 +11,8 @@ pub struct QueryShapeMap {
 }
 
 impl QueryShapeMap {
-    pub fn new() -> QueryShapeMap {
-        QueryShapeMap {
-            associations: Vec::new(),
-            nodes_prefixmap: PrefixMap::new(),
-            shapes_prefixmap: PrefixMap::new(),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn nodes_prefixmap(&self) -> PrefixMap {
@@ -46,10 +42,13 @@ impl QueryShapeMap {
         self.associations.iter()
     }
 
-    pub fn iter_node_shape<'a, S>(&'a self, 
-        rdf: &'a S) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
-    where S: SRDF {
+    pub fn iter_node_shape<'a, S>(
+        &'a self,
+        rdf: &'a S,
+    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
+    where
+        S: SRDF,
+    {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
     }
 }
-

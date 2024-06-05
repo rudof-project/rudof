@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use iri_s::IriS;
-use srdf::{literal::Literal, lang::Lang, Object};
+use srdf::{lang::Lang, literal::Literal, Object};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {
@@ -25,10 +25,7 @@ impl ObjectValue {
                     Literal::StringLiteral { lexical_form, lang } => {
                         value == lexical_form && language == lang
                     }
-                    Literal::DatatypeLiteral {
-                        lexical_form,
-                        datatype,
-                    } => todo!(),
+                    Literal::DatatypeLiteral { .. } => todo!(),
                     Literal::BooleanLiteral(_) => todo!(),
                     Literal::NumericLiteral(_) => todo!(),
                 },

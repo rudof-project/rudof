@@ -1,6 +1,5 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use tracing::debug;
 use shex_testsuite::manifest_mode::ManifestMode;
 use shex_testsuite::manifest_run_result::ManifestRunResult;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
@@ -16,12 +15,11 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use tracing::debug;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-
-
     /// Name of Manifest file
     #[arg(
         short = 'm',
@@ -112,9 +110,9 @@ fn main() -> Result<()> {
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
 
         let manifest_mode = if let Some(mm) = cli.manifest_mode {
-          mm 
+            mm
         } else {
-          config.manifest_mode  
+            config.manifest_mode
         };
 
         parse_manifest(manifest_str, manifest_mode)?
@@ -170,7 +168,6 @@ fn print_failed_simple(result: &ManifestRunResult) {
         println!("{name}");
     }
 }
-
 
 fn print_panicked(result: &ManifestRunResult) {
     println!("--- Not implemented ---");

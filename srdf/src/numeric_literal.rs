@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fmt::Display, result};
+use std::fmt::Display;
 
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde::{de::Visitor, Deserialize, Serialize, Serializer};
@@ -13,7 +13,6 @@ pub enum NumericLiteral {
 }
 
 impl NumericLiteral {
-
     /// Creates a numeric literal from a decimal
     pub fn decimal(d: Decimal) -> NumericLiteral {
         NumericLiteral::Decimal(d)
@@ -86,18 +85,16 @@ impl NumericLiteral {
         match self {
             NumericLiteral::Integer(n) => Decimal::from_isize(*n).unwrap(),
             NumericLiteral::Double(d) => Decimal::from_f64(*d).unwrap(),
-            NumericLiteral::Decimal(d) => *d
+            NumericLiteral::Decimal(d) => *d,
         }
     }
 
     pub fn less_than(&self, other: &NumericLiteral) -> bool {
-         match (self, other) {
+        match (self, other) {
             (NumericLiteral::Integer(n1), NumericLiteral::Integer(n2)) => n1 < n2,
-            (v1, v2) => v1.as_decimal() < v2.as_decimal()
-         }    
+            (v1, v2) => v1.as_decimal() < v2.as_decimal(),
+        }
     }
-
-    
 }
 
 impl Eq for NumericLiteral {}
@@ -110,23 +107,20 @@ impl Hash for NumericLiteral {
 }
 
 impl Serialize for NumericLiteral {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
             NumericLiteral::Integer(n) => {
-                let c: u128 = (*n).try_into().unwrap();
+                let c: u128 = (*n) as u128;
                 serializer.serialize_u128(c)
             }
             NumericLiteral::Decimal(d) => {
                 let f: f64 = (*d).try_into().unwrap();
                 serializer.serialize_f64(f)
             }
-            NumericLiteral::Double(d) => {
-                let f: f64 = (*d).try_into().unwrap();
-                serializer.serialize_f64(f)
-            }
+            NumericLiteral::Double(d) => serializer.serialize_f64(*d),
         }
     }
 }
@@ -213,8 +207,8 @@ impl Display for NumericLiteral {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             NumericLiteral::Double(d) => write!(f, "{}", d),
-            NumericLiteral::Integer(n) => write!(f, "{}", n.to_string()),
-            NumericLiteral::Decimal(d) => write!(f, "{}", d.to_string()),
+            NumericLiteral::Integer(n) => write!(f, "{}", n),
+            NumericLiteral::Decimal(d) => write!(f, "{}", d),
         }
     }
 }

@@ -32,26 +32,7 @@ pub trait Deref {
     where
         T: Deref,
     {
-        let result = match maybe {
-            None => None,
-            Some(t) => {
-                let new_t = t.deref(base, prefixmap)?;
-                Some(new_t)
-            }
-        };
-        Ok(result)
-    }
-
-    fn deref_box<T>(
-        bt: &Box<T>,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Box<T>, DerefError>
-    where
-        T: Deref,
-    {
-        let t = bt.as_ref().deref(base, prefixmap)?;
-        Ok(Box::new(t))
+        maybe.as_ref().map(|t| t.deref(base, prefixmap)).transpose()
     }
 
     fn deref_opt_box<T>(
@@ -62,29 +43,33 @@ pub trait Deref {
     where
         T: Deref,
     {
-        let result = match maybe {
-            None => None,
-            Some(t) => {
-                let new_t = t.deref(base, prefixmap)?;
-                Some(Box::new(new_t))
-            }
-        };
-        Ok(result)
+        maybe
+            .as_ref()
+            .map(|t| t.deref(base, prefixmap))
+            .transpose()
+            .map(|t| t.map(|t| Box::new(t)))
     }
 
     fn deref_vec<T>(
-        ts: &Vec<T>,
+        ts: &[T],
         base: &Option<IriS>,
         prefixmap: &Option<PrefixMap>,
     ) -> Result<Vec<T>, DerefError>
     where
         T: Deref,
     {
-        let mut new_ts = Vec::new();
-        for t in ts {
-            new_ts.push(t.deref(base, prefixmap)?);
-        }
-        Ok(new_ts)
+        ts.iter().map(|t| t.deref(base, prefixmap)).collect()
+    }
+
+    fn deref_vec_box<T>(
+        ts: &[Box<T>],
+        base: &Option<IriS>,
+        prefixmap: &Option<PrefixMap>,
+    ) -> Result<Vec<T>, DerefError>
+    where
+        T: Deref,
+    {
+        ts.iter().map(|t| t.deref(base, prefixmap)).collect()
     }
 
     fn deref_opt_vec<T>(
@@ -95,16 +80,9 @@ pub trait Deref {
     where
         T: Deref,
     {
-        let result = match maybe_ts {
-            None => None,
-            Some(ts) => {
-                let mut new_ts = Vec::new();
-                for t in ts {
-                    new_ts.push(t.deref(base, prefixmap)?);
-                }
-                Some(new_ts)
-            }
-        };
-        Ok(result)
+        maybe_ts
+            .as_ref()
+            .map(|ts| ts.iter().map(|t| t.deref(base, prefixmap)).collect())
+            .transpose()
     }
 }

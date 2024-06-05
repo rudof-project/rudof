@@ -1,7 +1,7 @@
 use std::fmt;
 
 use serde::de::{self};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 // use serde_derive::Serialize;
 
 #[derive(Serialize, Debug)]

@@ -1,7 +1,7 @@
 extern crate anyhow;
 extern crate clap;
+extern crate dctap;
 extern crate iri_s;
-extern crate tracing;
 extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
@@ -11,28 +11,29 @@ extern crate shapemap;
 extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
-extern crate tracing_subscriber;
 extern crate srdf;
-extern crate dctap;
+extern crate tracing;
+extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use tracing::debug;
+use dctap::DCTap;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
-use srdf::SRDF;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
-use tracing_subscriber::fmt::time::Uptime;
+use srdf::SRDF;
 use std::fs::File;
-use std::io::{self, Write, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::Instant;
-use dctap::DCTap;
+use tracing::debug;
+use tracing_subscriber::fmt::time::Uptime;
 
 pub mod cli;
 pub mod data;
@@ -41,19 +42,25 @@ pub use cli::*;
 pub use data::*;
 
 use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
-use tracing_subscriber::{fmt, filter::EnvFilter};
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::{filter::EnvFilter, fmt};
 
 fn main() -> Result<()> {
-
-
-    let fmt_layer = fmt::layer().with_file(true).with_target(false).with_line_number(true).without_time();
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_target(false)
+        .with_line_number(true)
+        .without_time();
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info")).unwrap();
-    tracing_subscriber::registry().with(filter_layer).with(fmt_layer).init();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
 
     tracing::info!("sx is running...");
-
 
     let cli = Cli::parse();
 
@@ -64,8 +71,15 @@ fn main() -> Result<()> {
             result_schema_format,
             output,
             show_time,
-            show_statistics
-        }) => run_schema(schema, schema_format, result_schema_format, output, *show_time, *show_statistics),
+            show_statistics,
+        }) => run_schema(
+            schema,
+            schema_format,
+            result_schema_format,
+            output,
+            *show_time,
+            *show_statistics,
+        ),
         Some(Command::Validate {
             schema,
             schema_format,
@@ -77,7 +91,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
-            output
+            output,
         }) => run_validate(
             schema,
             schema_format,
@@ -90,12 +104,13 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             cli.debug,
-            output
+            output,
         ),
-        Some(Command::Data { 
-            data, 
-            data_format, 
-            output }) => run_data(data, data_format, cli.debug, output),
+        Some(Command::Data {
+            data,
+            data_format,
+            output,
+        }) => run_data(data, data_format, cli.debug, output),
         Some(Command::Node {
             data,
             data_format,
@@ -104,7 +119,7 @@ fn main() -> Result<()> {
             predicates,
             show_node_mode,
             show_hyperlinks,
-            output
+            output,
         }) => run_node(
             data,
             data_format,
@@ -114,41 +129,26 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             cli.debug,
-            output
+            output,
         ),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
             result_shapemap_format,
-            output
-        }) => run_shapemap(
-            shapemap, 
-            shapemap_format, 
-            result_shapemap_format,
-            output
-        ),
+            output,
+        }) => run_shapemap(shapemap, shapemap_format, result_shapemap_format, output),
         Some(Command::Shacl {
             shapes,
             shapes_format,
             result_shapes_format,
-            output
-        }) => run_shacl(
-            shapes, 
-            shapes_format, 
-            result_shapes_format, 
-            output
-        ),
+            output,
+        }) => run_shacl(shapes, shapes_format, result_shapes_format, output),
         Some(Command::DCTap {
             file,
             format,
             result_format,
-            output
-        }) => run_dctap(
-            file, 
-            format, 
-            result_format, 
-            output
-        ),
+            output,
+        }) => run_dctap(file, format, result_format, output),
         None => {
             println!("Command not specified");
             Ok(())
@@ -162,7 +162,7 @@ fn run_schema(
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
     show_time: bool,
-    show_statistics: bool
+    show_statistics: bool,
 ) -> Result<()> {
     let begin = Instant::now();
     let mut writer = get_writer(output)?;
@@ -210,7 +210,7 @@ fn run_validate(
     shapemap_format: &ShapeMapFormat,
     max_steps: &usize,
     debug: u8,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
@@ -235,7 +235,9 @@ fn run_validate(
             shapemap.add_association(node_selector, shape_selector)
         }
         (None, Some(shape_str)) => {
-            tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
+            tracing::debug!(
+                "Shape label {shape_str} ignored because noshapemap has also been provided"
+            )
         }
     };
     let mut validator = Validator::new(schema).with_max_steps(*max_steps);
@@ -265,7 +267,7 @@ fn run_shacl(
     shapes_buf: &PathBuf,
     shapes_format: &ShaclFormat,
     result_shapes_format: &ShaclFormat,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let shacl_schema = parse_shacl(shapes_buf, shapes_format)?;
@@ -288,7 +290,7 @@ fn run_dctap(
     input_buf: &PathBuf,
     format: &DCTapFormat,
     result_format: &DCTapResultFormat,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let dctap = parse_dctap(input_buf, format)?;
@@ -301,14 +303,13 @@ fn run_dctap(
     }
 }
 
-
 fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {
     match output {
         None => {
             let stdout = io::stdout();
             let handle = stdout.lock();
             Ok(Box::new(handle))
-        },
+        }
         Some(path) => {
             let file = File::create(path)?;
             let writer = BufWriter::new(file);
@@ -368,7 +369,7 @@ fn run_node(
     show_node_mode: &ShowNodeMode,
     show_hyperlinks: &bool,
     debug: u8,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let data = get_data(data, data_format, endpoint, debug)?;
@@ -380,7 +381,7 @@ fn run_node(
             &endpoint,
             &show_node_mode,
             show_hyperlinks,
-            &mut writer
+            &mut writer,
         ),
         Data::RDFData(data) => show_node_info(
             node_selector,
@@ -388,7 +389,7 @@ fn run_node(
             &data,
             &show_node_mode,
             show_hyperlinks,
-            &mut writer
+            &mut writer,
         ),
     }
 }
@@ -399,7 +400,7 @@ fn show_node_info<S, W: Write>(
     rdf: &S,
     show_node_mode: &ShowNodeMode,
     _show_hyperlinks: &bool,
-    writer: &mut W
+    writer: &mut W,
 ) -> Result<()>
 where
     S: SRDF,
@@ -493,7 +494,7 @@ fn run_shapemap(
     shapemap: &PathBuf,
     shapemap_format: &ShapeMapFormat,
     result_format: &ShapeMapFormat,
-    output: &Option<PathBuf>
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let shapemap = parse_shapemap(shapemap, shapemap_format)?;
@@ -537,10 +538,11 @@ where
     }
 }
 
-fn run_data(data: &PathBuf, 
-    data_format: &DataFormat, 
-    _debug: u8, 
-    output: &Option<PathBuf>
+fn run_data(
+    data: &PathBuf,
+    data_format: &DataFormat,
+    _debug: u8,
+    output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let data = parse_data(data, data_format)?;
@@ -600,10 +602,9 @@ fn parse_dctap(input_buf: &PathBuf, format: &DCTapFormat) -> Result<DCTap> {
         DCTapFormat::CSV => {
             let dctap = DCTap::read_buf(input_buf)?;
             Ok(dctap)
-        },
+        }
     }
 }
-
 
 fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat> {
     match shacl_format {
@@ -612,7 +613,7 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
         ShaclFormat::NTriples => Ok(DataFormat::NTriples),
         ShaclFormat::TriG => Ok(DataFormat::TriG),
         ShaclFormat::N3 => Ok(DataFormat::N3),
-        ShaclFormat::NQuads => Ok(DataFormat::NQuads),    
+        ShaclFormat::NQuads => Ok(DataFormat::NQuads),
         ShaclFormat::Internal => bail!("Cannot convert internal SHACL format to RDF data format"),
     }
 }
@@ -624,7 +625,7 @@ fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
             let graph = SRDFGraph::from_path(data, &rdf_format, None)?;
             Ok(graph)
         }
-        _ => bail!("Not implemented reading from other RDF formats yet...")
+        _ => bail!("Not implemented reading from other RDF formats yet..."),
     }
 }
 

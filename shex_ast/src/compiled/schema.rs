@@ -1,5 +1,4 @@
 use iri_s::IriS;
-use iri_s::IriSError;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 
@@ -10,7 +9,7 @@ pub struct Schema {
     pub(crate) prefixes: Option<PrefixMap>,
 }
 
-impl<'a> Schema {
+impl Schema {
     pub fn id(&self) -> Option<IriS> {
         self.id.clone()
     }
@@ -20,12 +19,9 @@ impl<'a> Schema {
     }
 
     pub fn resolve(&self, alias: &str) -> Result<Option<IriS>, PrefixMapError> {
-        match &self.prefixes {
-            Some(pm) => { 
-                let iri = pm.resolve(alias)?;
-                Ok(Some(iri))
-            },
-            None => Ok(None),
-        }
+        self.prefixes
+            .as_ref()
+            .map(|pm| pm.resolve(alias))
+            .transpose()
     }
 }

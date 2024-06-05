@@ -66,7 +66,7 @@ pub(crate) fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector
         map_error(
             move |i| {
                 alt((
-                    map(shape_expr_label, |sl| ShapeSelector::Label(sl)),
+                    map(shape_expr_label, ShapeSelector::Label),
                     map(tag_no_case_tws("START"), |_| ShapeSelector::Start),
                 ))(i)
             },
@@ -86,7 +86,6 @@ fn subject_term(i: Span) -> IRes<NodeSelector> {
     let (i, iri) = iri(i)?;
     Ok((i, NodeSelector::iri_ref(iri)))
 }
-
 
 #[cfg(test)]
 mod tests {

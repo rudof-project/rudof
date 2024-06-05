@@ -17,7 +17,7 @@ where
     K: Hash + Eq + Display + Default + Clone,
     V: Hash + Default + Eq + Display + Clone,
 {
-    pub fn from(values: &Vec<(K, V)>) -> Values<K, V> {
+    pub fn from(values: &[(K, V)]) -> Values<K, V> {
         Values {
             values: values.to_vec(),
         }

@@ -104,7 +104,7 @@ impl TripleExpr {
             negated,
             inverse,
             predicate,
-            value_expr: se.map(|se| Box::new(se)),
+            value_expr: se.map(Box::new),
             min,
             max,
             sem_acts: None,
@@ -467,8 +467,8 @@ impl Deref for TripleExpr {
                 Ok(TripleExpr::EachOf {
                     id,
                     expressions,
-                    min: min.clone(),
-                    max: max.clone(),
+                    min: *min,
+                    max: *max,
                     sem_acts,
                     annotations,
                 })
@@ -490,8 +490,8 @@ impl Deref for TripleExpr {
                 Ok(TripleExpr::OneOf {
                     id,
                     expressions,
-                    min: min.clone(),
-                    max: max.clone(),
+                    min: *min,
+                    max: *max,
                     sem_acts,
                     annotations,
                 })
@@ -515,12 +515,12 @@ impl Deref for TripleExpr {
                 let value_expr = <ShapeExpr as Deref>::deref_opt_box(value_expr, base, prefixmap)?;
                 Ok(TripleExpr::TripleConstraint {
                     id,
-                    negated: negated.clone(),
-                    inverse: inverse.clone(),
+                    negated: *negated,
+                    inverse: *inverse,
                     predicate,
                     value_expr,
-                    min: min.clone(),
-                    max: max.clone(),
+                    min: *min,
+                    max: *max,
                     sem_acts,
                     annotations,
                 })
@@ -579,8 +579,8 @@ impl Deref for TripleExprWrapper {
     }
 }
 
-impl Into<TripleExprWrapper> for TripleExpr {
-    fn into(self) -> TripleExprWrapper {
-        TripleExprWrapper { te: self }
+impl From<TripleExpr> for TripleExprWrapper {
+    fn from(value: TripleExpr) -> Self {
+        Self { te: value }
     }
 }

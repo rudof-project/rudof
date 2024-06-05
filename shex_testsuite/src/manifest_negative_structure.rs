@@ -3,8 +3,8 @@ use std::{collections::HashMap, path::Path};
 use crate::{
     context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError,
 };
-use tracing::debug;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestNegativeStructureJson")]

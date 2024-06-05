@@ -7,7 +7,7 @@ pub enum NodeKind {
     BlankNode,
     BlankNodeOrIri,
     BlankNodeOrLiteral,
-    IRIOrLiteral
+    IRIOrLiteral,
 }
 
 impl Display for NodeKind {

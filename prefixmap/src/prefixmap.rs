@@ -28,7 +28,7 @@ pub struct PrefixMap {
 }
 
 fn split(str: &str) -> Option<(&str, &str)> {
-    str.rsplit_once(":")
+    str.rsplit_once(':')
 }
 
 impl PrefixMap {
@@ -304,14 +304,6 @@ impl fmt::Display for PrefixMap {
     }
 }
 
-/*impl Default for PrefixMap {
-    fn default() -> PrefixMap {
-        PrefixMap {
-            map: IndexMap::new(),
-        }
-    }
-}*/
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -349,7 +341,7 @@ mod tests {
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", &ex_iri);
         assert_eq!(
-            pm.resolve(&"ex:pepe").unwrap(),
+            pm.resolve("ex:pepe").unwrap(),
             IriS::from_str("http://example.org/pepe").unwrap()
         );
     }

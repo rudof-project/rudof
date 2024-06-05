@@ -24,4 +24,3 @@ lazy_static! {
     pub static ref XSD_DECIMAL: IriS = IriS::new_unchecked(XSD_DECIMAL_STR);
     pub static ref XSD_DOUBLE: IriS = IriS::new_unchecked(XSD_DOUBLE_STR);
 }
-

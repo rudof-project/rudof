@@ -4,7 +4,6 @@ use serde_derive::{Deserialize, Serialize};
 use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
-#[serde(try_from = "&str", into = "String")]
 pub struct BNode {
     value: String,
 }
@@ -29,10 +28,5 @@ impl TryFrom<&str> for BNode {
 impl Display for BNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "_:{}", self.value)
-    }
-}
-impl Into<String> for BNode {
-    fn into(self) -> String {
-        format!("_:{}", self.value)
     }
 }

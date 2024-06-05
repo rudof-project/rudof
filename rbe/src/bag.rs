@@ -25,21 +25,23 @@ impl<T: Hash + Eq> Bag<T> {
     }
 
     pub fn insert(&mut self, value: T) -> usize {
-        let n = self.bag.insert(value);
-        n
+        self.bag.insert(value)
     }
 
     pub fn insert_many(&mut self, value: T, n: usize) -> usize {
-        let n = self.bag.insert_many(value, n);
-        n
+        self.bag.insert_many(value, n)
     }
 
     pub fn contains(&self, value: &T) -> usize {
-        self.bag.contains(&value)
+        self.bag.contains(value)
     }
 
     pub fn len(&self) -> usize {
         self.bag.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.bag.is_empty()
     }
 
     pub fn iter(&self) -> SetIter<'_, T> {
@@ -81,7 +83,7 @@ where
     }
 }
 
-impl<T> std::iter::FromIterator<T> for Bag<T>
+impl<T> FromIterator<T> for Bag<T>
 where
     T: Eq + Hash,
 {
@@ -209,7 +211,7 @@ mod tests {
 
     #[test]
     fn bag_from_iter() {
-        let bag = Bag::from_iter(vec!['a', 'b', 'a'].into_iter());
+        let bag = Bag::from_iter(vec!['a', 'b', 'a']);
         assert_eq!(bag.contains(&'a'), 2);
         assert_eq!(bag.contains(&'b'), 1);
         assert_eq!(bag.contains(&'c'), 0);

@@ -40,15 +40,6 @@ impl IriRef {
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
     }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            IriRef::Iri(iri) => iri.as_str().to_string(),
-            IriRef::Prefixed { prefix, local } => {
-                format!("{prefix}:{local}")
-            }
-        }
-    }
 }
 
 impl Deref for IriRef {
@@ -96,9 +87,9 @@ impl FromStr for IriRef {
     }
 }
 
-impl Into<IriS> for IriRef {
-    fn into(self) -> IriS {
-        match self {
+impl From<IriRef> for IriS {
+    fn from(iri_ref: IriRef) -> IriS {
+        match iri_ref {
             IriRef::Iri(iri_s) => iri_s,
             IriRef::Prefixed { prefix, local } => {
                 panic!("Cannot convert prefixed name {prefix}:{local} to IriS without context")
@@ -113,9 +104,9 @@ impl From<IriS> for IriRef {
     }
 }
 
-impl Into<String> for IriRef {
-    fn into(self) -> String {
-        match self {
+impl From<IriRef> for String {
+    fn from(iri_ref: IriRef) -> String {
+        match iri_ref {
             IriRef::Iri(i) => i.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => format!("{prefix}:{local}"),
         }
@@ -125,7 +116,7 @@ impl Into<String> for IriRef {
 impl Display for IriRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IriRef::Iri(i) => write!(f, "{}", i.to_string())?,
+            IriRef::Iri(i) => write!(f, "{i}")?,
             IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}")?,
         }
         Ok(())

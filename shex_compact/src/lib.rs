@@ -42,10 +42,10 @@ pub use crate::compact_printer::*;
 pub use crate::grammar::*;
 pub use crate::located_parse_error::*;
 pub use crate::shapemap_compact_printer::*;
-pub use crate::shex_compact_printer::*;
-pub use crate::shex_grammar::*;
 pub use crate::shapemap_grammar::*;
 pub use crate::shapemap_parser::*;
+pub use crate::shex_compact_printer::*;
+pub use crate::shex_grammar::*;
 pub use crate::shex_parser::*;
 pub use crate::shex_parser_error::*;
 

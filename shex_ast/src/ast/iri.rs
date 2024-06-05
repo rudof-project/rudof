@@ -1,10 +1,10 @@
 use iri_s::{IriS, IriSError};
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::str::FromStr;
 use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-#[serde(try_from = "String", into = "String")]
 pub enum Iri {
     String(String),
     IriS(IriS),
@@ -34,12 +34,13 @@ impl Iri {
     }
 }
 
-impl Into<String> for Iri {
-    fn into(self) -> String {
-        match self {
+impl Display for Iri {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             Iri::String(s) => s,
-            Iri::IriS(iri_s) => iri_s.as_str().to_string(),
-        }
+            Iri::IriS(iri_s) => iri_s.as_str(),
+        };
+        write!(f, "{}", str)
     }
 }
 

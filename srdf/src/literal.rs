@@ -73,11 +73,11 @@ impl Literal {
 
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
-            Literal::StringLiteral { lexical_form, .. } => None,
-            Literal::DatatypeLiteral { lexical_form, .. } => None,
             Literal::NumericLiteral(nl) => Some(nl.clone()),
-            Literal::BooleanLiteral(true) => None,
-            Literal::BooleanLiteral(false) => None,
+            Literal::StringLiteral { .. }
+            | Literal::DatatypeLiteral { .. }
+            | Literal::BooleanLiteral(true)
+            | Literal::BooleanLiteral(false) => None,
         }
     }
 }
@@ -106,7 +106,7 @@ impl Display for Literal {
                 lexical_form,
                 datatype,
             } => write!(f, "\"{lexical_form}\"^^{datatype}"),
-            Literal::NumericLiteral(n) => write!(f, "{}", n.to_string()),
+            Literal::NumericLiteral(n) => write!(f, "{}", n),
             Literal::BooleanLiteral(true) => write!(f, "true"),
             Literal::BooleanLiteral(false) => write!(f, "false"),
         }
@@ -131,7 +131,7 @@ impl Deref for Literal {
     ) -> Result<Self, DerefError> {
         match self {
             Literal::NumericLiteral(n) => Ok(Literal::NumericLiteral(n.clone())),
-            Literal::BooleanLiteral(b) => Ok(Literal::BooleanLiteral(b.clone())),
+            Literal::BooleanLiteral(b) => Ok(Literal::BooleanLiteral(*b)),
             Literal::StringLiteral { lexical_form, lang } => Ok(Literal::StringLiteral {
                 lexical_form: lexical_form.clone(),
                 lang: lang.clone(),
@@ -142,9 +142,10 @@ impl Deref for Literal {
             } => {
                 let dt = datatype.deref(base, prefixmap)?;
                 Ok(Literal::DatatypeLiteral {
-                lexical_form: lexical_form.clone(),
-                datatype: dt,
-            })},
+                    lexical_form: lexical_form.clone(),
+                    datatype: dt,
+                })
+            }
         }
     }
 }

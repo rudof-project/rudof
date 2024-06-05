@@ -32,18 +32,16 @@ where
     }
 
     pub fn empty() -> MatchCond<K, V, R> {
-        MatchCond::Single(SingleCond::new().with_name("empty".into()))
+        MatchCond::Single(SingleCond::new().with_name("empty"))
     }
 
     pub fn matches(&self, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         match self {
             MatchCond::Single(single) => single.matches(value),
-            MatchCond::And(vs) => vs.iter().fold(Ok(Pending::new()), |result, c| {
-                result.and_then(|mut p| {
-                    let new_pending = c.matches(value)?;
-                    p.merge(new_pending);
-                    Ok(p)
-                })
+            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
+                let new_pending = c.matches(value)?;
+                current.merge(new_pending);
+                Ok(current)
             }),
             _ => {
                 todo!()
@@ -55,12 +53,11 @@ where
         MatchCond::Single(single)
     }
 
-    pub fn simple(name: &str, 
+    pub fn simple(
+        name: &str,
         cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static,
     ) -> Self {
-        MatchCond::single(
-            SingleCond::new().with_name(name).with_cond(cond)
-        )
+        MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
 }
 
@@ -205,12 +202,10 @@ where
     R: Ref,
 {
     pub fn matches(&self, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
-        self.cond.iter().fold(Ok(Pending::new()), |current, f| {
-            current.and_then(|mut r| {
-                let pending = f.call(value)?;
-                r.merge(pending);
-                Ok(r)
-            })
+        self.cond.iter().try_fold(Pending::new(), |mut current, f| {
+            let pending = f.call(value)?;
+            current.merge(pending);
+            Ok(current)
         })
     }
 
@@ -287,7 +282,7 @@ where
     R: Ref,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.name.clone().unwrap_or_else(|| "".to_string()))?;
+        write!(f, "{}", self.name.clone().unwrap_or_default())?;
         Ok(())
     }
 }
@@ -299,7 +294,7 @@ where
     R: Ref,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.name.clone().unwrap_or_else(|| "".to_string()))?;
+        write!(f, "{}", self.name.clone().unwrap_or_default())?;
         Ok(())
     }
 }

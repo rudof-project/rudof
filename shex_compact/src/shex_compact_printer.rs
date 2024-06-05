@@ -1,4 +1,3 @@
-use std::{borrow::Cow, marker::PhantomData};
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -6,11 +5,11 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind,
-    NumericFacet, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
-    StringFacet, TripleExpr, XsFacet,
+    value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind, NumericFacet, Pattern, Schema,
+    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
 use srdf::numeric_literal::NumericLiteral;
+use std::{borrow::Cow, marker::PhantomData};
 
 use crate::pp_object_value;
 
@@ -122,7 +121,7 @@ where
             marker: PhantomData,
             prefixmap: schema
                 .prefixmap()
-                .unwrap_or_else(|| PrefixMap::default())
+                .unwrap_or_default()
                 .with_qualify_localname_color(DEFAULT_QUALIFY_LOCALNAME_COLOR)
                 .with_qualify_prefix_color(DEFAULT_QUALIFY_ALIAS_COLOR)
                 .with_qualify_semicolon_color(DEFAULT_QUALIFY_SEMICOLON_COLOR),
@@ -156,7 +155,7 @@ where
 
     pub fn pretty_print(&self) -> String {
         let doc = self.pp_schema();
-        doc.pretty(self.width as usize).to_string()
+        doc.pretty(self.width).to_string()
     }
 
     fn pp_schema(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
@@ -261,10 +260,7 @@ where
     ) -> impl Fn(&TripleExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> + '_
     {
         move |te, printer| match te {
-            TripleExpr::EachOf {
-                expressions,
-                ..
-            } => {
+            TripleExpr::EachOf { expressions, .. } => {
                 let mut docs = Vec::new();
                 for e in expressions {
                     let pp_te = printer.pp_triple_expr()(&e.te, printer);
@@ -274,7 +270,7 @@ where
                     .doc
                     .intersperse(docs, printer.doc.text(";").append(printer.doc.line()))
             }
-            TripleExpr::OneOf {.. } => todo!(),
+            TripleExpr::OneOf { .. } => todo!(),
             TripleExpr::TripleConstraint {
                 negated,
                 inverse,
@@ -511,7 +507,7 @@ where
         match v {
             ValueSetValue::LanguageStem { .. } => todo!(),
             ValueSetValue::LanguageStemRange { .. } => todo!(),
-            ValueSetValue::ObjectValue(ov) => pp_object_value(&ov, self.doc, &self.prefixmap),
+            ValueSetValue::ObjectValue(ov) => pp_object_value(ov, self.doc, &self.prefixmap),
             ValueSetValue::IriStem { .. } => todo!(),
             ValueSetValue::IriStemRange { .. } => todo!(),
             ValueSetValue::LiteralStem { .. } => todo!(),
@@ -524,7 +520,7 @@ where
         match ref_ {
             ShapeExprLabel::BNode { value } => self.pp_bnode(value),
             ShapeExprLabel::IriRef { value } => self.pp_iri_ref(value),
-            ShapeExprLabel::Start => self.keyword("START")
+            ShapeExprLabel::Start => self.keyword("START"),
         }
     }
 
@@ -620,7 +616,7 @@ where
             printer
                 .keyword("base")
                 .append(printer.doc.space())
-                .append(printer.pp_iri_unqualified(&base))
+                .append(printer.pp_iri_unqualified(base))
                 .append(printer.doc.hardline())
         }
     }
@@ -651,7 +647,7 @@ where
     }
 
     fn pp_iri_unqualified(&self, iri: &IriS) -> DocBuilder<'a, Arena<'a, A>, A> {
-        let str = format!("<{}>", iri.to_string());
+        let str = format!("<{iri}>");
         self.doc.text(str)
     }
 
@@ -674,24 +670,24 @@ where
         use pretty::Doc::*;
         match &**d {
             Nil => true,
-            FlatAlt(t1, t2) => self.is_empty_ref(t1) && self.is_empty_ref(t2),
-            Group(t) => self.is_empty_ref(t),
-            Nest(_, t) => self.is_empty_ref(t),
-            Union(t1, t2) => self.is_empty_ref(t1) && self.is_empty_ref(t2),
-            Annotated(_, t) => self.is_empty_ref(t),
+            FlatAlt(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
+            Group(t) => Self::is_empty_ref(t),
+            Nest(_, t) => Self::is_empty_ref(t),
+            Union(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
+            Annotated(_, t) => Self::is_empty_ref(t),
             _ => false,
         }
     }
 
-    fn is_empty_ref(&self, rd: &RefDoc<'a, A>) -> bool {
+    fn is_empty_ref(rd: &RefDoc<'a, A>) -> bool {
         use pretty::Doc::*;
         match &**rd {
             Nil => true,
-            FlatAlt(t1, t2) => self.is_empty_ref(t1) && self.is_empty_ref(t2),
-            Group(t) => self.is_empty_ref(t),
-            Nest(_, t) => self.is_empty_ref(t),
-            Union(t1, t2) => self.is_empty_ref(t1) && self.is_empty_ref(t2),
-            Annotated(_, t) => self.is_empty_ref(t),
+            FlatAlt(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
+            Group(t) => Self::is_empty_ref(t),
+            Nest(_, t) => Self::is_empty_ref(t),
+            Union(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
+            Annotated(_, t) => Self::is_empty_ref(t),
             _ => false,
         }
     }

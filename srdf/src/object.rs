@@ -1,12 +1,12 @@
 use std::fmt::{Debug, Display};
 
 use crate::literal::Literal;
+use crate::numeric_literal::NumericLiteral;
 use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
-use crate::numeric_literal::NumericLiteral;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
-/// 
+///
 /// Note: We plan to support triple terms as in RDF-star in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
@@ -14,7 +14,6 @@ pub enum Object {
     BlankNode(String),
     Literal(Literal),
 }
-
 
 impl Object {
     pub fn iri(iri: IriS) -> Object {
@@ -29,7 +28,7 @@ impl Object {
         Object::Literal(lit)
     }
 
-    pub fn length(&self)  -> usize {
+    pub fn length(&self) -> usize {
         match self {
             Object::Iri(iri) => iri.as_str().len(),
             Object::BlankNode(bn) => bn.len(),
@@ -37,10 +36,9 @@ impl Object {
         }
     }
 
-    pub fn numeric_value(&self)  -> Option<NumericLiteral> {
+    pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
-            Object::Iri(iri) => None,
-            Object::BlankNode(bn) => None,
+            Object::Iri(_) | Object::BlankNode(_) => None,
             Object::Literal(lit) => lit.numeric_value(),
         }
     }

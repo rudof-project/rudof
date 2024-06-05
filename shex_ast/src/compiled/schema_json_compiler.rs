@@ -1,26 +1,23 @@
 use crate::compiled::annotation::Annotation;
 use crate::compiled::compiled_schema::CompiledSchema;
-use crate::compiled::node_kind::NodeKind;
 use crate::compiled::object_value::ObjectValue;
 use crate::compiled::sem_act::SemAct;
 use crate::compiled::shape::Shape;
 use crate::compiled::shape_expr::ShapeExpr;
 use crate::compiled::shape_label::ShapeLabel;
 use crate::compiled::value_set::ValueSet;
-use crate::compiled::value_set_value::{StringOrLiteralStem, StringOrWildcard, ValueSetValue};
-use crate::compiled::xs_facet::XsFacet;
+use crate::compiled::value_set_value::ValueSetValue;
 use crate::ShapeExprLabel;
 use crate::{ast, ast::Schema as SchemaJson, CompiledSchemaError, ShapeLabelIdx};
 use crate::{CResult, Cond, Node, Pred};
 use iri_s::IriS;
-use tracing::debug;
+use lazy_static::lazy_static;
 use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use srdf::literal::Literal;
 use srdf::Object;
-use srdf::numeric_literal::NumericLiteral;
-use lazy_static::lazy_static;
+use tracing::debug;
 
 use super::node_constraint::NodeConstraint;
 
@@ -33,16 +30,14 @@ lazy_static! {
     ));
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SchemaJsonCompiler {
     shape_decls_counter: usize,
 }
 
 impl SchemaJsonCompiler {
-    pub fn new() -> SchemaJsonCompiler {
-        SchemaJsonCompiler {
-            shape_decls_counter: 0,
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn compile(
@@ -93,7 +88,7 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn shape_expr_label_to_shape_label<'a>(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
+    fn shape_expr_label_to_shape_label(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
         match id {
             ShapeExprLabel::IriRef { value } => {
                 let shape_label = iri_ref_2_shape_label(value)?;
@@ -219,7 +214,7 @@ impl SchemaJsonCompiler {
                 // let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
                 // let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
                 let cond = Self::cnv_node_constraint(
-                    &self,
+                    self,
                     &nc.node_kind(),
                     &nc.datatype(),
                     &nc.xs_facet(),
@@ -260,11 +255,11 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn cnv_extra<'a>(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
+    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
-                let nm = cnv_iri_ref(&iri)?;
+                let nm = cnv_iri_ref(iri)?;
                 vs.push(nm);
             }
             Ok(vs)
@@ -312,7 +307,7 @@ impl SchemaJsonCompiler {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                Ok(Self::mk_card_group(Rbe::and(cs.into_iter()), card))
+                Ok(Self::mk_card_group(Rbe::and(cs), card))
             }
             ast::TripleExpr::OneOf {
                 id: _,
@@ -328,7 +323,7 @@ impl SchemaJsonCompiler {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                Ok(Self::mk_card_group(Rbe::or(cs.into_iter()), card))
+                Ok(Self::mk_card_group(Rbe::or(cs), card))
             }
             ast::TripleExpr::TripleConstraint {
                 id: _,
@@ -341,8 +336,8 @@ impl SchemaJsonCompiler {
                 sem_acts: _,
                 annotations: _,
             } => {
-                let min = self.cnv_min(&min)?;
-                let max = self.cnv_max(&max)?;
+                let min = self.cnv_min(min)?;
+                let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
                 let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
                 let c = current_table.add_component(iri, &cond);
@@ -366,8 +361,8 @@ impl SchemaJsonCompiler {
     }
 
     fn cnv_min_max(&self, min: &Option<i32>, max: &Option<i32>) -> CResult<Cardinality> {
-        let min = self.cnv_min(&min)?;
-        let max = self.cnv_max(&max)?;
+        let min = self.cnv_min(min)?;
+        let max = self.cnv_max(max)?;
         Ok(Cardinality::from(min, max))
     }
 
@@ -453,13 +448,11 @@ impl SchemaJsonCompiler {
         match te {
             ast::TripleExpr::EachOf { expressions, .. } => expressions
                 .iter()
-                .map(|te| Self::get_preds_triple_expr(&te.te))
-                .flatten()
+                .flat_map(|te| Self::get_preds_triple_expr(&te.te))
                 .collect(),
             ast::TripleExpr::OneOf { expressions, .. } => expressions
                 .iter()
-                .map(|te| Self::get_preds_triple_expr(&te.te))
-                .flatten()
+                .flat_map(|te| Self::get_preds_triple_expr(&te.te))
                 .collect(),
             ast::TripleExpr::TripleConstraint { predicate, .. } => {
                 let pred = iri_ref2iri_s(predicate);
@@ -485,19 +478,12 @@ fn node_constraint2match_cond(
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
 ) -> CResult<Cond> {
-    let c1: Option<Cond> = node_kind.as_ref().map(|k| node_kind2match_cond(k));
-    let c2 = invert_option(datatype.as_ref().map(|dt| {
-        let c = datatype2match_cond(&dt)?;
-        Ok(c)
-    }))?;
-    let c3 = xs_facet.as_ref().map(|xsf| xs_facets2match_cond(&xsf));
+    let c1: Option<Cond> = node_kind.as_ref().map(node_kind2match_cond);
+    let c2 = datatype.as_ref().map(datatype2match_cond).transpose()?;
+    let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
     let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
     let os = vec![c1, c2, c3, c4];
     Ok(options2match_cond(os))
-}
-
-fn invert_option<T>(r: Option<CResult<T>>) -> CResult<Option<T>> {
-    r.map_or(Ok(None), |v| v.map(Some))
 }
 
 fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
@@ -520,26 +506,22 @@ fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
     match xs_facet {
         ast::XsFacet::StringFacet(sf) => string_facet_to_match_cond(sf),
-        ast::XsFacet::NumericFacet(nf) => numeric_facet_to_match_cond(nf)
-    } 
+        ast::XsFacet::NumericFacet(nf) => numeric_facet_to_match_cond(nf),
+    }
 }
 
 fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
     match sf {
-        ast::StringFacet::Length(len) => {
-            mk_cond_length(*len)
-        },
-        ast::StringFacet::MinLength(len) => mk_cond_min_length(*len)
-        ,
+        ast::StringFacet::Length(len) => mk_cond_length(*len),
+        ast::StringFacet::MinLength(len) => mk_cond_min_length(*len),
         ast::StringFacet::MaxLength(len) => mk_cond_max_length(*len),
         ast::StringFacet::Pattern(_) => todo!(),
-        
     }
 }
 
 fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     match nf {
-        ast::NumericFacet::MinInclusive(min) => 
+        ast::NumericFacet::MinInclusive(_min) =>
            /*MatchCond::simple(
             format!("minInclusive({min})").as_str(),
             move |value: &Node| match check_node_min_inclusive(value, min) {
@@ -557,7 +539,6 @@ fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
         ast::NumericFacet::FractionDigits(_) => todo!(),
     }
 }
-
 
 fn valueset2match_cond(vs: ValueSet) -> Cond {
     mk_cond_value_set(vs)
@@ -614,29 +595,27 @@ fn mk_cond_min_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minLength{len}").as_str())
-            .with_cond(move |value: &Node| match check_node_min_length(value, len) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MinLength error: {err}"),
-                }),
-            }),
+            .with_cond(
+                move |value: &Node| match check_node_min_length(value, len) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinLength error: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
 fn mk_cond_max_length(len: usize) -> Cond {
-   MatchCond::simple(
-    format!("maxLength{len}").as_str(),
-    move |value: &Node| match check_node_max_length(value, len) {
-        Ok(_) => Ok(Pending::new()),
-        Err(err) => Err(RbeError::MsgError {
-            msg: format!("MaxLength error: {err}"),
-        }),
-    }
- )
- 
+    MatchCond::simple(format!("maxLength{len}").as_str(), move |value: &Node| {
+        match check_node_max_length(value, len) {
+            Ok(_) => Ok(Pending::new()),
+            Err(err) => Err(RbeError::MsgError {
+                msg: format!("MaxLength error: {err}"),
+            }),
+        }
+    })
 }
-
-
 
 fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
@@ -691,11 +670,11 @@ fn create_value_set(values: &Vec<ast::ValueSetValue>) -> CResult<ValueSet> {
 fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
     match &v {
         ast::ValueSetValue::IriStem { stem, .. } => {
-            let cnv_stem = cnv_iri_ref(&stem)?;
+            let cnv_stem = cnv_iri_ref(stem)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(&ovw)?;
+            let ov = cnv_object_value(ovw)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -704,9 +683,7 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
         ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
             stem: stem.to_string(),
         }),
-        ast::ValueSetValue::LiteralStemRange {
-            stem, exclusions, ..
-        } => {
+        ast::ValueSetValue::LiteralStemRange { .. } => {
             todo!()
             /*let stem = cnv_string_or_wildcard(&stem)?;
             let exclusions = cnv_opt_vec(&exclusions, cnv_string_or_literalstem)?;
@@ -716,11 +693,12 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
     }
 }
 
-fn cnv_node_kind(nk: &ast::NodeKind) -> CResult<NodeKind> {
+/*
+fn cnv_node_kind(_nk: &ast::NodeKind) -> CResult<NodeKind> {
     todo!()
 }
 
-fn cnv_xs_facet(xsf: &ast::XsFacet) -> CResult<XsFacet> {
+fn cnv_xs_facet(_xsf: &ast::XsFacet) -> CResult<XsFacet> {
     todo!()
 }
 
@@ -770,13 +748,16 @@ where
     }
 }
 
-fn cnv_string_or_wildcard(sw: &ast::StringOrWildcard) -> CResult<StringOrWildcard> {
+fn cnv_string_or_wildcard(_sw: &ast::StringOrWildcard) -> CResult<StringOrWildcard> {
     todo!()
 }
 
-fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<StringOrLiteralStem> {
+fn cnv_string_or_literalstem(
+    _sl: &ast::StringOrLiteralStemWrapper,
+) -> CResult<StringOrLiteralStem> {
     todo!()
 }
+*/
 
 fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
@@ -784,7 +765,7 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
-        ast::ObjectValue::Literal(n) => {
+        ast::ObjectValue::Literal(_n) => {
             todo!()
         } /*ast::ObjectValue::ObjectLiteral {
               value, language, ..
@@ -824,12 +805,14 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     }
 }
 
+/*
 fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<()> {
     match datatype {
         None => Ok(()),
         Some(dt) => check_node_datatype(node, dt),
     }
 }
+*/
 
 fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
     debug!("check_node_datatype: {node:?} datatype: {dt}");
@@ -894,7 +877,7 @@ fn check_node_length(node: &Node, len: usize) -> CResult<()> {
         Err(CompiledSchemaError::LengthError {
             expected: len,
             found: node_length,
-            node: format!("{node}")
+            node: format!("{node}"),
         })
     }
 }
@@ -908,7 +891,7 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
         Err(CompiledSchemaError::MinLengthError {
             expected: len,
             found: node_length,
-            node: format!("{node}")
+            node: format!("{node}"),
         })
     }
 }
@@ -922,29 +905,31 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
         Err(CompiledSchemaError::MaxLengthError {
             expected: len,
             found: node_length,
-            node: format!("{node}")
+            node: format!("{node}"),
         })
     }
 }
 
+/*
 fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
     debug!("check_node_min_inclusive: {node:?} min: {min}");
     if let Some(node_number) = node.numeric_value() {
-      if node_number.less_than(min) {
-        Ok(())
-      } else {
-        Err(CompiledSchemaError::MinInclusiveError {
-            expected: min.clone(),
-            found: node_number,
-            node: format!("{node}")
-        })
-      }   
+        if node_number.less_than(min) {
+            Ok(())
+        } else {
+            Err(CompiledSchemaError::MinInclusiveError {
+                expected: min.clone(),
+                found: node_number,
+                node: format!("{node}"),
+            })
+        }
     } else {
         Err(CompiledSchemaError::NonNumeric {
-            node: format!("{node}")
+            node: format!("{node}"),
         })
     }
 }
+*/
 
 /*fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
     Ok(()) // todo!()
