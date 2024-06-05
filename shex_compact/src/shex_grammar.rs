@@ -2447,6 +2447,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_prefix_simple() {
+        let s = shex_statement()(Span::new("prefix : <urn>")).unwrap();
+        assert_eq!(
+            s.1,
+            ShExStatement::PrefixDecl {
+                alias: "",
+                iri: IriS::new_unchecked("urn")
+            }
+        );
+    }
+
+    #[test]
     fn test_prefix_id_with_dots() {
         let s = shex_statement()(Span::new("prefix a.b.c: <urn>")).unwrap();
         assert_eq!(
