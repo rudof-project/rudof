@@ -57,7 +57,7 @@ impl Deref for ShapeDecl {
         let shape_expr = self.shape_expr.deref(base, prefixmap)?;
         Ok(ShapeDecl {
             type_: self.type_.clone(),
-            is_abstract: self.is_abstract.clone(),
+            is_abstract: self.is_abstract,
             id,
             shape_expr,
         })

@@ -7,12 +7,9 @@ use serde_derive::{Deserialize, Serialize};
 use prefixmap::{Deref, DerefError, IriRef};
 use thiserror::Error;
 
-use crate::ShapeExpr;
-
 use super::bnode::BNode;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone)]
-#[serde(try_from = "&str", into = "String")]
 pub enum ShapeExprLabel {
     IriRef { value: IriRef },
     BNode { value: BNode },
@@ -99,13 +96,14 @@ impl TryFrom<&str> for ShapeExprLabel {
     }
 }
 
-impl Into<String> for ShapeExprLabel {
-    fn into(self) -> String {
-        match self {
-            ShapeExprLabel::IriRef { value } => value.into(),
-            ShapeExprLabel::BNode { value } => value.into(),
+impl Display for ShapeExprLabel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            ShapeExprLabel::IriRef { value } => value.to_string(),
+            ShapeExprLabel::BNode { value } => value.to_string(),
             ShapeExprLabel::Start => "START".to_string(),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -124,14 +122,4 @@ pub enum RefError {
 
     #[error("Cannot parse as Iri or BNode: {str}")]
     BadRef { str: String },
-}
-
-impl Display for ShapeExprLabel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ShapeExprLabel::IriRef { value } => write!(f,"{value}"),
-            ShapeExprLabel::BNode { value } => write!(f,"{value}"),
-            ShapeExprLabel::Start => write!(f,"Start"),
-        }
-    }
 }

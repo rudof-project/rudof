@@ -1,14 +1,17 @@
 use crate::{shex_parser_error::ParseError as ShExParseError, Span};
 use nom::error::{ErrorKind, FromExternalError};
-use std::{fmt::Debug, num::{ParseIntError, ParseFloatError}};
+use std::{
+    fmt::Debug,
+    num::{ParseFloatError, ParseIntError},
+};
 use thiserror::Error;
 
 /// A [`ShExParseError`] at a certain location
 #[derive(Debug, Error)]
-#[error("Parse error on line {}, column {}: {}\nat {}{}", 
-  .line, .column, 
-  .source, 
-  .fragment, 
+#[error("Parse error on line {}, column {}: {}\nat {}{}",
+  .line, .column,
+  .source,
+  .fragment,
   format_parse_error_context(.context))]
 pub struct LocatedParseError {
     #[source]
@@ -74,4 +77,3 @@ impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
         .at(input)
     }
 }
-

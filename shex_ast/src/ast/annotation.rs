@@ -149,7 +149,7 @@ impl<'de> Deserialize<'de> for Annotation {
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["type", "predicate", "object"];
+        const FIELDS: &[&str] = &["type", "predicate", "object"];
         deserializer.deserialize_struct("Annotation", FIELDS, AnnotationVisitor)
     }
 }

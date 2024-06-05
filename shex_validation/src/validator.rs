@@ -6,7 +6,6 @@ use crate::PosAtom;
 use crate::Reason;
 use crate::ResultValue;
 use either::Either;
-use tracing::debug;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use shapemap::query_shape_map::QueryShapeMap;
@@ -18,6 +17,7 @@ use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
 use srdf::SRDF;
+use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;

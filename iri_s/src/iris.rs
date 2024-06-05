@@ -17,7 +17,6 @@ pub struct IriS {
 }
 
 impl IriS {
-
     pub fn rdf_type() -> IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
@@ -39,8 +38,8 @@ impl IriS {
         &self.iri
     }
 
-    /// Extend an IRI with a new string 
-    /// 
+    /// Extend an IRI with a new string
+    ///
     /// This function is safe as it checks for possible errors
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
@@ -50,7 +49,7 @@ impl IriS {
     }
 
     /// Extend an IRI with a new string without checking for possible syntactic errors
-    /// 
+    ///
     pub fn extend_unchecked(&self, str: &str) -> Self {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
         let iri = NamedNode::new_unchecked(extended_str);
@@ -144,7 +143,6 @@ impl<'de> Deserialize<'de> for IriS {
         deserializer.deserialize_str(IriVisitor)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

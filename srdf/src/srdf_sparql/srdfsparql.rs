@@ -1,10 +1,11 @@
-use crate::{SRDFSparqlError, Object, literal::Literal, lang::Lang};
+use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
+use crate::{AsyncSRDF, SRDFBasic, SRDF};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use oxrdf::{Literal as OxLiteral, Term as OxTerm, Subject as OxSubject, 
-     BlankNode as OxBlankNode, 
-     NamedNode as OxNamedNode
+use oxrdf::{
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
+    Term as OxTerm,
 };
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
@@ -13,8 +14,9 @@ use reqwest::{
     header::{self, ACCEPT, USER_AGENT},
     Url,
 };
-use sparesults::{QueryResultsFormat, QueryResultsParser, QuerySolution, FromReadQueryResultsReader};
-use crate::{AsyncSRDF, SRDFBasic, SRDF};
+use sparesults::{
+    FromReadQueryResultsReader, QueryResultsFormat, QueryResultsParser, QuerySolution,
+};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt::Display,
@@ -36,28 +38,8 @@ impl SRDFSparql {
         Ok(SRDFSparql {
             endpoint_iri: iri.clone(),
             prefixmap: PrefixMap::new(),
-            client: client,
+            client,
         })
-    }
-
-    pub fn from_str(s: &str) -> Result<SRDFSparql> {
-        let re_iri = Regex::new(r"<(.*)>").unwrap();
-        if let Some(iri_str) = re_iri.captures(s) {
-            let iri_s = IriS::from_str(&iri_str[1])?;
-            let client = sparql_client()?;
-            Ok(SRDFSparql {
-                endpoint_iri: iri_s,
-                prefixmap: PrefixMap::new(),
-                client,
-            })
-        } else {
-            match s.to_lowercase().as_str() {
-                "wikidata" => SRDFSparql::wikidata(),
-                name => Err(SRDFSparqlError::UnknownEndpontName {
-                    name: name.to_string(),
-                }),
-            }
-        }
     }
 
     pub fn wikidata() -> Result<SRDFSparql> {
@@ -78,6 +60,30 @@ impl SRDFSparql {
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
+    }
+}
+
+impl FromStr for SRDFSparql {
+    type Err = SRDFSparqlError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let re_iri = Regex::new(r"<(.*)>").unwrap();
+        if let Some(iri_str) = re_iri.captures(s) {
+            let iri_s = IriS::from_str(&iri_str[1])?;
+            let client = sparql_client()?;
+            Ok(SRDFSparql {
+                endpoint_iri: iri_s,
+                prefixmap: PrefixMap::new(),
+                client,
+            })
+        } else {
+            match s.to_lowercase().as_str() {
+                "wikidata" => SRDFSparql::wikidata(),
+                name => Err(SRDFSparqlError::UnknownEndpontName {
+                    name: name.to_string(),
+                }),
+            }
+        }
     }
 }
 
@@ -102,16 +108,10 @@ impl SRDFBasic for SRDFSparql {
         }
     }
     fn subject_is_iri(subject: &OxSubject) -> bool {
-        match subject {
-            OxSubject::NamedNode(_) => true,
-            _ => false,
-        }
+        matches!(subject, OxSubject::NamedNode(_))
     }
     fn subject_is_bnode(subject: &OxSubject) -> bool {
-        match subject {
-            OxSubject::BlankNode(_) => true,
-            _ => false,
-        }
+        matches!(subject, OxSubject::BlankNode(_))
     }
 
     fn term_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
@@ -134,24 +134,15 @@ impl SRDFBasic for SRDFSparql {
     }
 
     fn term_is_iri(object: &OxTerm) -> bool {
-        match object {
-            OxTerm::NamedNode(_) => true,
-            _ => false,
-        }
+        matches!(object, OxTerm::NamedNode(_))
     }
 
     fn term_is_bnode(object: &OxTerm) -> bool {
-        match object {
-            OxTerm::BlankNode(_) => true,
-            _ => false,
-        }
+        matches!(object, OxTerm::BlankNode(_))
     }
 
     fn term_is_literal(object: &OxTerm) -> bool {
-        match object {
-            OxTerm::Literal(_) => true,
-            _ => false,
-        }
+        matches!(object, OxTerm::Literal(_))
     }
 
     fn term_as_subject(object: &Self::Term) -> Option<OxSubject> {
@@ -184,17 +175,14 @@ impl SRDFBasic for SRDFSparql {
         match term {
             Self::Term::BlankNode(bn) => Object::BlankNode(bn.to_string()),
             Self::Term::Literal(lit) => match lit.to_owned().destruct() {
-                (s, None, None) => Object::Literal(
-                    Literal::StringLiteral {
+                (s, None, None) => Object::Literal(Literal::StringLiteral {
                     lexical_form: s,
                     lang: None,
                 }),
-                (s, None, Some(lang)) => {
-                    Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: Some(Lang::new(lang.as_str())),
-                    })
-                }
+                (s, None, Some(lang)) => Object::Literal(Literal::StringLiteral {
+                    lexical_form: s,
+                    lang: Some(Lang::new(lang.as_str())),
+                }),
                 (s, Some(datatype), _) => {
                     let iri_s = Self::iri2iri_s(&datatype);
                     Object::Literal(Literal::DatatypeLiteral {
@@ -203,9 +191,7 @@ impl SRDFBasic for SRDFSparql {
                     })
                 }
             },
-            Self::Term::NamedNode(iri) => Object::Iri(
-                Self::iri2iri_s(iri),
-            ),
+            Self::Term::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
         }
     }
 
@@ -236,7 +222,7 @@ impl SRDFBasic for SRDFSparql {
     fn qualify_term(&self, term: &OxTerm) -> String {
         match term {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
-            OxTerm::Literal(lit) => self.show_literal(&lit),
+            OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
         }
     }
@@ -245,7 +231,7 @@ impl SRDFBasic for SRDFSparql {
         OxSubject::NamedNode(iri)
     }
 
-    fn prefixmap(&self) -> Option<PrefixMap> { 
+    fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
     }
 
@@ -257,11 +243,11 @@ impl SRDFBasic for SRDFSparql {
         OxTerm::BlankNode(bnode)
     }
 
-    fn object_as_term(obj: &Object) -> Self::Term {
+    fn object_as_term(_obj: &Object) -> Self::Term {
         todo!()
     }
 
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
+    fn bnode_as_subject(_bnode: Self::BNode) -> Self::Subject {
         todo!()
     }
 }
@@ -288,16 +274,16 @@ impl AsyncSRDF for SRDFSparql {
 
     async fn get_objects_for_subject_predicate(
         &self,
-        subject: &OxSubject,
-        pred: &OxNamedNode,
+        _subject: &OxSubject,
+        _pred: &OxNamedNode,
     ) -> Result<HashSet<OxTerm>> {
         todo!();
     }
 
     async fn get_subjects_for_object_predicate(
         &self,
-        object: &OxTerm,
-        pred: &OxNamedNode,
+        _object: &OxTerm,
+        _pred: &OxNamedNode,
     ) -> Result<HashSet<OxSubject>> {
         todo!();
     }
@@ -379,12 +365,12 @@ impl SRDF for SRDFSparql {
         (HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>),
         Self::Err,
     > {
-        outgoing_neighs_from_list(&subject, preds, &self.client, &self.endpoint_iri)
+        outgoing_neighs_from_list(subject, preds, &self.client, &self.endpoint_iri)
     }
 
     fn triples_with_predicate(
         &self,
-        _pred: &Self::IRI
+        _pred: &Self::IRI,
     ) -> std::prelude::v1::Result<Vec<crate::Triple<Self>>, Self::Err> {
         todo!()
     }
@@ -413,7 +399,9 @@ fn make_sparql_query(
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) =
+        json_parser.parse_read(body.as_bytes())?
+    {
         for solution in solutions {
             let sol = solution?;
             results.push(sol)
@@ -453,7 +441,9 @@ fn outgoing_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) =
+        json_parser.parse_read(body.as_bytes())?
+    {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(obj)) {
@@ -496,12 +486,14 @@ fn outgoing_neighs(
     }
 }
 
+type OutputNodes = HashMap<OxNamedNode, HashSet<OxTerm>>;
+
 fn outgoing_neighs_from_list(
     subject: &OxSubject,
     preds: Vec<OxNamedNode>,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<(HashMap<OxNamedNode, HashSet<OxTerm>>, Vec<OxNamedNode>)> {
+) -> Result<(OutputNodes, Vec<OxNamedNode>)> {
     // This is not an efficient way to obtain the neighbours related with a set of predicates
     // At this moment, it obtains all neighbours and them removes the ones that are not in the list
     let mut remainder = Vec::new();
@@ -531,7 +523,9 @@ fn incoming_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) = json_parser.parse_read(body.as_bytes())? {
+    if let FromReadQueryResultsReader::Solutions(solutions) =
+        json_parser.parse_read(body.as_bytes())?
+    {
         for solution in solutions {
             let sol = solution?;
             match (sol.get(pred), sol.get(subj)) {
@@ -625,6 +619,8 @@ fn subject_as_term(subject: &OxSubject) -> OxTerm {
     match subject {
         OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
         OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
+        #[cfg(feature = "rdf-star")]
+        _ => unimplemented!(),
     }
 }
 
@@ -644,6 +640,6 @@ mod tests {
         let p19: NamedNode =
             NamedNode::new_unchecked("http://www.wikidata.org/prop/P19".to_string());
 
-        assert_eq!(data.contains(&p19), true);
+        assert!(data.contains(&p19));
     }
 }

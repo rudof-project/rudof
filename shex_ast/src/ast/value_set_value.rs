@@ -395,7 +395,7 @@ impl<'de> Deserialize<'de> for Stem {
 
         struct StemVisitor;
 
-        const FIELDS: &'static [&'static str] = &["type"];
+        const FIELDS: &[&str] = &["type"];
 
         impl<'de> Visitor<'de> for StemVisitor {
             type Value = Stem;
@@ -424,7 +424,7 @@ impl<'de> Deserialize<'de> for Stem {
                             }
                             let value: String = map.next_value()?;
 
-                            let parsed_type_ = StemType::parse(&value.as_str()).map_err(|e| {
+                            let parsed_type_ = StemType::parse(value.as_str()).map_err(|e| {
                                 de::Error::custom(format!(
                                     "Error parsing stem type, found: {value}. Error: {e:?}"
                                 ))
@@ -435,7 +435,7 @@ impl<'de> Deserialize<'de> for Stem {
                 }
                 match type_ {
                     Some(StemType::Wildcard) => Ok(Stem::Wildcard),
-                    _ => Err(de::Error::custom("Unknwon stem type")),
+                    _ => Err(de::Error::custom("Unknown stem type")),
                 }
             }
         }
@@ -449,6 +449,7 @@ enum StemType {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct StemTypeError {
     stem_type: String,
 }
@@ -516,7 +517,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
 
         struct ValueSetValueVisitor;
 
-        const FIELDS: &'static [&'static str] = &[
+        const FIELDS: &[&str] = &[
             "type",
             "value",
             "stem",
@@ -559,7 +560,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                             let value: String = map.next_value()?;
 
                             let parsed_type_ =
-                                ValueSetValueType::parse(&value.as_str()).map_err(|e| {
+                                ValueSetValueType::parse(value.as_str()).map_err(|e| {
                                     de::Error::custom(format!(
                                     "Error parsing ValueSetValue type, found: {value}. Error: {e}"
                                 ))
@@ -609,7 +610,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     de::Error::custom(format!("LiteralStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
                                 })?;
                                 Ok(ValueSetValue::LiteralStemRange {
-                                    stem: stem,
+                                    stem,
                                     exclusions: Some(lit_excs),
                                 })
                             }
@@ -629,7 +630,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     de::Error::custom(format!("LanguageStemRange: stem is not lang or wildcard. stem `{stem:?}`: {e:?}"))
                                 })?;
                                 Ok(ValueSetValue::LanguageStemRange {
-                                    stem: stem,
+                                    stem,
                                     exclusions: Some(lang_excs),
                                 })
                             }
@@ -647,7 +648,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     de::Error::custom(format!("IriStemRange: stem is not string or wildcard. stem `{stem:?}`: {e:?}"))
                                 })?;
                                 Ok(ValueSetValue::IriStemRange {
-                                    stem: stem,
+                                    stem,
                                     exclusions: Some(iri_excs),
                                 })
                             }
@@ -657,12 +658,12 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     },
                     Some(ValueSetValueType::LiteralStem) => match stem {
                         Some(stem) => {
-                            let stem = stem.as_string().map_err(|e| {
-                                de::Error::custom(format!(
-                                    "LiteralStem: value of stem must be a string"
-                                ))
+                            let stem = stem.as_string().map_err(|_e| {
+                                de::Error::custom(
+                                    "LiteralStem: value of stem must be a string".to_string(),
+                                )
                             })?;
-                            Ok(ValueSetValue::LiteralStem { stem: stem })
+                            Ok(ValueSetValue::LiteralStem { stem })
                         }
                         None => Err(de::Error::missing_field("stem")),
                     },

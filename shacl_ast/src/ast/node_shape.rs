@@ -1,9 +1,7 @@
+use srdf::RDFNode;
 use std::fmt::Display;
 
-use prefixmap::IriRef;
-use srdf::{numeric_literal::NumericLiteral, RDFNode};
-
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{component::Component, target::Target};
 
 #[derive(Debug, Clone)]
 pub struct NodeShape {
@@ -12,18 +10,18 @@ pub struct NodeShape {
     targets: Vec<Target>,
     property_shapes: Vec<RDFNode>,
     closed: bool,
-    ignored_properties: Vec<IriRef>,
-    deactivated: bool,
-    message: MessageMap,
-    severity: Option<Severity>,
-    name: MessageMap,
-    description: MessageMap,
+    // ignored_properties: Vec<IriRef>,
+    // deactivated: bool,
+    // message: MessageMap,
+    // severity: Option<Severity>,
+    // name: MessageMap,
+    // description: MessageMap,
 
     // SHACL spec says that the values of sh:order should be decimals but in the examples they use integers. `NumericLiteral` also includes doubles.
-    order: Option<NumericLiteral>,
+    // order: Option<NumericLiteral>,
 
-    group: Option<RDFNode>,
-    source_iri: Option<IriRef>,
+    // group: Option<RDFNode>,
+    // source_iri: Option<IriRef>,
 }
 
 impl NodeShape {
@@ -34,15 +32,15 @@ impl NodeShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed: false,
-            ignored_properties: Vec::new(),
-            deactivated: false,
-            message: MessageMap::new(),
-            severity: None,
-            name: MessageMap::new(),
-            description: MessageMap::new(),
-            order: None,
-            group: None,
-            source_iri: None,
+            // ignored_properties: Vec::new(),
+            // deactivated: false,
+            // message: MessageMap::new(),
+            // severity: None,
+            // name: MessageMap::new(),
+            // description: MessageMap::new(),
+            // order: None,
+            // group: None,
+            // source_iri: None,
         }
     }
 
@@ -59,7 +57,6 @@ impl NodeShape {
         self.targets = targets;
     }
 
-
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
         self.property_shapes = property_shapes;
         self
@@ -74,8 +71,6 @@ impl NodeShape {
         self.closed = closed;
         self
     }
-
-
 }
 
 impl Display for NodeShape {

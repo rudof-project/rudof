@@ -1,13 +1,8 @@
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum MatchResult {
-  Pass,
-  Fail
-}
-
-impl Default for MatchResult {
-  fn default() -> Self { 
-    MatchResult::Pass
-  }
+    #[default]
+    Pass,
+    Fail,
 }

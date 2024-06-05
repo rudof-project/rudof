@@ -5,8 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-
+#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub closed: Option<bool>,
@@ -64,7 +63,7 @@ impl Shape {
     }
 
     pub fn is_closed(&self) -> bool {
-        self.closed.unwrap_or_else(|| false)
+        self.closed.unwrap_or(false)
     }
 
     pub fn triple_expr(&self) -> Option<TripleExpr> {
@@ -135,18 +134,5 @@ impl Deref for Shape {
             extends: new_extends,
         };
         Ok(shape)
-    }
-}
-
-impl Default for Shape {
-    fn default() -> Self {
-        Shape {
-            closed: None,
-            extra: None,
-            expression: None,
-            sem_acts: None,
-            annotations: None,
-            extends: None,
-        }
     }
 }

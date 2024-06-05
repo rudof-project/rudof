@@ -2,14 +2,19 @@ use std::fmt::Display;
 
 use crate::SRDFBasic;
 
-pub struct Triple<S> 
-where S: SRDFBasic + ?Sized { 
-   subj: S::Subject,
-   pred: S::IRI,
-   obj: S::Term
+pub struct Triple<S>
+where
+    S: SRDFBasic + ?Sized,
+{
+    subj: S::Subject,
+    pred: S::IRI,
+    obj: S::Term,
 }
 
-impl <S> Triple<S> where S: SRDFBasic {
+impl<S> Triple<S>
+where
+    S: SRDFBasic,
+{
     pub fn new(subj: S::Subject, pred: S::IRI, obj: S::Term) -> Self {
         Triple { subj, pred, obj }
     }
@@ -25,10 +30,12 @@ impl <S> Triple<S> where S: SRDFBasic {
     pub fn obj(&self) -> S::Term {
         self.obj.clone()
     }
-
 }
 
-impl <S> Display for Triple<S> where S: SRDFBasic {
+impl<S> Display for Triple<S>
+where
+    S: SRDFBasic,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<{},{},{}>", self.subj, self.pred, self.obj)
     }

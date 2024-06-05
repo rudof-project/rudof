@@ -3,14 +3,14 @@ use std::fmt::Display;
 
 use super::value_set_value::ValueSetValue;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ValueSet {
     values: Vec<ValueSetValue>,
 }
 
 impl ValueSet {
-    pub fn new() -> ValueSet {
-        ValueSet { values: Vec::new() }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn add_value(&mut self, v: ValueSetValue) {

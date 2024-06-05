@@ -1,6 +1,6 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::{SRDFBasic, SRDF};
+use crate::SRDF;
 
 pub enum Neigh<S>
 where
@@ -32,8 +32,8 @@ pub struct NeighsIterator<S>
 where
     S: SRDF,
 {
-    term: S::Term,
-    neigh_iter: IntoIter<Neigh<S>>,
+    _term: S::Term,
+    _neigh_iter: IntoIter<Neigh<S>>,
 }
 
 impl<S> NeighsIterator<S>
@@ -47,7 +47,7 @@ where
             }
             Some(subject) => {
                 let preds: HashSet<S::IRI> = rdf.predicates_for_subject(&subject)?;
-                let qs = preds.into_iter();
+                let _qs = preds.into_iter();
                 /*let vv = qs.flat_map(|p| {
                     let objs = rdf.get_objects_for_subject_predicate(&subject, &p)?;
                     objs.into_iter().map(|o| Neigh::Direct { p, o })
@@ -63,7 +63,7 @@ impl<S> FromIterator<Neigh<S>> for NeighsIterator<S>
 where
     S: SRDF,
 {
-    fn from_iter<T>(t: T) -> Self
+    fn from_iter<T>(_t: T) -> Self
     where
         T: IntoIterator,
     {
@@ -81,6 +81,3 @@ where
         todo!()
     }
 }
-
-#[cfg(test)]
-mod tests {}

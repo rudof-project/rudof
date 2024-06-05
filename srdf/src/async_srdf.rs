@@ -1,4 +1,3 @@
-
 use std::{collections::HashSet, fmt::Display};
 
 use async_trait::async_trait;
@@ -29,14 +28,12 @@ pub trait AsyncSRDF {
         object: &Self::Term,
         pred: &Self::IRI,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
-
-
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use iri_s::*;
+    use std::str::FromStr;
 
     #[test]
     fn check_2_iris() {

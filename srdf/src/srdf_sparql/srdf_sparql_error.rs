@@ -15,8 +15,8 @@ pub enum SRDFSparqlError {
     URLParseError { e: url::ParseError },
 
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults { 
-        e: sparesults::QueryResultsParseError 
+    SPAResults {
+        e: sparesults::QueryResultsParseError,
     },
 
     #[error(transparent)]
@@ -26,9 +26,7 @@ pub enum SRDFSparqlError {
     },
 
     #[error("Unknown name for endpoint: {name}")]
-    UnknownEndpontName {
-        name: String,
-    },
+    UnknownEndpontName { name: String },
 
     #[error("Error parsing body: {body}")]
     ParsingBody { body: String },
@@ -41,7 +39,6 @@ pub enum SRDFSparqlError {
 
     #[error("SPARQL solutions error: Expected Subject, got {value}")]
     SPARQLSolutionErrorNoSubject { value: Term },
-
 
     #[error("SPARQL solutions error: Not found value for {value} in {solution:?}")]
     NotFoundInSolution { value: String, solution: String },
@@ -58,13 +55,13 @@ pub enum SRDFSparqlError {
 
 impl From<reqwest::Error> for SRDFSparqlError {
     fn from(e: reqwest::Error) -> SRDFSparqlError {
-        SRDFSparqlError::HTTPRequestError { e: e }
+        SRDFSparqlError::HTTPRequestError { e }
     }
 }
 
 impl From<url::ParseError> for SRDFSparqlError {
     fn from(e: url::ParseError) -> SRDFSparqlError {
-        SRDFSparqlError::URLParseError { e: e }
+        SRDFSparqlError::URLParseError { e }
     }
 }
 

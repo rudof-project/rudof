@@ -1,16 +1,10 @@
-use std::collections::HashMap;
-
-use srdf::lang::Lang;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct MessageMap {
-    mmap: HashMap<Option<Lang>, String>
+    // mmap: HashMap<Option<Lang>, String>
 }
 
-impl  MessageMap {
+impl MessageMap {
     pub fn new() -> Self {
-        MessageMap {
-            mmap: HashMap::new()
-        }
+        Self::default()
     }
 }

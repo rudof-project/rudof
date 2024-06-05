@@ -1,4 +1,4 @@
-use std::{fmt, result};
+use std::fmt;
 
 use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
@@ -12,7 +12,7 @@ use super::ValueSetValue;
 use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};
 use serde::ser::SerializeMap;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct NodeConstraint {
     // #[serde(default, rename = "nodeKind", skip_serializing_if = "Option::is_none")]
     node_kind: Option<NodeKind>,
@@ -28,13 +28,8 @@ pub struct NodeConstraint {
 }
 
 impl NodeConstraint {
-    pub fn new() -> NodeConstraint {
-        NodeConstraint {
-            node_kind: None,
-            datatype: None,
-            xs_facet: None,
-            values: None,
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn with_datatype(mut self, datatype: IriRef) -> Self {
@@ -133,7 +128,7 @@ impl NodeConstraint {
         for v in values {
             vs.push(v);
         }*/
-        self.values =Some(values);
+        self.values = Some(values);
         self
     }
 
@@ -172,91 +167,83 @@ impl Deref for NodeConstraint {
 }
 
 impl Serialize for NodeConstraint {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match self {
-            NodeConstraint {
-                node_kind,
-                datatype,
-                xs_facet,
-                values,
-            } => {
-                let mut map = serializer.serialize_map(None)?;
+        let NodeConstraint {
+            node_kind,
+            datatype,
+            xs_facet,
+            values,
+        } = self;
 
-                // map.serialize_entry("type", "NodeConstraint")?;
-                match node_kind {
-                    None => (),
-                    Some(nk) => {
-                        map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
-                    }
-                }
-                match datatype {
-                    None => (),
-                    Some(dt) => {
-                        map.serialize_entry("datatype", &format!("{dt}"))?;
-                    }
-                }
-                match values {
-                    None => (),
-                    Some(values) => {
-                        map.serialize_entry("values", &values)?;
-                    }
-                }
-                match xs_facet {
-                    None => (),
-                    Some(facets) => {
-                        for f in facets {
-                            match f {
-                                XsFacet::StringFacet(sf) => match sf {
-                                    StringFacet::Length(len) => {
-                                        map.serialize_entry("length", len)?
-                                    }
-                                    StringFacet::MinLength(ml) => {
-                                        map.serialize_entry("minlength", ml)?
-                                    }
-                                    StringFacet::MaxLength(ml) => {
-                                        map.serialize_entry("maxlength", ml)?
-                                    }
-                                    StringFacet::Pattern(Pattern { str, flags: None }) => {
-                                        map.serialize_entry("pattern", str)?;
-                                    }
-                                    StringFacet::Pattern(Pattern {
-                                        str,
-                                        flags: Some(fs),
-                                    }) => {
-                                        map.serialize_entry("pattern", str)?;
-                                        map.serialize_entry("flags", fs)?;
-                                    }
-                                },
-                                XsFacet::NumericFacet(nf) => match nf {
-                                    NumericFacet::FractionDigits(fd) => {
-                                        map.serialize_entry("fractiondigits", fd)?
-                                    }
-                                    NumericFacet::TotalDigits(td) => {
-                                        map.serialize_entry("totaldigits", td)?
-                                    }
-                                    NumericFacet::MaxExclusive(me) => {
-                                        map.serialize_entry("maxexclusive", me)?
-                                    }
-                                    NumericFacet::MaxInclusive(mi) => {
-                                        map.serialize_entry("maxinclusive", mi)?
-                                    }
-                                    NumericFacet::MinInclusive(mi) => {
-                                        map.serialize_entry("mininclusive", mi)?
-                                    }
-                                    NumericFacet::MinExclusive(me) => {
-                                        map.serialize_entry("minexclusive", me)?
-                                    }
-                                },
-                            }
-                        }
-                    }
-                }
-                map.end()
+        let mut map = serializer.serialize_map(None)?;
+
+        // map.serialize_entry("type", "NodeConstraint")?;
+        match node_kind {
+            None => (),
+            Some(nk) => {
+                map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
             }
         }
+        match datatype {
+            None => (),
+            Some(dt) => {
+                map.serialize_entry("datatype", &format!("{dt}"))?;
+            }
+        }
+        match values {
+            None => (),
+            Some(values) => {
+                map.serialize_entry("values", &values)?;
+            }
+        }
+        match xs_facet {
+            None => (),
+            Some(facets) => {
+                for f in facets {
+                    match f {
+                        XsFacet::StringFacet(sf) => match sf {
+                            StringFacet::Length(len) => map.serialize_entry("length", len)?,
+                            StringFacet::MinLength(ml) => map.serialize_entry("minlength", ml)?,
+                            StringFacet::MaxLength(ml) => map.serialize_entry("maxlength", ml)?,
+                            StringFacet::Pattern(Pattern { str, flags: None }) => {
+                                map.serialize_entry("pattern", str)?;
+                            }
+                            StringFacet::Pattern(Pattern {
+                                str,
+                                flags: Some(fs),
+                            }) => {
+                                map.serialize_entry("pattern", str)?;
+                                map.serialize_entry("flags", fs)?;
+                            }
+                        },
+                        XsFacet::NumericFacet(nf) => match nf {
+                            NumericFacet::FractionDigits(fd) => {
+                                map.serialize_entry("fractiondigits", fd)?
+                            }
+                            NumericFacet::TotalDigits(td) => {
+                                map.serialize_entry("totaldigits", td)?
+                            }
+                            NumericFacet::MaxExclusive(me) => {
+                                map.serialize_entry("maxexclusive", me)?
+                            }
+                            NumericFacet::MaxInclusive(mi) => {
+                                map.serialize_entry("maxinclusive", mi)?
+                            }
+                            NumericFacet::MinInclusive(mi) => {
+                                map.serialize_entry("mininclusive", mi)?
+                            }
+                            NumericFacet::MinExclusive(me) => {
+                                map.serialize_entry("minexclusive", me)?
+                            }
+                        },
+                    }
+                }
+            }
+        }
+        map.end()
     }
 }
 
@@ -517,7 +504,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
             }
         }
 
-        const FIELDS: &'static [&'static str] = &[
+        const FIELDS: &[&str] = &[
             "type",
             "nodeKind",
             "datatype",

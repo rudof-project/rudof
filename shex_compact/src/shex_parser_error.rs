@@ -1,17 +1,16 @@
 use iri_s::IriSError;
 use prefixmap::DerefError;
+use regex::Regex;
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},
 };
 use thiserror::Error;
-use regex::Regex;
 
 use crate::{LocatedParseError, Span};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
-
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
@@ -75,7 +74,9 @@ pub enum ParseError {
     #[error("Expected non literal node constraint followed by optional shape or shape reference")]
     NonLitNodeConstraintOptShapeOrRef,
 
-    #[error("Expected non literal inline node constraint followed by optional shape or shape reference")]
+    #[error(
+        "Expected non literal inline node constraint followed by optional shape or shape reference"
+    )]
     NonLitInlineNodeConstraintOptShapeOrRef,
 
     #[error("Expected inline shape atom")]
@@ -211,8 +212,7 @@ pub enum ParseError {
     ExpectedNodeSpec,
 
     #[error("Failed regular expression, str: {str} doesn't match: {re}")]
-    RegexFailed { re: String, str: String},
-
+    RegexFailed { re: String, str: String },
 }
 
 impl ParseError {

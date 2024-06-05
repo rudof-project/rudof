@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 /// Indicates a map of values `V` that depend on some references `R`
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct Pending<V, R>
 where
     V: Hash + Eq,
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn test_from() {
         let pending = Pending::from(vec![('a', vec![1, 2]), ('b', vec![3])]);
-        let expected = IndexSet::from_iter([1, 2].into_iter());
+        let expected = IndexSet::from_iter([1, 2]);
         assert_eq!(pending.get(&'a'), Some(&expected));
     }
 

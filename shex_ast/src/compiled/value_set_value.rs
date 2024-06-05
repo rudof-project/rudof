@@ -1,10 +1,7 @@
-use super::{value_set::ValueSet, object_value::ObjectValue};
+use super::object_value::ObjectValue;
 use iri_s::IriS;
-use rbe::Value;
-use serde::Serializer;
-use srdf::{lang::Lang, literal::Literal, Object};
-use std::{fmt::Display, result, str::FromStr};
-use void::Void;
+use srdf::Object;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValueSetValue {
@@ -54,15 +51,14 @@ pub enum StringOrIriStem {
     IriStem { stem: String },
 }
 
-
 impl ValueSetValue {
     pub fn match_value(&self, object: &Object) -> bool {
         match self {
-            ValueSetValue::IriStem { stem } => todo!(),
-            ValueSetValue::IriStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::LiteralStem { stem } => todo!(),
-            ValueSetValue::LiteralStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::Language { language_tag } => todo!(),
+            ValueSetValue::IriStem { .. } => todo!(),
+            ValueSetValue::IriStemRange { .. } => todo!(),
+            ValueSetValue::LiteralStem { .. } => todo!(),
+            ValueSetValue::LiteralStemRange { .. } => todo!(),
+            ValueSetValue::Language { .. } => todo!(),
             ValueSetValue::LanguageStem => todo!(),
             ValueSetValue::LanguageStemRange => todo!(),
             ValueSetValue::ObjectValue(v) => v.match_value(object),
@@ -73,11 +69,11 @@ impl ValueSetValue {
 impl Display for ValueSetValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValueSetValue::IriStem { stem } => todo!(),
-            ValueSetValue::IriStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::LiteralStem { stem } => todo!(),
-            ValueSetValue::LiteralStemRange { stem, exclusions } => todo!(),
-            ValueSetValue::Language { language_tag } => todo!(),
+            ValueSetValue::IriStem { .. } => todo!(),
+            ValueSetValue::IriStemRange { .. } => todo!(),
+            ValueSetValue::LiteralStem { .. } => todo!(),
+            ValueSetValue::LiteralStemRange { .. } => todo!(),
+            ValueSetValue::Language { .. } => todo!(),
             ValueSetValue::LanguageStem => todo!(),
             ValueSetValue::LanguageStemRange => todo!(),
             ValueSetValue::ObjectValue(ov) => write!(f, "{ov}"),

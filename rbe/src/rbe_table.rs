@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
-use tracing::debug;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::vec::IntoIter;
+use tracing::debug;
 
 use crate::Bag;
 use crate::Key;
@@ -20,7 +20,7 @@ use crate::rbe_error;
 use crate::values::Values;
 use crate::Component;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R>
 where
     K: Key,
@@ -42,14 +42,7 @@ where
     R: Ref,
 {
     pub fn new() -> RbeTable<K, V, R> {
-        RbeTable {
-            rbe: Rbe::Empty,
-            key_components: IndexMap::new(),
-            component_cond: IndexMap::new(),
-            component_key: HashMap::new(),
-            open: false,
-            component_counter: 0,
-        }
+        RbeTable::default()
     }
 
     pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
@@ -83,14 +76,14 @@ where
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
         for (key, value) in &values {
-            let components = self.key_components.get(key).unwrap_or_else(|| &cs_empty);
+            let components = self.key_components.get(key).unwrap_or(&cs_empty);
             let mut pairs = Vec::new();
             for component in components {
                 // TODO: Add some better error control to replace unwrap()?
                 //  This should mark an internal error anyway
                 let cond = self.component_cond.get(component).unwrap();
                 pairs_found += 1;
-                pairs.push((key.clone(), value.clone(), component.clone(), cond.clone()));
+                pairs.push((key.clone(), value.clone(), *component, cond.clone()));
             }
             candidates.push(pairs);
         }
@@ -107,9 +100,13 @@ where
             }))
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
-            let _: Vec<_> = candidates.iter().zip(0..).map(|(candidate, n)| {
-                debug!("Candidate {n}: {candidate:?}");
-            }).collect();
+            let _: Vec<_> = candidates
+                .iter()
+                .zip(0..)
+                .map(|(candidate, n)| {
+                    debug!("Candidate {n}: {candidate:?}");
+                })
+                .collect();
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -164,14 +161,16 @@ where
             MatchTableIter::Empty(ref mut e) => {
                 debug!("MatchTableIter::Empty");
                 e.next()
-            },
+            }
             MatchTableIter::NonEmpty(ref mut cp) => {
                 debug!("MatchTableIter::NonEmpty");
                 cp.next()
-            },
+            }
         }
     }
 }
+
+type State<K, V, R> = MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>>;
 
 #[derive(Debug)]
 pub struct IterCartesianProduct<K, V, R>
@@ -181,7 +180,7 @@ where
     R: Ref,
 {
     is_first: bool,
-    state: MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>>,
+    state: State<K, V, R>,
     rbe: Rbe<Component>,
     open: bool,
     // controlled: HashSet<K>
@@ -286,11 +285,11 @@ where
     match rbe {
         Rbe::Empty => Rbe1::Empty,
         Rbe::And { values } => {
-            let values1 = values.into_iter().map(|c| cnv_rbe(c, table)).collect();
+            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
             Rbe1::And { exprs: values1 }
         }
         Rbe::Or { values } => {
-            let values1 = values.into_iter().map(|c| cnv_rbe(c, table)).collect();
+            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
             Rbe1::Or { exprs: values1 }
         }
         Rbe::Symbol { value, card } => {

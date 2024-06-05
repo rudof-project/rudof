@@ -1,4 +1,3 @@
-use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]

@@ -20,13 +20,17 @@ impl Association {
         }
     }
 
-    pub fn iter_node_shape<S>(&self, 
-        rdf: &S) -> impl Iterator<Item=(&ObjectValue, &ShapeExprLabel)> 
-    where S: SRDF {
-       self.node_selector.iter_node(rdf)
-       .flat_map(move |node| 
-        self.shape_selector.iter_shape().flat_map(move |label| 
-            once((node, label))
-        ))
+    pub fn iter_node_shape<S>(
+        &self,
+        rdf: &S,
+    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)>
+    where
+        S: SRDF,
+    {
+        self.node_selector.iter_node(rdf).flat_map(move |node| {
+            self.shape_selector
+                .iter_shape()
+                .flat_map(move |label| once((node, label)))
+        })
     }
 }

@@ -26,12 +26,12 @@ impl Display for SHACLPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SHACLPath::Predicate { pred } => write!(f, "{pred}"),
-            SHACLPath::Alternative { paths } => todo!(),
-            SHACLPath::Sequence { paths } => todo!(),
-            SHACLPath::Inverse { path } => todo!(),
-            SHACLPath::ZeroOrMore { path } => todo!(),
-            SHACLPath::OneOrMore { path } => todo!(),
-            SHACLPath::ZeroOrOne { path } => todo!(),
+            SHACLPath::Alternative { .. } => todo!(),
+            SHACLPath::Sequence { .. } => todo!(),
+            SHACLPath::Inverse { .. } => todo!(),
+            SHACLPath::ZeroOrMore { .. } => todo!(),
+            SHACLPath::OneOrMore { .. } => todo!(),
+            SHACLPath::ZeroOrOne { .. } => todo!(),
         }
     }
 }
