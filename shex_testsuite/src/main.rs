@@ -106,7 +106,7 @@ fn main() -> Result<()> {
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
         debug!("path_buf: {}", &path_buf.display());
-        let manifest_str = fs::read_to_string(&manifest_path)
+        let manifest_str = fs::read_to_string(manifest_path)
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
 
         let manifest_mode = if let Some(mm) = cli.manifest_mode {
