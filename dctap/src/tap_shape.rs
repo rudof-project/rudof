@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::TapStatement;
+use crate::tap_statement::TapStatement;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct TapShape {

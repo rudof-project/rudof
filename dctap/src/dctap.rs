@@ -1,4 +1,4 @@
-use crate::dctap_error::DCTapError;
+use crate::{tap_config::TapConfig, tap_error::TapError};
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::debug;
