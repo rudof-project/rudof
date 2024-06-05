@@ -10,6 +10,7 @@ use thiserror::Error;
 use super::bnode::BNode;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone)]
+#[serde(try_from = "&str", into = "String")]
 pub enum ShapeExprLabel {
     IriRef { value: IriRef },
     BNode { value: BNode },
@@ -107,6 +108,16 @@ impl Display for ShapeExprLabel {
     }
 }
 
+impl Into<String> for ShapeExprLabel {
+    fn into(self) -> String {
+        match self {
+            ShapeExprLabel::IriRef { value } => value.into(),
+            ShapeExprLabel::BNode { value } => value.into(),
+            ShapeExprLabel::Start => "START".to_string(),
+        }
+    }
+}
+
 impl FromStr for ShapeExprLabel {
     type Err = RefError;
 
@@ -123,3 +134,4 @@ pub enum RefError {
     #[error("Cannot parse as Iri or BNode: {str}")]
     BadRef { str: String },
 }
+

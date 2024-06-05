@@ -25,6 +25,12 @@ impl TryFrom<&str> for BNode {
     }
 }
 
+impl Into<String> for BNode {
+    fn into(self) -> String {
+        format!("_:{}", self.value)
+    }
+}
+
 impl Display for BNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "_:{}", self.value)

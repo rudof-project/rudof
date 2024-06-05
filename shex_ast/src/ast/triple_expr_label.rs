@@ -7,6 +7,7 @@ use prefixmap::{Deref, DerefError, IriRef};
 use super::bnode::BNode;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone)]
+#[serde(try_from = "&str", into = "String")]
 pub enum TripleExprLabel {
     IriRef { value: IriRef },
     BNode { value: BNode },
@@ -49,5 +50,14 @@ impl Display for TripleExprLabel {
             TripleExprLabel::BNode { value } => value.to_string(),
         };
         write!(f, "{}", str)
+    }
+}
+
+impl Into<String> for TripleExprLabel {
+    fn into(self) -> String {
+        match self {
+            TripleExprLabel::IriRef { value } => value.into(),
+            TripleExprLabel::BNode { value } => value.into(),
+        }
     }
 }
