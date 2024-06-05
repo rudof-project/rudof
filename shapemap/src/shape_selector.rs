@@ -26,10 +26,10 @@ impl ShapeSelector {
         ShapeSelector::Label(ShapeExprLabel::prefixed(alias, local))
     }
 
-    pub fn iter_shape(&self) -> impl Iterator<Item=&ShapeExprLabel> {
+    pub fn iter_shape(&self) -> impl Iterator<Item = &ShapeExprLabel> {
         match self {
             ShapeSelector::Label(label) => std::iter::once(label),
-            ShapeSelector::Start  => std::iter::once(&ShapeExprLabel::Start)
+            ShapeSelector::Start => std::iter::once(&ShapeExprLabel::Start),
         }
     }
 }

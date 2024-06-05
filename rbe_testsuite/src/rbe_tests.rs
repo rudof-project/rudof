@@ -1,7 +1,7 @@
-use std::{collections::HashSet, path::Path, fs};
 use anyhow::{bail, Context, Result};
+use std::{collections::HashSet, fs, path::Path};
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::{RbeTest, RbeTestsResults};
 
@@ -12,19 +12,19 @@ pub struct RbeTests
 {
     // #[serde(default, rename = "test", borrow)]
     tests: Vec<RbeTest>,
-    
+
     #[serde(skip)]
     visited: HashSet<String>,
 }
 
 impl RbeTests
-// where T: Hash + Eq + Clone + fmt::Debug 
+// where T: Hash + Eq + Clone + fmt::Debug
 {
     pub fn new() -> RbeTests {
         RbeTests::default()
     }
 
-    pub fn with_tests(&mut self, tests:Vec<RbeTest>) {
+    pub fn with_tests(&mut self, tests: Vec<RbeTest>) {
         // TODO: Add visited
         self.tests = tests;
     }
@@ -40,10 +40,10 @@ impl RbeTests
     pub fn run(&self) -> RbeTestsResults {
         let mut results = RbeTestsResults::new();
         for test in &self.tests {
-          let result = test.run();
-          results.add_result(&result);
-       }
-       results
+            let result = test.run();
+            results.add_result(&result);
+        }
+        results
     }
 
     pub fn run_by_name(&self, name: String) -> RbeTestsResults {
@@ -53,25 +53,19 @@ impl RbeTests
                 let result = test.run();
                 results.add_result(&result);
             }
-       }
-       results
+        }
+        results
     }
-
 
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         let path = path.as_ref();
-        let data = fs::read(path)
-            .with_context(|| format!("failed to read {}", path.display()))?;
+        let data = fs::read(path).with_context(|| format!("failed to read {}", path.display()))?;
         let group_name = path
             .file_stem()
-            .with_context(|| {
-                format!("failed to get file name of {}", path.display())
-            })?
+            .with_context(|| format!("failed to get file name of {}", path.display()))?
             .to_str()
-            .with_context(|| {
-                format!("invalid UTF-8 found in {}", path.display())
-            })?;
-        self.load_slice(&group_name, &data)
+            .with_context(|| format!("invalid UTF-8 found in {}", path.display()))?;
+        self.load_slice(group_name, &data)
             .with_context(|| format!("error loading {}", path.display()))?;
         Ok(())
     }
@@ -79,14 +73,11 @@ impl RbeTests
     /// Load all of the encoded tests in `data` into this collection.
     /// The given group name is assigned to all loaded tests.
     pub fn load_slice(&mut self, group_name: &str, data: &[u8]) -> Result<()> {
-        let data = std::str::from_utf8(&data).with_context(|| {
-            format!("data in {} is not valid UTF-8", group_name)
-        })?;
+        let data = std::str::from_utf8(data)
+            .with_context(|| format!("data in {} is not valid UTF-8", group_name))?;
         let mut index = 1;
-        let mut tests: RbeTests =
-            serde_yaml::from_str(&data).with_context(|| {
-                format!("error decoding YAML for '{}'", group_name)
-            })?;
+        let mut tests: RbeTests = serde_yaml::from_str(data)
+            .with_context(|| format!("error decoding YAML for '{}'", group_name))?;
         for t in &mut tests.tests {
             t.set_group(group_name.to_string());
             if t.name().is_empty() {
@@ -103,5 +94,4 @@ impl RbeTests
         self.tests.extend(tests.tests);
         Ok(())
     }
-
 }

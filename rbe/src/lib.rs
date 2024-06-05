@@ -8,6 +8,7 @@
 //! S. Staworko, I. Boneva, J. Labra, S. Hym, E. Prud'hommeaux, H. Solbrig
 //!
 pub mod bag;
+pub mod candidate;
 pub mod cardinality;
 pub mod deriv_error;
 pub mod keys;
@@ -15,7 +16,6 @@ pub mod max;
 pub mod min;
 pub mod rbe;
 pub mod values;
-pub mod candidate;
 
 pub mod component;
 pub mod deriv_n;

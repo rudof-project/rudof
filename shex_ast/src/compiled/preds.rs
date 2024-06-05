@@ -2,11 +2,15 @@ use crate::Pred;
 
 #[derive(Debug, Clone)]
 pub struct Preds {
-    values: Vec<Pred>,
+    pub values: Vec<Pred>,
 }
 
 impl Preds {
-    pub fn new(values: Vec<Pred>) -> Preds {
-        Preds { values }
+    pub fn new(values: Vec<Pred>) -> Self {
+        Self { values }
+    }
+
+    pub fn preds(&self) -> &Vec<Pred> {
+        &self.values
     }
 }

@@ -35,12 +35,12 @@ impl Display for ShapeExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ShapeExpr::ShapeOr { display, .. } => write!(f, "{display}"),
-            ShapeExpr::ShapeAnd { exprs, display } => write!(f, "{display}"),
+            ShapeExpr::ShapeAnd { display, .. } => write!(f, "{display}"),
             ShapeExpr::ShapeNot { display, .. } => write!(f, "{display}"),
             ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),
             ShapeExpr::Shape(shape) => write!(f, "{shape}"),
             ShapeExpr::External {} => write!(f, "External"),
-            ShapeExpr::Ref { idx } => todo!(),
+            ShapeExpr::Ref { .. } => todo!(),
             ShapeExpr::Empty => write!(f, "<Empty>"),
         }
     }

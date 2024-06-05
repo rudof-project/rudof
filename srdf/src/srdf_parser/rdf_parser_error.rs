@@ -3,23 +3,22 @@ use thiserror::Error;
 
 use crate::literal::Literal;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum RDFParseError {
-
     #[error("No focus node")]
-    NoFocusNode, 
+    NoFocusNode,
 
     #[error("Expected focus node to be boolean but found: {term}")]
-    ExpectedBoolean { term: String }, 
+    ExpectedBoolean { term: String },
 
     #[error("Expected focus node to be integer but found: {term}")]
-    ExpectedInteger { term: String }, 
+    ExpectedInteger { term: String },
 
     #[error("Expected focus node to be string but found: {term}")]
-    ExpectedString { term: String }, 
+    ExpectedString { term: String },
 
     #[error("Expected IRI or Literal value but obtained blank node: {bnode}")]
-    BlankNodeNoValue { bnode: String }, 
+    BlankNodeNoValue { bnode: String },
 
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
@@ -28,7 +27,11 @@ pub enum RDFParseError {
     NoValuesPredicate { node: String, pred: String },
 
     #[error("Node {node} has no value for predicate {pred}. Outgoing arcs: {outgoing_arcs}")]
-    NoValuesPredicateDebug { node: String, pred: String, outgoing_arcs: String },
+    NoValuesPredicateDebug {
+        node: String,
+        pred: String,
+        outgoing_arcs: String,
+    },
 
     #[error("Node {node} has more than one value for predicate {pred}: {value1}, {value2}")]
     MoreThanOneValuePredicate {
@@ -63,13 +66,11 @@ pub enum RDFParseError {
     #[error("Expected Literal, but found {term}")]
     ExpectedLiteral { term: String },
 
-
     #[error("Expected focus to act as subject, found {focus}")]
     ExpectedFocusAsSubject { focus: String },
 
     #[error("Unexpected Blank Node: {term}")]
     UnexpectedBNode { term: String },
-
 
     #[error("Expected IRI but found Literal {lit}")]
     ExpectedIRIFoundLiteral { lit: Literal },
@@ -81,19 +82,24 @@ pub enum RDFParseError {
     },
 
     #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
-    FailedOr { err1: Box<RDFParseError>, err2: Box<RDFParseError> },
+    FailedOr {
+        err1: Box<RDFParseError>,
+        err2: Box<RDFParseError>,
+    },
 
     #[error("Not parser failed because internal parser passed with value: {value}")]
     FailedNot { value: String },
 
     #[error("Error obtaining subjects whose value for property {property} is {value}: {err}")]
-    ErrorSubjectsPredicateObject{ property: String, value: String, err: String },
+    ErrorSubjectsPredicateObject {
+        property: String,
+        value: String,
+        err: String,
+    },
 
     #[error("Error parsing by type. Unknown type: {iri_type}")]
     UnknownType { iri_type: IriS },
 
     #[error("{msg}")]
-    Custom { msg: String }
-
-
+    Custom { msg: String },
 }

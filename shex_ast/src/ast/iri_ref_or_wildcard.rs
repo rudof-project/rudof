@@ -1,8 +1,8 @@
-use std::{result, str::FromStr};
 use iri_s::IriSError;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
+use std::{result, str::FromStr};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IriRefOrWildcard {

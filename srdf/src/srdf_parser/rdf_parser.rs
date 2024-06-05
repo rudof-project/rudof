@@ -65,13 +65,13 @@ where
     ) -> Result<impl Iterator<Item = RDF::Subject>, RDFParseError> {
         let values = self
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), &object)
+            .subjects_with_predicate_object(&Self::rdf_type(), object)
             .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?;
         Ok(values.into_iter())
     }
 
     pub fn instance_of(&self, object: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        let mut values = self.instances_of(&object)?;
+        let mut values = self.instances_of(object)?;
         if let Some(value1) = values.next() {
             if let Some(value2) = values.next() {
                 Err(RDFParseError::MoreThanOneInstanceOf {
@@ -118,7 +118,7 @@ where
     }
 
     pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        match RDF::term_as_subject(&term) {
+        match RDF::term_as_subject(term) {
             None => Err(RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
             }),

@@ -5,5 +5,5 @@ pub enum Severity {
     Violation,
     Warning,
     Info,
-    Generic(IriRef)
+    Generic(IriRef),
 }

@@ -1,10 +1,10 @@
-use std::fs;
-use std::path::PathBuf;
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
 use shex_ast::Iri;
 use shex_ast::Schema;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use crate::grammar_structs::ShExStatement;
 use crate::shex_statement;
@@ -33,42 +33,42 @@ impl<'a> ShExParser<'a> {
             shex_statement_iterator: StatementIterator::new(Span::new(src))?,
         };
         let mut shapes_counter = 0;
-        while let Some(s) = parser.shex_statement_iterator.next() {
+        for s in parser.shex_statement_iterator.by_ref() {
             match s? {
-                    ShExStatement::Empty => {}
-                    ShExStatement::BaseDecl { iri } => {
-                        schema = schema.with_base(Some(iri));
-                    }
-                    ShExStatement::PrefixDecl { alias, iri } => {
-                        schema.add_prefix(alias, &iri);
-                    }
-                    ShExStatement::StartDecl { shape_expr } => {
-                        schema = schema.with_start(Some(shape_expr))
-                    }
-                    ShExStatement::ImportDecl { iri } => {
-                        schema = schema.with_import(Iri::new(iri.as_str()));
-                    }
-                    ShExStatement::ShapeDecl {
-                        is_abstract,
-                        shape_label,
-                        shape_expr,
-                    } => {
-                        let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
-                        let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                        shapes_counter += 1;
-                        tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
-                        schema.add_shape(shape_label, shape_expr, is_abstract);
-                    }
-                    ShExStatement::StartActions { actions } => {
-                        schema = schema.with_start_actions(Some(actions));
-                    }
+                ShExStatement::Empty => {}
+                ShExStatement::BaseDecl { iri } => {
+                    schema = schema.with_base(Some(iri));
                 }
+                ShExStatement::PrefixDecl { alias, iri } => {
+                    schema.add_prefix(alias, &iri);
+                }
+                ShExStatement::StartDecl { shape_expr } => {
+                    schema = schema.with_start(Some(shape_expr))
+                }
+                ShExStatement::ImportDecl { iri } => {
+                    schema = schema.with_import(Iri::new(iri.as_str()));
+                }
+                ShExStatement::ShapeDecl {
+                    is_abstract,
+                    shape_label,
+                    shape_expr,
+                } => {
+                    let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
+                    let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
+                    shapes_counter += 1;
+                    tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
+                    schema.add_shape(shape_label, shape_expr, is_abstract);
+                }
+                ShExStatement::StartActions { actions } => {
+                    schema = schema.with_start_actions(Some(actions));
+                }
+            }
         }
         Ok(schema)
     }
 
-    pub fn parse_buf(path_buf: &PathBuf, base: Option<IriS>) -> Result<Schema> {
-        let data = fs::read_to_string(&path_buf.as_path())?;
+    pub fn parse_buf(path: &Path, base: Option<IriS>) -> Result<Schema> {
+        let data = fs::read_to_string(path)?;
         let schema = ShExParser::parse(&data, base)?;
         Ok(schema)
     }
@@ -104,7 +104,7 @@ impl<'a> Iterator for StatementIterator<'a> {
         let mut r;
         if self.src.is_empty() {
             self.done = true;
-            return None
+            return None;
         }
         match shex_statement()(self.src) {
             Ok((left, s)) => {
@@ -147,7 +147,6 @@ impl<'a> Iterator for StatementIterator<'a> {
         r
     }
 }
-
 
 #[cfg(test)]
 mod tests {

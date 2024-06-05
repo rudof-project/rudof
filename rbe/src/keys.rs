@@ -14,7 +14,7 @@ impl<K> Keys<K>
 where
     K: Eq + Display + Default + Clone,
 {
-    pub fn from(keys: &Vec<K>) -> Keys<K> {
+    pub fn from(keys: &[K]) -> Keys<K> {
         Keys {
             keys: keys.to_vec(),
         }

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use prefixmap::IriRef;
-use srdf::{RDFNode, literal::Literal, lang::Lang};
+use srdf::{lang::Lang, literal::Literal, RDFNode};
 
 use crate::{node_kind::NodeKind, value::Value};
 use itertools::Itertools;
@@ -19,22 +19,49 @@ pub enum Component {
     MaxInclusive(Literal),
     MinLength(isize),
     MaxLength(isize),
-    Pattern{ pattern: String, flags: Option<String> },
+    Pattern {
+        pattern: String,
+        flags: Option<String>,
+    },
     UniqueLang(bool),
-    LanguageIn{ langs: Vec<Lang> },
+    LanguageIn {
+        langs: Vec<Lang>,
+    },
     Equals(IriRef),
     Disjoint(IriRef),
     LessThan(IriRef),
     LessThanOrEquals(IriRef),
-    Or { shapes: Vec<RDFNode> },
-    And { shapes: Vec<RDFNode> },
-    Not { shape: RDFNode },
-    Xone { shapes: Vec<RDFNode> },
-    Closed { is_closed: bool, ignored_properties: Vec<IriRef> },
-    Node { shape: RDFNode },
-    HasValue { value: Value },
-    In { values: Vec<Value> },
-    QualifiedValueShape { shape: RDFNode, qualified_min_count: Option<isize>, qualified_max_count: Option<isize>, qualified_value_shapes_disjoint: Option<bool>}
+    Or {
+        shapes: Vec<RDFNode>,
+    },
+    And {
+        shapes: Vec<RDFNode>,
+    },
+    Not {
+        shape: RDFNode,
+    },
+    Xone {
+        shapes: Vec<RDFNode>,
+    },
+    Closed {
+        is_closed: bool,
+        ignored_properties: Vec<IriRef>,
+    },
+    Node {
+        shape: RDFNode,
+    },
+    HasValue {
+        value: Value,
+    },
+    In {
+        values: Vec<Value>,
+    },
+    QualifiedValueShape {
+        shape: RDFNode,
+        qualified_min_count: Option<isize>,
+        qualified_max_count: Option<isize>,
+        qualified_value_shapes_disjoint: Option<bool>,
+    },
 }
 
 impl Display for Component {
@@ -56,34 +83,34 @@ impl Display for Component {
                 None => write!(f, "pattern({pattern})"),
             },
             Component::UniqueLang(ul) => write!(f, "uniqueLang({ul})"),
-            Component::LanguageIn { langs } => todo!(), // write!(f, "languageIn({langs})"),
+            Component::LanguageIn { .. } => todo!(), // write!(f, "languageIn({langs})"),
             Component::Equals(e) => write!(f, "equals({e})"),
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
             Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
             Component::LessThanOrEquals(lte) => write!(f, "uniqueLang({lte})"),
             Component::Or { shapes } => {
-                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "or [{str}]")
-            },
+            }
             Component::And { shapes } => {
-                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "and [{str}]")
-            },
+            }
             Component::Not { shape } => {
                 write!(f, "not [{shape}]")
-            },
+            }
             Component::Xone { shapes } => {
-                let str = shapes.iter().map(|s| format!("{s}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
+                let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "xone [{str}]")
-            },
-            Component::Closed { is_closed, ignored_properties } => todo!(),
+            }
+            Component::Closed { .. } => todo!(),
             Component::Node { shape } => write!(f, "node({shape})"),
             Component::HasValue { value } => write!(f, "hasValue({value})"),
             Component::In { values } => {
-                let str = values.iter().map(|v| format!("{v}")).intersperse(" ".to_string()).fold(String::new(), |acc, s| acc + s.as_str());
-                write!(f,"In [{str}]")
-            },
-            Component::QualifiedValueShape { shape, qualified_min_count, qualified_max_count, qualified_value_shapes_disjoint } => todo!(),
+                let str = values.iter().map(|v| v.to_string()).join(" ");
+                write!(f, "In [{str}]")
+            }
+            Component::QualifiedValueShape { .. } => todo!(),
         }
     }
 }

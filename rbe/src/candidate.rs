@@ -1,9 +1,8 @@
-use std::{
-    fmt::Display,
-    ops::Deref,
-};
+use std::{fmt::Display, ops::Deref};
 
 use crate::{Component, Key, MatchCond, Ref, Value};
+
+type CandidateItem<K, V, R> = (K, V, Component, MatchCond<K, V, R>);
 
 // TODO: We are not using the struct yet
 #[derive(Debug, Clone)]
@@ -13,7 +12,7 @@ where
     V: Value,
     R: Ref,
 {
-    values: Vec<(K, V, Component, MatchCond<K, V, R>)>,
+    values: Vec<CandidateItem<K, V, R>>,
 }
 
 impl<K, V, R> Display for Candidate<K, V, R>

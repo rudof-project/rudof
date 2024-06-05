@@ -105,7 +105,7 @@ where
     d.deserialize_option(OptStringOrStruct(PhantomData))
 }
 
-/// Some structs can be serialized as a string, 
+/// Some structs can be serialized as a string,
 /// but only under certain circumstances.
 pub trait SerializeStringOrStruct: Serialize {
     /// Serialize either a string representation of this struct, or a full
@@ -136,7 +136,7 @@ where
 {
     /// A fun little trick: We need to pass `value` to `serialize_some`,
     /// but we don't want `serialize_some` to call the normal `serialize`
-    /// method on it.  
+    /// method on it.
     /// So we define a local wrapper type that overrides the
     /// serialization.  This is one of the more subtle tricks of generic
     /// programming in Rust: using a "newtype" wrapper struct to override
@@ -214,7 +214,7 @@ where
 {
     /// A fun little trick: We need to pass `value` to `serialize_some`,
     /// but we don't want `serialize_some` to call the normal `serialize`
-    /// method on it.  
+    /// method on it.
     /// So we define a local wrapper type that overrides the
     /// serialization.  This is one of the more subtle tricks of generic
     /// programming in Rust: using a "newtype" wrapper struct to override
@@ -307,7 +307,7 @@ where
 /// Like `serialize_string_or_struct`, but can also handle missing values.
 #[allow(dead_code)]
 pub fn serialize_vec_box_string_or_struct<T, S>(
-    _value: &Vec<Box<T>>,
+    _value: &[Box<T>],
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -316,7 +316,7 @@ where
 {
     /// A fun little trick: We need to pass `value` to `serialize_some`,
     /// but we don't want `serialize_some` to call the normal `serialize`
-    /// method on it.  
+    /// method on it.
     /// So we define a local wrapper type that overrides the
     /// serialization.  This is one of the more subtle tricks of generic
     /// programming in Rust: using a "newtype" wrapper struct to override

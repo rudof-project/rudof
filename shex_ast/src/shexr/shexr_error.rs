@@ -43,7 +43,7 @@ impl Display for Nodes {
         for n in self.values.iter() {
             write!(f, "{n} ")?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }

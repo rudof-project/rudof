@@ -88,17 +88,17 @@ pub enum Exclusion {
 
 #[derive(Debug)]
 pub struct SomeNoLitExclusion {
-    exc: Exclusion,
+    pub exc: Exclusion,
 }
 
 #[derive(Debug)]
 pub struct SomeNoIriExclusion {
-    exc: Exclusion,
+    pub exc: Exclusion,
 }
 
 #[derive(Debug)]
 pub struct SomeNoLanguageExclusion {
-    exc: Exclusion,
+    pub exc: Exclusion,
 }
 
 impl Exclusion {
@@ -125,7 +125,7 @@ impl Exclusion {
                 Exclusion::IriExclusion(le) => iri_excs.push(le.clone()),
                 v @ Exclusion::Untyped(s) => {
                     let iri = FromStr::from_str(s.as_str())
-                        .map_err(|e| SomeNoIriExclusion { exc: v.clone() })?;
+                        .map_err(|_e| SomeNoIriExclusion { exc: v.clone() })?;
                     iri_excs.push(IriExclusion::Iri(iri))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other.clone() }),
@@ -157,8 +157,8 @@ impl Serialize for Exclusion {
         S: Serializer,
     {
         match self {
-            Exclusion::IriExclusion(iri) => todo!(),
-            Exclusion::LiteralExclusion(LiteralExclusion::Literal(lit)) => {
+            Exclusion::IriExclusion(_iri) => todo!(),
+            Exclusion::LiteralExclusion(LiteralExclusion::Literal(_lit)) => {
                 todo!()
             }
             Exclusion::LiteralExclusion(LiteralExclusion::LiteralStem(stem)) => {
@@ -220,7 +220,7 @@ impl<'de> DeserializeTrait<'de> for Exclusion {
 
         struct ExclusionVisitor;
 
-        const FIELDS: &'static [&'static str] = &["type", "stem"];
+        const FIELDS: &[&str] = &["type", "stem"];
 
         impl<'de> Visitor<'de> for ExclusionVisitor {
             type Value = Exclusion;
@@ -251,7 +251,7 @@ impl<'de> DeserializeTrait<'de> for Exclusion {
                             let value: String = map.next_value()?;
 
                             let parsed_type_ =
-                                ExclusionType::parse(&value.as_str()).map_err(|e| {
+                                ExclusionType::parse(value.as_str()).map_err(|e| {
                                     de::Error::custom(format!(
                                         "Error parsing Exclusion type, found: {value}. Error: {e:?}"
                                     ))
@@ -305,6 +305,7 @@ impl<'de> DeserializeTrait<'de> for Exclusion {
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(clippy::enum_variant_names)]
 enum ExclusionType {
     IriStem,
     LiteralStem,
@@ -320,6 +321,7 @@ enum StemValue {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ExclusionTypeError {
     value: String,
 }

@@ -143,7 +143,7 @@ where
 
     pub fn pretty_print(&self) -> String {
         let doc = self.pp_shapemap();
-        doc.pretty(self.width as usize).to_string()
+        doc.pretty(self.width).to_string()
     }
 
     fn pp_shapemap(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
@@ -162,7 +162,7 @@ where
 
     fn pp_node_selector(&self, ns: &NodeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match ns {
-            NodeSelector::Node(v) => pp_object_value(&v, self.doc, &self.nodes_prefixmap),
+            NodeSelector::Node(v) => pp_object_value(v, self.doc, &self.nodes_prefixmap),
             NodeSelector::TriplePattern { .. } => todo!(),
             NodeSelector::TriplePatternPath { .. } => todo!(),
             NodeSelector::Sparql { .. } => todo!(),
@@ -172,7 +172,9 @@ where
 
     fn pp_shape_selector(&self, s: &ShapeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match s {
-            ShapeSelector::Label(label) => pp_label(&label, self.doc, &self.shapes_prefixmap, self.keyword_color),
+            ShapeSelector::Label(label) => {
+                pp_label(label, self.doc, &self.shapes_prefixmap, self.keyword_color)
+            }
             ShapeSelector::Start => keyword("START", self.doc, self.keyword_color),
         }
     }

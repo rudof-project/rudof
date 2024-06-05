@@ -46,7 +46,7 @@ pub use prefixmap_error::*;
 
 #[cfg(test)]
 mod tests {
-    use iri_s::{IriS, IriSError};
+    use iri_s::IriS;
     use std::str::FromStr;
 
     use super::*;

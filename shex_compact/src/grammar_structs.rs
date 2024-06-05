@@ -25,15 +25,12 @@ pub(crate) enum ShExStatement<'a> {
         shape_label: ShapeExprLabel,
         shape_expr: ShapeExpr,
     },
-    Empty
+    Empty,
 }
 
 impl<'a> ShExStatement<'a> {
     pub fn is_empty(&self) -> bool {
-       match self {
-        ShExStatement::Empty => true,
-        _ => false
-       }
+        matches!(self, ShExStatement::Empty)
     }
 }
 

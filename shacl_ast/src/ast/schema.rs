@@ -7,11 +7,11 @@ use srdf::RDFNode;
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
-    imports: Vec<IriS>,
-    entailments: Vec<IriS>,
+    // imports: Vec<IriS>,
+    // entailments: Vec<IriS>,
     shapes: HashMap<RDFNode, Shape>,
     prefixmap: PrefixMap,
-    base: Option<IriS>
+    base: Option<IriS>,
 }
 
 impl Schema {
@@ -37,10 +37,9 @@ impl Schema {
         self.base.clone()
     }
 
-    pub fn iter(&self)  -> impl Iterator<Item=(&RDFNode, &Shape)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape)> {
         self.shapes.iter()
     }
-
 }
 
 impl Display for Schema {

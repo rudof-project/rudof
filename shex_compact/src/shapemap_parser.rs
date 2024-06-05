@@ -12,7 +12,7 @@ use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::NodeSelector;
 use shapemap::ShapeSelector;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -38,7 +38,7 @@ impl<'a> ShapeMapParser<'a> {
         let mut parser = ShapeMapParser {
             shapemap_statement_iterator: ShapeMapStatementIterator::new(Span::new(src))?,
         };
-        while let Some(ss) = parser.shapemap_statement_iterator.next() {
+        for ss in parser.shapemap_statement_iterator.by_ref() {
             let statements = ss?;
             for s in statements {
                 match s {
@@ -56,11 +56,11 @@ impl<'a> ShapeMapParser<'a> {
     }
 
     pub fn parse_buf(
-        path_buf: &PathBuf,
+        path: &Path,
         nodes_prefixmap: &Option<PrefixMap>,
         shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<QueryShapeMap> {
-        let data = fs::read_to_string(&path_buf.as_path())?;
+        let data = fs::read_to_string(path)?;
         let query_shapemap = ShapeMapParser::parse(&data, nodes_prefixmap, shapes_prefixmap)?;
         Ok(query_shapemap)
     }

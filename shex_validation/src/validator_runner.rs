@@ -7,7 +7,6 @@ use crate::MAX_STEPS;
 use either::Either;
 use indexmap::IndexSet;
 use iri_s::IriS;
-use tracing::debug;
 use rbe::MatchTableIter;
 use shex_ast::compiled::preds::Preds;
 use shex_ast::compiled::shape::Shape;
@@ -21,12 +20,14 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
+use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = atom::NegAtom<(Node, ShapeLabelIdx)>;
 type PosAtom = atom::PosAtom<(Node, ShapeLabelIdx)>;
 type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
+type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 
 #[derive(Debug)]
 pub struct ValidatorRunner {
@@ -369,16 +370,11 @@ impl ValidatorRunner {
         Node::from(object)
     }
 
-    fn neighs<S>(
-        &self,
-        node: &Node,
-        preds: Vec<IriS>,
-        rdf: &S,
-    ) -> Result<(Vec<(Pred, Node)>, Vec<Pred>)>
+    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Neighs>
     where
         S: SRDF,
     {
-        let node = self.get_rdf_node(&node, rdf);
+        let node = self.get_rdf_node(node, rdf);
         let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
         if let Some(subject) = S::term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf

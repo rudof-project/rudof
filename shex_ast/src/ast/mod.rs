@@ -52,9 +52,6 @@ pub use triple_expr_label::*;
 pub use value_set_value::*;
 pub use xs_facet::*;
 
-#[derive(Debug, Clone)]
-struct ClosedError;
-
 const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
 const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
 const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
@@ -82,7 +79,7 @@ mod tests {
               "predicate": "http://a.example/p1"
             }
           }"#;
-        let se = serde_json::from_str::<ShapeExpr>(&str).unwrap();
+        let se = serde_json::from_str::<ShapeExpr>(str).unwrap();
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
@@ -109,7 +106,7 @@ mod tests {
               "valueExpr": "http://all.example/S5"
             }
           }"#;
-        let se = serde_json::from_str::<ShapeExpr>(&str).unwrap();
+        let se = serde_json::from_str::<ShapeExpr>(str).unwrap();
         let expected = ShapeExpr::Shape(Shape::default().with_expression(
             TripleExpr::TripleConstraint {
                 id: None,
@@ -135,16 +132,16 @@ mod tests {
  "predicate": "http://a.example/p1",
  "valueExpr": "http://all.example/S5"
 }"#;
-        let te = serde_json::from_str::<TripleExpr>(&str).unwrap();
+        let te = serde_json::from_str::<TripleExpr>(str).unwrap();
         let p1 = IriS::from_str("http://a.example/p1").unwrap();
-        let S5 = IriS::from_str("http://all.example/S5").unwrap();
+        let s5 = IriS::from_str("http://all.example/S5").unwrap();
         let expected = TripleExpr::TripleConstraint {
             id: None,
             negated: None,
             inverse: None,
             predicate: p1.into(),
             value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
-                value: IriRef::iri(S5),
+                value: IriRef::iri(s5),
             }))),
             max: None,
             min: None,
@@ -165,15 +162,15 @@ mod tests {
                 }
              ]
           }"#;
-        match serde_json::from_str::<ShapeExpr>(&str) {
-            Ok(v) => {
-                println!("Value parsed: {:?}", v);
-                let serialized = serde_json::to_string(&v).unwrap();
-                println!("serialized: {}", serialized);
-                assert!(true)
-            }
-            Err(e) => assert!(false, "Error parsing: {}", e),
+
+        let shape_expr = serde_json::from_str::<ShapeExpr>(str);
+        if let Ok(v) = &shape_expr {
+            println!("Value parsed: {:?}", v);
+            let serialized = serde_json::to_string(v).unwrap();
+            println!("serialized: {}", serialized);
         }
+
+        assert!(shape_expr.is_ok())
     }
 
     #[test]
@@ -182,14 +179,14 @@ mod tests {
             "type": "Shape",
             "expression": "http://all.example/S2e"
           }"#;
-        match serde_json::from_str::<ShapeExpr>(&str) {
-            Ok(v) => {
-                println!("Value parsed: {:?}", v);
-                let serialized = serde_json::to_string(&v).unwrap();
-                println!("serialized: {}", serialized);
-                assert!(true)
-            }
-            Err(e) => assert!(false, "Error parsing: {}", e),
+
+        let shape_expr = serde_json::from_str::<ShapeExpr>(str);
+        if let Ok(v) = &shape_expr {
+            println!("Value parsed: {:?}", v);
+            let serialized = serde_json::to_string(v).unwrap();
+            println!("serialized: {}", serialized);
         }
+
+        assert!(shape_expr.is_ok())
     }
 }

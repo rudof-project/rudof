@@ -42,11 +42,13 @@ impl NodeSelector {
         NodeSelector::Node(ObjectValue::prefixed(alias, local))
     }
 
-    pub fn iter_node<S>(&self, rdf: &S) -> impl Iterator<Item=&ObjectValue> 
-    where S: SRDF {
+    pub fn iter_node<S>(&self, _rdf: &S) -> impl Iterator<Item = &ObjectValue>
+    where
+        S: SRDF,
+    {
         match self {
             NodeSelector::Node(value) => std::iter::once(value),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }
@@ -55,12 +57,12 @@ impl NodeSelector {
 pub enum NodeSelectorError {}
 
 impl NodeSelect for NodeSelector {
-    fn select<S>(&self, rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
+    fn select<S>(&self, _rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
     where
         S: SRDF,
     {
         match self {
-            NodeSelector::Node(node) => {
+            NodeSelector::Node(_node) => {
                 todo!()
             }
             NodeSelector::TriplePattern {
@@ -68,21 +70,15 @@ impl NodeSelect for NodeSelector {
                 pred,
                 object,
             } => match (subject, pred, object) {
-                (Pattern::Focus, pred, Pattern::Wildcard) => todo!(),
-                (Pattern::Focus, pred, Pattern::Node(n)) => todo!(),
-                (Pattern::Wildcard, pred, Pattern::Focus) => todo!(),
-                (Pattern::Node(n), pred, Pattern::Focus) => todo!(),
+                (Pattern::Focus, _pred, Pattern::Wildcard) => todo!(),
+                (Pattern::Focus, _pred, Pattern::Node(_node)) => todo!(),
+                (Pattern::Wildcard, _pred, Pattern::Focus) => todo!(),
+                (Pattern::Node(_n), _pred, Pattern::Focus) => todo!(),
                 (_, _, _) => todo!(),
             },
-            NodeSelector::TriplePatternPath {
-                subject,
-                pred,
-                object,
-            } => {
-                todo!()
-            }
-            NodeSelector::Sparql { query } => todo!(),
-            NodeSelector::Generic { iri, param } => todo!(),
+            NodeSelector::TriplePatternPath { .. } => todo!(),
+            NodeSelector::Sparql { .. } => todo!(),
+            NodeSelector::Generic { .. } => todo!(),
         }
     }
 }
@@ -94,6 +90,7 @@ pub enum Pattern {
     Focus,
 }
 
+#[allow(dead_code)]
 trait NodeSelect {
     fn select<S>(&self, rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
     where

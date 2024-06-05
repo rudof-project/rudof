@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use crate::context_entry_value::ContextEntryValue;
 use iri_s::IriS;
 use serde::de::{self};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;

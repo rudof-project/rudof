@@ -7,10 +7,9 @@ use nom::{
     combinator::value,
     multi::{many0, many1},
     sequence::{delimited, pair},
-    Err
+    Err,
 };
 use std::fmt::Debug;
-
 
 // Create a [`Span`][nom_locate::LocatedSpan] over the input.
 /* fn span_from_str(input: &str) -> Span<'_> {

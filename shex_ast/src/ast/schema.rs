@@ -1,13 +1,13 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
 use iri_s::IriS;
-use tracing::debug;
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tracing::debug;
 
 use super::{SemAct, ShapeDecl, ShapeExpr};
 
@@ -110,24 +110,21 @@ impl Schema {
         let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr, is_abstract);
         match self.shapes {
             None => {
-                let mut ses = Vec::new();
-                ses.push(sd);
-                self.shapes = Some(ses);
+                self.shapes = Some(vec![sd]);
             }
             Some(ref mut ses) => ses.push(sd),
         }
     }
 
-    pub fn parse_schema_buf(path_buf: &PathBuf) -> Result<Schema, SchemaJsonError> {
+    pub fn parse_schema_buf(path: &Path) -> Result<Schema, SchemaJsonError> {
         let schema = {
-            let schema_str = fs::read_to_string(&path_buf.as_path()).map_err(|e| {
-                SchemaJsonError::ReadingPathError {
-                    path_name: path_buf.display().to_string(),
+            let schema_str =
+                fs::read_to_string(path).map_err(|e| SchemaJsonError::ReadingPathError {
+                    path_name: path.display().to_string(),
                     error: e.to_string(),
-                }
-            })?;
+                })?;
             serde_json::from_str::<Schema>(&schema_str).map_err(|e| SchemaJsonError::JsonError {
-                path_name: path_buf.display().to_string(),
+                path_name: path.display().to_string(),
                 error: e.to_string(),
             })?
         };
@@ -167,32 +164,27 @@ impl Schema {
     }
 
     pub fn count_extends(&self) -> Option<HashMap<usize, usize>> {
-        
         if let Some(shapes) = self.shapes() {
             let mut result = HashMap::new();
             for shape in shapes {
-                let extends_counter;
-                match shape.shape_expr {
-                    ShapeExpr::Shape(Shape {extends: None, .. }) => {
-                        extends_counter = Some(0);
-                    },
-                    ShapeExpr::Shape(Shape {extends: Some(es), .. }) => {
-                        extends_counter = Some(es.len());
-                    },
-                    _ => {
-                        extends_counter = None
-                    }
-                }
+                let extends_counter = match shape.shape_expr {
+                    ShapeExpr::Shape(Shape { extends: None, .. }) => Some(0),
+                    ShapeExpr::Shape(Shape {
+                        extends: Some(es), ..
+                    }) => Some(es.len()),
+                    _ => None,
+                };
+
                 if let Some(ec) = extends_counter {
                     match result.entry(ec) {
-                     Entry::Occupied(mut v) => {
-                        let mut r = v.get_mut();
-                        *r =  *r + 1;
-                     },
-                     Entry::Vacant(vac) => {
-                        vac.insert(1);
-                     }
-                  }
+                        Entry::Occupied(mut v) => {
+                            let r = v.get_mut();
+                            *r += 1;
+                        }
+                        Entry::Vacant(vac) => {
+                            vac.insert(1);
+                        }
+                    }
                 }
             }
             Some(result)
@@ -200,7 +192,12 @@ impl Schema {
             None
         }
     }
+}
 
+impl Default for Schema {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -235,7 +232,7 @@ mod tests {
           }
         "#;
 
-        let schema: Schema = serde_json::from_str(&str).unwrap();
+        let schema: Schema = serde_json::from_str(str).unwrap();
         let serialized = serde_json::to_string_pretty(&schema).unwrap();
         println!("{}", serialized);
         let schema_after_serialization = serde_json::from_str(&serialized).unwrap();

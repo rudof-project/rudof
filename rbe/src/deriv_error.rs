@@ -20,12 +20,21 @@ impl<A> Failures<A>
 where
     A: Hash + Eq + Display,
 {
-    pub fn new() -> Failures<A> {
-        Failures { fs: Vec::new() }
+    pub fn new() -> Self {
+        Self { fs: Vec::new() }
     }
 
     pub fn push(&mut self, expr: Rbe<A>, err: DerivError<A>) {
         self.fs.push((Box::new(expr), err));
+    }
+}
+
+impl<A> Default for Failures<A>
+where
+    A: Hash + Eq + Display,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -35,7 +44,7 @@ where
 {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         for (expr, err) in &self.fs {
-            write!(dest, "Error at {expr}: {err}\n")?;
+            writeln!(dest, "Error at {expr}: {err}")?;
         }
         Ok(())
     }
@@ -106,8 +115,8 @@ where
     #[error("Error matching bag: {error_msg}\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}\nopen: {open}")]
     DerivBagError {
         error_msg: String,
-        processed: Bag<A>,
-        bag: Bag<A>,
+        processed: Box<Bag<A>>,
+        bag: Box<Bag<A>>,
         expr: Box<Rbe<A>>,
         current: Box<Rbe<A>>,
         value: A,
