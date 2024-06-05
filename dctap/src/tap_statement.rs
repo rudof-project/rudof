@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-pub struct TapStatementTemplate {
+pub struct TapStatement {
 
     #[serde(rename = "propertyID")]
     property_id: String, 

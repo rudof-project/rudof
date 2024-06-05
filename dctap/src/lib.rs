@@ -6,9 +6,14 @@
 //! DCTAP (Dublin Core Tabular Application Profiles) is a simple model that can be used to specify data models
 //! 
 pub mod dctap;
-pub mod dctap_error;
-pub mod tap_statement_template;
+pub mod tap_error;
+pub mod tap_statement;
+pub mod tap_shape;
+pub mod tap_config;
 
 pub use dctap::*;
-pub use crate::dctap_error::*;
+pub use crate::tap_error::*;
+pub use crate::tap_statement::*;
+pub use crate::tap_shape::*;
+pub use crate::tap_config::*;
 
