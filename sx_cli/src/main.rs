@@ -17,7 +17,7 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use dctap::DCTap;
+use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
@@ -600,7 +600,7 @@ fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<Sha
 fn parse_dctap(input_buf: &PathBuf, format: &DCTapFormat) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let dctap = DCTap::read_buf(input_buf)?;
+            let dctap = DCTap::read_buf(input_buf, TapConfig::default())?;
             Ok(dctap)
         }
     }
