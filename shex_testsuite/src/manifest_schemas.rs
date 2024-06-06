@@ -199,6 +199,7 @@ impl SchemasEntry {
             } else {
                 Err(ManifestError::ShExSchemaDifferent {
                     json_schema_parsed: schema_parsed,
+                    schema_serialized, 
                     shex_schema_parsed,
                 })
             }

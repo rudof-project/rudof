@@ -70,10 +70,11 @@ pub enum ManifestError {
     },
 
     #[error(
-        "ShEx Schema is different from schema parsed\nSchema JSON Parsed:\n{json_schema_parsed:?}\nShEx schema parsed:\n{shex_schema_parsed:?}"
+        "ShEx Schema is different from schema parsed\nSchema JSON Parsed:\n{json_schema_parsed:?}\nSchema serialized: {schema_serialized}\nShEx schema parsed:\n{shex_schema_parsed:?}"
     )]
     ShExSchemaDifferent {
         json_schema_parsed: Schema,
+        schema_serialized: String, 
         shex_schema_parsed: Schema,
     },
 

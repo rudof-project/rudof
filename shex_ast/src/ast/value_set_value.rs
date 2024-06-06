@@ -599,6 +599,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         }
                     }
                 }
+                println!("Serializer after while: Type: {type_:?}, value: {value:?}");
                 match type_ {
                     Some(ValueSetValueType::LiteralStemRange) => match stem {
                         Some(stem) => match exclusions {
@@ -723,21 +724,27 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     "Can't parse value {s} as decimal: Error {e}"
                                 ))
                             })?;
-                            Ok(ValueSetValue::ObjectValue(ObjectValue::decimal(n)))
+                            let v = ValueSetValue::ObjectValue(ObjectValue::decimal(n));
+                            println!("Result: {v:?}");
+                            Ok(v)
                         }
                         None => Err(de::Error::missing_field("value")),
                     },
-                    Some(ValueSetValueType::Integer) => match value {
+                    Some(ValueSetValueType::Integer) => {
+                        println!("Is integer! {value:?}");
+                        match value {
                         Some(s) => {
                             let n = isize::from_str(&s).map_err(|e| {
                                 de::Error::custom(format!(
                                     "Can't parse value {s} as integer: Error {e}"
                                 ))
                             })?;
-                            Ok(ValueSetValue::ObjectValue(ObjectValue::integer(n)))
+                            let v = ValueSetValue::ObjectValue(ObjectValue::integer(n));
+                            println!("Integer value {v:?}");
+                            Ok(v)
                         }
                         None => Err(de::Error::missing_field("value")),
-                    },
+                    }},
                     Some(ValueSetValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
@@ -746,7 +753,10 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     lang: Some(Lang::new(&lang)),
                                 },
                             ))),
-                            None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
+                            None => {
+                                println!("### {iri}");
+                                Ok(ValueSetValue::datatype_literal(&v, &iri))
+                            },
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
@@ -771,6 +781,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
             }
         }
 
+        println!("Deserializer for value_set_value");
         deserializer.deserialize_any(ValueSetValueVisitor)
     }
 }
