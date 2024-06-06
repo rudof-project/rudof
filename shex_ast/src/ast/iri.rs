@@ -5,6 +5,7 @@ use std::str::FromStr;
 use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(try_from = "String", into = "String")]
 pub enum Iri {
     String(String),
     IriS(IriS),
@@ -41,6 +42,16 @@ impl Display for Iri {
             Iri::IriS(iri_s) => iri_s.as_str(),
         };
         write!(f, "{}", str)
+    }
+}
+
+// This is required by serde serialization
+impl Into<String> for Iri {
+    fn into(self) -> String {
+        match self {
+            Iri::String(s) => s,
+            Iri::IriS(iri_s) => iri_s.as_str().to_string(),
+        }
     }
 }
 
