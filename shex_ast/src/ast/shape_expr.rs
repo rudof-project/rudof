@@ -42,11 +42,11 @@ impl From<ShapeExpr> for ShapeExprWrapper {
 pub enum ShapeExpr {
     ShapeOr {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<Box<ShapeExprWrapper>>,
+        shape_exprs: Vec<ShapeExprWrapper>,
     },
     ShapeAnd {
         #[serde(rename = "shapeExprs")]
-        shape_exprs: Vec<Box<ShapeExprWrapper>>,
+        shape_exprs: Vec<ShapeExprWrapper>,
     },
     ShapeNot {
         #[serde(rename = "shapeExpr")]
@@ -100,20 +100,26 @@ impl ShapeExpr {
     }
 
     pub fn or(ses: Vec<ShapeExpr>) -> ShapeExpr {
-        let shape_exprs = ses
+        /*let shape_exprs = ses
             .into_iter()
             .map(|shape_expression| Box::new(shape_expression.into()))
-            .collect();
-
+            .collect(); */
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
         ShapeExpr::ShapeOr { shape_exprs }
     }
 
     pub fn and(ses: Vec<ShapeExpr>) -> ShapeExpr {
-        let shape_exprs = ses
+        /* let shape_exprs = ses
             .into_iter()
             .map(|shape_expression| Box::new(shape_expression.into()))
-            .collect();
-
+            .collect(); */
+        let mut shape_exprs = Vec::new();
+        for se in ses {
+            shape_exprs.push(se.into())
+        }
         ShapeExpr::ShapeAnd { shape_exprs }
     }
 
@@ -152,12 +158,14 @@ impl Deref for ShapeExpr {
     ) -> Result<Self, DerefError> {
         match self {
             ShapeExpr::External => Ok(ShapeExpr::External),
-            ShapeExpr::ShapeAnd { shape_exprs } => Ok(ShapeExpr::ShapeAnd {
-                shape_exprs: shape_exprs.clone(),
-            }),
-            ShapeExpr::ShapeOr { shape_exprs } => Ok(ShapeExpr::ShapeOr {
-                shape_exprs: shape_exprs.clone(),
-            }),
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeAnd { shape_exprs: shape_exprs.clone() })
+            },
+            ShapeExpr::ShapeOr { shape_exprs } => {
+                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                Ok(ShapeExpr::ShapeOr { shape_exprs: shape_exprs.clone() })
+            },
             ShapeExpr::ShapeNot { shape_expr } => {
                 let shape_expr = Box::new(shape_expr.deref(base, prefixmap)?);
                 Ok(ShapeExpr::ShapeNot { shape_expr })

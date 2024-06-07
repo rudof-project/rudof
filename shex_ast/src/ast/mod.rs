@@ -165,11 +165,8 @@ mod tests {
 
         let shape_expr = serde_json::from_str::<ShapeExpr>(str);
         if let Ok(v) = &shape_expr {
-            println!("Value parsed: {:?}", v);
             let serialized = serde_json::to_string(v).unwrap();
-            println!("serialized: {}", serialized);
         }
-
         assert!(shape_expr.is_ok())
     }
 

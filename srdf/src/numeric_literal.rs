@@ -1,7 +1,7 @@
 use core::fmt;
 use std::fmt::Display;
 
-use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal::{prelude::{FromPrimitive, ToPrimitive}, Decimal};
 use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 use std::hash::Hash;
 
@@ -53,6 +53,13 @@ impl NumericLiteral {
         let d: Decimal = Decimal::from_i128(d).unwrap();
         NumericLiteral::Decimal(d)
     }
+
+    pub fn integer_from_i128(d: i128) -> NumericLiteral {
+        let d: Decimal = Decimal::from_i128(d).unwrap();
+        let n: isize = Decimal::to_isize(&d).unwrap();
+        NumericLiteral::Integer(n)
+    }
+
 
     pub fn decimal_from_u64(d: u64) -> NumericLiteral {
         let d: Decimal = Decimal::from_u64(d).unwrap();
