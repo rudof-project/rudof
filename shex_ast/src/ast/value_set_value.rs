@@ -728,8 +728,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         }
                         None => Err(de::Error::missing_field("value")),
                     },
-                    Some(ValueSetValueType::Integer) => {
-                        match value {
+                    Some(ValueSetValueType::Integer) => match value {
                         Some(s) => {
                             let n = isize::from_str(&s).map_err(|e| {
                                 de::Error::custom(format!(
@@ -740,7 +739,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                             Ok(v)
                         }
                         None => Err(de::Error::missing_field("value")),
-                    }},
+                    },
                     Some(ValueSetValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
@@ -749,9 +748,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     lang: Some(Lang::new(&lang)),
                                 },
                             ))),
-                            None => {
-                                Ok(ValueSetValue::datatype_literal(&v, &iri))
-                            },
+                            None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

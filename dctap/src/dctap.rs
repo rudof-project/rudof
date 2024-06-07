@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct TapShapeId(String); 
+struct TapShapeId(String);
 
 #[derive(Debug, Serialize)]
 pub struct DCTap {

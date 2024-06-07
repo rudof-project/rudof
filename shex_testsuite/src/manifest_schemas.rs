@@ -175,12 +175,13 @@ impl SchemasEntry {
                 }
             })?;
 
-        let schema_serialized_after = serde_json::to_string_pretty(&schema_parsed_after_serialization).map_err(|e| {
+        let schema_serialized_after =
+            serde_json::to_string_pretty(&schema_parsed_after_serialization).map_err(|e| {
                 ManifestError::SchemaSerializationError2nd {
                     schema_parsed: schema_parsed_after_serialization.clone(),
                     error: e,
                 }
-        })?;
+            })?;
 
         if schema_parsed == schema_parsed_after_serialization {
             // If the 2 schemas are equal, parse the corresponding schema using ShExC and check that it is also equal
@@ -216,7 +217,7 @@ impl SchemasEntry {
                 schema_parsed,
                 schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization,
-                schema_serialized_after
+                schema_serialized_after,
             })
         }
     }

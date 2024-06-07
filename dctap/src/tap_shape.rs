@@ -4,12 +4,8 @@ use crate::tap_statement::TapStatement;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct TapShape {
-
     #[serde(rename = "shapeID")]
-    shape_id: String, 
+    shape_id: String,
 
-    statements: Vec<TapStatement>
-
-
-    
+    statements: Vec<TapStatement>,
 }
