@@ -6,7 +6,7 @@ pub struct TapConfig {
 }
 
 impl Default for TapConfig {
-    
+
     fn default() -> Self {
         Self {  }
     }

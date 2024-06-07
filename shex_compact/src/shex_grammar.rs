@@ -171,7 +171,7 @@ fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 fn not_start_action(i: Span) -> IRes<ShExStatement> {
     alt((start(), shape_expr_decl()))(i)
 }
-    
+     
 
 /// `[6] start	::= "start" '=' inlineShapeExpression`
 fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
@@ -1479,14 +1479,21 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
      alt((
         map(double, |n| NumericLiteral::decimal_from_f64(n)),
         decimal,
-        integer_literal(), 
+        raw_integer_literal(), 
     ))(i)
    }, || ShExParseError::NumericLiteral)
 }
 
+fn raw_integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
+    map_error(move |i| {
+      map(integer(), |n| NumericLiteral::decimal_from_i128(n))(i)
+    }, || ShExParseError::IntegerLiteral)
+  }
+  
+
 fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
   map_error(move |i| {
-    map(integer(), |n| NumericLiteral::decimal_from_i128(n))(i)
+    map(integer(), |n| NumericLiteral::integer_from_i128(n))(i)
   }, || ShExParseError::IntegerLiteral)
 }
 
@@ -2688,6 +2695,13 @@ mod tests {
         let (_, result) = inline_shape_expression()(Span::new(":p")).unwrap();
         let expected =
             ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("","p")));
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_numeric_literal() {
+        let (_, result) = numeric_literal(Span::new("0")).unwrap();
+        let expected = NumericLiteral::integer(0) ;
         assert_eq!(result, expected)
     }
 
