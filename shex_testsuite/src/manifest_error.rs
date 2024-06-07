@@ -67,7 +67,7 @@ pub enum ManifestError {
         schema_parsed: Schema,
         schema_serialized: String,
         schema_parsed_after_serialization: Schema,
-        schema_serialized_after: String
+        schema_serialized_after: String,
     },
 
     #[error(
@@ -75,7 +75,7 @@ pub enum ManifestError {
     )]
     ShExSchemaDifferent {
         json_schema_parsed: Schema,
-        schema_serialized: String, 
+        schema_serialized: String,
         shex_schema_parsed: Schema,
     },
 
@@ -85,12 +85,13 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
-    #[error("Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}")]
+    #[error(
+        "Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}"
+    )]
     SchemaSerializationError2nd {
         schema_parsed: Schema,
         error: serde_json::Error,
     },
-
 
     #[error("Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}")]
     SchemaParsingAfterSerialization {
