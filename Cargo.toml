@@ -1,6 +1,6 @@
 [package]
 name = "shapes-rs"
-version = "0.0.10"
+version = "0.0.11"
 description = "RDF Data shapes implementation in Rust"
 license = "GPL-3.0-or-later"
 authors = [ 
@@ -59,18 +59,18 @@ keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["rdf"]
 
 [workspace.dependencies]
-rbe = { version = "0.0.10", path = "./rbe" }
-rbe_testsuite = { version = "0.0.10", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.10", path = "./iri_s" }
-prefixmap = { version = "0.0.10", path = "./prefixmap" }
-srdf = { version = "0.0.10", path = "./srdf" }
-dctap = { version = "0.0.10", path = "./dctap" }
-shex_ast = { version = "0.0.10", path = "./shex_ast" }
-shex_testsuite = { version = "0.0.10", path = "./shex_testsuite" }
-shex_validation = { version = "0.0.10", path = "./shex_validation" }
-shex_compact = { version = "0.0.10", path = "./shex_compact" }
-shapemap = { version = "0.0.10", path = "./shapemap" }
-shacl_ast = { version = "0.0.10", path = "./shacl_ast" }
+rbe = { version = "0.0.11", path = "./rbe" }
+rbe_testsuite = { version = "0.0.11", path = "./rbe_testsuite" }
+iri_s = { version = "0.0.11", path = "./iri_s" }
+prefixmap = { version = "0.0.11", path = "./prefixmap" }
+srdf = { version = "0.0.11", path = "./srdf" }
+dctap = { version = "0.0.11", path = "./dctap" }
+shex_ast = { version = "0.0.11", path = "./shex_ast" }
+shex_testsuite = { version = "0.0.11", path = "./shex_testsuite" }
+shex_validation = { version = "0.0.11", path = "./shex_validation" }
+shex_compact = { version = "0.0.11", path = "./shex_compact" }
+shapemap = { version = "0.0.11", path = "./shapemap" }
+shacl_ast = { version = "0.0.11", path = "./shacl_ast" }
 
 
 [dependencies]

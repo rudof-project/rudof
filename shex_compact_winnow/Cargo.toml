@@ -1,14 +1,14 @@
 [package]
 name = "shex_compact_winnow"
-version = "0.0.10"
+version = "0.0.11"
 
 [dependencies]
-shex_ast = { path = "../shex_ast", version = "0.0.10" }
-rbe = { path = "../rbe", version = "0.0.10" }
-iri_s = { path = "../iri_s", version = "0.0.10" }
-srdf = { path = "../srdf", version = "0.0.10" }
-prefixmap = { path = "../prefixmap", version = "0.0.10" } 
-shapemap = { path = "../shapemap", version = "0.0.10" } 
+shex_ast = { path = "../shex_ast", version = "0.0.11" }
+rbe = { path = "../rbe", version = "0.0.11" }
+iri_s = { path = "../iri_s", version = "0.0.11" }
+srdf = { path = "../srdf", version = "0.0.11" }
+prefixmap = { path = "../prefixmap", version = "0.0.11" } 
+shapemap = { path = "../shapemap", version = "0.0.11" } 
 thiserror = "1"
 colored = "2"
 rust_decimal = "1.32"
