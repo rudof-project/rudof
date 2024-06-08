@@ -1,5 +1,13 @@
 # Current changes without release yet
 
+- [0.0.11] - 2024-06-08
+
+- This version in mainly a maintainance version updating some dependencies
+- Started project DCTAP to handle DCTAP files
+- Updated some dependency versions
+  - oxrdf = "0.2.0-alpha.2"
+  - regex = "1.10.4"
+  
 # [0.0.10] - 2024-01-29
 
 - [issue 32](https://github.com/weso/shapes-rs/issues/32) ShEx parser works as an iterator per statement allowing to show debug information by statement. Debug information can be controlled by the environment variablt RUST_LOG. A value of "debug" for that variable will print more information.
@@ -7,7 +15,6 @@
     oxrdf = "0.2.0-alpha.2"
     oxttl = "0.1.0-alpha.2"
     oxrdfio = "0.1.0-alpha.2"
-
 
 # [0.0.9] - 2024-01-19
 
@@ -21,10 +28,10 @@
 
 # [0.0.7] - 2024-01-07
 
-In this release we added support for SHACL by defining the [`shacl_ast`](https://crates.io/crates/shacl_ast) crate. 
+In this release we added support for SHACL by defining the [`shacl_ast`](https://crates.io/crates/shacl_ast) crate.
 
-Other changes: 
+Other changes:
+
 - Renamed the project from shex_rs to shapes_rs to indicate that the project intends to support both ShEx and SHACL.
-- Merged the [srdf_graph](https://crates.io/crates/srdf_graph) and [srdf_sparql](https://crates.io/crates/srdf_sparql) crates into [srdf](https://crates.io/crates/srdf). 
--  Added more combinators and documentation examples to rdf_parser in order to document the RDF parser combinators approach. See, for example, the doc for the [map method](https://docs.rs/srdf/latest/srdf/srdf_parser/trait.RDFNodeParse.html#method.map).
-
+- Merged the [srdf_graph](https://crates.io/crates/srdf_graph) and [srdf_sparql](https://crates.io/crates/srdf_sparql) crates into [srdf](https://crates.io/crates/srdf).
+- Added more combinators and documentation examples to rdf_parser in order to document the RDF parser combinators approach. See, for example, the doc for the [map method](https://docs.rs/srdf/latest/srdf/srdf_parser/trait.RDFNodeParse.html#method.map).
