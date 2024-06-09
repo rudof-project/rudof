@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   binary_linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
@@ -26,6 +26,9 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y g++-aarch64-linux-gnu
           echo -e "\n\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" >> .cargo/config.toml
+      - name: Install libssl
+        run: |
+          sudo apt install libssl-dev
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shapes-rs` for the x86 architecture
@@ -131,7 +134,7 @@ jobs:
         if: github.event_name == 'release'
 
   deb:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3

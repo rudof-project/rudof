@@ -3,8 +3,8 @@
 
 # SHAPES-rs
 
-This repo contains an RDF data shapes library implemented in Rust. 
-The implementation supports both [ShEx](http://shex.io/) and [SHACL](https://www.w3.org/TR/shacl/). 
+This repo contains an RDF data shapes library implemented in Rust.
+The implementation supports both [ShEx](http://shex.io/) and [SHACL](https://www.w3.org/TR/shacl/).
 
 We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)).
 
@@ -15,26 +15,59 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 
 ### Installation
 
-<details markdown="block">
-<summary>Instructions</summary>
-
 #### Official releases
 
-You can download a binary from the [latest release](https://github.com/weso/shapes-rs/releases/latest) page. There you will also find the compiled packages for the installation on
-your system using a package manager.
+You can download a binary from the [latest release](https://github.com/weso/shapes-rs/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
 
 ##### Ubuntu
 
-Note that the example below is for version 0.0.2. For any other version, please change the X.X.X values accordingly:
+Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```
-wget https://github.com/weso/shapes-rs/releases/download/0.0.2/sx_0.0.2_amd64.deb
-sudo dpkg -i sx_0.0.2_amd64.deb
+wget https://github.com/weso/shapes-rs/releases/download/X.X.X/sx_vX.X.X_amd64.deb
+sudo dpkg -i sx_vX.X.X_amd64.deb
 ```
+
+##### Windows
+
+The binary can be downloaded from [https://github.com/weso/shapes-rs/releases]
+
+##### Mac
+
+The binary is available at: [https://github.com/weso/shapes-rs/releases]
+
+<details markdown="block">
+<summary>Compiling from source</summary>
 
 #### Compiling from source
 
 `shapes-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
+
+For example:
+
+```
+cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
+```
+
+#### Compiling from source and installing the binary (Debian)
+
+Install `cargo deb` (only the first time)
+
+```
+cargo install cargo-deb
+```
+
+Create the `.deb` package by:
+
+```
+cargo deb
+```
+
+And run:
+
+```
+sudo dpkg -i target/debian/shapes-rs_0.0.11-1_amd64.deb
+```
 
 #### Docker
 
@@ -44,15 +77,17 @@ TBD
 
 ### Usage
 
-#### Validate an example
+#### Some examples
 
 The folder `examples` contains several example files with ShEx schemas and RDF data.
 
-Validate a specific node with a shape:
+##### Validate a simple RDF file with a ShEx schema using a ShapeMap
 
 ```
-sx validate --data examples/user.ttl --schema examples/user.jsonld --node :a --shape http://example.org/User
+sx validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
+
+We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides).
 
 #### Debugging information
 
@@ -107,7 +142,7 @@ Options:
 
 ### Obtaining information about a node in RDF data
 
-This command can be useful to obtain the neighbourhood of a node. 
+This command can be useful to obtain the neighbourhood of a node.
 
 ```
 Usage: sx node [OPTIONS] --node <NODE>
