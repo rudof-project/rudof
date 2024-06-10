@@ -44,7 +44,7 @@ macro_rules! iri {
     (
    $lit: tt
  ) => {
-        IriS::new_unchecked($lit)
+        $crate::IriS::new_unchecked($lit)
     };
 }
 

@@ -13,6 +13,3 @@ pub mod shacl_vocab;
 pub use ast::*;
 pub use converter::*;
 pub use shacl_vocab::*;
-
-#[cfg(test)]
-mod tests {}

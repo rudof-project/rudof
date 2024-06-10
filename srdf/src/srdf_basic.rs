@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
+use oxrdf::Term as OxTerm;
 use prefixmap::{PrefixMap, PrefixMapError};
 
 use crate::Object;
@@ -103,6 +104,8 @@ pub trait SRDFBasic {
     }
 
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
+
+    fn term_s2term(term: &OxTerm) -> Self::Term;
     fn bnode_id2bnode(id: &str) -> Self::BNode;
 
     fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
