@@ -29,11 +29,10 @@ use srdf::srdf_sparql::SRDFSparql;
 use srdf::SRDF;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
 use tracing::debug;
-use tracing_subscriber::fmt::time::Uptime;
 
 pub mod cli;
 pub mod data;
@@ -157,7 +156,7 @@ fn main() -> Result<()> {
 }
 
 fn run_schema(
-    schema_buf: &PathBuf,
+    schema_path: &Path,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
@@ -166,7 +165,7 @@ fn run_schema(
 ) -> Result<()> {
     let begin = Instant::now();
     let mut writer = get_writer(output)?;
-    let schema_json = parse_schema(schema_buf, schema_format)?;
+    let schema_json = parse_schema(schema_path, schema_format)?;
     match result_schema_format {
         ShExFormat::Internal => {
             writeln!(writer, "{schema_json:?}")?;
@@ -198,15 +197,16 @@ fn run_schema(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_validate(
-    schema_path: &PathBuf,
+    schema_path: &Path,
     schema_format: &ShExFormat,
     data: &Option<PathBuf>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
-    shapemap: &Option<PathBuf>,
+    shapemap_path: &Option<PathBuf>,
     shapemap_format: &ShapeMapFormat,
     max_steps: &usize,
     debug: u8,
@@ -217,7 +217,7 @@ fn run_validate(
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
     let data = get_data(data, data_format, endpoint, debug)?;
-    let mut shapemap = match shapemap {
+    let mut shapemap = match shapemap_path {
         None => QueryShapeMap::new(),
         Some(shapemap_buf) => parse_shapemap(shapemap_buf, shapemap_format)?,
     };
@@ -264,13 +264,13 @@ fn run_validate(
 }
 
 fn run_shacl(
-    shapes_buf: &PathBuf,
+    shapes_path: &Path,
     shapes_format: &ShaclFormat,
     result_shapes_format: &ShaclFormat,
     output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
-    let shacl_schema = parse_shacl(shapes_buf, shapes_format)?;
+    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
             writeln!(writer, "{shacl_schema}")?;
@@ -287,13 +287,13 @@ fn run_shacl(
 }
 
 fn run_dctap(
-    input_buf: &PathBuf,
+    input_path: &Path,
     format: &DCTapFormat,
     result_format: &DCTapResultFormat,
     output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
-    let dctap = parse_dctap(input_buf, format)?;
+    let dctap = parse_dctap(input_path, format)?;
     match result_format {
         DCTapResultFormat::JSON => {
             let str = serde_json::to_string_pretty(&dctap)?;
@@ -360,11 +360,12 @@ fn start() -> ShapeSelector {
     ShapeSelector::start()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_node(
     data: &Option<PathBuf>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
-    node_str: &String,
+    node_str: &str,
     predicates: &Vec<String>,
     show_node_mode: &ShowNodeMode,
     show_hyperlinks: &bool,
@@ -379,7 +380,7 @@ fn run_node(
             node_selector,
             predicates,
             &endpoint,
-            &show_node_mode,
+            show_node_mode,
             show_hyperlinks,
             &mut writer,
         ),
@@ -387,7 +388,7 @@ fn run_node(
             node_selector,
             predicates,
             &data,
-            &show_node_mode,
+            show_node_mode,
             show_hyperlinks,
             &mut writer,
         ),
@@ -427,10 +428,10 @@ where
                 };
                 writeln!(writer, "{}", rdf.qualify_subject(&subject))?;
                 for pred in map.keys() {
-                    writeln!(writer, " -{}-> ", rdf.qualify_iri(&pred))?;
+                    writeln!(writer, " -{}-> ", rdf.qualify_iri(pred))?;
                     if let Some(objs) = map.get(pred) {
                         for o in objs {
-                            writeln!(writer, "      {}", rdf.qualify_term(&o))?;
+                            writeln!(writer, "      {}", rdf.qualify_term(o))?;
                         }
                     } else {
                         bail!("Not found values for {pred} in map")
@@ -453,10 +454,10 @@ where
                 };
                 writeln!(writer, "{}", rdf.qualify_term(&object))?;
                 for pred in map.keys() {
-                    writeln!(writer, "  <-{}-", rdf.qualify_iri(&pred))?;
+                    writeln!(writer, "  <-{}-", rdf.qualify_iri(pred))?;
                     if let Some(subjs) = map.get(pred) {
                         for s in subjs {
-                            writeln!(writer, "      {}", rdf.qualify_subject(&s))?;
+                            writeln!(writer, "      {}", rdf.qualify_subject(s))?;
                         }
                     } else {
                         bail!("Not found values for {pred} in map")
@@ -491,13 +492,13 @@ where
 }
 
 fn run_shapemap(
-    shapemap: &PathBuf,
+    shapemap_path: &Path,
     shapemap_format: &ShapeMapFormat,
     result_format: &ShapeMapFormat,
     output: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
-    let shapemap = parse_shapemap(shapemap, shapemap_format)?;
+    let shapemap = parse_shapemap(shapemap_path, shapemap_format)?;
     match result_format {
         ShapeMapFormat::Compact => {
             let str = ShapemapFormatter::default().format_shapemap(&shapemap);
@@ -518,14 +519,11 @@ where
     match node {
         ObjectValue::IriRef(iri_ref) => {
             let iri = match iri_ref {
-                IriRef::Iri(iri_s) => {
-                    let v = S::iri_s2iri(iri_s);
-                    v
-                }
+                IriRef::Iri(iri_s) => S::iri_s2iri(iri_s),
                 IriRef::Prefixed { prefix, local } => {
                     let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-                    let v = S::iri_s2iri(&iri_s);
-                    v
+
+                    S::iri_s2iri(&iri_s)
                 }
             };
             let term = S::iri_as_term(iri);
@@ -539,7 +537,7 @@ where
 }
 
 fn run_data(
-    data: &PathBuf,
+    data: &Path,
     data_format: &DataFormat,
     _debug: u8,
     output: &Option<PathBuf>,
@@ -550,10 +548,7 @@ fn run_data(
     Ok(())
 }
 
-fn parse_shapemap(
-    shapemap_path: &PathBuf,
-    shapemap_format: &ShapeMapFormat,
-) -> Result<QueryShapeMap> {
+fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Result<QueryShapeMap> {
     match shapemap_format {
         ShapeMapFormat::Internal => Err(anyhow!("Cannot read internal ShapeMap format yet")),
         ShapeMapFormat::Compact => {
@@ -563,7 +558,7 @@ fn parse_shapemap(
     }
 }
 
-fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<SchemaJson> {
+fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
@@ -585,7 +580,7 @@ fn parse_schema(schema_path: &PathBuf, schema_format: &ShExFormat) -> Result<Sch
     }
 }
 
-fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<ShaclSchema> {
+fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclSchema> {
     match shapes_format {
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         _ => {
@@ -597,10 +592,10 @@ fn parse_shacl(shapes_path: &PathBuf, shapes_format: &ShaclFormat) -> Result<Sha
     }
 }
 
-fn parse_dctap(input_buf: &PathBuf, format: &DCTapFormat) -> Result<DCTap> {
+fn parse_dctap(input_path: &Path, format: &DCTapFormat) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let dctap = DCTap::read_buf(input_buf, TapConfig::default())?;
+            let dctap = DCTap::read_buf(input_path, TapConfig::default())?;
             Ok(dctap)
         }
     }
@@ -618,7 +613,7 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
     }
 }
 
-fn parse_data(data: &PathBuf, data_format: &DataFormat) -> Result<SRDFGraph> {
+fn parse_data(data: &Path, data_format: &DataFormat) -> Result<SRDFGraph> {
     match data_format {
         DataFormat::Turtle => {
             let rdf_format = (*data_format).into();

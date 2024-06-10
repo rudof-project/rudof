@@ -1,5 +1,4 @@
 use crate::atom;
-use crate::rule;
 use crate::validator_error::*;
 use crate::Reason;
 use crate::ResultValue;
@@ -16,17 +15,14 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use srdf::{Object, SRDF};
 use std::collections::hash_map::Entry;
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use std::collections::HashMap;
 use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = atom::NegAtom<(Node, ShapeLabelIdx)>;
 type PosAtom = atom::PosAtom<(Node, ShapeLabelIdx)>;
-type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
+// type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 
 #[derive(Debug)]
@@ -34,7 +30,7 @@ pub struct ValidatorRunner {
     checked: IndexSet<Atom>,
     processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
-    rules: Vec<Rule>,
+    //rules: Vec<Rule>,
     alternative_match_iterators: Vec<MatchTableIter<Pred, Node, ShapeLabelIdx>>,
     // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     max_steps: usize,
@@ -43,13 +39,19 @@ pub struct ValidatorRunner {
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
 }
 
+impl Default for ValidatorRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ValidatorRunner {
     pub fn new() -> ValidatorRunner {
         ValidatorRunner {
             checked: IndexSet::new(),
             processing: IndexSet::new(),
             pending: IndexSet::new(),
-            rules: Vec::new(),
+            //rules: Vec::new(),
             alternative_match_iterators: Vec::new(),
             max_steps: MAX_STEPS,
             step_counter: 0,
@@ -63,7 +65,7 @@ impl ValidatorRunner {
     }
 
     pub(crate) fn remove_processing(&mut self, atom: &Atom) {
-        self.processing.remove(atom);
+        self.processing.swap_remove(atom);
     }
 
     pub(crate) fn add_checked_pos(&mut self, atom: Atom, reasons: Vec<Reason>) {
@@ -73,7 +75,7 @@ impl ValidatorRunner {
                 self.checked.insert(new_atom);
                 self.add_reasons(pa, reasons)
             }
-            Atom::Neg(na) => {
+            Atom::Neg(_na) => {
                 todo!()
             }
         }
@@ -86,7 +88,7 @@ impl ValidatorRunner {
                 self.checked.insert(new_atom);
                 self.add_errors(na, errors)
             }
-            Atom::Pos(na) => {
+            Atom::Pos(_na) => {
                 todo!()
             }
         }
@@ -226,7 +228,7 @@ impl ValidatorRunner {
                 }
                 Err(err) => Ok(Either::Left(vec![ValidatorError::RbeError(err)])),
             },
-            ShapeExpr::Ref { idx } => {
+            ShapeExpr::Ref { .. } => {
                 todo!()
             }
             ShapeExpr::ShapeAnd { exprs, .. } => {
@@ -248,15 +250,15 @@ impl ValidatorRunner {
             ShapeExpr::ShapeNot { expr, .. } => {
                 let result = self.check_node_shape_expr(node, expr, rdf)?;
                 match result {
-                    Either::Left(errors) => {
+                    Either::Left(_errors) => {
                         todo!()
                     }
-                    Either::Right(errors) => {
+                    Either::Right(_errors) => {
                         todo!()
                     }
                 }
             }
-            ShapeExpr::ShapeOr { exprs, .. } => {
+            ShapeExpr::ShapeOr { .. } => {
                 todo!()
                 /*for e in exprs {
                     let result = self.check_node_shape_expr(node, e, rdf)?;
@@ -399,14 +401,14 @@ impl ValidatorRunner {
         }
     }
 
-    fn cnv_err<S>(&self, err: S::Err) -> ValidatorError
+    fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
     where
         S: SRDF,
     {
         todo!()
     }
 
-    fn get_rdf_node<S>(&self, node: &Node, rdf: &S) -> S::Term
+    fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
     where
         S: SRDF,
     {
@@ -415,10 +417,10 @@ impl ValidatorRunner {
                 let i = S::iri_s2iri(iri);
                 S::iri_as_term(i)
             }
-            Object::BlankNode(id) => {
+            Object::BlankNode(_id) => {
                 todo!()
             }
-            Object::Literal(lit) => {
+            Object::Literal(_lit) => {
                 todo!()
             }
         }

@@ -19,6 +19,7 @@ where
         Rule { head, body }
     }
 
+    /*
     /// A fact is a rule with an empty body
     fn fact(a: Atom<A>) -> Rule<A> {
         Rule {
@@ -33,5 +34,5 @@ where
             self.body.swap_remove(index);
         }
         self
-    }
+    }*/
 }

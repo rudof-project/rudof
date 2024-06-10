@@ -128,11 +128,6 @@ where
         }
     }
 
-    pub fn with_width(mut self, width: usize) -> Self {
-        self.width = width;
-        self
-    }
-
     pub fn with_keyword_color(mut self, color: Option<Color>) -> Self {
         self.keyword_color = color;
         self
@@ -568,7 +563,6 @@ where
         U: Into<Cow<'a, str>>,
     {
         if let Some(color) = self.keyword_color {
-            use std::borrow::Borrow;
             let data: Cow<str> = s.into();
             let s: String = match data {
                 Cow::Owned(t) => t,
@@ -689,26 +683,6 @@ where
             Union(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
             Annotated(_, t) => Self::is_empty_ref(t),
             _ => false,
-        }
-    }
-
-    pub fn enclose(
-        &self,
-        left: &'a str,
-        doc: DocBuilder<'a, Arena<'a, A>, A>,
-        right: &'a str,
-    ) -> DocBuilder<'a, Arena<'a, A>, A> {
-        if self.is_empty(&doc) {
-            self.doc.text(left).append(right)
-        } else {
-            self.doc
-                .text(left)
-                .append(self.doc.line_())
-                .append(doc)
-                .nest(self.indent)
-                .append(self.doc.line_())
-                .append(right)
-                .group()
         }
     }
 

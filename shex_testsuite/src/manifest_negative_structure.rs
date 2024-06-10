@@ -22,7 +22,7 @@ pub struct ManifestNegativeStructureJson {
     graph: Vec<ManifestNegativeStructureGraph>,
 }
 
-impl<'a> From<ManifestNegativeStructureJson> for ManifestNegativeStructure {
+impl From<ManifestNegativeStructureJson> for ManifestNegativeStructure {
     fn from(m: ManifestNegativeStructureJson) -> Self {
         let entries = &m.graph[0].entries;
         let names = entries.iter().map(|e| e.name.clone()).collect();
@@ -32,7 +32,7 @@ impl<'a> From<ManifestNegativeStructureJson> for ManifestNegativeStructure {
         }
         ManifestNegativeStructure {
             entry_names: names,
-            map: map,
+            map,
         }
     }
 }
@@ -70,8 +70,8 @@ struct NegativeStructureEntry {
 }
 
 impl NegativeStructureEntry {
-    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        debug!("Runnnig entry: {}...not implemented", self.id);
+    pub fn run(&self, _base: &Path) -> Result<(), ManifestError> {
+        debug!("Running entry: {}...not implemented", self.id);
         Ok(())
     }
 }
@@ -79,6 +79,10 @@ impl NegativeStructureEntry {
 impl Manifest for ManifestNegativeStructure {
     fn len(&self) -> usize {
         self.entry_names.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entry_names.is_empty()
     }
 
     fn entry_names(&self) -> Vec<String> {
@@ -105,7 +109,7 @@ mod tests {
     fn count_negative_structure_entries() {
         let manifest_path = Path::new("shexTest/negativeStructure/manifest.jsonld");
         let manifest = {
-            let manifest_str = fs::read_to_string(&manifest_path).unwrap();
+            let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestNegativeStructure>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.entry_names.len(), 14);

@@ -7,6 +7,8 @@ use std::path::Path;
 pub trait Manifest {
     fn len(&self) -> usize;
 
+    fn is_empty(&self) -> bool;
+
     fn entry_names(&self) -> Vec<String>;
 
     fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError>;
@@ -28,38 +30,32 @@ pub trait Manifest {
         mode: ManifestRunMode,
         excluded_entries: Vec<String>,
         single_entries: Option<Vec<String>>,
-        single_traits: Option<Vec<String>>,
+        _single_traits: Option<Vec<String>>,
     ) -> ManifestRunResult {
         let mut result: ManifestRunResult = ManifestRunResult::new();
         for entry_name in &self.entry_names() {
             if excluded_entries.contains(entry_name) {
                 result.add_skipped(entry_name.to_string());
-                ()
-            } else if Self::should_run_entry_name(&self, &single_entries, entry_name) {
+            } else if Self::should_run_entry_name(self, &single_entries, entry_name) {
                 let safe_result =
                     catch_unwind(AssertUnwindSafe(move || self.run_entry(entry_name, base)));
                 match safe_result {
                     Ok(Ok(())) => {
                         result.add_passed(entry_name.to_string());
-                        ()
                     }
                     Ok(Err(e)) => {
                         result.add_failed(entry_name.to_string(), e);
-                        match mode {
-                            ManifestRunMode::FailFirstError => return result,
-                            _ => (),
+                        if mode == ManifestRunMode::FailFirstError {
+                            return result;
                         }
                     }
                     Err(err) => {
                         result.add_panicked(entry_name.to_string(), err);
-                        match mode {
-                            ManifestRunMode::FailFirstError => return result,
-                            _ => (),
+                        if mode == ManifestRunMode::FailFirstError {
+                            return result;
                         }
                     }
                 }
-            } else {
-                ()
             }
         }
         result

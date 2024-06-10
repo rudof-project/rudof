@@ -329,9 +329,9 @@ pub enum DataFormat {
     NQuads,
 }
 
-impl Into<RDFFormat> for DataFormat {
-    fn into(self) -> RDFFormat {
-        match self {
+impl From<DataFormat> for RDFFormat {
+    fn from(val: DataFormat) -> Self {
+        match val {
             DataFormat::Turtle => RDFFormat::Turtle,
             DataFormat::NTriples => RDFFormat::NTriples,
             DataFormat::RDFXML => RDFFormat::RDFXML,

@@ -1,15 +1,10 @@
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
-use rust_decimal::Decimal;
+use pretty::{Arena, DocAllocator, DocBuilder};
 use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
 use srdf::literal::Literal;
 use std::borrow::Cow;
-
-pub(crate) fn space<'a, A>(doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    doc.space()
-}
 
 pub(crate) fn pp_object_value<'a, A>(
     v: &ObjectValue,
@@ -47,22 +42,6 @@ pub(crate) fn pp_bnode<'a, A>(
     doc.text(format!("{value}"))
 }
 
-fn pp_isize<'a, A>(value: &isize, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    doc.text(value.to_string())
-}
-
-fn pp_decimal<'a, A>(value: &Decimal, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    doc.text(value.to_string())
-}
-
-fn pp_double<'a, A>(value: &f64, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    doc.text(value.to_string())
-}
-
-fn pp_usize<'a, A>(value: &usize, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    doc.text(value.to_string())
-}
-
 fn pp_iri_ref<'a, A>(
     value: &IriRef,
     doc: &'a Arena<'a, A>,
@@ -98,84 +77,10 @@ where
     }
 }
 
-fn pp_iri_unqualified<'a, A>(iri: &IriS, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
-    let str = format!("<{iri}>");
-    doc.text(str)
-}
-
 fn pp_iri<'a, A>(
     iri: &IriS,
     doc: &'a Arena<'a, A>,
     prefixmap: &PrefixMap,
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     doc.text(prefixmap.qualify(iri))
-}
-
-fn is_empty<'a, A>(d: &DocBuilder<'a, Arena<'a, A>, A>) -> bool {
-    use pretty::Doc::*;
-    match &**d {
-        Nil => true,
-        FlatAlt(t1, t2) => is_empty_ref(t1) && is_empty_ref(t2),
-        Group(t) => is_empty_ref(t),
-        Nest(_, t) => is_empty_ref(t),
-        Union(t1, t2) => is_empty_ref(t1) && is_empty_ref(t2),
-        Annotated(_, t) => is_empty_ref(t),
-        _ => false,
-    }
-}
-
-fn is_empty_ref<A>(rd: &RefDoc<'_, A>) -> bool {
-    use pretty::Doc::*;
-
-    match &**rd {
-        Nil => true,
-        FlatAlt(t1, t2) => is_empty_ref(t1) && is_empty_ref(t2),
-        Group(t) => is_empty_ref(t),
-        Nest(_, t) => is_empty_ref(t),
-        Union(t1, t2) => is_empty_ref(t1) && is_empty_ref(t2),
-        Annotated(_, t) => is_empty_ref(t),
-        _ => false,
-    }
-}
-
-pub(crate) fn enclose<'a, A>(
-    left: &'a str,
-    doc: DocBuilder<'a, Arena<'a, A>, A>,
-    right: &'a str,
-    arena: &'a Arena<'a, A>,
-    indent: isize,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
-    if is_empty(&doc) {
-        arena.text(left).append(right)
-    } else {
-        arena
-            .text(left)
-            .append(arena.line_())
-            .append(doc)
-            .nest(indent)
-            .append(arena.line_())
-            .append(right)
-            .group()
-    }
-}
-
-pub(crate) fn enclose_space<'a, A>(
-    left: &'a str,
-    middle: DocBuilder<'a, Arena<'a, A>, A>,
-    right: &'a str,
-    arena: &'a Arena<'a, A>,
-    indent: isize,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
-    if is_empty(&middle) {
-        arena.text(left).append(right)
-    } else {
-        arena
-            .text(left)
-            .append(arena.line())
-            .append(middle)
-            .nest(indent)
-            .append(arena.line())
-            .append(right)
-            .group()
-    }
 }

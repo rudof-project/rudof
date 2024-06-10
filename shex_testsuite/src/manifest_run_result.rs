@@ -10,6 +10,12 @@ pub struct ManifestRunResult {
     pub panicked: Vec<(String, Box<dyn Any + Send + 'static>)>,
 }
 
+impl Default for ManifestRunResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ManifestRunResult {
     pub fn new() -> ManifestRunResult {
         ManifestRunResult {

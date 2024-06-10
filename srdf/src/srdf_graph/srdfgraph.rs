@@ -102,7 +102,7 @@ impl SRDFGraph {
     }
 
     pub fn from_path(
-        path: &PathBuf,
+        path: &Path,
         format: &RDFFormat,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {

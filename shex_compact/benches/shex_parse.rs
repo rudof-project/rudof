@@ -16,7 +16,7 @@ fn shex_parse_benchmark(c: &mut Criterion) {
     // test once to make sure it parses correctly the first time
     parse();
     // real benchmark
-    c.bench_function("shex_parse", |b| b.iter(|| parse()));
+    c.bench_function("shex_parse", |b| b.iter(parse));
 }
 
 criterion_group! {

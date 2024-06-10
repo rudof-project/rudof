@@ -25,13 +25,6 @@ pub(crate) enum ShExStatement<'a> {
         shape_label: ShapeExprLabel,
         shape_expr: ShapeExpr,
     },
-    Empty,
-}
-
-impl<'a> ShExStatement<'a> {
-    pub fn is_empty(&self) -> bool {
-        matches!(self, ShExStatement::Empty)
-    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -69,12 +62,14 @@ impl Cardinality {
         }
     }
 
+    /*
     pub fn range(min: i32, max: i32) -> Cardinality {
         Cardinality {
             min: Some(min),
             max: Some(max),
         }
     }
+    */
 
     pub fn exact(n: i32) -> Cardinality {
         Cardinality {
@@ -83,12 +78,14 @@ impl Cardinality {
         }
     }
 
+    /*
     pub fn only_min(n: i32) -> Cardinality {
         Cardinality {
             min: Some(n),
             max: None,
         }
     }
+    */
 
     pub fn min_max(min: i32, max: i32) -> Cardinality {
         Cardinality {

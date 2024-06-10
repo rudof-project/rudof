@@ -61,7 +61,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Clippy check
         uses: actions-rs/cargo@v1
-        continue-on-error: true
         with:
           command: clippy
           args: --all-targets --all-features --workspace -- -D warnings

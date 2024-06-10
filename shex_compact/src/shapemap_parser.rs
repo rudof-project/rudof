@@ -12,7 +12,7 @@ use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::NodeSelector;
 use shapemap::ShapeSelector;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 type Result<A> = std::result::Result<A, ParseError>;
 

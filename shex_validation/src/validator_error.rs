@@ -23,7 +23,7 @@ pub enum ValidatorError {
     ConversionObjectIri { object: Object },
 
     #[error(transparent)]
-    CompiledSchemaError(#[from] CompiledSchemaError),
+    CompiledSchemaError(#[from] Box<CompiledSchemaError>),
 
     #[error("Failed regular expression")]
     RbeFailed(),
@@ -40,7 +40,7 @@ pub enum ValidatorError {
     #[error("ShapeLabel not found {shape_label:?}: {err}")]
     ShapeLabelNotFoundError {
         shape_label: ShapeExprLabel,
-        err: CompiledSchemaError,
+        err: Box<CompiledSchemaError>,
     },
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
