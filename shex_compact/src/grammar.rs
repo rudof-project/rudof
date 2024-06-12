@@ -5,7 +5,7 @@ use nom::{
     bytes::complete::{is_not, tag, tag_no_case},
     character::complete::multispace1,
     combinator::value,
-    multi::{many0, many1},
+    multi::many0,
     sequence::{delimited, pair},
     Err,
 };
@@ -89,11 +89,13 @@ pub(crate) fn tws0(input: Span) -> IRes<()> {
     value((), many0(alt((value((), multispace1), comment))))(input)
 }
 
+/*
 /// A combinator that recognises any non-empty amount of whitespace
 /// and comments.
 pub(crate) fn tws1(input: Span) -> IRes<()> {
     value((), many1(alt((value((), multispace1), comment))))(input)
 }
+*/
 
 /// A combinator that creates a parser for a specific token.
 pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
@@ -116,59 +118,4 @@ pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRe
     map_error(delimited(tws0, tag_no_case(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
-}
-
-fn many1_sep<'a, O, O2, F, G, H>(
-    mut parser_many: F,
-    mut sep: G,
-    maker: H,
-    mut i: Span<'a>,
-) -> IRes<'a, O2>
-where
-    F: FnMut(Span<'a>) -> IRes<'a, O>,
-    G: FnMut(Span<'a>) -> IRes<'a, ()>,
-    H: Fn(Vec<O>) -> O2,
-{
-    let mut vs = Vec::new();
-
-    // skip tws
-    if let Ok((left, _)) = tws0(i) {
-        i = left;
-    }
-    match parser_many(i) {
-        Ok((left, v)) => {
-            vs.push(v);
-            i = left;
-        }
-        Err(e) => return Err(e),
-    }
-    loop {
-        if let Ok((left, _)) = tws0(i) {
-            i = left;
-        }
-
-        match sep(i) {
-            Ok((left, _)) => {
-                i = left;
-            }
-            _ => return Ok((i, maker(vs))),
-        }
-
-        if let Ok((left, _)) = tws0(i) {
-            i = left;
-        }
-
-        match parser_many(i) {
-            Ok((left, v)) => {
-                vs.push(v);
-                i = left;
-            }
-            _ => return Ok((i, maker(vs))),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }

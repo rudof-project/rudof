@@ -1,7 +1,12 @@
-use srdf::RDFNode;
+use crate::{
+    component::Component, message_map::MessageMap, severity::Severity, target::Target,
+    SH_DEACTIVATED_STR, SH_DESCRIPTION_STR, SH_GROUP_STR, SH_INFO_STR, SH_NAME_STR, SH_NODE_SHAPE,
+    SH_PROPERTY_STR, SH_SEVERITY_STR, SH_VIOLATION_STR, SH_WARNING_STR,
+};
+use iri_s::iri;
+use oxrdf::{Literal as OxLiteral, Term as OxTerm};
+use srdf::{RDFNode, SRDFBuilder};
 use std::fmt::Display;
-
-use crate::{component::Component, target::Target};
 
 #[derive(Debug, Clone)]
 pub struct NodeShape {
@@ -11,16 +16,12 @@ pub struct NodeShape {
     property_shapes: Vec<RDFNode>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
-    // deactivated: bool,
+    deactivated: bool,
     // message: MessageMap,
-    // severity: Option<Severity>,
-    // name: MessageMap,
-    // description: MessageMap,
-
-    // SHACL spec says that the values of sh:order should be decimals but in the examples they use integers. `NumericLiteral` also includes doubles.
-    // order: Option<NumericLiteral>,
-
-    // group: Option<RDFNode>,
+    severity: Option<Severity>,
+    name: MessageMap,
+    description: MessageMap,
+    group: Option<RDFNode>,
     // source_iri: Option<IriRef>,
 }
 
@@ -33,13 +34,12 @@ impl NodeShape {
             property_shapes: Vec::new(),
             closed: false,
             // ignored_properties: Vec::new(),
-            // deactivated: false,
+            deactivated: false,
             // message: MessageMap::new(),
-            // severity: None,
-            // name: MessageMap::new(),
-            // description: MessageMap::new(),
-            // order: None,
-            // group: None,
+            severity: None,
+            name: MessageMap::new(),
+            description: MessageMap::new(),
+            group: None,
             // source_iri: None,
         }
     }
@@ -70,6 +70,80 @@ impl NodeShape {
     pub fn with_closed(mut self, closed: bool) -> Self {
         self.closed = closed;
         self
+    }
+
+    pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
+    where
+        RDF: SRDFBuilder,
+    {
+        rdf.add_type(&self.id, RDF::iri_s2term(&SH_NODE_SHAPE))?;
+
+        self.name.to_term_iter().try_for_each(|term| {
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_NAME_STR)),
+                &RDF::term_s2term(&term),
+            )
+        })?;
+
+        self.description.to_term_iter().try_for_each(|term| {
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_DESCRIPTION_STR)),
+                &RDF::term_s2term(&term),
+            )
+        })?;
+
+        self.components
+            .iter()
+            .try_for_each(|component| component.write(&self.id, rdf))?;
+
+        self.targets
+            .iter()
+            .try_for_each(|target| target.write(&self.id, rdf))?;
+
+        self.property_shapes.iter().try_for_each(|property_shape| {
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_PROPERTY_STR)),
+                &RDF::object_as_term(property_shape),
+            )
+        })?;
+
+        if self.deactivated {
+            let term = OxTerm::Literal(OxLiteral::new_simple_literal("true"));
+
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_DEACTIVATED_STR)),
+                &RDF::term_s2term(&term),
+            )?;
+        }
+
+        if let Some(group) = &self.group {
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_GROUP_STR)),
+                &RDF::object_as_term(group),
+            )?;
+        }
+
+        if let Some(severity) = &self.severity {
+            let pred = match severity {
+                Severity::Violation => iri!(SH_VIOLATION_STR),
+                Severity::Info => iri!(SH_INFO_STR),
+                Severity::Warning => iri!(SH_WARNING_STR),
+                Severity::Generic(iri) => iri.get_iri().unwrap(),
+            };
+
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_SEVERITY_STR)),
+                &RDF::iri_s2term(&pred),
+            )?;
+        }
+
+        Ok(())
     }
 }
 

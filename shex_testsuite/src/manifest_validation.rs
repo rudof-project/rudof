@@ -39,7 +39,7 @@ struct ManifestValidationJson {
     graph: Vec<ManifestValidationGraph>,
 }
 
-impl<'a> From<ManifestValidationJson> for ManifestValidation {
+impl From<ManifestValidationJson> for ManifestValidation {
     fn from(m: ManifestValidationJson) -> Self {
         let entries = &m.graph[0].entries;
         let names = entries.iter().map(|e| e.name.clone()).collect();
@@ -49,7 +49,7 @@ impl<'a> From<ManifestValidationJson> for ManifestValidation {
         }
         ManifestValidation {
             entry_names: names,
-            map: map,
+            map,
         }
     }
 }
@@ -189,7 +189,9 @@ impl ValidationEntry {
 
         let mut compiler = SchemaJsonCompiler::new();
         let mut compiled_schema = CompiledSchema::new();
-        compiler.compile(&schema, &mut compiled_schema)?;
+        compiler
+            .compile(&schema, &mut compiled_schema)
+            .map_err(Box::new)?;
         let mut validator = Validator::new(compiled_schema);
         validator.validate_node_shape(&node, &shape, &graph)?;
         let type_ = parse_type(&self.type_)?;
@@ -219,7 +221,7 @@ fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError
     match &shape {
         None => Ok(ShapeLabel::Start),
         Some(str) => {
-            let shape = parse_shape(&str)?;
+            let shape = parse_shape(str)?;
             Ok(shape)
         }
     }
@@ -275,6 +277,10 @@ impl Manifest for ManifestValidation {
         self.entry_names.len()
     }
 
+    fn is_empty(&self) -> bool {
+        self.entry_names.is_empty()
+    }
+
     fn entry_names(&self) -> Vec<String> {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
@@ -299,7 +305,7 @@ mod tests {
     fn count_validation_entries() {
         let manifest_path = Path::new("shexTest/validation/manifest.jsonld");
         let manifest = {
-            let manifest_str = fs::read_to_string(&manifest_path).unwrap();
+            let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestValidation>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.entry_names.len(), 1166);

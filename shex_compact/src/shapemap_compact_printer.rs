@@ -69,7 +69,6 @@ where
     A: Clone,
 {
     width: usize,
-    indent: isize,
     keyword_color: Option<Color>,
     shapemap: &'a QueryShapeMap,
     doc: &'a Arena<'a, A>,
@@ -79,7 +78,6 @@ where
 }
 
 const DEFAULT_WIDTH: usize = 100;
-const DEFAULT_INDENT: isize = 4;
 const DEFAULT_QUALIFY_ALIAS_COLOR: Option<Color> = Some(Color::Blue);
 const DEFAULT_QUALIFY_SEMICOLON_COLOR: Option<Color> = Some(Color::BrightGreen);
 const DEFAULT_QUALIFY_LOCALNAME_COLOR: Option<Color> = Some(Color::Black);
@@ -95,7 +93,6 @@ where
     ) -> ShapemapCompactPrinter<'a, A> {
         ShapemapCompactPrinter {
             width: DEFAULT_WIDTH,
-            indent: DEFAULT_INDENT,
             keyword_color: DEFAULT_KEYWORD_COLOR,
             shapemap,
             doc,
@@ -111,11 +108,6 @@ where
                 .with_qualify_prefix_color(DEFAULT_QUALIFY_ALIAS_COLOR)
                 .with_qualify_semicolon_color(DEFAULT_QUALIFY_SEMICOLON_COLOR),
         }
-    }
-
-    pub fn with_width(mut self, width: usize) -> Self {
-        self.width = width;
-        self
     }
 
     pub fn with_keyword_color(mut self, color: Option<Color>) -> Self {

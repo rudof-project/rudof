@@ -1,11 +1,9 @@
 use colored::*;
 use prefixmap::PrefixMap;
-use rbe::Pending;
 use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::Node;
 use srdf::Object;
 use std::collections::hash_map::Entry;
-use std::hash::Hash;
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Debug, Display, Formatter},

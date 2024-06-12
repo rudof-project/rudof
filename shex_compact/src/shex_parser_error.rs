@@ -1,6 +1,5 @@
 use iri_s::IriSError;
 use prefixmap::DerefError;
-use regex::Regex;
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},

@@ -53,8 +53,8 @@ impl Display for TripleExprLabel {
     }
 }
 
-impl Into<String> for TripleExprLabel {
-    fn into(self) -> String {
-        self.to_string()
+impl From<TripleExprLabel> for String {
+    fn from(val: TripleExprLabel) -> Self {
+        val.to_string()
     }
 }

@@ -1,7 +1,8 @@
-use srdf::{RDFFormat, SRDFBasic, SRDFBuilder};
+use crate::{Schema, SH_STR};
+use iri_s::IriS;
+use srdf::{RDFFormat, SRDFBuilder, RDF, XSD};
 use std::io::Write;
-
-use crate::{shape::Shape, Schema, SH_NODE_SHAPE, SH_PROPERTY_SHAPE};
+use std::str::FromStr;
 
 pub struct ShaclWriter<RDF>
 where
@@ -19,14 +20,18 @@ where
     }
 
     pub fn write(&mut self, schema: &Schema) -> Result<(), RDF::Err> {
-        self.rdf.add_prefix_map(schema.prefix_map())?;
+        let mut prefix_map = schema.prefix_map();
+        prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
+        prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());
+        prefix_map.insert("sh", &IriS::from_str(SH_STR).unwrap());
+
+        self.rdf.add_prefix_map(prefix_map)?;
         self.rdf.add_base(&schema.base())?;
-        for (node, shape) in schema.iter() {
-            match shape {
-                Shape::NodeShape(_) => self.rdf.add_type(node, node_shape::<RDF>())?,
-                Shape::PropertyShape(_) => self.rdf.add_type(node, property_shape::<RDF>())?,
-            }
-        }
+
+        schema
+            .iter()
+            .try_for_each(|(_, shape)| shape.write(&mut self.rdf))?;
+
         Ok(())
     }
 
@@ -42,17 +47,4 @@ where
     fn default() -> Self {
         Self::new()
     }
-}
-fn node_shape<RDF>() -> RDF::Term
-where
-    RDF: SRDFBasic,
-{
-    RDF::iri_s2term(&SH_NODE_SHAPE)
-}
-
-fn property_shape<RDF>() -> RDF::Term
-where
-    RDF: SRDFBasic,
-{
-    RDF::iri_s2term(&SH_PROPERTY_SHAPE)
 }

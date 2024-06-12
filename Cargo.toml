@@ -3,9 +3,10 @@ name = "shapes-rs"
 version = "0.0.11"
 description = "RDF Data shapes implementation in Rust"
 license = "GPL-3.0-or-later"
-authors = [ 
-    "Jose Emilio Labra Gayo",
-    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", 
+authors = [
+    "Jose Emilio Labra Gayo <labra@uniovi.es>",
+    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
+    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
 ]
 repository = "https://github.com/weso/shapes-rs"
 homepage = "https://www.weso.es/shapes-rs/"
@@ -13,7 +14,7 @@ homepage = "https://www.weso.es/shapes-rs/"
 
 [[bin]]
 path = "sx_cli/src/main.rs"
-name = "sx"  
+name = "sx"
 
 [workspace]
 members = [
@@ -47,15 +48,17 @@ exclude = [
 # version = "0.0.6"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-authors = ["Jose Emilio Labra Gayo <labra@uniovi.es>",
-    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>", 
+authors = [
+    "Jose Emilio Labra Gayo <labra@uniovi.es>",
+    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
+    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
 ]
 description = "RDF data shapes implementation in Rust"
-repository = "https://github.com/weso/shapes_rs"
+repository = "https://github.com/weso/shapes-rs"
 homepage = "https://www.weso.es/shapes-rs/"
 
 readme = "./README.md"
-keywords = ["rdf", "linked-data", "semantic-web", "shex"] 
+keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["rdf"]
 
 [workspace.dependencies]

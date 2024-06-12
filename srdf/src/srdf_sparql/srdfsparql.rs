@@ -171,6 +171,10 @@ impl SRDFBasic for SRDFSparql {
         iri_s.as_named_node().clone()
     }
 
+    fn term_s2term(term: &OxTerm) -> Self::Term {
+        term.clone()
+    }
+
     fn term_as_object(term: &Self::Term) -> Object {
         match term {
             Self::Term::BlankNode(bn) => Object::BlankNode(bn.to_string()),

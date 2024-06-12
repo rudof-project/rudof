@@ -3,7 +3,7 @@ use shex_ast::{ast::SchemaJsonError, CompiledSchemaError, Schema};
 use shex_compact::ParseError;
 use shex_validation::{ResultValue, ValidatorError};
 use srdf::srdf_graph::SRDFGraphError;
-use std::{ffi::OsString, io, path::Path};
+use std::{ffi::OsString, io};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -45,7 +45,7 @@ pub enum ManifestError {
     ParseError(#[from] ParseError),
 
     #[error(transparent)]
-    CompiledSchemaError(#[from] CompiledSchemaError),
+    CompiledSchemaError(#[from] Box<CompiledSchemaError>),
 
     #[error(transparent)]
     IriError(#[from] IriSError),

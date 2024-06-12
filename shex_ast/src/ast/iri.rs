@@ -46,9 +46,9 @@ impl Display for Iri {
 }
 
 // This is required by serde serialization
-impl Into<String> for Iri {
-    fn into(self) -> String {
-        match self {
+impl From<Iri> for String {
+    fn from(val: Iri) -> Self {
+        match val {
             Iri::String(s) => s,
             Iri::IriS(iri_s) => iri_s.as_str().to_string(),
         }

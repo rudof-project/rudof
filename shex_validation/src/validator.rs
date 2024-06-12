@@ -50,9 +50,9 @@ impl Validator {
     fn get_shape_expr_label(&mut self, label: &ShapeExprLabel) -> Result<ShapeLabelIdx> {
         self.schema
             .find_ref(label)
-            .map_err(|e| ValidatorError::ShapeLabelNotFoundError {
+            .map_err(|error| ValidatorError::ShapeLabelNotFoundError {
                 shape_label: label.clone(),
-                err: e,
+                err: Box::new(error),
             })
     }
 
@@ -87,7 +87,7 @@ impl Validator {
                 let iri = rdf.resolve_prefix_local(prefix, local)?;
                 Ok(Node::iri(iri.clone()))
             }
-            ObjectValue::Literal(lit) => todo!(),
+            ObjectValue::Literal(_lit) => todo!(),
         }
     }
 
@@ -135,7 +135,7 @@ impl Validator {
 
     pub fn get_result(&self, node: &Node, shape: &ShapeLabel) -> Result<ResultValue> {
         if let Some(idx) = self.schema.find_shape_label_idx(shape) {
-            let pos_atom = PosAtom::new((node.clone(), idx.clone()));
+            let pos_atom = PosAtom::new((node.clone(), *idx));
             let atom = Atom::pos(&pos_atom);
             Ok(self.runner.get_result(&atom))
         } else {
@@ -152,7 +152,7 @@ impl Validator {
 
     fn get_idx(&self, shape: &ShapeLabel) -> Result<ShapeLabelIdx> {
         match self.schema.find_label(shape) {
-            Some((idx, _se)) => Ok(idx.clone()),
+            Some((idx, _se)) => Ok(*idx),
             None => Err(ValidatorError::NotFoundShapeLabel {
                 shape: (*shape).clone(),
             }),

@@ -93,7 +93,7 @@ impl ShapeExpr {
         ShapeExpr::External
     }
 
-    pub fn not(se: ShapeExpr) -> ShapeExpr {
+    pub fn shape_not(se: ShapeExpr) -> ShapeExpr {
         ShapeExpr::ShapeNot {
             shape_expr: Box::new(ShapeExprWrapper { se }),
         }

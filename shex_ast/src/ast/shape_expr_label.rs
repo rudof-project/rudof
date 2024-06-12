@@ -108,9 +108,9 @@ impl Display for ShapeExprLabel {
     }
 }
 
-impl Into<String> for ShapeExprLabel {
-    fn into(self) -> String {
-        self.to_string()
+impl From<ShapeExprLabel> for String {
+    fn from(val: ShapeExprLabel) -> Self {
+        val.to_string()
     }
 }
 

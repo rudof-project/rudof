@@ -4,7 +4,7 @@ use prefixmap::Deref;
 use shex_ast::Iri;
 use shex_ast::Schema;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::grammar_structs::ShExStatement;
 use crate::shex_statement;
@@ -35,7 +35,6 @@ impl<'a> ShExParser<'a> {
         let mut shapes_counter = 0;
         for s in parser.shex_statement_iterator.by_ref() {
             match s? {
-                ShExStatement::Empty => {}
                 ShExStatement::BaseDecl { iri } => {
                     schema = schema.with_base(Some(iri));
                 }

@@ -1,6 +1,6 @@
 use crate::{tap_config::TapConfig, tap_error::TapError};
 use serde_derive::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::Path;
 use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,6 +11,12 @@ pub struct DCTap {
     version: String,
 }
 
+impl Default for DCTap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DCTap {
     pub fn new() -> DCTap {
         DCTap {
@@ -18,7 +24,7 @@ impl DCTap {
         }
     }
 
-    pub fn read_buf(path_buf: &PathBuf, config: TapConfig) -> Result<DCTap, TapError> {
+    pub fn read_buf(_path: &Path, _config: TapConfig) -> Result<DCTap, TapError> {
         let dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
         Ok(dctap)

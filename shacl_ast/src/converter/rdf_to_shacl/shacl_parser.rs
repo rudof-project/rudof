@@ -265,7 +265,7 @@ where
         RDF: FocusRDF + 'a,
     {
         node_shape()
-            .then(move |ns| ok(&Shape::NodeShape(ns)))
+            .then(move |ns| ok(&Shape::NodeShape(Box::new(ns))))
             .or(property_shape(state).then(|ps| ok(&Shape::PropertyShape(ps))))
     }
 }

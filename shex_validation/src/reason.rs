@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use prefixmap::PrefixMap;
 use shex_ast::{
     compiled::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
     Node,

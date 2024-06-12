@@ -102,7 +102,7 @@ impl SRDFGraph {
     }
 
     pub fn from_path(
-        path: &PathBuf,
+        path: &Path,
         format: &RDFFormat,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {
@@ -233,6 +233,10 @@ impl SRDFBasic for SRDFGraph {
 
     fn iri2iri_s(iri: &OxNamedNode) -> IriS {
         IriS::from_named_node(iri)
+    }
+
+    fn term_s2term(term: &OxTerm) -> Self::Term {
+        term.clone()
     }
 
     fn term_as_object(term: &OxTerm) -> Object {
@@ -577,10 +581,10 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
-    fn add_type(&mut self, node: &crate::RDFNode, type_: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, node: &crate::RDFNode, r#type: Self::Term) -> Result<(), Self::Err> {
         match Self::object_as_subject(node) {
             Some(subj) => {
-                let triple = OxTriple::new(subj, rdf_type(), type_.clone());
+                let triple = OxTriple::new(subj, rdf_type(), r#type.clone());
                 self.graph.insert(&triple);
                 Ok(())
             }
@@ -600,7 +604,12 @@ impl SRDFBuilder for SRDFGraph {
     }
 
     fn serialize<W: Write>(&self, format: RDFFormat, write: W) -> Result<(), Self::Err> {
-        let serializer = RdfSerializer::from_format(cnv_rdf_format(format));
+        let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
+
+        for (prefix, iri) in &self.pm.map {
+            serializer = serializer.with_prefix(prefix, iri.as_str()).unwrap();
+        }
+
         let mut writer = serializer.serialize_to_write(write);
         for triple in self.graph.iter() {
             writer.write_triple(triple)?;
@@ -874,7 +883,7 @@ mod tests {
     fn test_rdf_parser_macro() {
         use crate::SRDFGraph;
         use crate::{rdf_parser, satisfy, RDFNodeParse, SRDFBasic};
-        use iri_s::{iri, IriS};
+        use iri_s::iri;
 
         rdf_parser! {
               fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
@@ -901,7 +910,7 @@ mod tests {
 fn test_rdf_list() {
     use crate::SRDFGraph;
     use crate::{property_value, rdf_list, set_focus, RDFNodeParse};
-    use iri_s::{iri, IriS};
+    use iri_s::iri;
 
     let s = r#"prefix : <http://example.org/>
                :x :p (1 2).
@@ -924,7 +933,7 @@ fn test_rdf_list() {
 fn test_not() {
     use crate::SRDFGraph;
     use crate::{not, property_value, RDFNodeParse};
-    use iri_s::{iri, IriS};
+    use iri_s::iri;
 
     let s = r#"prefix : <http://example.org/>
                :x :p 1 .
@@ -939,7 +948,7 @@ fn test_not() {
 fn test_iri() {
     use crate::SRDFGraph;
     use crate::{iri, RDFNodeParse};
-    use iri_s::{iri, IriS};
+    use iri_s::iri;
 
     let graph = SRDFGraph::new();
     let x = iri!("http://example.org/x");

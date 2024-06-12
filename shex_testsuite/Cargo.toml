@@ -17,7 +17,6 @@ shex_ast = { path = "../shex_ast", version = "0.0.11" }
 shex_compact = { path = "../shex_compact", version = "0.0.11" }
 shex_validation = { path = "../shex_validation", version = "0.0.11" }
 serde = { version = "1.0", features = ["derive"] }
-# serde_derive = "1.0"
 serde_json = "1.0"
 serde_yaml = "0.9.21"
 anyhow = "1.0"
@@ -28,9 +27,5 @@ clap = { version = "4.2.1", features = ["derive"] }
 # rio_turtle = "0.8.2"
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
-clippy = "0.0.302"
 url = "2.4"
 tracing = "0.1"
-
-
-[dev-dependencies]

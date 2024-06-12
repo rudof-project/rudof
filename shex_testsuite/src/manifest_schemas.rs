@@ -20,7 +20,7 @@ pub struct ManifestSchemas {
     map: HashMap<String, SchemasEntry>,
 }
 
-impl<'a> From<ManifestSchemasJson> for ManifestSchemas {
+impl From<ManifestSchemasJson> for ManifestSchemas {
     fn from(m: ManifestSchemasJson) -> Self {
         let entries = &m.graph[0].entries;
         let names = entries.iter().map(|e| e.name.clone()).collect();
@@ -30,7 +30,7 @@ impl<'a> From<ManifestSchemasJson> for ManifestSchemas {
         }
         ManifestSchemas {
             entry_names: names,
-            map: map,
+            map,
         }
     }
 }
@@ -134,7 +134,7 @@ impl<'de> Deserialize<'de> for Focus {
 }
 
 impl ManifestSchemas {
-    pub fn run(&self, base: &Path, debug: u8) -> Result<(), ManifestError> {
+    pub fn run(&self, base: &Path, _debug: u8) -> Result<(), ManifestError> {
         for entry in self.map.values() {
             entry.run(base)?
         }
@@ -145,7 +145,7 @@ impl ManifestSchemas {
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
         tracing::debug!(
-            "Runnnig entry: {} with json: {}, shex: {}, base: {:?}",
+            "Running entry: {} with json: {}, shex: {}, base: {:?}",
             self.id,
             self.json,
             self.shex,
@@ -228,6 +228,10 @@ impl Manifest for ManifestSchemas {
         self.entry_names.len()
     }
 
+    fn is_empty(&self) -> bool {
+        self.entry_names.is_empty()
+    }
+
     fn entry_names(&self) -> Vec<String> {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
@@ -252,7 +256,7 @@ mod tests {
     fn count_local_manifest_entries() {
         let manifest_path = Path::new("localTest/schemas/manifest.jsonld");
         let manifest = {
-            let manifest_str = fs::read_to_string(&manifest_path).unwrap();
+            let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.len(), 2);
@@ -262,7 +266,7 @@ mod tests {
     fn count_schema_entries() {
         let manifest_path = Path::new("shexTest/schemas/manifest.jsonld");
         let manifest = {
-            let manifest_str = fs::read_to_string(&manifest_path).unwrap();
+            let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.len(), 433);

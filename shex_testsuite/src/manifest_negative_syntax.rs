@@ -22,7 +22,7 @@ pub struct ManifestNegativeSyntaxJson {
     graph: Vec<ManifestNegativeSyntaxGraph>,
 }
 
-impl<'a> From<ManifestNegativeSyntaxJson> for ManifestNegativeSyntax {
+impl From<ManifestNegativeSyntaxJson> for ManifestNegativeSyntax {
     fn from(m: ManifestNegativeSyntaxJson) -> Self {
         let entries = &m.graph[0].entries;
         let names = entries.iter().map(|e| e.name.clone()).collect();
@@ -32,7 +32,7 @@ impl<'a> From<ManifestNegativeSyntaxJson> for ManifestNegativeSyntax {
         }
         ManifestNegativeSyntax {
             entry_names: names,
-            map: map,
+            map,
         }
     }
 }
@@ -54,6 +54,9 @@ struct ManifestNegativeSyntaxGraph {
 impl Manifest for ManifestNegativeSyntax {
     fn len(&self) -> usize {
         self.entry_names.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.entry_names.is_empty()
     }
 
     fn entry_names(&self) -> Vec<String> {
@@ -90,8 +93,8 @@ struct NegativeSyntaxEntry {
 }
 
 impl NegativeSyntaxEntry {
-    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        debug!("Runnnig entry: {}...not implemented", self.id);
+    pub fn run(&self, _base: &Path) -> Result<(), ManifestError> {
+        debug!("Running entry: {}...not implemented", self.id);
         Ok(())
     }
 }
@@ -106,7 +109,7 @@ mod tests {
     fn count_negative_syntax_entries() {
         let manifest_path = Path::new("shexTest/negativeSyntax/manifest.jsonld");
         let manifest = {
-            let manifest_str = fs::read_to_string(&manifest_path).unwrap();
+            let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.entry_names.len(), 100);

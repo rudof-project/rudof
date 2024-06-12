@@ -26,4 +26,6 @@ serde_json = "1"
 const_format = "0.2"
 itertools = "0.13"
 
+oxrdf = { version = "0.2.0-alpha.5", features = ["oxsdatatypes"] }
+
 [dev-dependencies]

@@ -13,8 +13,6 @@ pub mod tap_statement;
 
 pub use crate::tap_config::*;
 pub use crate::tap_error::*;
-pub use crate::tap_error::*;
 pub use crate::tap_shape::*;
 pub use crate::tap_statement::*;
-pub use dctap::*;
 pub use dctap::*;
