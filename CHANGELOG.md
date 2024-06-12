@@ -1,13 +1,15 @@
 # Current changes without release yet
 
-- [0.0.11] - 2024-06-08
+- Code cleaned with Rustfmt and Clippy by [MarcAntoine-Arnaud](https://github.com/MarcAntoine-Arnaud).
+
+# [0.0.11] - 2024-06-08
 
 - This version in mainly a maintainance version updating some dependencies
 - Started project DCTAP to handle DCTAP files
 - Updated some dependency versions
   - oxrdf = "0.2.0-alpha.2"
   - regex = "1.10.4"
-  
+
 # [0.0.10] - 2024-01-29
 
 - [issue 32](https://github.com/weso/shapes-rs/issues/32) ShEx parser works as an iterator per statement allowing to show debug information by statement. Debug information can be controlled by the environment variablt RUST_LOG. A value of "debug" for that variable will print more information.
