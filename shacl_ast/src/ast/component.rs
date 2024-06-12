@@ -124,12 +124,7 @@ impl Component {
                 }
             }
             Self::UniqueLang(value) => {
-                Self::write_literal(
-                    &Literal::BooleanLiteral(*value),
-                    SH_UNIQUE_LANG_STR,
-                    rdf_node,
-                    rdf,
-                )?;
+                Self::write_boolean(*value, SH_UNIQUE_LANG_STR, rdf_node, rdf)?;
             }
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
@@ -175,12 +170,7 @@ impl Component {
                 is_closed,
                 ignored_properties,
             } => {
-                Self::write_literal(
-                    &Literal::BooleanLiteral(*is_closed),
-                    SH_CLOSED_STR,
-                    rdf_node,
-                    rdf,
-                )?;
+                Self::write_boolean(*is_closed, SH_CLOSED_STR, rdf_node, rdf)?;
 
                 ignored_properties.iter().try_for_each(|iri| {
                     Self::write_iri(iri, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
@@ -235,12 +225,7 @@ impl Component {
                 }
 
                 if let Some(value) = qualified_value_shapes_disjoint {
-                    Self::write_literal(
-                        &Literal::BooleanLiteral(*value),
-                        SH_QUALIFIED_MAX_COUNT_STR,
-                        rdf_node,
-                        rdf,
-                    )?;
+                    Self::write_boolean(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
                 }
             }
         }
@@ -262,6 +247,20 @@ impl Component {
             value.to_string(),
             decimal_type,
         ));
+
+        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
+    }
+
+    fn write_boolean<RDF>(
+        value: bool,
+        predicate: &str,
+        rdf_node: &RDFNode,
+        rdf: &mut RDF,
+    ) -> Result<(), RDF::Err>
+    where
+        RDF: SRDFBuilder,
+    {
+        let term = OxTerm::Literal(OxLiteral::from(value));
 
         Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
     }
