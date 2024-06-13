@@ -1,7 +1,7 @@
 use crate::{
     component::Component, message_map::MessageMap, severity::Severity, target::Target,
-    SH_DEACTIVATED_STR, SH_DESCRIPTION_STR, SH_GROUP_STR, SH_INFO_STR, SH_NAME_STR, SH_NODE_SHAPE,
-    SH_PROPERTY_STR, SH_SEVERITY_STR, SH_VIOLATION_STR, SH_WARNING_STR,
+    SH_CLOSED_STR, SH_DEACTIVATED_STR, SH_DESCRIPTION_STR, SH_GROUP_STR, SH_INFO_STR, SH_NAME_STR,
+    SH_NODE_SHAPE, SH_PROPERTY_STR, SH_SEVERITY_STR, SH_VIOLATION_STR, SH_WARNING_STR,
 };
 use iri_s::iri;
 use oxrdf::{Literal as OxLiteral, Term as OxTerm};
@@ -140,6 +140,16 @@ impl NodeShape {
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &RDF::iri_s2iri(&iri!(SH_SEVERITY_STR)),
                 &RDF::iri_s2term(&pred),
+            )?;
+        }
+
+        if self.closed {
+            let term = OxTerm::Literal(OxLiteral::from(true));
+
+            rdf.add_triple(
+                &RDF::object_as_subject(&self.id).unwrap(),
+                &RDF::iri_s2iri(&iri!(SH_CLOSED_STR)),
+                &RDF::term_s2term(&term),
             )?;
         }
 
