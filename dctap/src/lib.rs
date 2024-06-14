@@ -8,6 +8,7 @@
 pub mod dctap;
 pub mod tap_config;
 pub mod tap_error;
+pub mod tap_headers;
 pub mod tap_reader;
 pub mod tap_shape;
 pub mod tap_statement;
