@@ -8,11 +8,13 @@
 pub mod dctap;
 pub mod tap_config;
 pub mod tap_error;
+pub mod tap_reader;
 pub mod tap_shape;
 pub mod tap_statement;
 
 pub use crate::tap_config::*;
 pub use crate::tap_error::*;
+pub use crate::tap_reader::*;
 pub use crate::tap_shape::*;
 pub use crate::tap_statement::*;
 pub use dctap::*;
