@@ -28,7 +28,7 @@ impl<'r, R: io::Read> TapReader<'r, R> {
         if self.reader.read_record(&mut record)? {
             self.state
                 .current_shape
-                .from_record(record, &self.state.headers)?;
+                .parse_from_record(record, &self.state.headers)?;
             Ok(true)
         } else {
             Ok(false)
@@ -67,14 +67,9 @@ impl<'r, R: io::Read> ShapesIter<'r, R> {
         ShapesIter { reader }
     }
 
-    /// Return a reference to the underlying `TapReader`.
-    pub fn reader(&self) -> &TapReader<R> {
-        &self.reader
-    }
-
     /// Return a mutable reference to the underlying `TapReader`.
     pub fn reader_mut(&mut self) -> &mut TapReader<'r, R> {
-        &mut self.reader
+        self.reader
     }
 }
 

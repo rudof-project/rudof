@@ -4,7 +4,7 @@ use crate::{tap_error::Result, tap_headers::TapHeaders};
 use csv::StringRecord;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct TapShape {
     #[serde(rename = "shapeID")]
     shape_id: Option<String>,
@@ -20,7 +20,7 @@ impl TapShape {
         }
     }
 
-    pub(crate) fn from_record(
+    pub(crate) fn parse_from_record(
         &mut self,
         record: StringRecord,
         tap_headers: &TapHeaders,
