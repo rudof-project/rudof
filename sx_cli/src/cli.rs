@@ -251,7 +251,7 @@ pub enum Command {
             short = 'r',
             long = "Result format",
             value_name = "Ouput results format",
-            default_value_t = DCTapResultFormat::JSON
+            default_value_t = DCTapResultFormat::Internal
         )]
         result_format: DCTapResultFormat,
 
@@ -398,13 +398,13 @@ impl Display for DCTapFormat {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum DCTapResultFormat {
-    JSON,
+    Internal,
 }
 
 impl Display for DCTapResultFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            DCTapResultFormat::JSON => write!(dest, "json"),
+            DCTapResultFormat::Internal => write!(dest, "internal"),
         }
     }
 }

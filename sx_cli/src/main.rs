@@ -295,9 +295,8 @@ fn run_dctap(
     let mut writer = get_writer(output)?;
     let dctap = parse_dctap(input_path, format)?;
     match result_format {
-        DCTapResultFormat::JSON => {
-            let str = serde_json::to_string_pretty(&dctap)?;
-            writeln!(writer, "{str}")?;
+        DCTapResultFormat::Internal => {
+            writeln!(writer, "{dctap:?}")?;
             Ok(())
         }
     }
@@ -595,7 +594,8 @@ fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclS
 fn parse_dctap(input_path: &Path, format: &DCTapFormat) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let dctap = DCTap::read_buf(input_path, TapConfig::default())?;
+            let dctap = DCTap::from_path(input_path, TapConfig::default())?;
+            debug!("DCTAP read {dctap:?}");
             Ok(dctap)
         }
     }
