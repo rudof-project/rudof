@@ -12,6 +12,7 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 - [Discussion](https://github.com/weso/shapes-rs/discussions/landing)
 - [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
 - [How to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides)
+- [Roadmap](https://github.com/weso/shapes-rs/issues/1)
 
 ### Installation
 
