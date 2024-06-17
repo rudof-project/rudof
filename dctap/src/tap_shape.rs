@@ -18,6 +18,10 @@ impl TapShape {
         }
     }
 
+    pub fn shape_id(&self) -> Option<ShapeId> {
+        self.shape_id.clone()
+    }
+
     pub fn set_shape_id(&mut self, shape_id: &ShapeId) {
         self.shape_id = Some(shape_id.clone());
     }

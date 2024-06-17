@@ -1,8 +1,10 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
 use crate::{PropertyId, ShapeId, TapShape, TapStatement};
 use csv::{Reader, ReaderBuilder, StringRecord, Terminator, Trim};
+use std::fs::File;
 // use indexmap::IndexSet;
 use std::io::{self};
+use std::path::Path;
 
 #[derive(Default)]
 pub struct TapReaderBuilder {
@@ -15,7 +17,7 @@ impl TapReaderBuilder {
     }
 
     // Most of these options are copied from CSV Rust
-    pub fn flexible(&mut self, yes: bool) -> &mut TapReaderBuilder {
+    pub fn flexible(mut self, yes: bool) -> Self {
         self.reader_builder.flexible(yes);
         self
     }
@@ -40,10 +42,13 @@ impl TapReaderBuilder {
         self
     }
 
-    /*
     pub fn from_path<P: AsRef<Path>>(&self, path: P) -> Result<TapReader<File>> {
-        Ok(TapReader::new(self, File::open(path)?))
-    }*/
+        let mut reader = self.reader_builder.from_path(path)?;
+        let rcd_headers = reader.headers()?;
+        let headers = TapHeaders::from_record(rcd_headers)?;
+        let state = TapReaderState::new().with_headers(headers);
+        Ok(TapReader { reader, state })
+    }
 
     pub fn from_reader<R: io::Read>(&mut self, rdr: R) -> Result<TapReader<R>> {
         let mut reader = self.reader_builder.from_reader(rdr);
