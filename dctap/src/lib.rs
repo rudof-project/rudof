@@ -46,3 +46,11 @@ impl ShapeId {
         }
     }
 }
+
+impl Default for ShapeId {
+    fn default() -> Self {
+        Self {
+            str: "default".to_string(),
+        }
+    }
+}

@@ -399,12 +399,14 @@ impl Display for DCTapFormat {
 #[clap(rename_all = "lower")]
 pub enum DCTapResultFormat {
     Internal,
+    JSON,
 }
 
 impl Display for DCTapResultFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             DCTapResultFormat::Internal => write!(dest, "internal"),
+            DCTapResultFormat::JSON => write!(dest, "json"),
         }
     }
 }

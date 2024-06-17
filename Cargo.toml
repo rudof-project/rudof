@@ -13,7 +13,7 @@ homepage = "https://www.weso.es/shapes-rs/"
 
 
 [[bin]]
-path = "sx_cli/src/main.rs"
+path = "rdfsx_cli/src/main.rs"
 name = "rdfsx"
 
 [workspace]
@@ -26,7 +26,7 @@ members = [
     "srdf",
     "shex_ast",
     "shex_compact",
-    "sx_cli",
+    "rdfsx_cli",
     "shex_testsuite",
     "shex_validation",
     "shapemap",

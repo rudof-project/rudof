@@ -299,6 +299,12 @@ fn run_dctap(
             writeln!(writer, "{dctap:?}")?;
             Ok(())
         }
+        DCTapResultFormat::JSON => {
+            let str = serde_json::to_string_pretty(&dctap)
+                .context("Error converting DCTap to JSON: {dctap}")?;
+            writeln!(writer, "{str}")?;
+            Ok(())
+        }
     }
 }
 
