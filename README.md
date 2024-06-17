@@ -24,8 +24,8 @@ You can download a binary from the [latest release](https://github.com/weso/shap
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```
-wget https://github.com/weso/shapes-rs/releases/download/X.X.X/sx_vX.X.X_amd64.deb
-sudo dpkg -i sx_vX.X.X_amd64.deb
+wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rdfsx_vX.X.X_amd64.deb
+sudo dpkg -i rdfsx_vX.X.X_amd64.deb
 ```
 
 ##### Windows
@@ -84,7 +84,7 @@ The folder `examples` contains several example files with ShEx schemas and RDF d
 ##### Validate a simple RDF file with a ShEx schema using a ShapeMap
 
 ```
-sx validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
+rdfsx validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides).
@@ -101,8 +101,8 @@ where `value` can be `debug` to show more verbose information or `info` to show 
 
 ## Command line usage
 
-```
-$ sx --help
+```sh
+$ rdfsx --help
 Usage: sx [OPTIONS] [COMMAND]
 Commands:
   schema
@@ -115,8 +115,8 @@ Commands:
 
 ### Obtaining information about a schema
 
-```
-Usage: sx schema [OPTIONS] --schema <Schema file name>
+```sh
+Usage: rdfsx schema [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
@@ -131,8 +131,8 @@ Options:
 
 ### Obtaining information about RDF data
 
-```
-Usage: sx data [OPTIONS] --data <RDF data path>
+```sh
+Usage: rdfsx data [OPTIONS] --data <RDF data path>
 
 Options:
   -d, --data <RDF data path>           
@@ -144,8 +144,8 @@ Options:
 
 This command can be useful to obtain the neighbourhood of a node.
 
-```
-Usage: sx node [OPTIONS] --node <NODE>
+```sh
+Usage: rdfsx node [OPTIONS] --node <NODE>
 
 Options:
   -n, --node <NODE>
@@ -164,28 +164,28 @@ Options:
 
 For example, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
 
-```
-sx node -e wikidata -n wd:Q80
+```sh
+rdfsx node -e wikidata -n wd:Q80
 ```
 
 ### Validating an RDF node against some data
 
 Example: Assuming there a ShEx file in `examples/user.shex` and an RDF turtle file in `examples/user.ttl` we can ask to validate node `:a` with shape label `:User` using:
 
-```
-sx validate -s examples/user.shex -d examples/user.ttl -n :a -l :User
+```sh
+rdfsx validate -s examples/user.shex -d examples/user.ttl -n :a -l :User
 ```
 
 If there is a shapemap in `examples/user.sm`, we can validate using:
 
-```
-sx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
+```sh
+rdfsx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
 ```
 
 The full help for the `validate` subcommand is:
 
-```
-Usage: sx validate [OPTIONS] --schema <Schema file name> --data <RDF data path>
+```sh
+Usage: rdfsx validate [OPTIONS] --schema <Schema file name> --data <RDF data path>
 
 Options:
   -s, --schema <Schema file name>
@@ -263,7 +263,7 @@ git submodule update --init --recursive
 cargo run -p shex_testsuite
 ```
 
-```
+```sh
 Usage: shex_testsuite [OPTIONS]
 
 Options:
@@ -295,7 +295,7 @@ cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.js
 
 ### Schemas tests
 
-```
+```sh
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/schemas/manifest.jsonld -f schemas -p failed
 ```
 

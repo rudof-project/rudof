@@ -2,7 +2,7 @@
 name = "shapes-rs"
 version = "0.0.11"
 description = "RDF Data shapes implementation in Rust"
-license = "GPL-3.0-or-later"
+license = "MIT OR Apache-2.0"
 authors = [
     "Jose Emilio Labra Gayo <labra@uniovi.es>",
     "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
@@ -14,7 +14,7 @@ homepage = "https://www.weso.es/shapes-rs/"
 
 [[bin]]
 path = "sx_cli/src/main.rs"
-name = "sx"
+name = "rdfsx"
 
 [workspace]
 members = [
