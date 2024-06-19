@@ -1,7 +1,6 @@
 use crate::{tap_config::TapConfig, tap_error::TapError, ShapeId, TapReaderBuilder, TapShape};
 use indexmap::IndexMap;
 use serde_derive::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::{io, path::Path};
 use tracing::debug;
 
@@ -30,10 +29,8 @@ impl DCTap {
     }
 
     pub fn add_shape(&mut self, shape: &TapShape) {
-        self.shapes.insert(
-            shape.shape_id().unwrap_or_else(|| ShapeId::default()),
-            shape.clone(),
-        );
+        self.shapes
+            .insert(shape.shape_id().unwrap_or_default(), shape.clone());
     }
 
     pub fn from_path(path: &Path, _config: TapConfig) -> Result<DCTap, TapError> {
