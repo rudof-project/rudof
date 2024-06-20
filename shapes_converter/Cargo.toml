@@ -1,0 +1,31 @@
+[package]
+name = "shapes_converter"
+version = "0.0.12"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/shapes_converter"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+iri_s = { path = "../iri_s", version = "0.0.12" }
+rbe = { path = "../rbe", version = "0.0.12" }
+srdf = { path = "../srdf", version = "0.0.12" }
+shex_ast = { path = "../shex_ast", version = "0.0.12" }
+shex_compact = { path = "../shex_compact", version = "0.0.12" }
+shapemap = { path = "../shapemap", version = "0.0.12" }
+prefixmap = { path = "../prefixmap", version = "0.0.12" }
+thiserror = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+spargebra = "0.3.0-alpha.5"
+tracing = "0.1"
+indexmap = { version = "2" }
+colored = "2"
+either = "1"
+
+[dev-dependencies]
+oxrdf = "0.2.0-alpha.2"

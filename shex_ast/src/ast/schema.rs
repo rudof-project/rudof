@@ -192,6 +192,42 @@ impl Schema {
             None
         }
     }
+
+    pub fn find_shape_by_iri(&self, shape: &IriS) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        if let Some(shapes) = self.shapes() {
+            for shape_decl in shapes {
+                match shape_decl.id {
+                    ShapeExprLabel::IriRef { value } => match value {
+                        prefixmap::IriRef::Iri(iri) => {
+                            if iri == *shape {
+                                return Ok(Some(shape_decl.shape_expr));
+                            }
+                        }
+                        prefixmap::IriRef::Prefixed { prefix, local } => {
+                            if let Some(prefixmap) = self.prefixmap() {
+                                let iri = prefixmap.resolve_prefix_local(&prefix, &local)?;
+                                if iri == *shape {
+                                    return Ok(Some(shape_decl.shape_expr));
+                                }
+                            } else {
+                                // Should be an internal error
+                                return Err(SchemaJsonError::ShapeDeclPrefixNoPrefixMap {
+                                    prefix,
+                                    local,
+                                });
+                            }
+                        }
+                    },
+                    _ => (),
+                }
+            }
+            // Not found in shapes
+            Ok(None)
+        } else {
+            // No shapes
+            Ok(None)
+        }
+    }
 }
 
 impl Default for Schema {

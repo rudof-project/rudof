@@ -31,6 +31,7 @@ members = [
     "shex_validation",
     "shapemap",
     "shacl_ast",
+    "shapes_converter",
     # "shapemap_oxgraph",
     # "validation_oxgraph"
     # "shex_antlr",
@@ -74,7 +75,7 @@ shex_validation = { version = "0.0.12", path = "./shex_validation" }
 shex_compact = { version = "0.0.12", path = "./shex_compact" }
 shapemap = { version = "0.0.12", path = "./shapemap" }
 shacl_ast = { version = "0.0.12", path = "./shacl_ast" }
-
+shaper_converter = { version = "0.0.12", path = "./shapes_converter" }
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
