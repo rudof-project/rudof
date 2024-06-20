@@ -55,10 +55,5 @@ fn clean(str: &str) -> String {
 }
 
 fn get_str_from_rcd(rcd: &StringRecord, idx: usize) -> Option<String> {
-    if let Some(str) = rcd.get(idx) {
-        Some(str.to_string())
-    } else {
-        // Should be an internal error?
-        None
-    }
+    rcd.get(idx).map(|str| str.to_string())
 }
