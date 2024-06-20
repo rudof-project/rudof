@@ -13,6 +13,8 @@ pub mod tap_reader;
 pub mod tap_shape;
 pub mod tap_statement;
 
+use std::fmt::Display;
+
 pub use crate::tap_config::*;
 pub use crate::tap_error::*;
 pub use crate::tap_reader::*;
@@ -52,5 +54,11 @@ impl Default for ShapeId {
         Self {
             str: "default".to_string(),
         }
+    }
+}
+
+impl Display for ShapeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.str)
     }
 }

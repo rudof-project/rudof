@@ -1,5 +1,4 @@
-use crate::{tap_config::TapConfig, tap_error::TapError, ShapeId, TapReaderBuilder, TapShape};
-use indexmap::IndexMap;
+use crate::{tap_config::TapConfig, tap_error::TapError, TapReaderBuilder, TapShape};
 use serde_derive::{Deserialize, Serialize};
 use std::{io, path::Path};
 use tracing::debug;
@@ -7,11 +6,11 @@ use tracing::debug;
 #[derive(Debug, Serialize, Deserialize)]
 struct TapShapeId(String);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DCTap {
     version: String,
 
-    shapes: IndexMap<ShapeId, TapShape>,
+    shapes: Vec<TapShape>,
 }
 
 impl Default for DCTap {
@@ -24,13 +23,12 @@ impl DCTap {
     pub fn new() -> DCTap {
         DCTap {
             version: "0.1".to_string(),
-            shapes: IndexMap::new(),
+            shapes: Vec::new(),
         }
     }
 
     pub fn add_shape(&mut self, shape: &TapShape) {
-        self.shapes
-            .insert(shape.shape_id().unwrap_or_default(), shape.clone());
+        self.shapes.push(shape.clone());
     }
 
     pub fn from_path(path: &Path, _config: TapConfig) -> Result<DCTap, TapError> {
@@ -60,7 +58,7 @@ impl DCTap {
 
 #[cfg(test)]
 mod tests {
-    use crate::{PropertyId, TapShape, TapStatement};
+    use crate::{PropertyId, ShapeId, TapShape, TapStatement};
 
     use super::*;
 
@@ -68,13 +66,14 @@ mod tests {
     fn test_simple() {
         let data = "\
 shapeId,shapeLabel,propertyId,propertyLabel
-Person,PersonLabel,knows,KnowsLabel
+Person,PersonLabel,knows,knowsLabel
 ";
         let dctap = DCTap::from_reader(data.as_bytes()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
-        expected_shape.add_statement(TapStatement::new(PropertyId::new("knows")));
-
+        let mut statement = TapStatement::new(PropertyId::new("knows"));
+        statement.set_property_label("knowsLabel");
+        expected_shape.add_statement(statement);
         let mut expected_dctap = DCTap::new();
         expected_dctap.add_shape(&expected_shape);
         assert_eq!(dctap, expected_dctap);

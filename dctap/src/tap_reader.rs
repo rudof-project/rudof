@@ -130,27 +130,19 @@ impl<R: io::Read> TapReader<R> {
         self
     }
 
-    fn get_shape_id(&mut self, record: &StringRecord) -> Result<Option<ShapeId>> {
-        if let Some(shape_id_idx) = self.state.headers.shape_id() {
-            if let Some(str) = record.get(shape_id_idx) {
-                let shape_id = ShapeId::new(str);
-                Ok(Some(shape_id))
-            } else {
-                Ok(None)
-            }
+    fn get_shape_id(&mut self, rcd: &StringRecord) -> Result<Option<ShapeId>> {
+        if let Some(str) = self.state.headers.shape_id(rcd) {
+            let shape_id = ShapeId::new(&str);
+            Ok(Some(shape_id))
         } else {
             Ok(None)
         }
     }
 
     fn get_property_id(&self, rcd: &StringRecord) -> Option<PropertyId> {
-        if let Some(property_id_idx) = self.state.headers.property_id() {
-            if let Some(str) = rcd.get(property_id_idx) {
-                let property_id = PropertyId::new(str);
-                Some(property_id)
-            } else {
-                None
-            }
+        if let Some(str) = self.state.headers.property_id(rcd) {
+            let property_id = PropertyId::new(&str);
+            Some(property_id)
         } else {
             None
         }
@@ -158,10 +150,17 @@ impl<R: io::Read> TapReader<R> {
 
     fn record2statement(&self, rcd: &StringRecord) -> Result<Option<TapStatement>> {
         if let Some(property_id) = self.get_property_id(rcd) {
-            let statement = TapStatement::new(property_id);
+            let mut statement = TapStatement::new(property_id);
+            self.read_property_label(&mut statement, rcd);
             Ok(Some(statement))
         } else {
             Ok(None)
+        }
+    }
+
+    fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
+        if let Some(str) = self.state.headers.property_label(rcd) {
+            statement.set_property_label(&str);
         }
     }
 }
@@ -264,7 +263,9 @@ Person,PersonLabel,knows,KnowsLabel
             .unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
-        expected_shape.add_statement(TapStatement::new(PropertyId::new("knows")));
+        let mut statement = TapStatement::new(PropertyId::new("knows"));
+        statement.set_property_label("KnowsLabel");
+        expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
         assert_eq!(next_shape, expected_shape);
     }
