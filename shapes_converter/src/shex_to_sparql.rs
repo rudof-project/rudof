@@ -1,8 +1,8 @@
 use iri_s::IriS;
-use shex_ast::Schema;
+use shex_ast::{Schema, ShapeExpr};
 use spargebra::Query;
 
-use crate::{SelectQuery, ShEx2SparqlError};
+use crate::{SelectQuery, ShEx2SparqlError, TriplePattern};
 
 pub struct ShEx2Sparql {}
 
@@ -10,12 +10,16 @@ impl ShEx2Sparql {
     pub fn shex_to_sparql(
         shex: Schema,
         maybe_shape: Option<IriS>,
-    ) -> Result<Query, ShEx2SparqlError> {
+    ) -> Result<SelectQuery, ShEx2SparqlError> {
         match maybe_shape {
             Some(shape) => {
-                if let Some(_shape_expr) = shex.find_shape_by_iri(&shape)? {
-                    let query = SelectQuery::new();
-                    todo!()
+                if let Some(shape_expr) = shex.find_shape_by_iri(&shape)? {
+                    let patterns = shape_expr2patterns(shape_expr);
+                    let mut query = SelectQuery::new()
+                        .with_prefixmap(shex.prefixmap())
+                        .with_base(shex.base())
+                        .with_patterns(patterns);
+                    Ok(query)
                 } else {
                     Err(ShEx2SparqlError::ShapeNotFound {
                         iri: shape,
@@ -31,6 +35,19 @@ impl ShEx2Sparql {
     }
 }
 
+fn shape_expr2patterns(se: &ShapeExpr) -> Vec<TriplePattern> {
+    let mut ps = Vec::new();
+    match se {
+        ShapeExpr::ShapeOr { shape_exprs: _ } => todo!(),
+        ShapeExpr::ShapeAnd { shape_exprs: _ } => todo!(),
+        ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
+        ShapeExpr::NodeConstraint(_) => todo!(),
+        ShapeExpr::Shape(_) => todo!(),
+        ShapeExpr::External => todo!(),
+        ShapeExpr::Ref(_) => todo!(),
+    }
+    ps
+}
 #[cfg(test)]
 mod tests {
     use super::*;

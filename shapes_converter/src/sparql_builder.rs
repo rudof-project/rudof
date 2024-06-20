@@ -35,18 +35,33 @@ impl Display for Var {
 }
 
 pub struct SelectQuery {
-    prefixmap: PrefixMap,
-    base_iri: Option<IriS>,
+    prefixmap: Option<PrefixMap>,
+    base: Option<IriS>,
     patterns: Vec<TriplePattern>,
 }
 
 impl SelectQuery {
     pub fn new() -> SelectQuery {
         SelectQuery {
-            prefixmap: PrefixMap::new(),
-            base_iri: None,
+            prefixmap: None,
+            base: None,
             patterns: Vec::new(),
         }
+    }
+
+    pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
+        self.prefixmap = prefixmap;
+        self
+    }
+
+    pub fn with_base(mut self, base: Option<IriS>) -> Self {
+        self.base = base;
+        self
+    }
+
+    pub fn with_patterns(mut self, patterns: Vec<TriplePattern>) -> Self {
+        self.patterns = patterns;
+        self
     }
 }
 
