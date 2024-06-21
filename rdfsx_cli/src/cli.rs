@@ -6,13 +6,13 @@ use srdf::RDFFormat;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "shex-cli")]
+// #[command(name = "rdfsx")]
 // #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
 // #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
     long_about = r#"
- This tool is a work in progress implementation of ShEx in Rust"#
+ A tool to process and validate RDF data using shapes, and convert between different RDF data models"#
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -265,25 +265,25 @@ pub enum Command {
 
     #[command(name = "convert")]
     Convert {
-        #[arg(short = 'm', long = "Input model", value_name = "Input model")]
-        model: InputConvertModel,
+        #[arg(short = 'm', long = "Input mode", value_name = "Input mode")]
+        input_mode: InputConvertMode,
 
         #[arg(short = 'd', long = "Source file", value_name = "Source file name")]
         file: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "File format",
-            value_name = "Source file format",
+            long = "Input format",
+            value_name = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
         format: InputConvertFormat,
 
         #[arg(
             short = 'r',
-            long = "Result format",
+            long = "export-format",
             value_name = "Ouput result format",
-            default_value_t = OutputConvertFormat::Compact
+            default_value_t = OutputConvertFormat::Default
         )]
         result_format: OutputConvertFormat,
 
@@ -293,6 +293,16 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "shape label (default = START)"
+        )]
+        shape: Option<String>,
+
+        #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
+        output_mode: OutputConvertMode,
     },
 }
 
@@ -459,28 +469,28 @@ impl Display for InputConvertFormat {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
-pub enum InputConvertModel {
+pub enum InputConvertMode {
     ShEx,
 }
 
-impl Display for InputConvertModel {
+impl Display for InputConvertMode {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            InputConvertModel::ShEx => write!(dest, "shex"),
+            InputConvertMode::ShEx => write!(dest, "shex"),
         }
     }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
-pub enum OutputConvertModel {
+pub enum OutputConvertMode {
     SPARQL,
 }
 
-impl Display for OutputConvertModel {
+impl Display for OutputConvertMode {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            OutputConvertModel::SPARQL => write!(dest, "sparql"),
+            OutputConvertMode::SPARQL => write!(dest, "sparql"),
         }
     }
 }
@@ -488,7 +498,7 @@ impl Display for OutputConvertModel {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum OutputConvertFormat {
-    Compact,
+    Default,
     Internal,
     JSON,
 }
@@ -498,7 +508,7 @@ impl Display for OutputConvertFormat {
         match self {
             OutputConvertFormat::Internal => write!(dest, "internal"),
             OutputConvertFormat::JSON => write!(dest, "json"),
-            OutputConvertFormat::Compact => write!(dest, "compact"),
+            OutputConvertFormat::Default => write!(dest, "default"),
         }
     }
 }

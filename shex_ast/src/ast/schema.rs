@@ -1,7 +1,7 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
 use iri_s::IriS;
-use prefixmap::PrefixMap;
+use prefixmap::{IriRef, PrefixMap};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -193,31 +193,27 @@ impl Schema {
         }
     }
 
-    pub fn find_shape_by_iri(&self, shape: &IriS) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+    pub fn find_shape_by_iri_ref(
+        &self,
+        shape: &IriRef,
+    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        let prefixmap = match &self.prefixmap {
+            None => PrefixMap::default(),
+            Some(pm) => {
+                // TODO: This should not be necessary
+                pm.clone()
+            }
+        };
         if let Some(shapes) = self.shapes() {
+            let expected_iri = prefixmap.resolve_iriref(shape)?;
             for shape_decl in shapes {
                 match shape_decl.id {
-                    ShapeExprLabel::IriRef { value } => match value {
-                        prefixmap::IriRef::Iri(iri) => {
-                            if iri == *shape {
-                                return Ok(Some(shape_decl.shape_expr));
-                            }
+                    ShapeExprLabel::IriRef { value } => {
+                        let iri = prefixmap.resolve_iriref(&value)?;
+                        if iri == expected_iri {
+                            return Ok(Some(shape_decl.shape_expr));
                         }
-                        prefixmap::IriRef::Prefixed { prefix, local } => {
-                            if let Some(prefixmap) = self.prefixmap() {
-                                let iri = prefixmap.resolve_prefix_local(&prefix, &local)?;
-                                if iri == *shape {
-                                    return Ok(Some(shape_decl.shape_expr));
-                                }
-                            } else {
-                                // Should be an internal error
-                                return Err(SchemaJsonError::ShapeDeclPrefixNoPrefixMap {
-                                    prefix,
-                                    local,
-                                });
-                            }
-                        }
-                    },
+                    }
                     _ => (),
                 }
             }

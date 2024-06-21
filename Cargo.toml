@@ -80,6 +80,7 @@ shaper_converter = { version = "0.0.12", path = "./shapes_converter" }
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
 anyhow = "1.0"
+shapes_converter = { path = "./shapes_converter" }
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
 shex_compact = { path = "./shex_compact" }

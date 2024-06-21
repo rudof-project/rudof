@@ -16,11 +16,11 @@ impl ShEx2Sparql {
     pub fn convert(
         &self,
         shex: Schema,
-        maybe_shape: Option<IriS>,
+        maybe_shape: Option<IriRef>,
     ) -> Result<SelectQuery, ShEx2SparqlError> {
         match maybe_shape {
             Some(shape) => {
-                if let Some(shape_expr) = shex.find_shape_by_iri(&shape)? {
+                if let Some(shape_expr) = shex.find_shape_by_iri_ref(&shape)? {
                     let prefixmap = shex.prefixmap().unwrap_or_else(|| PrefixMap::new());
                     let patterns = shape_expr2patterns(&shape_expr, &self.config, &prefixmap);
                     let query = SelectQuery::new()

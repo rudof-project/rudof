@@ -5,7 +5,7 @@ use iri_s::*;
 // use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::PrefixMapError;
+use crate::{IriRef, PrefixMapError};
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
@@ -114,6 +114,17 @@ impl PrefixMap {
                 let iri = IriS::from_str(str)?;
                 Ok(iri)
             }
+        }
+    }
+
+    /// Resolves an IriRef against a prefix map
+    pub fn resolve_iriref(&self, iri_ref: &IriRef) -> Result<IriS, PrefixMapError> {
+        match iri_ref {
+            IriRef::Prefixed { prefix, local } => {
+                let iri = self.resolve_prefix_local(prefix, local)?;
+                Ok(iri)
+            }
+            IriRef::Iri(iri) => Ok(iri.clone()),
         }
     }
 

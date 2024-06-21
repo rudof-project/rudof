@@ -8,6 +8,7 @@ extern crate regex;
 extern crate serde_json;
 extern crate shacl_ast;
 extern crate shapemap;
+extern crate shapes_converter;
 extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
@@ -21,6 +22,7 @@ use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
+use shapes_converter::{ShEx2Sparql, ShEx2SparqlConfig};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
@@ -151,10 +153,20 @@ fn main() -> Result<()> {
         Some(Command::Convert {
             file,
             format,
-            model,
+            input_mode,
+            shape,
             result_format,
             output,
-        }) => run_convert(file, format, model, result_format, output),
+            output_mode,
+        }) => run_convert(
+            file,
+            format,
+            input_mode,
+            shape,
+            result_format,
+            output,
+            output_mode,
+        ),
         None => {
             println!("Command not specified");
             Ok(())
@@ -186,7 +198,7 @@ fn run_schema(
             writeln!(writer, "{str}")?;
         }
         ShExFormat::Turtle => {
-            writeln!(writer, "Not implemented conversion to Turtle yet")?;
+            eprintln!("Not implemented conversion to Turtle yet");
             todo!()
         }
     };
@@ -318,12 +330,50 @@ fn run_dctap(
 fn run_convert(
     input_path: &Path,
     format: &InputConvertFormat,
-    model: &InputConvertModel,
+    input_mode: &InputConvertMode,
+    shape: &Option<String>,
     result_format: &OutputConvertFormat,
     output: &Option<PathBuf>,
+    output_mode: &OutputConvertMode,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
-    todo!()
+    match (input_mode, output_mode) {
+        (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
+            if let Some(shape_str) = shape {
+                let iri_shape = parse_iri_ref(&shape_str)?;
+                run_shex2sparql(
+                    input_path,
+                    format,
+                    Some(iri_shape),
+                    &mut writer,
+                    result_format,
+                )
+            } else {
+                todo!()
+            }
+        }
+        (_, _) => Err(anyhow!(
+            "Conversion from {input_mode} to {output_mode} is not supported yet"
+        )),
+    }
+}
+
+fn run_shex2sparql(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    shape: Option<IriRef>,
+    writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+) -> Result<()> {
+    let schema_format = match format {
+        InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
+        _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
+    }?;
+    let schema = parse_schema(input_path, &schema_format)?;
+    let converter = ShEx2Sparql::new(ShEx2SparqlConfig::default());
+    let sparql = converter.convert(schema, shape)?;
+    write!(writer, "{}", sparql)?;
+    Ok(())
 }
 
 fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {

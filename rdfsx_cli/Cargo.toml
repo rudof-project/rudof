@@ -19,6 +19,7 @@ shapemap = { path = "../shapemap", version = "0.0.12" }
 shex_compact = { path = "../shex_compact", version = "0.0.12" }
 shacl_ast = { path = "../shacl_ast", version = "0.0.12" }
 dctap = { path = "../dctap", version = "0.0.12" }
+shapes_converter = { path = "../shapes_converter", version = "0.0.12" }
 
 serde = "1.0"
 serde_derive = "1.0"

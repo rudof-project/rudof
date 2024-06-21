@@ -1,10 +1,10 @@
-//! ShEx validation
+//! Shapes converter
 //!
 //!
 mod select_query;
-mod shex_to_sparql;
-mod shex_to_sparql_config;
-mod shex_to_sparql_error;
+pub mod shex_to_sparql;
+pub mod shex_to_sparql_config;
+pub mod shex_to_sparql_error;
 mod triple_pattern;
 mod var;
 
