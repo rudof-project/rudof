@@ -148,6 +148,13 @@ fn main() -> Result<()> {
             result_format,
             output,
         }) => run_dctap(file, format, result_format, output),
+        Some(Command::Convert {
+            file,
+            format,
+            model,
+            result_format,
+            output,
+        }) => run_convert(file, format, model, result_format, output),
         None => {
             println!("Command not specified");
             Ok(())
@@ -306,6 +313,17 @@ fn run_dctap(
             Ok(())
         }
     }
+}
+
+fn run_convert(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    model: &InputConvertModel,
+    result_format: &OutputConvertFormat,
+    output: &Option<PathBuf>,
+) -> Result<()> {
+    let mut writer = get_writer(output)?;
+    todo!()
 }
 
 fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {

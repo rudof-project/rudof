@@ -262,6 +262,38 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
     },
+
+    #[command(name = "convert")]
+    Convert {
+        #[arg(short = 'm', long = "Input model", value_name = "Input model")]
+        model: InputConvertModel,
+
+        #[arg(short = 'd', long = "Source file", value_name = "Source file name")]
+        file: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "File format",
+            value_name = "Source file format",
+            default_value_t = InputConvertFormat::ShExC
+        )]
+        format: InputConvertFormat,
+
+        #[arg(
+            short = 'r',
+            long = "Result format",
+            value_name = "Ouput result format",
+            default_value_t = OutputConvertFormat::Compact
+        )]
+        result_format: OutputConvertFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -407,6 +439,66 @@ impl Display for DCTapResultFormat {
         match self {
             DCTapResultFormat::Internal => write!(dest, "internal"),
             DCTapResultFormat::JSON => write!(dest, "json"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum InputConvertFormat {
+    ShExC,
+}
+
+impl Display for InputConvertFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            InputConvertFormat::ShExC => write!(dest, "shexc"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum InputConvertModel {
+    ShEx,
+}
+
+impl Display for InputConvertModel {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            InputConvertModel::ShEx => write!(dest, "shex"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum OutputConvertModel {
+    SPARQL,
+}
+
+impl Display for OutputConvertModel {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputConvertModel::SPARQL => write!(dest, "sparql"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum OutputConvertFormat {
+    Compact,
+    Internal,
+    JSON,
+}
+
+impl Display for OutputConvertFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputConvertFormat::Internal => write!(dest, "internal"),
+            OutputConvertFormat::JSON => write!(dest, "json"),
+            OutputConvertFormat::Compact => write!(dest, "compact"),
         }
     }
 }

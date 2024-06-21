@@ -78,9 +78,9 @@ impl PrefixMap {
         self.map.iter()
     }
 
-    /// Resolves a string against a ("map
+    /// Resolves a string against a prefix map
     /// Example:
-    /// Given a ("map `pm`
+    /// Given a string like "ex:a" and a prefixmap that has alias "ex" with value "http://example.org/", the result will be "http://example.org/a"
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
@@ -117,9 +117,7 @@ impl PrefixMap {
         }
     }
 
-    /// Resolves a ("and a local name against a ("map
-    /// Example:
-    /// Given a ("map `pm`
+    /// Resolves a prefixed alias and a local name in a prefix map to obtain the full IRI
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
@@ -161,9 +159,7 @@ impl PrefixMap {
         }
     }
 
-    /// Qualifies an IRI against a ("map
-    /// Example:
-    /// Given a ("map `pm`
+    /// Qualifies an IRI against a prefix map
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -221,6 +217,46 @@ impl PrefixMap {
             )
         } else {
             str
+        }
+    }
+
+    /// Qualify an IRI against a prefix map and obtains the local name
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use prefixmap::PrefixMap;
+    /// # use prefixmap::PrefixMapError;
+    /// # use iri_s::*;
+    /// # use std::str::FromStr;
+    /// let pm = PrefixMap::from_hashmap(
+    ///   &HashMap::from([
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
+    /// )?;
+    /// let a = IriS::from_str("http://example.org/a")?;
+    /// assert_eq!(pm.qualify_local(&a), Some("a".to_string()));
+    ///
+    /// let knows = IriS::from_str("http://schema.org/knows")?;
+    /// assert_eq!(pm.qualify_local(&knows), Some("knows".to_string()));
+    ///
+    /// let other = IriS::from_str("http://other.org/foo")?;
+    /// assert_eq!(pm.qualify_local(&other), None);
+    /// # Ok::<(), PrefixMapError>(())
+    /// ```
+    pub fn qualify_local(&self, iri: &IriS) -> Option<String> {
+        let mut founds: Vec<_> = self
+            .map
+            .iter()
+            .filter_map(|(alias, pm_iri)| {
+                iri.as_str()
+                    .strip_prefix(pm_iri.as_str())
+                    .map(|rest| (alias, rest))
+            })
+            .collect();
+        founds.sort_by_key(|(_, iri)| iri.len());
+        if let Some((_alias, rest)) = founds.first() {
+            Some(rest.to_string())
+        } else {
+            None
         }
     }
 
@@ -298,7 +334,7 @@ impl PrefixMap {
 impl fmt::Display for PrefixMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (alias, iri) in self.map.iter() {
-            writeln!(f, "{} <{}>", &alias, &iri)?
+            writeln!(f, "prefix {}: <{}>", &alias, &iri)?
         }
         Ok(())
     }
