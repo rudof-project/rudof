@@ -25,7 +25,7 @@ pub enum ConfigError {
 impl Config {
     pub fn from_file(file_name: &str) -> Result<Config, ConfigError> {
         let config_str =
-            fs::read_to_string(&file_name).map_err(|e| ConfigError::ReadingConfigError {
+            fs::read_to_string(file_name).map_err(|e| ConfigError::ReadingConfigError {
                 path_name: file_name.to_string(),
                 error: e,
             })?;

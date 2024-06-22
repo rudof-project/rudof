@@ -30,10 +30,12 @@ impl IriS {
         self.iri.as_str()
     }
 
+    /// Convert a `NamedNode` to an `IriS`
     pub fn from_named_node(iri: &NamedNode) -> IriS {
         IriS { iri: iri.clone() }
     }
 
+    /// Convert an `IriS` to a `NamedNode`
     pub fn as_named_node(&self) -> &NamedNode {
         &self.iri
     }

@@ -25,6 +25,11 @@ impl SelectQuery {
         self
     }
 
+    pub fn without_prefixmap(mut self) -> Self {
+        self.prefixmap = None;
+        self
+    }
+
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
         self
@@ -47,7 +52,7 @@ impl Display for SelectQuery {
             writeln!(f, "SELECT * WHERE {{")?;
             for pattern in &self.patterns {
                 write!(f, " ")?;
-                pattern.show_qualified(f, &prefixmap).map_err(|e| match e {
+                pattern.show_qualified(f, prefixmap).map_err(|e| match e {
                     prefixmap::PrefixMapError::IriSError(_) => todo!(),
                     prefixmap::PrefixMapError::PrefixNotFound {
                         prefix: _,
@@ -55,7 +60,7 @@ impl Display for SelectQuery {
                     } => todo!(),
                     prefixmap::PrefixMapError::FormatError(err) => err,
                 })?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
         } else {
             let prefixmap = PrefixMap::new();
@@ -72,5 +77,11 @@ impl Display for SelectQuery {
         }
         writeln!(f, "}}")?;
         Ok(())
+    }
+}
+
+impl Default for SelectQuery {
+    fn default() -> Self {
+        Self::new()
     }
 }

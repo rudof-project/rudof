@@ -331,7 +331,7 @@ fn run_convert(
     input_path: &Path,
     format: &InputConvertFormat,
     input_mode: &InputConvertMode,
-    shape: &Option<String>,
+    maybe_shape_str: &Option<String>,
     result_format: &OutputConvertFormat,
     output: &Option<PathBuf>,
     output_mode: &OutputConvertMode,
@@ -339,22 +339,17 @@ fn run_convert(
     let mut writer = get_writer(output)?;
     match (input_mode, output_mode) {
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
-            if let Some(shape_str) = shape {
-                let iri_shape = parse_iri_ref(&shape_str)?;
-                run_shex2sparql(
-                    input_path,
-                    format,
-                    Some(iri_shape),
-                    &mut writer,
-                    result_format,
-                )
-            } else {
-                todo!()
-            }
-        }
-        (_, _) => Err(anyhow!(
-            "Conversion from {input_mode} to {output_mode} is not supported yet"
-        )),
+            let maybe_shape = match maybe_shape_str {
+                None => None,
+                Some(shape_str) => {
+                    let iri_shape = parse_iri_ref(shape_str)?;
+                    Some(iri_shape)
+                }
+            };
+            run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format)
+        } //_ => Err(anyhow!(
+          //    "Conversion from {input_mode} to {output_mode} is not supported yet"
+          //)),
     }
 }
 
@@ -363,15 +358,15 @@ fn run_shex2sparql(
     format: &InputConvertFormat,
     shape: Option<IriRef>,
     writer: &mut Box<dyn Write>,
-    result_format: &OutputConvertFormat,
+    _result_format: &OutputConvertFormat,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
-        _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
+        // _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
     let converter = ShEx2Sparql::new(ShEx2SparqlConfig::default());
-    let sparql = converter.convert(schema, shape)?;
+    let sparql = converter.convert(&schema, shape)?;
     write!(writer, "{}", sparql)?;
     Ok(())
 }

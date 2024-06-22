@@ -138,7 +138,7 @@ fn main() -> Result<()> {
 }
 
 fn parse_config(file_name: String) -> Result<Config, ConfigError> {
-    Config::from_file(file_name)
+    Config::from_file(file_name.as_str())
 }
 
 fn print_basic(result: &ManifestRunResult) {

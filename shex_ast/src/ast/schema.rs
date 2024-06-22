@@ -163,6 +163,17 @@ impl Schema {
         self.type_.clone()
     }
 
+    pub fn find_shape_by_label(
+        &self,
+        label: &ShapeExprLabel,
+    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        match label {
+            ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(value),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
+            ShapeExprLabel::Start => todo!(),
+        }
+    }
+
     pub fn count_extends(&self) -> Option<HashMap<usize, usize>> {
         if let Some(shapes) = self.shapes() {
             let mut result = HashMap::new();
@@ -207,14 +218,11 @@ impl Schema {
         if let Some(shapes) = self.shapes() {
             let expected_iri = prefixmap.resolve_iriref(shape)?;
             for shape_decl in shapes {
-                match shape_decl.id {
-                    ShapeExprLabel::IriRef { value } => {
-                        let iri = prefixmap.resolve_iriref(&value)?;
-                        if iri == expected_iri {
-                            return Ok(Some(shape_decl.shape_expr));
-                        }
+                if let ShapeExprLabel::IriRef { value } = shape_decl.id {
+                    let iri = prefixmap.resolve_iriref(&value)?;
+                    if iri == expected_iri {
+                        return Ok(Some(shape_decl.shape_expr));
                     }
-                    _ => (),
                 }
             }
             // Not found in shapes

@@ -1,4 +1,3 @@
-use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 
 use crate::Var;
@@ -24,9 +23,9 @@ impl TriplePattern {
         prefixmap: &PrefixMap,
     ) -> Result<(), PrefixMapError> {
         let pred_str = match &self.pred {
-            IriRef::Iri(iri) => prefixmap.qualify(&iri),
+            IriRef::Iri(iri) => prefixmap.qualify(iri),
             IriRef::Prefixed { prefix, local } => {
-                let iri = prefixmap.resolve_prefix_local(&prefix, &local)?;
+                let iri = prefixmap.resolve_prefix_local(prefix, local)?;
                 iri.to_string()
             }
         };

@@ -18,7 +18,7 @@ impl Default for ShEx2SparqlConfig {
 
 impl ShEx2SparqlConfig {
     pub fn from_file(file_name: &str) -> Result<ShEx2SparqlConfig, ShEx2SparqlConfigError> {
-        let config_str = fs::read_to_string(&file_name).map_err(|e| {
+        let config_str = fs::read_to_string(file_name).map_err(|e| {
             ShEx2SparqlConfigError::ReadingConfigError {
                 path_name: file_name.to_string(),
                 error: e,

@@ -25,7 +25,7 @@ pub enum ManifestError {
 
     #[error("Error parsing Schema as Json: errror {error:?}, entry: {entry_name:?}")]
     SchemaJsonError {
-        error: SchemaJsonError,
+        error: Box<SchemaJsonError>,
         entry_name: String,
     },
 
