@@ -1,5 +1,5 @@
 [package]
-name = "sx_cli"
+name = "rdfsx_cli"
 version = "0.0.13"
 authors.workspace = true
 description.workspace = true

@@ -42,7 +42,7 @@ exclude = [
 ]
 
 #default-members = [
-#    "sx_cli"
+#    "rdfsx_cli"
 #]
 
 [workspace.package]
