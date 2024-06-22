@@ -1,6 +1,6 @@
 [package]
 name = "shex_validation"
-version = "0.0.12"
+version = "0.0.13"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_validation"
@@ -10,12 +10,12 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.12" }
-rbe = { path = "../rbe", version = "0.0.12" }
-srdf = { path = "../srdf", version = "0.0.12" }
-shex_ast = { path = "../shex_ast", version = "0.0.12" }
-shapemap = { path = "../shapemap", version = "0.0.12" }
-prefixmap = { path = "../prefixmap", version = "0.0.12" }
+iri_s = { path = "../iri_s", version = "0.0.13" }
+rbe = { path = "../rbe", version = "0.0.13" }
+srdf = { path = "../srdf", version = "0.0.13" }
+shex_ast = { path = "../shex_ast", version = "0.0.13" }
+shapemap = { path = "../shapemap", version = "0.0.13" }
+prefixmap = { path = "../prefixmap", version = "0.0.13" }
 async-recursion = "1.0.4"
 thiserror = "1.0"
 serde = "1.0"

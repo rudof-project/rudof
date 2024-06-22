@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.0.12"
+version = "0.0.13"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -10,8 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.12" }
-prefixmap = { path = "../prefixmap", version = "0.0.12" }
+iri_s = { path = "../iri_s", version = "0.0.13" }
+prefixmap = { path = "../prefixmap", version = "0.0.13" }
 async-trait = "0.1.68"
 hashbag = "0.1.11"
 serde = "1.0"
