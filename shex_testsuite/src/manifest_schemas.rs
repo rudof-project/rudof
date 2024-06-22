@@ -153,7 +153,7 @@ impl SchemasEntry {
         );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
-                error: e,
+                error: Box::new(e),
                 entry_name: self.name.to_string(),
             }
         })?;

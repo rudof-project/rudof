@@ -1,3 +1,3 @@
 # ShEx AST
 
-Represents ShEx Abstract Syntax Tree.
+ShEx Abstract Syntax Tree.

@@ -15,7 +15,7 @@ pub enum ConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading JSON from {path_name:?}. Error: {error:?}")]
+    #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
         error: serde_yaml::Error,
@@ -23,14 +23,14 @@ pub enum ConfigError {
 }
 
 impl Config {
-    pub fn from_file(file_name: String) -> Result<Config, ConfigError> {
+    pub fn from_file(file_name: &str) -> Result<Config, ConfigError> {
         let config_str =
-            fs::read_to_string(&file_name).map_err(|e| ConfigError::ReadingConfigError {
+            fs::read_to_string(file_name).map_err(|e| ConfigError::ReadingConfigError {
                 path_name: file_name.to_string(),
                 error: e,
             })?;
         serde_yaml::from_str::<Config>(&config_str).map_err(|e| ConfigError::YamlError {
-            path_name: file_name,
+            path_name: file_name.to_string(),
             error: e,
         })
     }

@@ -6,13 +6,13 @@ use srdf::RDFFormat;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "shex-cli")]
+// #[command(name = "rdfsx")]
 // #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
 // #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
     long_about = r#"
- This tool is a work in progress implementation of ShEx in Rust"#
+ A tool to process and validate RDF data using shapes, and convert between different RDF data models"#
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -262,6 +262,48 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
     },
+
+    #[command(name = "convert")]
+    Convert {
+        #[arg(short = 'm', long = "Input mode", value_name = "Input mode")]
+        input_mode: InputConvertMode,
+
+        #[arg(short = 'd', long = "Source file", value_name = "Source file name")]
+        file: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "Input format",
+            value_name = "Input file format",
+            default_value_t = InputConvertFormat::ShExC
+        )]
+        format: InputConvertFormat,
+
+        #[arg(
+            short = 'r',
+            long = "export-format",
+            value_name = "Ouput result format",
+            default_value_t = OutputConvertFormat::Default
+        )]
+        result_format: OutputConvertFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "shape label (default = START)"
+        )]
+        shape: Option<String>,
+
+        #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
+        output_mode: OutputConvertMode,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -407,6 +449,66 @@ impl Display for DCTapResultFormat {
         match self {
             DCTapResultFormat::Internal => write!(dest, "internal"),
             DCTapResultFormat::JSON => write!(dest, "json"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum InputConvertFormat {
+    ShExC,
+}
+
+impl Display for InputConvertFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            InputConvertFormat::ShExC => write!(dest, "shexc"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum InputConvertMode {
+    ShEx,
+}
+
+impl Display for InputConvertMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            InputConvertMode::ShEx => write!(dest, "shex"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum OutputConvertMode {
+    SPARQL,
+}
+
+impl Display for OutputConvertMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputConvertMode::SPARQL => write!(dest, "sparql"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum OutputConvertFormat {
+    Default,
+    Internal,
+    JSON,
+}
+
+impl Display for OutputConvertFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputConvertFormat::Internal => write!(dest, "internal"),
+            OutputConvertFormat::JSON => write!(dest, "json"),
+            OutputConvertFormat::Default => write!(dest, "default"),
         }
     }
 }

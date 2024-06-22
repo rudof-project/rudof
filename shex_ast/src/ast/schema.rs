@@ -1,7 +1,7 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
 use iri_s::IriS;
-use prefixmap::PrefixMap;
+use prefixmap::{IriRef, PrefixMap};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -163,6 +163,17 @@ impl Schema {
         self.type_.clone()
     }
 
+    pub fn find_shape_by_label(
+        &self,
+        label: &ShapeExprLabel,
+    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        match label {
+            ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(value),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
+            ShapeExprLabel::Start => todo!(),
+        }
+    }
+
     pub fn count_extends(&self) -> Option<HashMap<usize, usize>> {
         if let Some(shapes) = self.shapes() {
             let mut result = HashMap::new();
@@ -190,6 +201,35 @@ impl Schema {
             Some(result)
         } else {
             None
+        }
+    }
+
+    pub fn find_shape_by_iri_ref(
+        &self,
+        shape: &IriRef,
+    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        let prefixmap = match &self.prefixmap {
+            None => PrefixMap::default(),
+            Some(pm) => {
+                // TODO: This should not be necessary
+                pm.clone()
+            }
+        };
+        if let Some(shapes) = self.shapes() {
+            let expected_iri = prefixmap.resolve_iriref(shape)?;
+            for shape_decl in shapes {
+                if let ShapeExprLabel::IriRef { value } = shape_decl.id {
+                    let iri = prefixmap.resolve_iriref(&value)?;
+                    if iri == expected_iri {
+                        return Ok(Some(shape_decl.shape_expr));
+                    }
+                }
+            }
+            // Not found in shapes
+            Ok(None)
+        } else {
+            // No shapes
+            Ok(None)
         }
     }
 }
