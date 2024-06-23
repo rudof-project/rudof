@@ -623,8 +623,8 @@ fn subject_as_term(subject: &OxSubject) -> OxTerm {
     match subject {
         OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
         OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-        #[cfg(feature = "rdf-star")]
-        _ => unimplemented!(),
+        // #[cfg(feature = "rdf-star")]
+        // _ => unimplemented!(),
     }
 }
 

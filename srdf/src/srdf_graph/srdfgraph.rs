@@ -194,8 +194,8 @@ impl SRDFBasic for SRDFGraph {
         match subject {
             OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
             OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            #[cfg(feature = "rdf-star")]
-            _ => unimplemented!(),
+            // #[cfg(feature = "rdf-star")]
+            // _ => unimplemented!(),
         }
     }
 
@@ -263,8 +263,8 @@ impl SRDFBasic for SRDFGraph {
                 }
             }
             OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
-            #[cfg(feature = "rdf-star")]
-            _ => unimplemented!(),
+            // #[cfg(feature = "rdf-star")]
+            // _ => unimplemented!(),
         }
     }
 
@@ -282,8 +282,8 @@ impl SRDFBasic for SRDFGraph {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
-            _ => unimplemented!(),
+            // #[cfg(feature = "rdf-star")]
+            // _ => unimplemented!(),
         }
     }
 
@@ -292,8 +292,8 @@ impl SRDFBasic for SRDFGraph {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
-            _ => unimplemented!(),
+            // #[cfg(feature = "rdf-star")]
+            // _ => unimplemented!(),
         }
     }
 
