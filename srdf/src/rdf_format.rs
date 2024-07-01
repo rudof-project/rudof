@@ -24,7 +24,9 @@ impl FromStr for RDFFormat {
             "trig" => Ok(RDFFormat::TriG),
             "n3" => Ok(RDFFormat::N3),
             "nq" => Ok(RDFFormat::NQuads),
-            _ => Err(RDFParseError::SRDFError { err: format!("Format {} not supported", s).to_string() }),
+            _ => Err(RDFParseError::SRDFError {
+                err: format!("Format {} not supported", s).to_string(),
+            }),
         }
     }
 }

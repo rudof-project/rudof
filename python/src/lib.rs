@@ -3,7 +3,7 @@ mod shacl;
 use pyo3::prelude::*;
 
 #[pymodule]
-pub mod pyshapes {    
+pub mod pyshapes {
     use super::*;
 
     #[pymodule_export]
