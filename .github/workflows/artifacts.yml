@@ -176,6 +176,7 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
 
   python:
+    runs-on: ubuntu-latest
     steps:
       - name: Publish Python bindings to PyPy
         uses: PyO3/maturin-action@v1
