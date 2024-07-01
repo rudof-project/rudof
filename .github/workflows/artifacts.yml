@@ -26,8 +26,6 @@ jobs:
       - name: Update the system and install the aarch64 compiler
         run: |
           sudo apt update && sudo apt install -y g++-aarch64-linux-gnu
-          mkdir .cargo
-          touch .cargo/config.toml
           echo -e "\n\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" >> .cargo/config.toml
       - name: Install libssl
         run: |
@@ -41,7 +39,7 @@ jobs:
       - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
       - name: Build the release version of `shapes-rs` for the aarch64 architecture
-        run: cargo build --release --target aarch64-linux-gnu
+        run: cargo build --release --target aarch64-unknown-linux-gnu
         env:
           BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
