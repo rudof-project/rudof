@@ -3,7 +3,7 @@ use std::fmt::Display;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 
-use crate::TriplePattern;
+use crate::shex_to_sparql::TriplePattern;
 
 pub struct SelectQuery {
     prefixmap: Option<PrefixMap>,

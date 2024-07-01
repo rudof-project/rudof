@@ -1,7 +1,9 @@
 use prefixmap::IriRef;
 use shex_ast::{Schema, Shape, ShapeExpr, TripleExpr};
 
-use crate::{SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder};
+use crate::shex_to_sparql::{
+    SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder,
+};
 
 pub struct ShEx2Sparql {
     config: ShEx2SparqlConfig,

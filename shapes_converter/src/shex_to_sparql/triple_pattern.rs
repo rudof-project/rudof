@@ -1,6 +1,6 @@
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 
-use crate::Var;
+use crate::shex_to_sparql::Var;
 
 pub struct TriplePattern {
     subj: Var,

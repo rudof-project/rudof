@@ -22,7 +22,7 @@ use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
-use shapes_converter::{ShEx2Sparql, ShEx2SparqlConfig};
+use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
