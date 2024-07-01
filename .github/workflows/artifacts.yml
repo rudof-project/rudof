@@ -175,8 +175,9 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
 
   python:
-    - name: Release the Python bindings to pypy
-    - uses: PyO3/maturin-action@v1
-    with:
-      command: build
-      args: --release
+    steps:
+      - name: Publish Python bindings to PyPy
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release
