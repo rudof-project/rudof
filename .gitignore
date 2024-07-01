@@ -15,6 +15,7 @@ Cargo.lock
 # vscode
 .metals/
 .vscode/
+.cargo/
 
 # Added by cargo
 target/
