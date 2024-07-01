@@ -16,9 +16,6 @@ concurrency:
 jobs:
   linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
@@ -57,10 +54,17 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_aarch64-linux_gnu
           path: target/aarch64-unknown-linux-gnu/release/${{ vars.BINARY_NAME }}
-      - name: Build wheels
+      - name: Build x86_64 wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: "x86_64"
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+          manylinux: auto
+      - name: Build aarch64 wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: "aarch64"
           args: --release --out dist --find-interpreter
           sccache: "true"
           manylinux: auto
@@ -119,10 +123,16 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_aarch64_apple
           path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
-      - name: Build wheels
+      - name: Build x86_64 wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: "x86_64"
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+      - name: Build aarch64 wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: "aarch64"
           args: --release --out dist --find-interpreter
           sccache: "true"
       - name: Upload wheels
@@ -146,9 +156,6 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        target: [x64, x86]
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
@@ -172,10 +179,10 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_windows_msvc
           path: target/release/${{ vars.BINARY_NAME }}.exe
-      - name: Build wheels
+      - name: Build x86_64 wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: "x86_64"
           args: --release --out dist --find-interpreter
           sccache: "true"
       - name: Upload wheels
