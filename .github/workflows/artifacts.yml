@@ -41,7 +41,7 @@ jobs:
       - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
       - name: Build the release version of `shapes-rs` for the aarch64 architecture
-        run: cargo build --release --target aarch64-unknown-linux-gnu
+        run: cargo build --release --target aarch64-linux-gnu
         env:
           BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
