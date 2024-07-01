@@ -89,9 +89,6 @@ jobs:
 
   mac:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        target: [x86_64, aarch64]
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
       SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
