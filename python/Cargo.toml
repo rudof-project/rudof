@@ -19,7 +19,7 @@ crate-type = ["cdylib"]
 [dependencies]
 srdf = { path = "../srdf", version = "0.0.13" }
 shacl_ast = { path = "../shacl_ast", version = "0.0.13" }
-openssl = { version = "0.10", features = ["vendored"] }
+openssl = { version = "0.10.57", features = ["vendored"] }
 
 [dependencies.pyo3]
 version = "0.22.0"
