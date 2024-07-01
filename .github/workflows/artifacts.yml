@@ -14,8 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  binary_linux:
+  linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
@@ -30,6 +33,10 @@ jobs:
       - name: Install libssl
         run: |
           sudo apt install libssl-dev
+      - name: Setup Python for exporting the Python bindings for Linux
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shapes-rs` for the x86 architecture
@@ -48,6 +55,18 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_aarch64-linux_gnu
           path: target/aarch64-unknown-linux-gnu/release/${{ vars.BINARY_NAME }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+          manylinux: auto
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
         if: github.event_name == 'release'
@@ -62,8 +81,11 @@ jobs:
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
 
-  binary_mac:
+  mac:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
       SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
@@ -75,6 +97,10 @@ jobs:
           submodules: true
       - name: Update Rustup and select the target architectures
         run: rustup update && rustup target add aarch64-apple-darwin
+      - name: Setup Python for exporting the Python bindings for Linux
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shapes-rs` for the x86 architecture
@@ -91,6 +117,17 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_aarch64_apple
           path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
         if: github.event_name == 'release'
@@ -105,8 +142,11 @@ jobs:
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
         if: github.event_name == 'release'
 
-  binary_windows:
+  windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [x64, x86]
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
@@ -114,6 +154,11 @@ jobs:
           submodules: true
       - name: Update Rustup
         run: rustup update
+      - name: Setup Python for exporting the Python bindings for Windows
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          architecture: ${{ matrix.target }}
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
@@ -125,6 +170,17 @@ jobs:
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_windows_msvc
           path: target/release/${{ vars.BINARY_NAME }}.exe
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }}.exe ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
         if: github.event_name == 'release'
@@ -175,11 +231,34 @@ jobs:
           no-cache: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
 
-  python:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish Python bindings to PyPy
-        uses: PyO3/maturin-action@v1
-        with:
-          command: build
-          args: --release
+sdist:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v3
+    - name: Build sdist
+      uses: PyO3/maturin-action@v1
+      with:
+        command: sdist
+        args: --out dist
+    - name: Upload sdist
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
+python:
+  name: Release python to PyPI
+  runs-on: ubuntu-latest
+  if: "startsWith(github.ref, 'refs/tags/')"
+  needs: [linux, windows, macos, sdist]
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: wheels
+    - name: Publish to PyPI
+      uses: PyO3/maturin-action@v1
+      env:
+        MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      with:
+        command: upload
+        args: --non-interactive --skip-existing *
