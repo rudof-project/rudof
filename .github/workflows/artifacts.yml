@@ -7,6 +7,7 @@ on:
   release:
     types:
       - published
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -235,5 +236,6 @@ jobs:
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
+          working-directory: python
           command: upload
           args: --non-interactive --skip-existing *
