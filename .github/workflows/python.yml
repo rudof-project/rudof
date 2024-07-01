@@ -51,7 +51,7 @@ jobs:
               "x86" | "x86_64")
                 # NOTE: rust-cross/manylinux docker images are CentOS based
                 yum update -y
-                yum install -y openssl openssl-devel
+                yum install -y openssl openssl-devel perl-IPC-Cmd
                 ;;
             esac
       - name: Upload wheels
