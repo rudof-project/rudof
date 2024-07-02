@@ -1,12 +1,12 @@
 name: Python
 
 on:
-  branches:
+  push:
+    branches:
       - main
   release:
     types:
       - published
-  pull_request:
 
 permissions:
   contents: write
