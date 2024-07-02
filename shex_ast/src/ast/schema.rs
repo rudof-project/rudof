@@ -116,6 +116,13 @@ impl Schema {
         }
     }
 
+    pub fn add_shape_decl(&mut self, shape_decl: &ShapeDecl) {
+        match self.shapes {
+            None => self.shapes = Some(vec![shape_decl.clone()]),
+            Some(ref mut ses) => ses.push(shape_decl.clone()),
+        }
+    }
+
     pub fn parse_schema_buf(path: &Path) -> Result<Schema, SchemaJsonError> {
         let schema = {
             let schema_str =

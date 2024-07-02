@@ -54,6 +54,10 @@ impl DCTap {
         }
         Ok(dctap)
     }
+
+    pub fn shapes(&self) -> impl Iterator<Item = &TapShape> {
+        self.shapes.iter()
+    }
 }
 
 #[cfg(test)]
