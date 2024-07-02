@@ -13,55 +13,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  binary_linux:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Update Rustup and select the target architectures
-        run: rustup update && rustup target add aarch64-unknown-linux-gnu
-      - name: Update the system and install the aarch64 compiler
-        run: |
-          sudo apt update && sudo apt install -y g++-aarch64-linux-gnu
-          echo -e "\n\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" >> .cargo/config.toml
-      - name: Install libssl
-        run: |
-          sudo apt install libssl-dev
+      - name: Update Rustup
+        run: rustup update
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shapes-rs` for the x86 architecture
         run: cargo build --release
-      - name: Build the release version of `shapes-rs` for the aarch64 architecture
-        run: cargo build --release --target aarch64-unknown-linux-gnu
-        env:
-          BINDGEN_EXTRA_CLANG_ARGS: --sysroot /usr/aarch64-linux-gnu
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_linux_gnu
           path: target/release/${{ vars.BINARY_NAME }}
-      - name: Upload the generated Artifact for it to be stored in its corresponding release (aarch64)
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ vars.BINARY_NAME }}_aarch64-linux_gnu
-          path: target/aarch64-unknown-linux-gnu/release/${{ vars.BINARY_NAME }}
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-        if: github.event_name == 'release'
-      - name: Rename the binary according to the version and architecture
-        run: mv target/aarch64-unknown-linux-gnu/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-            ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_linux_gnu
         if: github.event_name == 'release'
 
-  binary_mac:
+  mac:
     runs-on: macos-latest
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
@@ -72,8 +52,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Update Rustup and select the target architectures
-        run: rustup update && rustup target add aarch64-apple-darwin
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `shapes-rs` for the x86 architecture
@@ -104,7 +82,7 @@ jobs:
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
         if: github.event_name == 'release'
 
-  binary_windows:
+  windows:
     runs-on: windows-latest
     steps:
       - name: Allow the workflow to access the files of the repository

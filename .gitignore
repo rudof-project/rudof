@@ -20,3 +20,5 @@ Cargo.lock
 # Added by cargo
 target/
 
+# Ignore virtual environments from the Python bindings
+.venv

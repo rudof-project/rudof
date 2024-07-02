@@ -11,7 +11,6 @@ authors = [
 repository = "https://github.com/weso/shapes-rs"
 homepage = "https://www.weso.es/shapes-rs/"
 
-
 [[bin]]
 path = "rdfsx_cli/src/main.rs"
 name = "rdfsx"
@@ -32,6 +31,7 @@ members = [
     "shapemap",
     "shacl_ast",
     "shapes_converter",
+    "python",
     # "shapemap_oxgraph",
     # "validation_oxgraph"
     # "shex_antlr",
@@ -63,6 +63,7 @@ keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["rdf"]
 
 [workspace.dependencies]
+# Internal dependencies
 rbe = { version = "0.0.13", path = "./rbe" }
 rbe_testsuite = { version = "0.0.13", path = "./rbe_testsuite" }
 iri_s = { version = "0.0.13", path = "./iri_s" }

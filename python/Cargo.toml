@@ -1,0 +1,26 @@
+[package]
+name = "pyshapes"
+version = "0.0.13"
+documentation = "https://www.weso.es/shapes-rs/"
+license.workspace = true
+authors.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
+
+[lib]
+name = "pyshapes"
+crate-type = ["cdylib"]
+
+[dependencies]
+srdf = { path = "../srdf", version = "0.0.13" }
+shacl_ast = { path = "../shacl_ast", version = "0.0.13" }
+openssl = { version = "0.10.57", features = ["vendored"] }
+
+[dependencies.pyo3]
+version = "0.22.0"
+features = ["abi3-py37"]
