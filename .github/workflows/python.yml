@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  musllinux:
+  linux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
