@@ -1,4 +1,4 @@
-//! Shapes converter
+//! ShEx to SPARQL
 //!
 //!
 mod select_query;

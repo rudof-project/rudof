@@ -265,15 +265,15 @@ pub enum Command {
 
     #[command(name = "convert")]
     Convert {
-        #[arg(short = 'm', long = "Input mode", value_name = "Input mode")]
+        #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
         input_mode: InputConvertMode,
 
-        #[arg(short = 'd', long = "Source file", value_name = "Source file name")]
+        #[arg(short = 's', long = "source-file", value_name = "Source file name")]
         file: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "Input format",
+            long = "input-format",
             value_name = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
@@ -456,13 +456,19 @@ impl Display for DCTapResultFormat {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum InputConvertFormat {
+    CSV,
     ShExC,
+    ShExJ,
+    Turtle,
 }
 
 impl Display for InputConvertFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
+            InputConvertFormat::CSV => write!(dest, "csv"),
             InputConvertFormat::ShExC => write!(dest, "shexc"),
+            InputConvertFormat::ShExJ => write!(dest, "shexj"),
+            InputConvertFormat::Turtle => write!(dest, "turtle"),
         }
     }
 }
@@ -471,12 +477,14 @@ impl Display for InputConvertFormat {
 #[clap(rename_all = "lower")]
 pub enum InputConvertMode {
     ShEx,
+    DCTAP,
 }
 
 impl Display for InputConvertMode {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             InputConvertMode::ShEx => write!(dest, "shex"),
+            InputConvertMode::DCTAP => write!(dest, "dctap"),
         }
     }
 }
@@ -485,12 +493,14 @@ impl Display for InputConvertMode {
 #[clap(rename_all = "lower")]
 pub enum OutputConvertMode {
     SPARQL,
+    ShEx,
 }
 
 impl Display for OutputConvertMode {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             OutputConvertMode::SPARQL => write!(dest, "sparql"),
+            OutputConvertMode::ShEx => write!(dest, "shex"),
         }
     }
 }
@@ -501,6 +511,9 @@ pub enum OutputConvertFormat {
     Default,
     Internal,
     JSON,
+    ShExC,
+    ShExJ,
+    Turtle,
 }
 
 impl Display for OutputConvertFormat {
@@ -509,6 +522,9 @@ impl Display for OutputConvertFormat {
             OutputConvertFormat::Internal => write!(dest, "internal"),
             OutputConvertFormat::JSON => write!(dest, "json"),
             OutputConvertFormat::Default => write!(dest, "default"),
+            OutputConvertFormat::ShExC => write!(dest, "shexc"),
+            OutputConvertFormat::ShExJ => write!(dest, "shexj"),
+            OutputConvertFormat::Turtle => write!(dest, "turtle"),
         }
     }
 }
