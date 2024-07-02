@@ -1,20 +1,18 @@
 name: Python
 
 on:
-  push:
-    branches:
+  branches:
       - main
-      - master
-    tags:
-      - '*'
+  release:
+    types:
+      - published
   pull_request:
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  linux:
+  musllinux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -27,58 +25,22 @@ jobs:
             target: aarch64
           - runner: ubuntu-latest
             target: armv7
-          - runner: ubuntu-latest
-            target: ppc64le
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
-          manylinux: auto
-          before-script-linux: |
-            set -ex
-
-            # If we're running on rhel centos, install needed packages.
-            if command -v yum &> /dev/null; then
-                yum update -y && yum install -y perl-core openssl openssl-devel pkgconfig libatomic
-
-                # If we're running on i686 we need to symlink libatomic
-                # in order to build openssl with -latomic flag.
-                if [[ ! -d "/usr/lib64" ]]; then
-                    ln -s /usr/lib/libatomic.so.1 /usr/lib/libatomic.so
-                fi
-
-                OPENSSL_LIB_DIR=/usr/lib
-            else
-                # If we're running on debian-based system.
-                apt update -y && apt-get install -y libssl-dev openssl pkg-config
-
-                OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
-            fi
-
-            export OPENSSL_DIR="/usr/lib/ssl"
-            export OPENSSL_INCLUDE_DIR=/usr/include/openssl
-            export OPENSSL_NO_VENDOR=1
-
-            ls $OPENSSL_LIB_DIR
-            ls $OPENSSL_INCLUDE_DIR
-
-
-            echo "OpenSSL Lib Dir: $OPENSSL_LIB_DIR"
-            echo "OpenSSL Include Dir: $OPENSSL_INCLUDE_DIR"
-
-            pkg-config --list-all
-            pkg-config --libs --cflags openssl
+          manylinux: musllinux_1_2
           working-directory: python
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.platform.target }}
+          name: wheels-musllinux-${{ matrix.platform.target }}
           path: dist
 
   windows:
