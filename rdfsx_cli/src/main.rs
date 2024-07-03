@@ -211,7 +211,7 @@ fn show_schema(
             writeln!(writer, "{schema:?}")?;
         }
         ShExFormat::ShExC => {
-            let str = ShExFormatter::default().format_schema(&schema);
+            let str = ShExFormatter::default().format_schema(schema);
             writeln!(writer, "{str}")?;
         }
         ShExFormat::ShExJ => {
