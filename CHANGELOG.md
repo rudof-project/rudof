@@ -6,6 +6,7 @@
 
 - First version with initial support for DCTap to ShEx converter, issue #54
 - Refactor on shapes converter to accomodate more conversions each of them in its own folder
+- First version which publishes also Python bindings
 
 ## [0.0.13] - 2024-06-22
 
