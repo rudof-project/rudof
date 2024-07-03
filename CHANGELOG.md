@@ -2,9 +2,14 @@
 
 ## Current changes without release yet
 
+## [0.0.14] - 2024-07-02
+
+- First version with initial support for DCTap to ShEx converter, issue #54
+- Refactor on shapes converter to accomodate more conversions each of them in its own folder
+
 ## [0.0.13] - 2024-06-22
 
-- First attempt to add support for ShEx to SPARQL converter, issue #67
+- First version with initial support for ShEx to SPARQL converter, issue #67
 
 ## [0.0.12] - 2024-06-17
 

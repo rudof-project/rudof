@@ -1,6 +1,6 @@
 [package]
 name = "pyshapes"
-version = "0.0.13"
+version = "0.0.14"
 documentation = "https://www.weso.es/shapes-rs/"
 license.workspace = true
 authors.workspace = true
@@ -17,8 +17,8 @@ name = "pyshapes"
 crate-type = ["cdylib"]
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.0.13" }
-shacl_ast = { path = "../shacl_ast", version = "0.0.13" }
+srdf = { path = "../srdf", version = "0.0.14" }
+shacl_ast = { path = "../shacl_ast", version = "0.0.14" }
 openssl = { version = "0.10.57", features = ["vendored"] }
 
 [dependencies.pyo3]
