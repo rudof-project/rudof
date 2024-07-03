@@ -37,7 +37,6 @@ impl DCTap {
         let mut tap_reader = TapReaderBuilder::new().flexible(true).from_path(path)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
-            println!("Shape read: {shape:?}");
             dctap.add_shape(&shape)
         }
         Ok(dctap)
@@ -49,7 +48,6 @@ impl DCTap {
         let mut tap_reader = TapReaderBuilder::new().flexible(true).from_reader(reader)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
-            println!("Shape read: {shape:?}");
             dctap.add_shape(&shape)
         }
         Ok(dctap)

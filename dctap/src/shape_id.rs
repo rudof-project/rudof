@@ -18,6 +18,10 @@ impl ShapeId {
         // TODO: Check how to escape special characters
         self.str.to_string()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.str.is_empty()
+    }
 }
 
 impl Default for ShapeId {
