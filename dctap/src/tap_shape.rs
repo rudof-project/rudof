@@ -24,9 +24,15 @@ impl TapShape {
 
     pub fn set_shape_id(&mut self, shape_id: &ShapeId) {
         self.shape_id = Some(shape_id.clone());
+        // Reset the statements because we have a new shape
+        self.statements = Vec::new();
     }
 
     pub fn add_statement(&mut self, statement: TapStatement) {
         self.statements.push(statement.clone());
+    }
+
+    pub fn statements(&self) -> impl Iterator<Item = &TapStatement> {
+        self.statements.iter()
     }
 }

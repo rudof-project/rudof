@@ -22,7 +22,8 @@ use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
-use shapes_converter::{ShEx2Sparql, ShEx2SparqlConfig};
+use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
+use shapes_converter::{Tap2ShEx, Tap2ShExConfig};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
@@ -61,7 +62,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::info!("sx is running...");
+    tracing::info!("rdfsx is running...");
 
     let cli = Cli::parse();
 
@@ -183,25 +184,9 @@ fn run_schema(
     show_statistics: bool,
 ) -> Result<()> {
     let begin = Instant::now();
-    let mut writer = get_writer(output)?;
+    let writer = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
-    match result_schema_format {
-        ShExFormat::Internal => {
-            writeln!(writer, "{schema_json:?}")?;
-        }
-        ShExFormat::ShExC => {
-            let str = ShExFormatter::default().format_schema(&schema_json);
-            writeln!(writer, "{str}")?;
-        }
-        ShExFormat::ShExJ => {
-            let str = serde_json::to_string_pretty(&schema_json)?;
-            writeln!(writer, "{str}")?;
-        }
-        ShExFormat::Turtle => {
-            eprintln!("Not implemented conversion to Turtle yet");
-            todo!()
-        }
-    };
+    show_schema(&schema_json, result_schema_format, writer)?;
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
@@ -213,6 +198,31 @@ fn run_schema(
         }
         let _ = writeln!(io::stderr(), "No shape declaration");
     }
+    Ok(())
+}
+
+fn show_schema(
+    schema: &SchemaJson,
+    result_schema_format: &ShExFormat,
+    mut writer: Box<dyn Write>,
+) -> Result<()> {
+    match result_schema_format {
+        ShExFormat::Internal => {
+            writeln!(writer, "{schema:?}")?;
+        }
+        ShExFormat::ShExC => {
+            let str = ShExFormatter::default().format_schema(schema);
+            writeln!(writer, "{str}")?;
+        }
+        ShExFormat::ShExJ => {
+            let str = serde_json::to_string_pretty(&schema)?;
+            writeln!(writer, "{str}")?;
+        }
+        ShExFormat::Turtle => {
+            eprintln!("Not implemented conversion to Turtle yet");
+            todo!()
+        }
+    };
     Ok(())
 }
 
@@ -338,6 +348,9 @@ fn run_convert(
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     match (input_mode, output_mode) {
+        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
+            run_tap2shex(input_path, format, writer, result_format)
+        }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
                 None => None,
@@ -347,9 +360,10 @@ fn run_convert(
                 }
             };
             run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format)
-        } //_ => Err(anyhow!(
-          //    "Conversion from {input_mode} to {output_mode} is not supported yet"
-          //)),
+        }
+        _ => Err(anyhow!(
+            "Conversion from {input_mode} to {output_mode} is not supported yet"
+        )),
     }
 }
 
@@ -362,12 +376,36 @@ fn run_shex2sparql(
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
-        // _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
+        _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
     let converter = ShEx2Sparql::new(ShEx2SparqlConfig::default());
     let sparql = converter.convert(&schema, shape)?;
     write!(writer, "{}", sparql)?;
+    Ok(())
+}
+
+fn run_tap2shex(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    writer: Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+) -> Result<()> {
+    let tap_format = match format {
+        InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
+    }?;
+    let dctap = parse_dctap(input_path, &tap_format)?;
+    let converter = Tap2ShEx::new(Tap2ShExConfig::default());
+    let shex = converter.convert(&dctap)?;
+    let result_schema_format = match result_format {
+        OutputConvertFormat::Default => Ok(ShExFormat::ShExC),
+        OutputConvertFormat::Internal => Ok(ShExFormat::Internal),
+        OutputConvertFormat::ShExJ => Ok(ShExFormat::ShExJ),
+        OutputConvertFormat::Turtle => Ok(ShExFormat::Turtle),
+        _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
+    }?;
+    show_schema(&shex, &result_schema_format, writer)?;
     Ok(())
 }
 

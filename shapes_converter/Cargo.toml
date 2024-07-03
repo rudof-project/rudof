@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.13" }
+dctap = { path = "../dctap", version = "0.0.13" }
 rbe = { path = "../rbe", version = "0.0.13" }
 srdf = { path = "../srdf", version = "0.0.13" }
 shex_ast = { path = "../shex_ast", version = "0.0.13" }

@@ -1,0 +1,5 @@
+shapeId,shapeLabel,propertyId,propertyLabel, valueShape
+Person,PersonLabel,knows,KnowsLabel, @Person
+,,name,name of person, xsd:string
+,,worksFor, works for, @Company
+Company,,founder, founder person, @Person

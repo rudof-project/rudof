@@ -53,4 +53,8 @@ impl TapStatement {
     pub fn set_property_label(&mut self, property_label: &str) {
         self.property_label = Some(property_label.to_string());
     }
+
+    pub fn property_id(&self) -> PropertyId {
+        self.property_id.clone()
+    }
 }

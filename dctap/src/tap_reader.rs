@@ -109,7 +109,7 @@ impl<R: io::Read> TapReader<R> {
         let mut record = StringRecord::new();
         if self.reader.read_record(&mut record)? {
             let new_shape_id = self.get_shape_id(&record)?;
-            if new_shape_id == *shape_id {
+            if is_empty(&new_shape_id) || new_shape_id == *shape_id {
                 Ok(Some(record))
             } else {
                 self.set_next_record(&record);
@@ -162,6 +162,14 @@ impl<R: io::Read> TapReader<R> {
         if let Some(str) = self.state.headers.property_label(rcd) {
             statement.set_property_label(&str);
         }
+    }
+}
+
+fn is_empty(str: &Option<ShapeId>) -> bool {
+    match str {
+        None => true,
+        Some(s) if s.is_empty() => true,
+        _ => false,
     }
 }
 
@@ -268,5 +276,58 @@ Person,PersonLabel,knows,KnowsLabel
         expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
         assert_eq!(next_shape, expected_shape);
+    }
+
+    #[test]
+    fn test_2lines() {
+        let data = "\
+shapeId,shapeLabel,propertyId,propertyLabel
+Person,PersonLabel,knows,KnowsLabel
+,,name,NameLabel
+";
+        let mut tap_reader = TapReaderBuilder::new()
+            .from_reader(data.as_bytes())
+            .unwrap();
+        let mut expected_shape = TapShape::new();
+        expected_shape.set_shape_id(&ShapeId::new("Person"));
+        let mut statement = TapStatement::new(PropertyId::new("knows"));
+        statement.set_property_label("KnowsLabel");
+        expected_shape.add_statement(statement);
+        let mut statement = TapStatement::new(PropertyId::new("name"));
+        statement.set_property_label("NameLabel");
+        expected_shape.add_statement(statement);
+        let next_shape = tap_reader.shapes().next().unwrap().unwrap();
+        assert_eq!(next_shape, expected_shape);
+    }
+
+    #[test]
+    fn test_2shapes() {
+        let data = "\
+shapeId,shapeLabel,propertyId,propertyLabel
+Person,PersonLabel,knows,KnowsLabel
+,,name,NameLabel
+Company,CompanyLabel,founder,FounderLabel
+";
+        let mut tap_reader = TapReaderBuilder::new()
+            .from_reader(data.as_bytes())
+            .unwrap();
+        let mut expected_shape1 = TapShape::new();
+        expected_shape1.set_shape_id(&ShapeId::new("Person"));
+        let mut statement = TapStatement::new(PropertyId::new("knows"));
+        statement.set_property_label("KnowsLabel");
+        expected_shape1.add_statement(statement);
+        let mut statement = TapStatement::new(PropertyId::new("name"));
+        statement.set_property_label("NameLabel");
+        expected_shape1.add_statement(statement);
+        let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();
+        assert_eq!(next_shape1, expected_shape1);
+
+        let mut expected_shape2 = TapShape::new();
+        expected_shape2.set_shape_id(&ShapeId::new("Company"));
+        let mut statement = TapStatement::new(PropertyId::new("founder"));
+        statement.set_property_label("FounderLabel");
+        expected_shape2.add_statement(statement);
+        let next_shape2 = tap_reader.shapes().next().unwrap().unwrap();
+        assert_eq!(next_shape2, expected_shape2);
     }
 }
