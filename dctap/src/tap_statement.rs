@@ -11,10 +11,10 @@ pub struct TapStatement {
     property_label: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    mandatory: Option<String>,
+    mandatory: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    repeatable: Option<String>,
+    repeatable: Option<bool>,
 
     #[serde(rename = "valueNodeType", skip_serializing_if = "Option::is_none")]
     value_node_type: Option<String>,
@@ -32,7 +32,7 @@ pub struct TapStatement {
     value_constraint_type: Option<String>,
 
     #[serde(rename = "valueShape", skip_serializing_if = "Option::is_none")]
-    valueshape: Option<String>,
+    value_shape: Option<String>,
 
     #[serde(rename = "note", skip_serializing_if = "Option::is_none")]
     note: Option<String>,
@@ -50,11 +50,34 @@ impl TapStatement {
         self
     }
 
+    pub fn set_repeatable(&mut self, repeatable: bool) {
+        self.repeatable = Some(repeatable);
+    }
+
+    pub fn set_mandatory(&mut self, mandatory: bool) {
+        self.mandatory = Some(mandatory);
+    }
+
+    pub fn set_value_datatype(&mut self, datatype: &str) {
+        self.value_data_type = Some(datatype.to_string());
+    }
+
+    pub fn set_value_shape(&mut self, value_shape: &str) {
+        self.value_shape = Some(value_shape.to_string());
+    }
+
     pub fn set_property_label(&mut self, property_label: &str) {
         self.property_label = Some(property_label.to_string());
     }
 
     pub fn property_id(&self) -> PropertyId {
         self.property_id.clone()
+    }
+
+    pub fn mandatory(&self) -> Option<bool> {
+        self.mandatory
+    }
+    pub fn repeatable(&self) -> Option<bool> {
+        self.repeatable
     }
 }

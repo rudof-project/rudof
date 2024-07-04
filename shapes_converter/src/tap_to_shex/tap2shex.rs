@@ -81,14 +81,32 @@ fn statement_to_triple_expr(
     config: &Tap2ShExConfig,
 ) -> Result<TripleExpr, Tap2ShExError> {
     let pred = property_id2iri(&statement.property_id(), config)?;
+    let min = get_min(statement.mandatory(), statement.repeatable());
+    let max = get_max(statement.mandatory(), statement.repeatable());
     Ok(TripleExpr::triple_constraint(
         None,
         None,
         IriRef::Iri(pred),
         None,
-        None,
-        None,
+        min,
+        max,
     ))
+}
+
+fn get_min(mandatory: Option<bool>, repeatable: Option<bool>) -> Option<i32> {
+    match (mandatory, repeatable) {
+        (Some(true), _) => Some(1),
+        (Some(false), _) => Some(0),
+        _ => None,
+    }
+}
+
+fn get_max(mandatory: Option<bool>, repeatable: Option<bool>) -> Option<i32> {
+    match (mandatory, repeatable) {
+        (_, Some(false)) => Some(1),
+        (_, Some(true)) => Some(-1),
+        _ => None,
+    }
 }
 
 fn property_id2iri<'a>(

@@ -62,7 +62,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::info!("rdfsx is running...");
+    // tracing::info!("rdfsx is running...");
 
     let cli = Cli::parse();
 

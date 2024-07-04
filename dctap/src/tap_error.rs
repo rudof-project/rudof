@@ -18,4 +18,7 @@ pub enum TapError {
         shape_id: usize,
         record: StringRecord,
     },
+
+    #[error("Value of field {field} is {value} and should be boolean")]
+    ShouldBeBoolean { field: String, value: String },
 }

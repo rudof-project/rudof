@@ -1,5 +1,5 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{PropertyId, ShapeId, TapShape, TapStatement};
+use crate::{PropertyId, ShapeId, TapError, TapShape, TapStatement};
 use csv::{Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
 // use indexmap::IndexSet;
@@ -152,6 +152,10 @@ impl<R: io::Read> TapReader<R> {
         if let Some(property_id) = self.get_property_id(rcd) {
             let mut statement = TapStatement::new(property_id);
             self.read_property_label(&mut statement, rcd);
+            self.read_mandatory(&mut statement, rcd)?;
+            self.read_repeatable(&mut statement, rcd)?;
+            self.read_value_datatype(&mut statement, rcd);
+            self.read_value_shape(&mut statement, rcd);
             Ok(Some(statement))
         } else {
             Ok(None)
@@ -160,8 +164,42 @@ impl<R: io::Read> TapReader<R> {
 
     fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.property_label(rcd) {
-            statement.set_property_label(&str);
+            if let Some(clean_str) = strip_whitespace(&str) {
+                statement.set_property_label(&clean_str);
+            }
         }
+    }
+
+    fn read_value_datatype(&self, statement: &mut TapStatement, rcd: &StringRecord) {
+        if let Some(str) = self.state.headers.value_datatype(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                statement.set_value_datatype(&clean_str);
+            }
+        }
+    }
+
+    fn read_value_shape(&self, statement: &mut TapStatement, rcd: &StringRecord) {
+        if let Some(str) = self.state.headers.value_shape(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                statement.set_value_shape(&clean_str);
+            }
+        }
+    }
+
+    fn read_mandatory(&self, statement: &mut TapStatement, rcd: &StringRecord) -> Result<()> {
+        if let Some(str) = self.state.headers.property_label(rcd) {
+            let mandatory = parse_boolean(&str, "mandatory")?;
+            statement.set_mandatory(mandatory);
+        };
+        Ok(())
+    }
+
+    fn read_repeatable(&self, statement: &mut TapStatement, rcd: &StringRecord) -> Result<()> {
+        if let Some(str) = self.state.headers.repeatable(rcd) {
+            let repeatable = parse_boolean(&str, "repeatable")?;
+            statement.set_repeatable(repeatable);
+        };
+        Ok(())
     }
 }
 
@@ -170,6 +208,26 @@ fn is_empty(str: &Option<ShapeId>) -> bool {
         None => true,
         Some(s) if s.is_empty() => true,
         _ => false,
+    }
+}
+
+fn parse_boolean(str: &str, field: &str) -> Result<bool> {
+    match str.trim().to_uppercase().as_str() {
+        "TRUE" => Ok(true),
+        "FALSE" => Ok(false),
+        _ => Err(TapError::ShouldBeBoolean {
+            field: field.to_string(),
+            value: str.to_string(),
+        }),
+    }
+}
+
+fn strip_whitespace(str: &str) -> Option<String> {
+    let trimmed = str.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
     }
 }
 
