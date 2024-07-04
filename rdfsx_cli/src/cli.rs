@@ -494,6 +494,7 @@ impl Display for InputConvertMode {
 pub enum OutputConvertMode {
     SPARQL,
     ShEx,
+    UML,
 }
 
 impl Display for OutputConvertMode {
@@ -501,6 +502,7 @@ impl Display for OutputConvertMode {
         match self {
             OutputConvertMode::SPARQL => write!(dest, "sparql"),
             OutputConvertMode::ShEx => write!(dest, "shex"),
+            OutputConvertMode::UML => write!(dest, "uml"),
         }
     }
 }
@@ -514,6 +516,7 @@ pub enum OutputConvertFormat {
     ShExC,
     ShExJ,
     Turtle,
+    PlantUML,
 }
 
 impl Display for OutputConvertFormat {
@@ -525,6 +528,7 @@ impl Display for OutputConvertFormat {
             OutputConvertFormat::ShExC => write!(dest, "shexc"),
             OutputConvertFormat::ShExJ => write!(dest, "shexj"),
             OutputConvertFormat::Turtle => write!(dest, "turtle"),
+            OutputConvertFormat::PlantUML => write!(dest, "uml"),
         }
     }
 }

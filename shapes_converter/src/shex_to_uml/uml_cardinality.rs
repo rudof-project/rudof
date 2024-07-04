@@ -1,6 +1,20 @@
-use super::NodeId;
+#[derive(Debug, PartialEq, Clone)]
+pub enum UmlCardinality {
+    OneOne,
+    Star,
+    Plus,
+    Optional,
+    Range(i32, i32),
+    Fixed(i32),
+}
 
-#[derive(Debug, PartialEq)]
+impl Default for UmlCardinality {
+    fn default() -> Self {
+        UmlCardinality::OneOne
+    }
+}
+
+/*#[derive(Debug, PartialEq)]
 pub enum UmlCardinality {
     UmlClass {
         id: NodeId,
@@ -19,4 +33,4 @@ enum UmlEntry {
         valueConstraint: Vec<ValueConstraint>,
         card: UMLCardinality,
     },
-}
+}*/

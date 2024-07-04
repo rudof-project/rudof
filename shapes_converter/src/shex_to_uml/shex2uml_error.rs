@@ -2,6 +2,8 @@ use prefixmap::IriRef;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 
+use super::UmlError;
+
 #[derive(Error, Debug)]
 pub enum ShEx2UmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
@@ -27,7 +29,16 @@ pub enum ShEx2UmlError {
         err: SchemaJsonError,
     },
 
-    #[error("ShEx2Sparql: Feature not implemented: {msg}")]
+    #[error(transparent)]
+    UmlError {
+        #[from]
+        err: UmlError,
+    },
+
+    #[error("Wrong cardinality: ({min},{max})")]
+    WrongCardinality { min: i32, max: i32 },
+
+    #[error("ShEx2Uml error: Feature not implemented: {msg}")]
     NotImplemented { msg: String },
 }
 
