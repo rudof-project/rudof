@@ -1,6 +1,6 @@
 [package]
 name = "rdfsx_cli"
-version = "0.0.14"
+version = "0.0.15"
 authors.workspace = true
 description.workspace = true
 documentation = "https://www.weso.es/shapes-rs/"
@@ -19,7 +19,7 @@ shapemap = { path = "../shapemap", version = "0.0.14" }
 shex_compact = { path = "../shex_compact", version = "0.0.14" }
 shacl_ast = { path = "../shacl_ast", version = "0.0.14" }
 dctap = { path = "../dctap", version = "0.0.14" }
-shapes_converter = { path = "../shapes_converter", version = "0.0.14" }
+shapes_converter = { path = "../shapes_converter", version = "0.0.15" }
 
 serde = "1.0"
 serde_derive = "1.0"
