@@ -8,11 +8,7 @@ impl Name {
     pub fn new(str: &str, href: Option<&str>) -> Name {
         Name {
             str: str.to_string(),
-            href: if let Some(href) = href {
-                Some(href.to_string())
-            } else {
-                None
-            },
+            href: href.map(|href| href.to_string()),
         }
     }
 

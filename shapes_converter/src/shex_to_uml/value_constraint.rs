@@ -1,7 +1,8 @@
 use super::Name;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub enum ValueConstraint {
+    #[default]
     Any,
     Datatype(Name),
     Ref(Name),
@@ -11,11 +12,5 @@ pub enum ValueConstraint {
 impl ValueConstraint {
     pub fn datatype(name: Name) -> ValueConstraint {
         ValueConstraint::Datatype(name)
-    }
-}
-
-impl Default for ValueConstraint {
-    fn default() -> Self {
-        ValueConstraint::Any
     }
 }

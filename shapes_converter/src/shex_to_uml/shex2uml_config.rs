@@ -3,14 +3,8 @@ use std::{fs, io};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
 pub struct ShEx2UmlConfig {}
-
-impl Default for ShEx2UmlConfig {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl ShEx2UmlConfig {
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {

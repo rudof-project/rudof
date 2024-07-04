@@ -26,7 +26,7 @@ impl ShEx2Uml {
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2UmlError> {
-        let prefixmap = shex.prefixmap().unwrap_or_else(|| PrefixMap::new());
+        let prefixmap = shex.prefixmap().unwrap_or_default();
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
@@ -99,11 +99,11 @@ impl ShEx2Uml {
                                 sem_acts: _,
                                 annotations: _,
                             } => {
-                                let pred_name = iri_ref2name(&predicate, &self.config, prefixmap)?;
+                                let pred_name = iri_ref2name(predicate, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
-                                        &se,
+                                        se,
                                         prefixmap,
                                         current_node_id,
                                         &pred_name,
@@ -144,11 +144,11 @@ impl ShEx2Uml {
                     sem_acts: _,
                     annotations: _,
                 } => {
-                    let pred_name = iri_ref2name(&predicate, &self.config, prefixmap)?;
+                    let pred_name = iri_ref2name(predicate, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
                         self.value_expr2value_constraint(
-                            &se,
+                            se,
                             prefixmap,
                             current_node_id,
                             &pred_name,
@@ -199,7 +199,7 @@ impl ShEx2Uml {
                 ShapeExprLabel::IriRef { value } => {
                     let ref_name = iri_ref2name(value, &self.config, prefixmap)?;
                     self.current_uml.add_link(
-                        current_node_id.clone(),
+                        *current_node_id,
                         ref_name,
                         current_predicate.clone(),
                         current_card.clone(),

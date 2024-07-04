@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use shex_ast::Node;
-
 #[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash)]
 pub struct NodeId {
     n: usize,

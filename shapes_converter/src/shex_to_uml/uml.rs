@@ -25,12 +25,12 @@ impl Uml {
 
     pub fn add_label(&mut self, label: &Name) -> NodeId {
         match self.labels.entry(label.clone()) {
-            Entry::Occupied(c) => c.get().clone(),
+            Entry::Occupied(c) => *c.get(),
             Entry::Vacant(v) => {
                 self.labels_counter += 1;
                 let n = NodeId::new(self.labels_counter);
                 v.insert(n);
-                n.clone()
+                n
             }
         }
     }
@@ -114,7 +114,7 @@ fn link2plantuml<W: Write>(link: &UmlLink, writer: &mut W) -> Result<(), UmlErro
     let card = card2plantuml(&link.card);
     let target = format!("{}", link.target);
     let name = name2plantuml(&link.name);
-    writeln!(writer, "{source} --> \"{card}\" {target} {name}");
+    writeln!(writer, "{source} --> \"{card}\" {target} {name}")?;
     Ok(())
 }
 
@@ -146,10 +146,10 @@ fn value_constraint2plantuml(vc: &ValueConstraint) -> String {
 
 fn card2plantuml(card: &UmlCardinality) -> String {
     match card {
-        UmlCardinality::OneOne => format!(""),
-        UmlCardinality::Star => format!("*"),
-        UmlCardinality::Plus => format!("+"),
-        UmlCardinality::Optional => format!("?"),
+        UmlCardinality::OneOne => "".to_string(),
+        UmlCardinality::Star => "*".to_string(),
+        UmlCardinality::Plus => "+".to_string(),
+        UmlCardinality::Optional => "?".to_string(),
         UmlCardinality::Range(m, n) => format!("{m}-{n}"),
         UmlCardinality::Fixed(m) => format!("{{{m}}}"),
     }

@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.0.15] - 2024-07-04
+
+- First version with support for conversion from ShEx schemas to UML
+
 ## [0.0.14] - 2024-07-02
 
 - First version with initial support for DCTap to ShEx converter, issue #54

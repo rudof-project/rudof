@@ -1,4 +1,4 @@
-use super::{Name, UmlClass};
+use super::UmlClass;
 
 #[derive(Debug, PartialEq)]
 pub enum UmlComponent {
