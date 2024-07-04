@@ -23,7 +23,7 @@ use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
-use shapes_converter::{Tap2ShEx, Tap2ShExConfig};
+use shapes_converter::{ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
@@ -361,10 +361,30 @@ fn run_convert(
             };
             run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format)
         }
+        (InputConvertMode::ShEx, OutputConvertMode::UML) => {
+            run_shex2uml(input_path, format, &mut writer, result_format)
+        }
         _ => Err(anyhow!(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
         )),
     }
+}
+
+fn run_shex2uml(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    writer: &mut Box<dyn Write>,
+    _result_format: &OutputConvertFormat,
+) -> Result<()> {
+    let schema_format = match format {
+        InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
+        _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
+    }?;
+    let schema = parse_schema(input_path, &schema_format)?;
+    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+    converter.convert(&schema)?;
+    converter.as_plantuml(writer)?;
+    Ok(())
 }
 
 fn run_shex2sparql(

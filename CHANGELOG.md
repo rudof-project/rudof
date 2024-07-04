@@ -2,10 +2,15 @@
 
 ## Current changes without release yet
 
+## [0.0.15] - 2024-07-04
+
+- First version with support for conversion from ShEx schemas to UML
+
 ## [0.0.14] - 2024-07-02
 
 - First version with initial support for DCTap to ShEx converter, issue #54
 - Refactor on shapes converter to accomodate more conversions each of them in its own folder
+- First version which publishes also Python bindings
 
 ## [0.0.13] - 2024-06-22
 
