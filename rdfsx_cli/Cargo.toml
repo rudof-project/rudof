@@ -1,6 +1,6 @@
 [package]
 name = "rdfsx_cli"
-version = "0.0.15"
+version = "0.1.0"
 authors.workspace = true
 description.workspace = true
 documentation = "https://www.weso.es/shapes-rs/"
@@ -10,16 +10,16 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-shex_ast = { path = "../shex_ast", version = "0.0.14" }
-shex_validation = { path = "../shex_validation", version = "0.0.14" }
-srdf = { path = "../srdf", version = "0.0.14" }
-prefixmap = { path = "../prefixmap", version = "0.0.13" }
+shex_ast = { path = "../shex_ast", version = "0.1.0" }
+shex_validation = { path = "../shex_validation", version = "0.1.0" }
+srdf = { path = "../srdf", version = "0.1.0" }
+prefixmap = { path = "../prefixmap", version = "0.1.0" }
 iri_s = { path = "../iri_s", version = "0.0.13" }
-shapemap = { path = "../shapemap", version = "0.0.14" }
-shex_compact = { path = "../shex_compact", version = "0.0.14" }
-shacl_ast = { path = "../shacl_ast", version = "0.0.14" }
-dctap = { path = "../dctap", version = "0.0.14" }
-shapes_converter = { path = "../shapes_converter", version = "0.0.15" }
+shapemap = { path = "../shapemap", version = "0.1.0" }
+shex_compact = { path = "../shex_compact", version = "0.1.0" }
+shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
+dctap = { path = "../dctap", version = "0.1.0" }
+shapes_converter = { path = "../shapes_converter", version = "0.1.0" }
 
 serde = "1.0"
 serde_derive = "1.0"

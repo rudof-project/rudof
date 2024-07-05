@@ -1,6 +1,6 @@
 [package]
 name = "shapemap"
-version = "0.0.14"
+version = "0.1.0"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapemap"
@@ -11,9 +11,9 @@ repository.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.13" }
-srdf = { path = "../srdf", version = "0.0.14" }
-prefixmap = { path = "../prefixmap", version = "0.0.13" }
-shex_ast = { path = "../shex_ast", version = "0.0.14" }
+srdf = { path = "../srdf", version = "0.1.0" }
+prefixmap = { path = "../prefixmap", version = "0.1.0" }
+shex_ast = { path = "../shex_ast", version = "0.1.0" }
 indexmap = "2.1"
 thiserror = "1.0"
 tracing = "0.1"

@@ -1,6 +1,6 @@
 [package]
 name = "shex_testsuite"
-version = "0.0.14"
+version = "0.1.0"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_testsuite"
@@ -11,11 +11,11 @@ repository.workspace = true
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.0.13" }
-prefixmap = { path = "../prefixmap", version = "0.0.13" }
-srdf = { path = "../srdf", version = "0.0.14" }
-shex_ast = { path = "../shex_ast", version = "0.0.14" }
-shex_compact = { path = "../shex_compact", version = "0.0.14" }
-shex_validation = { path = "../shex_validation", version = "0.0.14" }
+prefixmap = { path = "../prefixmap", version = "0.1.0" }
+srdf = { path = "../srdf", version = "0.1.0" }
+shex_ast = { path = "../shex_ast", version = "0.1.0" }
+shex_compact = { path = "../shex_compact", version = "0.1.0" }
+shex_validation = { path = "../shex_validation", version = "0.1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9.21"
