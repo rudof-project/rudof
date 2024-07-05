@@ -2,7 +2,7 @@
 
 ## Current changes without release yet
 
-## [0.0.16] - 2024-07-05
+## [0.1.0] - 2024-07-05
 
 - Added fields: mandatory, repeatable, valueDatatype and valueShape to DCTAP
 - Repaired spelling errors in README issue #73
