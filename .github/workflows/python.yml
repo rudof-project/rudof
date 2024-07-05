@@ -41,8 +41,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
-
+          path: python/dist
+          if-no-files-found: error
+          
   windows:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -68,7 +69,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.platform.target }}
-          path: dist
+          path: python/dist
+          if-no-files-found: error
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
@@ -94,7 +96,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}
-          path: dist
+          path: python/dist
+          if-no-files-found: error
 
   sdist:
     runs-on: ubuntu-latest
@@ -110,7 +113,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
-          path: dist
+          path: python/dist
+          if-no-files-found: error
 
   release:
     name: Release
@@ -125,3 +129,4 @@ jobs:
         with:
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
+          working-directory: python
