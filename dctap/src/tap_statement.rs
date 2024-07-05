@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::PropertyId;
+use crate::{DatatypeId, PropertyId, ShapeId};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct TapStatement {
@@ -20,7 +20,7 @@ pub struct TapStatement {
     value_node_type: Option<String>,
 
     #[serde(rename = "valueDataType", skip_serializing_if = "Option::is_none")]
-    value_data_type: Option<String>,
+    value_datatype: Option<DatatypeId>,
 
     #[serde(rename = "valueConstraint", skip_serializing_if = "Option::is_none")]
     value_constraint: Option<String>,
@@ -32,7 +32,7 @@ pub struct TapStatement {
     value_constraint_type: Option<String>,
 
     #[serde(rename = "valueShape", skip_serializing_if = "Option::is_none")]
-    value_shape: Option<String>,
+    value_shape: Option<ShapeId>,
 
     #[serde(rename = "note", skip_serializing_if = "Option::is_none")]
     note: Option<String>,
@@ -58,12 +58,12 @@ impl TapStatement {
         self.mandatory = Some(mandatory);
     }
 
-    pub fn set_value_datatype(&mut self, datatype: &str) {
-        self.value_data_type = Some(datatype.to_string());
+    pub fn set_value_datatype(&mut self, datatype: &DatatypeId) {
+        self.value_datatype = Some(datatype.clone());
     }
 
-    pub fn set_value_shape(&mut self, value_shape: &str) {
-        self.value_shape = Some(value_shape.to_string());
+    pub fn set_value_shape(&mut self, value_shape: &ShapeId) {
+        self.value_shape = Some(value_shape.clone());
     }
 
     pub fn set_property_label(&mut self, property_label: &str) {
@@ -79,5 +79,11 @@ impl TapStatement {
     }
     pub fn repeatable(&self) -> Option<bool> {
         self.repeatable
+    }
+    pub fn value_datatype(&self) -> Option<DatatypeId> {
+        self.value_datatype.clone()
+    }
+    pub fn value_shape(&self) -> Option<ShapeId> {
+        self.value_shape.clone()
     }
 }

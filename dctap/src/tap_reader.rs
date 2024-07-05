@@ -1,5 +1,5 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{PropertyId, ShapeId, TapError, TapShape, TapStatement};
+use crate::{DatatypeId, PropertyId, ShapeId, TapError, TapShape, TapStatement};
 use csv::{Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
 // use indexmap::IndexSet;
@@ -75,6 +75,12 @@ impl<R: io::Read> TapReader<R> {
             if let Some(shape_id) = &maybe_shape_id {
                 self.state.current_shape.set_shape_id(shape_id);
             }
+            if let Some(shapelabel) = self.get_shape_label(&record)? {
+                self.state
+                    .current_shape
+                    .set_shape_label(shapelabel.as_str());
+            }
+
             let maybe_statement = self.record2statement(&record)?;
             if let Some(statement) = maybe_statement {
                 self.state.current_shape.add_statement(statement);
@@ -139,6 +145,14 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
+    fn get_shape_label(&mut self, rcd: &StringRecord) -> Result<Option<String>> {
+        if let Some(str) = self.state.headers.shape_label(rcd) {
+            Ok(Some(str.to_string()))
+        } else {
+            Ok(None)
+        }
+    }
+
     fn get_property_id(&self, rcd: &StringRecord) -> Option<PropertyId> {
         if let Some(str) = self.state.headers.property_id(rcd) {
             let property_id = PropertyId::new(&str);
@@ -173,7 +187,8 @@ impl<R: io::Read> TapReader<R> {
     fn read_value_datatype(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.value_datatype(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                statement.set_value_datatype(&clean_str);
+                let datatype_id = DatatypeId::new(&clean_str);
+                statement.set_value_datatype(&datatype_id);
             }
         }
     }
@@ -181,13 +196,14 @@ impl<R: io::Read> TapReader<R> {
     fn read_value_shape(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.value_shape(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                statement.set_value_shape(&clean_str);
+                let shape_id = ShapeId::new(&clean_str);
+                statement.set_value_shape(&shape_id);
             }
         }
     }
 
     fn read_mandatory(&self, statement: &mut TapStatement, rcd: &StringRecord) -> Result<()> {
-        if let Some(str) = self.state.headers.property_label(rcd) {
+        if let Some(str) = self.state.headers.mandatory(rcd) {
             let mandatory = parse_boolean(&str, "mandatory")?;
             statement.set_mandatory(mandatory);
         };

@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.0.16] - 2024-07-05
+
+- Added fields: mandatory, repeatable, valueDatatype and valueShape to DCTAP
+
 ## [0.0.15] - 2024-07-04
 
 - First version with support for conversion from ShEx schemas to UML

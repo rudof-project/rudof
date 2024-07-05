@@ -68,7 +68,6 @@ impl TapHeaders {
         self.property_label
             .and_then(|idx| get_str_from_rcd(rcd, idx))
     }
-
     pub fn shape_label(&self, rcd: &StringRecord) -> Option<String> {
         self.shape_label.and_then(|idx| get_str_from_rcd(rcd, idx))
     }

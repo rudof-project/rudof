@@ -271,6 +271,17 @@ impl PrefixMap {
         }
     }
 
+    /// Basic prefixmap with common definitions
+    pub fn basic() -> PrefixMap {
+        PrefixMap::from_hashmap(&HashMap::from([
+            ("", "http://example.org/"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+        ]))
+        .unwrap()
+        .without_default_colors()
+        .with_hyperlink(true)
+    }
+
     /// Default Wikidata prefixmap
     /// This source of this list is https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
     pub fn wikidata() -> PrefixMap {
