@@ -1,12 +1,14 @@
+# SHAPES-rs
+
 [![Shapes-rs](https://github.com/weso/shapes-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/shapes-rs/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/weso/shapes-rs/status.svg)](https://deps.rs/repo/github/weso/shapes-rs)
 
-# SHAPES-rs
-
 This repo contains an RDF data shapes library implemented in Rust.
-The implementation supports both [ShEx](http://shex.io/) and [SHACL](https://www.w3.org/TR/shacl/).
+The implementation supports [ShEx](http://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTap](https://www.dublincore.org/specifications/dctap/) and conversions between different RDF data modeling formalisms.
 
-We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)).
+The code can be used as a Rust library but it also contains a binary called `rdfsx` which can be used as an RDF playground.
+
+We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)), as well as Python bindings.
 
 - [List of issues](https://github.com/weso/shapes-rs)
 - [Discussion](https://github.com/weso/shapes-rs/discussions/landing)
@@ -14,13 +16,13 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 - [How to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides)
 - [Roadmap](https://github.com/weso/shapes-rs/issues/1)
 
-### Installation
+## Installation
 
-#### Official releases
+### Official releases
 
 You can download a binary from the [latest release](https://github.com/weso/shapes-rs/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
 
-##### Ubuntu
+#### Ubuntu
 
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
@@ -29,18 +31,18 @@ wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rdfsx_vX.X.X_amd6
 sudo dpkg -i rdfsx_vX.X.X_amd64.deb
 ```
 
-##### Windows
+#### Windows
 
 The binary can be downloaded from [https://github.com/weso/shapes-rs/releases]
 
-##### Mac
+#### Mac
 
 The binary is available at: [https://github.com/weso/shapes-rs/releases]
 
 <details markdown="block">
 <summary>Compiling from source</summary>
 
-#### Compiling from source
+### Compiling from source
 
 `shapes-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
 
@@ -50,7 +52,7 @@ For example:
 cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
 ```
 
-#### Compiling from source and installing the binary (Debian)
+### Compiling from source and installing the binary (Debian)
 
 Install `cargo deb` (only the first time)
 
@@ -70,31 +72,31 @@ And run:
 sudo dpkg -i target/debian/shapes-rs_0.0.11-1_amd64.deb
 ```
 
-#### Docker
+## Docker
 
-TBD
+The library is also published as a Docker image.
 
 </details>
 
-### Usage
+## Usage
 
-#### Some examples
+### Some examples
 
 The folder `examples` contains several example files with ShEx schemas and RDF data.
 
-##### Validate a simple RDF file with a ShEx schema using a ShapeMap
+### Validate a simple RDF file with a ShEx schema using a ShapeMap
 
-```
+```sh
 rdfsx validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides).
 
-#### Debugging information
+### Debugging information
 
 It is possible to change the debug level information with:
 
-```
+```sh
 export RUST_LOG=value
 ```
 

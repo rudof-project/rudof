@@ -1,4 +1,3 @@
-use std::{borrow::Cow, marker::PhantomData};
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -6,11 +5,11 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind,
-    NumericFacet, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
-    StringFacet, TripleExpr, XsFacet,
+    value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind, NumericFacet, Pattern, Schema,
+    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
 use srdf::numeric_literal::NumericLiteral;
+use std::{borrow::Cow, marker::PhantomData};
 
 use crate::pp_object_value;
 
@@ -191,11 +190,12 @@ where
     ) -> impl Fn(&ShapeExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |se, printer| {
             printer
-                .keyword("base")
+                .keyword("start")
                 .append(printer.space())
                 .append("=")
                 .append(printer.space())
                 .append(printer.pp_shape_expr(se))
+                .append(printer.doc.hardline())
         }
     }
 
@@ -536,7 +536,7 @@ where
         match ref_ {
             ShapeExprLabel::BNode { value } => self.pp_bnode(value),
             ShapeExprLabel::IriRef { value } => self.pp_iri_ref(value),
-            ShapeExprLabel::Start => self.keyword("START")
+            ShapeExprLabel::Start => self.keyword("START"),
         }
     }
 

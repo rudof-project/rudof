@@ -1,0 +1,10 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:a :name "Alice" ;
+   :birthdate "1990-05-02"^^xsd:date ;
+   :enrolledIn :cs101 .
+
+:b :name "Bob", "Robert" .
+
+:cs101 :name "Computer Science" .   

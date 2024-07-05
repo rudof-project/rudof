@@ -1369,14 +1369,19 @@ pub fn instance_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = RDF:
 where
     RDF: FocusRDF,
 {
-    instances_of(expected).flat_map(|vs| {
+    // TODO: Review that this code seems to overlap with code at line 73 of rdf_parser.rs
+    // We should probably replace this code by the other one
+    let str = format!("{expected}");
+    instances_of(expected).flat_map(move |vs| {
         let mut values = vs.into_iter();
         match values.next() {
             Some(value) => match values.next() {
                 Some(_other_value) => todo!(),
                 None => Ok(value),
             },
-            None => todo!(),
+            None => Err(RDFParseError::NoInstancesOf {
+                object: str.to_string(),
+            }),
         }
     })
 }

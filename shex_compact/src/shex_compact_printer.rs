@@ -185,11 +185,12 @@ where
     ) -> impl Fn(&ShapeExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |se, printer| {
             printer
-                .keyword("base")
+                .keyword("start")
                 .append(printer.space())
                 .append("=")
                 .append(printer.space())
                 .append(printer.pp_shape_expr(se))
+                .append(printer.doc.hardline())
         }
     }
 
