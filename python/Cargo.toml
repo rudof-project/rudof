@@ -1,5 +1,5 @@
 [package]
-name = "shapes-rs"
+name = "rdfsx"
 version = "0.1.0"
 documentation = "https://www.weso.es/shapes-rs/"
 license.workspace = true
@@ -13,6 +13,7 @@ categories.workspace = true
 edition.workspace = true
 
 [lib]
+name = "rdfsx"
 crate-type = ["cdylib"]
 
 [dependencies]
