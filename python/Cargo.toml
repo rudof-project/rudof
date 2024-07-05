@@ -13,7 +13,6 @@ categories.workspace = true
 edition.workspace = true
 
 [lib]
-name = "shapes-rs"
 crate-type = ["cdylib"]
 
 [dependencies]
