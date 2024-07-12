@@ -5,7 +5,7 @@ use prefixmap::PrefixMap;
 use super::{HtmlShape, Name, NodeId};
 use crate::ShEx2HtmlError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct HtmlSchema {
     labels_counter: usize,
     labels: HashMap<Name, NodeId>,
@@ -54,11 +54,5 @@ impl HtmlSchema {
 
     pub fn shapes(&self) -> impl Iterator<Item = &HtmlShape> {
         self.shapes.values()
-    }
-}
-
-impl Default for HtmlSchema {
-    fn default() -> Self {
-        Self::new()
     }
 }

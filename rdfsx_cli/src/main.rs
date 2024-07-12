@@ -410,6 +410,7 @@ fn run_shex2html<P: AsRef<Path>>(
     _result_format: &OutputConvertFormat,
     output_folder: P,
 ) -> Result<()> {
+    debug!("Starting shex2html");
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
@@ -417,6 +418,7 @@ fn run_shex2html<P: AsRef<Path>>(
     let schema = parse_schema(input_path.as_ref(), &schema_format)?;
     let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
+    debug!("Landing page {landing_page}\nConverter...");
     let mut converter = ShEx2Html::new(config);
     converter.convert(&schema)?;
     converter.export_schema()?;

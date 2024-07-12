@@ -31,6 +31,7 @@ impl ShEx2Html {
         let out = OpenOptions::new()
             .write(true)
             .truncate(true)
+            .create(true)
             .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage { name, error: e })?;
         generate_landing_page(Box::new(out), &self.current_html, &self.config)?;
@@ -283,6 +284,7 @@ fn generate_landing_page(
             let file = OpenOptions::new()
                 .write(true)
                 .truncate(true)
+                .create(true)
                 .open(path)
                 .map_err(|e| ShEx2HtmlError::ErrorCreatingShapesFile {
                     name: file_name,
