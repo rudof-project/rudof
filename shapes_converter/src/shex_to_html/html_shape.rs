@@ -21,4 +21,8 @@ impl HtmlShape {
     pub fn name(&self) -> Name {
         self.name.clone()
     }
+
+    pub fn entries(&self) -> impl Iterator<Item = &Entry> {
+        self.entries.iter()
+    }
 }

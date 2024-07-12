@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf};
+use std::io;
 
 use prefixmap::IriRef;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
@@ -39,6 +39,9 @@ pub enum ShEx2HtmlError {
 
     #[error("Error creating landing page at: {name}, error: {error}")]
     ErrorCreatingLandingPage { name: String, error: io::Error },
+
+    #[error("Error creating shapes file at: {name}, error: {error}")]
+    ErrorCreatingShapesFile { name: String, error: io::Error },
 
     #[error("Wrong cardinality: ({min},{max})")]
     WrongCardinality { min: i32, max: i32 },

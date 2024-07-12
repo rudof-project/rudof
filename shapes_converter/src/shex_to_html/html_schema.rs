@@ -1,13 +1,9 @@
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    path::Path,
-};
+use std::collections::{hash_map::Entry, HashMap};
 
 use prefixmap::PrefixMap;
 
-use crate::{ShEx2HtmlConfig, ShEx2HtmlError};
-
 use super::{HtmlShape, Name, NodeId};
+use crate::ShEx2HtmlError;
 
 #[derive(Debug, PartialEq)]
 pub struct HtmlSchema {
@@ -19,12 +15,7 @@ pub struct HtmlSchema {
 
 impl HtmlSchema {
     pub fn new() -> HtmlSchema {
-        HtmlSchema {
-            labels_counter: 0,
-            labels: HashMap::new(),
-            shapes: HashMap::new(),
-            prefixmap: PrefixMap::new(),
-        }
+        Default::default()
     }
 
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
@@ -62,6 +53,12 @@ impl HtmlSchema {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = &HtmlShape> {
-        self.shapes.iter().map(|(_, s)| s)
+        self.shapes.values()
+    }
+}
+
+impl Default for HtmlSchema {
+    fn default() -> Self {
+        Self::new()
     }
 }

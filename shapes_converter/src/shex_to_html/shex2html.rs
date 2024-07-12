@@ -1,7 +1,6 @@
 use std::{
-    fs::File,
+    fs::OpenOptions,
     io::{self, Write},
-    path::Path,
 };
 
 use prefixmap::{IriRef, PrefixMap};
@@ -26,15 +25,14 @@ impl ShEx2Html {
         }
     }
 
-    pub fn export_schema<P: AsRef<Path>>(&self, path: P) -> Result<(), ShEx2HtmlError> {
-        let landing_page_name = path
-            .as_ref()
-            .join(Path::new(&self.config.landing_page_name));
-        let name = landing_page_name.display().to_string();
-        println!("Ready to create: {name:?}");
-        let out = File::create(landing_page_name)
+    pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
+        let landing_page = self.config.landing_page();
+        let name = landing_page.to_string_lossy().to_string();
+        let out = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage { name, error: e })?;
-        println!("File created: {out:?}");
         generate_landing_page(Box::new(out), &self.current_html, &self.config)?;
         Ok(())
     }
@@ -237,17 +235,19 @@ impl ShEx2Html {
 
 fn iri_ref2name(
     iri_ref: &IriRef,
-    _config: &ShEx2HtmlConfig,
+    config: &ShEx2HtmlConfig,
     prefixmap: &PrefixMap,
 ) -> Result<Name, ShEx2HtmlError> {
     match iri_ref {
         IriRef::Iri(iri) => Ok(Name::new(
             prefixmap.qualify(iri).as_str(),
             Some(iri.as_str()),
+            config.target_folder.as_path(),
         )),
         IriRef::Prefixed { prefix: _, local } => {
             // TODO: Check if we could replace href as None by a proper IRI
-            Ok(Name::new(local, None))
+            // println!("Is a local name: {local}");
+            Ok(Name::new(local, None, config.target_folder.as_path()))
         }
     }
 }
@@ -271,16 +271,26 @@ fn generate_landing_page(
     html_schema: &HtmlSchema,
     config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
-    println!("Starting to generate landing page...");
     open_html(&mut writer)?;
-    open_tag("head", &mut writer)?;
-    close_tag("head", &mut writer)?;
+    header(&mut writer, config.title.as_str())?;
     open_tag("body", &mut writer)?;
     tag_txt("h1", config.title.as_str(), &mut writer)?;
     open_tag("ul", &mut writer)?;
     for html_shape in html_schema.shapes() {
-        let _file = File::create_new(html_shape.name().as_path())?;
-        write_li_shape(html_shape, &mut writer)?;
+        let name = html_shape.name();
+        if let Some((path, local_name)) = name.as_local_ref() {
+            let file_name = path.as_path().display().to_string();
+            let file = OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .open(path)
+                .map_err(|e| ShEx2HtmlError::ErrorCreatingShapesFile {
+                    name: file_name,
+                    error: e,
+                })?;
+            write_li_shape(name.name().as_str(), local_name.as_str(), &mut writer)?;
+            write_shape(Box::new(file), html_shape, config)?;
+        }
     }
     close_tag("ul", &mut writer)?;
     close_tag("body", &mut writer)?;
@@ -313,12 +323,48 @@ fn close_tag(tag: &str, writer: &mut Box<dyn Write>) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn write_li_shape(shape: &HtmlShape, writer: &mut Box<dyn Write>) -> Result<(), ShEx2HtmlError> {
-    tag_txt("li", name2html(shape.name()).as_str(), writer)?;
+fn write_li_shape(
+    name: &str,
+    local_name: &str,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), ShEx2HtmlError> {
+    let a = format!("<a href=\"{local_name}\">{name}</a>");
+    tag_txt("li", a.as_str(), writer)?;
     Ok(())
 }
 
-fn name2html(name: Name) -> String {
+fn write_shape(
+    mut writer: Box<dyn Write>,
+    html_shape: &HtmlShape,
+    _config: &ShEx2HtmlConfig,
+) -> Result<(), ShEx2HtmlError> {
+    open_html(&mut writer)?;
+    header(&mut writer, html_shape.name().name().as_str())?;
+    close_html(&mut writer)?;
+    tag_txt("h1", html_shape.name().name().as_str(), &mut writer)?;
+    open_tag("table", &mut writer)?;
+    for entry in html_shape.entries() {
+        write_entry(&mut writer, entry)?;
+    }
+    close_tag("table", &mut writer)?;
+    Ok(())
+}
+
+fn write_entry(writer: &mut Box<dyn Write>, entry: &Entry) -> Result<(), ShEx2HtmlError> {
+    open_tag("tr", writer)?;
+    tag_txt("td", name2html(&entry.name).as_str(), writer)?;
+    close_tag("tr", writer)?;
+    Ok(())
+}
+
+fn header(writer: &mut Box<dyn Write>, title: &str) -> Result<(), ShEx2HtmlError> {
+    open_tag("head", writer)?;
+    tag_txt("title", title, writer)?;
+    close_tag("head", writer)?;
+    Ok(())
+}
+
+fn name2html(name: &Name) -> String {
     if let Some(href) = name.href() {
         format!("<a href=\"{}\">{}</a>", href, name.name())
     } else {

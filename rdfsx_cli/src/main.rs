@@ -341,6 +341,7 @@ fn run_dctap(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_convert(
     input_path: &Path,
     format: &InputConvertFormat,
@@ -409,16 +410,17 @@ fn run_shex2html<P: AsRef<Path>>(
     _result_format: &OutputConvertFormat,
     output_folder: P,
 ) -> Result<()> {
-    println!("ShEx 2 HTML");
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path.as_ref(), &schema_format)?;
-    let mut converter = ShEx2Html::new(ShEx2HtmlConfig::default());
+    let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
+    let landing_page = config.landing_page().to_string_lossy().to_string();
+    let mut converter = ShEx2Html::new(config);
     converter.convert(&schema)?;
-    println!("Schema converted...now starting to export...");
-    converter.export_schema(output_folder)?;
+    converter.export_schema()?;
+    writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
     Ok(())
 }
 
