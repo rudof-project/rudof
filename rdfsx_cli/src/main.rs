@@ -23,7 +23,9 @@ use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
-use shapes_converter::{ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig};
+use shapes_converter::{
+    ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
+};
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::Validator;
@@ -159,6 +161,7 @@ fn main() -> Result<()> {
             result_format,
             output,
             output_mode,
+            target_folder,
         }) => run_convert(
             file,
             format,
@@ -167,6 +170,7 @@ fn main() -> Result<()> {
             result_format,
             output,
             output_mode,
+            target_folder,
         ),
         None => {
             println!("Command not specified");
@@ -337,6 +341,7 @@ fn run_dctap(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_convert(
     input_path: &Path,
     format: &InputConvertFormat,
@@ -345,6 +350,7 @@ fn run_convert(
     result_format: &OutputConvertFormat,
     output: &Option<PathBuf>,
     output_mode: &OutputConvertMode,
+    target_folder: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     match (input_mode, output_mode) {
@@ -363,6 +369,16 @@ fn run_convert(
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
             run_shex2uml(input_path, format, &mut writer, result_format)
+        }
+        (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
+            match target_folder {
+                None => Err(anyhow!(
+            "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
+                )),
+                Some(output_path) => {
+                    run_shex2html(input_path, format, &mut writer, result_format, output_path)
+                }
+            }
         }
         _ => Err(anyhow!(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
@@ -384,6 +400,27 @@ fn run_shex2uml(
     let mut converter = ShEx2Uml::new(ShEx2UmlConfig::default());
     converter.convert(&schema)?;
     converter.as_plantuml(writer)?;
+    Ok(())
+}
+
+fn run_shex2html<P: AsRef<Path>>(
+    input_path: P,
+    format: &InputConvertFormat,
+    msg_writer: &mut Box<dyn Write>,
+    _result_format: &OutputConvertFormat,
+    output_folder: P,
+) -> Result<()> {
+    let schema_format = match format {
+        InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
+        _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
+    }?;
+    let schema = parse_schema(input_path.as_ref(), &schema_format)?;
+    let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
+    let landing_page = config.landing_page().to_string_lossy().to_string();
+    let mut converter = ShEx2Html::new(config);
+    converter.convert(&schema)?;
+    converter.export_schema()?;
+    writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
     Ok(())
 }
 

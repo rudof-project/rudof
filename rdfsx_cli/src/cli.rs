@@ -294,6 +294,9 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
+        #[arg(short = 't', long = "target-folder", value_name = "Target folder")]
+        target_folder: Option<PathBuf>,
+
         #[arg(
             short = 'l',
             long = "shape-label",
@@ -495,6 +498,7 @@ pub enum OutputConvertMode {
     SPARQL,
     ShEx,
     UML,
+    HTML,
 }
 
 impl Display for OutputConvertMode {
@@ -503,6 +507,7 @@ impl Display for OutputConvertMode {
             OutputConvertMode::SPARQL => write!(dest, "sparql"),
             OutputConvertMode::ShEx => write!(dest, "shex"),
             OutputConvertMode::UML => write!(dest, "uml"),
+            OutputConvertMode::HTML => write!(dest, "html"),
         }
     }
 }
@@ -517,6 +522,7 @@ pub enum OutputConvertFormat {
     ShExJ,
     Turtle,
     PlantUML,
+    HTML,
 }
 
 impl Display for OutputConvertFormat {
@@ -529,6 +535,7 @@ impl Display for OutputConvertFormat {
             OutputConvertFormat::ShExJ => write!(dest, "shexj"),
             OutputConvertFormat::Turtle => write!(dest, "turtle"),
             OutputConvertFormat::PlantUML => write!(dest, "uml"),
+            OutputConvertFormat::HTML => write!(dest, "html"),
         }
     }
 }
