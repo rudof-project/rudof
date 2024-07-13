@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{DatatypeId, PropertyId, ShapeId};
+use crate::{DatatypeId, NodeType, PropertyId, ShapeId};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct TapStatement {
@@ -19,7 +19,7 @@ pub struct TapStatement {
     repeatable: Option<bool>,
 
     #[serde(rename = "valueNodeType", skip_serializing_if = "Option::is_none")]
-    value_node_type: Option<String>,
+    value_nodetype: Option<NodeType>,
 
     #[serde(rename = "valueDataType", skip_serializing_if = "Option::is_none")]
     value_datatype: Option<DatatypeId>,
@@ -64,6 +64,10 @@ impl TapStatement {
         self.value_datatype = Some(datatype.clone());
     }
 
+    pub fn set_value_nodetype(&mut self, nodetype: &NodeType) {
+        self.value_nodetype = Some(nodetype.clone());
+    }
+
     pub fn set_value_shape(&mut self, value_shape: &ShapeId) {
         self.value_shape = Some(value_shape.clone());
     }
@@ -95,9 +99,9 @@ impl Display for TapStatement {
         write!(
             f,
             "{} {} {} {}",
-            self.property_id,
+            show_property(&self.property_id, &self.property_label),
             show_node_constraints(
-                &self.value_node_type,
+                &self.value_nodetype,
                 &self.value_datatype,
                 &self.value_constraint,
                 &self.value_constraint_type,
@@ -110,8 +114,18 @@ impl Display for TapStatement {
     }
 }
 
+fn show_property(property_id: &PropertyId, property_label: &Option<String>) -> String {
+    let mut result = String::new();
+    if let Some(label) = property_label {
+        result.push_str(format!("{label} ({property_id})").as_str());
+    } else {
+        result.push_str(format!("{property_id}").as_str());
+    }
+    result
+}
+
 fn show_node_constraints(
-    value_node_type: &Option<String>,
+    value_node_type: &Option<NodeType>,
     datatype: &Option<DatatypeId>,
     value_constraint: &Option<String>,
     value_constraint_type: &Option<String>,
@@ -119,7 +133,7 @@ fn show_node_constraints(
 ) -> String {
     let mut result = String::new();
     if let Some(node_type) = value_node_type {
-        result.push_str(node_type.as_str());
+        result.push_str(format!("{node_type}").as_str());
     }
     if let Some(datatype) = datatype {
         result.push_str(format!("{datatype}").as_str());

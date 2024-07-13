@@ -1,5 +1,7 @@
+use crate::{
+    node_type, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape, TapStatement,
+};
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{DatatypeId, PropertyId, ShapeId, TapError, TapShape, TapStatement};
 use csv::{Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
 // use indexmap::IndexSet;
@@ -168,6 +170,7 @@ impl<R: io::Read> TapReader<R> {
             self.read_property_label(&mut statement, rcd);
             self.read_mandatory(&mut statement, rcd)?;
             self.read_repeatable(&mut statement, rcd)?;
+            self.read_value_nodetype(&mut statement, rcd);
             self.read_value_datatype(&mut statement, rcd);
             self.read_value_shape(&mut statement, rcd);
             Ok(Some(statement))
@@ -189,6 +192,21 @@ impl<R: io::Read> TapReader<R> {
             if let Some(clean_str) = strip_whitespace(&str) {
                 let datatype_id = DatatypeId::new(&clean_str);
                 statement.set_value_datatype(&datatype_id);
+            }
+        }
+    }
+
+    fn read_value_nodetype(&self, statement: &mut TapStatement, rcd: &StringRecord) {
+        if let Some(str) = self.state.headers.value_datatype(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                let node_type;
+                match clean_str.to_uppercase().as_str() {
+                    "IRI" => node_type = NodeType::IRI,
+                    "BNODE" => node_type = NodeType::BNode,
+                    "LITERAL" => node_type = NodeType::Literal,
+                    _ => todo!(),
+                }
+                statement.set_value_nodetype(&node_type);
             }
         }
     }
@@ -231,6 +249,8 @@ fn parse_boolean(str: &str, field: &str) -> Result<bool> {
     match str.trim().to_uppercase().as_str() {
         "TRUE" => Ok(true),
         "FALSE" => Ok(false),
+        "1" => Ok(true),
+        "0" => Ok(false),
         _ => Err(TapError::ShouldBeBoolean {
             field: field.to_string(),
             value: str.to_string(),
