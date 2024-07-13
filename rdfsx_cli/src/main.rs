@@ -329,7 +329,7 @@ fn run_dctap(
     let dctap = parse_dctap(input_path, format)?;
     match result_format {
         DCTapResultFormat::Internal => {
-            writeln!(writer, "{dctap:?}")?;
+            writeln!(writer, "{dctap}")?;
             Ok(())
         }
         DCTapResultFormat::JSON => {

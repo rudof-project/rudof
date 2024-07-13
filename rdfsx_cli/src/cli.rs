@@ -29,14 +29,16 @@ pub enum Command {
         shapemap: PathBuf,
 
         #[arg(
-            long = "shapemap-format",
+            short = 'f',
+            long = "format",
             value_name = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact
         )]
         shapemap_format: ShapeMapFormat,
 
         #[arg(
-            long = "result-shapemap-format",
+            short = 'r',
+            long = "result-format",
             value_name = "Result shapemap format",
             default_value_t = ShapeMapFormat::Compact
         )]
@@ -56,7 +58,7 @@ pub enum Command {
 
         #[arg(
             short = 'f',
-            long = "schema-format",
+            long = "format",
             value_name = "Schema format",
             default_value_t = ShExFormat::ShExC
         )]
@@ -64,7 +66,7 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "result-schema-format",
+            long = "result-format",
             value_name = "Result schema format",
             default_value_t = ShExFormat::ShExJ
         )]
@@ -236,12 +238,12 @@ pub enum Command {
 
     #[command(name = "dctap")]
     DCTap {
-        #[arg(short = 'd', long = "DCTap file", value_name = "DCTap file name")]
+        #[arg(short = 'd', long = "data", value_name = "DCTap file name")]
         file: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "File format",
+            long = "format",
             value_name = "DCTap file format",
             default_value_t = DCTapFormat::CSV
         )]
@@ -249,7 +251,7 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "Result format",
+            long = "result-format",
             value_name = "Ouput results format",
             default_value_t = DCTapResultFormat::Internal
         )]
@@ -273,7 +275,7 @@ pub enum Command {
 
         #[arg(
             short = 'f',
-            long = "input-format",
+            long = "format",
             value_name = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
@@ -281,8 +283,8 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "export-format",
-            value_name = "Ouput result format",
+            long = "result-format",
+            value_name = "Result format",
             default_value_t = OutputConvertFormat::Default
         )]
         result_format: OutputConvertFormat,

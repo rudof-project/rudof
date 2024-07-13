@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -16,5 +18,12 @@ impl PropertyId {
     pub fn as_local_name(&self) -> String {
         // TODO: Check how to escape special characters
         self.str.to_string()
+    }
+}
+
+impl Display for PropertyId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.str)?;
+        Ok(())
     }
 }

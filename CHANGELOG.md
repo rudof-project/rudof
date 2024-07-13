@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.1] - 2024-07-12
+
+- Added basic support for generating HTML views from ShEx schemas, #60
+
 ## [0.1.0] - 2024-07-05
 
 - Added fields: mandatory, repeatable, valueDatatype and valueShape to DCTAP

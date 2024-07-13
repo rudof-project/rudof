@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -25,5 +27,16 @@ impl DatatypeId {
         } else {
             None
         }
+    }
+}
+
+impl Display for DatatypeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some((prefix, name)) = self.as_prefix_local_name() {
+            write!(f, "{prefix}:{name}")?;
+        } else {
+            write!(f, "{}", self.str)?;
+        }
+        Ok(())
     }
 }

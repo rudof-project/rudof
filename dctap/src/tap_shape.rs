@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::tap_statement::TapStatement;
 use crate::ShapeId;
 use serde_derive::{Deserialize, Serialize};
@@ -26,6 +28,10 @@ impl TapShape {
         self.shape_id.clone()
     }
 
+    pub fn shape_label(&self) -> Option<String> {
+        self.shape_label.clone()
+    }
+
     pub fn set_shape_id(&mut self, shape_id: &ShapeId) {
         self.shape_id = Some(shape_id.clone());
         // Reset the statements because we have a new shape
@@ -44,5 +50,20 @@ impl TapShape {
 
     pub fn statements(&self) -> impl Iterator<Item = &TapStatement> {
         self.statements.iter()
+    }
+}
+
+impl Display for TapShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "Shape({}) {}",
+            self.shape_id().unwrap_or_else(|| ShapeId::new("")),
+            self.shape_label().unwrap_or_default()
+        )?;
+        for statement in self.statements() {
+            writeln!(f, " {statement}")?;
+        }
+        Ok(())
     }
 }

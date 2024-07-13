@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{DatatypeId, PropertyId, ShapeId};
@@ -85,5 +87,73 @@ impl TapStatement {
     }
     pub fn value_shape(&self) -> Option<ShapeId> {
         self.value_shape.clone()
+    }
+}
+
+impl Display for TapStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {} {} {}",
+            self.property_id,
+            show_node_constraints(
+                &self.value_node_type,
+                &self.value_datatype,
+                &self.value_constraint,
+                &self.value_constraint_type,
+                &self.value_shape
+            ),
+            show_cardinality(self.mandatory, self.repeatable),
+            show_note(&self.note)
+        )?;
+        Ok(())
+    }
+}
+
+fn show_node_constraints(
+    value_node_type: &Option<String>,
+    datatype: &Option<DatatypeId>,
+    value_constraint: &Option<String>,
+    value_constraint_type: &Option<String>,
+    value_shape: &Option<ShapeId>,
+) -> String {
+    let mut result = String::new();
+    if let Some(node_type) = value_node_type {
+        result.push_str(node_type.as_str());
+    }
+    if let Some(datatype) = datatype {
+        result.push_str(format!("{datatype}").as_str());
+    }
+    if let Some(value_constraint) = value_constraint {
+        result.push_str(value_constraint);
+    }
+    if let Some(value_constraint_type) = value_constraint_type {
+        result.push_str(value_constraint_type);
+    }
+    if let Some(value_shape) = value_shape {
+        result.push_str(format!("@{value_shape}").as_str());
+    }
+    if result.is_empty() {
+        result.push('.')
+    }
+    result
+}
+
+fn show_cardinality(mandatory: Option<bool>, repeatable: Option<bool>) -> String {
+    let mandatory = mandatory.unwrap_or(false);
+    let repeatable = repeatable.unwrap_or(false);
+    match (mandatory, repeatable) {
+        (false, false) => "?".to_string(),
+        (false, true) => "*".to_string(),
+        (true, false) => "".to_string(),
+        (true, true) => "+".to_string(),
+    }
+}
+
+fn show_note(note: &Option<String>) -> String {
+    if let Some(note) = note {
+        format!("// {note}")
+    } else {
+        "".to_string()
     }
 }
