@@ -1,8 +1,7 @@
-use crate::{
-    node_type, BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape,
-    TapStatement,
-};
 use crate::{tap_error::Result, tap_headers::TapHeaders};
+use crate::{
+    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape, TapStatement,
+};
 use csv::{Position, Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
 // use indexmap::IndexSet;
@@ -174,6 +173,7 @@ impl<R: io::Read> TapReader<R> {
             self.read_value_nodetype(&mut statement, rcd)?;
             self.read_value_datatype(&mut statement, rcd);
             self.read_value_shape(&mut statement, rcd);
+            self.read_note(&mut statement, rcd);
             Ok(Some(statement))
         } else {
             Ok(None)
@@ -183,15 +183,21 @@ impl<R: io::Read> TapReader<R> {
     fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.property_label(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                statement.set_property_label(&clean_str);
+                statement.set_property_label(clean_str);
             }
+        }
+    }
+
+    fn read_note(&self, statement: &mut TapStatement, rcd: &StringRecord) {
+        if let Some(str) = self.state.headers.note(rcd) {
+            statement.set_note(&str);
         }
     }
 
     fn read_value_datatype(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.value_datatype(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                let datatype_id = DatatypeId::new(&clean_str);
+                let datatype_id = DatatypeId::new(clean_str);
                 statement.set_value_datatype(&datatype_id);
             }
         }
@@ -200,7 +206,7 @@ impl<R: io::Read> TapReader<R> {
     fn read_value_nodetype(&self, statement: &mut TapStatement, rcd: &StringRecord) -> Result<()> {
         if let Some(str) = self.state.headers.value_nodetype(rcd) {
             let mut current_node_type: Option<NodeType> = None;
-            while let Some(str) = get_strs(&str).next() {
+            for str in get_strs(&str) {
                 let next_node_type = parse_node_type(str)?;
                 match &mut current_node_type {
                     Some(node_type) => {
@@ -223,7 +229,7 @@ impl<R: io::Read> TapReader<R> {
     fn read_value_shape(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.value_shape(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                let shape_id = ShapeId::new(&clean_str);
+                let shape_id = ShapeId::new(clean_str);
                 statement.set_value_shape(&shape_id);
             }
         }
@@ -296,7 +302,7 @@ struct TapReaderState {
     current_shape: TapShape,
     cached_next_record: Option<StringRecord>,
     headers: TapHeaders,
-    position: Position,
+    _position: Position,
 }
 
 impl TapReaderState {
@@ -305,7 +311,7 @@ impl TapReaderState {
             current_shape: TapShape::new(),
             cached_next_record: None,
             headers: TapHeaders::new(),
-            position: Position::new(),
+            _position: Position::new(),
         }
     }
 

@@ -76,6 +76,10 @@ impl TapStatement {
         self.property_label = Some(property_label.to_string());
     }
 
+    pub fn set_note(&mut self, note: &str) {
+        self.note = Some(note.to_string());
+    }
+
     pub fn property_id(&self) -> PropertyId {
         self.property_id.clone()
     }
@@ -98,7 +102,7 @@ impl Display for TapStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{} {}{}{}",
             show_property(&self.property_id, &self.property_label),
             show_node_constraints(
                 &self.value_nodetype,
@@ -133,10 +137,10 @@ fn show_node_constraints(
 ) -> String {
     let mut result = String::new();
     if let Some(node_type) = value_node_type {
-        result.push_str(format!("{node_type}").as_str());
+        result.push_str(format!("{node_type} ").as_str());
     }
     if let Some(datatype) = datatype {
-        result.push_str(format!("{datatype}").as_str());
+        result.push_str(format!("{datatype} ").as_str());
     }
     if let Some(value_constraint) = value_constraint {
         result.push_str(value_constraint);
@@ -145,7 +149,7 @@ fn show_node_constraints(
         result.push_str(value_constraint_type);
     }
     if let Some(value_shape) = value_shape {
-        result.push_str(format!("@{value_shape}").as_str());
+        result.push_str(format!("@{value_shape} ").as_str());
     }
     if result.is_empty() {
         result.push('.')

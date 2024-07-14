@@ -96,6 +96,9 @@ impl TapHeaders {
     pub fn value_shape(&self, rcd: &StringRecord) -> Option<String> {
         self.value_shape.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
+    pub fn note(&self, rcd: &StringRecord) -> Option<String> {
+        self.note.and_then(|idx| get_str_from_rcd(rcd, idx))
+    }
 }
 
 fn clean(str: &str) -> String {
