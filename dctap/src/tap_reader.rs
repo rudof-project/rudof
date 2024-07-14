@@ -1,8 +1,9 @@
 use crate::{
-    node_type, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape, TapStatement,
+    node_type, BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape,
+    TapStatement,
 };
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use csv::{Reader, ReaderBuilder, StringRecord, Terminator, Trim};
+use csv::{Position, Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
 // use indexmap::IndexSet;
 use std::io::{self};
@@ -170,7 +171,7 @@ impl<R: io::Read> TapReader<R> {
             self.read_property_label(&mut statement, rcd);
             self.read_mandatory(&mut statement, rcd)?;
             self.read_repeatable(&mut statement, rcd)?;
-            self.read_value_nodetype(&mut statement, rcd);
+            self.read_value_nodetype(&mut statement, rcd)?;
             self.read_value_datatype(&mut statement, rcd);
             self.read_value_shape(&mut statement, rcd);
             Ok(Some(statement))
@@ -196,18 +197,26 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn read_value_nodetype(&self, statement: &mut TapStatement, rcd: &StringRecord) {
-        if let Some(str) = self.state.headers.value_datatype(rcd) {
-            if let Some(clean_str) = strip_whitespace(&str) {
-                let node_type;
-                match clean_str.to_uppercase().as_str() {
-                    "IRI" => node_type = NodeType::IRI,
-                    "BNODE" => node_type = NodeType::BNode,
-                    "LITERAL" => node_type = NodeType::Literal,
-                    _ => todo!(),
+    fn read_value_nodetype(&self, statement: &mut TapStatement, rcd: &StringRecord) -> Result<()> {
+        if let Some(str) = self.state.headers.value_nodetype(rcd) {
+            let mut current_node_type: Option<NodeType> = None;
+            while let Some(str) = get_strs(&str).next() {
+                let next_node_type = parse_node_type(str)?;
+                match &mut current_node_type {
+                    Some(node_type) => {
+                        current_node_type = Some(node_type.merge_node_type(&next_node_type))
+                    }
+                    None => current_node_type = Some(next_node_type),
                 }
-                statement.set_value_nodetype(&node_type);
             }
+            if let Some(node_type) = current_node_type {
+                statement.set_value_nodetype(&node_type);
+                Ok(())
+            } else {
+                Err(TapError::EmptyNodeType)
+            }
+        } else {
+            Ok(())
         }
     }
 
@@ -245,6 +254,17 @@ fn is_empty(str: &Option<ShapeId>) -> bool {
     }
 }
 
+fn parse_node_type(str: &str) -> Result<NodeType> {
+    match str.to_uppercase().as_str() {
+        "IRI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
+        "BNODE" => Ok(NodeType::Basic(BasicNodeType::BNode)),
+        "LITERAL" => Ok(NodeType::Basic(BasicNodeType::Literal)),
+        _ => Err(TapError::UnexpectedNodeType {
+            str: str.to_string(),
+        }),
+    }
+}
+
 fn parse_boolean(str: &str, field: &str) -> Result<bool> {
     match str.trim().to_uppercase().as_str() {
         "TRUE" => Ok(true),
@@ -258,32 +278,34 @@ fn parse_boolean(str: &str, field: &str) -> Result<bool> {
     }
 }
 
-fn strip_whitespace(str: &str) -> Option<String> {
-    let trimmed = str.trim();
-    if trimmed.is_empty() {
+fn strip_whitespace(str: &str) -> Option<&str> {
+    let s = str.trim();
+    if s.is_empty() {
         None
     } else {
-        Some(trimmed.to_string())
+        Some(s)
     }
+}
+
+fn get_strs(str: &str) -> impl Iterator<Item = &str> {
+    str.split(|c| c == ' ').filter(|&x| !x.is_empty())
 }
 
 #[derive(Debug)]
 struct TapReaderState {
     current_shape: TapShape,
-    // current_shape_id: Option<usize>,
     cached_next_record: Option<StringRecord>,
     headers: TapHeaders,
-    // shape_ids: IndexSet<ShapeId>,
+    position: Position,
 }
 
 impl TapReaderState {
     pub fn new() -> TapReaderState {
         TapReaderState {
             current_shape: TapShape::new(),
-            // current_shape_id: None,
             cached_next_record: None,
             headers: TapHeaders::new(),
-            // shape_ids: IndexSet::new(),
+            position: Position::new(),
         }
     }
 
@@ -309,14 +331,6 @@ impl TapReaderState {
             None
         }
     }
-
-    /* fn current_shape_id(&self) -> Option<&ShapeId> {
-        if let Some(idx) = self.current_shape_id {
-            self.shape_ids.get_index(idx)
-        } else {
-            None
-        }
-    } */
 }
 /// A borrowed iterator over Shapes
 ///

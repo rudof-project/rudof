@@ -12,6 +12,7 @@ repository.workspace = true
 [dependencies]
 csv = "1.3.0"
 indexmap = { version = "2"}
+itertools = "0.13"
 serde = "1.0"
 serde_derive = "1.0"
 serde_with = "3.8.1"
