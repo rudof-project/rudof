@@ -1,6 +1,7 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
 use crate::{
-    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapError, TapShape, TapStatement,
+    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapConfig, TapError, TapShape,
+    TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
 use csv::{Position, Reader, ReaderBuilder, StringRecord, Terminator, Trim};
 use std::fs::File;
@@ -44,26 +45,35 @@ impl TapReaderBuilder {
         self
     }
 
-    pub fn from_path<P: AsRef<Path>>(&self, path: P) -> Result<TapReader<File>> {
+    pub fn from_path<P: AsRef<Path>>(&self, path: P, config: TapConfig) -> Result<TapReader<File>> {
         let mut reader = self.reader_builder.from_path(path)?;
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader { reader, state })
+        Ok(TapReader {
+            reader,
+            state,
+            config,
+        })
     }
 
-    pub fn from_reader<R: io::Read>(&mut self, rdr: R) -> Result<TapReader<R>> {
+    pub fn from_reader<R: io::Read>(&mut self, rdr: R, config: TapConfig) -> Result<TapReader<R>> {
         let mut reader = self.reader_builder.from_reader(rdr);
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader { reader, state })
+        Ok(TapReader {
+            reader,
+            state,
+            config,
+        })
     }
 }
 
 pub struct TapReader<R> {
     reader: Reader<R>,
     state: TapReaderState,
+    config: TapConfig,
 }
 
 impl<R: io::Read> TapReader<R> {
@@ -173,6 +183,7 @@ impl<R: io::Read> TapReader<R> {
             self.read_value_nodetype(&mut statement, rcd)?;
             self.read_value_datatype(&mut statement, rcd);
             self.read_value_shape(&mut statement, rcd);
+            self.read_value_constraint(&mut statement, rcd)?;
             self.read_note(&mut statement, rcd);
             Ok(Some(statement))
         } else {
@@ -190,7 +201,9 @@ impl<R: io::Read> TapReader<R> {
 
     fn read_note(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers.note(rcd) {
-            statement.set_note(&str);
+            if !str.is_empty() {
+                statement.set_note(&str);
+            }
         }
     }
 
@@ -232,6 +245,53 @@ impl<R: io::Read> TapReader<R> {
                 let shape_id = ShapeId::new(clean_str);
                 statement.set_value_shape(&shape_id);
             }
+        }
+    }
+
+    fn read_value_constraint(
+        &self,
+        statement: &mut TapStatement,
+        rcd: &StringRecord,
+    ) -> Result<()> {
+        if let Some(str) = self.state.headers.value_constraint(rcd) {
+            let value_constraint_type = self.read_value_constraint_type(rcd)?;
+            match value_constraint_type {
+                ValueConstraintType::PickList => {
+                    let values = parse_values(str.as_str(), self.config.picklist_delimiter())?;
+                    if !values.is_empty() {
+                        statement.set_value_constraint(&ValueConstraint::picklist(values));
+                    }
+                }
+                ValueConstraintType::Pattern => {
+                    statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
+                }
+                _ => todo!(),
+            }
+        };
+        Ok(())
+    }
+
+    fn read_value_constraint_type(&self, rcd: &StringRecord) -> Result<ValueConstraintType> {
+        if let Some(str) = self.state.headers.value_constraint_type(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                match clean_str.to_uppercase().as_str() {
+                    "PICKLIST" => Ok(ValueConstraintType::PickList),
+                    "PATTERN" => Ok(ValueConstraintType::Pattern),
+                    "LANGUAGETAG" => Ok(ValueConstraintType::LanguageTag),
+                    "IRISTEM" => Ok(ValueConstraintType::IRIStem),
+                    "MINLENGTH" => Ok(ValueConstraintType::MinLength),
+                    "MAXLENGTH" => Ok(ValueConstraintType::MaxLength),
+                    "MININCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
+                    "MINEXCLUSIVE" => Ok(ValueConstraintType::MinExclusive),
+                    "MAXINCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
+                    "MAXEXCLUSIVE" => Ok(ValueConstraintType::MaxExclusive),
+                    _ => Err(TapError::UnexpectedValueConstraintType { value: str.clone() }),
+                }
+            } else {
+                Ok(ValueConstraintType::default())
+            }
+        } else {
+            Ok(ValueConstraintType::default())
         }
     }
 
@@ -282,6 +342,13 @@ fn parse_boolean(str: &str, field: &str) -> Result<bool> {
             value: str.to_string(),
         }),
     }
+}
+
+fn parse_values(str: &str, delimiter: &str) -> Result<Vec<Value>> {
+    Ok(str
+        .split_terminator(delimiter)
+        .map(|str| Value::new(str))
+        .collect())
 }
 
 fn strip_whitespace(str: &str) -> Option<&str> {
@@ -381,7 +448,7 @@ shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel
 ";
         let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes())
+            .from_reader(data.as_bytes(), TapConfig::default())
             .unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
@@ -400,7 +467,7 @@ Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 ";
         let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes())
+            .from_reader(data.as_bytes(), TapConfig::default())
             .unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
@@ -423,7 +490,7 @@ Person,PersonLabel,knows,KnowsLabel
 Company,CompanyLabel,founder,FounderLabel
 ";
         let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes())
+            .from_reader(data.as_bytes(), TapConfig::default())
             .unwrap();
         let mut expected_shape1 = TapShape::new();
         expected_shape1.set_shape_id(&ShapeId::new("Person"));

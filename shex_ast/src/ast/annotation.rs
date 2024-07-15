@@ -1,5 +1,6 @@
 use std::{fmt, result};
 
+use iri_s::iri;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{
@@ -20,6 +21,13 @@ pub struct Annotation {
 impl Annotation {
     pub fn new(predicate: IriRef, object: ObjectValue) -> Annotation {
         Annotation { predicate, object }
+    }
+
+    pub fn rdfs_label(str: &str) -> Annotation {
+        Annotation {
+            predicate: IriRef::iri(iri!("http://www.w3.org/2000/01/rdf-schema#")),
+            object: ObjectValue::str(str),
+        }
     }
 }
 

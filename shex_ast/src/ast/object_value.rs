@@ -60,6 +60,10 @@ impl ObjectValue {
     pub fn prefixed(alias: &str, local: &str) -> Self {
         ObjectValue::IriRef(IriRef::prefixed(alias, local))
     }
+
+    pub fn str(str: &str) -> Self {
+        ObjectValue::Literal(Literal::str(str))
+    }
 }
 
 impl Deref for ObjectValue {

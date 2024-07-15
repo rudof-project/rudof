@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
 use crate::ast::serde_string_or_struct::*;
+use crate::Annotation;
 use crate::{NodeConstraint, RefError, Shape, ShapeExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -141,6 +142,13 @@ impl ShapeExpr {
 
     pub fn shape(shape: Shape) -> ShapeExpr {
         ShapeExpr::Shape(shape)
+    }
+
+    pub fn add_annotation(&mut self, annotation: Annotation) {
+        match self {
+            Self::Shape(s) => s.add_annotation(annotation),
+            _ => todo!(),
+        };
     }
 }
 

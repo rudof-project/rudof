@@ -5,7 +5,9 @@
 use dctap::{DCTap, DatatypeId, PropertyId, ShapeId, TapShape, TapStatement};
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shex_ast::{NodeConstraint, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, TripleExpr};
+use shex_ast::{
+    Annotation, NodeConstraint, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, TripleExpr,
+};
 
 use crate::{Tap2ShExConfig, Tap2ShExError};
 pub struct Tap2ShEx {
@@ -35,7 +37,10 @@ fn tapshape_to_shape(
         let id = shape_id2iri(&shape_id, config)?;
         let label = ShapeExprLabel::iri(id);
         let shape_expr = tapshape_to_shape_expr(tap_shape, config)?;
-        let shape = ShapeDecl::new(label, shape_expr, false);
+        let mut shape = ShapeDecl::new(label, shape_expr, false);
+        if let Some(shape_label) = tap_shape.shape_label() {
+            shape.add_annotation(Annotation::rdfs_label(shape_label.as_str()))
+        }
         Ok(shape)
     } else {
         Err(Tap2ShExError::NoShapeId {

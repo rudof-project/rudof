@@ -13,6 +13,9 @@ pub enum TapError {
     #[error("Unexpected node type: {str}")]
     UnexpectedNodeType { str: String },
 
+    #[error("Unexpected value constraint type: {value}")]
+    UnexpectedValueConstraintType { value: String },
+
     #[error("CSV Error: {err}")]
     RDFParseError {
         #[from]

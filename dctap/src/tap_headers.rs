@@ -13,6 +13,8 @@ pub(crate) struct TapHeaders {
     value_datatype: Option<usize>,
     value_nodetype: Option<usize>,
     value_shape: Option<usize>,
+    value_constraint: Option<usize>,
+    value_constraint_type: Option<usize>,
     note: Option<usize>,
 }
 
@@ -30,6 +32,8 @@ impl TapHeaders {
         let mut mandatory = None;
         let mut value_nodetype = None;
         let mut value_datatype = None;
+        let mut value_constraint = None;
+        let mut value_constraint_type = None;
         let mut value_shape = None;
         let mut note = None;
 
@@ -44,6 +48,8 @@ impl TapHeaders {
                 "VALUEDATATYPE" => value_datatype = Some(idx),
                 "VALUESHAPE" => value_shape = Some(idx),
                 "VALUENODETYPE" => value_nodetype = Some(idx),
+                "VALUECONSTRAINT" => value_constraint = Some(idx),
+                "VALUECONSTRAINTTYPE" => value_constraint_type = Some(idx),
                 "NOTE" => note = Some(idx),
                 _ => {
                     debug!("Unknown field reading headers: {field}")
@@ -60,6 +66,8 @@ impl TapHeaders {
             value_datatype,
             value_nodetype,
             value_shape,
+            value_constraint,
+            value_constraint_type,
             note,
         })
     }
@@ -95,6 +103,14 @@ impl TapHeaders {
     }
     pub fn value_shape(&self, rcd: &StringRecord) -> Option<String> {
         self.value_shape.and_then(|idx| get_str_from_rcd(rcd, idx))
+    }
+    pub fn value_constraint(&self, rcd: &StringRecord) -> Option<String> {
+        self.value_constraint
+            .and_then(|idx| get_str_from_rcd(rcd, idx))
+    }
+    pub fn value_constraint_type(&self, rcd: &StringRecord) -> Option<String> {
+        self.value_constraint_type
+            .and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn note(&self, rcd: &StringRecord) -> Option<String> {
         self.note.and_then(|idx| get_str_from_rcd(rcd, idx))
