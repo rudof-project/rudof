@@ -25,7 +25,7 @@ impl Annotation {
 
     pub fn rdfs_label(str: &str) -> Annotation {
         Annotation {
-            predicate: IriRef::iri(iri!("http://www.w3.org/2000/01/rdf-schema#label")),
+            predicate: IriRef::prefixed("rdfs", "label"),
             object: ObjectValue::str(str),
         }
     }
