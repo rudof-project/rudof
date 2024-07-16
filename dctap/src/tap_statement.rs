@@ -91,6 +91,12 @@ impl TapStatement {
     pub fn value_shape(&self) -> Option<ShapeId> {
         self.value_shape.clone()
     }
+    pub fn value_constraint(&self) -> &Option<ValueConstraint> {
+        &self.value_constraint
+    }
+    pub fn property_label(&self) -> &Option<String> {
+        &self.property_label
+    }
 }
 
 impl Display for TapStatement {

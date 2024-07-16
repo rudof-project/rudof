@@ -29,6 +29,13 @@ impl Annotation {
             object: ObjectValue::str(str),
         }
     }
+
+    pub fn rdfs_comment(str: &str) -> Annotation {
+        Annotation {
+            predicate: IriRef::prefixed("rdfs", "comment"),
+            object: ObjectValue::str(str),
+        }
+    }
 }
 
 impl Deref for Annotation {

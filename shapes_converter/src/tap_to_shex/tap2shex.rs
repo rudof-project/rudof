@@ -105,14 +105,11 @@ fn statement_to_triple_expr(
             value_shape: valueshape.clone(),
         }),
     }?;
-    Ok(TripleExpr::triple_constraint(
-        None,
-        None,
-        IriRef::Iri(pred),
-        value_expr,
-        min,
-        max,
-    ))
+    let mut te = TripleExpr::triple_constraint(None, None, IriRef::Iri(pred), value_expr, min, max);
+    if let Some(label) = statement.property_label() {
+        te.add_annotation(Annotation::rdfs_label(label))
+    }
+    Ok(te)
 }
 
 fn get_min(mandatory: Option<bool>) -> Option<i32> {
