@@ -345,10 +345,7 @@ fn parse_boolean(str: &str, field: &str) -> Result<bool> {
 }
 
 fn parse_values(str: &str, delimiter: &str) -> Result<Vec<Value>> {
-    Ok(str
-        .split_terminator(delimiter)
-        .map(|str| Value::new(str))
-        .collect())
+    Ok(str.split_terminator(delimiter).map(Value::new).collect())
 }
 
 fn strip_whitespace(str: &str) -> Option<&str> {

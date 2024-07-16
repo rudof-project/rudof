@@ -70,8 +70,9 @@ impl Display for Value {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub enum ValueConstraintType {
+    #[default]
     PickList,
     Pattern,
     IRIStem,
@@ -82,12 +83,6 @@ pub enum ValueConstraintType {
     MinExclusive,
     MaxInclusive,
     MaxExclusive,
-}
-
-impl Default for ValueConstraintType {
-    fn default() -> Self {
-        ValueConstraintType::PickList
-    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
