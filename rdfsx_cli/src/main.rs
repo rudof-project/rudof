@@ -69,7 +69,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Command::Schema {
+        Some(Command::ShEx {
             schema,
             schema_format,
             result_schema_format,

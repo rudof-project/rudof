@@ -1,6 +1,5 @@
 use std::{fmt, result};
 
-use iri_s::iri;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{

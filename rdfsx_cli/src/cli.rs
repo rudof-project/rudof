@@ -24,6 +24,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Information about ShEx shapemaps
     Shapemap {
         #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
         shapemap: PathBuf,
@@ -52,7 +53,8 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
-    Schema {
+    /// Information about ShEx schemas
+    ShEx {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -86,6 +88,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// RDF Validation using ShEx schemas
     Validate {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
@@ -148,6 +151,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// Information about RDF data
     Data {
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
         data: PathBuf,
@@ -168,6 +172,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// Information about RDF nodes which are part of RDF Graphs
     Node {
         #[arg(short = 'n', long = "node")]
         node: String,
@@ -208,6 +213,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// Information about SHACL shapes
     Shacl {
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
@@ -236,6 +242,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// Information and processing of DCTAP files
     #[command(name = "dctap")]
     DCTap {
         #[arg(short = 'd', long = "data", value_name = "DCTap file name")]
@@ -265,6 +272,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
+    /// Conversion between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
         #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
