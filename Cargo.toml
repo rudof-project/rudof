@@ -1,6 +1,6 @@
 [package]
 name = "shapes-rs"
-version = "0.1.1"
+version = "0.1.2"
 description = "RDF Data shapes implementation in Rust"
 license = "MIT OR Apache-2.0"
 authors = [
