@@ -3,7 +3,6 @@ use std::{
     io::{self, Write},
 };
 
-use dctap::value_constraint;
 use prefixmap::{IriRef, PrefixMap};
 use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use tracing::debug;
@@ -11,8 +10,7 @@ use tracing::debug;
 use crate::ShEx2HtmlError;
 
 use super::{
-    cardinality, Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig,
-    ValueConstraint,
+    Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ValueConstraint,
 };
 
 pub struct ShEx2Html {
@@ -42,6 +40,22 @@ impl ShEx2Html {
             .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage { name, error: e })?;
         generate_landing_page(Box::new(out), &self.current_html, &self.config)?;
+
+        if let Some(css_file) = &self.config.css_file_name {
+            let mut out_css = OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(css_file)
+                .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
+                    name: css_file.clone(),
+                    error: e,
+                })?;
+            if let Some(color) = &self.config.color_property_name {
+                writeln!(out_css, ".property_name {{ {color} }}")?;
+            }
+        }
+
         Ok(())
     }
 
@@ -283,7 +297,7 @@ fn generate_landing_page(
     config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     open_html(&mut writer)?;
-    header(&mut writer, config.title.as_str())?;
+    header(&mut writer, &config.title, config)?;
     open_tag("body", &mut writer)?;
     tag_txt("h1", config.title.as_str(), &mut writer)?;
     open_tag("ul", &mut writer)?;
@@ -333,6 +347,33 @@ fn tag_txt(tag: &str, txt: &str, writer: &mut Box<dyn Write>) -> Result<(), io::
     Ok(())
 }
 
+fn tag_txt_attrs(
+    tag: &str,
+    attrs: Vec<(&str, &str)>,
+    txt: &str,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), io::Error> {
+    write!(writer, "<{tag}")?;
+    for (name, value) in attrs {
+        write!(writer, " {name}=\"{value}\"")?;
+    }
+    write!(writer, ">{txt}</{tag}>")?;
+    Ok(())
+}
+
+fn tag_attrs(
+    tag: &str,
+    attrs: Vec<(&str, &str)>,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), io::Error> {
+    write!(writer, "<{tag}")?;
+    for (name, value) in attrs {
+        write!(writer, " {name}=\"{value}\"")?;
+    }
+    write!(writer, "/>")?;
+    Ok(())
+}
+
 fn close_tag(tag: &str, writer: &mut Box<dyn Write>) -> Result<(), io::Error> {
     write!(writer, "</{tag}>")?;
     Ok(())
@@ -351,10 +392,10 @@ fn write_li_shape(
 fn write_shape(
     mut writer: Box<dyn Write>,
     html_shape: &HtmlShape,
-    _config: &ShEx2HtmlConfig,
+    config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     open_html(&mut writer)?;
-    header(&mut writer, html_shape.name().name().as_str())?;
+    header(&mut writer, html_shape.name().name().as_str(), config)?;
     tag_txt("h1", html_shape.name().name().as_str(), &mut writer)?;
     open_tag("table", &mut writer)?;
     open_tag("tr", &mut writer)?;
@@ -372,7 +413,12 @@ fn write_shape(
 
 fn write_entry(writer: &mut Box<dyn Write>, entry: &Entry) -> Result<(), ShEx2HtmlError> {
     open_tag("tr", writer)?;
-    tag_txt("td", name2html(&entry.name).as_str(), writer)?;
+    tag_txt_attrs(
+        "td",
+        vec![("class", "property_name")],
+        name2html(&entry.name).as_str(),
+        writer,
+    )?;
     tag_txt(
         "td",
         value_constraint2html(&entry.value_constraint).as_str(),
@@ -383,9 +429,20 @@ fn write_entry(writer: &mut Box<dyn Write>, entry: &Entry) -> Result<(), ShEx2Ht
     Ok(())
 }
 
-fn header(writer: &mut Box<dyn Write>, title: &str) -> Result<(), ShEx2HtmlError> {
+fn header(
+    writer: &mut Box<dyn Write>,
+    title: &str,
+    config: &ShEx2HtmlConfig,
+) -> Result<(), ShEx2HtmlError> {
     open_tag("head", writer)?;
-    tag_txt("title", title, writer)?;
+    tag_txt("title", config.title.as_str(), writer)?;
+    if let Some(css_file) = &config.css_file_name {
+        tag_attrs(
+            "link",
+            vec![("href", css_file.as_str()), ("rel", "stylesheet")],
+            writer,
+        )?;
+    }
     close_tag("head", writer)?;
     Ok(())
 }

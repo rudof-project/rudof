@@ -8,9 +8,11 @@ use thiserror::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct ShEx2HtmlConfig {
-    landing_page_name: String,
+    pub landing_page_name: String,
+    pub css_file_name: Option<String>,
     pub title: String,
     pub target_folder: PathBuf,
+    pub color_property_name: Option<String>,
 }
 
 impl Default for ShEx2HtmlConfig {
@@ -18,7 +20,9 @@ impl Default for ShEx2HtmlConfig {
         Self {
             title: "Generated shapes".to_string(),
             landing_page_name: "index.html".to_string(),
+            css_file_name: Some("shex2html.css".to_string()),
             target_folder: PathBuf::new(),
+            color_property_name: Some("blue".to_string()),
         }
     }
 }
