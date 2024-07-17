@@ -435,7 +435,7 @@ fn header(
     config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     open_tag("head", writer)?;
-    tag_txt("title", config.title.as_str(), writer)?;
+    tag_txt("title", title, writer)?;
     if let Some(css_file) = &config.css_file_name {
         tag_attrs(
             "link",
