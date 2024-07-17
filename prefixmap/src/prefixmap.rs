@@ -55,6 +55,13 @@ impl PrefixMap {
         self
     }
 
+    pub fn without_rich_qualifying(self) -> Self {
+        self.with_hyperlink(false)
+            .with_qualify_localname_color(None)
+            .with_qualify_prefix_color(None)
+            .with_qualify_semicolon_color(None)
+    }
+
     /// Inserts an alias association to an IRI
     pub fn insert(&mut self, alias: &str, iri: &IriS) {
         self.map.insert(alias.to_owned(), iri.clone());

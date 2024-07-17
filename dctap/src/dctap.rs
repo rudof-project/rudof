@@ -31,7 +31,7 @@ impl DCTap {
         self.shapes.push(shape.clone());
     }
 
-    pub fn from_path(path: &Path, _config: TapConfig) -> Result<DCTap, TapError> {
+    pub fn from_path<P: AsRef<Path>>(path: P, _config: TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
         let mut tap_reader = TapReaderBuilder::new()

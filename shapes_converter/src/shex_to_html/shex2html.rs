@@ -3,13 +3,16 @@ use std::{
     io::{self, Write},
 };
 
+use dctap::value_constraint;
 use prefixmap::{IriRef, PrefixMap};
 use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use tracing::debug;
 
 use crate::ShEx2HtmlError;
 
 use super::{
-    Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ValueConstraint,
+    cardinality, Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig,
+    ValueConstraint,
 };
 
 pub struct ShEx2Html {
@@ -23,6 +26,10 @@ impl ShEx2Html {
             config,
             current_html: HtmlSchema::new(),
         }
+    }
+
+    pub fn current_html(&self) -> &HtmlSchema {
+        &self.current_html
     }
 
     pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
@@ -39,7 +46,10 @@ impl ShEx2Html {
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2HtmlError> {
-        let prefixmap = shex.prefixmap().unwrap_or_default();
+        let prefixmap = shex
+            .prefixmap()
+            .unwrap_or_default()
+            .without_rich_qualifying();
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
@@ -279,6 +289,7 @@ fn generate_landing_page(
     open_tag("ul", &mut writer)?;
     for html_shape in html_schema.shapes() {
         let name = html_shape.name();
+        debug!("Generating shape with name: {name}");
         if let Some((path, local_name)) = name.as_local_ref() {
             let file_name = path.as_path().display().to_string();
             let file = OpenOptions::new()
@@ -292,6 +303,8 @@ fn generate_landing_page(
                 })?;
             write_li_shape(name.name().as_str(), local_name.as_str(), &mut writer)?;
             write_shape(Box::new(file), html_shape, config)?;
+        } else {
+            debug!("No local ref for that name");
         }
     }
     close_tag("ul", &mut writer)?;
@@ -342,19 +355,30 @@ fn write_shape(
 ) -> Result<(), ShEx2HtmlError> {
     open_html(&mut writer)?;
     header(&mut writer, html_shape.name().name().as_str())?;
-    close_html(&mut writer)?;
     tag_txt("h1", html_shape.name().name().as_str(), &mut writer)?;
     open_tag("table", &mut writer)?;
+    open_tag("tr", &mut writer)?;
+    tag_txt("td", "Property", &mut writer)?;
+    tag_txt("td", "Expected value", &mut writer)?;
+    tag_txt("td", "Cardinality", &mut writer)?;
+    close_tag("tr", &mut writer)?;
     for entry in html_shape.entries() {
         write_entry(&mut writer, entry)?;
     }
     close_tag("table", &mut writer)?;
+    close_html(&mut writer)?;
     Ok(())
 }
 
 fn write_entry(writer: &mut Box<dyn Write>, entry: &Entry) -> Result<(), ShEx2HtmlError> {
     open_tag("tr", writer)?;
     tag_txt("td", name2html(&entry.name).as_str(), writer)?;
+    tag_txt(
+        "td",
+        value_constraint2html(&entry.value_constraint).as_str(),
+        writer,
+    )?;
+    tag_txt("td", cardinality2html(&entry.card).as_str(), writer)?;
     close_tag("tr", writer)?;
     Ok(())
 }
@@ -371,6 +395,34 @@ fn name2html(name: &Name) -> String {
         format!("<a href=\"{}\">{}</a>", href, name.name())
     } else {
         name.name()
+    }
+}
+
+fn ref2html(name: &Name) -> String {
+    if let Some(local_ref) = name.as_local_href() {
+        format!("<a href=\"{}\">@{}</a>", local_ref, name.name())
+    } else {
+        name.name()
+    }
+}
+
+fn value_constraint2html(value_constraint: &ValueConstraint) -> String {
+    match value_constraint {
+        ValueConstraint::Any => "Any".to_string(),
+        ValueConstraint::Datatype(name) => name2html(name),
+        ValueConstraint::Ref(r) => ref2html(r),
+        ValueConstraint::None => "None".to_string(),
+    }
+}
+
+fn cardinality2html(card: &Cardinality) -> String {
+    match card {
+        Cardinality::OneOne => "".to_string(),
+        Cardinality::Star => "*".to_string(),
+        Cardinality::Plus => "+".to_string(),
+        Cardinality::Optional => "?".to_string(),
+        Cardinality::Range(m, n) => format!("[{m}-{n}]"),
+        Cardinality::Fixed(m) => format!("[{m}]"),
     }
 }
 
