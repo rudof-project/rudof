@@ -40,22 +40,9 @@ impl ShEx2Html {
             .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage { name, error: e })?;
         generate_landing_page(Box::new(out), &self.current_html, &self.config)?;
-
         if let Some(css_file) = &self.config.css_file_name {
-            let mut out_css = OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .create(true)
-                .open(css_file)
-                .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
-                    name: css_file.clone(),
-                    error: e,
-                })?;
-            if let Some(color) = &self.config.color_property_name {
-                writeln!(out_css, ".property_name {{ {color} }}")?;
-            }
+            generate_css_file(css_file, &self.config)?;
         }
-
         Ok(())
     }
 
@@ -291,6 +278,25 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
     }
 }
 
+fn generate_css_file(name: &str, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
+    let css_path = config.target_folder.join(name);
+    let css_path_name = css_path.display().to_string();
+    debug!("Generating css file: {css_path_name}");
+    let mut out_css = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(css_path)
+        .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
+            name: css_path_name,
+            error: e,
+        })?;
+    if let Some(color) = &config.color_property_name {
+        writeln!(out_css, ".property_name {{ {color} }}")?;
+    }
+    Ok(())
+}
+
 fn generate_landing_page(
     mut writer: Box<dyn Write>,
     html_schema: &HtmlSchema,
@@ -300,8 +306,19 @@ fn generate_landing_page(
     header(&mut writer, &config.title, config)?;
     open_tag("body", &mut writer)?;
     tag_txt("h1", config.title.as_str(), &mut writer)?;
-    open_tag("ul", &mut writer)?;
-    for html_shape in html_schema.shapes() {
+    generate_shapes(&mut writer, html_schema.shapes(), config)?;
+    close_tag("body", &mut writer)?;
+    close_html(&mut writer)?;
+    Ok(())
+}
+
+fn generate_shapes<'a>(
+    writer: &mut Box<dyn Write>,
+    shapes: impl Iterator<Item = &'a HtmlShape>,
+    config: &ShEx2HtmlConfig,
+) -> Result<(), ShEx2HtmlError> {
+    open_tag("ul", writer)?;
+    for html_shape in shapes {
         let name = html_shape.name();
         debug!("Generating shape with name: {name}");
         if let Some((path, local_name)) = name.as_local_ref() {
@@ -315,15 +332,13 @@ fn generate_landing_page(
                     name: file_name,
                     error: e,
                 })?;
-            write_li_shape(name.name().as_str(), local_name.as_str(), &mut writer)?;
+            write_li_shape(name.name().as_str(), local_name.as_str(), writer)?;
             write_shape(Box::new(file), html_shape, config)?;
         } else {
             debug!("No local ref for that name");
         }
     }
-    close_tag("ul", &mut writer)?;
-    close_tag("body", &mut writer)?;
-    close_html(&mut writer)?;
+    close_tag("ul", writer)?;
     Ok(())
 }
 
@@ -469,6 +484,7 @@ fn value_constraint2html(value_constraint: &ValueConstraint) -> String {
         ValueConstraint::Datatype(name) => name2html(name),
         ValueConstraint::Ref(r) => ref2html(r),
         ValueConstraint::None => "None".to_string(),
+        ValueConstraint::ValueSet(_) => todo!(),
     }
 }
 

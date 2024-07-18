@@ -1,4 +1,5 @@
 use super::Name;
+use super::Value;
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub enum ValueConstraint {
@@ -6,6 +7,7 @@ pub enum ValueConstraint {
     Any,
     Datatype(Name),
     Ref(Name),
+    ValueSet(Vec<Value>),
     None,
 }
 
