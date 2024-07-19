@@ -76,6 +76,7 @@ pub const SH_TARGET_OBJECTS_OF_STR: &str = concatcp!(SH_STR, "targetObjectsOf");
 pub const SH_TEXT_STR: &str = concatcp!(SH_STR, "text");
 pub const SH_UNIQUE_LANG_STR: &str = concatcp!(SH_STR, "uniqueLang");
 pub const SH_XONE_STR: &str = concatcp!(SH_STR, "xone");
+pub const SH_SOURCE_CONSTRAINT_STR: &str = concatcp!(SH_STR, "sourceConstraint");
 
 lazy_static! {
     pub static ref SH: IriS = IriS::new_unchecked(SH_STR);
@@ -155,4 +156,5 @@ lazy_static! {
     pub static ref SH_TEXT: IriS = IriS::new_unchecked(SH_TEXT_STR);
     pub static ref SH_UNIQUE_LANG: IriS = IriS::new_unchecked(SH_UNIQUE_LANG_STR);
     pub static ref SH_XONE: IriS = IriS::new_unchecked(SH_XONE_STR);
+    pub static ref SH_SOURCE_CONSTRAINT: IriS = IriS::new_unchecked(SH_SOURCE_CONSTRAINT_STR);
 }

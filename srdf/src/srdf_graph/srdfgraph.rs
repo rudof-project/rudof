@@ -27,7 +27,7 @@ use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::TurtleParser;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
     graph: Graph,

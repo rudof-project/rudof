@@ -111,6 +111,14 @@ impl PropertyShape {
         &self.description
     }
 
+    pub fn is_deactivated(&self) -> &bool {
+        &self.deactivated
+    }
+
+    pub fn components(&self) -> &Vec<Component> {
+        &self.components
+    }
+
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: SRDFBuilder,

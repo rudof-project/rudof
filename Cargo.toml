@@ -31,7 +31,7 @@ members = [
     "shapemap",
     "shacl_ast",
     "shapes_converter",
-    "python",
+    "python", "shacl_validation",
     # "shapemap_oxgraph",
     # "validation_oxgraph"
     # "shex_antlr",
