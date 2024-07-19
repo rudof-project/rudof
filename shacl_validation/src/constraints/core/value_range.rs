@@ -36,7 +36,7 @@ impl Evaluate for MinInclusiveConstraintComponent {
     }
 }
 
-/// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
+/// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 pub(crate) struct MaxExclusiveConstraintComponent {
     literal: Literal,
 }
