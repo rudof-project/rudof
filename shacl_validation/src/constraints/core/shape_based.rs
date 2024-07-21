@@ -1,6 +1,6 @@
 use srdf::RDFNode;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 // TODO: missing PropertyConstraintComponent
 

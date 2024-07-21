@@ -23,7 +23,7 @@ use core::{
 
 use shacl_ast::component::Component;
 
-use crate::validation_report::ValidationResult;
+use crate::validation_report::result::ValidationResult;
 
 pub mod core;
 

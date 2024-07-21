@@ -1,7 +1,7 @@
 use prefixmap::IriRef;
 use shacl_ast::value::Value;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// sh:in specifies the condition that each value node is a member of a provided
 /// SHACL list.

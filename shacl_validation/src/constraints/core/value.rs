@@ -2,7 +2,7 @@ use prefixmap::IriRef;
 use shacl_ast::node_kind::NodeKind;
 use srdf::RDFNode;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.

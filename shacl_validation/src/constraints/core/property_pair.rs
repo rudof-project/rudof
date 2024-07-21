@@ -1,6 +1,6 @@
 use prefixmap::IriRef;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// sh:equals specifies the condition that the set of all value nodes is equal
 /// to the set of objects of the triples that have the focus node as subject and

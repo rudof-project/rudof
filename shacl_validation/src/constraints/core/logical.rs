@@ -1,6 +1,6 @@
 use srdf::RDFNode;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// sh:not specifies the condition that each value node cannot conform to a
 /// given shape. This is comparable to negation and the logical "not" operator.

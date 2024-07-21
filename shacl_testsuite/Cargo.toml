@@ -1,5 +1,5 @@
 [package]
-name = "shacl_validation"
+name = "shacl_testsuite"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -14,11 +14,12 @@ categories.workspace = true
 [dependencies]
 srdf = { path = "../srdf", version = "0.1.0" }
 shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
+shacl_validation = { path = "../shacl_validation", version = "0.1.0" }
 iri_s = { path = "../iri_s", version = "0.0.13" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }
 
 thiserror = "1.0.63"
-lazy_static = "1"
+clap = { version = "4.2.1", features = ["derive"] }
 const_format = "0.2"
 
 oxrdf = "0.2.0-alpha.2"

@@ -30,6 +30,8 @@ members = [
     "shex_validation",
     "shapemap",
     "shacl_ast",
+    "shacl_validation",
+    "shacl_testsuite",
     "shapes_converter",
     "python", "shacl_validation",
     # "shapemap_oxgraph",
@@ -76,6 +78,7 @@ shex_validation = { version = "0.1.0", path = "./shex_validation" }
 shex_compact = { version = "0.1.0", path = "./shex_compact" }
 shapemap = { version = "0.1.0", path = "./shapemap" }
 shacl_ast = { version = "0.1.0", path = "./shacl_ast" }
+shacl_validation = { version = "0.1.0", path = "./shacl_validation" }
 shaper_converter = { version = "0.0.12", path = "./shapes_converter" }
 
 [dependencies]

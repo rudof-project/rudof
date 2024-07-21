@@ -1,4 +1,4 @@
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
 /// condition. If the minimum cardinality value is 0 then this constraint is

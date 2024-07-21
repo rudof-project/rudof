@@ -1,6 +1,6 @@
 use srdf::literal::Literal;
 
-use crate::{constraints::Evaluate, validation_report::ValidationResult};
+use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 pub(crate) struct MinExclusiveConstraintComponent {

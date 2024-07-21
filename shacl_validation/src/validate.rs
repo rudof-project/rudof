@@ -1,10 +1,10 @@
-use anyhow::*;
 use shacl_ast::{node_shape::NodeShape, property_shape::PropertyShape, shape::Shape, Schema};
 use srdf::SRDFGraph;
 
 use crate::{
-    constraints::{ConstraintFactory, Evaluate},
-    validation_report::{ValidationReport, ValidationResult},
+    constraints::ConstraintFactory,
+    validate_error::ValidateError,
+    validation_report::{report::ValidationReport, result::ValidationResult},
 };
 
 trait Validate {
@@ -69,13 +69,16 @@ impl Validate for PropertyShape {
     }
 }
 
-pub fn validate(data_graph: &SRDFGraph, shapes_graph: Schema) -> Result<ValidationReport> {
+pub fn validate(
+    data_graph: &SRDFGraph,
+    shapes_graph: Schema,
+) -> Result<ValidationReport, ValidateError> {
     let mut validation_report = ValidationReport::default(); // conforming by default...
     for (_, shape) in shapes_graph.iter() {
         let result = shape.validate(data_graph); // TODO: Extend traits
         if let Some(result) = result {
             validation_report.set_non_conformant();
-            validation_report.extend_result(result);
+            validation_report.extend_results(result);
         }
     }
     Ok(validation_report)
