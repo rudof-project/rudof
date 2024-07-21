@@ -18,7 +18,7 @@ struct Cli {
         short = 'm',
         long = "manifest",
         value_name = "Manifest FILE (.ttl)",
-        default_value = "/shacl_testsuite/data-shapes/data-shapes-test-suite/tests/core.ttl"
+        default_value = "shacl_testsuite/data-shapes/data-shapes-test-suite/tests/manifest.ttl"
     )]
     manifest_filename: String,
 }
