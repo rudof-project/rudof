@@ -26,3 +26,4 @@ impl HtmlShape {
         self.entries.iter()
     }
 }
+
