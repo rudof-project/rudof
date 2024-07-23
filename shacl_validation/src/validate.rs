@@ -124,20 +124,29 @@ impl Validate for PropertyShape {
 
         for component in self.components() {
             let constraint = ConstraintFactory::new_constraint(component);
-            let focus_nodes = self.focus_nodes(data_graph, self.targets());
+            let focus_nodes = match self.focus_nodes(data_graph, self.targets()) {
+                Ok(focus_nodes) => focus_nodes,
+                Err(_) => todo!(),
+            };
 
-            let value_nodes = match focus_nodes {
-                Ok(focus_nodes) => match self.path() {
-                    srdf::SHACLPath::Predicate { pred } => todo!(),
-                    srdf::SHACLPath::Alternative { paths } => todo!(),
+            let mut value_nodes = HashSet::new();
+            for focus_node in focus_nodes {
+                match self.path() {
+                    srdf::SHACLPath::Predicate { pred: _ } => value_nodes
+                        .extend(self.get_value_nodes(data_graph, &focus_node, self.path())),
+                    srdf::SHACLPath::Alternative { paths } => value_nodes.extend(
+                        paths
+                            .iter()
+                            .flat_map(|path| self.get_value_nodes(data_graph, &focus_node, path))
+                            .collect::<HashSet<_>>(),
+                    ),
                     srdf::SHACLPath::Sequence { paths } => todo!(),
                     srdf::SHACLPath::Inverse { path } => todo!(),
                     srdf::SHACLPath::ZeroOrMore { path } => todo!(),
                     srdf::SHACLPath::OneOrMore { path } => todo!(),
                     srdf::SHACLPath::ZeroOrOne { path } => todo!(),
-                },
-                Err(_) => todo!(),
-            };
+                }
+            }
 
             if let Some(result) = constraint.evaluate(data_graph, value_nodes) {
                 results.push(result)

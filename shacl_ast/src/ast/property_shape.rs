@@ -1,7 +1,10 @@
 use iri_s::iri;
-use oxrdf::{Literal as OxLiteral, NamedNode, Term as OxTerm};
-use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, XSD_DECIMAL_STR};
-use std::fmt::Display;
+use oxrdf::{Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
+use srdf::{
+    numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph, Term, SRDF,
+    XSD_DECIMAL_STR,
+};
+use std::{collections::HashSet, fmt::Display};
 
 use crate::{
     component::Component, message_map::MessageMap, severity::Severity, target::Target,
@@ -121,6 +124,31 @@ impl PropertyShape {
 
     pub fn targets(&self) -> &Vec<Target> {
         &self.targets
+    }
+
+    pub fn get_value_nodes(
+        &self,
+        data_graph: &SRDFGraph,
+        focus_node: &OxTerm,
+        path: &SHACLPath,
+    ) -> HashSet<OxTerm> {
+        match path {
+            SHACLPath::Predicate { pred } => {
+                let subject = match focus_node {
+                    OxTerm::NamedNode(node) => Subject::NamedNode(node.to_owned()),
+                    OxTerm::BlankNode(node) => Subject::BlankNode(node.to_owned()),
+                    OxTerm::Literal(_) => todo!(),
+                };
+                if let Ok(objects) =
+                    data_graph.objects_for_subject_predicate(&subject, pred.as_named_node())
+                {
+                    objects
+                } else {
+                    HashSet::new()
+                }
+            }
+            _ => HashSet::new(),
+        }
     }
 
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
