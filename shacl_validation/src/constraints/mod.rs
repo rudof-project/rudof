@@ -20,15 +20,18 @@ use core::{
         MinInclusiveConstraintComponent,
     },
 };
+use std::collections::HashSet;
 
+use oxrdf::Term;
 use shacl_ast::component::Component;
+use srdf::SRDFGraph;
 
 use crate::validation_report::result::ValidationResult;
 
 pub mod core;
 
 pub trait Evaluate {
-    fn evaluate(&self) -> Option<ValidationResult>;
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult>;
 }
 
 pub struct ConstraintFactory;

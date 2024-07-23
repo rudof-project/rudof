@@ -1,3 +1,8 @@
+use std::collections::HashSet;
+
+use oxrdf::Term;
+use srdf::SRDFGraph;
+
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
@@ -16,7 +21,14 @@ impl MinCountConstraintComponent {
 }
 
 impl Evaluate for MinCountConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+        if self.min_count == 0 {
+            // If min_count is 0, then it always passes
+            return None;
+        }
+
+        for node in value_nodes {}
+
         todo!()
     }
 }
@@ -36,7 +48,7 @@ impl MaxCountConstraintComponent {
 }
 
 impl Evaluate for MaxCountConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

@@ -80,6 +80,10 @@ impl NodeShape {
         &self.components
     }
 
+    pub fn targets(&self) -> &Vec<Target> {
+        &self.targets
+    }
+
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: SRDFBuilder,

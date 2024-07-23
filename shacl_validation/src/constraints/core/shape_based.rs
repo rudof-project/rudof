@@ -1,4 +1,7 @@
-use srdf::RDFNode;
+use std::collections::HashSet;
+
+use oxrdf::Term;
+use srdf::{RDFNode, SRDFGraph};
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -19,7 +22,7 @@ impl NodeConstraintComponent {
 }
 
 impl Evaluate for NodeConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -54,7 +57,7 @@ impl QualifiedValueShapeConstraintComponent {
 }
 
 impl Evaluate for QualifiedValueShapeConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

@@ -33,7 +33,7 @@ members = [
     "shacl_validation",
     "shacl_testsuite",
     "shapes_converter",
-    "python", "shacl_validation",
+    "python",
     # "shapemap_oxgraph",
     # "validation_oxgraph"
     # "shex_antlr",

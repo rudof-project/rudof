@@ -1,4 +1,7 @@
-use srdf::lang::Lang;
+use std::collections::HashSet;
+
+use oxrdf::Term;
+use srdf::{lang::Lang, SRDFGraph};
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -18,7 +21,7 @@ impl MinLengthConstraintComponent {
 }
 
 impl Evaluate for MinLengthConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -39,7 +42,7 @@ impl MaxLengthConstraintComponent {
 }
 
 impl Evaluate for MaxLengthConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -60,7 +63,7 @@ impl PatternConstraintComponent {
 }
 
 impl Evaluate for PatternConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -80,7 +83,7 @@ impl LanguageInConstraintComponent {
 }
 
 impl Evaluate for LanguageInConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -100,7 +103,7 @@ impl UniqueLangConstraintComponent {
 }
 
 impl Evaluate for UniqueLangConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

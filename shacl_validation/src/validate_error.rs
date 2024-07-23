@@ -1,11 +1,14 @@
+use srdf::SRDFGraphError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
-    #[error("the data for key `{0}` is not available")]
-    Redaction(String),
-    #[error("invalid header (expected {expected:?}, found {found:?})")]
-    InvalidHeader { expected: String, found: String },
-    #[error("unknown data store error")]
-    Unknown,
+    #[error("Error obtaining the triples")]
+    SRDFGraph(#[from] SRDFGraphError),
+    #[error("TargetNode cannot be a Blank Node")]
+    TargetNodeBlankNode,
+    #[error("TargetClass cannot be a Blank Node")]
+    TargetClassBlankNode,
+    #[error("TargetClass cannot be a Literal")]
+    TargetClassLiteral,
 }

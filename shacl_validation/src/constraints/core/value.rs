@@ -1,6 +1,9 @@
+use std::collections::HashSet;
+
+use oxrdf::Term;
 use prefixmap::IriRef;
 use shacl_ast::node_kind::NodeKind;
-use srdf::RDFNode;
+use srdf::{RDFNode, SRDFGraph};
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -19,7 +22,7 @@ impl ClassConstraintComponent {
 }
 
 impl Evaluate for ClassConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -39,7 +42,7 @@ impl DatatypeConstraintComponent {
 }
 
 impl Evaluate for DatatypeConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -59,7 +62,7 @@ impl NodeKindConstraintComponent {
 }
 
 impl Evaluate for NodeKindConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

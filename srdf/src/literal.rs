@@ -1,6 +1,6 @@
 use std::{fmt::Display, result};
 
-use rust_decimal::Decimal;
+use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::Serializer;
 use serde_derive::{Deserialize, Serialize};
 
@@ -146,6 +146,39 @@ impl Deref for Literal {
                     datatype: dt,
                 })
             }
+        }
+    }
+}
+
+impl Into<oxrdf::Literal> for Literal {
+    fn into(self) -> oxrdf::Literal {
+        match self {
+            Literal::StringLiteral { lexical_form, lang } => match lang {
+                Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(
+                    lexical_form,
+                    lang.to_string(),
+                ),
+                None => lexical_form.into(),
+            },
+            Literal::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => match datatype.get_iri() {
+                Ok(datatype) => oxrdf::Literal::new_typed_literal(
+                    lexical_form,
+                    datatype.as_named_node().to_owned(),
+                ),
+                Err(_) => lexical_form.into(),
+            },
+            Literal::NumericLiteral(number) => match number {
+                NumericLiteral::Integer(int) => (int as i64).into(),
+                NumericLiteral::Decimal(decimal) => match decimal.to_f64() {
+                    Some(decimal) => decimal.into(),
+                    None => decimal.to_string().into(),
+                },
+                NumericLiteral::Double(double) => double.into(),
+            },
+            Literal::BooleanLiteral(bool) => bool.into(),
         }
     }
 }

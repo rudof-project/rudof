@@ -1,4 +1,8 @@
+use std::collections::HashSet;
+
+use oxrdf::Term;
 use prefixmap::IriRef;
+use srdf::SRDFGraph;
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -18,7 +22,7 @@ impl EqualsConstraintComponent {
 }
 
 impl Evaluate for EqualsConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -39,7 +43,7 @@ impl DisjointConstraintComponent {
 }
 
 impl Evaluate for DisjointConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -60,7 +64,7 @@ impl LessThanConstraintComponent {
 }
 
 impl Evaluate for LessThanConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -81,7 +85,7 @@ impl LessThanOrEqualsConstraintComponent {
 }
 
 impl Evaluate for LessThanOrEqualsConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

@@ -1,4 +1,7 @@
-use srdf::literal::Literal;
+use std::collections::HashSet;
+
+use oxrdf::Term;
+use srdf::{literal::Literal, SRDFGraph};
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -14,7 +17,7 @@ impl MinExclusiveConstraintComponent {
 }
 
 impl Evaluate for MinExclusiveConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -31,7 +34,7 @@ impl MinInclusiveConstraintComponent {
 }
 
 impl Evaluate for MinInclusiveConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -48,7 +51,7 @@ impl MaxExclusiveConstraintComponent {
 }
 
 impl Evaluate for MaxExclusiveConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -65,7 +68,7 @@ impl MaxInclusiveConstraintComponent {
 }
 
 impl Evaluate for MaxInclusiveConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }

@@ -1,5 +1,9 @@
+use std::collections::HashSet;
+
+use oxrdf::Term;
 use prefixmap::IriRef;
 use shacl_ast::value::Value;
+use srdf::SRDFGraph;
 
 use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
 
@@ -18,7 +22,7 @@ impl InConstraintComponent {
 }
 
 impl Evaluate for InConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -47,7 +51,7 @@ impl ClosedConstraintComponent {
 }
 
 impl Evaluate for ClosedConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
@@ -67,7 +71,7 @@ impl HasValueConstraintComponent {
 }
 
 impl Evaluate for HasValueConstraintComponent {
-    fn evaluate(&self) -> Option<ValidationResult> {
+    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
         todo!()
     }
 }
