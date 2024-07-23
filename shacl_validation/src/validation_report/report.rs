@@ -4,7 +4,9 @@ use srdf::{SRDFGraph, SRDF};
 use std::collections::HashSet;
 use std::fmt;
 
-use super::{result::ValidationResult, validation_report_error::ValidationResultError};
+use crate::shacl_validation_vocab::SHT_FAILURE;
+
+use super::{result::ValidationResult, validation_report_error::ValidationReportError};
 
 pub struct ValidationReport {
     conforms: bool,
@@ -23,7 +25,7 @@ impl ValidationReport {
         }
     }
 
-    fn is_conforms(graph: &SRDFGraph, subject: &Subject) -> Result<bool, ValidationResultError> {
+    fn is_conforms(graph: &SRDFGraph, subject: &Subject) -> Result<bool, ValidationReportError> {
         match graph.objects_for_subject_predicate(&subject, &SH_CONFORMS.as_named_node()) {
             Ok(objects) => match objects.into_iter().nth(0) {
                 Some(object) => match object {
@@ -43,32 +45,39 @@ impl ValidationReport {
     fn get_results(
         graph: &SRDFGraph,
         subject: &Subject,
-    ) -> Result<HashSet<Term>, ValidationResultError> {
+    ) -> Result<HashSet<Term>, ValidationReportError> {
         match graph.objects_for_subject_predicate(subject, &SH_RESULT.as_named_node()) {
             Ok(objects) => Ok(objects),
             Err(_) => todo!(),
         }
     }
 
-    pub fn parse(graph: SRDFGraph, subject: Subject) -> ValidationReport {
-        let conforms = match Self::is_conforms(&graph, &subject) {
-            Ok(conforms) => conforms,
-            Err(_) => todo!(),
-        };
-        let iters = match Self::get_results(&graph, &subject) {
-            Ok(results) => results.len(),
-            Err(_) => todo!(),
-        };
-
+    pub fn parse(
+        graph: SRDFGraph,
+        subject: Subject,
+    ) -> Result<ValidationReport, ValidationReportError> {
         let mut results = Vec::new();
-        for _ in 0..iters {
-            match ValidationResult::parse(&graph, &subject) {
-                Ok(result) => results.push(result),
-                Err(_) => todo!(),
-            }
-        }
 
-        ValidationReport::new(conforms, results)
+        let conforms = match subject {
+            Subject::NamedNode(named_node) => {
+                if &named_node == SHT_FAILURE.as_named_node() {
+                    false
+                } else {
+                    todo!()
+                }
+            }
+            Subject::BlankNode(_) => {
+                for _ in 0..Self::get_results(&graph, &subject)?.len() {
+                    match ValidationResult::parse(&graph, &subject) {
+                        Ok(result) => results.push(result),
+                        Err(_) => todo!(),
+                    }
+                }
+                Self::is_conforms(&graph, &subject)?
+            }
+        };
+
+        Ok(ValidationReport::new(conforms, results))
     }
 
     pub fn set_non_conformant(&mut self) {

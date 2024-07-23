@@ -56,8 +56,8 @@ fn main() -> Result<(), TestSuiteError> {
     let cli = Cli::parse(); // we obtain the CLI...
 
     let manifest = match Manifest::load(&cli.manifest_filename) {
-        Some(manifest) => manifest,
-        None => todo!(),
+        Ok(Some(manifest)) => manifest,
+        _ => todo!(),
     };
 
     let mut manifests = Vec::new();
@@ -65,7 +65,7 @@ fn main() -> Result<(), TestSuiteError> {
 
     let mut tests = Vec::new();
     for manifest in manifests {
-        tests.extend(manifest.collect_tests());
+        tests.extend(manifest.collect_tests()?);
     }
 
     let total = tests.len();

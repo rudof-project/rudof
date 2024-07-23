@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use oxiri::Iri;
-use oxrdf::{BlankNode, Subject, Term};
+use oxrdf::{NamedNode, Subject, Term};
 use shacl_ast::{Schema, ShaclParser};
 use shacl_validation::{
     shacl_validation_vocab::{
@@ -8,8 +8,8 @@ use shacl_validation::{
     },
     validation_report::report::ValidationReport,
 };
-use srdf::{RDFFormat, SRDFGraph, Triple, RDFS_LABEL, SRDF};
-use std::{path::Path, str::FromStr};
+use srdf::{RDFFormat, SRDFGraph, RDFS_LABEL, RDF_FIRST, RDF_REST, SRDF};
+use std::{collections::HashSet, path::Path, str::FromStr};
 
 use crate::manifest_error::ManifestError;
 use crate::ShaclTest;
@@ -18,7 +18,7 @@ pub struct Manifest {
     base: String,
     graph: SRDFGraph,
     includes: Vec<Manifest>,
-    entries: Vec<BlankNode>,
+    entries: Vec<NamedNode>,
 }
 
 impl Manifest {
@@ -26,7 +26,7 @@ impl Manifest {
         base: String,
         graph: SRDFGraph,
         includes: Vec<Manifest>,
-        entries: Vec<BlankNode>,
+        entries: Vec<NamedNode>,
     ) -> Self {
         Manifest {
             base,
@@ -36,21 +36,30 @@ impl Manifest {
         }
     }
 
+    fn get_objects_for(
+        graph: &SRDFGraph,
+        subject: &Subject,
+        predicate: &IriS,
+    ) -> Result<HashSet<Term>, ManifestError> {
+        match graph.objects_for_subject_predicate(subject, predicate.as_named_node()) {
+            Ok(triples) => Ok(triples),
+            Err(_) => todo!(),
+        }
+    }
+
     fn get_object_for(
         graph: &SRDFGraph,
         subject: &Subject,
         predicate: &IriS,
     ) -> Result<Option<Term>, ManifestError> {
-        match graph.objects_for_subject_predicate(subject, predicate.as_named_node()) {
-            Ok(triples) => match triples.into_iter().nth(0) {
-                Some(triple) => Ok(Some(triple)),
-                None => todo!(),
-            },
-            Err(_) => todo!(),
+        let objects = Self::get_objects_for(graph, subject, predicate)?;
+        match objects.into_iter().nth(0) {
+            Some(object) => Ok(Some(object)),
+            None => Ok(None),
         }
     }
 
-    pub fn collect_tests(&self) -> Vec<ShaclTest> {
+    pub fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
         let mut ans = Vec::new();
 
         let base = match Iri::from_str(&self.base) {
@@ -61,7 +70,7 @@ impl Manifest {
         for entry in &self.entries {
             let label = match Self::get_object_for(
                 &self.graph,
-                &Subject::BlankNode(entry.to_owned()),
+                &Subject::NamedNode(entry.to_owned()),
                 &RDFS_LABEL,
             ) {
                 Ok(label) => label,
@@ -70,7 +79,7 @@ impl Manifest {
 
             let action = match Self::get_object_for(
                 &self.graph,
-                &Subject::BlankNode(entry.to_owned()),
+                &Subject::NamedNode(entry.to_owned()),
                 &MF_ACTION,
             ) {
                 Ok(Some(Term::BlankNode(action))) => action,
@@ -81,7 +90,7 @@ impl Manifest {
 
             let result = match Self::get_object_for(
                 &self.graph,
-                &Subject::BlankNode(entry.to_owned()),
+                &Subject::NamedNode(entry.to_owned()),
                 &MF_RESULT,
             ) {
                 Ok(result) => ValidationReport::parse(
@@ -92,7 +101,7 @@ impl Manifest {
                         Some(Term::Literal(_)) => todo!(),
                         None => todo!(),
                     },
-                ),
+                )?,
                 _ => todo!(),
             };
 
@@ -156,7 +165,7 @@ impl Manifest {
             }
 
             ans.push(ShaclTest::new(
-                Term::BlankNode(entry.clone()),
+                Term::NamedNode(entry.clone()),
                 self.graph.to_owned(),
                 shapes_graph,
                 result,
@@ -168,21 +177,30 @@ impl Manifest {
             ))
         }
 
-        ans
+        Ok(ans)
     }
 
-    fn get_triples_for(
+    fn get_subject_for(
         graph: &SRDFGraph,
+        subject: &Subject,
         predicate: &IriS,
-    ) -> Result<Vec<Triple<SRDFGraph>>, ManifestError> {
-        match graph.triples_with_predicate(predicate.as_named_node()) {
-            Ok(triples) => Ok(triples),
+    ) -> Result<Option<Subject>, ManifestError> {
+        match Self::get_object_for(graph, subject, predicate) {
+            Ok(entry) => match entry {
+                Some(entry) => match entry {
+                    Term::NamedNode(named_node) => Ok(Some(Subject::NamedNode(named_node))),
+                    Term::BlankNode(blank_node) => Ok(Some(Subject::BlankNode(blank_node))),
+                    Term::Literal(_) => todo!(),
+                },
+                None => Ok(None),
+            },
             Err(_) => todo!(),
         }
     }
 
-    pub fn load(file: &str) -> Option<Manifest> {
+    pub fn load(file: &str) -> Result<Option<Manifest>, ManifestError> {
         let path = Path::new(file);
+
         let base = match path.canonicalize() {
             Ok(path) => match path.to_str() {
                 Some(path) => format!("file:://{}", path),
@@ -191,46 +209,44 @@ impl Manifest {
             Err(_) => todo!(),
         };
 
-        let base_iri = match Iri::from_str(&base) {
-            Ok(iri) => iri,
-            Err(_) => todo!(),
-        };
-
-        let graph = match SRDFGraph::from_path(path, &RDFFormat::Turtle, Some(base_iri)) {
-            Ok(graph) => graph,
-            Err(_) => todo!(),
-        };
-
-        let includes = match Self::get_triples_for(&graph, &MF_INCLUDE) {
-            Ok(includes) => includes,
-            Err(_) => todo!(),
-        };
+        let base_subject = Subject::NamedNode(NamedNode::new_unchecked(base.to_owned()));
+        let base_iri = Iri::from_str(&base)?;
+        let graph = SRDFGraph::from_path(path, &RDFFormat::Turtle, Some(base_iri))?;
+        let includes = Self::get_objects_for(&graph, &base_subject, &MF_INCLUDE)?;
 
         let mut include_manifests = Vec::new();
         for include in includes {
             let object = Self::clear_object(include, &base);
             let file = Self::clear_file(file, object);
             let child_manifest = Self::load(&file);
-            if let Some(child_manifest) = child_manifest {
+            if let Ok(Some(child_manifest)) = child_manifest {
                 include_manifests.push(child_manifest);
             }
         }
-
-        let entries = match Self::get_triples_for(&graph, &MF_ENTRIES) {
-            Ok(entries) => entries,
-            Err(_) => todo!(),
-        };
-
         let mut entry_terms = Vec::new();
-        for entry in entries {
-            entry_terms.push(match entry.obj() {
-                Term::NamedNode(_) => todo!(),
-                Term::BlankNode(blank_node) => blank_node,
-                Term::Literal(_) => todo!(),
-            })
+        let entry_subject = Self::get_subject_for(&graph, &base_subject, &MF_ENTRIES)?;
+
+        if let Some(mut subject) = entry_subject {
+            loop {
+                entry_terms.push(match Self::get_object_for(&graph, &subject, &RDF_FIRST)? {
+                    Some(Term::NamedNode(named_node)) => named_node,
+                    Some(Term::BlankNode(_)) => todo!(),
+                    Some(Term::Literal(_)) => todo!(),
+                    None => break,
+                });
+                subject = match Self::get_subject_for(&graph, &subject, &RDF_REST)? {
+                    Some(subject) => subject,
+                    None => break,
+                };
+            }
         }
 
-        Some(Manifest::new(base, graph, include_manifests, entry_terms))
+        Ok(Some(Manifest::new(
+            base,
+            graph,
+            include_manifests,
+            entry_terms,
+        )))
     }
 
     pub fn flatten<'a>(manifest: &'a Manifest, manifests: &mut Vec<&'a Manifest>) {
@@ -240,9 +256,9 @@ impl Manifest {
         }
     }
 
-    fn clear_object(triple: srdf::Triple<SRDFGraph>, base: &str) -> String {
+    fn clear_object(object: Term, base: &str) -> String {
         let base = base.replace("/manifest.ttl", "");
-        let object = triple.obj().to_string();
+        let object = object.to_string();
         let split = object.split(&base).collect::<Vec<&str>>();
         let object = split[1];
         let mut chars = object.chars();
