@@ -1,7 +1,7 @@
-use iri_s::iri;
-use oxrdf::{Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
+use iri_s::{iri, IriS};
+use oxrdf::{BlankNode, Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
 use srdf::{
-    numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph, Term, SRDF,
+    numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph, SRDF,
     XSD_DECIMAL_STR,
 };
 use std::{collections::HashSet, fmt::Display};
@@ -129,20 +129,29 @@ impl PropertyShape {
     pub fn get_value_nodes(
         &self,
         data_graph: &SRDFGraph,
-        focus_node: &OxTerm,
+        focus_node: &RDFNode,
         path: &SHACLPath,
-    ) -> HashSet<OxTerm> {
+    ) -> HashSet<RDFNode> {
         match path {
             SHACLPath::Predicate { pred } => {
                 let subject = match focus_node {
-                    OxTerm::NamedNode(node) => Subject::NamedNode(node.to_owned()),
-                    OxTerm::BlankNode(node) => Subject::BlankNode(node.to_owned()),
-                    OxTerm::Literal(_) => todo!(),
+                    RDFNode::Iri(iri_s) => Subject::NamedNode(iri_s.as_named_node().to_owned()),
+                    RDFNode::BlankNode(id) => Subject::BlankNode(BlankNode::new_unchecked(id)),
+                    RDFNode::Literal(_) => todo!(),
                 };
                 if let Ok(objects) =
                     data_graph.objects_for_subject_predicate(&subject, pred.as_named_node())
                 {
                     objects
+                        .into_iter()
+                        .map(|object| match object {
+                            OxTerm::NamedNode(node) => {
+                                RDFNode::iri(IriS::new_unchecked(node.as_str()))
+                            }
+                            OxTerm::BlankNode(node) => RDFNode::bnode(node.to_string()),
+                            OxTerm::Literal(literal) => RDFNode::literal(literal.into()),
+                        })
+                        .collect::<HashSet<RDFNode>>()
                 } else {
                     HashSet::new()
                 }

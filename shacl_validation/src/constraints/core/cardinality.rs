@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
-use srdf::SRDFGraph;
+use srdf::{RDFNode, SRDFGraph};
 
-use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
+use crate::{
+    constraints::{constraint_error::ConstraintError, Evaluate},
+    validation_report::{report::ValidationReport, result::ValidationResult},
+};
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
 /// condition. If the minimum cardinality value is 0 then this constraint is
@@ -21,15 +23,20 @@ impl MinCountConstraintComponent {
 }
 
 impl Evaluate for MinCountConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         if self.min_count == 0 {
             // If min_count is 0, then it always passes
-            return None;
+            return Ok(());
         }
 
         for node in value_nodes {}
 
-        todo!()
+        Ok(())
     }
 }
 
@@ -48,7 +55,12 @@ impl MaxCountConstraintComponent {
 }
 
 impl Evaluate for MaxCountConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }

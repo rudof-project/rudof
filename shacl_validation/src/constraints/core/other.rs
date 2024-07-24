@@ -1,11 +1,13 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
 use prefixmap::IriRef;
 use shacl_ast::value::Value;
-use srdf::SRDFGraph;
+use srdf::{RDFNode, SRDFGraph};
 
-use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
+use crate::{
+    constraints::{constraint_error::ConstraintError, Evaluate},
+    validation_report::{report::ValidationReport, result::ValidationResult},
+};
 
 /// sh:in specifies the condition that each value node is a member of a provided
 /// SHACL list.
@@ -22,7 +24,12 @@ impl InConstraintComponent {
 }
 
 impl Evaluate for InConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -51,7 +58,12 @@ impl ClosedConstraintComponent {
 }
 
 impl Evaluate for ClosedConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -71,7 +83,12 @@ impl HasValueConstraintComponent {
 }
 
 impl Evaluate for HasValueConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }

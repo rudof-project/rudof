@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
 use srdf::{RDFNode, SRDFGraph};
 
-use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
+use crate::{
+    constraints::{constraint_error::ConstraintError, Evaluate},
+    validation_report::{report::ValidationReport, result::ValidationResult},
+};
 
 /// sh:not specifies the condition that each value node cannot conform to a
 /// given shape. This is comparable to negation and the logical "not" operator.
@@ -20,7 +22,12 @@ impl NotConstraintComponent {
 }
 
 impl Evaluate for NotConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -40,7 +47,12 @@ impl AndConstraintComponent {
 }
 
 impl Evaluate for AndConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -61,7 +73,12 @@ impl OrConstraintComponent {
 }
 
 impl Evaluate for OrConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -82,7 +99,12 @@ impl XoneConstraintComponent {
 }
 
 impl Evaluate for XoneConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }

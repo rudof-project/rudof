@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
-use srdf::{literal::Literal, SRDFGraph};
+use srdf::{literal::Literal, RDFNode, SRDFGraph};
 
-use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
+use crate::{
+    constraints::{constraint_error::ConstraintError, Evaluate},
+    validation_report::{report::ValidationReport, result::ValidationResult},
+};
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 pub(crate) struct MinExclusiveConstraintComponent {
@@ -17,7 +19,12 @@ impl MinExclusiveConstraintComponent {
 }
 
 impl Evaluate for MinExclusiveConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -34,7 +41,12 @@ impl MinInclusiveConstraintComponent {
 }
 
 impl Evaluate for MinInclusiveConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -51,7 +63,12 @@ impl MaxExclusiveConstraintComponent {
 }
 
 impl Evaluate for MaxExclusiveConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -68,7 +85,12 @@ impl MaxInclusiveConstraintComponent {
 }
 
 impl Evaluate for MaxInclusiveConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }

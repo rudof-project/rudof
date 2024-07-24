@@ -1,137 +1,158 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
+use prefixmap::IriRef;
 use shacl_ast::{
     node_shape::NodeShape, property_shape::PropertyShape, shape::Shape, target::Target, Schema,
 };
-use srdf::{Object, SRDFGraph, RDF_TYPE, SRDF};
+use srdf::{Object, RDFNode, SRDFGraph, RDF_TYPE, SRDF};
 
 use crate::{
     constraints::ConstraintFactory,
-    validate_error::{
-        ValidateError, ValidateError::TargetClassBlankNode, ValidateError::TargetClassLiteral,
-        ValidateError::TargetNodeBlankNode,
+    helper::oxrdf::{subject_to_node, term_to_node},
+    validate_error::ValidateError::{
+        self, TargetClassBlankNode, TargetClassLiteral, TargetNodeBlankNode,
     },
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    validation_report::report::ValidationReport,
 };
 
 trait Validate {
-    fn validate(&self, data_graph: &SRDFGraph) -> Option<Vec<ValidationResult>>;
+    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport);
 
     fn focus_nodes(
         &self,
-        data_graph: &SRDFGraph,
+        graph: &SRDFGraph,
         targets: &Vec<Target>,
-    ) -> Result<HashSet<Term>, ValidateError> {
-        let mut results = HashSet::new();
+    ) -> Result<HashSet<RDFNode>, ValidateError> {
+        let mut ans = HashSet::new();
         for target in targets.to_vec() {
             match target {
-                Target::TargetNode(node) => {
-                    let ans = match node {
-                        Object::Iri(iri) => Term::NamedNode(iri.as_named_node().clone()),
-                        Object::BlankNode(_) => return Err(TargetNodeBlankNode),
-                        Object::Literal(literal) => Term::Literal(literal.into()),
-                    };
-                    results.insert(ans);
-                }
-                Target::TargetClass(class) => {
-                    let object = match class {
-                        Object::Iri(iri) => Term::NamedNode(iri.as_named_node().to_owned()),
-                        Object::BlankNode(_) => return Err(TargetClassBlankNode),
-                        Object::Literal(_) => return Err(TargetClassLiteral),
-                    };
-                    results.extend(
-                        data_graph
-                            .subjects_with_predicate_object(RDF_TYPE.as_named_node(), &object)?
-                            .into_iter()
-                            .map(|subject| subject.into())
-                            .collect::<HashSet<Term>>(),
-                    )
-                }
-                Target::TargetSubjectsOf(predicate) => results.extend(
-                    data_graph
-                        .triples_with_predicate(&match predicate.get_iri() {
-                            Ok(iri_s) => iri_s.as_named_node().to_owned(),
-                            Err(_) => todo!(),
-                        })?
-                        .into_iter()
-                        .map(|triple| triple.subj().into())
-                        .collect::<HashSet<Term>>(),
-                ),
-                Target::TargetObjectsOf(predicate) => results.extend(
-                    data_graph
-                        .triples_with_predicate(&match predicate.get_iri() {
-                            Ok(iri_s) => iri_s.as_named_node().to_owned(),
-                            Err(_) => todo!(),
-                        })?
-                        .into_iter()
-                        .map(|triple| triple.obj())
-                        .collect::<HashSet<Term>>(),
-                ),
+                Target::TargetNode(node) => self.target_node(node, &mut ans)?,
+                Target::TargetClass(class) => self.target_class(graph, class, &mut ans)?,
+                Target::TargetSubjectsOf(pred) => self.target_subject_of(graph, pred, &mut ans)?,
+                Target::TargetObjectsOf(pred) => self.target_object_of(graph, pred, &mut ans)?,
             }
         }
-        Ok(results)
+        Ok(ans)
     }
-}
 
-impl Validate for Shape {
-    fn validate(&self, data_graph: &SRDFGraph) -> Option<Vec<ValidationResult>> {
-        match self {
-            Shape::NodeShape(node_shape) => node_shape.validate(data_graph),
-            Shape::PropertyShape(property_shape) => property_shape.validate(data_graph),
+    fn target_node(
+        &self,
+        node: Object,
+        focus_nodes: &mut HashSet<RDFNode>,
+    ) -> Result<(), ValidateError> {
+        if let Object::BlankNode(_) = node {
+            Err(TargetNodeBlankNode)
+        } else {
+            focus_nodes.insert(node);
+            Ok(())
         }
+    }
+
+    fn target_class(
+        &self,
+        graph: &SRDFGraph,
+        class: Object,
+        focus_nodes: &mut HashSet<RDFNode>,
+    ) -> Result<(), ValidateError> {
+        match class {
+            Object::Iri(iri) => {
+                focus_nodes.extend(
+                    graph
+                        .subjects_with_predicate_object(
+                            RDF_TYPE.as_named_node(),
+                            &oxrdf::Term::NamedNode(iri.as_named_node().to_owned()),
+                        )?
+                        .into_iter()
+                        .map(|subject| subject_to_node(subject))
+                        .collect::<HashSet<_>>(),
+                );
+                Ok(())
+            }
+            Object::BlankNode(_) => return Err(TargetClassBlankNode),
+            Object::Literal(_) => return Err(TargetClassLiteral),
+        }
+    }
+
+    fn target_subject_of(
+        &self,
+        graph: &SRDFGraph,
+        predicate: IriRef,
+        focus_nodes: &mut HashSet<RDFNode>,
+    ) -> Result<(), ValidateError> {
+        let predicate = &match predicate.get_iri() {
+            Ok(iri_s) => iri_s.as_named_node().to_owned(),
+            Err(_) => todo!(),
+        };
+        focus_nodes.extend(
+            graph
+                .triples_with_predicate(&predicate)?
+                .into_iter()
+                .map(|triple| subject_to_node(triple.subj()))
+                .collect::<HashSet<_>>(),
+        );
+        Ok(())
+    }
+
+    fn target_object_of(
+        &self,
+        graph: &SRDFGraph,
+        predicate: IriRef,
+        focus_nodes: &mut HashSet<RDFNode>,
+    ) -> Result<(), ValidateError> {
+        let predicate = &match predicate.get_iri() {
+            Ok(iri_s) => iri_s.as_named_node().to_owned(),
+            Err(_) => todo!(),
+        };
+        focus_nodes.extend(
+            graph
+                .triples_with_predicate(&predicate)?
+                .into_iter()
+                .map(|triple| term_to_node(triple.obj()))
+                .collect::<HashSet<_>>(),
+        );
+        Ok(())
     }
 }
 
 impl Validate for NodeShape {
-    fn validate(&self, data_graph: &SRDFGraph) -> Option<Vec<ValidationResult>> {
+    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport) {
         if *self.is_deactivated() {
             // skipping because it is deactivated
-            return None;
+            return;
         }
-
-        let mut results = Vec::new();
 
         for component in self.components() {
             let constraint = ConstraintFactory::new_constraint(component);
-            let focus_nodes = self.focus_nodes(data_graph, self.targets());
 
-            let value_nodes = match focus_nodes {
+            let value_nodes = match self.focus_nodes(data_graph, self.targets()) {
                 Ok(focus_nodes) => focus_nodes,
                 Err(_) => todo!(),
             };
 
-            if let Some(result) = constraint.evaluate(data_graph, value_nodes) {
-                results.push(result)
-            }
-        }
-
-        if results.len() > 0 {
-            Some(results)
-        } else {
-            None
+            constraint.evaluate(data_graph, value_nodes, report);
         }
     }
 }
 
 impl Validate for PropertyShape {
-    fn validate(&self, data_graph: &SRDFGraph) -> Option<Vec<ValidationResult>> {
+    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport) {
         if *self.is_deactivated() {
-            return None;
+            return;
         }
-
-        let mut results = Vec::new();
 
         for component in self.components() {
             let constraint = ConstraintFactory::new_constraint(component);
+
             let focus_nodes = match self.focus_nodes(data_graph, self.targets()) {
                 Ok(focus_nodes) => focus_nodes,
                 Err(_) => todo!(),
             };
 
             let mut value_nodes = HashSet::new();
+
             for focus_node in focus_nodes {
                 match self.path() {
+                    // TODO: fix and improve this
                     srdf::SHACLPath::Predicate { pred: _ } => value_nodes
                         .extend(self.get_value_nodes(data_graph, &focus_node, self.path())),
                     srdf::SHACLPath::Alternative { paths } => value_nodes.extend(
@@ -148,15 +169,7 @@ impl Validate for PropertyShape {
                 }
             }
 
-            if let Some(result) = constraint.evaluate(data_graph, value_nodes) {
-                results.push(result)
-            }
-        }
-
-        if results.len() > 0 {
-            Some(results)
-        } else {
-            None
+            constraint.evaluate(data_graph, value_nodes, report);
         }
     }
 }
@@ -165,13 +178,12 @@ pub fn validate(
     data_graph: &SRDFGraph,
     shapes_graph: Schema,
 ) -> Result<ValidationReport, ValidateError> {
-    let mut validation_report = ValidationReport::default(); // conforming by default...
+    let mut ans = ValidationReport::default(); // conformant by default...
     for (_, shape) in shapes_graph.iter() {
-        let result = shape.validate(data_graph); // TODO: Extend traits
-        if let Some(result) = result {
-            validation_report.set_non_conformant();
-            validation_report.extend_results(result);
-        }
+        let result = match shape {
+            Shape::NodeShape(node_shape) => node_shape.validate(data_graph, &mut ans),
+            Shape::PropertyShape(property_shape) => property_shape.validate(data_graph, &mut ans),
+        };
     }
-    Ok(validation_report)
+    Ok(ans)
 }

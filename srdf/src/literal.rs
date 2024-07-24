@@ -1,5 +1,6 @@
 use std::{fmt::Display, result};
 
+use iri_s::IriS;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::Serializer;
 use serde_derive::{Deserialize, Serialize};
@@ -179,6 +180,19 @@ impl Into<oxrdf::Literal> for Literal {
                 NumericLiteral::Double(double) => double.into(),
             },
             Literal::BooleanLiteral(bool) => bool.into(),
+        }
+    }
+}
+
+impl From<oxrdf::Literal> for Literal {
+    fn from(value: oxrdf::Literal) -> Self {
+        match value.destruct() {
+            (s, None, None) => Literal::str(&s),
+            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
+            (value, Some(dtype), None) => {
+                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
+            }
+            _ => todo!(),
         }
     }
 }

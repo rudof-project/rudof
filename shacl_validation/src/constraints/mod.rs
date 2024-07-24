@@ -22,16 +22,34 @@ use core::{
 };
 use std::collections::HashSet;
 
-use oxrdf::Term;
+use constraint_error::ConstraintError;
 use shacl_ast::component::Component;
-use srdf::SRDFGraph;
+use srdf::{RDFNode, SRDFGraph};
 
-use crate::validation_report::result::ValidationResult;
+use crate::validation_report::{report::ValidationReport, result::ValidationResult};
 
+pub(crate) mod constraint_error;
 pub mod core;
 
 pub trait Evaluate {
-    fn evaluate(&self, graph: &SRDFGraph, value_nodes: HashSet<Term>) -> Option<ValidationResult>;
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError>;
+
+    fn make_validation_result(graph: &SRDFGraph, value_node: RDFNode) -> ValidationResult {
+        ValidationResult::new(
+            value_node,
+            result_severity,
+            result_path,
+            source_constraint,
+            source_constraint_component,
+            source_shape,
+            value,
+        )
+    }
 }
 
 pub struct ConstraintFactory;

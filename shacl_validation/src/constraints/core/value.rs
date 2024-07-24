@@ -1,29 +1,73 @@
 use std::collections::HashSet;
 
-use oxrdf::Term;
 use prefixmap::IriRef;
 use shacl_ast::node_kind::NodeKind;
-use srdf::{RDFNode, SRDFGraph};
+use srdf::{RDFNode, SRDFGraph, RDFS_SUBCLASS_OF, RDF_TYPE, SRDF};
 
-use crate::{constraints::Evaluate, validation_report::result::ValidationResult};
+use crate::{
+    constraints::{constraint_error::ConstraintError, Evaluate},
+    helper::oxrdf::{node_to_subject, node_to_term, term_to_subject},
+    validation_report::report::ValidationReport,
+};
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 pub(crate) struct ClassConstraintComponent {
-    node: RDFNode,
+    class_rule: RDFNode,
 }
 
 impl ClassConstraintComponent {
-    pub fn new(node: RDFNode) -> Self {
-        ClassConstraintComponent { node }
+    pub fn new(class_rule: RDFNode) -> Self {
+        ClassConstraintComponent { class_rule }
     }
 }
 
 impl Evaluate for ClassConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
-        todo!()
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
+        let class_rule = node_to_term(self.class_rule.to_owned()); // TODO: check this clone?
+        for node in value_nodes {
+            let mut found = false;
+            let subject = match node_to_subject(node) {
+                Ok(subject) => subject,
+                Err(_) => todo!(),
+            };
+            let predicate = RDF_TYPE.as_named_node();
+            let objects = match graph.objects_for_subject_predicate(&subject, predicate) {
+                Ok(objects) => objects,
+                Err(_) => todo!(),
+            };
+            for object in objects {
+                if object == class_rule {
+                    found = true;
+                    break;
+                } else {
+                    let subject = match term_to_subject(object) {
+                        Ok(subject) => subject,
+                        Err(_) => todo!(),
+                    };
+                    let predicate = RDFS_SUBCLASS_OF.as_named_node();
+                    let objects = match graph.objects_for_subject_predicate(&subject, predicate) {
+                        Ok(objects) => objects,
+                        Err(_) => todo!(),
+                    };
+                    if objects.contains(&class_rule) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if !found {
+                report.add_result(self.make_validation_result(graph, node))
+            }
+        }
+        Ok(())
     }
 }
 
@@ -42,7 +86,12 @@ impl DatatypeConstraintComponent {
 }
 
 impl Evaluate for DatatypeConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -62,7 +111,12 @@ impl NodeKindConstraintComponent {
 }
 
 impl Evaluate for NodeKindConstraintComponent {
-    fn evaluate(&self, graph: &SRDFGraph, focus_nodes: HashSet<Term>) -> Option<ValidationResult> {
+    fn evaluate(
+        &self,
+        graph: &SRDFGraph,
+        value_nodes: HashSet<RDFNode>,
+        report: &mut ValidationReport,
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }

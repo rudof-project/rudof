@@ -84,8 +84,12 @@ impl ValidationReport {
         self.conforms = false;
     }
 
-    pub fn extend_results(&mut self, result: Vec<ValidationResult>) {
-        self.result.extend(result)
+    pub fn add_result(&mut self, result: ValidationResult) {
+        self.result.push(result)
+    }
+
+    pub fn extend_results(&mut self, results: Vec<ValidationResult>) {
+        self.result.extend(results)
     }
 }
 
