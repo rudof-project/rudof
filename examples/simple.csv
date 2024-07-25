@@ -1,5 +1,6 @@
 shapeId,shapeLabel,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
-PersonShape,Person,name,true,false,xsd:string, 
+Person,Person ,name,true,false,xsd:string, 
 ,,birthdate,false,false,xsd:date, 
 ,,enrolledIn,false,true,,Course
-CourseShape,Course,name,true,false,xsd:string, 
+Course,Course,name,true,false,xsd:string, 
+

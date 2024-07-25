@@ -1,8 +1,9 @@
 use std::collections::{hash_map::Entry, HashMap};
 
 use prefixmap::PrefixMap;
+use serde::Serialize;
 
-use super::{HtmlShape, Name, NodeId};
+use super::{HtmlShape, Name, NodeId, ShEx2HtmlConfig};
 use crate::ShEx2HtmlError;
 
 #[derive(Debug, PartialEq, Default)]
@@ -54,5 +55,42 @@ impl HtmlSchema {
 
     pub fn shapes(&self) -> impl Iterator<Item = &HtmlShape> {
         self.shapes.values()
+    }
+
+    pub fn to_landing_html_schema(&self, config: &ShEx2HtmlConfig) -> LandingHtmlSchema {
+        let mut shapes = Vec::new();
+        for shape in self.shapes.values() {
+            shapes.push(ShapeRef::new(
+                shape.name().name().as_str(),
+                shape.name().as_local_href().unwrap_or_default().as_str(),
+            ))
+        }
+        LandingHtmlSchema {
+            title: config.title.clone(),
+            shapes,
+        }
+    }
+}
+
+#[derive(Serialize, Debug, PartialEq, Default)]
+
+pub struct LandingHtmlSchema {
+    title: String,
+    shapes: Vec<ShapeRef>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Default)]
+
+pub struct ShapeRef {
+    name: String,
+    href: String,
+}
+
+impl ShapeRef {
+    pub fn new(name: &str, href: &str) -> ShapeRef {
+        ShapeRef {
+            name: name.to_string(),
+            href: href.to_string(),
+        }
     }
 }

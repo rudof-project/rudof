@@ -1,6 +1,7 @@
 use prefixmap::IriRef;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 
 pub enum Value {
     Str(String),

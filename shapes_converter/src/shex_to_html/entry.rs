@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use super::{Cardinality, Name, ValueConstraint};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct Entry {
     pub name: Name,
     pub value_constraint: ValueConstraint,

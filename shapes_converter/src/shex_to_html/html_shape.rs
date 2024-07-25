@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use super::{Entry, Name};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct HtmlShape {
     name: Name,
     entries: Vec<Entry>,
@@ -26,4 +28,3 @@ impl HtmlShape {
         self.entries.iter()
     }
 }
-
