@@ -1,252 +1,218 @@
-use iri_s::IriS;
-use oxiri::Iri;
-use oxrdf::{NamedNode, Subject, Term};
-use shacl_ast::{Schema, ShaclParser};
-use shacl_validation::{
-    shacl_validation_vocab::{
-        MF_ACTION, MF_ENTRIES, MF_INCLUDE, MF_RESULT, SHT_DATA_GRAPH, SHT_SHAPES_GRAPH,
-    },
-    validation_report::report::ValidationReport,
-};
-use srdf::{RDFFormat, SRDFGraph, RDFS_LABEL, RDF_FIRST, RDF_REST, SRDF};
-use std::{collections::HashSet, path::Path, str::FromStr};
+use std::collections::HashSet;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
+use std::str::FromStr;
 
+use indoc::formatdoc;
+use oxigraph::io::GraphFormat;
+use oxigraph::model::{GraphNameRef, NamedNode};
+use oxigraph::{model::Term, store::Store};
+use oxiri::Iri;
+use shacl_ast::ShaclParser;
+use shacl_validation::shacl_validation_vocab;
+use shacl_validation::validation_report::report::ValidationReport;
+use srdf::{RDFFormat, SRDFGraph};
+
+use crate::helper::sparql::{select, select_many};
 use crate::manifest_error::ManifestError;
 use crate::ShaclTest;
 
 pub struct Manifest {
     base: String,
-    graph: SRDFGraph,
+    store: Store,
     includes: Vec<Manifest>,
-    entries: Vec<NamedNode>,
+    entries: HashSet<Term>,
 }
 
 impl Manifest {
-    fn new(
-        base: String,
-        graph: SRDFGraph,
-        includes: Vec<Manifest>,
-        entries: Vec<NamedNode>,
-    ) -> Self {
+    fn new(base: String, store: Store, includes: Vec<Manifest>, entries: HashSet<Term>) -> Self {
         Manifest {
             base,
-            graph,
+            store,
             includes,
             entries,
         }
     }
 
-    fn get_objects_for(
-        graph: &SRDFGraph,
-        subject: &Subject,
-        predicate: &IriS,
-    ) -> Result<HashSet<Term>, ManifestError> {
-        match graph.objects_for_subject_predicate(subject, predicate.as_named_node()) {
-            Ok(triples) => Ok(triples),
-            Err(_) => todo!(),
-        }
-    }
-
-    fn get_object_for(
-        graph: &SRDFGraph,
-        subject: &Subject,
-        predicate: &IriS,
-    ) -> Result<Option<Term>, ManifestError> {
-        let objects = Self::get_objects_for(graph, subject, predicate)?;
-        match objects.into_iter().nth(0) {
-            Some(object) => Ok(Some(object)),
-            None => Ok(None),
-        }
-    }
-
     pub fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
         let mut ans = Vec::new();
-
-        let base = match Iri::from_str(&self.base) {
-            Ok(base) => base,
-            Err(_) => todo!(),
-        };
-
         for entry in &self.entries {
-            let label = match Self::get_object_for(
-                &self.graph,
-                &Subject::NamedNode(entry.to_owned()),
-                &RDFS_LABEL,
-            ) {
-                Ok(label) => label,
-                Err(_) => todo!(),
+            let query = formatdoc! {
+                "
+                    SELECT ?action ?result ?label
+                    WHERE {{
+                        {} {} ?action .
+                        {} {} ?result .
+                        OPTIONAL {{ {} {} ?label }}
+                    }}
+                ",
+                entry, shacl_validation_vocab::MF_ACTION.as_named_node(), // check it is blank node
+                entry, shacl_validation_vocab::MF_RESULT.as_named_node(), // check it is not literal
+                entry, srdf::RDFS_LABEL.as_named_node(),
             };
 
-            let action = match Self::get_object_for(
-                &self.graph,
-                &Subject::NamedNode(entry.to_owned()),
-                &MF_ACTION,
-            ) {
-                Ok(Some(Term::BlankNode(action))) => action,
-                Ok(Some(Term::NamedNode(_))) => todo!(),
-                Ok(Some(Term::Literal(_))) => todo!(),
-                _ => todo!(),
+            let solution = match select(&self.store, query) {
+                Ok(solution) => solution,
+                Err(_) => break,
             };
 
-            let result = match Self::get_object_for(
-                &self.graph,
-                &Subject::NamedNode(entry.to_owned()),
-                &MF_RESULT,
-            ) {
-                Ok(result) => ValidationReport::parse(
-                    self.graph.to_owned(),
-                    match result {
-                        Some(Term::NamedNode(named_node)) => Subject::NamedNode(named_node),
-                        Some(Term::BlankNode(blank_node)) => Subject::BlankNode(blank_node),
-                        Some(Term::Literal(_)) => todo!(),
-                        None => todo!(),
-                    },
-                )?,
-                _ => todo!(),
+            let label = match solution.get("label") {
+                Some(label) => Some(label.to_string()),
+                None => None,
             };
 
-            let graph_term = match Self::get_object_for(
-                &self.graph,
-                &Subject::BlankNode(action.to_owned()),
-                &SHT_DATA_GRAPH,
-            ) {
-                Ok(Some(graph_term)) => graph_term,
-                _ => todo!(),
+            let action = match solution.get("action") {
+                Some(action) => action,
+                None => todo!(),
             };
 
-            let shapes_term = match Self::get_object_for(
-                &self.graph,
-                &Subject::BlankNode(action.to_owned()),
-                &SHT_SHAPES_GRAPH,
-            ) {
-                Ok(Some(shapes_term)) => shapes_term,
-                _ => todo!(),
+            let result = match solution.get("result") {
+                Some(result) => result,
+                None => todo!(),
             };
 
-            let mut shapes_graph = Schema::default();
-            if shapes_term != graph_term {
-                let term = shapes_term.to_string().replace("file:://", "");
-                let mut chars = term.chars();
-                chars.next();
-                chars.next_back();
+            let query = formatdoc! {
+                "
+                    SELECT DISTINCT ?data_graph ?shapes_graph
+                    WHERE {{
+                        {} {} ?data_graph .
+                        {} {} ?shapes_graph .
+                    }}
+                ", 
+                action, shacl_validation_vocab::SHT_DATA_GRAPH.as_named_node(),
+                action, shacl_validation_vocab::SHT_SHAPES_GRAPH.as_named_node(),
+            };
 
-                let rdf = match SRDFGraph::from_path(
-                    Path::new(&chars.as_str().to_string()),
-                    &RDFFormat::Turtle,
-                    Some(base.clone()),
-                ) {
-                    Ok(rdf) => rdf,
-                    Err(_) => todo!(),
-                };
+            let solution = select(&self.store, query)?;
 
-                shapes_graph = match ShaclParser::new(rdf).parse() {
-                    Ok(shapes_graph) => shapes_graph,
-                    Err(_) => todo!(),
-                };
-            }
+            let data_graph_iri = match solution.get("data_graph") {
+                Some(data_graph) => data_graph.to_owned(),
+                None => todo!(),
+            };
 
-            let term = graph_term.to_string();
+            let shapes_graph_iri = match solution.get("shapes_graph") {
+                Some(shapes_graph) => shapes_graph.to_owned(),
+                None => todo!(),
+            };
+
+            // TODO: explain this
+            let term = shapes_graph_iri.to_string().replace("file:/", "");
             let mut chars = term.chars();
             chars.next();
             chars.next_back();
-            let graph_chars = chars.as_str().to_string();
+            let path = chars.as_str().to_string();
 
-            let mut data_graph = self.graph.to_owned();
-            if graph_chars != self.base {
-                let file_name = graph_chars.replace("file:://", "");
-                data_graph = match SRDFGraph::from_path(
-                    Path::new(&file_name),
-                    &RDFFormat::Turtle,
-                    Some(base.clone()),
-                ) {
-                    Ok(rdf) => rdf,
-                    Err(_) => todo!(),
-                };
+            let rdf = SRDFGraph::from_path(
+                Path::new(&path),
+                &RDFFormat::Turtle,
+                Some(Iri::from_str(&self.base)?),
+            )?;
+
+            let schema = match ShaclParser::new(rdf).parse() {
+                Ok(shapes_graph) => shapes_graph,
+                Err(_) => return Err(ManifestError::ShaclParser),
+            };
+
+            // TODO: explain this
+            let term = data_graph_iri.to_string();
+            let mut chars = term.chars();
+            chars.next();
+            chars.next_back();
+            let path = chars.as_str().to_string();
+
+            let mut data_store = self.store.clone(); // explicit copy
+            if path != self.base {
+                data_store = Store::new()?;
+                data_store.bulk_loader().load_graph(
+                    BufReader::new(File::open(path.replace("file:/", ""))?),
+                    GraphFormat::Turtle,
+                    GraphNameRef::DefaultGraph,
+                    Some(&self.base),
+                )?;
             }
 
             ans.push(ShaclTest::new(
-                Term::NamedNode(entry.clone()),
-                self.graph.to_owned(),
-                shapes_graph,
-                result,
-                data_graph,
-                match label {
-                    Some(label) => Some(label.to_string()),
-                    None => None,
-                },
+                entry.to_owned(),
+                self.store.to_owned(), // TODO: can this be removed?
+                data_store,
+                schema,
+                ValidationReport::parse(&self.store, result)?,
+                label,
             ))
         }
-
         Ok(ans)
     }
 
-    fn get_subject_for(
-        graph: &SRDFGraph,
-        subject: &Subject,
-        predicate: &IriS,
-    ) -> Result<Option<Subject>, ManifestError> {
-        match Self::get_object_for(graph, subject, predicate) {
-            Ok(entry) => match entry {
-                Some(entry) => match entry {
-                    Term::NamedNode(named_node) => Ok(Some(Subject::NamedNode(named_node))),
-                    Term::BlankNode(blank_node) => Ok(Some(Subject::BlankNode(blank_node))),
-                    Term::Literal(_) => todo!(),
-                },
-                None => Ok(None),
-            },
-            Err(_) => todo!(),
-        }
-    }
-
-    pub fn load(file: &str) -> Result<Option<Manifest>, ManifestError> {
+    pub fn load(file: &str) -> Result<Manifest, ManifestError> {
         let path = Path::new(file);
 
-        let base = match path.canonicalize() {
-            Ok(path) => match path.to_str() {
-                Some(path) => format!("file:://{}", path),
-                None => todo!(),
-            },
-            Err(_) => todo!(),
+        let base = match path.canonicalize()?.to_str() {
+            Some(path) => format!("file:/{}", path),
+            None => todo!(),
         };
 
-        let base_subject = Subject::NamedNode(NamedNode::new_unchecked(base.to_owned()));
-        let base_iri = Iri::from_str(&base)?;
-        let graph = SRDFGraph::from_path(path, &RDFFormat::Turtle, Some(base_iri))?;
-        let includes = Self::get_objects_for(&graph, &base_subject, &MF_INCLUDE)?;
+        let store = Store::new()?;
 
-        let mut include_manifests = Vec::new();
-        for include in includes {
-            let object = Self::clear_object(include, &base);
-            let file = Self::clear_file(file, object);
-            let child_manifest = Self::load(&file);
-            if let Ok(Some(child_manifest)) = child_manifest {
-                include_manifests.push(child_manifest);
+        store.bulk_loader().load_graph(
+            BufReader::new(File::open(path)?),
+            GraphFormat::Turtle,
+            GraphNameRef::DefaultGraph,
+            Some(&base),
+        )?;
+
+        let subject = Term::NamedNode(NamedNode::new_unchecked(base.clone()));
+
+        let query = formatdoc! {
+            "
+                SELECT ?this
+                WHERE {{
+                    {} {} ?this
+                }}
+            ", 
+            subject, shacl_validation_vocab::MF_INCLUDE.as_named_node(),
+        };
+
+        let mut includes = Vec::new();
+        for manifest in select_many(&store, query)? {
+            let file = manifest.to_string().replace("file:/", ""); // TODO: fn
+            let mut chars = file.chars();
+            chars.next();
+            chars.next_back();
+            if let Ok(child_manifest) = Self::load(&chars.as_str()) {
+                includes.push(child_manifest);
             }
         }
-        let mut entry_terms = Vec::new();
-        let entry_subject = Self::get_subject_for(&graph, &base_subject, &MF_ENTRIES)?;
 
-        if let Some(mut subject) = entry_subject {
-            loop {
-                entry_terms.push(match Self::get_object_for(&graph, &subject, &RDF_FIRST)? {
-                    Some(Term::NamedNode(named_node)) => named_node,
-                    Some(Term::BlankNode(_)) => todo!(),
-                    Some(Term::Literal(_)) => todo!(),
-                    None => break,
-                });
-                subject = match Self::get_subject_for(&graph, &subject, &RDF_REST)? {
-                    Some(subject) => subject,
-                    None => break,
-                };
+        let query = formatdoc! {
+            "
+                SELECT ?this
+                WHERE {{
+                    {} {} ?this
+                }}
+            ", 
+            subject, shacl_validation_vocab::MF_ENTRIES.as_named_node(),
+        };
+
+        let mut entries = HashSet::new();
+        if let Ok(query_result) = select(&store, query) {
+            let query = formatdoc! {"
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                SELECT ?this
+                WHERE {{
+                    {} rdf:rest*/rdf:first ?this
+                }}
+                ", query_result.get("this").unwrap()
+            };
+
+            for entry in select_many(&store, query)? {
+                if let Term::NamedNode(_) = entry {
+                    entries.insert(entry);
+                }
             }
         }
 
-        Ok(Some(Manifest::new(
-            base,
-            graph,
-            include_manifests,
-            entry_terms,
-        )))
+        Ok(Manifest::new(base, store, includes, entries))
     }
 
     pub fn flatten<'a>(manifest: &'a Manifest, manifests: &mut Vec<&'a Manifest>) {
@@ -254,21 +220,5 @@ impl Manifest {
         for manifest in &manifest.includes {
             Self::flatten(manifest, manifests);
         }
-    }
-
-    fn clear_object(object: Term, base: &str) -> String {
-        let base = base.replace("/manifest.ttl", "");
-        let object = object.to_string();
-        let split = object.split(&base).collect::<Vec<&str>>();
-        let object = split[1];
-        let mut chars = object.chars();
-        chars.next();
-        chars.next_back();
-        chars.as_str().to_string()
-    }
-
-    fn clear_file(prev: &str, next: String) -> String {
-        let prev = prev.replace("/manifest.ttl", "");
-        format!("{}/{}", prev, next)
     }
 }

@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
+use oxigraph::{model::Term, store::Store};
 use prefixmap::IriRef;
 use shacl_ast::value::Value;
-use srdf::{RDFNode, SRDFGraph};
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    validation_report::report::ValidationReport,
 };
 
 /// sh:in specifies the condition that each value node is a member of a provided
@@ -26,8 +26,8 @@ impl InConstraintComponent {
 impl Evaluate for InConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -60,8 +60,8 @@ impl ClosedConstraintComponent {
 impl Evaluate for ClosedConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -85,8 +85,8 @@ impl HasValueConstraintComponent {
 impl Evaluate for HasValueConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()

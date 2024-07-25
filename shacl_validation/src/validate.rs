@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
+use indoc::formatdoc;
+use oxigraph::{model::Term, store::Store};
 use prefixmap::IriRef;
 use shacl_ast::{
     node_shape::NodeShape, property_shape::PropertyShape, shape::Shape, target::Target, Schema,
 };
-use srdf::{Object, RDFNode, SRDFGraph, RDF_TYPE, SRDF};
 
 use crate::{
     constraints::ConstraintFactory,
-    helper::oxrdf::{subject_to_node, term_to_node},
+    helper::sparql::select,
     validate_error::ValidateError::{
         self, TargetClassBlankNode, TargetClassLiteral, TargetNodeBlankNode,
     },
@@ -16,20 +17,20 @@ use crate::{
 };
 
 trait Validate {
-    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport);
+    fn validate(&self, store: &Store, report: &mut ValidationReport);
 
     fn focus_nodes(
         &self,
-        graph: &SRDFGraph,
+        store: &Store,
         targets: &Vec<Target>,
-    ) -> Result<HashSet<RDFNode>, ValidateError> {
+    ) -> Result<HashSet<Term>, ValidateError> {
         let mut ans = HashSet::new();
         for target in targets.to_vec() {
             match target {
-                Target::TargetNode(node) => self.target_node(node, &mut ans)?,
-                Target::TargetClass(class) => self.target_class(graph, class, &mut ans)?,
-                Target::TargetSubjectsOf(pred) => self.target_subject_of(graph, pred, &mut ans)?,
-                Target::TargetObjectsOf(pred) => self.target_object_of(graph, pred, &mut ans)?,
+                Target::TargetNode(node) => self.target_node(store, node, &mut ans)?,
+                Target::TargetClass(class) => self.target_class(store, class, &mut ans)?,
+                Target::TargetSubjectsOf(pred) => self.target_subject_of(store, pred, &mut ans)?,
+                Target::TargetObjectsOf(pred) => self.target_object_of(store, pred, &mut ans)?,
             }
         }
         Ok(ans)
@@ -37,85 +38,84 @@ trait Validate {
 
     fn target_node(
         &self,
-        node: Object,
-        focus_nodes: &mut HashSet<RDFNode>,
+        store: &Store,
+        node: srdf::Object,
+        focus_nodes: &mut HashSet<Term>,
     ) -> Result<(), ValidateError> {
-        if let Object::BlankNode(_) = node {
+        if let srdf::Object::BlankNode(_) = node {
             Err(TargetNodeBlankNode)
         } else {
-            focus_nodes.insert(node);
+            let query = formatdoc! {"
+                SELECT DISTINCT ?this
+                WHERE {{
+                    BIND ({} AS ?this)
+                }}
+            ", node};
+            focus_nodes.extend(select(store, query)?);
             Ok(())
         }
     }
 
     fn target_class(
         &self,
-        graph: &SRDFGraph,
-        class: Object,
-        focus_nodes: &mut HashSet<RDFNode>,
+        store: &Store,
+        class: srdf::Object,
+        focus_nodes: &mut HashSet<Term>,
     ) -> Result<(), ValidateError> {
         match class {
-            Object::Iri(iri) => {
-                focus_nodes.extend(
-                    graph
-                        .subjects_with_predicate_object(
-                            RDF_TYPE.as_named_node(),
-                            &oxrdf::Term::NamedNode(iri.as_named_node().to_owned()),
-                        )?
-                        .into_iter()
-                        .map(|subject| subject_to_node(subject))
-                        .collect::<HashSet<_>>(),
-                );
+            srdf::Object::Iri(iri) => {
+                let query = formatdoc! {"
+                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+                    SELECT DISTINCT ?this
+                    WHERE {{
+                        ?this rdf:type/rdfs:subClassOf* {} .
+                    }}
+                ", iri.as_named_node()};
+                focus_nodes.extend(select(store, query)?);
                 Ok(())
             }
-            Object::BlankNode(_) => return Err(TargetClassBlankNode),
-            Object::Literal(_) => return Err(TargetClassLiteral),
+            srdf::Object::BlankNode(_) => Err(TargetClassBlankNode),
+            srdf::Object::Literal(_) => Err(TargetClassLiteral),
         }
     }
 
     fn target_subject_of(
         &self,
-        graph: &SRDFGraph,
+        store: &Store,
         predicate: IriRef,
-        focus_nodes: &mut HashSet<RDFNode>,
+        focus_nodes: &mut HashSet<Term>,
     ) -> Result<(), ValidateError> {
-        let predicate = &match predicate.get_iri() {
-            Ok(iri_s) => iri_s.as_named_node().to_owned(),
-            Err(_) => todo!(),
-        };
-        focus_nodes.extend(
-            graph
-                .triples_with_predicate(&predicate)?
-                .into_iter()
-                .map(|triple| subject_to_node(triple.subj()))
-                .collect::<HashSet<_>>(),
-        );
+        let query = formatdoc! {"
+            SELECT DISTINCT ?this
+            WHERE {{
+                ?this {} ?any .
+            }}
+        ", predicate};
+        focus_nodes.extend(select(store, query)?);
         Ok(())
     }
 
     fn target_object_of(
         &self,
-        graph: &SRDFGraph,
+        store: &Store,
         predicate: IriRef,
-        focus_nodes: &mut HashSet<RDFNode>,
+        focus_nodes: &mut HashSet<Term>,
     ) -> Result<(), ValidateError> {
-        let predicate = &match predicate.get_iri() {
-            Ok(iri_s) => iri_s.as_named_node().to_owned(),
-            Err(_) => todo!(),
-        };
-        focus_nodes.extend(
-            graph
-                .triples_with_predicate(&predicate)?
-                .into_iter()
-                .map(|triple| term_to_node(triple.obj()))
-                .collect::<HashSet<_>>(),
-        );
+        let query = formatdoc! {"
+            SELECT DISTINCT ?this
+            WHERE {{
+                ?any {} ?this .
+            }}
+        ", predicate};
+        focus_nodes.extend(select(store, query)?);
         Ok(())
     }
 }
 
 impl Validate for NodeShape {
-    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport) {
+    fn validate(&self, store: &Store, report: &mut ValidationReport) {
         if *self.is_deactivated() {
             // skipping because it is deactivated
             return;
@@ -124,18 +124,20 @@ impl Validate for NodeShape {
         for component in self.components() {
             let constraint = ConstraintFactory::new_constraint(component);
 
-            let value_nodes = match self.focus_nodes(data_graph, self.targets()) {
+            let value_nodes = match self.focus_nodes(store, self.targets()) {
                 Ok(focus_nodes) => focus_nodes,
                 Err(_) => todo!(),
             };
 
-            constraint.evaluate(data_graph, value_nodes, report);
+            println!("{}", component);
+
+            constraint.evaluate(store, value_nodes, report);
         }
     }
 }
 
 impl Validate for PropertyShape {
-    fn validate(&self, data_graph: &SRDFGraph, report: &mut ValidationReport) {
+    fn validate(&self, store: &Store, report: &mut ValidationReport) {
         if *self.is_deactivated() {
             return;
         }
@@ -143,7 +145,7 @@ impl Validate for PropertyShape {
         for component in self.components() {
             let constraint = ConstraintFactory::new_constraint(component);
 
-            let focus_nodes = match self.focus_nodes(data_graph, self.targets()) {
+            let focus_nodes = match self.focus_nodes(store, self.targets()) {
                 Ok(focus_nodes) => focus_nodes,
                 Err(_) => todo!(),
             };
@@ -152,15 +154,8 @@ impl Validate for PropertyShape {
 
             for focus_node in focus_nodes {
                 match self.path() {
-                    // TODO: fix and improve this
-                    srdf::SHACLPath::Predicate { pred: _ } => value_nodes
-                        .extend(self.get_value_nodes(data_graph, &focus_node, self.path())),
-                    srdf::SHACLPath::Alternative { paths } => value_nodes.extend(
-                        paths
-                            .iter()
-                            .flat_map(|path| self.get_value_nodes(data_graph, &focus_node, path))
-                            .collect::<HashSet<_>>(),
-                    ),
+                    srdf::SHACLPath::Predicate { pred: _ } => todo!(),
+                    srdf::SHACLPath::Alternative { paths } => todo!(),
                     srdf::SHACLPath::Sequence { paths } => todo!(),
                     srdf::SHACLPath::Inverse { path } => todo!(),
                     srdf::SHACLPath::ZeroOrMore { path } => todo!(),
@@ -169,20 +164,18 @@ impl Validate for PropertyShape {
                 }
             }
 
-            constraint.evaluate(data_graph, value_nodes, report);
+            constraint.evaluate(store, value_nodes, report);
         }
     }
 }
 
-pub fn validate(
-    data_graph: &SRDFGraph,
-    shapes_graph: Schema,
-) -> Result<ValidationReport, ValidateError> {
+pub fn validate(store: &Store, shapes_graph: Schema) -> Result<ValidationReport, ValidateError> {
     let mut ans = ValidationReport::default(); // conformant by default...
     for (_, shape) in shapes_graph.iter() {
-        let result = match shape {
-            Shape::NodeShape(node_shape) => node_shape.validate(data_graph, &mut ans),
-            Shape::PropertyShape(property_shape) => property_shape.validate(data_graph, &mut ans),
+        println!("{}", shape);
+        match shape {
+            Shape::NodeShape(node_shape) => node_shape.validate(store, &mut ans),
+            Shape::PropertyShape(property_shape) => property_shape.validate(store, &mut ans),
         };
     }
     Ok(ans)

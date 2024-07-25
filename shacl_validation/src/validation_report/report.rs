@@ -1,10 +1,10 @@
-use oxrdf::{Subject, Term};
-use shacl_ast::{SH_CONFORMS, SH_RESULT};
-use srdf::{SRDFGraph, SRDF};
 use std::collections::HashSet;
 use std::fmt;
 
-use crate::shacl_validation_vocab::SHT_FAILURE;
+use indoc::formatdoc;
+use oxigraph::{model::Term, store::Store};
+
+use crate::helper::sparql::{ask, select};
 
 use super::{result::ValidationResult, validation_report_error::ValidationReportError};
 
@@ -25,71 +25,42 @@ impl ValidationReport {
         }
     }
 
-    fn is_conforms(graph: &SRDFGraph, subject: &Subject) -> Result<bool, ValidationReportError> {
-        match graph.objects_for_subject_predicate(&subject, &SH_CONFORMS.as_named_node()) {
-            Ok(objects) => match objects.into_iter().nth(0) {
-                Some(object) => match object {
-                    Term::NamedNode(_) => todo!(),
-                    Term::BlankNode(_) => todo!(),
-                    Term::Literal(literal) => match literal.destruct().0.parse() {
-                        Ok(conforms) => Ok(conforms),
-                        Err(_) => todo!(),
-                    },
-                },
-                None => todo!(),
-            },
-            Err(_) => todo!(),
+    pub fn add_result(&mut self, result: ValidationResult) {
+        if self.conforms {
+            // We add a result --> make the Report non-conformant
+            self.conforms = false;
         }
+        self.result.push(result)
     }
 
-    fn get_results(
-        graph: &SRDFGraph,
-        subject: &Subject,
-    ) -> Result<HashSet<Term>, ValidationReportError> {
-        match graph.objects_for_subject_predicate(subject, &SH_RESULT.as_named_node()) {
-            Ok(objects) => Ok(objects),
-            Err(_) => todo!(),
-        }
-    }
+    pub fn parse(store: &Store, subject: &Term) -> Result<ValidationReport, ValidationReportError> {
+        let conforms = Self::is_conforms(store, subject)?;
 
-    pub fn parse(
-        graph: SRDFGraph,
-        subject: Subject,
-    ) -> Result<ValidationReport, ValidationReportError> {
         let mut results = Vec::new();
-
-        let conforms = match subject {
-            Subject::NamedNode(named_node) => {
-                if &named_node == SHT_FAILURE.as_named_node() {
-                    false
-                } else {
-                    todo!()
-                }
-            }
-            Subject::BlankNode(_) => {
-                for _ in 0..Self::get_results(&graph, &subject)?.len() {
-                    match ValidationResult::parse(&graph, &subject) {
-                        Ok(result) => results.push(result),
-                        Err(_) => todo!(),
-                    }
-                }
-                Self::is_conforms(&graph, &subject)?
-            }
-        };
+        for _ in Self::get_results(store, subject)? {
+            results.push(ValidationResult::parse(store, subject)?);
+        }
 
         Ok(ValidationReport::new(conforms, results))
     }
 
-    pub fn set_non_conformant(&mut self) {
-        self.conforms = false;
+    fn is_conforms(store: &Store, subject: &Term) -> Result<bool, ValidationReportError> {
+        let query = formatdoc! {"
+            ASK {{
+                {} {} ?this .
+            }}
+        ", subject, shacl_ast::SH_CONFORMS.as_named_node()};
+        Ok(ask(store, query)?)
     }
 
-    pub fn add_result(&mut self, result: ValidationResult) {
-        self.result.push(result)
-    }
-
-    pub fn extend_results(&mut self, results: Vec<ValidationResult>) {
-        self.result.extend(results)
+    fn get_results(store: &Store, subject: &Term) -> Result<HashSet<Term>, ValidationReportError> {
+        let query = formatdoc! {"
+            SELECT DISTINCT ?this
+            WHERE {{
+                {} {} ?this .
+            }}
+        ", subject, shacl_ast::SH_RESULT.as_named_node()};
+        Ok(select(store, query)?)
     }
 }
 
@@ -101,7 +72,6 @@ impl PartialEq for ValidationReport {
         if self.result.len() != other.result.len() {
             return false;
         }
-
         true
     }
 }
@@ -113,30 +83,26 @@ impl fmt::Display for ValidationReport {
         writeln!(f, "\tresult: {{")?;
         for result in &self.result {
             writeln!(f, "\t\t[")?;
-            if let Some(focus_node) = &result.focus_node() {
-                writeln!(f, "\t\t\tfocus_node: {},", focus_node)?;
+            if let Some(term) = &result.focus_node() {
+                writeln!(f, "\t\t\tfocus_node: {},", term)?;
             }
-            if let Some(result_path) = &result.result_path() {
-                writeln!(f, "\t\t\tresult_path: {},", result_path)?;
+            if let Some(term) = &result.result_path() {
+                writeln!(f, "\t\t\tresult_path: {},", term)?;
             }
-            if let Some(result_severity) = &result.result_severity() {
-                writeln!(f, "\t\t\tresult_severity: {},", result_severity)?;
+            if let Some(term) = &result.result_severity() {
+                writeln!(f, "\t\t\tresult_severity: {},", term)?;
             }
-            if let Some(source_constraint) = &result.source_constraint() {
-                writeln!(f, "\t\t\tsource_constraint: {},", source_constraint)?;
+            if let Some(term) = &result.source_constraint() {
+                writeln!(f, "\t\t\tsource_constraint: {},", term)?;
             }
-            if let Some(source_constraint_component) = &result.source_constraint_component() {
-                writeln!(
-                    f,
-                    "\t\t\tsource_constraint_component: {},",
-                    source_constraint_component
-                )?;
+            if let Some(term) = &result.source_constraint_component() {
+                writeln!(f, "\t\t\tsource_constraint_component: {},", term)?;
             }
-            if let Some(source_shape) = &result.source_shape() {
-                writeln!(f, "\t\t\tsource_shape: {},", source_shape)?;
+            if let Some(term) = &result.source_shape() {
+                writeln!(f, "\t\t\tsource_shape: {},", term)?;
             }
-            if let Some(value) = &result.value() {
-                writeln!(f, "\t\t\tvalue: {},", value)?;
+            if let Some(term) = &result.value() {
+                writeln!(f, "\t\t\tvalue: {},", term)?;
             }
             writeln!(f, "\t\t],")?;
         }

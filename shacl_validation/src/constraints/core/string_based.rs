@@ -1,10 +1,13 @@
 use std::collections::HashSet;
 
-use srdf::{lang::Lang, RDFNode, SRDFGraph};
+use indoc::formatdoc;
+use oxigraph::{model::Term, store::Store};
+use srdf::lang::Lang;
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    helper::sparql::ask,
+    validation_report::report::ValidationReport,
 };
 
 /// sh:minLength specifies the minimum string length of each value node that
@@ -25,11 +28,21 @@ impl MinLengthConstraintComponent {
 impl Evaluate for MinLengthConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
+                node, self.min_length
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -51,11 +64,21 @@ impl MaxLengthConstraintComponent {
 impl Evaluate for MaxLengthConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
+                node, self.max_length
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -77,11 +100,31 @@ impl PatternConstraintComponent {
 impl Evaluate for PatternConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let query = match &self.flags {
+                Some(flags) => formatdoc! {
+                    "ASK {{
+                        FILTER (!isBlank({}) && regex(str({}), {}, {}))
+                    }}",
+                    node, node, self.pattern, flags
+                },
+                None => formatdoc! {
+                    "ASK {{
+                        FILTER (!isBlank({}) && regex(str({}), {}))
+                    }}",
+                    node, node, self.pattern
+                },
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -102,11 +145,31 @@ impl LanguageInConstraintComponent {
 impl Evaluate for LanguageInConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let literal = match node {
+                Term::Literal(literal) => literal,
+                _ => {
+                    self.make_validation_result(Some(node));
+                    return Ok(());
+                }
+            };
+
+            match literal.language() {
+                Some(language) => {
+                    if !self.langs.contains(&Lang::new(language)) {
+                        self.make_validation_result(Some(node));
+                    }
+                }
+                _ => {
+                    self.make_validation_result(Some(node));
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -127,8 +190,8 @@ impl UniqueLangConstraintComponent {
 impl Evaluate for UniqueLangConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()

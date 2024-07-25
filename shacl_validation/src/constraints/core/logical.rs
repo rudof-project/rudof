@@ -1,10 +1,11 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDFGraph};
+use oxigraph::{model::Term, store::Store};
+use srdf::RDFNode;
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    validation_report::report::ValidationReport,
 };
 
 /// sh:not specifies the condition that each value node cannot conform to a
@@ -24,8 +25,8 @@ impl NotConstraintComponent {
 impl Evaluate for NotConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -49,8 +50,8 @@ impl AndConstraintComponent {
 impl Evaluate for AndConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -75,8 +76,8 @@ impl OrConstraintComponent {
 impl Evaluate for OrConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -101,8 +102,8 @@ impl XoneConstraintComponent {
 impl Evaluate for XoneConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()

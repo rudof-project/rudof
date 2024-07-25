@@ -16,17 +16,20 @@ use core::{
     },
     value::{ClassConstraintComponent, DatatypeConstraintComponent, NodeKindConstraintComponent},
     value_range::{
-        MaxExclusiveConstraintComponent, MinExclusiveConstraintComponent,
-        MinInclusiveConstraintComponent,
+        MaxExclusiveConstraintComponent, MaxInclusiveConstraintComponent,
+        MinExclusiveConstraintComponent, MinInclusiveConstraintComponent,
     },
 };
 use std::collections::HashSet;
 
 use constraint_error::ConstraintError;
+use oxigraph::{model::Term, store::Store};
 use shacl_ast::component::Component;
-use srdf::{RDFNode, SRDFGraph};
 
-use crate::validation_report::{report::ValidationReport, result::ValidationResult};
+use crate::validation_report::{
+    report::ValidationReport,
+    result::{ValidationResult, ValidationResultBuilder},
+};
 
 pub(crate) mod constraint_error;
 pub mod core;
@@ -34,21 +37,36 @@ pub mod core;
 pub trait Evaluate {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError>;
 
-    fn make_validation_result(graph: &SRDFGraph, value_node: RDFNode) -> ValidationResult {
-        ValidationResult::new(
-            value_node,
-            result_severity,
-            result_path,
-            source_constraint,
-            source_constraint_component,
-            source_shape,
-            value,
-        )
+    fn make_validation_result(&self, value_node: Option<&Term>) -> ValidationResult {
+        let builder = ValidationResultBuilder::default();
+
+        // let severity = match shape {
+        //     Shape::NodeShape(shape) => shape.severity(),
+        //     Shape::PropertyShape(shape) => shape.severity(),
+        // };
+        // let result_path = match shape {
+        //     Shape::NodeShape(shape) => shape.path(),
+        //     Shape::PropertyShape(shape) => shape.path(),
+        // };
+        // let source_constraint = match shape {
+        //     Shape::NodeShape(shape) => shape.source_constraint(),
+        //     Shape::PropertyShape(shape) => shape.source_constraint(),
+        // };
+        // let source_constraint_component = match shape {
+        //     Shape::NodeShape(shape) => shape.source_constraint_component(),
+        //     Shape::PropertyShape(shape) => shape.source_constraint_component(),
+        // };
+        // let value = match shape {
+        //     Shape::NodeShape(shape) => shape.value(),
+        //     Shape::PropertyShape(shape) => shape.value(),
+        // };
+
+        builder.build()
     }
 }
 
@@ -80,7 +98,7 @@ impl ConstraintFactory {
                 Box::new(MinInclusiveConstraintComponent::new(literal.to_owned()))
             }
             Component::MaxInclusive(literal) => {
-                Box::new(MaxExclusiveConstraintComponent::new(literal.to_owned()))
+                Box::new(MaxInclusiveConstraintComponent::new(literal.to_owned()))
             }
             Component::MinLength(min_length) => {
                 Box::new(MinLengthConstraintComponent::new(min_length.to_owned()))

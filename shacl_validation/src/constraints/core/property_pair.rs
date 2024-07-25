@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
+use oxigraph::{model::Term, store::Store};
 use prefixmap::IriRef;
-use srdf::{RDFNode, SRDFGraph};
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    validation_report::report::ValidationReport,
 };
 
 /// sh:equals specifies the condition that the set of all value nodes is equal
@@ -26,8 +26,8 @@ impl EqualsConstraintComponent {
 impl Evaluate for EqualsConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -52,8 +52,8 @@ impl DisjointConstraintComponent {
 impl Evaluate for DisjointConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -78,8 +78,8 @@ impl LessThanConstraintComponent {
 impl Evaluate for LessThanConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -104,8 +104,8 @@ impl LessThanOrEqualsConstraintComponent {
 impl Evaluate for LessThanOrEqualsConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()

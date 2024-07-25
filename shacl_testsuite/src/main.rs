@@ -1,11 +1,11 @@
 use clap::Parser;
 use manifest::Manifest;
-use oxrdf::Term;
+use oxigraph::{model::Term, store::Store};
 use shacl_ast::Schema;
 use shacl_validation::{validate::validate, validation_report::report::ValidationReport};
-use srdf::SRDFGraph;
 use testsuite_error::TestSuiteError;
 
+mod helper;
 mod manifest;
 mod manifest_error;
 mod testsuite_error;
@@ -25,28 +25,28 @@ struct Cli {
 
 struct ShaclTest {
     node: Term,
-    graph: SRDFGraph,
+    manifest_store: Store,
+    data_store: Store,
     schema: Schema,
     result: ValidationReport,
-    data_graph: SRDFGraph,
     label: Option<String>,
 }
 
 impl ShaclTest {
     fn new(
         node: Term,
-        graph: SRDFGraph,
+        manifest_store: Store,
+        data_store: Store,
         schema: Schema,
         result: ValidationReport,
-        data_graph: SRDFGraph,
         label: Option<String>,
     ) -> Self {
         ShaclTest {
             node,
-            graph,
+            manifest_store,
+            data_store,
             schema,
             result,
-            data_graph,
             label,
         }
     }
@@ -55,10 +55,7 @@ impl ShaclTest {
 fn main() -> Result<(), TestSuiteError> {
     let cli = Cli::parse(); // we obtain the CLI...
 
-    let manifest = match Manifest::load(&cli.manifest_filename) {
-        Ok(Some(manifest)) => manifest,
-        _ => todo!(),
-    };
+    let manifest = Manifest::load(&cli.manifest_filename)?;
 
     let mut manifests = Vec::new();
     Manifest::flatten(&manifest, &mut manifests);
@@ -71,7 +68,7 @@ fn main() -> Result<(), TestSuiteError> {
     let total = tests.len();
     let mut count = 0;
     for test in tests {
-        match validate(&test.data_graph, test.schema) {
+        match validate(&test.data_store, test.schema) {
             Ok(actual) => {
                 if actual == test.result {
                     count += 1;

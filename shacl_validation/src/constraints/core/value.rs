@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
+use oxigraph::{model::Term, store::Store};
 use prefixmap::IriRef;
 use shacl_ast::node_kind::NodeKind;
-use srdf::{RDFNode, SRDFGraph, RDFS_SUBCLASS_OF, RDF_TYPE, SRDF};
+use srdf::RDFNode;
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    helper::oxrdf::{node_to_subject, node_to_term, term_to_subject},
     validation_report::report::ValidationReport,
 };
 
@@ -27,46 +27,10 @@ impl ClassConstraintComponent {
 impl Evaluate for ClassConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        let class_rule = node_to_term(self.class_rule.to_owned()); // TODO: check this clone?
-        for node in value_nodes {
-            let mut found = false;
-            let subject = match node_to_subject(node) {
-                Ok(subject) => subject,
-                Err(_) => todo!(),
-            };
-            let predicate = RDF_TYPE.as_named_node();
-            let objects = match graph.objects_for_subject_predicate(&subject, predicate) {
-                Ok(objects) => objects,
-                Err(_) => todo!(),
-            };
-            for object in objects {
-                if object == class_rule {
-                    found = true;
-                    break;
-                } else {
-                    let subject = match term_to_subject(object) {
-                        Ok(subject) => subject,
-                        Err(_) => todo!(),
-                    };
-                    let predicate = RDFS_SUBCLASS_OF.as_named_node();
-                    let objects = match graph.objects_for_subject_predicate(&subject, predicate) {
-                        Ok(objects) => objects,
-                        Err(_) => todo!(),
-                    };
-                    if objects.contains(&class_rule) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if !found {
-                report.add_result(self.make_validation_result(graph, node))
-            }
-        }
         Ok(())
     }
 }
@@ -88,8 +52,8 @@ impl DatatypeConstraintComponent {
 impl Evaluate for DatatypeConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
@@ -113,8 +77,8 @@ impl NodeKindConstraintComponent {
 impl Evaluate for NodeKindConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()

@@ -1,10 +1,13 @@
 use std::collections::HashSet;
 
-use srdf::{literal::Literal, RDFNode, SRDFGraph};
+use indoc::formatdoc;
+use oxigraph::{model::Term, store::Store};
+use srdf::literal::Literal;
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    helper::sparql::ask,
+    validation_report::report::ValidationReport,
 };
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
@@ -21,11 +24,22 @@ impl MinExclusiveConstraintComponent {
 impl Evaluate for MinExclusiveConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER ({} < {}) }} ",
+                node, self.literal
+            };
+            println!("{}", query);
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -43,11 +57,21 @@ impl MinInclusiveConstraintComponent {
 impl Evaluate for MinInclusiveConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in &value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER ({} <= {}) }} ",
+                node, self.literal
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -65,11 +89,21 @@ impl MaxExclusiveConstraintComponent {
 impl Evaluate for MaxExclusiveConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER ({} > {}) }} ",
+                node, self.literal
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(&node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -87,10 +121,20 @@ impl MaxInclusiveConstraintComponent {
 impl Evaluate for MaxInclusiveConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        for node in value_nodes {
+            let query = formatdoc! {
+                " ASK {{ FILTER ({} >= {}) }} ",
+                node, self.literal
+            };
+            if !ask(store, query)? {
+                let result = self.make_validation_result(Some(&node));
+                report.add_result(result);
+            }
+        }
+        Ok(())
     }
 }

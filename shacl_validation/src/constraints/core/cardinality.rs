@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDFGraph};
+use oxigraph::{model::Term, store::Store};
 
 use crate::{
     constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::{report::ValidationReport, result::ValidationResult},
+    validation_report::report::ValidationReport,
 };
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
@@ -25,8 +25,8 @@ impl MinCountConstraintComponent {
 impl Evaluate for MinCountConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        _store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         if self.min_count == 0 {
@@ -34,7 +34,10 @@ impl Evaluate for MinCountConstraintComponent {
             return Ok(());
         }
 
-        for node in value_nodes {}
+        if (value_nodes.len() as isize) < self.min_count {
+            let result = self.make_validation_result(None);
+            report.add_result(result);
+        }
 
         Ok(())
     }
@@ -57,10 +60,14 @@ impl MaxCountConstraintComponent {
 impl Evaluate for MaxCountConstraintComponent {
     fn evaluate(
         &self,
-        graph: &SRDFGraph,
-        value_nodes: HashSet<RDFNode>,
+        _store: &Store,
+        value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        if (value_nodes.len() as isize) > self.max_count {
+            let result = self.make_validation_result(None);
+            report.add_result(result);
+        }
+        Ok(())
     }
 }

@@ -1,21 +1,14 @@
 use thiserror::Error;
 
+use crate::helper::helper_error::SPARQLError;
+
 #[derive(Error, Debug)]
 pub enum ValidationReportError {
-    #[error("the data for key `{0}` is not available")]
-    Redaction(String),
-    #[error("invalid header (expected {expected:?}, found {found:?})")]
-    InvalidHeader { expected: String, found: String },
-    #[error("unknown data store error")]
-    Unknown,
+    #[error("Error during the SPARQL operation")]
+    SPARQL(#[from] SPARQLError),
+    #[error("Error during the creation of the Validation Result")]
+    ValidationResult(#[from] ValidationResultError),
 }
 
 #[derive(Error, Debug)]
-pub enum ValidationResultError {
-    #[error("the data for key `{0}` is not available")]
-    Redaction(String),
-    #[error("invalid header (expected {expected:?}, found {found:?})")]
-    InvalidHeader { expected: String, found: String },
-    #[error("unknown data store error")]
-    Unknown,
-}
+pub enum ValidationResultError {}
