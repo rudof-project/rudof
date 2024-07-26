@@ -1,51 +1,64 @@
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Serialize, Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct Name {
-    str: String,
+    repr: String,
+    path: Option<PathBuf>,
     href: Option<String>,
-
-    // Local_ref keeps track of the local file where the shape will be written and the local name to refer to that file
-    local_ref: Option<(PathBuf, String)>,
 }
 
 impl Name {
     pub fn new<P: AsRef<Path>>(str: &str, href: Option<&str>, target_folder: P) -> Name {
         if let Some(local_name) = str.strip_prefix(':') {
+            let local_name_html = format!("{local_name}.html");
             Name {
-                str: str.to_string(),
-                href: href.map(|href| href.to_string()),
-                local_ref: Some((
-                    target_folder.as_ref().join(Path::new(local_name)),
-                    local_name.to_string(),
-                )),
+                repr: str.to_string(),
+                path: Some(
+                    target_folder
+                        .as_ref()
+                        .join(Path::new(local_name_html.as_str())),
+                ),
+                href: Some(local_name_html),
+            }
+        } else if let Some(href) = href {
+            Name {
+                repr: str.to_string(),
+                href: Some(href.to_string()),
+                path: None,
             }
         } else {
             Name {
-                str: str.to_string(),
-                href: href.map(|href| href.to_string()),
-                local_ref: None,
+                repr: str.to_string(),
+                path: None,
+                href: None,
             }
         }
     }
 
     pub fn name(&self) -> String {
-        self.str.clone()
+        self.repr.to_string()
     }
 
     pub fn href(&self) -> Option<String> {
-        self.href.clone()
+        self.href.as_ref().map(|str| str.to_string())
     }
 
     pub fn as_local_ref(&self) -> Option<(PathBuf, String)> {
-        self.local_ref.clone()
+        if let Some(href) = &self.href {
+            self.path
+                .as_ref()
+                .map(|path| (path.to_owned(), href.to_string()))
+        } else {
+            None
+        }
     }
 
     pub fn as_path(&self) -> Option<PathBuf> {
-        self.local_ref.as_ref().map(|(r, _)| r.clone())
+        self.path.as_ref().map(|path| path.to_owned())
     }
 
     pub fn as_local_href(&self) -> Option<String> {
-        self.local_ref.as_ref().map(|(_, local)| local.clone())
+        self.href.as_ref().map(|href| href.to_string())
     }
 }

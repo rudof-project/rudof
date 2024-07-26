@@ -1,8 +1,7 @@
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use serde_derive::{Deserialize, Serialize};
-
-use crate::{DatatypeId, NodeType, PropertyId, ShapeId};
+use crate::{DatatypeId, NodeType, PropertyId, ShapeId, ValueConstraint};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct TapStatement {
@@ -25,21 +24,13 @@ pub struct TapStatement {
     value_datatype: Option<DatatypeId>,
 
     #[serde(rename = "valueConstraint", skip_serializing_if = "Option::is_none")]
-    value_constraint: Option<String>,
-
-    #[serde(
-        rename = "valueConstraintType",
-        skip_serializing_if = "Option::is_none"
-    )]
-    value_constraint_type: Option<String>,
+    value_constraint: Option<ValueConstraint>,
 
     #[serde(rename = "valueShape", skip_serializing_if = "Option::is_none")]
     value_shape: Option<ShapeId>,
 
     #[serde(rename = "note", skip_serializing_if = "Option::is_none")]
     note: Option<String>,
-    // state_warns: dict = field(default_factory=dict)
-    // state_extras: dict = field(default_factory=dict)
 }
 
 impl TapStatement {
@@ -72,8 +63,16 @@ impl TapStatement {
         self.value_shape = Some(value_shape.clone());
     }
 
+    pub fn set_value_constraint(&mut self, value_constraint: &ValueConstraint) {
+        self.value_constraint = Some(value_constraint.clone());
+    }
+
     pub fn set_property_label(&mut self, property_label: &str) {
         self.property_label = Some(property_label.to_string());
+    }
+
+    pub fn set_note(&mut self, note: &str) {
+        self.note = Some(note.to_string());
     }
 
     pub fn property_id(&self) -> PropertyId {
@@ -92,19 +91,24 @@ impl TapStatement {
     pub fn value_shape(&self) -> Option<ShapeId> {
         self.value_shape.clone()
     }
+    pub fn value_constraint(&self) -> &Option<ValueConstraint> {
+        &self.value_constraint
+    }
+    pub fn property_label(&self) -> &Option<String> {
+        &self.property_label
+    }
 }
 
 impl Display for TapStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{} {}{}{}",
             show_property(&self.property_id, &self.property_label),
             show_node_constraints(
                 &self.value_nodetype,
                 &self.value_datatype,
                 &self.value_constraint,
-                &self.value_constraint_type,
                 &self.value_shape
             ),
             show_cardinality(self.mandatory, self.repeatable),
@@ -127,25 +131,21 @@ fn show_property(property_id: &PropertyId, property_label: &Option<String>) -> S
 fn show_node_constraints(
     value_node_type: &Option<NodeType>,
     datatype: &Option<DatatypeId>,
-    value_constraint: &Option<String>,
-    value_constraint_type: &Option<String>,
+    value_constraint: &Option<ValueConstraint>,
     value_shape: &Option<ShapeId>,
 ) -> String {
     let mut result = String::new();
     if let Some(node_type) = value_node_type {
-        result.push_str(format!("{node_type}").as_str());
+        result.push_str(format!("{node_type} ").as_str());
     }
     if let Some(datatype) = datatype {
-        result.push_str(format!("{datatype}").as_str());
+        result.push_str(format!("{datatype} ").as_str());
     }
     if let Some(value_constraint) = value_constraint {
-        result.push_str(value_constraint);
-    }
-    if let Some(value_constraint_type) = value_constraint_type {
-        result.push_str(value_constraint_type);
+        result.push_str(format!("{value_constraint}").as_str());
     }
     if let Some(value_shape) = value_shape {
-        result.push_str(format!("@{value_shape}").as_str());
+        result.push_str(format!("@{value_shape} ").as_str());
     }
     if result.is_empty() {
         result.push('.')
@@ -166,7 +166,7 @@ fn show_cardinality(mandatory: Option<bool>, repeatable: Option<bool>) -> String
 
 fn show_note(note: &Option<String>) -> String {
     if let Some(note) = note {
-        format!("// {note}")
+        format!(" // {note}")
     } else {
         "".to_string()
     }

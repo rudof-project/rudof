@@ -16,6 +16,7 @@ pub mod tap_headers;
 pub mod tap_reader;
 pub mod tap_shape;
 pub mod tap_statement;
+pub mod value_constraint;
 
 pub use crate::datatype_id::*;
 pub use crate::node_type::*;
@@ -26,4 +27,5 @@ pub use crate::tap_error::*;
 pub use crate::tap_reader::*;
 pub use crate::tap_shape::*;
 pub use crate::tap_statement::*;
+pub use crate::value_constraint::*;
 pub use dctap::*;

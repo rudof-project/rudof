@@ -1,11 +1,15 @@
-use super::Name;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Default, Clone)]
+use super::Name;
+use super::Value;
+
+#[derive(Serialize, Debug, PartialEq, Default, Clone)]
 pub enum ValueConstraint {
     #[default]
     Any,
     Datatype(Name),
     Ref(Name),
+    ValueSet(Vec<Value>),
     None,
 }
 

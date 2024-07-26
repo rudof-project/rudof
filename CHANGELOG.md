@@ -2,6 +2,13 @@
 
 ## Current changes without release yet
 
+## [0.1.2] - 2024-07-17
+
+- Added descriptions to subcommands in command line
+- Added more options in DCTAP: property and shape labels, and value constraints
+- Added direct conversion from DCTAP to HTML and UML
+- More options for HTML views
+
 ## [0.1.1] - 2024-07-12
 
 - Added basic support for generating HTML views from ShEx schemas, #60

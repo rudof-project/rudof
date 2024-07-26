@@ -1,12 +1,11 @@
-use std::{
-    fs::OpenOptions,
-    io::{self, Write},
-};
-
-use prefixmap::{IriRef, PrefixMap};
-use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use std::fs::OpenOptions;
 
 use crate::ShEx2HtmlError;
+use minijinja::Template;
+use minijinja::{path_loader, Environment};
+use prefixmap::{IriRef, PrefixMap};
+use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use tracing::debug;
 
 use super::{
     Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ValueConstraint,
@@ -25,21 +24,45 @@ impl ShEx2Html {
         }
     }
 
+    pub fn current_html(&self) -> &HtmlSchema {
+        &self.current_html
+    }
+
     pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
+        let environment = create_env();
         let landing_page = self.config.landing_page();
-        let name = landing_page.to_string_lossy().to_string();
+        let template = environment.get_template(self.config.landing_page_name.as_str())?;
+        let landing_page_name = landing_page.to_string_lossy().to_string();
         let out = OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(true)
             .open(landing_page)
-            .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage { name, error: e })?;
-        generate_landing_page(Box::new(out), &self.current_html, &self.config)?;
+            .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
+                name: landing_page_name,
+                error: e,
+            })?;
+        let _state = template
+            .render_to_write(self.current_html.to_landing_html_schema(&self.config), out)?;
+
+        let shape_template = environment.get_template("shape.html")?;
+        for shape in self.current_html.shapes() {
+            generate_shape_page(shape, &shape_template, &self.config)?;
+        }
+
+        // Old geeration of shapes
+        // generate_html(&self.current_html, &self.config)?;
+        /*if let Some(css_file) = &self.config.css_file_name {
+            generate_css_file(css_file, &self.config)?;
+        }*/
         Ok(())
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2HtmlError> {
-        let prefixmap = shex.prefixmap().unwrap_or_default();
+        let prefixmap = shex
+            .prefixmap()
+            .unwrap_or_default()
+            .without_rich_qualifying();
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
@@ -253,6 +276,12 @@ fn iri_ref2name(
     }
 }
 
+pub fn create_env() -> Environment<'static> {
+    let mut env = Environment::new();
+    env.set_loader(path_loader("shapes_converter/default_templates"));
+    env
+}
+
 fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2HtmlError> {
     let min = if let Some(n) = min { *n } else { 1 };
     let max = if let Some(n) = max { *n } else { 1 };
@@ -267,19 +296,72 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
     }
 }
 
-fn generate_landing_page(
-    mut writer: Box<dyn Write>,
-    html_schema: &HtmlSchema,
+/*
+fn generate_css_file(name: &str, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
+    let css_path = config.target_folder.join(name);
+    let css_path_name = css_path.display().to_string();
+    debug!("Generating css file: {css_path_name}");
+    let mut out_css = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(css_path)
+        .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
+            name: css_path_name,
+            error: e,
+        })?;
+    if let Some(color) = &config.color_property_name {
+        writeln!(out_css, ".property_name {{ {color} }}")?;
+    }
+    Ok(())
+}*/
+
+fn generate_shape_page(
+    shape: &HtmlShape,
+    template: &Template,
+    _config: &ShEx2HtmlConfig,
+) -> Result<(), ShEx2HtmlError> {
+    let name = shape.name();
+    debug!("Generating shape with name: {name:?}");
+    if let Some((path, _local_name)) = name.as_local_ref() {
+        let file_name = path.as_path().display().to_string();
+        let out_shape = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(path)
+            .map_err(|e| ShEx2HtmlError::ErrorCreatingShapesFile {
+                name: file_name,
+                error: e,
+            })?;
+        let state = template.render_to_write(shape, out_shape)?;
+        debug!("Generated state: {state:?}");
+        Ok(())
+    } else {
+        Err(ShEx2HtmlError::NoLocalRefName { name: name.clone() })
+    }
+}
+
+/*fn generate_html(html_schema: &HtmlSchema, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
+    /* open_html(&mut writer)?;
+    header(&mut writer, &config.title, config)?;
+    open_tag("body", &mut writer)?;
+    tag_txt("h1", config.title.as_str(), &mut writer)?; */
+    generate_shapes(html_schema.shapes(), config)?;
+    /* close_tag("body", &mut writer)?;
+    close_html(&mut writer)?; */
+    Ok(())
+}
+
+fn generate_shapes<'a>(
+    shapes: impl Iterator<Item = &'a HtmlShape>,
     config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
-    open_html(&mut writer)?;
-    header(&mut writer, config.title.as_str())?;
-    open_tag("body", &mut writer)?;
-    tag_txt("h1", config.title.as_str(), &mut writer)?;
-    open_tag("ul", &mut writer)?;
-    for html_shape in html_schema.shapes() {
+    /* open_tag("ul", writer)?; */
+    for html_shape in shapes {
         let name = html_shape.name();
-        if let Some((path, local_name)) = name.as_local_ref() {
+        debug!("Generating shape with name: {name:?}");
+        if let Some((path, _local_name)) = name.as_local_ref() {
             let file_name = path.as_path().display().to_string();
             let file = OpenOptions::new()
                 .write(true)
@@ -290,13 +372,13 @@ fn generate_landing_page(
                     name: file_name,
                     error: e,
                 })?;
-            write_li_shape(name.name().as_str(), local_name.as_str(), &mut writer)?;
+            // write_li_shape(name.name().as_str(), local_name.as_str(), writer)?;
             write_shape(Box::new(file), html_shape, config)?;
+        } else {
+            debug!("No local ref for that name");
         }
     }
-    close_tag("ul", &mut writer)?;
-    close_tag("body", &mut writer)?;
-    close_html(&mut writer)?;
+    // close_tag("ul", writer)?;
     Ok(())
 }
 
@@ -315,8 +397,47 @@ fn open_tag(tag: &str, writer: &mut Box<dyn Write>) -> Result<(), io::Error> {
     Ok(())
 }
 
+fn open_tag_attrs(
+    tag: &str,
+    attrs: Vec<(&str, &str)>,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), io::Error> {
+    write!(writer, "<{tag} ")?;
+    for (name, value) in attrs {
+        write!(writer, " {name}=\"{value}\"")?;
+    }
+    Ok(())
+}
+
 fn tag_txt(tag: &str, txt: &str, writer: &mut Box<dyn Write>) -> Result<(), io::Error> {
     write!(writer, "<{tag}>{txt}</{tag}>")?;
+    Ok(())
+}
+
+fn tag_txt_attrs(
+    tag: &str,
+    attrs: Vec<(&str, &str)>,
+    txt: &str,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), io::Error> {
+    write!(writer, "<{tag}")?;
+    for (name, value) in attrs {
+        write!(writer, " {name}=\"{value}\"")?;
+    }
+    write!(writer, ">{txt}</{tag}>")?;
+    Ok(())
+}
+
+fn tag_attrs(
+    tag: &str,
+    attrs: Vec<(&str, &str)>,
+    writer: &mut Box<dyn Write>,
+) -> Result<(), io::Error> {
+    write!(writer, "<{tag}")?;
+    for (name, value) in attrs {
+        write!(writer, " {name}=\"{value}\"")?;
+    }
+    write!(writer, "/>")?;
     Ok(())
 }
 
@@ -325,44 +446,79 @@ fn close_tag(tag: &str, writer: &mut Box<dyn Write>) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn write_li_shape(
-    name: &str,
-    local_name: &str,
-    writer: &mut Box<dyn Write>,
-) -> Result<(), ShEx2HtmlError> {
-    let a = format!("<a href=\"{local_name}\">{name}</a>");
-    tag_txt("li", a.as_str(), writer)?;
-    Ok(())
-}
-
 fn write_shape(
     mut writer: Box<dyn Write>,
     html_shape: &HtmlShape,
-    _config: &ShEx2HtmlConfig,
+    config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     open_html(&mut writer)?;
-    header(&mut writer, html_shape.name().name().as_str())?;
-    close_html(&mut writer)?;
+    header(&mut writer, html_shape.name().name().as_str(), config)?;
+    open_tag("body", &mut writer)?;
     tag_txt("h1", html_shape.name().name().as_str(), &mut writer)?;
-    open_tag("table", &mut writer)?;
+    open_tag_attrs("table", vec![("class", "table")], &mut writer)?;
+    open_tag("tr", &mut writer)?;
+    open_tag("thead", &mut writer)?;
+    tag_txt("th", "Property", &mut writer)?;
+    tag_txt("th", "Expected value", &mut writer)?;
+    tag_txt("th", "Cardinality", &mut writer)?;
+    close_tag("tr", &mut writer)?;
+    close_tag("thead", &mut writer)?;
+    open_tag("tbody", &mut writer)?;
     for entry in html_shape.entries() {
         write_entry(&mut writer, entry)?;
     }
+    close_tag("tbody", &mut writer)?;
     close_tag("table", &mut writer)?;
+    direct_txt(&mut writer, "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz\" crossorigin=\"anonymous\"></script>")?;
+    close_tag("body", &mut writer)?;
+    close_html(&mut writer)?;
     Ok(())
 }
 
 fn write_entry(writer: &mut Box<dyn Write>, entry: &Entry) -> Result<(), ShEx2HtmlError> {
     open_tag("tr", writer)?;
-    tag_txt("td", name2html(&entry.name).as_str(), writer)?;
+    tag_txt_attrs(
+        "td",
+        vec![("class", "property_name")],
+        name2html(&entry.name).as_str(),
+        writer,
+    )?;
+    tag_txt(
+        "td",
+        value_constraint2html(&entry.value_constraint).as_str(),
+        writer,
+    )?;
+    tag_txt("td", cardinality2html(&entry.card).as_str(), writer)?;
     close_tag("tr", writer)?;
     Ok(())
 }
 
-fn header(writer: &mut Box<dyn Write>, title: &str) -> Result<(), ShEx2HtmlError> {
+fn header(
+    writer: &mut Box<dyn Write>,
+    title: &str,
+    config: &ShEx2HtmlConfig,
+) -> Result<(), ShEx2HtmlError> {
     open_tag("head", writer)?;
+    direct_txt(writer, "<meta charset=\"utf-8\">")?;
+    direct_txt(
+        writer,
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+    )?;
     tag_txt("title", title, writer)?;
+    if let Some(css_file) = &config.css_file_name {
+        tag_attrs(
+            "link",
+            vec![("href", css_file.as_str()), ("rel", "stylesheet")],
+            writer,
+        )?;
+    }
+    direct_txt(writer, "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH\" crossorigin=\"anonymous\">")?;
     close_tag("head", writer)?;
+    Ok(())
+}
+
+fn direct_txt(writer: &mut Box<dyn Write>, str: &str) -> Result<(), ShEx2HtmlError> {
+    write!(writer, "{str}")?;
     Ok(())
 }
 
@@ -374,10 +530,56 @@ fn name2html(name: &Name) -> String {
     }
 }
 
+fn ref2html(name: &Name) -> String {
+    if let Some(local_ref) = name.as_local_href() {
+        format!("<a href=\"{}\">@{}</a>", local_ref, name.name())
+    } else {
+        name.name()
+    }
+}
+
+fn value_constraint2html(value_constraint: &ValueConstraint) -> String {
+    match value_constraint {
+        ValueConstraint::Any => "Any".to_string(),
+        ValueConstraint::Datatype(name) => name2html(name),
+        ValueConstraint::Ref(r) => ref2html(r),
+        ValueConstraint::None => "None".to_string(),
+        ValueConstraint::ValueSet(_) => todo!(),
+    }
+}
+
+fn cardinality2html(card: &Cardinality) -> String {
+    match card {
+        Cardinality::OneOne => "".to_string(),
+        Cardinality::Star => "*".to_string(),
+        Cardinality::Plus => "+".to_string(),
+        Cardinality::Optional => "?".to_string(),
+        Cardinality::Range(m, n) => format!("[{m}-{n}]"),
+        Cardinality::Fixed(m) => format!("[{m}]"),
+    }
+}
+
+fn url_for_name(name: ViaDeserialize<Name>) -> Result<String, Error> {
+    Ok(name.name())
+}
+*/
 #[cfg(test)]
 mod tests {
     // use super::*;
     // use shex_compact::ShExParser;
+
+    #[test]
+    fn test_minininja() {
+        use minijinja::{context, Environment};
+
+        let mut env = Environment::new();
+        env.add_template("hello", "Hello {{ name }}!").unwrap();
+        let tmpl = env.get_template("hello").unwrap();
+        assert_eq!(
+            tmpl.render(context!(name => "John")).unwrap(),
+            "Hello John!".to_string()
+        )
+    }
 
     /*    #[test]
         fn test_simple() {

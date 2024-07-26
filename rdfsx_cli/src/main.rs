@@ -29,7 +29,7 @@ use shacl_validation::validate;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
-    ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
+    ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Command::Schema {
+        Some(Command::ShEx {
             schema,
             schema_format,
             result_schema_format,
@@ -424,7 +424,20 @@ fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input_path, format, &mut writer, result_format, output_path)
+                    run_shex2html(input_path, format, &mut writer,  output_path)
+                }
+            }
+        }
+        (InputConvertMode::DCTAP, OutputConvertMode::UML) => {
+            run_tap2uml(input_path, format, &mut writer)
+        }
+        (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
+            match target_folder {
+                None => Err(anyhow!(
+            "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
+                )),
+                Some(output_path) => {
+                    run_tap2html(input_path, format, &mut writer, output_path)
                 }
             }
         }
@@ -438,24 +451,39 @@ fn run_shex2uml(
     input_path: &Path,
     format: &InputConvertFormat,
     writer: &mut Box<dyn Write>,
-    _result_format: &OutputConvertFormat,
+    result_format: &OutputConvertFormat,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
-    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::new());
     converter.convert(&schema)?;
-    converter.as_plantuml(writer)?;
-    Ok(())
+    match result_format {
+        OutputConvertFormat::PlantUML => {
+            converter.as_plantuml(writer)?;
+            Ok(())
+        }
+        OutputConvertFormat::SVG => {
+            converter.as_image(writer, ImageFormat::SVG)?;
+            Ok(())
+        }
+        OutputConvertFormat::PNG => {
+            converter.as_image(writer, ImageFormat::PNG)?;
+            Ok(())
+        }
+        // OutputConvertFormat::JPG => converter.as_image(writer, Image::JPG)?,
+        _ => Err(anyhow!(
+            "Conversion from ShEx to UML does not support format {result_format}"
+        )),
+    }
 }
 
 fn run_shex2html<P: AsRef<Path>>(
     input_path: P,
     format: &InputConvertFormat,
     msg_writer: &mut Box<dyn Write>,
-    _result_format: &OutputConvertFormat,
     output_folder: P,
 ) -> Result<()> {
     debug!("Starting shex2html");
@@ -469,6 +497,35 @@ fn run_shex2html<P: AsRef<Path>>(
     debug!("Landing page {landing_page}\nConverter...");
     let mut converter = ShEx2Html::new(config);
     converter.convert(&schema)?;
+    converter.export_schema()?;
+    writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
+    Ok(())
+}
+
+fn run_tap2html<P: AsRef<Path>>(
+    input_path: P,
+    format: &InputConvertFormat,
+    msg_writer: &mut Box<dyn Write>,
+    output_folder: P,
+) -> Result<()> {
+    debug!("Starting tap2html");
+    let dctap_format = match format {
+        InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
+    }?;
+    let dctap = parse_dctap(input_path, &dctap_format)?;
+    let converter_tap = Tap2ShEx::new(Tap2ShExConfig::default());
+    let shex = converter_tap.convert(&dctap)?;
+    debug!(
+        "Converted ShEx: {}",
+        ShExFormatter::default().format_schema(&shex)
+    );
+    let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
+    let landing_page = config.landing_page().to_string_lossy().to_string();
+    debug!("Landing page {landing_page}\nConverter...");
+    let mut converter = ShEx2Html::new(config);
+    converter.convert(&shex)?;
+    // debug!("Converted HTMLSchema: {:?}", converter.current_html());
     converter.export_schema()?;
     writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
     Ok(())
@@ -513,6 +570,24 @@ fn run_tap2shex(
         _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
     }?;
     show_schema(&shex, &result_schema_format, writer)?;
+    Ok(())
+}
+
+fn run_tap2uml(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    writer: &mut Box<dyn Write>,
+) -> Result<()> {
+    let tap_format = match format {
+        InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
+    }?;
+    let dctap = parse_dctap(input_path, &tap_format)?;
+    let converter_shex = Tap2ShEx::new(Tap2ShExConfig::default());
+    let shex = converter_shex.convert(&dctap)?;
+    let mut converter_uml = ShEx2Uml::new(ShEx2UmlConfig::new());
+    converter_uml.convert(&shex)?;
+    converter_uml.as_plantuml(writer)?;
     Ok(())
 }
 
@@ -805,7 +880,7 @@ fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclS
     }
 }
 
-fn parse_dctap(input_path: &Path, format: &DCTapFormat) -> Result<DCTap> {
+fn parse_dctap<P: AsRef<Path>>(input_path: P, format: &DCTapFormat) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
             let dctap = DCTap::from_path(input_path, TapConfig::default())?;

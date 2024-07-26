@@ -7,6 +7,15 @@ pub type Result<T> = result::Result<T, TapError>;
 
 #[derive(Error, Debug)]
 pub enum TapError {
+    #[error("Empty node type")]
+    EmptyNodeType,
+
+    #[error("Unexpected node type: {str}")]
+    UnexpectedNodeType { str: String },
+
+    #[error("Unexpected value constraint type: {value}")]
+    UnexpectedValueConstraintType { value: String },
+
     #[error("CSV Error: {err}")]
     RDFParseError {
         #[from]
