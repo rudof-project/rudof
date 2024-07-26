@@ -288,8 +288,8 @@ impl PrefixMap {
             ("dc", "http://purl.org/dc/elements/1.1/"),
         ]))
         .unwrap()
-        .without_default_colors()
-        .with_hyperlink(true)
+        // .without_default_colors()
+        // .with_hyperlink(true)
     }
 
     /// Default Wikidata prefixmap

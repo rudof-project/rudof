@@ -24,7 +24,7 @@ use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
-    ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
+    ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -403,17 +403,33 @@ fn run_shex2uml(
     input_path: &Path,
     format: &InputConvertFormat,
     writer: &mut Box<dyn Write>,
-    _result_format: &OutputConvertFormat,
+    result_format: &OutputConvertFormat,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
-    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::new());
     converter.convert(&schema)?;
-    converter.as_plantuml(writer)?;
-    Ok(())
+    match result_format {
+        OutputConvertFormat::PlantUML => {
+            converter.as_plantuml(writer)?;
+            Ok(())
+        }
+        OutputConvertFormat::SVG => {
+            converter.as_image(writer, ImageFormat::SVG)?;
+            Ok(())
+        }
+        OutputConvertFormat::PNG => {
+            converter.as_image(writer, ImageFormat::PNG)?;
+            Ok(())
+        }
+        // OutputConvertFormat::JPG => converter.as_image(writer, Image::JPG)?,
+        _ => Err(anyhow!(
+            "Conversion from ShEx to UML does not support format {result_format}"
+        )),
+    }
 }
 
 fn run_shex2html<P: AsRef<Path>>(
@@ -521,7 +537,7 @@ fn run_tap2uml(
     let dctap = parse_dctap(input_path, &tap_format)?;
     let converter_shex = Tap2ShEx::new(Tap2ShExConfig::default());
     let shex = converter_shex.convert(&dctap)?;
-    let mut converter_uml = ShEx2Uml::new(ShEx2UmlConfig::default());
+    let mut converter_uml = ShEx2Uml::new(ShEx2UmlConfig::new());
     converter_uml.convert(&shex)?;
     converter_uml.as_plantuml(writer)?;
     Ok(())

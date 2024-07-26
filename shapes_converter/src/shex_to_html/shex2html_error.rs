@@ -4,12 +4,15 @@ use prefixmap::IriRef;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 
-use super::{HtmlShape, NodeId};
+use super::{HtmlShape, Name, NodeId};
 
 #[derive(Error, Debug)]
 pub enum ShEx2HtmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
     ShapeNotFound { iri: IriRef, schema: Schema },
+
+    #[error("No local ref for shape name: {name:?}")]
+    NoLocalRefName { name: Name },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
     ShapeRefNotFound {
@@ -29,6 +32,12 @@ pub enum ShEx2HtmlError {
     SchemaError {
         #[from]
         err: SchemaJsonError,
+    },
+
+    #[error(transparent)]
+    MiniNinjaError {
+        #[from]
+        err: minijinja::Error,
     },
 
     #[error(transparent)]

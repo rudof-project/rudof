@@ -533,6 +533,8 @@ pub enum OutputConvertFormat {
     Turtle,
     PlantUML,
     HTML,
+    SVG,
+    PNG,
 }
 
 impl Display for OutputConvertFormat {
@@ -546,6 +548,8 @@ impl Display for OutputConvertFormat {
             OutputConvertFormat::Turtle => write!(dest, "turtle"),
             OutputConvertFormat::PlantUML => write!(dest, "uml"),
             OutputConvertFormat::HTML => write!(dest, "html"),
+            OutputConvertFormat::PNG => write!(dest, "png"),
+            OutputConvertFormat::SVG => write!(dest, "svg"),
         }
     }
 }
