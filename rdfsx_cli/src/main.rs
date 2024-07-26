@@ -326,16 +326,13 @@ fn run_validate_shacl(
     };
     if let Ok(data_format) = data_format.to_owned().try_into() {
         let store = Store::new()?;
-        println!("Loading the dataset located in: {:?}", path);
         store.bulk_loader().load_graph(
             BufReader::new(File::open(path)?),
             data_format,
             GraphNameRef::DefaultGraph,
             None,
         )?;
-        println!("{:?} triples loaded", store.len());
         let mut writer = get_writer(output)?;
-        println!("Validating the triples againts the provided Shape");
         let validate = validate(&store, shacl_schema);
         match validate {
             Ok(result) => writeln!(writer, "Result:\n{}", result)?,

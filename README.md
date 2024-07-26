@@ -218,7 +218,7 @@ Options:
 ### Validating an RDF node against some SHACL Shape
 
 ```sh
-cargo run -- validate-shacl --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+rdfsx validate-shacl --shapes examples/simple_shacl.ttl --data examples/simple.ttl
 ```
 
 ## Main modules
