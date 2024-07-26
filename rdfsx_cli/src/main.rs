@@ -2,11 +2,13 @@ extern crate anyhow;
 extern crate clap;
 extern crate dctap;
 extern crate iri_s;
+extern crate oxigraph;
 extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
 extern crate shacl_ast;
+extern crate shacl_validation;
 extern crate shapemap;
 extern crate shapes_converter;
 extern crate shex_ast;
@@ -19,8 +21,11 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use dctap::{DCTap, TapConfig};
+use oxigraph::model::GraphNameRef;
+use oxigraph::store::Store;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
+use shacl_validation::validate;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -32,12 +37,15 @@ use shex_validation::Validator;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
 use srdf::SRDF;
+use std::convert::TryInto;
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::result::Result::Ok;
 use std::str::FromStr;
 use std::time::Instant;
 use tracing::debug;
+use validate::validate;
 
 pub mod cli;
 pub mod data;
@@ -84,7 +92,7 @@ fn main() -> Result<()> {
             *show_time,
             *show_statistics,
         ),
-        Some(Command::Validate {
+        Some(Command::ValidateShex {
             schema,
             schema_format,
             data,
@@ -96,7 +104,7 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             output,
-        }) => run_validate(
+        }) => run_validate_shex(
             schema,
             schema_format,
             data,
@@ -110,6 +118,13 @@ fn main() -> Result<()> {
             cli.debug,
             output,
         ),
+        Some(Command::ValidateShacl {
+            shapes,
+            shapes_format,
+            data,
+            data_format,
+            output,
+        }) => run_validate_shacl(shapes, shapes_format, data, data_format, cli.debug, output),
         Some(Command::Data {
             data,
             data_format,
@@ -231,7 +246,7 @@ fn show_schema(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_validate(
+fn run_validate_shex(
     schema_path: &Path,
     schema_format: &ShExFormat,
     data: &Option<PathBuf>,
@@ -293,6 +308,39 @@ fn run_validate(
         Result::Err(err) => {
             bail!("{err}");
         }
+    }
+}
+
+fn run_validate_shacl(
+    shapes_path: &Path,
+    shapes_format: &ShaclFormat,
+    data: &Option<PathBuf>,
+    data_format: &DataFormat,
+    debug: u8,
+    output: &Option<PathBuf>,
+) -> Result<()> {
+    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
+    let path = match data {
+        Some(path) => Path::new(path),
+        None => todo!(),
+    };
+    if let Ok(data_format) = data_format.to_owned().try_into() {
+        let store = Store::new()?;
+        store.bulk_loader().load_graph(
+            BufReader::new(File::open(path)?),
+            data_format,
+            GraphNameRef::DefaultGraph,
+            None,
+        )?;
+        let mut writer = get_writer(output)?;
+        let validate = validate(&store, shacl_schema);
+        match validate {
+            Ok(result) => writeln!(writer, "Result:\n{}", result)?,
+            Err(err) => bail!("{err}"),
+        }
+        Ok(())
+    } else {
+        bail!("Provide a valid data format")
     }
 }
 

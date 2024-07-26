@@ -20,6 +20,7 @@ shex_compact = { path = "../shex_compact", version = "0.1.0" }
 shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
 dctap = { path = "../dctap", version = "0.1.0" }
 shapes_converter = { path = "../shapes_converter", version = "0.1.0" }
+shacl_validation = { path = "../shacl_validation", version = "0.1.0" }
 
 serde = "1.0"
 serde_derive = "1.0"
@@ -31,6 +32,7 @@ void = "1"
 clap = { version = "4.2.1", features = ["derive"] }
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
+oxigraph = "0.3.22"
 regex = "^1.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
