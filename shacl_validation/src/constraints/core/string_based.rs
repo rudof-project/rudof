@@ -33,13 +33,16 @@ impl Evaluate for MinLengthConstraintComponent {
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         for node in &value_nodes {
-            let query = formatdoc! {
-                " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
-                node, self.min_length
-            };
-            if !ask(store, query)? {
-                let result = self.make_validation_result(Some(node));
-                report.add_result(result);
+            if node.is_blank_node() || node.is_triple() {
+                self.make_validation_result(Some(node), report);
+            } else {
+                let query = formatdoc! {
+                    " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
+                    node, self.min_length
+                };
+                if !ask(store, query)? {
+                    self.make_validation_result(Some(node), report);
+                }
             }
         }
         Ok(())
@@ -69,13 +72,16 @@ impl Evaluate for MaxLengthConstraintComponent {
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         for node in &value_nodes {
-            let query = formatdoc! {
-                " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
-                node, self.max_length
-            };
-            if !ask(store, query)? {
-                let result = self.make_validation_result(Some(node));
-                report.add_result(result);
+            if node.is_blank_node() || node.is_triple() {
+                self.make_validation_result(Some(node), report);
+            } else {
+                let query = formatdoc! {
+                    " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
+                    node, self.max_length
+                };
+                if !ask(store, query)? {
+                    self.make_validation_result(Some(node), report);
+                }
             }
         }
         Ok(())
@@ -105,23 +111,26 @@ impl Evaluate for PatternConstraintComponent {
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         for node in &value_nodes {
-            let query = match &self.flags {
-                Some(flags) => formatdoc! {
-                    "ASK {{
-                        FILTER (!isBlank({}) && regex(str({}), {}, {}))
-                    }}",
-                    node, node, self.pattern, flags
-                },
-                None => formatdoc! {
-                    "ASK {{
-                        FILTER (!isBlank({}) && regex(str({}), {}))
-                    }}",
-                    node, node, self.pattern
-                },
-            };
-            if !ask(store, query)? {
-                let result = self.make_validation_result(Some(node));
-                report.add_result(result);
+            if node.is_blank_node() || node.is_triple() {
+                self.make_validation_result(Some(node), report);
+            } else {
+                let query = match &self.flags {
+                    Some(flags) => formatdoc! {
+                        "ASK {{
+                            FILTER (regex(str({}), {}, {}))
+                        }}",
+                        node, self.pattern, flags
+                    },
+                    None => formatdoc! {
+                        "ASK {{
+                            FILTER (regex(str({}), {}))
+                        }}",
+                        node, self.pattern
+                    },
+                };
+                if !ask(store, query)? {
+                    self.make_validation_result(Some(node), report);
+                }
             }
         }
         Ok(())
@@ -145,7 +154,7 @@ impl LanguageInConstraintComponent {
 impl Evaluate for LanguageInConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
+        _store: &Store,
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
@@ -153,19 +162,18 @@ impl Evaluate for LanguageInConstraintComponent {
             let literal = match node {
                 Term::Literal(literal) => literal,
                 _ => {
-                    self.make_validation_result(Some(node));
-                    return Ok(());
+                    self.make_validation_result(Some(node), report);
+                    break;
                 }
             };
-
             match literal.language() {
                 Some(language) => {
                     if !self.langs.contains(&Lang::new(language)) {
-                        self.make_validation_result(Some(node));
+                        self.make_validation_result(Some(node), report);
                     }
                 }
                 _ => {
-                    self.make_validation_result(Some(node));
+                    self.make_validation_result(Some(node), report);
                 }
             }
         }
@@ -190,10 +198,24 @@ impl UniqueLangConstraintComponent {
 impl Evaluate for UniqueLangConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
+        _store: &Store,
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        if self.unique_lang {
+            let mut langs = HashSet::new();
+            for node in &value_nodes {
+                if let Term::Literal(literal) = node {
+                    if let Some(lang) = literal.language() {
+                        if langs.contains(lang) {
+                            self.make_validation_result(Some(node), report)
+                        } else {
+                            langs.insert(lang);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }

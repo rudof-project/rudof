@@ -35,8 +35,7 @@ impl Evaluate for MinExclusiveConstraintComponent {
             };
             println!("{}", query);
             if !ask(store, query)? {
-                let result = self.make_validation_result(Some(node));
-                report.add_result(result);
+                self.make_validation_result(Some(node), report);
             }
         }
         Ok(())
@@ -67,8 +66,7 @@ impl Evaluate for MinInclusiveConstraintComponent {
                 node, self.literal
             };
             if !ask(store, query)? {
-                let result = self.make_validation_result(Some(node));
-                report.add_result(result);
+                self.make_validation_result(Some(node), report);
             }
         }
         Ok(())
@@ -93,14 +91,13 @@ impl Evaluate for MaxExclusiveConstraintComponent {
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        for node in value_nodes {
+        for node in &value_nodes {
             let query = formatdoc! {
                 " ASK {{ FILTER ({} > {}) }} ",
                 node, self.literal
             };
             if !ask(store, query)? {
-                let result = self.make_validation_result(Some(&node));
-                report.add_result(result);
+                self.make_validation_result(Some(node), report);
             }
         }
         Ok(())
@@ -125,14 +122,13 @@ impl Evaluate for MaxInclusiveConstraintComponent {
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        for node in value_nodes {
+        for node in &value_nodes {
             let query = formatdoc! {
                 " ASK {{ FILTER ({} >= {}) }} ",
                 node, self.literal
             };
             if !ask(store, query)? {
-                let result = self.make_validation_result(Some(&node));
-                report.add_result(result);
+                self.make_validation_result(Some(node), report);
             }
         }
         Ok(())

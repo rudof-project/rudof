@@ -70,8 +70,15 @@ fn main() -> Result<(), TestSuiteError> {
     for test in tests {
         match validate(&test.data_store, test.schema) {
             Ok(actual) => {
+                let label = match test.label {
+                    Some(label) => label,
+                    None => String::from("Test"),
+                };
                 if actual == test.result {
+                    println!("{} succeeded", label);
                     count += 1;
+                } else {
+                    println!("{} failed", label);
                 }
             }
             Err(_) => todo!(),

@@ -35,8 +35,7 @@ impl Evaluate for MinCountConstraintComponent {
         }
 
         if (value_nodes.len() as isize) < self.min_count {
-            let result = self.make_validation_result(None);
-            report.add_result(result);
+            self.make_validation_result(None, report);
         }
 
         Ok(())
@@ -65,8 +64,7 @@ impl Evaluate for MaxCountConstraintComponent {
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         if (value_nodes.len() as isize) > self.max_count {
-            let result = self.make_validation_result(None);
-            report.add_result(result);
+            self.make_validation_result(None, report);
         }
         Ok(())
     }

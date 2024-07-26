@@ -17,7 +17,10 @@ pub fn select(store: &Store, query: String) -> Result<HashSet<Term>, SPARQLError
             }),
             _ => todo!(),
         },
-        Err(_) => todo!(),
+        Err(error) => {
+            eprintln!("{}", error);
+            todo!()
+        }
     };
     Ok(ans)
 }

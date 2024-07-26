@@ -102,11 +102,11 @@ impl Display for Literal {
             Literal::StringLiteral {
                 lexical_form,
                 lang: Some(lang),
-            } => write!(f, "\"{lexical_form}\"@{lang}"),
+            } => write!(f, "\"{lexical_form}\"{lang}"),
             Literal::DatatypeLiteral {
                 lexical_form,
                 datatype,
-            } => write!(f, "\"{lexical_form}\"^^{datatype}"),
+            } => write!(f, "\"{lexical_form}\"^^<{datatype}>"),
             Literal::NumericLiteral(n) => write!(f, "{}", n),
             Literal::BooleanLiteral(true) => write!(f, "true"),
             Literal::BooleanLiteral(false) => write!(f, "false"),

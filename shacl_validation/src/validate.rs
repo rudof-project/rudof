@@ -42,18 +42,21 @@ trait Validate {
         node: srdf::Object,
         focus_nodes: &mut HashSet<Term>,
     ) -> Result<(), ValidateError> {
-        if let srdf::Object::BlankNode(_) = node {
-            Err(TargetNodeBlankNode)
-        } else {
-            let query = formatdoc! {"
+        let node = match &node {
+            srdf::Object::Iri(iri_s) => iri_s.as_named_node().to_string(),
+            srdf::Object::BlankNode(_) => return Err(TargetNodeBlankNode),
+            srdf::Object::Literal(literal) => literal.to_string(),
+        };
+        let query = formatdoc! {"
                 SELECT DISTINCT ?this
                 WHERE {{
                     BIND ({} AS ?this)
                 }}
-            ", node};
-            focus_nodes.extend(select(store, query)?);
-            Ok(())
-        }
+            ",
+            node
+        };
+        focus_nodes.extend(select(store, query)?);
+        Ok(())
     }
 
     fn target_class(
@@ -129,8 +132,6 @@ impl Validate for NodeShape {
                 Err(_) => todo!(),
             };
 
-            println!("{}", component);
-
             constraint.evaluate(store, value_nodes, report);
         }
     }
@@ -150,7 +151,7 @@ impl Validate for PropertyShape {
                 Err(_) => todo!(),
             };
 
-            let mut value_nodes = HashSet::new();
+            let value_nodes = HashSet::new();
 
             for focus_node in focus_nodes {
                 match self.path() {
@@ -172,7 +173,6 @@ impl Validate for PropertyShape {
 pub fn validate(store: &Store, shapes_graph: Schema) -> Result<ValidationReport, ValidateError> {
     let mut ans = ValidationReport::default(); // conformant by default...
     for (_, shape) in shapes_graph.iter() {
-        println!("{}", shape);
         match shape {
             Shape::NodeShape(node_shape) => node_shape.validate(store, &mut ans),
             Shape::PropertyShape(property_shape) => property_shape.validate(store, &mut ans),

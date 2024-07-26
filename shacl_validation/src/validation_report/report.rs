@@ -46,9 +46,7 @@ impl ValidationReport {
 
     fn is_conforms(store: &Store, subject: &Term) -> Result<bool, ValidationReportError> {
         let query = formatdoc! {"
-            ASK {{
-                {} {} ?this .
-            }}
+            ASK {{ {} {} true }}
         ", subject, shacl_ast::SH_CONFORMS.as_named_node()};
         Ok(ask(store, query)?)
     }
@@ -80,7 +78,7 @@ impl fmt::Display for ValidationReport {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Validation Report: [")?;
         writeln!(f, "\tconforms: {},", self.conforms)?;
-        writeln!(f, "\tresult: {{")?;
+        writeln!(f, "\tresult:")?;
         for result in &self.result {
             writeln!(f, "\t\t[")?;
             if let Some(term) = &result.focus_node() {

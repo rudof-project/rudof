@@ -26,10 +26,7 @@ use constraint_error::ConstraintError;
 use oxigraph::{model::Term, store::Store};
 use shacl_ast::component::Component;
 
-use crate::validation_report::{
-    report::ValidationReport,
-    result::{ValidationResult, ValidationResultBuilder},
-};
+use crate::validation_report::{report::ValidationReport, result::ValidationResultBuilder};
 
 pub(crate) mod constraint_error;
 pub mod core;
@@ -42,8 +39,12 @@ pub trait Evaluate {
         report: &mut ValidationReport,
     ) -> Result<(), ConstraintError>;
 
-    fn make_validation_result(&self, value_node: Option<&Term>) -> ValidationResult {
-        let builder = ValidationResultBuilder::default();
+    fn make_validation_result(&self, value_node: Option<&Term>, report: &mut ValidationReport) {
+        let mut builder = ValidationResultBuilder::default();
+
+        if let Some(focus_node) = value_node {
+            builder.focus_node(focus_node.to_owned());
+        }
 
         // let severity = match shape {
         //     Shape::NodeShape(shape) => shape.severity(),
@@ -66,7 +67,8 @@ pub trait Evaluate {
         //     Shape::PropertyShape(shape) => shape.value(),
         // };
 
-        builder.build()
+        let result = builder.build();
+        report.add_result(result);
     }
 }
 
