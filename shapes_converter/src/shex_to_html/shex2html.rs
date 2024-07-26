@@ -1,11 +1,8 @@
-use std::{
-    fs::OpenOptions,
-    io::{self, Write},
-};
+use std::fs::OpenOptions;
 
 use crate::ShEx2HtmlError;
-use minijinja::{path_loader, Environment, Error};
-use minijinja::{value::ViaDeserialize, Template};
+use minijinja::Template;
+use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap};
 use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use tracing::debug;
@@ -32,8 +29,7 @@ impl ShEx2Html {
     }
 
     pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
-        let mut environment = create_env();
-        environment.add_function("url_for_name", url_for_name);
+        let environment = create_env();
         let landing_page = self.config.landing_page();
         let template = environment.get_template(self.config.landing_page_name.as_str())?;
         let landing_page_name = landing_page.to_string_lossy().to_string();
@@ -300,6 +296,7 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
     }
 }
 
+/*
 fn generate_css_file(name: &str, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
     let css_path = config.target_folder.join(name);
     let css_path_name = css_path.display().to_string();
@@ -317,12 +314,12 @@ fn generate_css_file(name: &str, config: &ShEx2HtmlConfig) -> Result<(), ShEx2Ht
         writeln!(out_css, ".property_name {{ {color} }}")?;
     }
     Ok(())
-}
+}*/
 
 fn generate_shape_page(
     shape: &HtmlShape,
     template: &Template,
-    config: &ShEx2HtmlConfig,
+    _config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     let name = shape.name();
     debug!("Generating shape with name: {name:?}");
@@ -345,7 +342,7 @@ fn generate_shape_page(
     }
 }
 
-fn generate_html(html_schema: &HtmlSchema, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
+/*fn generate_html(html_schema: &HtmlSchema, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
     /* open_html(&mut writer)?;
     header(&mut writer, &config.title, config)?;
     open_tag("body", &mut writer)?;
@@ -565,7 +562,7 @@ fn cardinality2html(card: &Cardinality) -> String {
 fn url_for_name(name: ViaDeserialize<Name>) -> Result<String, Error> {
     Ok(name.name())
 }
-
+*/
 #[cfg(test)]
 mod tests {
     // use super::*;
