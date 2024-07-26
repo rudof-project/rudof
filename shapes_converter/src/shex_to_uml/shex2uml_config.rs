@@ -16,11 +16,10 @@ pub struct ShEx2UmlConfig {
 
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
-        let plantuml_path;
-        match env::var(PLANTUML) {
-            Ok(value) => plantuml_path = Some(Path::new(value.as_str()).to_path_buf()),
-            Err(_) => plantuml_path = None,
-        }
+        let plantuml_path = match env::var(PLANTUML) {
+            Ok(value) => Some(Path::new(value.as_str()).to_path_buf()),
+            Err(_) => None,
+        };
         Self { plantuml_path }
     }
 
@@ -57,4 +56,10 @@ pub enum ShEx2UmlConfigError {
 
     #[error("Accessing environment variable {var_name}: {error}")]
     EnvVarError { var_name: String, error: VarError },
+}
+
+impl Default for ShEx2UmlConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }

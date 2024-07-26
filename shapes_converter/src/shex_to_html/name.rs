@@ -46,11 +46,9 @@ impl Name {
 
     pub fn as_local_ref(&self) -> Option<(PathBuf, String)> {
         if let Some(href) = &self.href {
-            if let Some(path) = &self.path {
-                Some((path.to_owned(), href.to_string()))
-            } else {
-                None
-            }
+            self.path
+                .as_ref()
+                .map(|path| (path.to_owned(), href.to_string()))
         } else {
             None
         }

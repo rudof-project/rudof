@@ -1,4 +1,4 @@
-use std::{io, process::Command};
+use std::io;
 
 use prefixmap::IriRef;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};

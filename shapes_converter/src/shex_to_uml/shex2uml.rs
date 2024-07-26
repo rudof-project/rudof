@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File},
+    fs::File,
     io::{self, Write},
     process::Command,
 };
@@ -13,7 +13,7 @@ use crate::shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml};
 use super::{
     Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint, PLANTUML,
 };
-use tempfile::{NamedTempFile, TempDir};
+use tempfile::TempDir;
 
 pub struct ShEx2Uml {
     config: ShEx2UmlConfig,

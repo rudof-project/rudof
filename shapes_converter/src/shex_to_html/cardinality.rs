@@ -1,5 +1,5 @@
 // use serde::Serialize;
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::ser::{Serialize, Serializer};
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub enum Cardinality {
