@@ -325,6 +325,11 @@ fn copy<W: Write>(file: &mut File, writer: &mut W) -> Result<(), io::Error> {
     Ok(())
 }
 
+pub enum ImageFormat {
+    SVG,
+    PNG,
+}
+
 #[cfg(test)]
 mod tests {
     // use super::*;
@@ -353,9 +358,4 @@ mod tests {
             let converted_uml = converter.convert(&shex).unwrap();
             assert_eq!(converted_uml, expected_uml);
         } */
-}
-
-pub enum ImageFormat {
-    SVG,
-    PNG,
 }
