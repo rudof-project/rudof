@@ -57,10 +57,7 @@ impl Manifest {
                 Err(_) => break,
             };
 
-            let label = match solution.get("label") {
-                Some(label) => Some(label.to_string()),
-                None => None,
-            };
+            let label = solution.get("label").map(|label| label.to_string());
 
             let action = match solution.get("action") {
                 Some(action) => action,
@@ -179,7 +176,7 @@ impl Manifest {
             let mut chars = file.chars();
             chars.next();
             chars.next_back();
-            if let Ok(child_manifest) = Self::load(&chars.as_str()) {
+            if let Ok(child_manifest) = Self::load(chars.as_str()) {
                 includes.push(child_manifest);
             }
         }

@@ -7,6 +7,7 @@ use thiserror::Error;
 
 use crate::helper::helper_error::SPARQLError;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Error, Debug)]
 pub enum ManifestError {
     #[error("Error during the creation of the IRI")]

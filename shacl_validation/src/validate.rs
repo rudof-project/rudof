@@ -22,10 +22,10 @@ trait Validate {
     fn focus_nodes(
         &self,
         store: &Store,
-        targets: &Vec<Target>,
+        targets: &[Target],
     ) -> Result<HashSet<Term>, ValidateError> {
         let mut ans = HashSet::new();
-        for target in targets.to_vec() {
+        for target in targets.iter().cloned() {
             match target {
                 Target::TargetNode(node) => self.target_node(store, node, &mut ans)?,
                 Target::TargetClass(class) => self.target_class(store, class, &mut ans)?,
@@ -132,7 +132,8 @@ impl Validate for NodeShape {
                 Err(_) => todo!(),
             };
 
-            constraint.evaluate(store, value_nodes, report);
+            // TODO: The let _ assignment has been added to make clippy happy
+            let _ = constraint.evaluate(store, value_nodes, report);
         }
     }
 }
@@ -153,19 +154,20 @@ impl Validate for PropertyShape {
 
             let value_nodes = HashSet::new();
 
-            for focus_node in focus_nodes {
+            for _focus_node in focus_nodes {
                 match self.path() {
                     srdf::SHACLPath::Predicate { pred: _ } => todo!(),
-                    srdf::SHACLPath::Alternative { paths } => todo!(),
-                    srdf::SHACLPath::Sequence { paths } => todo!(),
-                    srdf::SHACLPath::Inverse { path } => todo!(),
-                    srdf::SHACLPath::ZeroOrMore { path } => todo!(),
-                    srdf::SHACLPath::OneOrMore { path } => todo!(),
-                    srdf::SHACLPath::ZeroOrOne { path } => todo!(),
+                    srdf::SHACLPath::Alternative { paths: _ } => todo!(),
+                    srdf::SHACLPath::Sequence { paths: _ } => todo!(),
+                    srdf::SHACLPath::Inverse { path: _ } => todo!(),
+                    srdf::SHACLPath::ZeroOrMore { path: _ } => todo!(),
+                    srdf::SHACLPath::OneOrMore { path: _ } => todo!(),
+                    srdf::SHACLPath::ZeroOrOne { path: _ } => todo!(),
                 }
             }
 
-            constraint.evaluate(store, value_nodes, report);
+            // TODO: The let _ assignment has been added to make clippy happy
+            let _ = constraint.evaluate(store, value_nodes, report);
         }
     }
 }

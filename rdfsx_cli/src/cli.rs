@@ -90,7 +90,10 @@ pub enum Command {
     },
 
     /// RDF Validation using ShEx schemas
-    ValidateShex {
+    Validate {
+        #[arg(short = 'm', long = "validation-mode", value_name = "Validation mode")]
+        validation_mode: ValidationMode,
+
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -528,6 +531,22 @@ impl Display for InputConvertFormat {
             InputConvertFormat::ShExC => write!(dest, "shexc"),
             InputConvertFormat::ShExJ => write!(dest, "shexj"),
             InputConvertFormat::Turtle => write!(dest, "turtle"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ValidationMode {
+    ShEx,
+    SHACL,
+}
+
+impl Display for ValidationMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ValidationMode::ShEx => write!(dest, "shex"),
+            ValidationMode::SHACL => write!(dest, "shacl"),
         }
     }
 }

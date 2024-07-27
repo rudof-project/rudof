@@ -23,6 +23,8 @@ struct Cli {
     manifest_filename: String,
 }
 
+// TODO: The following line is to make clippy happy...should be removed, it complains that node and manifest_store are not used
+#[allow(dead_code)]
 struct ShaclTest {
     node: Term,
     manifest_store: Store,

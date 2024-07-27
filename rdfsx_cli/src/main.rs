@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Command::ShEx {
+        Some(Command::Shex {
             schema,
             schema_format,
             result_schema_format,
@@ -92,7 +92,8 @@ fn main() -> Result<()> {
             *show_time,
             *show_statistics,
         ),
-        Some(Command::ValidateShex {
+        Some(Command::Validate {
+            validation_mode: _,
             schema,
             schema_format,
             data,
@@ -316,7 +317,7 @@ fn run_validate_shacl(
     shapes_format: &ShaclFormat,
     data: &Option<PathBuf>,
     data_format: &DataFormat,
-    debug: u8,
+    _debug: u8,
     output: &Option<PathBuf>,
 ) -> Result<()> {
     let shacl_schema = parse_shacl(shapes_path, shapes_format)?;

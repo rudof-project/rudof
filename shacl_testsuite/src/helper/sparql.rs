@@ -10,7 +10,7 @@ use super::helper_error::SPARQLError;
 
 pub fn select(store: &Store, query: String) -> Result<QuerySolution, SPARQLError> {
     match store.query(&query) {
-        Ok(QueryResults::Solutions(solutions)) => match solutions.into_iter().nth(0) {
+        Ok(QueryResults::Solutions(solutions)) => match solutions.into_iter().next() {
             Some(Ok(solution)) => Ok(solution),
             _ => Err(SPARQLError::NoTripleFound),
         },

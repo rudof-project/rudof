@@ -18,13 +18,6 @@ impl ValidationReport {
         ValidationReport { conforms, result }
     }
 
-    pub fn default() -> Self {
-        ValidationReport {
-            conforms: true,
-            result: Vec::new(),
-        }
-    }
-
     pub fn add_result(&mut self, result: ValidationResult) {
         if self.conforms {
             // We add a result --> make the Report non-conformant
@@ -105,5 +98,14 @@ impl fmt::Display for ValidationReport {
             writeln!(f, "\t\t],")?;
         }
         writeln!(f, "]")
+    }
+}
+
+impl Default for ValidationReport {
+    fn default() -> Self {
+        Self {
+            conforms: true,
+            result: Vec::new(),
+        }
     }
 }
