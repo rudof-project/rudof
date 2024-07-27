@@ -2,6 +2,13 @@
 
 ## Current changes without release yet
 
+## [0.1.3] - 2024-07-27
+
+- Generation of HTML views from ShEx based on Minininja templates which allow better customization
+- Direct conversion from DCTAP to UML and HTML views
+- Generation of UML visualizations in SVG and PNG
+- Basic support for SHACL validation and added shacl-validation crate
+
 ## [0.1.2] - 2024-07-17
 
 - Added descriptions to subcommands in command line
