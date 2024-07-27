@@ -1,6 +1,7 @@
 use std::{fmt::Display, result};
 
-use rust_decimal::Decimal;
+use iri_s::IriS;
+use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::Serializer;
 use serde_derive::{Deserialize, Serialize};
 
@@ -101,11 +102,11 @@ impl Display for Literal {
             Literal::StringLiteral {
                 lexical_form,
                 lang: Some(lang),
-            } => write!(f, "\"{lexical_form}\"@{lang}"),
+            } => write!(f, "\"{lexical_form}\"{lang}"),
             Literal::DatatypeLiteral {
                 lexical_form,
                 datatype,
-            } => write!(f, "\"{lexical_form}\"^^{datatype}"),
+            } => write!(f, "\"{lexical_form}\"^^<{datatype}>"),
             Literal::NumericLiteral(n) => write!(f, "{}", n),
             Literal::BooleanLiteral(true) => write!(f, "true"),
             Literal::BooleanLiteral(false) => write!(f, "false"),
@@ -146,6 +147,53 @@ impl Deref for Literal {
                     datatype: dt,
                 })
             }
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<oxrdf::Literal> for Literal {
+    fn into(self) -> oxrdf::Literal {
+        match self {
+            Literal::StringLiteral { lexical_form, lang } => match lang {
+                Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(
+                    lexical_form,
+                    lang.to_string(),
+                ),
+                None => lexical_form.into(),
+            },
+            Literal::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => match datatype.get_iri() {
+                Ok(datatype) => oxrdf::Literal::new_typed_literal(
+                    lexical_form,
+                    datatype.as_named_node().to_owned(),
+                ),
+                Err(_) => lexical_form.into(),
+            },
+            Literal::NumericLiteral(number) => match number {
+                NumericLiteral::Integer(int) => (int as i64).into(),
+                NumericLiteral::Decimal(decimal) => match decimal.to_f64() {
+                    Some(decimal) => decimal.into(),
+                    None => decimal.to_string().into(),
+                },
+                NumericLiteral::Double(double) => double.into(),
+            },
+            Literal::BooleanLiteral(bool) => bool.into(),
+        }
+    }
+}
+
+impl From<oxrdf::Literal> for Literal {
+    fn from(value: oxrdf::Literal) -> Self {
+        match value.destruct() {
+            (s, None, None) => Literal::str(&s),
+            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
+            (value, Some(dtype), None) => {
+                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
+            }
+            _ => todo!(),
         }
     }
 }

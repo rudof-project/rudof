@@ -1,8 +1,9 @@
+use clap::{Parser, Subcommand, ValueEnum};
+use oxigraph::io::GraphFormat;
+use srdf::RDFFormat;
+use std::convert::TryFrom;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
-
-use clap::{Parser, Subcommand, ValueEnum};
-use srdf::RDFFormat;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -54,7 +55,7 @@ pub enum Command {
     },
 
     /// Information about ShEx schemas
-    ShEx {
+    Shex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -90,6 +91,12 @@ pub enum Command {
 
     /// RDF Validation using ShEx schemas
     Validate {
+        #[arg(short = 'M', long = "mode", 
+            value_name = "Validation mode",
+            default_value_t = ValidationMode::ShEx
+        )]
+        validation_mode: ValidationMode,
+
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -142,6 +149,38 @@ pub enum Command {
             default_value_t = 100
         )]
         max_steps: usize,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+    },
+
+    /// RDF Validation using Shacl shapes
+    ValidateShacl {
+        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
+        shapes: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "shapes-format",
+            value_name = "Shapes file format",
+            default_value_t = ShaclFormat::Turtle
+        )]
+        shapes_format: ShaclFormat,
+
+        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        data: Option<PathBuf>,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
 
         #[arg(
             short = 'o',
@@ -344,6 +383,11 @@ pub enum ShExFormat {
     ShExC,
     ShExJ,
     Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
 }
 
 impl Display for ShExFormat {
@@ -353,6 +397,11 @@ impl Display for ShExFormat {
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
             ShExFormat::Turtle => write!(dest, "turtle"),
+            ShExFormat::NTriples => write!(dest, "ntriples"),
+            ShExFormat::RDFXML => write!(dest, "rdfxml"),
+            ShExFormat::TriG => write!(dest, "trig"),
+            ShExFormat::N3 => write!(dest, "n3"),
+            ShExFormat::NQuads => write!(dest, "nquads"),
         }
     }
 }
@@ -393,6 +442,19 @@ impl From<DataFormat> for RDFFormat {
             DataFormat::TriG => RDFFormat::TriG,
             DataFormat::N3 => RDFFormat::N3,
             DataFormat::NQuads => RDFFormat::NQuads,
+        }
+    }
+}
+
+impl TryFrom<DataFormat> for GraphFormat {
+    type Error = &'static str;
+
+    fn try_from(val: DataFormat) -> Result<Self, Self::Error> {
+        match val {
+            DataFormat::Turtle => Ok(GraphFormat::Turtle),
+            DataFormat::NTriples => Ok(GraphFormat::NTriples),
+            DataFormat::RDFXML => Ok(GraphFormat::RdfXml),
+            _ => Err("Not a valid format"),
         }
     }
 }
@@ -482,6 +544,22 @@ impl Display for InputConvertFormat {
             InputConvertFormat::ShExC => write!(dest, "shexc"),
             InputConvertFormat::ShExJ => write!(dest, "shexj"),
             InputConvertFormat::Turtle => write!(dest, "turtle"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ValidationMode {
+    ShEx,
+    SHACL,
+}
+
+impl Display for ValidationMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ValidationMode::ShEx => write!(dest, "shex"),
+            ValidationMode::SHACL => write!(dest, "shacl"),
         }
     }
 }

@@ -2,3 +2,6 @@
 [submodule "shex_testsuite/shexTest"]
 	path = shex_testsuite/shexTest
 	url = https://github.com/shexSpec/shexTest
+[submodule "shacl_testsuite/data-shapes"]
+	path = shacl_testsuite/data-shapes
+	url = https://github.com/w3c/data-shapes.git

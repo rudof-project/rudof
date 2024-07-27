@@ -12,13 +12,14 @@ pub enum NodeKind {
 
 impl Display for NodeKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NodeKind::Iri => write!(f, "Iri"),
-            NodeKind::Literal => write!(f, "Literal"),
-            NodeKind::BlankNode => write!(f, "BlankNode"),
-            NodeKind::BlankNodeOrIri => write!(f, "BlankNodeOrIri"),
-            NodeKind::BlankNodeOrLiteral => write!(f, "BlankNodeOrLiteral"),
-            NodeKind::IRIOrLiteral => write!(f, "IriOrLiteral"),
-        }
+        let node = match self {
+            NodeKind::Iri => crate::SH_IRI.as_named_node(),
+            NodeKind::Literal => crate::SH_LITERAL.as_named_node(),
+            NodeKind::BlankNode => crate::SH_BLANKNODE.as_named_node(),
+            NodeKind::BlankNodeOrIri => crate::SH_BLANK_NODE_OR_IRI.as_named_node(),
+            NodeKind::BlankNodeOrLiteral => crate::SH_BLANK_NODE_OR_LITERAL.as_named_node(),
+            NodeKind::IRIOrLiteral => crate::SH_IRI_OR_LITERAL.as_named_node(),
+        };
+        write!(f, "{}", node)
     }
 }

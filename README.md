@@ -215,6 +215,12 @@ Options:
           Print help
 ```
 
+### Validating an RDF node against some SHACL Shape
+
+```sh
+rdfsx validate-shacl --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+```
+
 ## Main modules
 
 The repo is divided in the following modules:

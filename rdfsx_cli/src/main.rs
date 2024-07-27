@@ -2,11 +2,13 @@ extern crate anyhow;
 extern crate clap;
 extern crate dctap;
 extern crate iri_s;
+extern crate oxigraph;
 extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
 extern crate shacl_ast;
+extern crate shacl_validation;
 extern crate shapemap;
 extern crate shapes_converter;
 extern crate shex_ast;
@@ -19,8 +21,11 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use dctap::{DCTap, TapConfig};
+use oxigraph::model::GraphNameRef;
+use oxigraph::store::Store;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
+use shacl_validation::validate;
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -32,12 +37,15 @@ use shex_validation::Validator;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
 use srdf::SRDF;
+use std::convert::TryInto;
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::result::Result::Ok;
 use std::str::FromStr;
 use std::time::Instant;
 use tracing::debug;
+use validate::validate;
 
 pub mod cli;
 pub mod data;
@@ -69,7 +77,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Command::ShEx {
+        Some(Command::Shex {
             schema,
             schema_format,
             result_schema_format,
@@ -85,6 +93,7 @@ fn main() -> Result<()> {
             *show_statistics,
         ),
         Some(Command::Validate {
+            validation_mode,
             schema,
             schema_format,
             data,
@@ -96,20 +105,47 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             output,
-        }) => run_validate(
-            schema,
-            schema_format,
+        }) => match validation_mode {
+            ValidationMode::ShEx => run_validate_shex(
+                schema,
+                schema_format,
+                data,
+                data_format,
+                endpoint,
+                node,
+                shape,
+                shapemap,
+                shapemap_format,
+                max_steps,
+                cli.debug,
+                output,
+            ),
+            ValidationMode::SHACL => {
+                let shacl_format = match schema_format {
+                    ShExFormat::Internal => Ok(ShaclFormat::Internal),
+                    ShExFormat::ShExC => Err(anyhow!(
+                        "Validation using SHACL mode doesn't support ShExC format"
+                    )),
+                    ShExFormat::ShExJ => Err(anyhow!(
+                        "Validation using SHACL mode doesn't support ShExC format"
+                    )),
+                    ShExFormat::Turtle => Ok(ShaclFormat::Turtle),
+                    ShExFormat::NTriples => Ok(ShaclFormat::NTriples),
+                    ShExFormat::RDFXML => Ok(ShaclFormat::RDFXML),
+                    ShExFormat::TriG => Ok(ShaclFormat::TriG),
+                    ShExFormat::N3 => Ok(ShaclFormat::N3),
+                    ShExFormat::NQuads => Ok(ShaclFormat::NQuads),
+                }?;
+                run_validate_shacl(schema, &shacl_format, data, data_format, cli.debug, output)
+            }
+        },
+        Some(Command::ValidateShacl {
+            shapes,
+            shapes_format,
             data,
             data_format,
-            endpoint,
-            node,
-            shape,
-            shapemap,
-            shapemap_format,
-            max_steps,
-            cli.debug,
             output,
-        ),
+        }) => run_validate_shacl(shapes, shapes_format, data, data_format, cli.debug, output),
         Some(Command::Data {
             data,
             data_format,
@@ -213,25 +249,26 @@ fn show_schema(
     match result_schema_format {
         ShExFormat::Internal => {
             writeln!(writer, "{schema:?}")?;
+            Ok(())
         }
         ShExFormat::ShExC => {
             let str = ShExFormatter::default().format_schema(schema);
             writeln!(writer, "{str}")?;
+            Ok(())
         }
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema)?;
             writeln!(writer, "{str}")?;
+            Ok(())
         }
-        ShExFormat::Turtle => {
-            eprintln!("Not implemented conversion to Turtle yet");
-            todo!()
-        }
-    };
-    Ok(())
+        _ => Err(anyhow!(
+            "Not implemented conversion to {result_schema_format} yet"
+        )),
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_validate(
+fn run_validate_shex(
     schema_path: &Path,
     schema_format: &ShExFormat,
     data: &Option<PathBuf>,
@@ -293,6 +330,39 @@ fn run_validate(
         Result::Err(err) => {
             bail!("{err}");
         }
+    }
+}
+
+fn run_validate_shacl(
+    shapes_path: &Path,
+    shapes_format: &ShaclFormat,
+    data: &Option<PathBuf>,
+    data_format: &DataFormat,
+    _debug: u8,
+    output: &Option<PathBuf>,
+) -> Result<()> {
+    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
+    let path = match data {
+        Some(path) => Path::new(path),
+        None => todo!(),
+    };
+    if let Ok(data_format) = data_format.to_owned().try_into() {
+        let store = Store::new()?;
+        store.bulk_loader().load_graph(
+            BufReader::new(File::open(path)?),
+            data_format,
+            GraphNameRef::DefaultGraph,
+            None,
+        )?;
+        let mut writer = get_writer(output)?;
+        let validate = validate(&store, shacl_schema);
+        match validate {
+            Ok(result) => writeln!(writer, "Result:\n{}", result)?,
+            Err(err) => bail!("{err}"),
+        }
+        Ok(())
+    } else {
+        bail!("Provide a valid data format")
     }
 }
 
@@ -817,6 +887,7 @@ fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<Schema
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
+        _ => Err(anyhow!("Not suppported parsing from {schema_format} yet")),
     }
 }
 
