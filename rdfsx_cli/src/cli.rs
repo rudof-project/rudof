@@ -380,6 +380,11 @@ pub enum ShExFormat {
     ShExC,
     ShExJ,
     Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
 }
 
 impl Display for ShExFormat {
@@ -389,6 +394,11 @@ impl Display for ShExFormat {
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
             ShExFormat::Turtle => write!(dest, "turtle"),
+            ShExFormat::NTriples => write!(dest, "ntriples"),
+            ShExFormat::RDFXML => write!(dest, "rdfxml"),
+            ShExFormat::TriG => write!(dest, "trig"),
+            ShExFormat::N3 => write!(dest, "n3"),
+            ShExFormat::NQuads => write!(dest, "nquads"),
         }
     }
 }

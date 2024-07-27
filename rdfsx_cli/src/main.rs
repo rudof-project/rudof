@@ -93,7 +93,7 @@ fn main() -> Result<()> {
             *show_statistics,
         ),
         Some(Command::Validate {
-            validation_mode: _,
+            validation_mode,
             schema,
             schema_format,
             data,
@@ -105,20 +105,40 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             output,
-        }) => run_validate_shex(
-            schema,
-            schema_format,
-            data,
-            data_format,
-            endpoint,
-            node,
-            shape,
-            shapemap,
-            shapemap_format,
-            max_steps,
-            cli.debug,
-            output,
-        ),
+        }) => match validation_mode {
+            ValidationMode::ShEx => run_validate_shex(
+                schema,
+                schema_format,
+                data,
+                data_format,
+                endpoint,
+                node,
+                shape,
+                shapemap,
+                shapemap_format,
+                max_steps,
+                cli.debug,
+                output,
+            ),
+            ValidationMode::SHACL => {
+                let shacl_format = match schema_format {
+                    ShExFormat::Internal => Ok(ShaclFormat::Internal),
+                    ShExFormat::ShExC => Err(anyhow!(
+                        "Validation using SHACL mode doesn't support ShExC format"
+                    )),
+                    ShExFormat::ShExJ => Err(anyhow!(
+                        "Validation using SHACL mode doesn't support ShExC format"
+                    )),
+                    ShExFormat::Turtle => Ok(ShaclFormat::Turtle),
+                    ShExFormat::NTriples => Ok(ShaclFormat::NTriples),
+                    ShExFormat::RDFXML => Ok(ShaclFormat::RDFXML),
+                    ShExFormat::TriG => Ok(ShaclFormat::TriG),
+                    ShExFormat::N3 => Ok(ShaclFormat::N3),
+                    ShExFormat::NQuads => Ok(ShaclFormat::NQuads),
+                }?;
+                run_validate_shacl(schema, &shacl_format, data, data_format, cli.debug, output)
+            }
+        },
         Some(Command::ValidateShacl {
             shapes,
             shapes_format,
@@ -229,21 +249,22 @@ fn show_schema(
     match result_schema_format {
         ShExFormat::Internal => {
             writeln!(writer, "{schema:?}")?;
+            Ok(())
         }
         ShExFormat::ShExC => {
             let str = ShExFormatter::default().format_schema(schema);
             writeln!(writer, "{str}")?;
+            Ok(())
         }
         ShExFormat::ShExJ => {
             let str = serde_json::to_string_pretty(&schema)?;
             writeln!(writer, "{str}")?;
+            Ok(())
         }
-        ShExFormat::Turtle => {
-            eprintln!("Not implemented conversion to Turtle yet");
-            todo!()
-        }
-    };
-    Ok(())
+        _ => Err(anyhow!(
+            "Not implemented conversion to {result_schema_format} yet"
+        )),
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -866,6 +887,7 @@ fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<Schema
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
+        _ => Err(anyhow!("Not suppported parsing from {schema_format} yet")),
     }
 }
 
