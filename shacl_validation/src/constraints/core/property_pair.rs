@@ -13,6 +13,7 @@ use crate::{
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct EqualsConstraintComponent {
     iri_ref: IriRef,
 }
@@ -26,9 +27,9 @@ impl EqualsConstraintComponent {
 impl Evaluate for EqualsConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -39,6 +40,7 @@ impl Evaluate for EqualsConstraintComponent {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct DisjointConstraintComponent {
     iri_ref: IriRef,
 }
@@ -52,9 +54,9 @@ impl DisjointConstraintComponent {
 impl Evaluate for DisjointConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -65,6 +67,7 @@ impl Evaluate for DisjointConstraintComponent {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct LessThanConstraintComponent {
     iri_ref: IriRef,
 }
@@ -78,9 +81,9 @@ impl LessThanConstraintComponent {
 impl Evaluate for LessThanConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -91,6 +94,7 @@ impl Evaluate for LessThanConstraintComponent {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct LessThanOrEqualsConstraintComponent {
     iri_ref: IriRef,
 }
@@ -104,9 +108,9 @@ impl LessThanOrEqualsConstraintComponent {
 impl Evaluate for LessThanOrEqualsConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }

@@ -91,7 +91,10 @@ pub enum Command {
 
     /// RDF Validation using ShEx schemas
     Validate {
-        #[arg(short = 'm', long = "validation-mode", value_name = "Validation mode")]
+        #[arg(short = 'M', long = "mode", 
+            value_name = "Validation mode",
+            default_value_t = ValidationMode::ShEx
+        )]
         validation_mode: ValidationMode,
 
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]

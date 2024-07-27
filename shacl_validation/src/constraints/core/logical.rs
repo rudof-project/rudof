@@ -12,6 +12,7 @@ use crate::{
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct NotConstraintComponent {
     shape: RDFNode,
 }
@@ -25,9 +26,9 @@ impl NotConstraintComponent {
 impl Evaluate for NotConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -37,6 +38,7 @@ impl Evaluate for NotConstraintComponent {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct AndConstraintComponent {
     shapes: Vec<RDFNode>,
 }
@@ -50,9 +52,9 @@ impl AndConstraintComponent {
 impl Evaluate for AndConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -63,6 +65,7 @@ impl Evaluate for AndConstraintComponent {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct OrConstraintComponent {
     shapes: Vec<RDFNode>,
 }
@@ -76,9 +79,9 @@ impl OrConstraintComponent {
 impl Evaluate for OrConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -89,6 +92,7 @@ impl Evaluate for OrConstraintComponent {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct XoneConstraintComponent {
     shapes: Vec<RDFNode>,
 }
@@ -102,9 +106,9 @@ impl XoneConstraintComponent {
 impl Evaluate for XoneConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }

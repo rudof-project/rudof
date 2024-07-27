@@ -14,6 +14,7 @@ use crate::{
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct NodeConstraintComponent {
     shape: RDFNode,
 }
@@ -27,9 +28,9 @@ impl NodeConstraintComponent {
 impl Evaluate for NodeConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -41,6 +42,7 @@ impl Evaluate for NodeConstraintComponent {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct QualifiedValueShapeConstraintComponent {
     shape: RDFNode,
     qualified_min_count: Option<isize>,
@@ -67,9 +69,9 @@ impl QualifiedValueShapeConstraintComponent {
 impl Evaluate for QualifiedValueShapeConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }

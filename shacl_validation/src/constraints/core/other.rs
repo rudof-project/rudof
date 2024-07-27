@@ -13,6 +13,7 @@ use crate::{
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct InConstraintComponent {
     values: Vec<Value>,
 }
@@ -26,9 +27,9 @@ impl InConstraintComponent {
 impl Evaluate for InConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -43,6 +44,7 @@ impl Evaluate for InConstraintComponent {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct ClosedConstraintComponent {
     is_closed: bool,
     ignored_properties: Vec<IriRef>,
@@ -60,9 +62,9 @@ impl ClosedConstraintComponent {
 impl Evaluate for ClosedConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }
@@ -72,6 +74,7 @@ impl Evaluate for ClosedConstraintComponent {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
+#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct HasValueConstraintComponent {
     value: Value,
 }
@@ -85,9 +88,9 @@ impl HasValueConstraintComponent {
 impl Evaluate for HasValueConstraintComponent {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        _store: &Store,
+        _value_nodes: HashSet<Term>,
+        _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
         todo!()
     }

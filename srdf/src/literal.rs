@@ -151,6 +151,7 @@ impl Deref for Literal {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<oxrdf::Literal> for Literal {
     fn into(self) -> oxrdf::Literal {
         match self {
