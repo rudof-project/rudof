@@ -1,10 +1,9 @@
-use std::convert::TryFrom;
-use std::fmt::Display;
-use std::{fmt::Formatter, path::PathBuf};
-
 use clap::{Parser, Subcommand, ValueEnum};
 use oxigraph::io::GraphFormat;
 use srdf::RDFFormat;
+use std::convert::TryFrom;
+use std::fmt::Display;
+use std::{fmt::Formatter, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -56,7 +55,7 @@ pub enum Command {
     },
 
     /// Information about ShEx schemas
-    ShEx {
+    Shex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -89,7 +88,7 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
     },
-  
+
     /// RDF Validation using ShEx schemas
     ValidateShex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]

@@ -30,7 +30,7 @@ impl Evaluate for NodeConstraintComponent {
         store: &Store,
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
-     ) -> Result<(), ConstraintError> {
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
@@ -70,7 +70,7 @@ impl Evaluate for QualifiedValueShapeConstraintComponent {
         store: &Store,
         value_nodes: HashSet<Term>,
         report: &mut ValidationReport,
-     ) -> Result<(), ConstraintError> {
+    ) -> Result<(), ConstraintError> {
         todo!()
     }
 }
