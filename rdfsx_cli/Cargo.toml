@@ -1,6 +1,6 @@
 [package]
 name = "rdfsx_cli"
-version = "0.1.3"
+version = "0.1.4"
 authors.workspace = true
 description.workspace = true
 documentation = "https://www.weso.es/shapes-rs/"
