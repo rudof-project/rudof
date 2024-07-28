@@ -131,6 +131,7 @@ Options:
 ### Obtaining information about a ShEx schema
 
 ```sh
+$ rdfsx shex --help
 Information about ShEx schemas
 
 Usage: rdfsx shex [OPTIONS] --schema <Schema file name>
@@ -155,6 +156,7 @@ Options:
 ### Obtaining information about RDF data
 
 ```sh
+$ rdfsx data --help
 Information about RDF data
 
 Usage: rdfsx data [OPTIONS] --data <RDF data path>
@@ -175,6 +177,7 @@ Options:
 This command can be useful to obtain the neighbourhood of a node.
 
 ```sh
+$ rdfsx node --help
 Information about RDF nodes which are part of RDF Graphs
 
 Usage: rdfsx node [OPTIONS] --node <NODE>
@@ -209,6 +212,7 @@ rdfsx node -e wikidata -n wd:Q80
 ### Validating an RDF node against some data
 
 ```
+$ rdfsx validate --help
 RDF Validation using ShEx or SHACL
 
 Usage: rdfsx validate [OPTIONS] --schema <Schema file name>
@@ -258,6 +262,35 @@ rdfsx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
 
 ```sh
 rdfsx shacl-validate --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+```
+
+### Conversion between shapes formalisms
+
+```sh
+$ rdfsx convert --help
+Conversion between different Data modeling technologies
+
+Usage: rdfsx convert [OPTIONS] --input-mode <Input mode> --source-file <Source file name> --export-mode <Result mode>
+
+Options:
+  -m, --input-mode <Input mode>
+          [possible values: shex, dctap]
+  -s, --source-file <Source file name>
+          
+  -f, --format <Input file format>
+          [default: shexc] [possible values: csv, shexc, shexj, turtle]
+  -r, --result-format <Result format>
+          [default: default] [possible values: default, internal, json, shexc, shexj, turtle, plantuml, html, svg, png]
+  -o, --output-file <Output file name, default = terminal>
+          
+  -t, --target-folder <Target folder>
+          
+  -l, --shape-label <shape label (default = START)>
+          
+  -x, --export-mode <Result mode>
+          [possible values: sparql, shex, uml, html]
+  -h, --help
+          Print help
 ```
 
 ## Main modules
