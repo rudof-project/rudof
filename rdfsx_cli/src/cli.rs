@@ -89,7 +89,7 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
-    /// RDF Validation using ShEx schemas
+    /// RDF Validation using ShEx or SHACL
     Validate {
         #[arg(short = 'M', long = "mode", 
             value_name = "Validation mode",
@@ -158,8 +158,71 @@ pub enum Command {
         output: Option<PathBuf>,
     },
 
-    /// RDF Validation using Shacl shapes
-    ValidateShacl {
+    /// RDF Validation using ShEx schemas
+    ShExValidate {
+        #[arg(short = 's', long = "schema", value_name = "Schema file name")]
+        schema: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "schema-format",
+            value_name = "Schema format",
+            default_value_t = ShExFormat::ShExC
+        )]
+        schema_format: ShExFormat,
+
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
+        shapemap: Option<PathBuf>,
+
+        #[arg(
+            long = "shapemap-format",
+            value_name = "ShapeMap format",
+            default_value_t = ShapeMapFormat::Compact,
+        )]
+        shapemap_format: ShapeMapFormat,
+
+        #[arg(short = 'n', long = "node")]
+        node: Option<String>,
+
+        #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "shape label (default = START)",
+            group = "node_shape"
+        )]
+        shape: Option<String>,
+
+        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        data: Option<PathBuf>,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
+        #[arg(
+            long = "max-steps",
+            value_name = "max steps to run",
+            default_value_t = 100
+        )]
+        max_steps: usize,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+    },
+
+    /// RDF Validation using SHACL shapes
+    ShaclValidate {
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
 
