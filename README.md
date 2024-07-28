@@ -26,7 +26,7 @@ You can download a binary from the [latest release](https://github.com/weso/shap
 
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
-```
+```sh
 wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rdfsx_vX.X.X_amd64.deb
 sudo dpkg -i rdfsx_vX.X.X_amd64.deb
 ```
@@ -48,7 +48,7 @@ The binary is available at: [https://github.com/weso/shapes-rs/releases]
 
 For example:
 
-```
+```sh
 cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
 ```
 
@@ -56,19 +56,19 @@ cargo run -- validate --data examples/user.ttl --schema examples/user.shex --sha
 
 Install `cargo deb` (only the first time)
 
-```
+```sh
 cargo install cargo-deb
 ```
 
 Create the `.deb` package by:
 
-```
+```sh
 cargo deb
 ```
 
 And run:
 
-```
+```sh
 sudo dpkg -i target/debian/shapes-rs_0.0.11-1_amd64.deb
 ```
 
@@ -211,7 +211,7 @@ rdfsx node -e wikidata -n wd:Q80
 
 ### Validating an RDF node against some data
 
-```
+```sh
 $ rdfsx validate --help
 RDF Validation using ShEx or SHACL
 
@@ -320,7 +320,7 @@ cargo workspaces publish
 
 The project is using cargo workspaces wihch can be installed with:
 
-```
+```sh
 cargo install cargo-workspaces
 ```
 
@@ -328,13 +328,13 @@ cargo install cargo-workspaces
 
 In order to test all the sub-projects
 
-```
+```sh
 cargo test --all
 ```
 
 Testing one specific subproject:
 
-```
+```sh
 cargo test -p shex_validation
 ```
 
@@ -373,7 +373,7 @@ Options:
 
 ### Validation conformance tests for ShEx
 
-```
+```sh
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation 
 ```
 

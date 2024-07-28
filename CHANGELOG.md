@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.4] - 2024-07-28
+
+- Added 2 separate options for shacl-validate and shex-validate, keeping the generic validate option
+- Repaired bug on UML visualization that didn't show link names
+- Added direct SVG/JPG generation from DCTAP files
+
 ## [0.1.3] - 2024-07-27
 
 - Generation of HTML views from ShEx based on Minininja templates which allow better customization

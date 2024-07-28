@@ -369,9 +369,9 @@ fn run_validate_shacl(
 ) -> Result<()> {
     let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
     let path = match data {
-        Some(path) => Path::new(path),
-        None => todo!(),
-    };
+        Some(path) => Ok(Path::new(path)),
+        None => Err(anyhow!("Data parameter must be specified\nReason: Validation from a single shapes graph is not supported yet.")),
+    }?;
     if let Ok(data_format) = data_format.to_owned().try_into() {
         let store = Store::new()?;
         store.bulk_loader().load_graph(
@@ -476,8 +476,8 @@ fn run_convert(
                 }
             }
         }
-        (InputConvertMode::DCTAP, OutputConvertMode::UML) => {
-            run_tap2uml(input_path, format, &mut writer)
+        (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
+            run_tap2uml(input_path, format, &mut writer, result_format)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -508,22 +508,35 @@ fn run_shex2uml(
     let schema = parse_schema(input_path, &schema_format)?;
     let mut converter = ShEx2Uml::new(ShEx2UmlConfig::new());
     converter.convert(&schema)?;
+    generate_uml_output(converter, writer, result_format)?;
+    Ok(())
+}
+
+fn generate_uml_output(
+    uml_converter: ShEx2Uml,
+    writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+) -> Result<()> {
     match result_format {
         OutputConvertFormat::PlantUML => {
-            converter.as_plantuml(writer)?;
+            uml_converter.as_plantuml(writer)?;
             Ok(())
         }
         OutputConvertFormat::SVG => {
-            converter.as_image(writer, ImageFormat::SVG)?;
+            uml_converter.as_image(writer, ImageFormat::SVG)?;
             Ok(())
         }
         OutputConvertFormat::PNG => {
-            converter.as_image(writer, ImageFormat::PNG)?;
+            uml_converter.as_image(writer, ImageFormat::PNG)?;
+            Ok(())
+        }
+        OutputConvertFormat::Default => {
+            uml_converter.as_plantuml(writer)?;
             Ok(())
         }
         // OutputConvertFormat::JPG => converter.as_image(writer, Image::JPG)?,
         _ => Err(anyhow!(
-            "Conversion from ShEx to UML does not support format {result_format}"
+            "Conversion to UML does not support output format {result_format}"
         )),
     }
 }
@@ -625,6 +638,7 @@ fn run_tap2uml(
     input_path: &Path,
     format: &InputConvertFormat,
     writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
@@ -636,6 +650,7 @@ fn run_tap2uml(
     let mut converter_uml = ShEx2Uml::new(ShEx2UmlConfig::new());
     converter_uml.convert(&shex)?;
     converter_uml.as_plantuml(writer)?;
+    generate_uml_output(converter_uml, writer, result_format)?;
     Ok(())
 }
 
@@ -961,32 +976,6 @@ fn parse_data(data: &Path, data_format: &DataFormat) -> Result<SRDFGraph> {
         _ => bail!("Not implemented reading from other RDF formats yet..."),
     }
 }
-
-/*fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
-    use regex::Regex;
-    use std::result::Result::Ok;
-    let iri_r = Regex::new("<(.*)>")?;
-    match iri_r.captures(node_str) {
-        Some(captures) => match captures.get(1) {
-            Some(cs) => {
-                let iri = IriS::from_str(cs.as_str())?;
-                Ok(iri.into())
-            }
-            None => {
-                todo!()
-            }
-        },
-        None => match data.resolve(node_str) {
-            Ok(named_node) => {
-                let iri = IriS::from_str(named_node.as_str())?;
-                Ok(iri.into())
-            }
-            Err(_err_resolve) => {
-                todo!()
-            }
-        },
-    }
-}*/
 
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     let ns = ShapeMapParser::parse_node_selector(node_str)?;
