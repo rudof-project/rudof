@@ -139,7 +139,33 @@ fn main() -> Result<()> {
                 run_validate_shacl(schema, &shacl_format, data, data_format, cli.debug, output)
             }
         },
-        Some(Command::ValidateShacl {
+        Some(Command::ShexValidate {
+            schema,
+            schema_format,
+            data,
+            data_format,
+            endpoint,
+            node,
+            shape,
+            shapemap,
+            shapemap_format,
+            max_steps,
+            output,
+        }) => run_validate_shex(
+            schema,
+            schema_format,
+            data,
+            data_format,
+            endpoint,
+            node,
+            shape,
+            shapemap,
+            shapemap_format,
+            max_steps,
+            cli.debug,
+            output,
+        ),
+        Some(Command::ShaclValidate {
             shapes,
             shapes_format,
             data,

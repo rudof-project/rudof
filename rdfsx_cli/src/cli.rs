@@ -159,7 +159,7 @@ pub enum Command {
     },
 
     /// RDF Validation using ShEx schemas
-    ShExValidate {
+    ShexValidate {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
