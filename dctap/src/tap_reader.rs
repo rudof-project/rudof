@@ -347,9 +347,8 @@ mod tests {
 shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel
 ";
-        let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes(), TapConfig::default())
-            .unwrap();
+        let mut tap_reader =
+            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));
@@ -366,9 +365,8 @@ shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 ";
-        let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes(), TapConfig::default())
-            .unwrap();
+        let mut tap_reader =
+            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));
@@ -389,9 +387,8 @@ Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 Company,CompanyLabel,founder,FounderLabel
 ";
-        let mut tap_reader = TapReaderBuilder::new()
-            .from_reader(data.as_bytes(), TapConfig::default())
-            .unwrap();
+        let mut tap_reader =
+            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
         let mut expected_shape1 = TapShape::new();
         expected_shape1.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));

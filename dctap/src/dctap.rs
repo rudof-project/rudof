@@ -34,9 +34,7 @@ impl DCTap {
     pub fn from_path<P: AsRef<Path>>(path: P, _config: TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new()
-            .flexible(true)
-            .from_path(path, TapConfig::default())?;
+        let mut tap_reader = TapReaderBuilder::from_path(path, TapConfig::default())?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -47,9 +45,7 @@ impl DCTap {
     pub fn from_reader<R: io::Read>(reader: R) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new()
-            .flexible(true)
-            .from_reader(reader, TapConfig::default())?;
+        let mut tap_reader = TapReaderBuilder::from_reader(reader, TapConfig::default())?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
