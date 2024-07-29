@@ -293,7 +293,7 @@ impl PrefixMap {
     }
 
     /// Default Wikidata prefixmap
-    /// This source of this list is https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
+    /// This source of this list is <https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
     pub fn wikidata() -> PrefixMap {
         PrefixMap::from_hashmap(&HashMap::from([
             ("bd", "http://www.bigdata.com/rdf#"),

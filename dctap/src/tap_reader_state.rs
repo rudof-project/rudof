@@ -1,13 +1,6 @@
-use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{
-    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapConfig, TapError, TapShape,
-    TapStatement, Value, ValueConstraint, ValueConstraintType,
-};
-use csv::{Position, Reader, ReaderBuilder, StringRecord, Terminator, Trim};
-use std::fs::File;
-// use indexmap::IndexSet;
-use std::io::{self};
-use std::path::Path;
+use crate::tap_headers::TapHeaders;
+use crate::TapShape;
+use csv::{Position, StringRecord};
 
 #[derive(Debug)]
 pub(crate) struct TapReaderState {

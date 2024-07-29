@@ -1,13 +1,11 @@
-use crate::{tap_error::Result, tap_headers::TapHeaders};
+use crate::tap_error::Result;
 use crate::{
     BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapConfig, TapError, TapReaderState,
     TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
-use csv::{Position, Reader, ReaderBuilder, StringRecord, Terminator, Trim};
-use std::fs::File;
+use csv::{Reader, StringRecord};
 // use indexmap::IndexSet;
 use std::io::{self};
-use std::path::Path;
 
 pub(crate) struct TapReader<R> {
     reader: Reader<R>,
@@ -310,7 +308,7 @@ fn get_strs(str: &str) -> impl Iterator<Item = &str> {
 /// A borrowed iterator over Shapes
 ///
 /// The lifetime parameter `'r` refers to the lifetime of the underlying `TapReader`.
-pub struct ShapesIter<'r, R: 'r> {
+pub(crate) struct ShapesIter<'r, R: 'r> {
     reader: &'r mut TapReader<R>,
 }
 
@@ -320,7 +318,7 @@ impl<'r, R: io::Read> ShapesIter<'r, R> {
     }
 
     /// Return a mutable reference to the underlying `TapReader`.
-    pub fn reader_mut(&mut self) -> &mut TapReader<R> {
+    pub fn _reader_mut(&mut self) -> &mut TapReader<R> {
         self.reader
     }
 }
