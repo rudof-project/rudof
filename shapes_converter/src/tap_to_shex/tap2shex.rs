@@ -15,8 +15,10 @@ pub struct Tap2ShEx {
 }
 
 impl Tap2ShEx {
-    pub fn new(config: Tap2ShExConfig) -> Tap2ShEx {
-        Tap2ShEx { config }
+    pub fn new(config: &Tap2ShExConfig) -> Tap2ShEx {
+        Tap2ShEx {
+            config: config.clone(),
+        }
     }
 
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {

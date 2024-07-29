@@ -9,7 +9,7 @@ use thiserror::Error;
 
 pub const PLANTUML: &str = "PLANTUML";
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
 }
@@ -29,7 +29,7 @@ impl ShEx2UmlConfig {
                 path_name: file_name.to_string(),
                 error: e,
             })?;
-        serde_yaml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| {
+        serde_yml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| {
             ShEx2UmlConfigError::YamlError {
                 path_name: file_name.to_string(),
                 error: e,
@@ -51,7 +51,7 @@ pub enum ShEx2UmlConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml::Error,
+        error: serde_yml::Error,
     },
 
     #[error("Accessing environment variable {var_name}: {error}")]

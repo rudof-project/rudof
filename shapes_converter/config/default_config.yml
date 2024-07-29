@@ -1,0 +1,5 @@
+dctap_config:
+  delimiter: ','
+  quote: '"'
+  flexible: true
+  picklist_delimiter: '|'

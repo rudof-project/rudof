@@ -14,11 +14,11 @@ pub(crate) struct TapReader<R> {
 }
 
 impl<R: io::Read> TapReader<R> {
-    pub fn new(reader: Reader<R>, state: TapReaderState, config: TapConfig) -> Self {
+    pub fn new(reader: Reader<R>, state: TapReaderState, config: &TapConfig) -> Self {
         TapReader {
             reader,
             state,
-            config,
+            config: config.clone(),
         }
     }
     pub fn shapes(&mut self) -> ShapesIter<R> {
@@ -201,7 +201,7 @@ impl<R: io::Read> TapReader<R> {
             let value_constraint_type = self.read_value_constraint_type(rcd)?;
             match value_constraint_type {
                 ValueConstraintType::PickList => {
-                    let values = parse_values(str.as_str(), self.config.picklist_delimiter())?;
+                    let values = parse_values(str.as_str(), *self.config.picklist_delimiter())?;
                     if !values.is_empty() {
                         statement.set_value_constraint(&ValueConstraint::picklist(values));
                     }
@@ -288,7 +288,7 @@ fn parse_boolean(str: &str, field: &str) -> Result<bool> {
     }
 }
 
-fn parse_values(str: &str, delimiter: &str) -> Result<Vec<Value>> {
+fn parse_values(str: &str, delimiter: char) -> Result<Vec<Value>> {
     Ok(str.split_terminator(delimiter).map(Value::new).collect())
 }
 
@@ -348,7 +348,7 @@ shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel
 ";
         let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
+            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));
@@ -366,7 +366,7 @@ Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 ";
         let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
+            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));
@@ -388,7 +388,7 @@ Person,PersonLabel,knows,KnowsLabel
 Company,CompanyLabel,founder,FounderLabel
 ";
         let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), TapConfig::default()).unwrap();
+            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape1 = TapShape::new();
         expected_shape1.set_shape_id(&ShapeId::new("Person"));
         let mut statement = TapStatement::new(PropertyId::new("knows"));

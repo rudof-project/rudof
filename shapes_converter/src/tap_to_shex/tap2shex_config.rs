@@ -1,7 +1,8 @@
 use iri_s::{iri, IriS};
 use prefixmap::PrefixMap;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Tap2ShExConfig {
     pub base_iri: Option<IriS>,
     pub datatype_base_iri: Option<IriS>,

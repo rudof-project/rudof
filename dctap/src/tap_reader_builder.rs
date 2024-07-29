@@ -59,7 +59,7 @@ impl TapReaderBuilder {
     ///     Ok(())
     /// }
     /// ```
-    pub fn from_path<P: AsRef<Path>>(path: P, config: TapConfig) -> Result<TapReader<File>> {
+    pub fn from_path<P: AsRef<Path>>(path: P, config: &TapConfig) -> Result<TapReader<File>> {
         let mut reader = ReaderBuilder::new()
             .delimiter(config.delimiter())
             .quote(config.quote())
@@ -71,7 +71,7 @@ impl TapReaderBuilder {
         Ok(TapReader::new(reader, state, config))
     }
 
-    pub fn from_reader<R: io::Read>(rdr: R, config: TapConfig) -> Result<TapReader<R>> {
+    pub fn from_reader<R: io::Read>(rdr: R, config: &TapConfig) -> Result<TapReader<R>> {
         let mut reader = ReaderBuilder::new()
             .delimiter(config.delimiter())
             .quote(config.quote())

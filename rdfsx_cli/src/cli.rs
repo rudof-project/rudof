@@ -366,6 +366,10 @@ pub enum Command {
         )]
         result_format: DCTapResultFormat,
 
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
         #[arg(
             short = 'o',
             long = "output-file",
@@ -377,6 +381,9 @@ pub enum Command {
     /// Conversion between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
+        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        config: Option<PathBuf>,
+
         #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
         input_mode: InputConvertMode,
 

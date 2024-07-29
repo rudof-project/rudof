@@ -6,7 +6,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2HtmlConfig {
     pub landing_page_name: String,
     pub css_file_name: Option<String>,
@@ -46,7 +46,7 @@ impl ShEx2HtmlConfig {
                 error: e,
             }
         })?;
-        serde_yaml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
+        serde_yml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
             ShEx2HtmlConfigError::YamlError {
                 path_name: file_name.to_string(),
                 error: e,
@@ -63,6 +63,6 @@ pub enum ShEx2HtmlConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml::Error,
+        error: serde_yml::Error,
     },
 }

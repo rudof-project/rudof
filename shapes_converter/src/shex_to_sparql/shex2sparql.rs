@@ -10,8 +10,10 @@ pub struct ShEx2Sparql {
 }
 
 impl ShEx2Sparql {
-    pub fn new(config: ShEx2SparqlConfig) -> ShEx2Sparql {
-        ShEx2Sparql { config }
+    pub fn new(config: &ShEx2SparqlConfig) -> ShEx2Sparql {
+        ShEx2Sparql {
+            config: config.clone(),
+        }
     }
 
     pub fn convert(
@@ -206,7 +208,7 @@ Select * where {
     ?this :knows ?knows  
 }";
         let expected_query = Query::parse(query_str, None).unwrap();
-        let converter = ShEx2Sparql::new(ShEx2SparqlConfig::default());
+        let converter = ShEx2Sparql::new(&ShEx2SparqlConfig::default());
         let converted_query = converter.convert(&schema, None).unwrap();
         let converted_query_str = format!("{}", converted_query);
         let converted_query_parsed = Query::parse(converted_query_str.as_str(), None).unwrap();
