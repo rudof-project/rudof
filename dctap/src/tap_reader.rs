@@ -9,7 +9,7 @@ use std::fs::File;
 use std::io::{self};
 use std::path::Path;
 
-pub struct TapReader<R> {
+pub(crate) struct TapReader<R> {
     reader: Reader<R>,
     state: TapReaderState,
     config: TapConfig,
