@@ -266,12 +266,12 @@ fn iri_ref2name(
         IriRef::Iri(iri) => Ok(Name::new(
             prefixmap.qualify(iri).as_str(),
             Some(iri.as_str()),
-            config.target_folder.as_path(),
+            config.target_folder().as_path(),
         )),
         IriRef::Prefixed { prefix: _, local } => {
             // TODO: Check if we could replace href as None by a proper IRI
             // println!("Is a local name: {local}");
-            Ok(Name::new(local, None, config.target_folder.as_path()))
+            Ok(Name::new(local, None, config.target_folder().as_path()))
         }
     }
 }

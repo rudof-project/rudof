@@ -6,7 +6,16 @@ use serde_derive::{Deserialize, Serialize};
 pub struct Tap2ShExConfig {
     pub base_iri: Option<IriS>,
     pub datatype_base_iri: Option<IriS>,
-    pub prefixmap: PrefixMap,
+    prefixmap: Option<PrefixMap>,
+}
+
+impl Tap2ShExConfig {
+    pub fn prefixmap(&self) -> PrefixMap {
+        match &self.prefixmap {
+            Some(pm) => pm.clone(),
+            None => PrefixMap::basic(),
+        }
+    }
 }
 
 impl Default for Tap2ShExConfig {
@@ -14,7 +23,7 @@ impl Default for Tap2ShExConfig {
         Self {
             base_iri: Some(iri!("http://example.org/")),
             datatype_base_iri: None,
-            prefixmap: PrefixMap::basic(),
+            prefixmap: Some(PrefixMap::basic()),
         }
     }
 }

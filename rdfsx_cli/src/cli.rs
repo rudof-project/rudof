@@ -313,6 +313,9 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        config: Option<PathBuf>,
     },
 
     /// Information about SHACL shapes

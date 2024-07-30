@@ -22,6 +22,9 @@ pub enum Tap2ShExError {
         err: PrefixMapError,
     },
 
+    #[error("No base IRI trying to resolve IRI for {str}")]
+    NoBaseIRI { str: String },
+
     #[error("Multiple value expressions in statement: value_datatype: {value_datatype:?}, value_shape: {value_shape} ")]
     MultipleValueExprInStatement {
         value_datatype: DatatypeId,

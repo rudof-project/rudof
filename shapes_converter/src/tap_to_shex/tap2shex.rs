@@ -22,7 +22,7 @@ impl Tap2ShEx {
     }
 
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
-        let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap.clone()));
+        let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap()));
         for tap_shape in tap.shapes() {
             let shape_decl = tapshape_to_shape(tap_shape, &self.config)?;
             schema.add_shape_decl(&shape_decl)
@@ -55,13 +55,15 @@ fn shape_id2iri<'a>(
     shape_id: &'a ShapeId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    let iri = match &config.base_iri {
-        None => {
-            todo!()
-        }
-        Some(base_iri) => base_iri.extend(shape_id.as_local_name().as_str())?,
-    };
-    Ok(iri.clone())
+    let str = shape_id.as_local_name();
+    match &config.base_iri {
+        None => Err(Tap2ShExError::NoBaseIRI {
+            str: str.to_string(),
+        }),
+        Some(base_iri) => base_iri
+            .extend(str.as_str())
+            .map_err(|e| Tap2ShExError::IriSError { err: e }),
+    }
 }
 
 fn tapshape_to_shape_expr(
@@ -138,7 +140,7 @@ fn datatype_id2iri<'a>(
         None => {
             if let Some((prefix, localname)) = datatype_id.as_prefix_local_name() {
                 let iri = config
-                    .prefixmap
+                    .prefixmap()
                     .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
                 Ok(iri)
             } else {

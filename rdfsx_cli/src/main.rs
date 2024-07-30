@@ -186,6 +186,7 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             output,
+            config,
         }) => run_node(
             data,
             data_format,
@@ -196,6 +197,7 @@ fn main() -> Result<()> {
             show_hyperlinks,
             cli.debug,
             output,
+            config,
         ),
         Some(Command::Shapemap {
             shapemap,
@@ -747,6 +749,7 @@ fn run_node(
     show_hyperlinks: &bool,
     debug: u8,
     output: &Option<PathBuf>,
+    _config: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let data = get_data(data, data_format, endpoint, debug)?;

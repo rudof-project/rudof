@@ -1,5 +1,12 @@
-dctap_config:
+dctap:
   delimiter: ','
   quote: '"'
   flexible: true
   picklist_delimiter: '|'
+shex2html:
+  landing_page_name: "index.html"
+  title: "Shapes"
+tap2shex:
+  base_iri: "http://example.org/"
+shex2sparql:
+shex2uml:  
