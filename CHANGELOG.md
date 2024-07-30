@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.4] - 2024-07-30
+
+- Added options in command line to pass config files in YAML
+- Repaired bug in DCTAP resolution of IRIs
+
 ## [0.1.4] - 2024-07-28
 
 - Added 2 separate options for shacl-validate and shex-validate, keeping the generic validate option
