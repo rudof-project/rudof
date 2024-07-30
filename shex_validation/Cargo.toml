@@ -1,6 +1,6 @@
 [package]
 name = "shex_validation"
-version = "0.1.0"
+version = "0.1.5"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_validation"
@@ -10,7 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 rbe = { path = "../rbe", version = "0.0.13" }
 srdf = { path = "../srdf", version = "0.1.0" }
 shex_ast = { path = "../shex_ast", version = "0.1.0" }

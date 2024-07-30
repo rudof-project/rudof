@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ast"
-version = "0.1.3"
+version = "0.1.5"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ast"
@@ -11,7 +11,7 @@ repository.workspace = true
 
 [dependencies]
 srdf = { path = "../srdf", version = "0.1.0" }
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 rbe = { path = "../rbe", version = "0.0.13" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }
 serde = "1"

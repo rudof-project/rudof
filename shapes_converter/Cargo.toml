@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.4"
+version = "0.1.5"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -10,7 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 dctap = { path = "../dctap", version = "0.1.0" }
 rbe = { path = "../rbe", version = "0.0.13" }
 srdf = { path = "../srdf", version = "0.1.0" }

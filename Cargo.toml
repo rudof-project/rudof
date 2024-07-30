@@ -1,6 +1,6 @@
 [package]
 name = "shapes-rs"
-version = "0.1.4"
+version = "0.1.5"
 description = "RDF Data shapes implementation in Rust"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -68,7 +68,7 @@ categories = ["rdf"]
 # Internal dependencies
 rbe = { version = "0.0.13", path = "./rbe" }
 rbe_testsuite = { version = "0.0.13", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.13", path = "./iri_s" }
+iri_s = { version = "0.1.5", path = "./iri_s" }
 prefixmap = { version = "0.1.0", path = "./prefixmap" }
 srdf = { version = "0.1.0", path = "./srdf" }
 dctap = { version = "0.1.0", path = "./dctap" }
