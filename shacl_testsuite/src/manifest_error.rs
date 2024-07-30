@@ -5,7 +5,7 @@ use srdf::SRDFGraphError;
 use std::io::Error;
 use thiserror::Error;
 
-use crate::helper::helper_error::SPARQLError;
+use crate::helper::helper_error::HelperError;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Error, Debug)]
@@ -19,7 +19,7 @@ pub enum ManifestError {
     #[error("Error parsing the SHACL Shape")]
     ShaclParser,
     #[error("Error performing the SPARQL operation")]
-    SPARQL(#[from] SPARQLError),
+    SPARQL(#[from] HelperError),
     #[error("Error creating the SPARQL Store")]
     Storage(#[from] StorageError),
     #[error("Error during the I/O operations")]

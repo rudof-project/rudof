@@ -1,11 +1,15 @@
-use indoc::formatdoc;
-use oxigraph::{model::Term, sparql::QueryResults, store::Store};
+use shacl_ast::*;
+use srdf::SRDFBasic;
+use srdf::SRDF;
+
+use crate::helper::srdf::get_object_for;
+use crate::helper::term::Term;
 
 use super::validation_report_error::ValidationResultError;
 
 #[derive(Default)]
-pub struct ValidationResultBuilder {
-    focus_node: Option<Term>,
+pub struct ValidationResultBuilder<'a> {
+    focus_node: Option<&'a Term>,
     result_severity: Option<Term>,
     result_path: Option<Term>,
     source_constraint: Option<Term>,
@@ -14,8 +18,20 @@ pub struct ValidationResultBuilder {
     value: Option<Term>,
 }
 
-impl ValidationResultBuilder {
-    pub fn focus_node(&mut self, focus_node: Term) {
+impl<'a> ValidationResultBuilder<'a> {
+    pub fn default() -> Self {
+        ValidationResultBuilder {
+            focus_node: None,
+            result_severity: None,
+            result_path: None,
+            source_constraint: None,
+            source_constraint_component: None,
+            source_shape: None,
+            value: None,
+        }
+    }
+
+    pub fn focus_node(&mut self, focus_node: &Term) {
         self.focus_node = Some(focus_node);
     }
 
@@ -43,21 +59,21 @@ impl ValidationResultBuilder {
         self.value = Some(value);
     }
 
-    pub fn build(self) -> ValidationResult {
-        ValidationResult {
-            focus_node: self.focus_node,
-            result_severity: self.result_severity,
-            result_path: self.result_path,
-            source_constraint: self.source_constraint,
-            source_constraint_component: self.source_constraint_component,
-            source_shape: self.source_shape,
-            value: self.value,
-        }
+    pub fn build(self) -> ValidationResult<'a> {
+        ValidationResult::new(
+            self.focus_node,
+            self.result_severity,
+            self.result_path,
+            self.source_constraint,
+            self.source_constraint_component,
+            self.source_shape,
+            self.value,
+        )
     }
 }
 
-pub struct ValidationResult {
-    focus_node: Option<Term>,
+pub struct ValidationResult<'a> {
+    focus_node: Option<&'a Term>,
     result_severity: Option<Term>,
     result_path: Option<Term>,
     source_constraint: Option<Term>,
@@ -66,94 +82,93 @@ pub struct ValidationResult {
     value: Option<Term>,
 }
 
-impl ValidationResult {
-    pub fn parse(store: &Store, subject: &Term) -> Result<Self, ValidationResultError> {
-        let query = formatdoc! {
-            "
-                SELECT ?focus_node ?result_severity ?result_path
-                    ?source_constraint ?source_constraint_component
-                    ?source_shape ?value
-                WHERE {{
-                    OPTIONAL {{
-                        {} {} ?focus_node .
-                        {} {} ?result_severity .
-                        {} {} ?result_path .
-                        {} {} ?source_constraint .
-                        {} {} ?source_constraint_component .
-                        {} {} ?source_shape .
-                        {} {} ?value .
-                    }}
-                }}
-            ", 
-            subject, shacl_ast::SH_FOCUS_NODE.as_named_node(),
-            subject, shacl_ast::SH_RESULT_SEVERITY.as_named_node(),
-            subject, shacl_ast::SH_RESULT_PATH.as_named_node(),
-            subject, shacl_ast::SH_SOURCE_CONSTRAINT.as_named_node(),
-            subject, shacl_ast::SH_SOURCE_CONSTRAINT_COMPONENT.as_named_node(),
-            subject, shacl_ast::SH_SOURCE_SHAPE.as_named_node(),
-            subject, shacl_ast::SH_VALUE.as_named_node()
-        };
+impl<'a> ValidationResult<'a> {
+    pub(crate) fn new(
+        focus_node: Option<&'a Term>,
+        result_severity: Option<Term>,
+        result_path: Option<Term>,
+        source_constraint: Option<Term>,
+        source_constraint_component: Option<Term>,
+        source_shape: Option<Term>,
+        value: Option<Term>,
+    ) -> Self {
+        ValidationResult {
+            focus_node,
+            result_severity,
+            result_path,
+            source_constraint,
+            source_constraint_component,
+            source_shape,
+            value,
+        }
+    }
 
+    pub(crate) fn parse<S: SRDF + SRDFBasic>(
+        store: &S,
+        subject: &Term,
+    ) -> Result<Self, ValidationResultError> {
         let mut builder = ValidationResultBuilder::default();
 
-        match store.query(&query) {
-            Ok(QueryResults::Solutions(solutions)) => match solutions.into_iter().nth(0) {
-                Some(Ok(solution)) => {
-                    if let Some(term) = solution.get("focus_node") {
-                        builder.focus_node(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("result_severity") {
-                        builder.result_severity(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("result_path") {
-                        builder.result_path(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("source_constraint") {
-                        builder.source_constraint(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("source_constraint_component") {
-                        builder.source_constraint_component(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("source_shape") {
-                        builder.source_shape(term.to_owned());
-                    }
-                    if let Some(term) = solution.get("focus_node") {
-                        builder.focus_node(term.to_owned());
-                    }
-                }
-                _ => todo!(),
-            },
-            _ => todo!(),
+        let subject = match subject {
+            Term::IRI(_) => subject,
+            Term::BlankNode(_) => subject,
+            Term::Literal(_) => return Err(ValidationResultError::LiteralToSubject),
+        };
+
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_FOCUS_NODE))? {
+            builder.focus_node(&term)
+        };
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_RESULT_SEVERITY))? {
+            builder.result_severity(term)
+        };
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_RESULT_PATH))? {
+            builder.result_path(term)
+        };
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_SOURCE_CONSTRAINT))? {
+            builder.source_constraint(term)
+        };
+        if let Some(term) = get_object_for(
+            store,
+            &subject,
+            &S::iri_s2iri(&SH_SOURCE_CONSTRAINT_COMPONENT),
+        )? {
+            builder.source_constraint_component(term)
+        };
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_SOURCE_SHAPE))? {
+            builder.source_shape(term)
+        };
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&SH_VALUE))? {
+            builder.value(term)
         };
 
         Ok(builder.build())
     }
 
-    pub fn focus_node(&self) -> Option<Term> {
-        self.focus_node.to_owned()
+    pub(crate) fn focus_node(&self) -> Option<&Term> {
+        self.focus_node
     }
 
-    pub fn result_severity(&self) -> Option<Term> {
-        self.result_severity.to_owned()
+    pub(crate) fn result_severity(&self) -> Option<Term> {
+        self.result_severity
     }
 
-    pub fn result_path(&self) -> Option<Term> {
-        self.result_path.to_owned()
+    pub(crate) fn result_path(&self) -> Option<Term> {
+        self.result_path
     }
 
-    pub fn source_constraint(&self) -> Option<Term> {
-        self.source_constraint.to_owned()
+    pub(crate) fn source_constraint(&self) -> Option<Term> {
+        self.source_constraint
     }
 
-    pub fn source_constraint_component(&self) -> Option<Term> {
-        self.source_constraint_component.to_owned()
+    pub(crate) fn source_constraint_component(&self) -> Option<Term> {
+        self.source_constraint_component
     }
 
-    pub fn source_shape(&self) -> Option<Term> {
-        self.source_shape.to_owned()
+    pub(crate) fn source_shape(&self) -> Option<Term> {
+        self.source_shape
     }
 
-    pub fn value(&self) -> Option<Term> {
-        self.value.to_owned()
+    pub(crate) fn value(&self) -> Option<Term> {
+        self.value
     }
 }

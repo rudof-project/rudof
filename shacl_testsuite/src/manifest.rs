@@ -1,33 +1,71 @@
 use std::collections::HashSet;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::Path;
-use std::str::FromStr;
 
 use indoc::formatdoc;
-use oxigraph::io::GraphFormat;
-use oxigraph::model::{GraphNameRef, NamedNode};
-use oxigraph::{model::Term, store::Store};
-use oxiri::Iri;
-use shacl_ast::ShaclParser;
+use oxigraph::model::NamedNode;
+use oxigraph::model::Term as OxTerm;
+use oxigraph::store::Store;
+use shacl_ast::Schema;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::validation_report::report::ValidationReport;
-use srdf::{RDFFormat, SRDFGraph};
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::helper::sparql::{select, select_many};
+use crate::helper::srdf::get_object_for;
+use crate::helper::srdf::get_objects_for;
 use crate::manifest_error::ManifestError;
 use crate::ShaclTest;
 
-pub struct Manifest {
-    base: String,
-    store: Store,
-    includes: Vec<Manifest>,
-    entries: HashSet<Term>,
+pub trait Manifest<S, T> {
+    fn new(base: String, store: S, includes: Vec<Self>, entries: HashSet<T>) -> Self
+    where
+        Self: Sized;
+
+    fn collect_tests(&self) -> Result<Vec<ShaclTest<S, T>>, ManifestError>;
+
+    fn load(file: &str) -> Result<Self, ManifestError>
+    where
+        Self: Sized;
+
+    fn includes(&self) -> Vec<Self>
+    where
+        Self: Sized;
+
+    fn flatten<'a>(manifest: &'a Self, manifests: &mut Vec<&'a Self>)
+    where
+        Self: Sized,
+    {
+        manifests.push(manifest);
+        for manifest in &manifest.includes() {
+            Self::flatten(manifest, manifests);
+        }
+    }
+
+    fn format_path(term: String) -> String {
+        let mut chars = term.chars();
+        chars.next();
+        chars.next_back();
+        chars.as_str().to_string().replace("file:/", "")
+    }
 }
 
-impl Manifest {
-    fn new(base: String, store: Store, includes: Vec<Manifest>, entries: HashSet<Term>) -> Self {
-        Manifest {
+pub struct OxigraphManifest {
+    base: String,
+    store: Store,
+    includes: Vec<OxigraphManifest>,
+    entries: HashSet<OxTerm>,
+}
+
+impl Manifest<Store, OxTerm> for OxigraphManifest {
+    fn new(
+        base: String,
+        store: Store,
+        includes: Vec<OxigraphManifest>,
+        entries: HashSet<OxTerm>,
+    ) -> Self {
+        OxigraphManifest {
             base,
             store,
             includes,
@@ -35,7 +73,7 @@ impl Manifest {
         }
     }
 
-    pub fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
+    fn collect_tests(&self) -> Result<Vec<ShaclTest<Store, OxTerm>>, ManifestError> {
         let mut ans = Vec::new();
         for entry in &self.entries {
             let query = formatdoc! {
@@ -93,41 +131,31 @@ impl Manifest {
                 None => todo!(),
             };
 
-            // TODO: explain this
-            let term = shapes_graph_iri.to_string().replace("file:/", "");
-            let mut chars = term.chars();
-            chars.next();
-            chars.next_back();
-            let path = chars.as_str().to_string();
+            let term = Self::format_path(shapes_graph_iri.to_string());
 
-            let rdf = SRDFGraph::from_path(
-                Path::new(&path),
-                &RDFFormat::Turtle,
-                Some(Iri::from_str(&self.base)?),
-            )?;
+            // let rdf = SRDFGraph::from_path(
+            //     Path::new(&path),
+            //     &RDFFormat::Turtle,
+            //     Some(Iri::from_str(&self.base)?),
+            // )?;
 
-            let schema = match ShaclParser::new(rdf).parse() {
-                Ok(shapes_graph) => shapes_graph,
-                Err(_) => return Err(ManifestError::ShaclParser),
-            };
+            // let schema = match ShaclParser::new(rdf).parse() {
+            //     Ok(shapes_graph) => shapes_graph,
+            //     Err(_) => return Err(ManifestError::ShaclParser),
+            // };
 
-            // TODO: explain this
-            let term = data_graph_iri.to_string();
-            let mut chars = term.chars();
-            chars.next();
-            chars.next_back();
-            let path = chars.as_str().to_string();
+            let term = Self::format_path(data_graph_iri.to_string());
 
-            let mut data_store = self.store.clone(); // explicit copy
-            if path != self.base {
-                data_store = Store::new()?;
-                data_store.bulk_loader().load_graph(
-                    BufReader::new(File::open(path.replace("file:/", ""))?),
-                    GraphFormat::Turtle,
-                    GraphNameRef::DefaultGraph,
-                    Some(&self.base),
-                )?;
-            }
+            // let mut data_store = self.store.clone(); // explicit copy
+            // if path != self.base {
+            //     data_store = Store::new()?;
+            //     data_store.bulk_loader().load_graph(
+            //         BufReader::new(File::open(path)?),
+            //         GraphFormat::Turtle,
+            //         GraphNameRef::DefaultGraph,
+            //         Some(&self.base),
+            //     )?;
+            // }
 
             ans.push(ShaclTest::new(
                 entry.to_owned(),
@@ -141,7 +169,7 @@ impl Manifest {
         Ok(ans)
     }
 
-    pub fn load(file: &str) -> Result<Manifest, ManifestError> {
+    fn load(file: &str) -> Result<OxigraphManifest, ManifestError> {
         let path = Path::new(file);
 
         let base = match path.canonicalize()?.to_str() {
@@ -151,14 +179,14 @@ impl Manifest {
 
         let store = Store::new()?;
 
-        store.bulk_loader().load_graph(
-            BufReader::new(File::open(path)?),
-            GraphFormat::Turtle,
-            GraphNameRef::DefaultGraph,
-            Some(&base),
-        )?;
+        // store.bulk_loader().load_graph(
+        //     BufReader::new(File::open(path)?),
+        //     GraphFormat::Turtle,
+        //     GraphNameRef::DefaultGraph,
+        //     Some(&base),
+        // )?;
 
-        let subject = Term::NamedNode(NamedNode::new_unchecked(base.clone()));
+        let subject = OxTerm::NamedNode(NamedNode::new_unchecked(base.clone()));
 
         let query = formatdoc! {
             "
@@ -172,11 +200,8 @@ impl Manifest {
 
         let mut includes = Vec::new();
         for manifest in select_many(&store, query)? {
-            let file = manifest.to_string().replace("file:/", ""); // TODO: fn
-            let mut chars = file.chars();
-            chars.next();
-            chars.next_back();
-            if let Ok(child_manifest) = Self::load(chars.as_str()) {
+            let path = Self::format_path(manifest.to_string());
+            if let Ok(child_manifest) = Self::load(path.as_str()) {
                 includes.push(child_manifest);
             }
         }
@@ -203,7 +228,7 @@ impl Manifest {
             };
 
             for entry in select_many(&store, query)? {
-                if let Term::NamedNode(_) = entry {
+                if let OxTerm::NamedNode(_) = entry {
                     entries.insert(entry);
                 }
             }
@@ -212,10 +237,180 @@ impl Manifest {
         Ok(Manifest::new(base, store, includes, entries))
     }
 
-    pub fn flatten<'a>(manifest: &'a Manifest, manifests: &mut Vec<&'a Manifest>) {
-        manifests.push(manifest);
-        for manifest in &manifest.includes {
-            Self::flatten(manifest, manifests);
+    fn includes(&self) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        self.includes
+    }
+}
+
+pub struct SRDFManifest<S: SRDF + SRDFBasic> {
+    base: String,
+    store: S,
+    includes: Vec<SRDFManifest<S>>,
+    entries: HashSet<RDFNode>,
+}
+
+impl<S: SRDF + SRDFBasic> Manifest<S, RDFNode> for SRDFManifest<S> {
+    fn new(
+        base: String,
+        store: S,
+        includes: Vec<SRDFManifest<S>>,
+        entries: HashSet<RDFNode>,
+    ) -> Self {
+        SRDFManifest {
+            base,
+            store,
+            includes,
+            entries,
         }
+    }
+
+    fn collect_tests(&self) -> Result<Vec<ShaclTest<S, RDFNode>>, ManifestError> {
+        let mut ans = Vec::new();
+
+        for entry in &self.entries {
+            let label = get_object_for(
+                &self.store,
+                &Subject::NamedNode(entry.to_owned()),
+                &srdf::RDFS_LABEL,
+            )?;
+
+            let action = match get_object_for(
+                &self.store,
+                &Subject::NamedNode(entry.to_owned()),
+                &shacl_validation_vocab::MF_ACTION,
+            ) {
+                Ok(Some(Term::BlankNode(action))) => action,
+                Ok(Some(Term::NamedNode(_))) => todo!(),
+                Ok(Some(Term::Literal(_))) => todo!(),
+                _ => todo!(),
+            };
+
+            let result = match get_object_for(
+                &self.store,
+                &Subject::NamedNode(entry.to_owned()),
+                &shacl_validation_vocab::MF_RESULT,
+            ) {
+                Ok(result) => ValidationReport::parse(
+                    self.store,
+                    match result {
+                        Some(Term::NamedNode(named_node)) => Subject::NamedNode(named_node),
+                        Some(Term::BlankNode(blank_node)) => Subject::BlankNode(blank_node),
+                        Some(Term::Literal(_)) => todo!(),
+                        None => todo!(),
+                    },
+                )?,
+                _ => todo!(),
+            };
+
+            let data_graph_iri = get_object_for(
+                &self.store,
+                &Subject::BlankNode(action.to_owned()),
+                &shacl_validation_vocab::SHT_DATA_GRAPH,
+            )?;
+
+            let shapes_graph_iri = get_object_for(
+                &self.store,
+                &Subject::BlankNode(action.to_owned()),
+                &shacl_validation_vocab::SHT_SHAPES_GRAPH,
+            )?;
+
+            let term = Self::format_path(shapes_graph_iri.to_string());
+
+            let mut shapes_graph = Schema::default();
+
+            // let rdf = match SRDFGraph::from_path(
+            //     Path::new(&chars.as_str().to_string()),
+            //     &RDFFormat::Turtle,
+            //     Some(base.clone()),
+            // ) {
+            //     Ok(rdf) => rdf,
+            //     Err(_) => todo!(),
+            // };
+
+            // shapes_graph = match ShaclParser::new(rdf).parse() {
+            //     Ok(shapes_graph) => shapes_graph,
+            //     Err(_) => todo!(),
+            // };
+
+            let term = Self::format_path(data_graph_iri.to_string());
+
+            let mut data_graph = self.graph.to_owned();
+            if term != self.base {
+                // data_graph = match SRDFGraph::from_path(
+                //     Path::new(&file_name),
+                //     &RDFFormat::Turtle,
+                //     Some(base.clone()),
+                // ) {
+                //     Ok(rdf) => rdf,
+                //     Err(_) => todo!(),
+                // };
+            }
+
+            ans.push(ShaclTest::new(
+                RDFNode::NamedNode(entry.clone()),
+                self.store.to_owned(),
+                shapes_graph,
+                result,
+                data_graph,
+                match label {
+                    Some(label) => Some(label.to_string()),
+                    None => None,
+                },
+            ))
+        }
+
+        Ok(ans)
+    }
+
+    fn load(file: &str) -> Result<SRDFManifest<S>, ManifestError> {
+        let path = Path::new(file);
+
+        let base = match path.canonicalize()?.to_str() {
+            Some(path) => format!("file:/{}", path),
+            None => todo!(),
+        };
+
+        let base_subject = Subject::NamedNode(NamedNode::new_unchecked(base.to_owned()));
+        let base_iri = Iri::from_str(&base)?;
+        let graph = SRDFGraph::from_path(path, &RDFFormat::Turtle, Some(base_iri))?;
+
+        let mut includes = Vec::new();
+        for manifest in get_objects_for(&graph, &base_subject, &shacl_validation_vocab::MF_INCLUDE)?
+        {
+            let path = Self::format_path(manifest.to_string());
+            if let Ok(child_manifest) = Self::load(path.as_str()) {
+                includes.push(child_manifest);
+            }
+        }
+
+        let mut entry_terms = Vec::new();
+        let entry_subject = get_subject_for(&graph, &base_subject, &MF_ENTRIES)?;
+
+        if let Some(mut subject) = entry_subject {
+            loop {
+                entry_terms.push(match get_object_for(&graph, &subject, &RDF_FIRST)? {
+                    Some(Term::NamedNode(named_node)) => named_node,
+                    Some(Term::BlankNode(_)) => todo!(),
+                    Some(Term::Literal(_)) => todo!(),
+                    None => break,
+                });
+                subject = match get_subject_for(&graph, &subject, &RDF_REST)? {
+                    Some(subject) => subject,
+                    None => break,
+                };
+            }
+        }
+
+        Ok(Manifest::new(base, graph, includes, entry_terms))
+    }
+
+    fn includes(&self) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        self.includes
     }
 }

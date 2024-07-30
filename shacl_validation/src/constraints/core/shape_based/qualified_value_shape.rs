@@ -1,40 +1,11 @@
 use std::collections::HashSet;
 
-use oxigraph::{model::Term, store::Store};
 use srdf::RDFNode;
 
-use crate::{
-    constraints::{constraint_error::ConstraintError, Evaluate},
-    validation_report::report::ValidationReport,
-};
-
-// TODO: missing PropertyConstraintComponent
-
-/// sh:node specifies the condition that each value node conforms to the given
-/// node shape.
-///
-/// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[allow(dead_code)] // TODO: Remove when it is used
-pub(crate) struct NodeConstraintComponent {
-    shape: RDFNode,
-}
-
-impl NodeConstraintComponent {
-    pub fn new(shape: RDFNode) -> Self {
-        NodeConstraintComponent { shape }
-    }
-}
-
-impl Evaluate for NodeConstraintComponent {
-    fn evaluate(
-        &self,
-        _store: &Store,
-        _value_nodes: HashSet<Term>,
-        _report: &mut ValidationReport,
-    ) -> Result<(), ConstraintError> {
-        todo!()
-    }
-}
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::ConstraintComponent;
+use crate::helper::term::Term;
+use crate::validation_report::report::ValidationReport;
 
 /// sh:qualifiedValueShape specifies the condition that a specified number of
 ///  value nodes conforms to the given shape. Each sh:qualifiedValueShape can
@@ -43,21 +14,21 @@ impl Evaluate for NodeConstraintComponent {
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[allow(dead_code)] // TODO: Remove when it is used
-pub(crate) struct QualifiedValueShapeConstraintComponent {
+pub(crate) struct QualifiedValue {
     shape: RDFNode,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
 }
 
-impl QualifiedValueShapeConstraintComponent {
+impl QualifiedValue {
     pub fn new(
         shape: RDFNode,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
     ) -> Self {
-        QualifiedValueShapeConstraintComponent {
+        QualifiedValue {
             shape,
             qualified_min_count,
             qualified_max_count,
@@ -66,13 +37,13 @@ impl QualifiedValueShapeConstraintComponent {
     }
 }
 
-impl Evaluate for QualifiedValueShapeConstraintComponent {
+impl<S> ConstraintComponent<S> for QualifiedValue {
     fn evaluate(
         &self,
-        _store: &Store,
+        _: &S,
         _value_nodes: HashSet<Term>,
         _report: &mut ValidationReport,
     ) -> Result<(), ConstraintError> {
-        todo!()
+        Err(ConstraintError::NotImplemented)
     }
 }

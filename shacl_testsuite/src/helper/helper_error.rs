@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum SPARQLError {
-    #[error("Error during the creation of the IRI")]
+pub enum HelperError {
+    #[error("No triple found por given terms")]
     NoTripleFound,
 }

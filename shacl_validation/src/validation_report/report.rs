@@ -1,78 +1,92 @@
-use std::collections::HashSet;
 use std::fmt;
 
-use indoc::formatdoc;
-use oxigraph::{model::Term, store::Store};
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
-use crate::helper::sparql::{ask, select};
+use crate::helper::srdf::get_object_for;
+use crate::helper::srdf::get_objects_for;
+use crate::helper::term::Term;
 
-use super::{result::ValidationResult, validation_report_error::ValidationReportError};
+use super::result::ValidationResult;
+use super::validation_report_error::ValidationReportError;
 
-pub struct ValidationReport {
+#[derive(Default)]
+pub struct ValidationReport<'a> {
     conforms: bool,
-    result: Vec<ValidationResult>,
+    results: Vec<ValidationResult<'a>>,
 }
 
-impl ValidationReport {
-    pub fn new(conforms: bool, result: Vec<ValidationResult>) -> Self {
-        ValidationReport { conforms, result }
+impl<'a> ValidationReport<'a> {
+    fn new(conforms: bool, results: Vec<ValidationResult>) -> Self {
+        ValidationReport { conforms, results }
     }
 
-    pub fn add_result(&mut self, result: ValidationResult) {
+    fn is_conforms<S: SRDF + SRDFBasic + Default>(
+        self,
+        store: &S,
+        subject: &Term,
+    ) -> Result<bool, ValidationReportError> {
+        let subject = match subject {
+            Term::IRI(_) => subject,
+            Term::BlankNode(_) => subject,
+            Term::Literal(_) => return Err(ValidationReportError::LiteralToSubject),
+        };
+
+        if let Some(term) = get_object_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_CONFORMS))?
+        {
+            match &term {
+                Term::IRI(_) => Err(ValidationReportError::InvalidTerm),
+                Term::BlankNode(_) => Err(ValidationReportError::InvalidTerm),
+                Term::Literal(content) => todo!(),
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub(crate) fn add_result(&mut self, result: ValidationResult) {
+        // We add a result --> make the Report non-conformant
         if self.conforms {
-            // We add a result --> make the Report non-conformant
             self.conforms = false;
         }
-        self.result.push(result)
+        self.results.push(result)
     }
 
-    pub fn parse(store: &Store, subject: &Term) -> Result<ValidationReport, ValidationReportError> {
-        let conforms = Self::is_conforms(store, subject)?;
+    fn parse<S: SRDF + SRDFBasic + Default>(
+        self,
+        store: &S,
+        subject: &Term,
+    ) -> Result<Self, ValidationReportError>
+    where
+        Self: Sized,
+    {
+        let mut report = ValidationReport::default();
 
-        let mut results = Vec::new();
-        for _ in Self::get_results(store, subject)? {
-            results.push(ValidationResult::parse(store, subject)?);
+        for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
+            report.add_result(ValidationResult::parse(store, &result)?);
         }
-
-        Ok(ValidationReport::new(conforms, results))
-    }
-
-    fn is_conforms(store: &Store, subject: &Term) -> Result<bool, ValidationReportError> {
-        let query = formatdoc! {"
-            ASK {{ {} {} true }}
-        ", subject, shacl_ast::SH_CONFORMS.as_named_node()};
-        Ok(ask(store, query)?)
-    }
-
-    fn get_results(store: &Store, subject: &Term) -> Result<HashSet<Term>, ValidationReportError> {
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                {} {} ?this .
-            }}
-        ", subject, shacl_ast::SH_RESULT.as_named_node()};
-        Ok(select(store, query)?)
+        Ok(report)
     }
 }
 
-impl PartialEq for ValidationReport {
+impl<'a> PartialEq for ValidationReport<'a> {
     fn eq(&self, other: &Self) -> bool {
         if self.conforms != other.conforms {
             return false;
         }
-        if self.result.len() != other.result.len() {
+        if self.results.len() != other.results.len() {
             return false;
         }
         true
     }
 }
 
-impl fmt::Display for ValidationReport {
+impl<'a> fmt::Display for ValidationReport<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Validation Report: [")?;
         writeln!(f, "\tconforms: {},", self.conforms)?;
         writeln!(f, "\tresult:")?;
-        for result in &self.result {
+        for result in &self.results {
             writeln!(f, "\t\t[")?;
             if let Some(term) = &result.focus_node() {
                 writeln!(f, "\t\t\tfocus_node: {},", term)?;
@@ -98,14 +112,5 @@ impl fmt::Display for ValidationReport {
             writeln!(f, "\t\t],")?;
         }
         writeln!(f, "]")
-    }
-}
-
-impl Default for ValidationReport {
-    fn default() -> Self {
-        Self {
-            conforms: true,
-            result: Vec::new(),
-        }
     }
 }

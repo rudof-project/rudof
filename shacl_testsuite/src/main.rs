@@ -1,8 +1,8 @@
 use clap::Parser;
 use manifest::Manifest;
-use oxigraph::{model::Term, store::Store};
 use shacl_ast::Schema;
-use shacl_validation::{validate::validate, validation_report::report::ValidationReport};
+use shacl_validation::validate::validate;
+use shacl_validation::validation_report::report::ValidationReport;
 use testsuite_error::TestSuiteError;
 
 mod helper;
@@ -25,20 +25,20 @@ struct Cli {
 
 // TODO: The following line is to make clippy happy...should be removed, it complains that node and manifest_store are not used
 #[allow(dead_code)]
-struct ShaclTest {
-    node: Term,
-    manifest_store: Store,
-    data_store: Store,
+struct ShaclTest<S, T> {
+    node: T,
+    manifest_store: S,
+    data_store: S,
     schema: Schema,
     result: ValidationReport,
     label: Option<String>,
 }
 
-impl ShaclTest {
+impl<S, T> ShaclTest<S, T> {
     fn new(
-        node: Term,
-        manifest_store: Store,
-        data_store: Store,
+        node: T,
+        manifest_store: S,
+        data_store: S,
         schema: Schema,
         result: ValidationReport,
         label: Option<String>,
