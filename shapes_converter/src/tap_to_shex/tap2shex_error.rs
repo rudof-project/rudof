@@ -1,4 +1,4 @@
-use dctap::{DatatypeId, ShapeId, TapShape};
+use dctap::{DatatypeId, PropertyId, ShapeId, TapShape};
 use prefixmap::PrefixMapError;
 use thiserror::Error;
 
@@ -33,6 +33,12 @@ pub enum Tap2ShExError {
 
     #[error("Converting value datatype to IRI, no prefix declaration: {datatype_id:?}")]
     DatatypeId2IriNoPrefix { datatype_id: DatatypeId },
+
+    #[error("Converting shape to IRI, no prefix declaration: {shape_id:?}")]
+    ShapeId2IriNoPrefix { shape_id: ShapeId },
+
+    #[error("Converting property to IRI, no prefix declaration: {property_id:?}")]
+    PropertyId2IriNoPrefix { property_id: PropertyId },
 }
 
 impl Tap2ShExError {
