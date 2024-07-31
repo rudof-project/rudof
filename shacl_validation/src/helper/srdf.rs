@@ -1,15 +1,16 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
-use srdf::{SRDFBasic, SRDF};
+use oxiri::Iri;
+use shacl_ast::{Schema, ShaclParser};
+use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDF};
 
 use super::helper_error::SRDFError;
-use super::term::Term;
 
-pub(crate) fn get_object_for<'a, S: SRDF + SRDFBasic>(
-    store: &'a S,
-    subject: &'a Term,
-    predicate: &'a S::IRI,
-) -> Result<Option<Term>, SRDFError> {
+pub(crate) fn get_object_for<S: SRDF + SRDFBasic>(
+    store: &S,
+    subject: &S::Term,
+    predicate: &S::IRI,
+) -> Result<Option<S::Term>, SRDFError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
         .nth(0)
@@ -19,24 +20,38 @@ pub(crate) fn get_object_for<'a, S: SRDF + SRDFBasic>(
     }
 }
 
-pub(crate) fn get_objects_for<'a, S: SRDF + SRDFBasic>(
-    store: &'a S,
-    subject: &'a Term,
-    predicate: &'a S::IRI,
-) -> Result<HashSet<Term>, SRDFError> {
-    let object = subject.into();
-    let term = S::object_as_term(&object);
-
-    let subject = match S::term_as_subject(&term) {
+pub(crate) fn get_objects_for<S: SRDF + SRDFBasic>(
+    store: &S,
+    subject: &S::Term,
+    predicate: &S::IRI,
+) -> Result<HashSet<S::Term>, SRDFError> {
+    let subject = match S::term_as_subject(&subject) {
         Some(subject) => subject,
         None => todo!(),
     };
 
     match store.objects_for_subject_predicate(&subject, predicate) {
-        Ok(res) => Ok(res
-            .iter()
-            .map(|object| S::term_as_object(&object).into())
-            .collect()),
+        Ok(ans) => Ok(ans),
+        Err(_) => Err(SRDFError::SRDF),
+    }
+}
+
+pub fn load_shapes_graph(
+    path: &str,
+    rdf_format: RDFFormat,
+    base: Option<&str>,
+) -> Result<Schema, SRDFError> {
+    let rdf = SRDFGraph::from_path(
+        std::path::Path::new(&path),
+        &rdf_format,
+        match base {
+            Some(base) => Some(Iri::from_str(&base)?),
+            None => None,
+        },
+    )?;
+
+    match ShaclParser::new(rdf).parse() {
+        Ok(schema) => Ok(schema),
         Err(_) => Err(SRDFError::SRDF),
     }
 }

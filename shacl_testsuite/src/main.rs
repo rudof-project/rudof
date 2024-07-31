@@ -1,8 +1,10 @@
 use clap::Parser;
-use manifest::Manifest;
-use shacl_ast::Schema;
-use shacl_validation::validate::validate;
-use shacl_validation::validation_report::report::ValidationReport;
+use manifest::{GraphManifest, Manifest};
+use shacl_validation::{
+    validate::{GraphValidator, Validator},
+    validation_report::report::ValidationReport,
+};
+use srdf::{SRDFBasic, SRDF};
 use testsuite_error::TestSuiteError;
 
 mod helper;
@@ -25,29 +27,26 @@ struct Cli {
 
 // TODO: The following line is to make clippy happy...should be removed, it complains that node and manifest_store are not used
 #[allow(dead_code)]
-struct ShaclTest<S, T> {
-    node: T,
-    manifest_store: S,
-    data_store: S,
-    schema: Schema,
-    result: ValidationReport,
+struct ShaclTest<S: SRDF + SRDFBasic> {
+    data: String,
+    shapes: String,
+    base: Option<String>,
+    result: ValidationReport<S>,
     label: Option<String>,
 }
 
-impl<S, T> ShaclTest<S, T> {
+impl<S: SRDF + SRDFBasic> ShaclTest<S> {
     fn new(
-        node: T,
-        manifest_store: S,
-        data_store: S,
-        schema: Schema,
-        result: ValidationReport,
+        data: String,
+        shapes: String,
+        base: Option<String>,
+        result: ValidationReport<S>,
         label: Option<String>,
     ) -> Self {
         ShaclTest {
-            node,
-            manifest_store,
-            data_store,
-            schema,
+            data,
+            shapes,
+            base,
             result,
             label,
         }
@@ -57,10 +56,10 @@ impl<S, T> ShaclTest<S, T> {
 fn main() -> Result<(), TestSuiteError> {
     let cli = Cli::parse(); // we obtain the CLI...
 
-    let manifest = Manifest::load(&cli.manifest_filename)?;
+    let manifest = GraphManifest::load(&cli.manifest_filename)?;
 
     let mut manifests = Vec::new();
-    Manifest::flatten(&manifest, &mut manifests);
+    Manifest::flatten(manifest, &mut manifests);
 
     let mut tests = Vec::new();
     for manifest in manifests {
@@ -70,7 +69,9 @@ fn main() -> Result<(), TestSuiteError> {
     let total = tests.len();
     let mut count = 0;
     for test in tests {
-        match validate(&test.data_store, test.schema) {
+        let validator =
+            GraphValidator::new(&test.data, srdf::RDFFormat::NTriples, test.base.as_deref());
+        match validator.validate(&test.shapes, srdf::RDFFormat::Turtle) {
             Ok(actual) => {
                 let label = match test.label {
                     Some(label) => label,

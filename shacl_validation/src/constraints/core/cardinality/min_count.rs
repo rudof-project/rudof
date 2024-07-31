@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
+use srdf::{SRDFBasic, SRDF};
+
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
-use crate::helper::term::Term;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
@@ -20,12 +21,12 @@ impl MinCount {
     }
 }
 
-impl<S> ConstraintComponent<S> for MinCount {
+impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for MinCount {
     fn evaluate(
         &self,
         _store: &S,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         if self.min_count == 0 {
             // If min_count is 0, then it always passes
@@ -33,7 +34,7 @@ impl<S> ConstraintComponent<S> for MinCount {
         }
 
         if (value_nodes.len() as isize) < self.min_count {
-            <MinCount as ConstraintComponent<S>>::make_validation_result(self, None, report);
+            self.make_validation_result(None, report);
         }
 
         Ok(())

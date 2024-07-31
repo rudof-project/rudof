@@ -1,4 +1,3 @@
-use oxigraph::store::{LoaderError, StorageError};
 use oxiri::IriParseError;
 use shacl_validation::validation_report::validation_report_error::ValidationReportError;
 use srdf::SRDFGraphError;
@@ -20,10 +19,6 @@ pub enum ManifestError {
     ShaclParser,
     #[error("Error performing the SPARQL operation")]
     SPARQL(#[from] HelperError),
-    #[error("Error creating the SPARQL Store")]
-    Storage(#[from] StorageError),
     #[error("Error during the I/O operations")]
     IO(#[from] Error),
-    #[error("Error loading the triples")]
-    Loader(#[from] LoaderError),
 }

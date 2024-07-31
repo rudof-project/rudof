@@ -45,7 +45,6 @@ use std::result::Result::Ok;
 use std::str::FromStr;
 use std::time::Instant;
 use tracing::debug;
-use validate::validate;
 
 pub mod cli;
 pub mod data;

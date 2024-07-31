@@ -29,205 +29,81 @@ use core::value_range::max_inclusive::MaxInclusive;
 use core::value_range::min_exclusive::MinExclusive;
 use core::value_range::min_inclusive::MinInclusive;
 use shacl_ast::component::Component;
-use srdf::{SRDFBasic, SRDF};
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
-use crate::helper::term::Term;
-use crate::runner::oxigraph::OxigraphStore;
 use crate::validation_report::report::ValidationReport;
 use crate::validation_report::result::ValidationResultBuilder;
 
 pub(crate) mod constraint_error;
 pub mod core;
 
-pub trait ConstraintComponent<S> {
+pub trait ConstraintComponent<S: SRDF + SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError>;
 
-    fn make_validation_result(&self, value_node: Option<&Term>, report: &mut ValidationReport) {
+    fn make_validation_result(
+        &self,
+        value_node: Option<&S::Term>,
+        report: &mut ValidationReport<S>,
+    ) {
         let mut builder = ValidationResultBuilder::default();
 
         if let Some(focus_node) = value_node {
-            builder.focus_node(focus_node);
+            builder.focus_node(focus_node.to_owned());
         }
 
         report.add_result(builder.build());
     }
 }
 
-impl<'a> ConstraintComponent<OxigraphStore<'a>> for Component {
-    fn evaluate(
-        &self,
-        store: &OxigraphStore<'a>,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
-    ) -> Result<(), ConstraintError> {
-        match self.to_owned() {
-            Component::Class(node) => Class::new(node).evaluate(store, value_nodes, report),
-            Component::Datatype(iri_ref) => {
-                Datatype::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::NodeKind(node_kind) => {
-                Nodekind::new(node_kind).evaluate(store, value_nodes, report)
-            }
-            Component::MinCount(min_count) => {
-                MinCount::new(min_count).evaluate(store, value_nodes, report)
-            }
-            Component::MaxCount(max_count) => {
-                MaxCount::new(max_count).evaluate(store, value_nodes, report)
-            }
-            Component::MinExclusive(literal) => {
-                MinExclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MaxExclusive(literal) => {
-                MaxExclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MinInclusive(literal) => {
-                MinInclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MaxInclusive(literal) => {
-                MaxInclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MinLength(min_length) => {
-                MinLength::new(min_length).evaluate(store, value_nodes, report)
-            }
-            Component::MaxLength(max_lenth) => {
-                MaxLength::new(max_lenth).evaluate(store, value_nodes, report)
-            }
-            Component::Pattern { pattern, flags } => {
-                Pattern::new(pattern, flags).evaluate(store, value_nodes, report)
-            }
-            Component::UniqueLang(lang) => {
-                UniqueLang::new(lang).evaluate(store, value_nodes, report)
-            }
-            Component::LanguageIn { langs } => {
-                LanguageIn::new(langs).evaluate(store, value_nodes, report)
-            }
-            Component::Equals(iri_ref) => Equals::new(iri_ref).evaluate(store, value_nodes, report),
-            Component::Disjoint(iri_ref) => {
-                Disjoint::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::LessThan(iri_ref) => {
-                LessThan::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::LessThanOrEquals(iri) => {
-                LessThanOrEquals::new(iri).evaluate(store, value_nodes, report)
-            }
-            Component::Or { shapes } => Or::new(shapes).evaluate(store, value_nodes, report),
-            Component::And { shapes } => And::new(shapes).evaluate(store, value_nodes, report),
-            Component::Not { shape } => Not::new(shape).evaluate(store, value_nodes, report),
-            Component::Xone { shapes } => Xone::new(shapes).evaluate(store, value_nodes, report),
+impl<S: SRDF + SRDFBasic> From<&Component> for Box<dyn ConstraintComponent<S>> {
+    fn from(value: &Component) -> Self {
+        match value.to_owned() {
+            Component::Class(node) => Box::new(Class::new(node)),
+            Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
+            Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),
+            Component::MinCount(min_count) => Box::new(MinCount::new(min_count)),
+            Component::MaxCount(max_count) => Box::new(MaxCount::new(max_count)),
+            Component::MinExclusive(literal) => Box::new(MinExclusive::new(literal)),
+            Component::MaxExclusive(literal) => Box::new(MaxExclusive::new(literal)),
+            Component::MinInclusive(literal) => Box::new(MinInclusive::new(literal)),
+            Component::MaxInclusive(literal) => Box::new(MaxInclusive::new(literal)),
+            Component::MinLength(min_length) => Box::new(MinLength::new(min_length)),
+            Component::MaxLength(max_lenth) => Box::new(MaxLength::new(max_lenth)),
+            Component::Pattern { pattern, flags } => Box::new(Pattern::new(pattern, flags)),
+            Component::UniqueLang(lang) => Box::new(UniqueLang::new(lang)),
+            Component::LanguageIn { langs } => Box::new(LanguageIn::new(langs)),
+            Component::Equals(iri_ref) => Box::new(Equals::new(iri_ref)),
+            Component::Disjoint(iri_ref) => Box::new(Disjoint::new(iri_ref)),
+            Component::LessThan(iri_ref) => Box::new(LessThan::new(iri_ref)),
+            Component::LessThanOrEquals(iri) => Box::new(LessThanOrEquals::new(iri)),
+            Component::Or { shapes } => Box::new(Or::new(shapes)),
+            Component::And { shapes } => Box::new(And::new(shapes)),
+            Component::Not { shape } => Box::new(Not::new(shape)),
+            Component::Xone { shapes } => Box::new(Xone::new(shapes)),
             Component::Closed {
                 is_closed,
                 ignored_properties,
-            } => Closed::new(is_closed, ignored_properties).evaluate(store, value_nodes, report),
-            Component::Node { shape } => Node::new(shape).evaluate(store, value_nodes, report),
-            Component::HasValue { value } => {
-                HasValue::new(value).evaluate(store, value_nodes, report)
-            }
-            Component::In { values } => In::new(values).evaluate(store, value_nodes, report),
+            } => Box::new(Closed::new(is_closed, ignored_properties)),
+            Component::Node { shape } => Box::new(Node::new(shape)),
+            Component::HasValue { value } => Box::new(HasValue::new(value)),
+            Component::In { values } => Box::new(In::new(values)),
             Component::QualifiedValueShape {
                 shape,
                 qualified_min_count,
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
-            } => QualifiedValue::new(
+            } => Box::new(QualifiedValue::new(
                 shape,
                 qualified_min_count,
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
-            )
-            .evaluate(store, value_nodes, report),
-        }
-    }
-}
-
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for Component {
-    fn evaluate(
-        &self,
-        store: &S,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
-    ) -> Result<(), ConstraintError> {
-        match self.to_owned() {
-            Component::Class(node) => Class::new(node).evaluate(store, value_nodes, report),
-            Component::Datatype(iri_ref) => {
-                Datatype::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::NodeKind(node_kind) => {
-                Nodekind::new(node_kind).evaluate(store, value_nodes, report)
-            }
-            Component::MinCount(min_count) => {
-                MinCount::new(min_count).evaluate(store, value_nodes, report)
-            }
-            Component::MaxCount(max_count) => {
-                MaxCount::new(max_count).evaluate(store, value_nodes, report)
-            }
-            Component::MinExclusive(literal) => {
-                MinExclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MaxExclusive(literal) => {
-                MaxExclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MinInclusive(literal) => {
-                MinInclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MaxInclusive(literal) => {
-                MaxInclusive::new(literal).evaluate(store, value_nodes, report)
-            }
-            Component::MinLength(min_length) => {
-                MinLength::new(min_length).evaluate(store, value_nodes, report)
-            }
-            Component::MaxLength(max_lenth) => {
-                MaxLength::new(max_lenth).evaluate(store, value_nodes, report)
-            }
-            Component::Pattern { pattern, flags } => {
-                Pattern::new(pattern, flags).evaluate(store, value_nodes, report)
-            }
-            Component::UniqueLang(lang) => {
-                UniqueLang::new(lang).evaluate(store, value_nodes, report)
-            }
-            Component::LanguageIn { langs } => {
-                LanguageIn::new(langs).evaluate(store, value_nodes, report)
-            }
-            Component::Equals(iri_ref) => Equals::new(iri_ref).evaluate(store, value_nodes, report),
-            Component::Disjoint(iri_ref) => {
-                Disjoint::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::LessThan(iri_ref) => {
-                LessThan::new(iri_ref).evaluate(store, value_nodes, report)
-            }
-            Component::LessThanOrEquals(iri) => {
-                LessThanOrEquals::new(iri).evaluate(store, value_nodes, report)
-            }
-            Component::Or { shapes } => Or::new(shapes).evaluate(store, value_nodes, report),
-            Component::And { shapes } => And::new(shapes).evaluate(store, value_nodes, report),
-            Component::Not { shape } => Not::new(shape).evaluate(store, value_nodes, report),
-            Component::Xone { shapes } => Xone::new(shapes).evaluate(store, value_nodes, report),
-            Component::Closed {
-                is_closed,
-                ignored_properties,
-            } => Closed::new(is_closed, ignored_properties).evaluate(store, value_nodes, report),
-            Component::Node { shape } => Node::new(shape).evaluate(store, value_nodes, report),
-            Component::HasValue { value } => {
-                HasValue::new(value).evaluate(store, value_nodes, report)
-            }
-            Component::In { values } => In::new(values).evaluate(store, value_nodes, report),
-            Component::QualifiedValueShape {
-                shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
-            } => QualifiedValue::new(
-                shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
-            )
-            .evaluate(store, value_nodes, report),
+            )),
         }
     }
 }

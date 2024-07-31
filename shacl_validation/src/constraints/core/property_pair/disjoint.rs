@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
 use prefixmap::IriRef;
+use srdf::{SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
-use crate::helper::term::Term;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
@@ -23,12 +23,12 @@ impl Disjoint {
     }
 }
 
-impl<S> ConstraintComponent<S> for Disjoint {
+impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for Disjoint {
     fn evaluate(
         &self,
-        _: &S,
-        _value_nodes: HashSet<Term>,
-        _report: &mut ValidationReport,
+        _store: &S,
+        _value_nodes: HashSet<S::Term>,
+        _report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }

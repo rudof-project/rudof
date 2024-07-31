@@ -24,6 +24,3 @@ const_format = "0.2"
 
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
-
-oxigraph = "0.3.22"
-indoc = "2"

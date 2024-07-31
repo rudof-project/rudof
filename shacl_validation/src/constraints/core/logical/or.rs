@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
-use srdf::RDFNode;
+use srdf::{RDFNode, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
-use crate::helper::term::Term;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:or specifies the condition that each value node conforms to at least one
@@ -23,12 +22,12 @@ impl Or {
     }
 }
 
-impl<S> ConstraintComponent<S> for Or {
+impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for Or {
     fn evaluate(
         &self,
         _store: &S,
-        _value_nodes: HashSet<Term>,
-        _report: &mut ValidationReport,
+        _value_nodes: HashSet<S::Term>,
+        _report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }

@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
+use srdf::{SRDFBasic, SRDF};
+
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
-use crate::helper::term::Term;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
@@ -19,15 +20,15 @@ impl MaxCount {
     }
 }
 
-impl<S> ConstraintComponent<S> for MaxCount {
+impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for MaxCount {
     fn evaluate(
         &self,
         _store: &S,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         if (value_nodes.len() as isize) > self.max_count {
-            <MaxCount as ConstraintComponent<S>>::make_validation_result(self, None, report);
+            self.make_validation_result(None, report);
         }
         Ok(())
     }

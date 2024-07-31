@@ -1,10 +1,9 @@
-use oxigraph::store::{LoaderError, StorageError};
 use oxiri::IriParseError;
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::helper::helper_error::SPARQLError;
+use crate::helper::helper_error::{SPARQLError, SRDFError};
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
@@ -24,10 +23,8 @@ pub enum ValidateError {
     Constraint(#[from] ConstraintError),
     #[error("Error parsing the IRI")]
     IriParse(#[from] IriParseError),
-    #[error("Error during the Storage")]
-    Storage(#[from] StorageError),
     #[error("Error during some I/O operation")]
     IO(#[from] std::io::Error),
-    #[error("Error during the Bulk Load")]
-    BulkLoad(#[from] LoaderError),
+    #[error("Error loading the Shapes")]
+    Shapes(#[from] SRDFError),
 }

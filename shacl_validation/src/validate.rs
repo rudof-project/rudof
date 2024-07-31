@@ -1,45 +1,78 @@
 use shacl_ast::shape::Shape;
-use srdf::{RDFFormat, SRDFGraph, SRDFSparql};
+use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDFSparql, SRDF};
 
-use crate::runner::oxigraph::OxigraphRunner;
-use crate::runner::srdf::SRDFRunner;
-use crate::runner::ValidatorRunner;
+use crate::helper::srdf::load_shapes_graph;
+use crate::runner::{GraphValidatorRunner, SparqlValidatorRunner, ValidatorRunner};
 use crate::shape::Validate;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-pub enum Backend {
-    InMemory,
-    SPARQL,
-    InDisk,
-}
+pub trait Validator<'a, S: SRDF + SRDFBasic, V: ValidatorRunner<S>> {
+    fn runner(&self) -> &V;
+    fn base(&self) -> Option<&'a str>;
 
-pub struct Validator;
-
-impl Validator {
-    pub fn validate<'a>(
-        data: &str,
-        data_format: RDFFormat,
+    fn validate(
+        &self,
         shapes: &str,
         shapes_format: RDFFormat,
-        backend: Backend,
-        base: Option<&str>,
-    ) -> Result<ValidationReport<'a>, ValidateError> {
-        let runner: Box<dyn ValidatorRunner> = match backend {
-            Backend::InMemory => Box::new(SRDFRunner::<SRDFGraph>::new(data, data_format, base)?),
-            Backend::SPARQL => Box::new(SRDFRunner::<SRDFSparql>::new(data, data_format, base)?),
-            Backend::InDisk => Box::new(OxigraphRunner::new(data, data_format, base)?),
-        };
-
-        let schema = runner.load_shapes_graph(shapes, shapes_format, base)?;
+    ) -> Result<ValidationReport<S>, ValidateError> {
+        let schema = load_shapes_graph(shapes, shapes_format, self.base())?;
 
         let mut ans = ValidationReport::default(); // conformant by default...
         for (_, shape) in schema.iter() {
             match shape {
-                Shape::NodeShape(shape) => shape.validate(&runner, &mut ans),
-                Shape::PropertyShape(shape) => shape.validate(&runner, &mut ans),
+                Shape::NodeShape(shape) => shape.validate(self.runner(), &mut ans)?,
+                Shape::PropertyShape(shape) => shape.validate(self.runner(), &mut ans)?,
             };
         }
         Ok(ans)
+    }
+}
+
+pub struct GraphValidator<'a> {
+    runner: GraphValidatorRunner,
+    base: Option<&'a str>,
+}
+
+impl<'a> GraphValidator<'a> {
+    pub fn new(data: &str, data_format: RDFFormat, base: Option<&'a str>) -> Self {
+        GraphValidator {
+            runner: GraphValidatorRunner::new(data, data_format, base),
+            base,
+        }
+    }
+}
+
+impl<'a> Validator<'a, SRDFGraph, GraphValidatorRunner> for GraphValidator<'a> {
+    fn runner(&self) -> &GraphValidatorRunner {
+        &self.runner
+    }
+
+    fn base(&self) -> Option<&'a str> {
+        self.base
+    }
+}
+
+pub struct SparqlValidator<'a> {
+    runner: SparqlValidatorRunner,
+    base: Option<&'a str>,
+}
+
+impl<'a> SparqlValidator<'a> {
+    pub fn new(data: &str) -> Self {
+        SparqlValidator {
+            runner: SparqlValidatorRunner::new(data),
+            base: None,
+        }
+    }
+}
+
+impl<'a> Validator<'a, SRDFSparql, SparqlValidatorRunner> for SparqlValidator<'a> {
+    fn runner(&self) -> &SparqlValidatorRunner {
+        &self.runner
+    }
+
+    fn base(&self) -> Option<&'a str> {
+        self.base
     }
 }
