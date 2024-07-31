@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use oxigraph::io::GraphFormat;
 use srdf::RDFFormat;
-use std::convert::TryFrom;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
 
@@ -181,6 +179,9 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
 
         #[arg(
             short = 'o',
@@ -442,19 +443,6 @@ impl From<DataFormat> for RDFFormat {
             DataFormat::TriG => RDFFormat::TriG,
             DataFormat::N3 => RDFFormat::N3,
             DataFormat::NQuads => RDFFormat::NQuads,
-        }
-    }
-}
-
-impl TryFrom<DataFormat> for GraphFormat {
-    type Error = &'static str;
-
-    fn try_from(val: DataFormat) -> Result<Self, Self::Error> {
-        match val {
-            DataFormat::Turtle => Ok(GraphFormat::Turtle),
-            DataFormat::NTriples => Ok(GraphFormat::NTriples),
-            DataFormat::RDFXML => Ok(GraphFormat::RdfXml),
-            _ => Err("Not a valid format"),
         }
     }
 }

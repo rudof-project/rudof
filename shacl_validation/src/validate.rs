@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use shacl_ast::shape::Shape;
 use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDFSparql, SRDF};
 
@@ -7,13 +9,13 @@ use crate::shape::Validate;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-pub trait Validator<'a, S: SRDF + SRDFBasic, V: ValidatorRunner<S>> {
-    fn runner(&self) -> &V;
+pub trait Validator<'a, S: SRDF + SRDFBasic> {
+    fn runner(&self) -> &impl ValidatorRunner<S>;
     fn base(&self) -> Option<&'a str>;
 
     fn validate(
         &self,
-        shapes: &str,
+        shapes: &Path,
         shapes_format: RDFFormat,
     ) -> Result<ValidationReport<S>, ValidateError> {
         let schema = load_shapes_graph(shapes, shapes_format, self.base())?;
@@ -35,16 +37,20 @@ pub struct GraphValidator<'a> {
 }
 
 impl<'a> GraphValidator<'a> {
-    pub fn new(data: &str, data_format: RDFFormat, base: Option<&'a str>) -> Self {
-        GraphValidator {
-            runner: GraphValidatorRunner::new(data, data_format, base),
+    pub fn new(
+        data: &Path,
+        data_format: RDFFormat,
+        base: Option<&'a str>,
+    ) -> Result<Self, ValidateError> {
+        Ok(GraphValidator {
+            runner: GraphValidatorRunner::new(data, data_format, base)?,
             base,
-        }
+        })
     }
 }
 
-impl<'a> Validator<'a, SRDFGraph, GraphValidatorRunner> for GraphValidator<'a> {
-    fn runner(&self) -> &GraphValidatorRunner {
+impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
+    fn runner(&self) -> &impl ValidatorRunner<SRDFGraph> {
         &self.runner
     }
 
@@ -59,16 +65,16 @@ pub struct SparqlValidator<'a> {
 }
 
 impl<'a> SparqlValidator<'a> {
-    pub fn new(data: &str) -> Self {
-        SparqlValidator {
-            runner: SparqlValidatorRunner::new(data),
+    pub fn new(data: &String) -> Result<Self, ValidateError> {
+        Ok(SparqlValidator {
+            runner: SparqlValidatorRunner::new(data)?,
             base: None,
-        }
+        })
     }
 }
 
-impl<'a> Validator<'a, SRDFSparql, SparqlValidatorRunner> for SparqlValidator<'a> {
-    fn runner(&self) -> &SparqlValidatorRunner {
+impl<'a> Validator<'a, SRDFSparql> for SparqlValidator<'a> {
+    fn runner(&self) -> &impl ValidatorRunner<SRDFSparql> {
         &self.runner
     }
 

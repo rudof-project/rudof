@@ -1,20 +1,19 @@
 use oxiri::IriParseError;
+use prefixmap::Underef;
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::helper::helper_error::{SPARQLError, SRDFError};
+use crate::helper::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
     #[error("Error during the SPARQL operation")]
-    SPARQL(#[from] SPARQLError),
+    SRDF,
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,
-    #[error("TargetClass cannot be a Blank Node")]
-    TargetClassBlankNode,
-    #[error("TargetClass cannot be a Literal")]
-    TargetClassLiteral,
+    #[error("TargetClass should be an IRI")]
+    TargetClassNotIri,
     #[error("Error during the creation of the SRDFGraph")]
     SRDFGraph(#[from] SRDFGraphError),
     #[error("Error during the creation of the Shacl shapes")]
@@ -27,4 +26,10 @@ pub enum ValidateError {
     IO(#[from] std::io::Error),
     #[error("Error loading the Shapes")]
     Shapes(#[from] SRDFError),
+    #[error("Error creating the SPARQL endpoint")]
+    SPARQLCreation,
+    #[error("Error creating the Graph in-memory")]
+    GraphCreation,
+    #[error("Error obtaining the underlying IRI")]
+    Underef(#[from] Underef),
 }

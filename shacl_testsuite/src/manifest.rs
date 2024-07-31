@@ -22,7 +22,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
     where
         Self: Sized;
 
-    fn load_data_graph(path: &str, base: &str) -> S;
+    fn load_data_graph(path: &Path, base: &str) -> S;
 
     fn base(&self) -> String;
 
@@ -75,12 +75,12 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
             )?
             .unwrap();
 
-            let shapes_path = Self::format_path(shapes_graph_iri.to_string());
-            let data_path = Self::format_path(data_graph_iri.to_string());
+            let shapes = Self::format_path(shapes_graph_iri.to_string());
+            let data = Self::format_path(data_graph_iri.to_string());
 
             ans.push(ShaclTest::new(
-                data_path,
-                shapes_path,
+                data,
+                shapes,
                 Some(self.base()),
                 result,
                 match label {
@@ -93,7 +93,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
         Ok(ans)
     }
 
-    fn load(path: &str) -> Result<Self, ManifestError>
+    fn load(path: &Path) -> Result<Self, ManifestError>
     where
         Self: Sized,
     {
@@ -111,8 +111,9 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
             &subject,
             &S::iri_s2iri(&shacl_validation_vocab::MF_INCLUDE),
         )? {
-            let path = Self::format_path(manifest.to_string());
-            if let Ok(child_manifest) = Self::load(path.as_str()) {
+            let format_path = Self::format_path(manifest.to_string());
+            let path = Path::new(&format_path);
+            if let Ok(child_manifest) = Self::load(path) {
                 includes.push(child_manifest);
             }
         }
@@ -130,7 +131,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
                 entry_terms.insert(
                     match get_object_for(&graph, &subject, &S::iri_s2iri(&srdf::RDF_FIRST))? {
                         Some(term) => term,
-                        None => todo!(),
+                        None => break,
                     },
                 );
 
@@ -144,13 +145,13 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
         Ok(Manifest::new(base, graph, includes, entry_terms))
     }
 
-    fn flatten<'a>(manifest: &'a Self, manifests: &mut Vec<&'a Self>)
+    fn flatten(manifest: Self, manifests: &mut Vec<Self>)
     where
-        Self: Sized,
+        Self: Sized + Clone,
     {
-        manifests.push(manifest);
+        manifests.push(manifest.to_owned());
         for manifest in manifest.includes() {
-            Self::flatten(&manifest, manifests);
+            Self::flatten(manifest.to_owned(), manifests);
         }
     }
 
@@ -185,10 +186,14 @@ impl Manifest<SRDFGraph> for GraphManifest {
         }
     }
 
-    fn load_data_graph(path: &str, base: &str) -> SRDFGraph {
-        GraphValidatorRunner::new(path, RDFFormat::Turtle, Some(base))
-            .store()
-            .to_owned()
+    fn load_data_graph(path: &Path, base: &str) -> SRDFGraph {
+        let path = Path::new(path);
+        match GraphValidatorRunner::new(path, RDFFormat::Turtle, Some(base)) {
+            Ok(validator) => validator,
+            Err(_) => todo!(),
+        }
+        .store()
+        .to_owned()
     }
 
     fn base(&self) -> String {
@@ -200,7 +205,7 @@ impl Manifest<SRDFGraph> for GraphManifest {
     }
 
     fn includes(&self) -> Vec<GraphManifest> {
-        self.includes
+        self.includes.to_owned()
     }
 
     fn entries(&self) -> HashSet<Term> {

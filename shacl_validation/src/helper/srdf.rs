@@ -1,4 +1,4 @@
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::HashSet, path::Path, str::FromStr};
 
 use oxiri::Iri;
 use shacl_ast::{Schema, ShaclParser};
@@ -37,12 +37,12 @@ pub(crate) fn get_objects_for<S: SRDF + SRDFBasic>(
 }
 
 pub fn load_shapes_graph(
-    path: &str,
+    path: &Path,
     rdf_format: RDFFormat,
     base: Option<&str>,
 ) -> Result<Schema, SRDFError> {
     let rdf = SRDFGraph::from_path(
-        std::path::Path::new(&path),
+        &path,
         &rdf_format,
         match base {
             Some(base) => Some(Iri::from_str(&base)?),

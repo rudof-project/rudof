@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use shacl_ast::node_shape::NodeShape;
 use shacl_ast::property_shape::PropertyShape;
 use srdf::SRDFBasic;
@@ -48,7 +50,10 @@ impl<S: SRDF + SRDFBasic> Validate<S> for PropertyShape {
 
         for component in self.components() {
             let focus_nodes = runner.focus_nodes(self.targets())?;
-            let value_nodes = runner.path(self.path())?;
+            let mut value_nodes = HashSet::new();
+            for focus_node in focus_nodes {
+                runner.path(self, focus_node, &mut value_nodes)?;
+            }
             runner.evaluate(component, value_nodes, report)?;
         }
 
