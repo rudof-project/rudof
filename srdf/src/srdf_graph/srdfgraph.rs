@@ -5,10 +5,7 @@ use iri_s::IriS;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::{
-    FocusRDF, QuerySRDF, QuerySolution, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple,
-    RDF_TYPE_STR, SRDF,
-};
+use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
 use oxiri::Iri;
 use oxrdfio::{RdfFormat, RdfSerializer};
 use rust_decimal::Decimal;
@@ -906,19 +903,6 @@ mod tests {
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph);
         assert!(result.is_ok())
-    }
-}
-
-impl QuerySRDF for SRDFGraph {
-    fn query_select(
-        &self,
-        query: &str,
-    ) -> Result<QuerySolutionIter<Self::Term>>, Self::Err> {
-        // 
-    }
-
-    fn query_ask(&self, query: &str) -> Result<bool, Self::Err> {
-        todo!()
     }
 }
 
