@@ -23,5 +23,5 @@ clap = { version = "4.2.1", features = ["derive"] }
 const_format = "0.2"
 
 oxiri = "0.2"
-oxigraph = "0.3.22"
+oxigraph = "0.4.0-alpha.7"
 indoc = "2"

@@ -9,6 +9,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+rdf-star = ["oxrdf/rdf-star"]
+
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.1.5" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }

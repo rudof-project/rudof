@@ -196,6 +196,9 @@ impl SRDFBasic for SRDFSparql {
                 }
             },
             Self::Term::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -220,6 +223,8 @@ impl SRDFBasic for SRDFSparql {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
+            #[cfg(feature = "rdf-star")]
+            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -228,6 +233,8 @@ impl SRDFBasic for SRDFSparql {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -623,8 +630,9 @@ fn subject_as_term(subject: &OxSubject) -> OxTerm {
     match subject {
         OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
         OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-        // #[cfg(feature = "rdf-star")]
-        // _ => unimplemented!(),
+        #[cfg(feature = "rdf-star")]
+        #[cfg(feature = "rdf-star")]
+        OxSubject::Triple(_) => unimplemented!(),
     }
 }
 

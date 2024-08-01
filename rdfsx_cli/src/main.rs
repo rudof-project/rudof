@@ -21,7 +21,7 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use dctap::{DCTap, TapConfig};
-use oxigraph::model::GraphNameRef;
+use oxigraph::io::RdfParser;
 use oxigraph::store::Store;
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
@@ -39,7 +39,7 @@ use srdf::srdf_sparql::SRDFSparql;
 use srdf::SRDF;
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use std::str::FromStr;
@@ -380,12 +380,15 @@ fn run_validate_shacl(
     }?;
     if let Ok(data_format) = data_format.to_owned().try_into() {
         let store = Store::new()?;
-        store.bulk_loader().load_graph(
-            BufReader::new(File::open(path)?),
-            data_format,
-            GraphNameRef::DefaultGraph,
-            None,
-        )?;
+        let parser = RdfParser::from_format(data_format);
+        let fp = match File::open(path) {
+            Ok(fp) => fp,
+            Err(error) => {
+                eprintln!("Error while opening file {}: {}", path.display(), error);
+                return Ok(());
+            }
+        };
+        store.bulk_loader().load_from_read(parser, fp)?;
         let mut writer = get_writer(output)?;
         let validate = validate(&store, shacl_schema);
         match validate {

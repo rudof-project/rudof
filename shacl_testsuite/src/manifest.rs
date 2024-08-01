@@ -5,7 +5,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use indoc::formatdoc;
-use oxigraph::io::GraphFormat;
+use oxigraph::io::RdfFormat;
 use oxigraph::model::{GraphNameRef, NamedNode};
 use oxigraph::{model::Term, store::Store};
 use oxiri::Iri;
@@ -35,6 +35,8 @@ impl Manifest {
         }
     }
 
+    // TODO: Change load_graph by load_from_read
+    #[allow(deprecated)]
     pub fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
         let mut ans = Vec::new();
         for entry in &self.entries {
@@ -123,7 +125,7 @@ impl Manifest {
                 data_store = Store::new()?;
                 data_store.bulk_loader().load_graph(
                     BufReader::new(File::open(path.replace("file:/", ""))?),
-                    GraphFormat::Turtle,
+                    RdfFormat::Turtle,
                     GraphNameRef::DefaultGraph,
                     Some(&self.base),
                 )?;
@@ -141,6 +143,8 @@ impl Manifest {
         Ok(ans)
     }
 
+    // TODO: Change load_graph by load_from_read
+    #[allow(deprecated)]
     pub fn load(file: &str) -> Result<Manifest, ManifestError> {
         let path = Path::new(file);
 
@@ -153,7 +157,7 @@ impl Manifest {
 
         store.bulk_loader().load_graph(
             BufReader::new(File::open(path)?),
-            GraphFormat::Turtle,
+            RdfFormat::Turtle,
             GraphNameRef::DefaultGraph,
             Some(&base),
         )?;

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use oxigraph::io::GraphFormat;
+use oxigraph::io::RdfFormat as GraphFormat;
 use srdf::RDFFormat;
 use std::convert::TryFrom;
 use std::fmt::Display;

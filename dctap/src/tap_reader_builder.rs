@@ -7,12 +7,12 @@ use std::io::{self};
 use std::path::Path;
 
 #[derive(Default)]
-pub(crate) struct TapReaderBuilder {
+pub struct TapReaderBuilder {
     _reader_builder: ReaderBuilder,
 }
 
 impl TapReaderBuilder {
-    pub fn _new() -> TapReaderBuilder {
+    pub fn new() -> TapReaderBuilder {
         TapReaderBuilder::default()
     }
     /*
@@ -47,11 +47,12 @@ impl TapReaderBuilder {
     /// # Example
     /// ```no_run
     /// use dctap::TapReaderBuilder;
+    /// use dctap::TapConfig;
     /// use std::error::Error;
     ///
     /// # fn main() { example().unwrap(); }
     /// fn example() -> Result<(), Box<dyn Error>> {
-    ///     let mut tap = TapReaderBuilder::new().from_path("foo.csv")?;
+    ///     let mut tap = TapReaderBuilder::from_path("foo.csv", &TapConfig::default())?;
     ///     for result in tap.shapes() {
     ///         let shape = result?;
     ///         println!("{:?}", shape);

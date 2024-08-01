@@ -3,7 +3,7 @@ use crate::TapShape;
 use csv::{Position, StringRecord};
 
 #[derive(Debug)]
-pub(crate) struct TapReaderState {
+pub struct TapReaderState {
     current_shape: TapShape,
     cached_next_record: Option<StringRecord>,
     headers: TapHeaders,
@@ -49,5 +49,11 @@ impl TapReaderState {
         } else {
             None
         }
+    }
+}
+
+impl Default for TapReaderState {
+    fn default() -> Self {
+        Self::new()
     }
 }
