@@ -9,7 +9,7 @@ use crate::runner::ValidatorRunner;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-pub trait Validate<S: SRDF + SRDFBasic> {
+pub trait Validate<S: SRDF + SRDFBasic + 'static> {
     fn validate(
         &self,
         runner: &impl ValidatorRunner<S>,
@@ -17,7 +17,7 @@ pub trait Validate<S: SRDF + SRDFBasic> {
     ) -> Result<(), ValidateError>;
 }
 
-impl<S: SRDF + SRDFBasic> Validate<S> for NodeShape {
+impl<S: SRDF + SRDFBasic + 'static> Validate<S> for NodeShape {
     fn validate(
         &self,
         runner: &impl ValidatorRunner<S>,
@@ -37,7 +37,7 @@ impl<S: SRDF + SRDFBasic> Validate<S> for NodeShape {
     }
 }
 
-impl<S: SRDF + SRDFBasic> Validate<S> for PropertyShape {
+impl<S: SRDF + SRDFBasic + 'static> Validate<S> for PropertyShape {
     fn validate(
         &self,
         runner: &impl ValidatorRunner<S>,

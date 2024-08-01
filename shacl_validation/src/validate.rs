@@ -9,7 +9,7 @@ use crate::shape::Validate;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-pub trait Validator<'a, S: SRDF + SRDFBasic> {
+pub trait Validator<'a, S: SRDF + SRDFBasic + 'static> {
     fn runner(&self) -> &impl ValidatorRunner<S>;
     fn base(&self) -> Option<&'a str>;
 

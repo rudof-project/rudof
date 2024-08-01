@@ -21,7 +21,7 @@ use crate::validation_report::report::ValidationReport;
 
 type Result<T> = std::result::Result<T, ValidateError>;
 
-pub trait ValidatorRunner<S: SRDF + SRDFBasic> {
+pub trait ValidatorRunner<S: SRDF + SRDFBasic + 'static> {
     fn store(&self) -> &S;
 
     fn evaluate(

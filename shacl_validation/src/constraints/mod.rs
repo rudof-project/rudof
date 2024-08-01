@@ -61,7 +61,7 @@ pub trait ConstraintComponent<S: SRDF + SRDFBasic> {
     }
 }
 
-impl<S: SRDF + SRDFBasic> From<&Component> for Box<dyn ConstraintComponent<S>> {
+impl<S: SRDF + SRDFBasic + 'static> From<&Component> for Box<dyn ConstraintComponent<S>> {
     fn from(value: &Component) -> Self {
         match value.to_owned() {
             Component::Class(node) => Box::new(Class::new(node)),

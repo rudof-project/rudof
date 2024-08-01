@@ -9,4 +9,6 @@ pub enum ConstraintError {
     SPARQL(#[from] SPARQLError),
     #[error("Not yet implemented Constraint")]
     NotImplemented,
+    #[error("Error creating the constriant")]
+    Create,
 }
