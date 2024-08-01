@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use iri_s::IriS;
 use prefixmap::IriRef;
-use srdf::{SRDFBasic, SRDF};
+use srdf::SRDFBasic;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
@@ -24,7 +24,7 @@ impl Datatype {
     }
 }
 
-impl<S: SRDFBasic + SRDF> ConstraintComponent<S> for Datatype {
+impl<S: SRDFBasic> ConstraintComponent<S> for Datatype {
     fn evaluate(
         &self,
         _: &S,

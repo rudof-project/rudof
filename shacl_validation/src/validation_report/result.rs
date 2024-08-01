@@ -71,7 +71,7 @@ impl<S: SRDF + SRDFBasic> ValidationResultBuilder<S> {
     }
 }
 
-pub struct ValidationResult<S: SRDF + SRDFBasic> {
+pub struct ValidationResult<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,
     result_path: Option<S::Term>,

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{SRDFBasic, SRDF};
+use srdf::SRDFBasic;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
@@ -20,7 +20,7 @@ impl MaxCount {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for MaxCount {
+impl<S: SRDFBasic> ConstraintComponent<S> for MaxCount {
     fn evaluate(
         &self,
         _store: &S,

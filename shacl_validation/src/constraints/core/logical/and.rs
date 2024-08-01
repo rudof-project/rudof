@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDFBasic, SRDF};
+use srdf::{RDFNode, SRDFBasic};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
@@ -21,7 +21,7 @@ impl And {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for And {
+impl<S: SRDFBasic> ConstraintComponent<S> for And {
     fn evaluate(
         &self,
         _store: &S,

@@ -10,7 +10,7 @@ use super::result::ValidationResult;
 use super::validation_report_error::ValidationReportError;
 
 #[derive(Default)]
-pub struct ValidationReport<S: SRDF + SRDFBasic> {
+pub struct ValidationReport<S: SRDFBasic> {
     conforms: bool,
     results: Vec<ValidationResult<S>>,
 }

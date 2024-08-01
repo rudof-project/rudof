@@ -30,7 +30,6 @@ use core::value_range::min_exclusive::MinExclusive;
 use core::value_range::min_inclusive::MinInclusive;
 use shacl_ast::component::Component;
 use srdf::SRDFBasic;
-use srdf::SRDF;
 
 use crate::validation_report::report::ValidationReport;
 use crate::validation_report::result::ValidationResultBuilder;
@@ -38,7 +37,7 @@ use crate::validation_report::result::ValidationResultBuilder;
 pub(crate) mod constraint_error;
 pub mod core;
 
-pub trait ConstraintComponent<S: SRDF + SRDFBasic> {
+pub trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
@@ -61,7 +60,7 @@ pub trait ConstraintComponent<S: SRDF + SRDFBasic> {
     }
 }
 
-impl<S: SRDF + SRDFBasic + 'static> From<&Component> for Box<dyn ConstraintComponent<S>> {
+impl<S: SRDFBasic + 'static> From<&Component> for Box<dyn ConstraintComponent<S>> {
     fn from(value: &Component) -> Self {
         match value.to_owned() {
             Component::Class(node) => Box::new(Class::new(node)),
