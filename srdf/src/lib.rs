@@ -12,6 +12,7 @@ pub mod literal;
 pub mod neighs;
 pub mod numeric_literal;
 pub mod object;
+pub mod query_srdf;
 pub mod rdf;
 pub mod rdf_format;
 pub mod shacl_path;
@@ -27,6 +28,7 @@ pub mod vocab;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
+pub use crate::query_srdf::*;
 pub use crate::srdf::*;
 pub use crate::srdf_basic::*;
 pub use bnode::*;
