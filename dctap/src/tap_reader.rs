@@ -7,7 +7,7 @@ use csv::{Reader, StringRecord};
 // use indexmap::IndexSet;
 use std::io::{self};
 
-pub(crate) struct TapReader<R> {
+pub struct TapReader<R> {
     reader: Reader<R>,
     state: TapReaderState,
     config: TapConfig,
@@ -308,7 +308,7 @@ fn get_strs(str: &str) -> impl Iterator<Item = &str> {
 /// A borrowed iterator over Shapes
 ///
 /// The lifetime parameter `'r` refers to the lifetime of the underlying `TapReader`.
-pub(crate) struct ShapesIter<'r, R: 'r> {
+pub struct ShapesIter<'r, R: 'r> {
     reader: &'r mut TapReader<R>,
 }
 
@@ -351,6 +351,7 @@ Person,PersonLabel,knows,KnowsLabel
             TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
+        expected_shape.set_shape_label("PersonLabel");
         let mut statement = TapStatement::new(PropertyId::new("knows"));
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
@@ -369,6 +370,7 @@ Person,PersonLabel,knows,KnowsLabel
             TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
+        expected_shape.set_shape_label("PersonLabel");
         let mut statement = TapStatement::new(PropertyId::new("knows"));
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
@@ -391,6 +393,7 @@ Company,CompanyLabel,founder,FounderLabel
             TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape1 = TapShape::new();
         expected_shape1.set_shape_id(&ShapeId::new("Person"));
+        expected_shape1.set_shape_label("PersonLabel");
         let mut statement = TapStatement::new(PropertyId::new("knows"));
         statement.set_property_label("KnowsLabel");
         expected_shape1.add_statement(statement);
@@ -402,6 +405,7 @@ Company,CompanyLabel,founder,FounderLabel
 
         let mut expected_shape2 = TapShape::new();
         expected_shape2.set_shape_id(&ShapeId::new("Company"));
+        expected_shape2.set_shape_label("CompanyLabel");
         let mut statement = TapStatement::new(PropertyId::new("founder"));
         statement.set_property_label("FounderLabel");
         expected_shape2.add_statement(statement);

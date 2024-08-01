@@ -82,6 +82,7 @@ Person,PersonLabel,knows,knowsLabel
         let dctap = DCTap::from_reader(data.as_bytes()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
+        expected_shape.set_shape_label("PersonLabel");
         let mut statement = TapStatement::new(PropertyId::new("knows"));
         statement.set_property_label("knowsLabel");
         expected_shape.add_statement(statement);
