@@ -3,7 +3,7 @@ use std::{fs, io};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2SparqlConfig {
     pub this_variable_name: String,
 }
@@ -24,7 +24,7 @@ impl ShEx2SparqlConfig {
                 error: e,
             }
         })?;
-        serde_yaml::from_str::<ShEx2SparqlConfig>(&config_str).map_err(|e| {
+        serde_yml::from_str::<ShEx2SparqlConfig>(&config_str).map_err(|e| {
             ShEx2SparqlConfigError::YamlError {
                 path_name: file_name.to_string(),
                 error: e,
@@ -41,6 +41,6 @@ pub enum ShEx2SparqlConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml::Error,
+        error: serde_yml::Error,
     },
 }

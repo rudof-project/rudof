@@ -19,6 +19,15 @@ impl ShapeId {
         self.str.to_string()
     }
 
+    pub fn as_prefix_local_name(&self) -> Option<(String, String)> {
+        // TODO: Check how to escape special characters
+        if let Some((prefix, localname)) = self.str.rsplit_once(':') {
+            Some((prefix.to_string(), localname.to_string()))
+        } else {
+            None
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.str.is_empty()
     }

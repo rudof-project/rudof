@@ -26,7 +26,7 @@ You can download a binary from the [latest release](https://github.com/weso/shap
 
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
-```
+```sh
 wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rdfsx_vX.X.X_amd64.deb
 sudo dpkg -i rdfsx_vX.X.X_amd64.deb
 ```
@@ -48,7 +48,7 @@ The binary is available at: [https://github.com/weso/shapes-rs/releases]
 
 For example:
 
-```
+```sh
 cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
 ```
 
@@ -56,19 +56,19 @@ cargo run -- validate --data examples/user.ttl --schema examples/user.shex --sha
 
 Install `cargo deb` (only the first time)
 
-```
+```sh
 cargo install cargo-deb
 ```
 
 Create the `.deb` package by:
 
-```
+```sh
 cargo deb
 ```
 
 And run:
 
-```
+```sh
 sudo dpkg -i target/debian/shapes-rs_0.0.11-1_amd64.deb
 ```
 
@@ -105,29 +105,50 @@ where `value` can be `debug` to show more verbose information or `info` to show 
 ## Command line usage
 
 ```sh
-$ rdfsx --help
-Usage: sx [OPTIONS] [COMMAND]
+RDF Data shapes implementation in Rust
+
+Usage: rdfsx [OPTIONS] [COMMAND]
+
 Commands:
-  schema
-  validate
-  data
-  node
-  help
-          Print this message or the help of the given subcommand(s)
+  shapemap        Information about ShEx shapemaps
+  shex            Information about ShEx schemas
+  validate        RDF Validation using ShEx or SHACL
+  shex-validate   RDF Validation using ShEx schemas
+  shacl-validate  RDF Validation using SHACL shapes
+  data            Information about RDF data
+  node            Information about RDF nodes which are part of RDF Graphs
+  shacl           Information about SHACL shapes
+  dctap           Information and processing of DCTAP files
+  convert         Conversion between different Data modeling technologies
+  help            Print this message or the help of the given subcommand(s)
+
+Options:
+  -d, --debug...  
+  -h, --help      Print help (see more with '--help')
+  -V, --version   Print version
 ```
 
-### Obtaining information about a schema
+### Obtaining information about a ShEx schema
 
 ```sh
-Usage: rdfsx schema [OPTIONS] --schema <Schema file name>
+$ rdfsx shex --help
+Information about ShEx schemas
+
+Usage: rdfsx shex [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
           
-  -f, --schema-format <Schema format>
-          [default: shexj] [possible values: internal, shexc, shexj]
-  -r, --result-schema-format <Result schema format>
-          [default: shexj] [possible values: internal, shexc, shexj]
+  -f, --format <Schema format>
+          [default: shexc] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -r, --result-format <Result schema format>
+          [default: shexj] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -t, --show elapsed time
+          
+      --statistics
+          
+  -o, --output-file <Output file name, default = terminal>
+          
   -h, --help
           Print help
 ```
@@ -135,12 +156,20 @@ Options:
 ### Obtaining information about RDF data
 
 ```sh
+$ rdfsx data --help
+Information about RDF data
+
 Usage: rdfsx data [OPTIONS] --data <RDF data path>
 
 Options:
-  -d, --data <RDF data path>           
-  -t, --data-format <RDF Data format>  [default: turtle] [possible values: turtle]
-  -h, --help                           Print help
+  -d, --data <RDF data path>
+          
+  -t, --data-format <RDF Data format>
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+  -o, --output-file <Output file name, default = terminal>
+          
+  -h, --help
+          Print help
 ```
 
 ### Obtaining information about a node in RDF data
@@ -148,6 +177,9 @@ Options:
 This command can be useful to obtain the neighbourhood of a node.
 
 ```sh
+$ rdfsx node --help
+Information about RDF nodes which are part of RDF Graphs
+
 Usage: rdfsx node [OPTIONS] --node <NODE>
 
 Options:
@@ -156,13 +188,19 @@ Options:
   -d, --data <RDF data path>
           
   -t, --data-format <RDF Data format>
-          [default: turtle] [possible values: turtle]
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
   -e, --endpoint <Endpoint with RDF data>
           
   -m, --show-node-mode <Show Node Mode>
           [default: outgoing] [possible values: outgoing, incoming, both]
+      --show hyperlinks
+          
+  -p, --predicates <PREDICATES>
+          
+  -o, --output-file <Output file name, default = terminal>
+          
   -h, --help
-          Print help  
+          Print help
 ```
 
 For example, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
@@ -172,6 +210,41 @@ rdfsx node -e wikidata -n wd:Q80
 ```
 
 ### Validating an RDF node against some data
+
+```sh
+$ rdfsx validate --help
+RDF Validation using ShEx or SHACL
+
+Usage: rdfsx validate [OPTIONS] --schema <Schema file name>
+
+Options:
+  -M, --mode <Validation mode>
+          [default: shex] [possible values: shex, shacl]
+  -s, --schema <Schema file name>
+          
+  -f, --schema-format <Schema format>
+          [default: shexc] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -m, --shapemap <ShapeMap file name>
+          
+      --shapemap-format <ShapeMap format>
+          [default: compact] [possible values: compact, internal]
+  -n, --node <NODE>
+          
+  -l, --shape-label <shape label (default = START)>
+          
+  -d, --data <RDF data path>
+          
+  -t, --data-format <RDF Data format>
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+  -e, --endpoint <Endpoint with RDF data>
+          
+      --max-steps <max steps to run>
+          [default: 100]
+  -o, --output-file <Output file name, default = terminal>
+          
+  -h, --help
+          Print help
+```
 
 Example: Assuming there a ShEx file in `examples/user.shex` and an RDF turtle file in `examples/user.ttl` we can ask to validate node `:a` with shape label `:User` using:
 
@@ -185,40 +258,39 @@ If there is a shapemap in `examples/user.sm`, we can validate using:
 rdfsx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
 ```
 
-The full help for the `validate` subcommand is:
-
-```sh
-Usage: rdfsx validate [OPTIONS] --schema <Schema file name> --data <RDF data path>
-
-Options:
-  -s, --schema <Schema file name>
-          
-  -f, --schema-format <Schema format>
-          [default: shexc] [possible values: internal, shexc, shexj]
-  -m, --shapemap <ShapeMap file name>
-          
-      --shapemap-format <ShapeMap format>
-          [default: compact] [possible values: compact, internal]
-      --result-shapemap-format <Result shapemap format>
-          [default: compact] [possible values: compact, internal]
-  -n, --node <NODE>
-          
-  -l, --shape-label <shape label (default = START)>
-          
-  -d, --data <RDF data path>
-          
-  -t, --data-format <RDF Data format>
-          [default: turtle] [possible values: turtle]
-      --max-steps <max steps to run>
-          [default: 100]
-  -h, --help
-          Print help
-```
-
 ### Validating an RDF node against some SHACL Shape
 
 ```sh
-rdfsx validate-shacl --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+rdfsx shacl-validate --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+```
+
+### Conversion between shapes formalisms
+
+```sh
+$ rdfsx convert --help
+Conversion between different Data modeling technologies
+
+Usage: rdfsx convert [OPTIONS] --input-mode <Input mode> --source-file <Source file name> --export-mode <Result mode>
+
+Options:
+  -m, --input-mode <Input mode>
+          [possible values: shex, dctap]
+  -s, --source-file <Source file name>
+          
+  -f, --format <Input file format>
+          [default: shexc] [possible values: csv, shexc, shexj, turtle]
+  -r, --result-format <Result format>
+          [default: default] [possible values: default, internal, json, shexc, shexj, turtle, plantuml, html, svg, png]
+  -o, --output-file <Output file name, default = terminal>
+          
+  -t, --target-folder <Target folder>
+          
+  -l, --shape-label <shape label (default = START)>
+          
+  -x, --export-mode <Result mode>
+          [possible values: sparql, shex, uml, html]
+  -h, --help
+          Print help
 ```
 
 ## Main modules
@@ -234,6 +306,9 @@ The repo is divided in the following modules:
 - [shex_validation](https://github.com/weso/shapes-rs/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
 - [shex_testsuite](https://github.com/weso/shapes-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
 - [shacl_ast](https://github.com/weso/shapes-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
+- [shacl_validation](https://github.com/weso/shapes-rs/tree/master/shacl_validation) contains the code required to validate RDF using SHACL.
+- [dctap](https://github.com/weso/shapes-rs/tree/master/dctap) contains the code required to do handle DCTAP files.
+- [shapes_converter](https://github.com/weso/shapes-rs/tree/master/shapes_converter) contains the code required to do conversion between different shapes formalisms.
 
 ## Publishing the crates
 
@@ -245,7 +320,7 @@ cargo workspaces publish
 
 The project is using cargo workspaces wihch can be installed with:
 
-```
+```sh
 cargo install cargo-workspaces
 ```
 
@@ -253,13 +328,13 @@ cargo install cargo-workspaces
 
 In order to test all the sub-projects
 
-```
+```sh
 cargo test --all
 ```
 
 Testing one specific subproject:
 
-```
+```sh
 cargo test -p shex_validation
 ```
 
@@ -296,9 +371,9 @@ Options:
           Print version
 ```
 
-### Validation tests
+### Validation conformance tests for ShEx
 
-```
+```sh
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation 
 ```
 

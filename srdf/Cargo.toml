@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.1"
+version = "0.1.5"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -9,8 +9,11 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+rdf-star = ["oxrdf/rdf-star"]
+
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }
 async-trait = "0.1.68"
 hashbag = "0.1.11"

@@ -15,12 +15,14 @@ pub struct Tap2ShEx {
 }
 
 impl Tap2ShEx {
-    pub fn new(config: Tap2ShExConfig) -> Tap2ShEx {
-        Tap2ShEx { config }
+    pub fn new(config: &Tap2ShExConfig) -> Tap2ShEx {
+        Tap2ShEx {
+            config: config.clone(),
+        }
     }
 
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
-        let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap.clone()));
+        let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap()));
         for tap_shape in tap.shapes() {
             let shape_decl = tapshape_to_shape(tap_shape, &self.config)?;
             schema.add_shape_decl(&shape_decl)
@@ -53,13 +55,22 @@ fn shape_id2iri<'a>(
     shape_id: &'a ShapeId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    let iri = match &config.base_iri {
-        None => {
-            todo!()
-        }
-        Some(base_iri) => base_iri.extend(shape_id.as_local_name().as_str())?,
-    };
-    Ok(iri.clone())
+    if let Some((prefix, localname)) = shape_id.as_prefix_local_name() {
+        let iri = config
+            .prefixmap()
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+        Ok(iri)
+    } else {
+        let iri = match &config.base_iri {
+            None => Err(Tap2ShExError::ShapeId2IriNoPrefix {
+                shape_id: shape_id.clone(),
+            }),
+            Some(base_iri) => base_iri
+                .extend(shape_id.as_local_name().as_str())
+                .map_err(|e| Tap2ShExError::IriSError { err: e }),
+        }?;
+        Ok(iri)
+    }
 }
 
 fn tapshape_to_shape_expr(
@@ -132,36 +143,43 @@ fn datatype_id2iri<'a>(
     datatype_id: &'a DatatypeId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    let iri = match &config.datatype_base_iri {
-        None => {
-            if let Some((prefix, localname)) = datatype_id.as_prefix_local_name() {
-                let iri = config
-                    .prefixmap
-                    .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+    if let Some((prefix, localname)) = datatype_id.as_prefix_local_name() {
+        let iri = config
+            .prefixmap()
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+        Ok(iri)
+    } else {
+        let iri = match &config.datatype_base_iri {
+            None => Err(Tap2ShExError::DatatypeId2IriNoPrefix {
+                datatype_id: datatype_id.clone(),
+            }),
+            Some(base_iri) => {
+                let iri = base_iri.extend(datatype_id.as_local_name().as_str())?;
                 Ok(iri)
-            } else {
-                Err(Tap2ShExError::DatatypeId2IriNoPrefix {
-                    datatype_id: datatype_id.clone(),
-                })
             }
-        }
-        Some(base_iri) => {
-            let iri = base_iri.extend(datatype_id.as_local_name().as_str())?;
-            Ok(iri)
-        }
-    }?;
-    Ok(iri.clone())
+        }?;
+        Ok(iri.clone())
+    }
 }
 
 fn property_id2iri<'a>(
     property_id: &'a PropertyId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    let iri = match &config.base_iri {
-        None => {
-            todo!()
-        }
-        Some(base_iri) => base_iri.extend(property_id.as_local_name().as_str())?,
-    };
-    Ok(iri.clone())
+    if let Some((prefix, localname)) = property_id.as_prefix_local_name() {
+        let iri = config
+            .prefixmap()
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+        Ok(iri)
+    } else {
+        let iri = match &config.base_iri {
+            None => Err(Tap2ShExError::PropertyId2IriNoPrefix {
+                property_id: property_id.clone(),
+            }),
+            Some(base_iri) => base_iri
+                .extend(property_id.as_local_name().as_str())
+                .map_err(|e| Tap2ShExError::IriSError { err: e }),
+        }?;
+        Ok(iri)
+    }
 }

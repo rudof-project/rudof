@@ -3,7 +3,7 @@ use csv::StringRecord;
 use tracing::debug;
 
 #[derive(Debug, Default)]
-pub(crate) struct TapHeaders {
+pub struct TapHeaders {
     shape_id: Option<usize>,
     shape_label: Option<usize>,
     property_id: Option<usize>,

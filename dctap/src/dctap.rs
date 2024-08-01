@@ -31,12 +31,10 @@ impl DCTap {
         self.shapes.push(shape.clone());
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P, _config: TapConfig) -> Result<DCTap, TapError> {
+    pub fn from_path<P: AsRef<Path>>(path: P, config: &TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new()
-            .flexible(true)
-            .from_path(path, TapConfig::default())?;
+        let mut tap_reader = TapReaderBuilder::from_path(path, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -47,9 +45,7 @@ impl DCTap {
     pub fn from_reader<R: io::Read>(reader: R) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new()
-            .flexible(true)
-            .from_reader(reader, TapConfig::default())?;
+        let mut tap_reader = TapReaderBuilder::from_reader(reader, &TapConfig::default())?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -86,6 +82,7 @@ Person,PersonLabel,knows,knowsLabel
         let dctap = DCTap::from_reader(data.as_bytes()).unwrap();
         let mut expected_shape = TapShape::new();
         expected_shape.set_shape_id(&ShapeId::new("Person"));
+        expected_shape.set_shape_label("PersonLabel");
         let mut statement = TapStatement::new(PropertyId::new("knows"));
         statement.set_property_label("knowsLabel");
         expected_shape.add_statement(statement);

@@ -1,4 +1,4 @@
-use std::result;
+use std::{io, result};
 
 use csv::StringRecord;
 use thiserror::Error;
@@ -30,4 +30,13 @@ pub enum TapError {
 
     #[error("Value of field {field} is {value} and should be boolean")]
     ShouldBeBoolean { field: String, value: String },
+
+    #[error("Error reading config file from path {path}: {error}")]
+    TapConfigFromPathError { path: String, error: io::Error },
+
+    #[error("Error reading config file from path {path}: {error}")]
+    TapConfigYamlError {
+        path: String,
+        error: serde_yml::Error,
+    },
 }

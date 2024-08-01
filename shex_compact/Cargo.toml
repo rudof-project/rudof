@@ -1,6 +1,6 @@
 [package]
 name = "shex_compact"
-version = "0.1.1"
+version = "0.1.5"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_compact"
@@ -12,7 +12,7 @@ repository.workspace = true
 [dependencies]
 shex_ast = { path = "../shex_ast", version = "0.1.0" }
 rbe = { path = "../rbe", version = "0.0.13" }
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 srdf = { path = "../srdf", version = "0.1.0" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" } 
 shapemap = { path = "../shapemap", version = "0.1.0" } 

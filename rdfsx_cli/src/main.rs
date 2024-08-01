@@ -20,13 +20,18 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use dctap::{DCTap, TapConfig};
+<<<<<<< HEAD
+=======
+use oxigraph::io::RdfParser;
+use oxigraph::store::Store;
+>>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::validate::{GraphValidator, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
-    ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx, Tap2ShExConfig,
+    ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx,
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -56,6 +61,7 @@ fn main() -> Result<()> {
         .with_file(true)
         .with_target(false)
         .with_line_number(true)
+        .with_writer(io::stderr)
         .without_time();
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
     let filter_layer = EnvFilter::try_from_default_env()
@@ -141,7 +147,33 @@ fn main() -> Result<()> {
                 )
             }
         },
-        Some(Command::ValidateShacl {
+        Some(Command::ShexValidate {
+            schema,
+            schema_format,
+            data,
+            data_format,
+            endpoint,
+            node,
+            shape,
+            shapemap,
+            shapemap_format,
+            max_steps,
+            output,
+        }) => run_validate_shex(
+            schema,
+            schema_format,
+            data,
+            data_format,
+            endpoint,
+            node,
+            shape,
+            shapemap,
+            shapemap_format,
+            max_steps,
+            cli.debug,
+            output,
+        ),
+        Some(Command::ShaclValidate {
             shapes,
             shapes_format,
             data,
@@ -171,6 +203,7 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             output,
+            config,
         }) => run_node(
             data,
             data_format,
@@ -181,6 +214,7 @@ fn main() -> Result<()> {
             show_hyperlinks,
             cli.debug,
             output,
+            config,
         ),
         Some(Command::Shapemap {
             shapemap,
@@ -198,8 +232,9 @@ fn main() -> Result<()> {
             file,
             format,
             result_format,
+            config,
             output,
-        }) => run_dctap(file, format, result_format, output),
+        }) => run_dctap(file, format, result_format, output, config),
         Some(Command::Convert {
             file,
             format,
@@ -209,6 +244,7 @@ fn main() -> Result<()> {
             output,
             output_mode,
             target_folder,
+            config,
         }) => run_convert(
             file,
             format,
@@ -218,6 +254,7 @@ fn main() -> Result<()> {
             output,
             output_mode,
             target_folder,
+            config,
         ),
         None => {
             println!("Command not specified");
@@ -353,6 +390,7 @@ fn run_validate_shacl(
     _debug: u8,
     output: &Option<PathBuf>,
 ) -> Result<()> {
+<<<<<<< HEAD
     let mut writer = get_writer(output)?;
     if let Some(data) = data {
         let validator = match GraphValidator::new(
@@ -410,6 +448,30 @@ fn run_validate_shacl(
             Err(_) => bail!("Error validating the graph"),
         };
         writeln!(writer, "Result:\n{}", result)?;
+=======
+    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
+    let path = match data {
+        Some(path) => Ok(Path::new(path)),
+        None => Err(anyhow!("Data parameter must be specified\nReason: Validation from a single shapes graph is not supported yet.")),
+    }?;
+    if let Ok(data_format) = data_format.to_owned().try_into() {
+        let store = Store::new()?;
+        let parser = RdfParser::from_format(data_format);
+        let fp = match File::open(path) {
+            Ok(fp) => fp,
+            Err(error) => {
+                eprintln!("Error while opening file {}: {}", path.display(), error);
+                return Ok(());
+            }
+        };
+        store.bulk_loader().load_from_read(parser, fp)?;
+        let mut writer = get_writer(output)?;
+        let validate = validate(&store, shacl_schema);
+        match validate {
+            Ok(result) => writeln!(writer, "Result:\n{}", result)?,
+            Err(err) => bail!("{err}"),
+        }
+>>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
         Ok(())
     } else {
         bail!("Please provide either a local data source or an endpoint")
@@ -444,9 +506,14 @@ fn run_dctap(
     format: &DCTapFormat,
     result_format: &DCTapResultFormat,
     output: &Option<PathBuf>,
+    config: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
-    let dctap = parse_dctap(input_path, format)?;
+    let tap_config = match config {
+        Some(config_path) => TapConfig::from_path(config_path),
+        None => Ok(TapConfig::default()),
+    }?;
+    let dctap = parse_dctap(input_path, format, &tap_config)?;
     match result_format {
         DCTapResultFormat::Internal => {
             writeln!(writer, "{dctap}")?;
@@ -471,11 +538,16 @@ fn run_convert(
     output: &Option<PathBuf>,
     output_mode: &OutputConvertMode,
     target_folder: &Option<PathBuf>,
+    config: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
+    let converter_config = match config {
+        None => Ok(ConverterConfig::default()),
+        Some(config_path) => ConverterConfig::from_path(config_path),
+    }?;
     match (input_mode, output_mode) {
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input_path, format, writer, result_format)
+            run_tap2shex(input_path, format, writer, result_format, &converter_config)
         }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
@@ -485,10 +557,10 @@ fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format)
+            run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format, &converter_config.shex2sparql_config())
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input_path, format, &mut writer, result_format)
+            run_shex2uml(input_path, format, &mut writer, result_format, &converter_config.shex2uml_config())
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -496,12 +568,12 @@ fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input_path, format, &mut writer,  output_path)
+                    run_shex2html(input_path, format, &mut writer,  output_path, &converter_config.shex2html_config())
                 }
             }
         }
-        (InputConvertMode::DCTAP, OutputConvertMode::UML) => {
-            run_tap2uml(input_path, format, &mut writer)
+        (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
+            run_tap2uml(input_path, format, &mut writer, result_format, &converter_config)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -509,7 +581,7 @@ fn run_convert(
             "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_tap2html(input_path, format, &mut writer, output_path)
+                    run_tap2html(input_path, format, &mut writer, output_path, &converter_config)
                 }
             }
         }
@@ -524,30 +596,44 @@ fn run_shex2uml(
     format: &InputConvertFormat,
     writer: &mut Box<dyn Write>,
     result_format: &OutputConvertFormat,
+    config: &ShEx2UmlConfig,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
-    let mut converter = ShEx2Uml::new(ShEx2UmlConfig::new());
+    let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
+    generate_uml_output(converter, writer, result_format)?;
+    Ok(())
+}
+
+fn generate_uml_output(
+    uml_converter: ShEx2Uml,
+    writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+) -> Result<()> {
     match result_format {
         OutputConvertFormat::PlantUML => {
-            converter.as_plantuml(writer)?;
+            uml_converter.as_plantuml(writer)?;
             Ok(())
         }
         OutputConvertFormat::SVG => {
-            converter.as_image(writer, ImageFormat::SVG)?;
+            uml_converter.as_image(writer, ImageFormat::SVG)?;
             Ok(())
         }
         OutputConvertFormat::PNG => {
-            converter.as_image(writer, ImageFormat::PNG)?;
+            uml_converter.as_image(writer, ImageFormat::PNG)?;
+            Ok(())
+        }
+        OutputConvertFormat::Default => {
+            uml_converter.as_plantuml(writer)?;
             Ok(())
         }
         // OutputConvertFormat::JPG => converter.as_image(writer, Image::JPG)?,
         _ => Err(anyhow!(
-            "Conversion from ShEx to UML does not support format {result_format}"
+            "Conversion to UML does not support output format {result_format}"
         )),
     }
 }
@@ -557,6 +643,7 @@ fn run_shex2html<P: AsRef<Path>>(
     format: &InputConvertFormat,
     msg_writer: &mut Box<dyn Write>,
     output_folder: P,
+    config: &ShEx2HtmlConfig,
 ) -> Result<()> {
     debug!("Starting shex2html");
     let schema_format = match format {
@@ -564,7 +651,7 @@ fn run_shex2html<P: AsRef<Path>>(
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path.as_ref(), &schema_format)?;
-    let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
+    let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
     debug!("Landing page {landing_page}\nConverter...");
     let mut converter = ShEx2Html::new(config);
@@ -579,23 +666,30 @@ fn run_tap2html<P: AsRef<Path>>(
     format: &InputConvertFormat,
     msg_writer: &mut Box<dyn Write>,
     output_folder: P,
+    config: &ConverterConfig,
 ) -> Result<()> {
     debug!("Starting tap2html");
     let dctap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &dctap_format)?;
-    let converter_tap = Tap2ShEx::new(Tap2ShExConfig::default());
+    let dctap = parse_dctap(input_path, &dctap_format, &config.tap_config())?;
+    let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
     let shex = converter_tap.convert(&dctap)?;
     debug!(
         "Converted ShEx: {}",
         ShExFormatter::default().format_schema(&shex)
     );
-    let config = ShEx2HtmlConfig::default().with_target_folder(output_folder.as_ref());
-    let landing_page = config.landing_page().to_string_lossy().to_string();
+    let shex2html_config = config
+        .shex2html_config()
+        .clone()
+        .with_target_folder(output_folder.as_ref());
+    let landing_page = shex2html_config
+        .landing_page()
+        .to_string_lossy()
+        .to_string();
     debug!("Landing page {landing_page}\nConverter...");
-    let mut converter = ShEx2Html::new(config);
+    let mut converter = ShEx2Html::new(shex2html_config);
     converter.convert(&shex)?;
     // debug!("Converted HTMLSchema: {:?}", converter.current_html());
     converter.export_schema()?;
@@ -609,13 +703,14 @@ fn run_shex2sparql(
     shape: Option<IriRef>,
     writer: &mut Box<dyn Write>,
     _result_format: &OutputConvertFormat,
+    config: &ShEx2SparqlConfig,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
     let schema = parse_schema(input_path, &schema_format)?;
-    let converter = ShEx2Sparql::new(ShEx2SparqlConfig::default());
+    let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
     write!(writer, "{}", sparql)?;
     Ok(())
@@ -626,13 +721,14 @@ fn run_tap2shex(
     format: &InputConvertFormat,
     writer: Box<dyn Write>,
     result_format: &OutputConvertFormat,
+    config: &ConverterConfig,
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &tap_format)?;
-    let converter = Tap2ShEx::new(Tap2ShExConfig::default());
+    let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
+    let converter = Tap2ShEx::new(&config.tap2shex_config());
     let shex = converter.convert(&dctap)?;
     let result_schema_format = match result_format {
         OutputConvertFormat::Default => Ok(ShExFormat::ShExC),
@@ -649,17 +745,20 @@ fn run_tap2uml(
     input_path: &Path,
     format: &InputConvertFormat,
     writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+    config: &ConverterConfig,
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &tap_format)?;
-    let converter_shex = Tap2ShEx::new(Tap2ShExConfig::default());
+    let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
+    let converter_shex = Tap2ShEx::new(&config.tap2shex_config());
     let shex = converter_shex.convert(&dctap)?;
-    let mut converter_uml = ShEx2Uml::new(ShEx2UmlConfig::new());
+    let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
     converter_uml.as_plantuml(writer)?;
+    generate_uml_output(converter_uml, writer, result_format)?;
     Ok(())
 }
 
@@ -731,6 +830,7 @@ fn run_node(
     show_hyperlinks: &bool,
     debug: u8,
     output: &Option<PathBuf>,
+    _config: &Option<PathBuf>,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let data = get_data(data, data_format, endpoint, debug)?;
@@ -953,10 +1053,14 @@ fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclS
     }
 }
 
-fn parse_dctap<P: AsRef<Path>>(input_path: P, format: &DCTapFormat) -> Result<DCTap> {
+fn parse_dctap<P: AsRef<Path>>(
+    input_path: P,
+    format: &DCTapFormat,
+    config: &TapConfig,
+) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let dctap = DCTap::from_path(input_path, TapConfig::default())?;
+            let dctap = DCTap::from_path(input_path, config)?;
             debug!("DCTAP read {dctap:?}");
             Ok(dctap)
         }
@@ -985,32 +1089,6 @@ fn parse_data(data: &Path, data_format: &DataFormat) -> Result<SRDFGraph> {
         _ => bail!("Not implemented reading from other RDF formats yet..."),
     }
 }
-
-/*fn parse(node_str: &str, data: &SRDFGraph) -> Result<Node> {
-    use regex::Regex;
-    use std::result::Result::Ok;
-    let iri_r = Regex::new("<(.*)>")?;
-    match iri_r.captures(node_str) {
-        Some(captures) => match captures.get(1) {
-            Some(cs) => {
-                let iri = IriS::from_str(cs.as_str())?;
-                Ok(iri.into())
-            }
-            None => {
-                todo!()
-            }
-        },
-        None => match data.resolve(node_str) {
-            Ok(named_node) => {
-                let iri = IriS::from_str(named_node.as_str())?;
-                Ok(iri.into())
-            }
-            Err(_err_resolve) => {
-                todo!()
-            }
-        },
-    }
-}*/
 
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     let ns = ShapeMapParser::parse_node_selector(node_str)?;

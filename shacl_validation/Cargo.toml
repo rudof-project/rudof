@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.0"
+version = "0.1.5"
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
@@ -14,12 +14,17 @@ categories.workspace = true
 [dependencies]
 srdf = { path = "../srdf", version = "0.1.0" }
 shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
-iri_s = { path = "../iri_s", version = "0.0.13" }
+iri_s = { path = "../iri_s", version = "0.1.5" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }
 
 thiserror = "1.0.63"
 lazy_static = "1"
 const_format = "0.2"
 
+<<<<<<< HEAD
 oxrdf = { version = "0.2.0-alpha.2", features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
+=======
+oxigraph = "0.4.0-alpha.7"
+indoc = "2"
+>>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6

@@ -1,11 +1,15 @@
 //! Shapes converter
 //!
 //!
+pub mod converter_config;
+pub mod converter_error;
 pub mod shex_to_html;
 pub mod shex_to_sparql;
 pub mod shex_to_uml;
 pub mod tap_to_shex;
 
+pub use crate::converter_config::*;
+pub use crate::converter_error::*;
 pub use crate::shex_to_html::shex2html::*;
 pub use crate::shex_to_html::shex2html_config::*;
 pub use crate::shex_to_html::shex2html_error::*;

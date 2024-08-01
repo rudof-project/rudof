@@ -1,6 +1,6 @@
 [package]
 name = "shapes-rs"
-version = "0.1.2"
+version = "0.1.5"
 description = "RDF Data shapes implementation in Rust"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -68,7 +68,7 @@ categories = ["rdf"]
 # Internal dependencies
 rbe = { version = "0.0.13", path = "./rbe" }
 rbe_testsuite = { version = "0.0.13", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.13", path = "./iri_s" }
+iri_s = { version = "0.1.5", path = "./iri_s" }
 prefixmap = { version = "0.1.0", path = "./prefixmap" }
 srdf = { version = "0.1.0", path = "./srdf" }
 dctap = { version = "0.1.0", path = "./dctap" }
@@ -91,12 +91,12 @@ shacl_validation = { path = "./shacl_validation" }
 shex_compact = { path = "./shex_compact" }
 prefixmap = { path = "./prefixmap" }
 shapemap = { path = "./shapemap" }
-srdf = { path = "./srdf" }
+srdf = { path = "./srdf", features = ["rdf-star"] }
 iri_s = { path = "./iri_s" }
-shacl_ast = { path = "./shacl_ast" }
+shacl_ast = { path = "./shacl_ast", features = ["rdf-star"] }
 dctap = { path = "./dctap" }
 oxrdf = "0.2.0-alpha.2"
-oxigraph = "0.3.22"
+oxigraph = "0.4.0-alpha.7"
 serde_json = "1.0"
 regex = "1.10.4"
 tracing = "0.1"

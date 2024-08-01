@@ -114,7 +114,7 @@ fn link2plantuml<W: Write>(link: &UmlLink, writer: &mut W) -> Result<(), UmlErro
     let card = card2plantuml(&link.card);
     let target = format!("{}", link.target);
     let name = name2plantuml(&link.name);
-    writeln!(writer, "{source} --> \"{card}\" {target} {name}")?;
+    writeln!(writer, "{source} --> \"{card}\" {target} : {name}")?;
     Ok(())
 }
 

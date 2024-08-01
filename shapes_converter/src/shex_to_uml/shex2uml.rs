@@ -21,9 +21,9 @@ pub struct ShEx2Uml {
 }
 
 impl ShEx2Uml {
-    pub fn new(config: ShEx2UmlConfig) -> ShEx2Uml {
+    pub fn new(config: &ShEx2UmlConfig) -> ShEx2Uml {
         ShEx2Uml {
-            config,
+            config: config.clone(),
             current_uml: Uml::new(),
         }
     }
