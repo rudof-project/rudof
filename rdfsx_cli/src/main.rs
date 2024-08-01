@@ -62,6 +62,7 @@ fn main() -> Result<()> {
         .with_file(true)
         .with_target(false)
         .with_line_number(true)
+        .with_writer(io::stderr)
         .without_time();
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
     let filter_layer = EnvFilter::try_from_default_env()
