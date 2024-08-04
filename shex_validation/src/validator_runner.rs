@@ -2,7 +2,7 @@ use crate::atom;
 use crate::validator_error::*;
 use crate::Reason;
 use crate::ResultValue;
-use crate::MAX_STEPS;
+use crate::ValidatorConfig;
 use either::Either;
 use indexmap::IndexSet;
 use iri_s::IriS;
@@ -33,7 +33,7 @@ pub struct ValidatorRunner {
     //rules: Vec<Rule>,
     alternative_match_iterators: Vec<MatchTableIter<Pred, Node, ShapeLabelIdx>>,
     // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
-    max_steps: usize,
+    config: ValidatorConfig,
     step_counter: usize,
     reasons: HashMap<PosAtom, Vec<Reason>>,
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
@@ -41,19 +41,19 @@ pub struct ValidatorRunner {
 
 impl Default for ValidatorRunner {
     fn default() -> Self {
-        Self::new()
+        Self::new(&ValidatorConfig::default())
     }
 }
 
 impl ValidatorRunner {
-    pub fn new() -> ValidatorRunner {
+    pub fn new(config: &ValidatorConfig) -> ValidatorRunner {
         ValidatorRunner {
             checked: IndexSet::new(),
             processing: IndexSet::new(),
             pending: IndexSet::new(),
             //rules: Vec::new(),
             alternative_match_iterators: Vec::new(),
-            max_steps: MAX_STEPS,
+            config: config.clone(),
             step_counter: 0,
             reasons: HashMap::new(),
             errors: HashMap::new(),
@@ -121,7 +121,7 @@ impl ValidatorRunner {
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {
-        self.max_steps = max_steps;
+        self.config.set_max_steps(max_steps);
     }
 
     pub(crate) fn is_processing(&self, atom: &Atom) -> bool {
@@ -182,7 +182,7 @@ impl ValidatorRunner {
     }
 
     pub fn max_steps(&self) -> usize {
-        self.max_steps
+        self.config.max_steps()
     }
 
     pub(crate) fn no_end_steps(&self) -> bool {
