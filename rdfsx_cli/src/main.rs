@@ -353,7 +353,7 @@ fn run_validate_shex(
             )
         }
     };
-    let mut validator = Validator::new(schema, &config);
+    let mut validator = Validator::new(schema, config);
     let result = match &data {
         Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
         Data::RDFData(data) => validator.validate_shapemap(&shapemap, data),
