@@ -1,5 +1,5 @@
 use oxiri::IriParseError;
-use shacl_validation::validation_report::validation_report_error::ValidationReportError;
+use shacl_validation::validation_report::validation_report_error::ReportError;
 use srdf::SRDFGraphError;
 use std::io::Error;
 use thiserror::Error;
@@ -14,7 +14,7 @@ pub enum ManifestError {
     #[error("Error during the creation of the graph")]
     Graph(#[from] SRDFGraphError),
     #[error("Error parsing the Validation Report")]
-    ReportParsing(#[from] ValidationReportError),
+    ReportParsing(#[from] ReportError),
     #[error("Error performing the SPARQL operation")]
     SPARQL(#[from] HelperError),
     #[error("Error during the I/O operations")]

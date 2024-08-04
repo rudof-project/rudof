@@ -3,11 +3,11 @@ use thiserror::Error;
 use crate::helper::helper_error::{SPARQLError, SRDFError};
 
 #[derive(Error, Debug)]
-pub enum ValidationReportError {
+pub enum ReportError {
     #[error("Error during the SPARQL operation")]
     SPARQL(#[from] SPARQLError),
     #[error("Error during the creation of the Validation Result")]
-    ValidationResult(#[from] ValidationResultError),
+    ValidationResult(#[from] ResultError),
     #[error("Error related to SRDF")]
     SRDF(#[from] SRDFError),
     #[error("Error querying")]
@@ -19,7 +19,7 @@ pub enum ValidationReportError {
 }
 
 #[derive(Error, Debug)]
-pub enum ValidationResultError {
+pub enum ResultError {
     #[error("Error related to SRDF")]
     SRDF(#[from] SRDFError),
     #[error("Cannot parse Literal to Subject")]

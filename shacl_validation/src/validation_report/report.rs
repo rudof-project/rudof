@@ -7,7 +7,7 @@ use crate::helper::srdf::get_objects_for;
 
 use super::result::ValidationResult;
 use super::result::ValidationResultBuilder;
-use super::validation_report_error::ValidationReportError;
+use super::validation_report_error::ReportError;
 
 pub struct ValidationReport<S: SRDFBasic> {
     conforms: bool,
@@ -35,7 +35,7 @@ impl<S: SRDFBasic> ValidationReport<S> {
 }
 
 impl<S: SRDF> ValidationReport<S> {
-    pub fn parse(store: &S, subject: S::Term) -> Result<Self, ValidationReportError> {
+    pub fn parse(store: &S, subject: S::Term) -> Result<Self, ReportError> {
         let mut report = ValidationReport::<S>::default();
         let predicate = S::iri_s2iri(&shacl_ast::SH_RESULT);
         for result in get_objects_for(store, &subject, &predicate)? {

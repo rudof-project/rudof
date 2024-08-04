@@ -3,7 +3,7 @@ use srdf::{SRDFBasic, SRDF};
 
 use crate::helper::srdf::get_object_for;
 
-use super::validation_report_error::ValidationResultError;
+use super::validation_report_error::ResultError;
 
 pub struct ValidationResultBuilder<S: SRDFBasic> {
     focus_node: Option<S::Term>,
@@ -132,7 +132,7 @@ impl<S: SRDFBasic> ValidationResult<S> {
 }
 
 impl<S: SRDF> ValidationResult<S> {
-    pub(crate) fn parse(store: &S, subject: &S::Term) -> Result<Self, ValidationResultError> {
+    pub(crate) fn parse(store: &S, subject: &S::Term) -> Result<Self, ResultError> {
         let mut builder = ValidationResultBuilder::default();
 
         if let Some(term) = get_object_for(store, subject, &S::iri_s2iri(&SH_FOCUS_NODE))? {
