@@ -51,6 +51,7 @@ use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSch
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
 
+#[allow(unused_variables)]
 fn main() -> Result<()> {
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -391,6 +392,7 @@ fn run_validate_shex(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_validate_shacl(
     shapes_path: &Path,
     shapes_format: &ShaclFormat,
