@@ -35,6 +35,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
 
     fn entries(&self) -> HashSet<S::Term>;
 
+    #[allow(clippy::result_large_err)]
     fn collect_tests(&self) -> Result<Vec<ShaclTest<S>>, ManifestError> {
         let mut ans = Vec::new();
 
@@ -94,6 +95,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
         Ok(ans)
     }
 
+    #[allow(clippy::result_large_err)]
     fn load(path: &Path) -> Result<Self, ManifestError>
     where
         Self: Sized,

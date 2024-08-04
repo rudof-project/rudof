@@ -64,6 +64,7 @@ impl<S: SRDF + SRDFBasic> ShaclTest<S> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn main() -> Result<(), TestSuiteError> {
     let cli = Cli::parse(); // we obtain the CLI...
     let path = Path::new(&cli.manifest_filename);
