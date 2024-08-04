@@ -135,7 +135,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         _store: &S,
         _shape: &PropertyShape,
-        _path: &Box<SHACLPath>,
+        _path: &SHACLPath,
         _focus_node: S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
@@ -146,7 +146,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         _store: &S,
         _shape: &PropertyShape,
-        _path: &Box<SHACLPath>,
+        _path: &SHACLPath,
         _focus_node: S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
@@ -157,7 +157,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         _store: &S,
         _shape: &PropertyShape,
-        _path: &Box<SHACLPath>,
+        _path: &SHACLPath,
         _focus_node: S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
@@ -168,7 +168,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         _store: &S,
         _shape: &PropertyShape,
-        _path: &Box<SHACLPath>,
+        _path: &SHACLPath,
         _focus_node: S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {

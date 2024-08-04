@@ -123,7 +123,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        path: &Box<SHACLPath>,
+        path: &SHACLPath,
         focus_node: S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
@@ -132,7 +132,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        path: &Box<SHACLPath>,
+        path: &SHACLPath,
         focus_node: S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
@@ -141,7 +141,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        path: &Box<SHACLPath>,
+        path: &SHACLPath,
         focus_node: S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
@@ -150,7 +150,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        path: &Box<SHACLPath>,
+        path: &SHACLPath,
         focus_node: S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
