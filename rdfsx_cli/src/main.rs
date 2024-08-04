@@ -20,14 +20,9 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use dctap::{DCTap, TapConfig};
-<<<<<<< HEAD
-=======
-use oxigraph::io::RdfParser;
-use oxigraph::store::Store;
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
-use shacl_validation::validate::{GraphValidator, SparqlValidator};
+use shacl_validation::validate::{GraphValidator, Mode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -104,6 +99,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
+            mode,
             output,
         }) => match validation_mode {
             ValidationMode::ShEx => run_validate_shex(
@@ -142,6 +138,7 @@ fn main() -> Result<()> {
                     data,
                     data_format,
                     endpoint,
+                    *mode,
                     cli.debug,
                     output,
                 )
@@ -179,6 +176,7 @@ fn main() -> Result<()> {
             data,
             data_format,
             endpoint,
+            mode,
             output,
         }) => run_validate_shacl(
             shapes,
@@ -186,6 +184,7 @@ fn main() -> Result<()> {
             data,
             data_format,
             endpoint,
+            *mode,
             cli.debug,
             output,
         ),
@@ -387,10 +386,10 @@ fn run_validate_shacl(
     data: &Option<PathBuf>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
+    mode: Mode,
     _debug: u8,
     output: &Option<PathBuf>,
 ) -> Result<()> {
-<<<<<<< HEAD
     let mut writer = get_writer(output)?;
     if let Some(data) = data {
         let validator = match GraphValidator::new(
@@ -404,6 +403,7 @@ fn run_validate_shacl(
                 DataFormat::NQuads => srdf::RDFFormat::NQuads,
             },
             None,
+            mode,
         ) {
             Ok(validator) => validator,
             Err(_) => bail!("Error during the creation of the Graph"),
@@ -427,7 +427,7 @@ fn run_validate_shacl(
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
-        let validator = match SparqlValidator::new(endpoint) {
+        let validator = match SparqlValidator::new(endpoint, mode) {
             Ok(validator) => validator,
             Err(_) => bail!("Error during the creation of the Graph"),
         };
@@ -448,30 +448,6 @@ fn run_validate_shacl(
             Err(_) => bail!("Error validating the graph"),
         };
         writeln!(writer, "Result:\n{}", result)?;
-=======
-    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
-    let path = match data {
-        Some(path) => Ok(Path::new(path)),
-        None => Err(anyhow!("Data parameter must be specified\nReason: Validation from a single shapes graph is not supported yet.")),
-    }?;
-    if let Ok(data_format) = data_format.to_owned().try_into() {
-        let store = Store::new()?;
-        let parser = RdfParser::from_format(data_format);
-        let fp = match File::open(path) {
-            Ok(fp) => fp,
-            Err(error) => {
-                eprintln!("Error while opening file {}: {}", path.display(), error);
-                return Ok(());
-            }
-        };
-        store.bulk_loader().load_from_read(parser, fp)?;
-        let mut writer = get_writer(output)?;
-        let validate = validate(&store, shacl_schema);
-        match validate {
-            Ok(result) => writeln!(writer, "Result:\n{}", result)?,
-            Err(err) => bail!("{err}"),
-        }
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
         Ok(())
     } else {
         bail!("Please provide either a local data source or an endpoint")

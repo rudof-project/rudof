@@ -1,10 +1,12 @@
 use std::collections::HashSet;
 
 use srdf::lang::Lang;
-use srdf::{SRDFBasic, SRDF};
+use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
 use crate::validation_report::report::ValidationReport;
 
 /// The condition specified by sh:languageIn is that the allowed language tags
@@ -21,10 +23,9 @@ impl LanguageIn {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for LanguageIn {
+impl<S: SRDFBasic> ConstraintComponent<S> for LanguageIn {
     fn evaluate(
         &self,
-        _: &S,
         value_nodes: HashSet<S::Term>,
         report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
@@ -32,13 +33,35 @@ impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for LanguageIn {
             if let Some(literal) = S::term_as_literal(node) {
                 if let Some(lang) = S::lang(&literal) {
                     if !self.langs.contains(&Lang::new(&lang)) {
-                        self.make_validation_result(Some(node), report);
+                        report.make_validation_result(Some(node));
                     }
                 }
             } else {
-                self.make_validation_result(Some(node), report)
+                report.make_validation_result(Some(node))
             }
         }
         Ok(())
+    }
+}
+
+impl<S: SRDF> DefaultConstraintComponent<S> for LanguageIn {
+    fn evaluate_default(
+        &self,
+        _: &S,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        self.evaluate(value_nodes, report)
+    }
+}
+
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for LanguageIn {
+    fn evaluate_sparql(
+        &self,
+        _: &S,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        self.evaluate(value_nodes, report)
     }
 }

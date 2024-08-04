@@ -4,7 +4,7 @@ use srdf::SRDFGraphError;
 use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::helper::helper_error::SRDFError;
+use crate::helper::helper_error::{SPARQLError, SRDFError};
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
@@ -32,4 +32,8 @@ pub enum ValidateError {
     GraphCreation,
     #[error("Error obtaining the underlying IRI")]
     Underef(#[from] Underef),
+    #[error("The provided mode is not supported for the data structure")]
+    UnsupportedMode,
+    #[error("Error during the SPARQL operation")]
+    Sparql(#[from] SPARQLError),
 }

@@ -1,10 +1,12 @@
 use std::collections::HashSet;
 
 use prefixmap::IriRef;
-use srdf::{SRDFBasic, SRDF};
+use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
 use crate::validation_report::report::ValidationReport;
 
 /// The RDF data model offers a huge amount of flexibility. Any node can in
@@ -31,11 +33,32 @@ impl Closed {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for Closed {
+impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
     fn evaluate(
         &self,
-        _store: &S,
         _value_nodes: HashSet<S::Term>,
+        _report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        Err(ConstraintError::NotImplemented)
+    }
+}
+
+impl<S: SRDF> DefaultConstraintComponent<S> for Closed {
+    fn evaluate_default(
+        &self,
+        _store: &S,
+        _value_nodes: HashSet<<S>::Term>,
+        _report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        Err(ConstraintError::NotImplemented)
+    }
+}
+
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for Closed {
+    fn evaluate_sparql(
+        &self,
+        _store: &S,
+        _value_nodes: HashSet<<S>::Term>,
         _report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         Err(ConstraintError::NotImplemented)

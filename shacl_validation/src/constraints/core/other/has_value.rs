@@ -1,10 +1,12 @@
 use std::collections::HashSet;
 
 use shacl_ast::value::Value;
-use srdf::{SRDFBasic, SRDF};
+use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:hasValue specifies the condition that at least one value node is equal to
@@ -22,11 +24,32 @@ impl HasValue {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for HasValue {
+impl<S: SRDFBasic> ConstraintComponent<S> for HasValue {
     fn evaluate(
         &self,
-        _store: &S,
         _value_nodes: HashSet<S::Term>,
+        _report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        Err(ConstraintError::NotImplemented)
+    }
+}
+
+impl<S: SRDF> DefaultConstraintComponent<S> for HasValue {
+    fn evaluate_default(
+        &self,
+        _store: &S,
+        _value_nodes: HashSet<<S>::Term>,
+        _report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        Err(ConstraintError::NotImplemented)
+    }
+}
+
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for HasValue {
+    fn evaluate_sparql(
+        &self,
+        _store: &S,
+        _value_nodes: HashSet<<S>::Term>,
         _report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         Err(ConstraintError::NotImplemented)

@@ -1,8 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-<<<<<<< HEAD
-=======
-use oxigraph::io::RdfFormat as GraphFormat;
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
+use shacl_validation::validate::Mode;
 use srdf::RDFFormat;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
@@ -152,6 +149,16 @@ pub enum Command {
         )]
         max_steps: usize,
 
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
+
         #[arg(
             short = 'o',
             long = "output-file",
@@ -249,6 +256,16 @@ pub enum Command {
 
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
+
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
 
         #[arg(
             short = 'o',

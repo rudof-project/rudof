@@ -20,11 +20,7 @@ prefixmap = { path = "../prefixmap", version = "0.1.0" }
 thiserror = "1.0.63"
 lazy_static = "1"
 const_format = "0.2"
-
-<<<<<<< HEAD
+indoc = "2"
 oxrdf = { version = "0.2.0-alpha.2", features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
-=======
-oxigraph = "0.4.0-alpha.7"
-indoc = "2"
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
+clap = { version = "4.2.1", features = ["derive"] }

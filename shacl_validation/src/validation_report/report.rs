@@ -3,43 +3,18 @@ use std::fmt;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::helper::srdf::get_object_for;
 use crate::helper::srdf::get_objects_for;
 
 use super::result::ValidationResult;
+use super::result::ValidationResultBuilder;
 use super::validation_report_error::ValidationReportError;
 
-#[derive(Default)]
 pub struct ValidationReport<S: SRDFBasic> {
     conforms: bool,
     results: Vec<ValidationResult<S>>,
 }
 
-impl<S: SRDF + SRDFBasic> ValidationReport<S> {
-    pub(crate) fn default() -> Self {
-        ValidationReport {
-            conforms: true,
-            results: Vec::new(),
-        }
-    }
-
-    fn new(conforms: bool, results: Vec<ValidationResult<S>>) -> Self {
-        ValidationReport { conforms, results }
-    }
-
-    fn is_conforms(self, store: &S, subject: &S::Term) -> Result<bool, ValidationReportError> {
-        let predicate = S::iri_s2iri(&shacl_ast::SH_CONFORMS);
-        if let Some(term) = get_object_for(store, &subject, &predicate)? {
-            if let Some(is_conforms) = S::term_as_boolean(&term) {
-                Ok(is_conforms)
-            } else {
-                Ok(false)
-            }
-        } else {
-            Ok(false)
-        }
-    }
-
+impl<S: SRDFBasic> ValidationReport<S> {
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {
         // We add a result --> make the Report non-conformant
         if self.conforms {
@@ -48,17 +23,38 @@ impl<S: SRDF + SRDFBasic> ValidationReport<S> {
         self.results.push(result)
     }
 
+    pub(crate) fn make_validation_result(&mut self, value_node: Option<&S::Term>) {
+        let mut builder = ValidationResultBuilder::default();
+
+        if let Some(focus_node) = value_node {
+            builder.focus_node(focus_node.to_owned());
+        }
+
+        self.add_result(builder.build());
+    }
+}
+
+impl<S: SRDF> ValidationReport<S> {
     pub fn parse(store: &S, subject: S::Term) -> Result<Self, ValidationReportError> {
         let mut report = ValidationReport::<S>::default();
-
-        for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
+        let predicate = S::iri_s2iri(&shacl_ast::SH_RESULT);
+        for result in get_objects_for(store, &subject, &predicate)? {
             report.add_result(ValidationResult::parse(store, &result)?);
         }
         Ok(report)
     }
 }
 
-impl<S: SRDF + SRDFBasic> PartialEq for ValidationReport<S> {
+impl<S: SRDFBasic> Default for ValidationReport<S> {
+    fn default() -> Self {
+        ValidationReport {
+            conforms: true,
+            results: Vec::new(),
+        }
+    }
+}
+
+impl<S: SRDFBasic> PartialEq for ValidationReport<S> {
     fn eq(&self, other: &Self) -> bool {
         if self.conforms != other.conforms {
             return false;
@@ -70,7 +66,7 @@ impl<S: SRDF + SRDFBasic> PartialEq for ValidationReport<S> {
     }
 }
 
-impl<S: SRDF + SRDFBasic> fmt::Display for ValidationReport<S> {
+impl<S: SRDFBasic> fmt::Display for ValidationReport<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Validation Report: [")?;
         writeln!(f, "\tconforms: {},", self.conforms)?;

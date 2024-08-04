@@ -11,4 +11,6 @@ pub enum ConstraintError {
     NotImplemented,
     #[error("Error creating the constriant")]
     Create,
+    #[error("Error during some of the query operations")]
+    Query,
 }

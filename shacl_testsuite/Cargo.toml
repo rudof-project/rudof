@@ -22,11 +22,5 @@ thiserror = "1.0.63"
 clap = { version = "4.2.1", features = ["derive"] }
 const_format = "0.2"
 
-<<<<<<< HEAD
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
-=======
-oxiri = "0.2"
-oxigraph = "0.4.0-alpha.7"
-indoc = "2"
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6

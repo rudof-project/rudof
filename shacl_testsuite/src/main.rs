@@ -3,7 +3,7 @@ use std::path::Path;
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
-    validate::{GraphValidator, Validator},
+    validate::{GraphValidator, Mode, Validator},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};
@@ -19,12 +19,21 @@ mod testsuite_error;
 struct Cli {
     /// Name of Manifest file
     #[arg(
-        short = 'm',
-        long = "manifest",
+        short = 'f',
+        long = "file",
         value_name = "Manifest FILE (.ttl)",
         default_value = "shacl_testsuite/data-shapes/data-shapes-test-suite/tests/manifest.ttl"
     )]
     manifest_filename: String,
+    /// Execution mode
+    #[arg(
+        short = 'm',
+        long = "mode",
+        value_name = "Execution mode",
+        default_value_t = Mode::Default,
+        value_enum
+    )]
+    mode: Mode,
 }
 
 // TODO: The following line is to make clippy happy...should be removed, it complains that node and manifest_store are not used
@@ -75,6 +84,7 @@ fn main() -> Result<(), TestSuiteError> {
             Path::new(&test.data),
             RDFFormat::NTriples,
             test.base.as_deref(),
+            cli.mode,
         )?;
         let label = match test.label {
             Some(label) => label,

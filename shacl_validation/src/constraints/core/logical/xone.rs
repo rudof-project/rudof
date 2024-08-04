@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDFBasic, SRDF};
+use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:or specifies the condition that each value node conforms to at least one
@@ -22,13 +24,34 @@ impl Xone {
     }
 }
 
-impl<S: SRDF + SRDFBasic> ConstraintComponent<S> for Xone {
+impl<S: SRDFBasic> ConstraintComponent<S> for Xone {
     fn evaluate(
         &self,
-        _: &S,
         _value_nodes: HashSet<S::Term>,
         _report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
         Err(ConstraintError::NotImplemented)
+    }
+}
+
+impl<S: SRDF> DefaultConstraintComponent<S> for Xone {
+    fn evaluate_default(
+        &self,
+        _: &S,
+        value_nodes: HashSet<<S>::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        self.evaluate(value_nodes, report)
+    }
+}
+
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for Xone {
+    fn evaluate_sparql(
+        &self,
+        _: &S,
+        value_nodes: HashSet<<S>::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError> {
+        self.evaluate(value_nodes, report)
     }
 }

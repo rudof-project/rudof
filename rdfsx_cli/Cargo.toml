@@ -32,10 +32,6 @@ void = "1"
 clap = { version = "4.2.1", features = ["derive"] }
 oxrdf = "0.2.0-alpha.2"
 oxiri = "0.2.3-alpha.1"
-<<<<<<< HEAD
-=======
-oxigraph = "0.4.0-alpha.7"
->>>>>>> 597911f3ae39befd00a88821b84ec56cdb56faf6
 regex = "^1.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
