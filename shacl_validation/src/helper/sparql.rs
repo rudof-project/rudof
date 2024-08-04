@@ -1,36 +1,27 @@
 use std::collections::HashSet;
 
-use oxigraph::{model::Term, sparql::QueryResults, store::Store};
+use srdf::QuerySRDF;
 
 use super::helper_error::SPARQLError;
 
-pub fn select(store: &Store, query: String) -> Result<HashSet<Term>, SPARQLError> {
+pub fn select<S: QuerySRDF>(
+    store: &S,
+    query: String,
+    index: &str,
+) -> Result<HashSet<S::Term>, SPARQLError> {
     let mut ans = HashSet::new();
-    match store.query(&query) {
-        Ok(query_results) => match query_results {
-            QueryResults::Solutions(solutions) => solutions.into_iter().for_each(|solution| {
-                if let Ok(solution) = solution {
-                    if let Some(this) = solution.get("this") {
-                        ans.insert(this.to_owned());
-                    }
-                }
-            }),
-            _ => todo!(),
-        },
-        Err(error) => {
-            eprintln!("{}", error);
-            todo!()
-        }
+    let query = match store.query_select(&query) {
+        Ok(ans) => ans,
+        Err(_) => return Err(SPARQLError::Query),
     };
-    Ok(ans)
-}
-
-pub fn ask(store: &Store, query: String) -> Result<bool, SPARQLError> {
-    match store.query(&query) {
-        Ok(query_results) => match query_results {
-            QueryResults::Boolean(bool) => Ok(bool),
-            _ => todo!(),
-        },
-        Err(_) => todo!(),
+    for solution in query.into_iter() {
+        let solution = match solution {
+            Ok(ans) => ans,
+            Err(_) => return Err(SPARQLError::Query),
+        };
+        if let Some(solution) = solution.find_solution(index) {
+            ans.insert(solution.to_owned());
+        }
     }
+    Ok(ans)
 }

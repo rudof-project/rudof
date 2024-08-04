@@ -349,8 +349,8 @@ impl SRDFBasic for SRDFGraph {
     }
 }
 
-fn cnv_iri_ref(_iri_ref: &IriRef) -> OxNamedNode {
-    todo!()
+fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
+    OxNamedNode::new_unchecked(iri_ref.to_string())
 }
 
 fn cnv_decimal(_d: &Decimal) -> OxDecimal {
