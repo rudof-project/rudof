@@ -216,18 +216,15 @@ pub enum Command {
         endpoint: Option<String>,
 
         #[arg(
-            long = "max-steps",
-            value_name = "max steps to run",
-            default_value_t = 100
-        )]
-        max_steps: usize,
-
-        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// RDF Validation using SHACL shapes

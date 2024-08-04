@@ -2,4 +2,7 @@ shapeId,shapeLabel,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
 Person,Person ,name,true,false,xsd:string, 
 ,,birthdate,false,false,xsd:date, 
 ,,enrolledIn,false,true,,Course
+,,worksFor,false,true,,Company
 Course,Course,name,true,false,xsd:string, 
+Company,Company label,name,true,false,xsd:string, 
+,,foundation,false,false,xsd:date, 

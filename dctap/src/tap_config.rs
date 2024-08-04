@@ -13,6 +13,7 @@ pub struct TapConfig {
 }
 
 impl TapConfig {
+    /// Obtain a TapConfig from a path file in YAML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<TapConfig, TapError> {
         let path_name = path.as_ref().display().to_string();
         let f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
@@ -26,6 +27,7 @@ impl TapConfig {
             })?;
         Ok(config)
     }
+
     pub fn picklist_delimiter(&self) -> &char {
         &self.picklist_delimiter
     }

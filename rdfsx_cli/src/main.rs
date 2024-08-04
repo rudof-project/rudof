@@ -30,7 +30,7 @@ use shapes_converter::{
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
-use shex_validation::Validator;
+use shex_validation::{Validator, ValidatorConfig};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{SRDFSparql, SRDF};
 use std::fs::File;
@@ -112,9 +112,9 @@ fn main() -> Result<()> {
                 shape,
                 shapemap,
                 shapemap_format,
-                max_steps,
                 cli.debug,
                 output,
+                &ValidatorConfig::default(),
             ),
             ValidationMode::SHACL => {
                 let shacl_format = match schema_format {
@@ -154,22 +154,34 @@ fn main() -> Result<()> {
             shape,
             shapemap,
             shapemap_format,
-            max_steps,
             output,
-        }) => run_validate_shex(
-            schema,
-            schema_format,
-            data,
-            data_format,
-            endpoint,
-            node,
-            shape,
-            shapemap,
-            shapemap_format,
-            max_steps,
-            cli.debug,
-            output,
-        ),
+            config,
+        }) => {
+            let config = match config {
+                Some(config_path) => match ValidatorConfig::from_path(config_path) {
+                    Ok(c) => Ok(c),
+                    Err(e) => Err(anyhow!(
+                        "Error obtaining ShEx validation confir from {}: {e}",
+                        config_path.display()
+                    )),
+                },
+                None => Ok(ValidatorConfig::default()),
+            }?;
+            run_validate_shex(
+                schema,
+                schema_format,
+                data,
+                data_format,
+                endpoint,
+                node,
+                shape,
+                shapemap,
+                shapemap_format,
+                cli.debug,
+                output,
+                &config,
+            )
+        }
         Some(Command::ShaclValidate {
             shapes,
             shapes_format,
@@ -325,9 +337,9 @@ fn run_validate_shex(
     maybe_shape: &Option<String>,
     shapemap_path: &Option<PathBuf>,
     shapemap_format: &ShapeMapFormat,
-    max_steps: &usize,
     debug: u8,
     output: &Option<PathBuf>,
+    config: &ValidatorConfig,
 ) -> Result<()> {
     let mut writer = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
@@ -357,8 +369,7 @@ fn run_validate_shex(
             )
         }
     };
-    let mut validator = Validator::new(schema).with_max_steps(*max_steps);
-    debug!("Validating with max_steps: {}", max_steps);
+    let mut validator = Validator::new(schema, config);
     let result = match &data {
         Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
         Data::RDFData(data) => validator.validate_shapemap(&shapemap, data),

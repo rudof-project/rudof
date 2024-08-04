@@ -9,6 +9,7 @@ pub mod reason;
 pub mod rule;
 pub mod solver;
 pub mod validator;
+pub mod validator_config;
 pub mod validator_error;
 pub mod validator_runner;
 
@@ -18,6 +19,7 @@ pub use crate::result_map::*;
 pub use crate::result_value::*;
 pub use crate::rule::*;
 pub use crate::validator::*;
+pub use crate::validator_config::*;
 pub use crate::validator_error::*;
 pub use crate::validator_runner::*;
 
