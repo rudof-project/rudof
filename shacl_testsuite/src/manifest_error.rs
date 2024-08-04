@@ -14,7 +14,7 @@ pub enum ManifestError {
     #[error("Error during the creation of the graph")]
     Graph(#[from] SRDFGraphError),
     #[error("Error parsing the Validation Report")]
-    ParsingValidationReport(#[from] ValidationReportError),
+    ReportParsing(#[from] ValidationReportError),
     #[error("Error performing the SPARQL operation")]
     SPARQL(#[from] HelperError),
     #[error("Error during the I/O operations")]

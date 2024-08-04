@@ -11,7 +11,7 @@ pub(crate) fn get_object_for<S: SRDF + SRDFBasic>(
 ) -> Result<Option<S::Term>, HelperError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
-        .nth(0)
+        .next()
     {
         Some(term) => Ok(Some(term)),
         None => Ok(None),
@@ -23,7 +23,7 @@ pub(crate) fn get_objects_for<S: SRDF + SRDFBasic>(
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, HelperError> {
-    let subject = match S::term_as_subject(&subject) {
+    let subject = match S::term_as_subject(subject) {
         Some(subject) => subject,
         None => todo!(),
     };
