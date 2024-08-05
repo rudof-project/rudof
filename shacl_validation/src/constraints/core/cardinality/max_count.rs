@@ -11,7 +11,9 @@ use crate::validation_report::report::ValidationReport;
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
 /// condition.
 ///
-/// https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
+/// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
+/// - DEF: If the number of value nodes is greater than $maxCount, there is a
+///   validation result.
 pub(crate) struct MaxCount {
     max_count: isize,
 }
@@ -28,6 +30,7 @@ impl<S: SRDFBasic> ConstraintComponent<S> for MaxCount {
         value_nodes: HashSet<S::Term>,
         report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
+        println!("{}", value_nodes.len());
         if (value_nodes.len() as isize) > self.max_count {
             report.make_validation_result(None);
         }

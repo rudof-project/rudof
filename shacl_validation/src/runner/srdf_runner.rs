@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use iri_s::IriS;
-use prefixmap::IriRef;
 use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use srdf::SHACLPath;
@@ -9,9 +7,11 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::DefaultConstraintComponent;
+use crate::helper::srdf::get_objects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
+use super::FocusNode;
 use super::ValidatorRunner;
 
 type Result<T> = std::result::Result<T, ValidateError>;
@@ -30,7 +30,9 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         Ok(component.evaluate_default(store, value_nodes, report)?)
     }
 
-    fn target_node(&self, _: &S, node: &S::Term, focus_nodes: &mut HashSet<S::Term>) -> Result<()> {
+    /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
+    /// in SG then { t } is a target from any data graph for s in SG.
+    fn target_node(&self, _: &S, node: &S::Term, focus_nodes: &mut FocusNode<S>) -> Result<()> {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -43,7 +45,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         store: &S,
         class: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
         if S::term_as_iri(class).is_some() {
             let subjects =
@@ -65,10 +67,10 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
-        let triples = match store.triples_with_predicate(&S::iri_s2iri(&predicate.get_iri()?)) {
+        let triples = match store.triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -83,10 +85,10 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
-        let triples = match store.triples_with_predicate(&S::iri_s2iri(&predicate.get_iri()?)) {
+        let triples = match store.triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -100,13 +102,14 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
 
     fn predicate(
         &self,
-        _store: &S,
+        store: &S,
         _shape: &PropertyShape,
-        _predicate: &IriS,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_node: S::Term,
+        value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
-        todo!()
+        value_nodes.extend(get_objects_for(store, &focus_node, predicate)?);
+        Ok(())
     }
 
     fn alternative(

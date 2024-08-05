@@ -12,7 +12,9 @@ use crate::validation_report::report::ValidationReport;
 /// condition. If the minimum cardinality value is 0 then this constraint is
 /// always satisfied and so may be omitted.
 ///
-/// https://www.w3.org/TR/shacl/#MinCountConstraintComponent
+/// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
+/// - DEF: If the number of value nodes is less than $minCount, there is a
+///   validation result.
 pub(crate) struct MinCount {
     min_count: isize,
 }

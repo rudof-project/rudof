@@ -39,10 +39,10 @@ impl<S: SRDF> DefaultConstraintComponent<S> for Equals {
     fn evaluate_default(
         &self,
         _: &S,
-        _value_nodes: HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        self.evaluate(value_nodes, report)
     }
 }
 
@@ -50,9 +50,9 @@ impl<S: QuerySRDF> SparqlConstraintComponent<S> for Equals {
     fn evaluate_sparql(
         &self,
         _: &S,
-        _value_nodes: HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        self.evaluate(value_nodes, report)
     }
 }

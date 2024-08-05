@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use iri_s::IriS;
-use prefixmap::IriRef;
 use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::target::Target;
@@ -15,6 +13,7 @@ pub mod sparql_runner;
 pub mod srdf_runner;
 
 type Result<T> = std::result::Result<T, ValidateError>;
+pub type FocusNode<S> = HashSet<<S as SRDFBasic>::Term>;
 
 pub trait ValidatorRunner<S: SRDFBasic> {
     fn evaluate(
@@ -25,51 +24,54 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         report: &mut ValidationReport<S>,
     ) -> Result<()>;
 
-    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<HashSet<S::Term>> {
-        let mut ans = HashSet::new();
+    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNode<S>> {
+        let mut ans = FocusNode::<S>::new();
         for target in targets.iter() {
             match target {
-                Target::TargetNode(e) => {
-                    let node = &S::object_as_term(e);
+                Target::TargetNode(node) => {
+                    let node = &S::object_as_term(node);
                     self.target_node(store, node, &mut ans)?
                 }
                 Target::TargetClass(class) => {
                     let class = &S::object_as_term(class);
                     self.target_class(store, class, &mut ans)?
                 }
-                Target::TargetSubjectsOf(e) => self.target_subject_of(store, e, &mut ans)?,
-                Target::TargetObjectsOf(e) => self.target_object_of(store, e, &mut ans)?,
+                Target::TargetSubjectsOf(predicate) => {
+                    let predicate = S::iri_s2iri(&predicate.get_iri()?);
+                    self.target_subject_of(store, &predicate, &mut ans)?
+                }
+                Target::TargetObjectsOf(predicate) => {
+                    let predicate = S::iri_s2iri(&predicate.get_iri()?);
+                    self.target_object_of(store, &predicate, &mut ans)?
+                }
             }
         }
         Ok(ans)
     }
 
-    fn target_node(
-        &self,
-        store: &S,
-        node: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
-    ) -> Result<()>;
+    /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
+    /// in SG then { t } is a target from any data graph for s in SG.
+    fn target_node(&self, store: &S, node: &S::Term, focus_nodes: &mut FocusNode<S>) -> Result<()>;
 
     fn target_class(
         &self,
         store: &S,
         class: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn path(
@@ -80,7 +82,10 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         values: &mut HashSet<S::Term>,
     ) -> Result<()> {
         match shape.path() {
-            SHACLPath::Predicate { pred } => self.predicate(store, shape, pred, focus, values),
+            SHACLPath::Predicate { pred } => {
+                let predicate = S::iri_s2iri(pred);
+                self.predicate(store, shape, &predicate, focus, values)
+            }
             SHACLPath::Alternative { paths } => {
                 self.alternative(store, shape, paths, focus, values)
             }
@@ -96,7 +101,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        predicate: &IriS,
+        predicate: &S::IRI,
         focus_node: S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;

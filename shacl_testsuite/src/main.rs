@@ -36,8 +36,6 @@ struct Cli {
     mode: Mode,
 }
 
-// TODO: The following line is to make clippy happy...should be removed, it complains that node and manifest_store are not used
-#[allow(dead_code)]
 struct ShaclTest<S: SRDF + SRDFBasic> {
     data: String,
     shapes: String,

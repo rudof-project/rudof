@@ -29,6 +29,8 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
             return Ok(());
         }
 
+        println!("{:?}", self);
+
         for component in self.components() {
             let value_nodes = runner.focus_nodes(store, self.targets())?;
             runner.evaluate(store, component, value_nodes, report)?;
@@ -50,12 +52,17 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
             return Ok(());
         }
 
+        println!("{:?}", self);
+
         for component in self.components() {
             let focus_nodes = runner.focus_nodes(store, self.targets())?;
+            println!("Targets: {:?}", self.targets());
+            println!("Focus: {:?}", focus_nodes);
             let mut value_nodes = HashSet::new();
             for focus_node in focus_nodes {
                 runner.path(store, self, focus_node, &mut value_nodes)?;
             }
+            println!("Values: {:?}", value_nodes);
             runner.evaluate(store, component, value_nodes, report)?;
         }
 

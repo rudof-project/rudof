@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
 use prefixmap::IriRef;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::{QuerySRDF, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::validation_report::report::ValidationReport;
@@ -22,16 +21,6 @@ pub(crate) struct LessThanOrEquals {
 impl LessThanOrEquals {
     pub fn new(iri_ref: IriRef) -> Self {
         LessThanOrEquals { iri_ref }
-    }
-}
-
-impl<S: SRDFBasic> ConstraintComponent<S> for LessThanOrEquals {
-    fn evaluate(
-        &self,
-        _value_nodes: HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
     }
 }
 

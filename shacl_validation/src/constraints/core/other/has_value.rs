@@ -37,21 +37,21 @@ impl<S: SRDFBasic> ConstraintComponent<S> for HasValue {
 impl<S: SRDF> DefaultConstraintComponent<S> for HasValue {
     fn evaluate_default(
         &self,
-        _store: &S,
-        _value_nodes: HashSet<<S>::Term>,
-        _report: &mut ValidationReport<S>,
+        _: &S,
+        value_nodes: HashSet<<S>::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        self.evaluate(value_nodes, report)
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for HasValue {
     fn evaluate_sparql(
         &self,
-        _store: &S,
-        _value_nodes: HashSet<<S>::Term>,
-        _report: &mut ValidationReport<S>,
+        _: &S,
+        value_nodes: HashSet<<S>::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        self.evaluate(value_nodes, report)
     }
 }
