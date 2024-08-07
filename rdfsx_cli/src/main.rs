@@ -473,14 +473,14 @@ fn run_convert(
     target_folder: &Option<PathBuf>,
     config: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    // let mut writer = get_writer(output)?;
     let converter_config = match config {
         None => Ok(ConverterConfig::default()),
         Some(config_path) => ConverterConfig::from_path(config_path),
     }?;
     match (input_mode, output_mode) {
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input_path, format, writer, result_format, &converter_config)
+            run_tap2shex(input_path, format, output, result_format, &converter_config)
         }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
@@ -490,10 +490,10 @@ fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input_path, format, maybe_shape, &mut writer, result_format, &converter_config.shex2sparql_config())
+            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config())
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input_path, format, &mut writer, result_format, &converter_config.shex2uml_config())
+            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config())
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -501,12 +501,12 @@ fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input_path, format, &mut writer,  output_path, &converter_config.shex2html_config())
+                    run_shex2html(input_path, format, output_path, &converter_config.shex2html_config())
                 }
             }
         }
         (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input_path, format, &mut writer, result_format, &converter_config)
+            run_tap2uml(input_path, format, output, result_format, &converter_config)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -514,7 +514,7 @@ fn run_convert(
             "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_tap2html(input_path, format, &mut writer, output_path, &converter_config)
+                    run_tap2html(input_path, format, output_path, &converter_config)
                 }
             }
         }
@@ -527,7 +527,7 @@ fn run_convert(
 fn run_shex2uml(
     input_path: &Path,
     format: &InputConvertFormat,
-    writer: &mut Box<dyn Write>,
+    output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ShEx2UmlConfig,
 ) -> Result<()> {
@@ -538,7 +538,8 @@ fn run_shex2uml(
     let schema = parse_schema(input_path, &schema_format)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
-    generate_uml_output(converter, writer, result_format)?;
+    let mut writer = get_writer(output)?;
+    generate_uml_output(converter, &mut writer, result_format)?;
     Ok(())
 }
 
@@ -574,7 +575,7 @@ fn generate_uml_output(
 fn run_shex2html<P: AsRef<Path>>(
     input_path: P,
     format: &InputConvertFormat,
-    msg_writer: &mut Box<dyn Write>,
+    // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
     config: &ShEx2HtmlConfig,
 ) -> Result<()> {
@@ -590,14 +591,14 @@ fn run_shex2html<P: AsRef<Path>>(
     let mut converter = ShEx2Html::new(config);
     converter.convert(&schema)?;
     converter.export_schema()?;
-    writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
+    debug!("HTML pages generated at {}", landing_page);
     Ok(())
 }
 
 fn run_tap2html<P: AsRef<Path>>(
     input_path: P,
     format: &InputConvertFormat,
-    msg_writer: &mut Box<dyn Write>,
+    // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
     config: &ConverterConfig,
 ) -> Result<()> {
@@ -626,7 +627,7 @@ fn run_tap2html<P: AsRef<Path>>(
     converter.convert(&shex)?;
     // debug!("Converted HTMLSchema: {:?}", converter.current_html());
     converter.export_schema()?;
-    writeln!(msg_writer, "HTML pages generated at {}", landing_page)?;
+    debug!("HTML pages generated at {}", landing_page);
     Ok(())
 }
 
@@ -634,7 +635,7 @@ fn run_shex2sparql(
     input_path: &Path,
     format: &InputConvertFormat,
     shape: Option<IriRef>,
-    writer: &mut Box<dyn Write>,
+    output: &Option<PathBuf>,
     _result_format: &OutputConvertFormat,
     config: &ShEx2SparqlConfig,
 ) -> Result<()> {
@@ -645,6 +646,7 @@ fn run_shex2sparql(
     let schema = parse_schema(input_path, &schema_format)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
+    let mut writer = get_writer(output)?;
     write!(writer, "{}", sparql)?;
     Ok(())
 }
@@ -652,7 +654,7 @@ fn run_shex2sparql(
 fn run_tap2shex(
     input_path: &Path,
     format: &InputConvertFormat,
-    writer: Box<dyn Write>,
+    output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ConverterConfig,
 ) -> Result<()> {
@@ -670,6 +672,7 @@ fn run_tap2shex(
         OutputConvertFormat::Turtle => Ok(ShExFormat::Turtle),
         _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
     }?;
+    let writer = get_writer(output)?;
     show_schema(&shex, &result_schema_format, writer)?;
     Ok(())
 }
@@ -677,7 +680,7 @@ fn run_tap2shex(
 fn run_tap2uml(
     input_path: &Path,
     format: &InputConvertFormat,
-    writer: &mut Box<dyn Write>,
+    output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ConverterConfig,
 ) -> Result<()> {
@@ -690,8 +693,9 @@ fn run_tap2uml(
     let shex = converter_shex.convert(&dctap)?;
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
-    converter_uml.as_plantuml(writer)?;
-    generate_uml_output(converter_uml, writer, result_format)?;
+    let mut writer = get_writer(output)?;
+    converter_uml.as_plantuml(&mut writer)?;
+    generate_uml_output(converter_uml, &mut writer, result_format)?;
     Ok(())
 }
 
