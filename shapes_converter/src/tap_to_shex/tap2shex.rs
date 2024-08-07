@@ -58,7 +58,12 @@ fn shape_id2iri<'a>(
     if let Some((prefix, localname)) = shape_id.as_prefix_local_name() {
         let iri = config
             .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())
+            .map_err(|e| Tap2ShExError::PrefixMapError {
+                err: e.clone(),
+                line: shape_id.line(),
+                field: shape_id.str().to_string(),
+            })?;
         Ok(iri)
     } else {
         let iri = match &config.base_iri {
@@ -146,7 +151,12 @@ fn datatype_id2iri<'a>(
     if let Some((prefix, localname)) = datatype_id.as_prefix_local_name() {
         let iri = config
             .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())
+            .map_err(|e| Tap2ShExError::PrefixMapError {
+                err: e,
+                line: datatype_id.line(),
+                field: datatype_id.str().to_string(),
+            })?;
         Ok(iri)
     } else {
         let iri = match &config.datatype_base_iri {
@@ -169,7 +179,12 @@ fn property_id2iri<'a>(
     if let Some((prefix, localname)) = property_id.as_prefix_local_name() {
         let iri = config
             .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
+            .resolve_prefix_local(prefix.as_str(), localname.as_str())
+            .map_err(|e| Tap2ShExError::PrefixMapError {
+                err: e,
+                line: property_id.line(),
+                field: property_id.str().to_string(),
+            })?;
         Ok(iri)
     } else {
         let iri = match &config.base_iri {

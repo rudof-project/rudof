@@ -5,12 +5,14 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct PropertyId {
     str: String,
+    line: u64,
 }
 
 impl PropertyId {
-    pub fn new(str: &str) -> PropertyId {
+    pub fn new(str: &str, line: u64) -> PropertyId {
         PropertyId {
             str: str.to_string(),
+            line,
         }
     }
 
@@ -27,6 +29,14 @@ impl PropertyId {
         } else {
             None
         }
+    }
+
+    pub fn line(&self) -> u64 {
+        self.line
+    }
+
+    pub fn str(&self) -> &str {
+        self.str.as_str()
     }
 }
 

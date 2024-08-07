@@ -16,10 +16,11 @@ pub enum Tap2ShExError {
         err: iri_s::IriSError,
     },
 
-    #[error(transparent)]
+    #[error("PrefixMap error: {err} at line: {line}, field: {field}")]
     PrefixMapError {
-        #[from]
         err: PrefixMapError,
+        line: u64,
+        field: String,
     },
 
     #[error("No base IRI trying to resolve IRI for {str}")]

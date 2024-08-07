@@ -5,7 +5,7 @@ use csv::{Position, StringRecord};
 #[derive(Debug)]
 pub struct TapReaderState {
     current_shape: TapShape,
-    cached_next_record: Option<StringRecord>,
+    cached_next_record: Option<(StringRecord, Position)>,
     headers: TapHeaders,
     _position: Position,
 }
@@ -13,7 +13,7 @@ pub struct TapReaderState {
 impl TapReaderState {
     pub fn new() -> TapReaderState {
         TapReaderState {
-            current_shape: TapShape::new(),
+            current_shape: TapShape::new(0),
             cached_next_record: None,
             headers: TapHeaders::new(),
             _position: Position::new(),
@@ -33,8 +33,8 @@ impl TapReaderState {
         self
     }
 
-    pub fn set_next_record(&mut self, rcd: &StringRecord) -> &mut Self {
-        self.cached_next_record = Some(rcd.clone());
+    pub fn set_next_record(&mut self, rcd: &StringRecord, pos: &Position) -> &mut Self {
+        self.cached_next_record = Some((rcd.clone(), pos.clone()));
         self
     }
 
@@ -43,9 +43,9 @@ impl TapReaderState {
         self
     }
 
-    pub fn get_cached_next_record(&mut self) -> Option<&StringRecord> {
-        if let Some(rcd) = &self.cached_next_record {
-            Some(rcd)
+    pub fn get_cached_next_record(&mut self) -> Option<(&StringRecord, &Position)> {
+        if let Some((rcd, pos)) = &self.cached_next_record {
+            Some((rcd, pos))
         } else {
             None
         }
