@@ -27,7 +27,7 @@ pub(crate) fn get_objects_for<S: SRDF>(
 ) -> Result<HashSet<S::Term>, SRDFError> {
     let subject = match S::term_as_subject(subject) {
         Some(subject) => subject,
-        None => todo!(),
+        None => return Err(SRDFError::Srdf),
     };
 
     match store.objects_for_subject_predicate(&subject, predicate) {

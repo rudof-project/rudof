@@ -36,24 +36,18 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Or {
         store: &S,
         schema: &Schema,
         runner: &dyn ValidatorRunner<S>,
-        _: &HashSet<S::Term>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         let shapes = get_shapes_ref(&self.shapes, schema);
-        let ans = shapes
-            .into_iter()
-            .filter_map(|shape| shape)
-            .any(|shape| match shape {
-                Shape::NodeShape(shape) => shape
-                    .validate(store, runner, schema, &mut ValidationReport::default())
-                    .unwrap_or(false),
-                Shape::PropertyShape(shape) => shape
-                    .validate(store, runner, schema, &mut ValidationReport::default())
-                    .unwrap_or(false),
-            });
-        if !ans {
-            report.make_validation_result(None);
-        }
+        let ans = shapes.into_iter().flatten().any(|shape| match shape {
+            Shape::NodeShape(shape) => shape
+                .check_shape(store, runner, schema, Some(value_nodes), report)
+                .unwrap_or(false),
+            Shape::PropertyShape(shape) => shape
+                .check_shape(store, runner, schema, Some(value_nodes), report)
+                .unwrap_or(false),
+        });
         Ok(ans)
     }
 }

@@ -110,7 +110,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
-        value_nodes.extend(get_objects_for(store, &focus_node, predicate)?);
+        value_nodes.extend(get_objects_for(store, focus_node, predicate)?);
         Ok(())
     }
 

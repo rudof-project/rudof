@@ -42,8 +42,7 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
             // skipping because it is deactivated
             return Ok(true);
         }
-
-        Ok(self.check_shape(store, runner, schema, None, report)?)
+        self.check_shape(store, runner, schema, None, report)
     }
 
     fn check_shape(
@@ -65,9 +64,15 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
             ans = runner.evaluate(store, schema, component, value_nodes, report)?;
         }
         // ... and the ones in the nested Property Shapes
-        for shape in get_shapes_ref(self.property_shapes(), schema) {
-            if let Some(Shape::PropertyShape(ps)) = shape {
-                ans = ps.check_shape(store, runner, schema, Some(value_nodes), report)?;
+        for shape in get_shapes_ref(self.property_shapes(), schema)
+            .into_iter()
+            .flatten()
+        {
+            ans = match shape {
+                Shape::NodeShape(_) => todo!(),
+                Shape::PropertyShape(ps) => {
+                    ps.check_shape(store, runner, schema, Some(value_nodes), report)?
+                }
             }
         }
         Ok(ans)
@@ -86,8 +91,7 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
             // skipping because it is deactivated
             return Ok(true);
         }
-
-        Ok(self.check_shape(store, runner, schema, None, report)?)
+        self.check_shape(store, runner, schema, None, report)
     }
 
     fn check_shape(
@@ -112,9 +116,15 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
             ans = runner.evaluate(store, schema, component, &value_nodes, report)?;
         }
         // ... and the ones in the nested Property Shapes
-        for shape in get_shapes_ref(self.property_shapes(), schema) {
-            if let Some(Shape::PropertyShape(ps)) = shape {
-                ans = ps.check_shape(store, runner, schema, Some(&value_nodes), report)?;
+        for shape in get_shapes_ref(self.property_shapes(), schema)
+            .into_iter()
+            .flatten()
+        {
+            ans = match shape {
+                Shape::NodeShape(_) => todo!(),
+                Shape::PropertyShape(ps) => {
+                    ps.check_shape(store, runner, schema, Some(&value_nodes), report)?
+                }
             }
         }
         Ok(ans)

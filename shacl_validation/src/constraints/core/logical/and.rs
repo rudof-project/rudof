@@ -39,17 +39,14 @@ impl<S: SRDFBasic> ConstraintComponent<S> for And {
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         let shapes = get_shapes_ref(&self.shapes, schema);
-        shapes
-            .into_iter()
-            .filter_map(|shape| shape)
-            .all(|shape| match shape {
-                Shape::NodeShape(shape) => shape
-                    .validate(store, runner, schema, report)
-                    .unwrap_or(false),
-                Shape::PropertyShape(shape) => shape
-                    .validate(store, runner, schema, report)
-                    .unwrap_or(false),
-            });
+        shapes.into_iter().flatten().all(|shape| match shape {
+            Shape::NodeShape(shape) => shape
+                .validate(store, runner, schema, report)
+                .unwrap_or(false),
+            Shape::PropertyShape(shape) => shape
+                .validate(store, runner, schema, report)
+                .unwrap_or(false),
+        });
         Ok(true)
     }
 }
