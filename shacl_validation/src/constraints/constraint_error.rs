@@ -13,4 +13,6 @@ pub enum ConstraintError {
     Create,
     #[error("Error during some of the query operations")]
     Query,
+    #[error("Error Shape not found")]
+    ShapeNotFound,
 }

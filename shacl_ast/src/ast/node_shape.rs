@@ -84,6 +84,10 @@ impl NodeShape {
         &self.targets
     }
 
+    pub fn property_shapes(&self) -> &Vec<RDFNode> {
+        &self.property_shapes
+    }
+
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: SRDFBuilder,

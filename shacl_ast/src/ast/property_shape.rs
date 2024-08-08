@@ -126,6 +126,10 @@ impl PropertyShape {
         &self.targets
     }
 
+    pub fn property_shapes(&self) -> &Vec<RDFNode> {
+        &self.property_shapes
+    }
+
     pub fn get_value_nodes(
         &self,
         data_graph: &SRDFGraph,

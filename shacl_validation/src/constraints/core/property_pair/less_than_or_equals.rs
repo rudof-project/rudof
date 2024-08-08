@@ -1,11 +1,14 @@
 use std::collections::HashSet;
 
 use prefixmap::IriRef;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:lessThanOrEquals specifies the condition that each value node is smaller
@@ -24,24 +27,28 @@ impl LessThanOrEquals {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for LessThanOrEquals {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_default(
         &self,
-        _: &S,
-        _value_nodes: HashSet<S::Term>,
+        _store: &S,
+        _schema: &Schema,
+        _: &DefaultValidatorRunner,
+        _value_nodes: &HashSet<S::Term>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for LessThanOrEquals {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        _value_nodes: HashSet<S::Term>,
+        _store: &S,
+        _schema: &Schema,
+        _: &SparqlValidatorRunner,
+        _value_nodes: &HashSet<S::Term>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }

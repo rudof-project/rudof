@@ -29,8 +29,12 @@ use core::value_range::max_inclusive::MaxInclusive;
 use core::value_range::min_exclusive::MinExclusive;
 use core::value_range::min_inclusive::MinInclusive;
 use shacl_ast::component::Component;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 pub(crate) mod constraint_error;
@@ -39,27 +43,34 @@ pub mod core;
 pub(crate) trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
         &self,
-        value_nodes: HashSet<S::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &dyn ValidatorRunner<S>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError>;
+    ) -> Result<bool, ConstraintError>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
     fn evaluate_default(
         &self,
         store: &S,
-        value_nodes: HashSet<S::Term>,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError>;
+    ) -> Result<bool, ConstraintError>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
     fn evaluate_sparql(
         &self,
         store: &S,
-        value_nodes: HashSet<S::Term>,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError>;
+    ) -> Result<bool, ConstraintError>;
 }
 
 impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {

@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::Schema;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
 use srdf::SRDF;
@@ -22,12 +23,13 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     fn evaluate(
         &self,
         store: &S,
+        schema: &Schema,
         component: &Component,
-        value_nodes: HashSet<S::Term>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let component: Box<dyn DefaultConstraintComponent<S>> = component.into();
-        Ok(component.evaluate_default(store, value_nodes, report)?)
+        Ok(component.evaluate_default(store, schema, self, value_nodes, report)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -105,7 +107,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         store: &S,
         _shape: &PropertyShape,
         predicate: &S::IRI,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         value_nodes.extend(get_objects_for(store, &focus_node, predicate)?);
@@ -117,7 +119,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()
@@ -128,7 +130,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()
@@ -139,7 +141,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()
@@ -150,7 +152,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()
@@ -161,7 +163,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()
@@ -172,7 +174,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
+        _focus_node: &S::Term,
         _value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()> {
         todo!()

@@ -1,18 +1,24 @@
 use std::collections::HashSet;
 
+use shacl_ast::shape::Shape;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::helper::shapes::get_shapes_ref;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::shape::Validate;
 use crate::validation_report::report::ValidationReport;
 
-/// sh:not specifies the condition that each value node cannot conform to a
-/// given shape. This is comparable to negation and the logical "not" operator.
+/// sh:and specifies the condition that each value node conforms to all provided
+/// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
-/// https://www.w3.org/TR/shacl/#NotConstraintComponent
-#[allow(dead_code)] // TODO: Remove when it is used
+/// https://www.w3.org/TR/shacl/#AndConstraintComponent
 pub(crate) struct And {
     shapes: Vec<RDFNode>,
 }
@@ -26,31 +32,50 @@ impl And {
 impl<S: SRDFBasic> ConstraintComponent<S> for And {
     fn evaluate(
         &self,
-        _value_nodes: HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        store: &S,
+        schema: &Schema,
+        runner: &dyn ValidatorRunner<S>,
+        _: &HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<bool, ConstraintError> {
+        let shapes = get_shapes_ref(&self.shapes, schema);
+        shapes
+            .into_iter()
+            .filter_map(|shape| shape)
+            .all(|shape| match shape {
+                Shape::NodeShape(shape) => shape
+                    .validate(store, runner, schema, report)
+                    .unwrap_or(false),
+                Shape::PropertyShape(shape) => shape
+                    .validate(store, runner, schema, report)
+                    .unwrap_or(false),
+            });
+        Ok(true)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for And {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for And {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for And {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for And {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }

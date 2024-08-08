@@ -40,6 +40,10 @@ impl Schema {
     pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape)> {
         self.shapes.iter()
     }
+
+    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape> {
+        self.shapes.get(sref)
+    }
 }
 
 impl Display for Schema {

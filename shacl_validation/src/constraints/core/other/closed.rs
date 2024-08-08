@@ -1,12 +1,16 @@
 use std::collections::HashSet;
 
 use prefixmap::IriRef;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// The RDF data model offers a huge amount of flexibility. Any node can in
@@ -36,31 +40,38 @@ impl Closed {
 impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
     fn evaluate(
         &self,
-        _value_nodes: HashSet<S::Term>,
+        _: &S,
+        _: &Schema,
+        _: &dyn ValidatorRunner<S>,
+        _value_nodes: &HashSet<S::Term>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Closed {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Closed {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Closed {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Closed {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }

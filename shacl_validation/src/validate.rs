@@ -35,8 +35,12 @@ pub trait Validator<'a, S: SRDFBasic> {
         let mut ans: ValidationReport<S> = ValidationReport::default(); // conformant by default...
         for (_, shape) in schema.iter() {
             match shape {
-                Shape::NodeShape(s) => s.validate(self.store(), self.runner(), &mut ans)?,
-                Shape::PropertyShape(s) => s.validate(self.store(), self.runner(), &mut ans)?,
+                Shape::NodeShape(s) => {
+                    s.validate(self.store(), self.runner(), &schema, &mut ans)?
+                }
+                Shape::PropertyShape(s) => {
+                    s.validate(self.store(), self.runner(), &schema, &mut ans)?
+                }
             };
         }
         Ok(ans)

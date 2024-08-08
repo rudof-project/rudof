@@ -1,11 +1,15 @@
 use std::collections::HashSet;
 
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
@@ -28,38 +32,47 @@ impl MinCount {
 impl<S: SRDFBasic> ConstraintComponent<S> for MinCount {
     fn evaluate(
         &self,
-        value_nodes: HashSet<S::Term>,
+        _: &S,
+        _: &Schema,
+        _: &dyn ValidatorRunner<S>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         if self.min_count == 0 {
             // If min_count is 0, then it always passes
-            return Ok(());
+            return Ok(true);
         }
+        let mut ans = true;
         if (value_nodes.len() as isize) < self.min_count {
+            ans = false;
             report.make_validation_result(None);
         }
-        Ok(())
+        Ok(ans)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MinCount {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinCount {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinCount {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinCount {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }

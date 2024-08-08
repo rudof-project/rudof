@@ -1,12 +1,15 @@
 use std::collections::HashSet;
 
 use indoc::formatdoc;
+use shacl_ast::Schema;
 use srdf::literal::Literal;
 use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
@@ -22,37 +25,43 @@ impl<S: SRDFBasic> MinInclusive<S> {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MinInclusive<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinInclusive<S> {
     fn evaluate_default(
         &self,
         _store: &S,
-        _value_nodes: HashSet<S::Term>,
+        _: &Schema,
+        _: &DefaultValidatorRunner,
+        _value_nodes: &HashSet<S::Term>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinInclusive<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinInclusive<S> {
     fn evaluate_sparql(
         &self,
         store: &S,
-        value_nodes: HashSet<S::Term>,
+        _: &Schema,
+        _: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for node in value_nodes {
             let query = formatdoc! {
                 " ASK {{ FILTER ({} <= {}) }} ",
                 node, self.min_inclusive
             };
-            let ans = match store.query_ask(&query) {
-                Ok(ans) => ans,
+            let ask = match store.query_ask(&query) {
+                Ok(ask) => ask,
                 Err(_) => return Err(ConstraintError::Query),
             };
-            if !ans {
+            if !ask {
+                ans = false;
                 report.make_validation_result(Some(node));
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }

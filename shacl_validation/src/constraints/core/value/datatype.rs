@@ -2,12 +2,16 @@ use std::collections::HashSet;
 
 use iri_s::IriS;
 use prefixmap::IriRef;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:datatype specifies a condition to be satisfied with regards to the
@@ -29,40 +33,50 @@ impl<S: SRDFBasic> Datatype<S> {
 impl<S: SRDFBasic> ConstraintComponent<S> for Datatype<S> {
     fn evaluate(
         &self,
-        value_nodes: HashSet<S::Term>,
+        _: &S,
+        _: &Schema,
+        _: &dyn ValidatorRunner<S>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for node in value_nodes {
             if let Some(literal) = S::term_as_literal(node) {
                 if S::datatype(&literal) != self.datatype {
+                    ans = false;
                     report.make_validation_result(Some(node));
                 }
             } else {
+                ans = false;
                 report.make_validation_result(Some(node));
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Datatype<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Datatype<S> {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Datatype<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Datatype<S> {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        store: &S,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }

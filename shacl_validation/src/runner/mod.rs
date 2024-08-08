@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::target::Target;
+use shacl_ast::Schema;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
 
@@ -19,10 +20,11 @@ pub trait ValidatorRunner<S: SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
+        schema: &Schema,
         component: &Component,
-        value_nodes: HashSet<S::Term>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<()>;
+    ) -> Result<bool>;
 
     fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNode<S>> {
         let mut ans = FocusNode::<S>::new();
@@ -78,7 +80,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        focus: S::Term,
+        focus: &S::Term,
         values: &mut HashSet<S::Term>,
     ) -> Result<()> {
         match shape.path() {
@@ -102,7 +104,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         predicate: &S::IRI,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -111,7 +113,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -120,7 +122,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -129,7 +131,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -138,7 +140,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -147,7 +149,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 
@@ -156,7 +158,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
+        focus_node: &S::Term,
         value_nodes: &mut HashSet<S::Term>,
     ) -> Result<()>;
 }

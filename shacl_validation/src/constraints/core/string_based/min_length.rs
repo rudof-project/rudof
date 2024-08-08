@@ -1,11 +1,14 @@
 use std::collections::HashSet;
 
 use indoc::formatdoc;
+use shacl_ast::Schema;
 use srdf::{QuerySRDF, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:minLength specifies the minimum string length of each value node that
@@ -23,48 +26,57 @@ impl MinLength {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MinLength {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinLength {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        _store: &S,
+        _: &Schema,
+        _: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for node in value_nodes {
             if S::term_is_bnode(node) {
+                ans = false;
                 report.make_validation_result(Some(node));
             } else {
                 return Err(ConstraintError::NotImplemented);
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinLength {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinLength {
     fn evaluate_sparql(
         &self,
         store: &S,
-        value_nodes: HashSet<S::Term>,
+        _: &Schema,
+        _: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for node in value_nodes {
             if S::term_is_bnode(node) {
+                ans = false;
                 report.make_validation_result(Some(node));
             } else {
                 let query = formatdoc! {
                     " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
                     node, self.min_length
                 };
-                let ans = match store.query_ask(&query) {
-                    Ok(ans) => ans,
+                let ask = match store.query_ask(&query) {
+                    Ok(ask) => ask,
                     Err(_) => return Err(ConstraintError::Query),
                 };
-                if !ans {
+                if !ask {
+                    ans = false;
                     report.make_validation_result(Some(node));
                 }
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }
