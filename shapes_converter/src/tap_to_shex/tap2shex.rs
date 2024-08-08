@@ -21,6 +21,8 @@ impl Tap2ShEx {
         }
     }
 
+    // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+    #[allow(clippy::result_large_err)]
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
         let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap()));
         for tap_shape in tap.shapes() {
@@ -31,6 +33,8 @@ impl Tap2ShEx {
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn tapshape_to_shape(
     tap_shape: &TapShape,
     config: &Tap2ShExConfig,
@@ -51,6 +55,8 @@ fn tapshape_to_shape(
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn shape_id2iri<'a>(
     shape_id: &'a ShapeId,
     config: &'a Tap2ShExConfig,
@@ -78,6 +84,8 @@ fn shape_id2iri<'a>(
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn tapshape_to_shape_expr(
     tap_shape: &TapShape,
     config: &Tap2ShExConfig,
@@ -97,6 +105,8 @@ fn tapshape_to_shape_expr(
     Ok(se)
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn statement_to_triple_expr(
     statement: &TapStatement,
     config: &Tap2ShExConfig,
@@ -144,6 +154,8 @@ fn get_max(repeatable: Option<bool>) -> Option<i32> {
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn datatype_id2iri<'a>(
     datatype_id: &'a DatatypeId,
     config: &'a Tap2ShExConfig,
@@ -172,6 +184,8 @@ fn datatype_id2iri<'a>(
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn property_id2iri<'a>(
     property_id: &'a PropertyId,
     config: &'a Tap2ShExConfig,

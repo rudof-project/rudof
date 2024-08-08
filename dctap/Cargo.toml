@@ -17,6 +17,7 @@ itertools = "0.13"
 iri_s = { path = "../iri_s", version = "0.1.5" }
 prefixmap = { path = "../prefixmap", version = "0.1.0" }
 serde = "1.0"
+serde_json = "1.0"
 serde_yml = "0.0.11"
 serde_derive = "1.0"
 serde_with = "3.8.1"

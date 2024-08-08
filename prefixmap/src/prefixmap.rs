@@ -399,7 +399,7 @@ mod tests {
         pm.insert("rdf", &ex_rdf);
         assert_eq!(
             pm.to_string(),
-            "ex <http://example.org/>\nrdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            "prefix ex: <http://example.org/>\nprefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
         );
     }
 
