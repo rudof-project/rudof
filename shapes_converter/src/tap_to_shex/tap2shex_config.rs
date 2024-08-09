@@ -23,6 +23,8 @@ impl Tap2ShExConfig {
         }
     }
 
+    // TOOD: Refactor Tap2ShExError to reduce its size and avoid the result_large_err warning
+    #[allow(clippy::result_large_err)]
     pub fn resolve_iri(&self, str: &str, line: u64) -> Result<IriS, Tap2ShExError> {
         if let Some((prefix, localname)) = prefix_local_name(str) {
             match self
