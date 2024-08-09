@@ -17,7 +17,7 @@ pub enum Tap2ShExError {
     },
 
     #[error("PrefixMap error: {err} at line: {line}, field: {field}")]
-    PrefixMapError {
+    ResolvingPrefixError {
         err: PrefixMapError,
         line: u64,
         field: String,
@@ -37,6 +37,9 @@ pub enum Tap2ShExError {
 
     #[error("Converting shape to IRI, no prefix declaration: {shape_id:?}")]
     ShapeId2IriNoPrefix { shape_id: ShapeId },
+
+    #[error("No base IRI converting {str} to IRI. Line: {line}")]
+    IriNoPrefix { str: String, line: u64 },
 
     #[error("Converting property to IRI, no prefix declaration: {property_id:?}")]
     PropertyId2IriNoPrefix { property_id: PropertyId },

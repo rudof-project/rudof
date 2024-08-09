@@ -36,3 +36,4 @@ oxigraph = "0.4.0-alpha.7"
 regex = "^1.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+supports-color = "3.0.0"
