@@ -33,45 +33,60 @@ use crate::pp_object_value;
 #[derive(Debug, Clone)]
 pub struct ShExFormatter {
     keyword_color: Option<Color>,
-    qualify_prefix_color: Option<Color>,
-    qualify_semicolon_color: Option<Color>,
-    qualify_localname_color: Option<Color>,
+    prefix_color: Option<Color>,
+    semicolon_color: Option<Color>,
+    localname_color: Option<Color>,
 }
 
 impl ShExFormatter {
+    pub fn keyword_color(&self) -> Option<Color> {
+        self.keyword_color
+    }
+
+    pub fn prefix_color(&self) -> Option<Color> {
+        self.prefix_color
+    }
+
+    pub fn semicolon_color(&self) -> Option<Color> {
+        self.semicolon_color
+    }
+
+    pub fn localname_color(&self) -> Option<Color> {
+        self.localname_color
+    }
+
     pub fn with_keyword_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.keyword_color = color;
         self
     }
-    pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
-        self.qualify_prefix_color = color;
+    pub fn with_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.prefix_color = color;
         self
     }
-    pub fn with_semicolon_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
-        self.qualify_semicolon_color = color;
-        self
-    }
-
-    pub fn with_qualify_localname_color(mut self, color: Option<Color>) -> ShExFormatter {
-        self.qualify_localname_color = color;
+    pub fn with_semicolon_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.semicolon_color = color;
         self
     }
 
-    pub fn without_colors(mut self) -> ShExFormatter {
-        self.keyword_color = None;
-        self.qualify_localname_color = None;
-        self.qualify_prefix_color = None;
-        self.qualify_semicolon_color = None;
+    pub fn with_localname_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.localname_color = color;
         self
+    }
+
+    pub fn without_colors(self) -> ShExFormatter {
+        self.with_keyword_color(None)
+            .with_localname_color(None)
+            .with_prefix_color(None)
+            .with_semicolon_color(None)
     }
 
     pub fn format_schema(&self, schema: &Schema) -> String {
         let arena = Arena::<()>::new();
         let mut printer = ShExCompactPrinter::new(schema, &arena);
         printer = printer.with_keyword_color(self.keyword_color);
-        printer = printer.with_qualify_localname_color(self.qualify_localname_color);
-        printer = printer.with_qualify_prefix_color(self.qualify_prefix_color);
-        printer = printer.with_qualify_semicolon_color(self.qualify_semicolon_color);
+        printer = printer.with_qualify_localname_color(self.localname_color);
+        printer = printer.with_qualify_prefix_color(self.prefix_color);
+        printer = printer.with_qualify_semicolon_color(self.semicolon_color);
         printer.pretty_print()
     }
 }
@@ -80,9 +95,9 @@ impl Default for ShExFormatter {
     fn default() -> Self {
         Self {
             keyword_color: DEFAULT_KEYWORD_COLOR,
-            qualify_prefix_color: DEFAULT_QUALIFY_ALIAS_COLOR,
-            qualify_semicolon_color: DEFAULT_QUALIFY_SEMICOLON_COLOR,
-            qualify_localname_color: DEFAULT_QUALIFY_LOCALNAME_COLOR,
+            prefix_color: DEFAULT_QUALIFY_ALIAS_COLOR,
+            semicolon_color: DEFAULT_QUALIFY_SEMICOLON_COLOR,
+            localname_color: DEFAULT_QUALIFY_LOCALNAME_COLOR,
         }
     }
 }
@@ -322,6 +337,7 @@ where
             (Some(0), Some(1)) => self.doc.space().append(self.doc.text("?")),
             (Some(0), Some(-1)) => self.doc.space().append(self.doc.text("*")),
             (Some(1), Some(-1)) => self.doc.space().append(self.doc.text("+")),
+            (Some(1), None) => self.doc.space().append(self.doc.text("+")),
             (Some(m), Some(n)) => self.doc.space().append(
                 self.enclose_space(
                     "{",
@@ -336,24 +352,13 @@ where
                 .doc
                 .space()
                 .append(self.doc.text("{"))
-                .append(self.doc.space())
                 .append(self.doc.text(m.to_string()))
-                .append(self.doc.text(","))
-                .append(self.doc.text("}")),
-            (None, Some(-1)) => self
-                .doc
-                .space()
-                .append(self.doc.text("{"))
-                .append(self.doc.space())
-                .append(self.doc.text(","))
-                .append(self.doc.text("*"))
-                .append(self.doc.text("}")),
+                .append(self.doc.text(",}")),
+            (None, Some(-1)) => self.doc.space().append(self.doc.text("*")),
             (None, Some(n)) => self
                 .doc
                 .space()
-                .append(self.doc.text("{"))
-                .append(self.doc.space())
-                .append(self.doc.text(","))
+                .append(self.doc.text("{,"))
                 .append(self.doc.text(n.to_string()))
                 .append(self.doc.text("}")),
             (None, None) => self.doc.nil(),
@@ -571,6 +576,7 @@ where
             };
             self.doc.text(s.as_str().color(color).to_string())
         } else {
+            let s: String = s.into().into();
             self.doc.text(s)
         }
     }

@@ -1,23 +1,23 @@
 use std::{io, result};
 
-use csv::StringRecord;
+use csv::{Position, StringRecord};
 use thiserror::Error;
 
 pub type Result<T> = result::Result<T, TapError>;
 
 #[derive(Error, Debug)]
 pub enum TapError {
-    #[error("Empty node type")]
-    EmptyNodeType,
+    #[error("Empty node type at line: {}, Record: {}", pos.line(), pos.record())]
+    EmptyNodeType { pos: Position },
 
-    #[error("Unexpected node type: {str}")]
-    UnexpectedNodeType { str: String },
+    #[error("Unexpected node type: {str}. Line: {}, Record: {}", pos.line(), pos.record())]
+    UnexpectedNodeType { str: String, pos: Position },
 
-    #[error("Unexpected value constraint type: {value}")]
-    UnexpectedValueConstraintType { value: String },
+    #[error("Unexpected value constraint type: {value}. Line: {}, Record: {}", pos.line(), pos.record())]
+    UnexpectedValueConstraintType { value: String, pos: Position },
 
     #[error("CSV Error: {err}")]
-    RDFParseError {
+    CSVError {
         #[from]
         err: csv::Error,
     },
@@ -28,8 +28,16 @@ pub enum TapError {
         record: StringRecord,
     },
 
-    #[error("Value of field {field} is {value} and should be boolean")]
-    ShouldBeBoolean { field: String, value: String },
+    #[error(
+        "Value of field {field} is {value} and should be boolean. Line: {}. Record: {}",
+        pos.line(),
+        pos.record()
+    )]
+    ShouldBeBoolean {
+        field: String,
+        value: String,
+        pos: Position,
+    },
 
     #[error("Error reading config file from path {path}: {error}")]
     TapConfigFromPathError { path: String, error: io::Error },

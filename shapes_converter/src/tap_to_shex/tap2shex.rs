@@ -21,6 +21,8 @@ impl Tap2ShEx {
         }
     }
 
+    // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+    #[allow(clippy::result_large_err)]
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
         let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap()));
         for tap_shape in tap.shapes() {
@@ -31,6 +33,8 @@ impl Tap2ShEx {
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn tapshape_to_shape(
     tap_shape: &TapShape,
     config: &Tap2ShExConfig,
@@ -51,28 +55,18 @@ fn tapshape_to_shape(
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn shape_id2iri<'a>(
     shape_id: &'a ShapeId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    if let Some((prefix, localname)) = shape_id.as_prefix_local_name() {
-        let iri = config
-            .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
-        Ok(iri)
-    } else {
-        let iri = match &config.base_iri {
-            None => Err(Tap2ShExError::ShapeId2IriNoPrefix {
-                shape_id: shape_id.clone(),
-            }),
-            Some(base_iri) => base_iri
-                .extend(shape_id.as_local_name().as_str())
-                .map_err(|e| Tap2ShExError::IriSError { err: e }),
-        }?;
-        Ok(iri)
-    }
+    let iri = config.resolve_iri(shape_id.str(), shape_id.line())?;
+    Ok(iri)
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn tapshape_to_shape_expr(
     tap_shape: &TapShape,
     config: &Tap2ShExConfig,
@@ -92,6 +86,8 @@ fn tapshape_to_shape_expr(
     Ok(se)
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn statement_to_triple_expr(
     statement: &TapStatement,
     config: &Tap2ShExConfig,
@@ -139,47 +135,22 @@ fn get_max(repeatable: Option<bool>) -> Option<i32> {
     }
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn datatype_id2iri<'a>(
     datatype_id: &'a DatatypeId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    if let Some((prefix, localname)) = datatype_id.as_prefix_local_name() {
-        let iri = config
-            .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
-        Ok(iri)
-    } else {
-        let iri = match &config.datatype_base_iri {
-            None => Err(Tap2ShExError::DatatypeId2IriNoPrefix {
-                datatype_id: datatype_id.clone(),
-            }),
-            Some(base_iri) => {
-                let iri = base_iri.extend(datatype_id.as_local_name().as_str())?;
-                Ok(iri)
-            }
-        }?;
-        Ok(iri.clone())
-    }
+    let iri = config.resolve_iri(datatype_id.str(), datatype_id.line())?;
+    Ok(iri)
 }
 
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn property_id2iri<'a>(
     property_id: &'a PropertyId,
     config: &'a Tap2ShExConfig,
 ) -> Result<IriS, Tap2ShExError> {
-    if let Some((prefix, localname)) = property_id.as_prefix_local_name() {
-        let iri = config
-            .prefixmap()
-            .resolve_prefix_local(prefix.as_str(), localname.as_str())?;
-        Ok(iri)
-    } else {
-        let iri = match &config.base_iri {
-            None => Err(Tap2ShExError::PropertyId2IriNoPrefix {
-                property_id: property_id.clone(),
-            }),
-            Some(base_iri) => base_iri
-                .extend(property_id.as_local_name().as_str())
-                .map_err(|e| Tap2ShExError::IriSError { err: e }),
-        }?;
-        Ok(iri)
-    }
+    let iri = config.resolve_iri(property_id.str(), property_id.line())?;
+    Ok(iri)
 }

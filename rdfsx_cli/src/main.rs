@@ -14,6 +14,7 @@ extern crate shex_ast;
 extern crate shex_compact;
 extern crate shex_validation;
 extern crate srdf;
+extern crate supports_color;
 extern crate tracing;
 extern crate tracing_subscriber;
 
@@ -39,6 +40,7 @@ use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use std::str::FromStr;
 use std::time::Instant;
+use supports_color::Stream;
 use tracing::debug;
 
 pub mod cli;
@@ -284,9 +286,9 @@ fn run_schema(
     show_statistics: bool,
 ) -> Result<()> {
     let begin = Instant::now();
-    let writer = get_writer(output)?;
+    let (writer, color) = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
-    show_schema(&schema_json, result_schema_format, writer)?;
+    show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
@@ -305,6 +307,7 @@ fn show_schema(
     schema: &SchemaJson,
     result_schema_format: &ShExFormat,
     mut writer: Box<dyn Write>,
+    color: ColorSupport,
 ) -> Result<()> {
     match result_schema_format {
         ShExFormat::Internal => {
@@ -312,7 +315,11 @@ fn show_schema(
             Ok(())
         }
         ShExFormat::ShExC => {
-            let str = ShExFormatter::default().format_schema(schema);
+            let formatter = match color {
+                ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+                ColorSupport::WithColor => ShExFormatter::default(),
+            };
+            let str = formatter.format_schema(schema);
             writeln!(writer, "{str}")?;
             Ok(())
         }
@@ -342,7 +349,7 @@ fn run_validate_shex(
     output: &Option<PathBuf>,
     config: &ValidatorConfig,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
@@ -403,7 +410,7 @@ fn run_validate_shacl(
     _debug: u8,
     output: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     if let Some(data) = data {
         let validator = match GraphValidator::new(
             data,
@@ -473,7 +480,7 @@ fn run_shacl(
     result_shapes_format: &ShaclFormat,
     output: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
@@ -497,7 +504,7 @@ fn run_dctap(
     output: &Option<PathBuf>,
     config: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let tap_config = match config {
         Some(config_path) => TapConfig::from_path(config_path),
         None => Ok(TapConfig::default()),
@@ -594,7 +601,7 @@ fn run_shex2uml(
     let schema = parse_schema(input_path, &schema_format)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     generate_uml_output(converter, &mut writer, result_format)?;
     Ok(())
 }
@@ -702,7 +709,7 @@ fn run_shex2sparql(
     let schema = parse_schema(input_path, &schema_format)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     write!(writer, "{}", sparql)?;
     Ok(())
 }
@@ -728,8 +735,8 @@ fn run_tap2shex(
         OutputConvertFormat::Turtle => Ok(ShExFormat::Turtle),
         _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
     }?;
-    let writer = get_writer(output)?;
-    show_schema(&shex, &result_schema_format, writer)?;
+    let (writer, color) = get_writer(output)?;
+    show_schema(&shex, &result_schema_format, writer, color)?;
     Ok(())
 }
 
@@ -749,23 +756,33 @@ fn run_tap2uml(
     let shex = converter_shex.convert(&dctap)?;
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     converter_uml.as_plantuml(&mut writer)?;
     generate_uml_output(converter_uml, &mut writer, result_format)?;
     Ok(())
 }
 
-fn get_writer(output: &Option<PathBuf>) -> Result<Box<dyn Write>> {
+#[derive(Debug, Clone, PartialEq)]
+enum ColorSupport {
+    NoColor,
+    WithColor,
+}
+
+fn get_writer(output: &Option<PathBuf>) -> Result<(Box<dyn Write>, ColorSupport)> {
     match output {
         None => {
             let stdout = io::stdout();
             let handle = stdout.lock();
-            Ok(Box::new(handle))
+            let color_support = match supports_color::on(Stream::Stdout) {
+                Some(_) => ColorSupport::WithColor,
+                _ => ColorSupport::NoColor,
+            };
+            Ok((Box::new(handle), color_support))
         }
         Some(path) => {
             let file = File::create(path)?;
             let writer = BufWriter::new(file);
-            Ok(Box::new(writer))
+            Ok((Box::new(writer), ColorSupport::NoColor))
         }
     }
 }
@@ -825,7 +842,7 @@ fn run_node(
     output: &Option<PathBuf>,
     _config: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
@@ -950,7 +967,7 @@ fn run_shapemap(
     result_format: &ShapeMapFormat,
     output: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let shapemap = parse_shapemap(shapemap_path, shapemap_format)?;
     match result_format {
         ShapeMapFormat::Compact => {
@@ -995,7 +1012,7 @@ fn run_data(
     _debug: u8,
     output: &Option<PathBuf>,
 ) -> Result<()> {
-    let mut writer = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output)?;
     let data = parse_data(data, data_format)?;
     writeln!(writer, "Data\n{data:?}\n")?;
     Ok(())
