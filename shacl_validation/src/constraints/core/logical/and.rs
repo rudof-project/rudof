@@ -35,19 +35,40 @@ impl<S: SRDFBasic> ConstraintComponent<S> for And {
         store: &S,
         schema: &Schema,
         runner: &dyn ValidatorRunner<S>,
-        _: &HashSet<S::Term>,
+        value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         let shapes = get_shapes_ref(&self.shapes, schema);
-        shapes.into_iter().flatten().all(|shape| match shape {
-            Shape::NodeShape(shape) => shape
-                .validate(store, runner, schema, report)
-                .unwrap_or(false),
-            Shape::PropertyShape(shape) => shape
-                .validate(store, runner, schema, report)
-                .unwrap_or(false),
-        });
-        Ok(true)
+        let mut is_valid = true;
+
+        for value_node in value_nodes {
+            let targets: HashSet<_> = std::iter::once(value_node.clone()).collect();
+            let all_valid = shapes.iter().flatten().all(|shape| {
+                let result = match shape {
+                    Shape::NodeShape(shape) => shape.check_shape(
+                        store,
+                        runner,
+                        schema,
+                        Some(&targets),
+                        &mut ValidationReport::default(),
+                    ),
+                    Shape::PropertyShape(shape) => shape.check_shape(
+                        store,
+                        runner,
+                        schema,
+                        Some(&targets),
+                        &mut ValidationReport::default(),
+                    ),
+                };
+                result.unwrap_or(false)
+            });
+            if !all_valid {
+                is_valid = false;
+                report.make_validation_result(Some(value_node));
+            }
+        }
+
+        Ok(is_valid)
     }
 }
 

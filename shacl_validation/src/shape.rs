@@ -50,7 +50,7 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
         store: &S,
         runner: &dyn ValidatorRunner<S>,
         schema: &Schema,
-        value_nodes: Option<&HashSet<<S as SRDFBasic>::Term>>,
+        value_nodes: Option<&HashSet<S::Term>>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ValidateError> {
         let mut ans = true; // validation status of the current Shape
