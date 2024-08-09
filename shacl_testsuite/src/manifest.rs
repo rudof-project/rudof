@@ -1,33 +1,187 @@
 use std::collections::HashSet;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::Path;
-use std::str::FromStr;
 
-use indoc::formatdoc;
-use oxigraph::io::RdfFormat;
-use oxigraph::model::{GraphNameRef, NamedNode};
-use oxigraph::{model::Term, store::Store};
-use oxiri::Iri;
-use shacl_ast::ShaclParser;
+use iri_s::IriS;
+use oxrdf::Term;
 use shacl_validation::shacl_validation_vocab;
+use shacl_validation::validate::GraphValidator;
+use shacl_validation::validate::Mode;
+use shacl_validation::validate::Validator;
 use shacl_validation::validation_report::report::ValidationReport;
-use srdf::{RDFFormat, SRDFGraph};
+use srdf::RDFFormat;
+use srdf::SRDFBasic;
+use srdf::SRDFGraph;
+use srdf::SRDF;
 
-use crate::helper::sparql::{select, select_many};
+use crate::helper::srdf::get_object_for;
+use crate::helper::srdf::get_objects_for;
 use crate::manifest_error::ManifestError;
 use crate::ShaclTest;
 
-pub struct Manifest {
+pub trait Manifest<S: SRDF + SRDFBasic> {
+    fn new(base: String, store: S, includes: Vec<Self>, entries: HashSet<S::Term>) -> Self
+    where
+        Self: Sized;
+
+    fn load_data_graph(path: &Path, base: &str) -> S;
+
+    fn base(&self) -> String;
+
+    fn store(&self) -> &S;
+
+    fn includes(&self) -> Vec<Self>
+    where
+        Self: Sized;
+
+    fn entries(&self) -> HashSet<S::Term>;
+
+    #[allow(clippy::result_large_err)]
+    fn collect_tests(&self) -> Result<Vec<ShaclTest<S>>, ManifestError> {
+        let mut ans = Vec::new();
+
+        for entry in &self.entries() {
+            let label = get_object_for(self.store(), entry, &S::iri_s2iri(&srdf::RDFS_LABEL))?;
+
+            let action = match get_object_for(
+                self.store(),
+                entry,
+                &S::iri_s2iri(&shacl_validation_vocab::MF_ACTION),
+            )? {
+                Some(action) => match S::term_as_bnode(&action) {
+                    Some(action) => S::bnode_as_term(action),
+                    None => todo!(),
+                },
+                None => todo!(),
+            };
+
+            let result = match get_object_for(
+                self.store(),
+                entry,
+                &S::iri_s2iri(&shacl_validation_vocab::MF_RESULT),
+            )? {
+                Some(result) => ValidationReport::parse(self.store(), result)?,
+                None => todo!(),
+            };
+
+            let data_graph_iri = get_object_for(
+                self.store(),
+                &action,
+                &S::iri_s2iri(&shacl_validation_vocab::SHT_DATA_GRAPH),
+            )?
+            .unwrap();
+
+            let shapes_graph_iri = get_object_for(
+                self.store(),
+                &action,
+                &S::iri_s2iri(&shacl_validation_vocab::SHT_SHAPES_GRAPH),
+            )?
+            .unwrap();
+
+            let shapes = Self::format_path(shapes_graph_iri.to_string());
+            let data = Self::format_path(data_graph_iri.to_string());
+
+            ans.push(ShaclTest::new(
+                data,
+                shapes,
+                Some(self.base()),
+                result,
+                match label {
+                    Some(label) => Some(label.to_string()),
+                    None => todo!(),
+                },
+            ))
+        }
+
+        Ok(ans)
+    }
+
+    #[allow(clippy::result_large_err)]
+    fn load(path: &Path) -> Result<Self, ManifestError>
+    where
+        Self: Sized,
+    {
+        let base = match Path::new(path).canonicalize()?.to_str() {
+            Some(path) => format!("file:/{}", path),
+            None => todo!(),
+        };
+
+        let subject = S::iri_s2term(&IriS::new_unchecked(&base));
+        let graph = Self::load_data_graph(path, &base);
+
+        let mut includes = Vec::new();
+        for manifest in get_objects_for(
+            &graph,
+            &subject,
+            &S::iri_s2iri(&shacl_validation_vocab::MF_INCLUDE),
+        )? {
+            let format_path = Self::format_path(manifest.to_string());
+            let path = Path::new(&format_path);
+            if let Ok(child_manifest) = Self::load(path) {
+                includes.push(child_manifest);
+            }
+        }
+
+        let mut entry_terms = HashSet::new();
+
+        let entry_subject = get_object_for(
+            &graph,
+            &subject,
+            &S::iri_s2iri(&shacl_validation_vocab::MF_ENTRIES),
+        )?;
+
+        if let Some(mut subject) = entry_subject {
+            loop {
+                entry_terms.insert(
+                    match get_object_for(&graph, &subject, &S::iri_s2iri(&srdf::RDF_FIRST))? {
+                        Some(term) => term,
+                        None => break,
+                    },
+                );
+
+                subject = match get_object_for(&graph, &subject, &S::iri_s2iri(&srdf::RDF_REST))? {
+                    Some(subject) => subject,
+                    None => break,
+                };
+            }
+        }
+
+        Ok(Manifest::new(base, graph, includes, entry_terms))
+    }
+
+    fn flatten(manifest: Self, manifests: &mut Vec<Self>)
+    where
+        Self: Sized + Clone,
+    {
+        manifests.push(manifest.to_owned());
+        for manifest in manifest.includes() {
+            Self::flatten(manifest.to_owned(), manifests);
+        }
+    }
+
+    fn format_path(term: String) -> String {
+        let mut chars = term.chars();
+        chars.next();
+        chars.next_back();
+        chars.as_str().to_string().replace("file:/", "")
+    }
+}
+
+#[derive(Clone)]
+pub struct GraphManifest {
     base: String,
-    store: Store,
-    includes: Vec<Manifest>,
+    store: SRDFGraph,
+    includes: Vec<GraphManifest>,
     entries: HashSet<Term>,
 }
 
-impl Manifest {
-    fn new(base: String, store: Store, includes: Vec<Manifest>, entries: HashSet<Term>) -> Self {
-        Manifest {
+impl Manifest<SRDFGraph> for GraphManifest {
+    fn new(
+        base: String,
+        store: SRDFGraph,
+        includes: Vec<GraphManifest>,
+        entries: HashSet<Term>,
+    ) -> Self {
+        GraphManifest {
             base,
             store,
             includes,
@@ -35,191 +189,33 @@ impl Manifest {
         }
     }
 
-    // TODO: Change load_graph by load_from_read
-    #[allow(deprecated)]
-    pub fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
-        let mut ans = Vec::new();
-        for entry in &self.entries {
-            let query = formatdoc! {
-                "
-                    SELECT ?action ?result ?label
-                    WHERE {{
-                        {} {} ?action .
-                        {} {} ?result .
-                        OPTIONAL {{ {} {} ?label }}
-                    }}
-                ",
-                entry, shacl_validation_vocab::MF_ACTION.as_named_node(), // check it is blank node
-                entry, shacl_validation_vocab::MF_RESULT.as_named_node(), // check it is not literal
-                entry, srdf::RDFS_LABEL.as_named_node(),
-            };
-
-            let solution = match select(&self.store, query) {
-                Ok(solution) => solution,
-                Err(_) => break,
-            };
-
-            let label = solution.get("label").map(|label| label.to_string());
-
-            let action = match solution.get("action") {
-                Some(action) => action,
-                None => todo!(),
-            };
-
-            let result = match solution.get("result") {
-                Some(result) => result,
-                None => todo!(),
-            };
-
-            let query = formatdoc! {
-                "
-                    SELECT DISTINCT ?data_graph ?shapes_graph
-                    WHERE {{
-                        {} {} ?data_graph .
-                        {} {} ?shapes_graph .
-                    }}
-                ", 
-                action, shacl_validation_vocab::SHT_DATA_GRAPH.as_named_node(),
-                action, shacl_validation_vocab::SHT_SHAPES_GRAPH.as_named_node(),
-            };
-
-            let solution = select(&self.store, query)?;
-
-            let data_graph_iri = match solution.get("data_graph") {
-                Some(data_graph) => data_graph.to_owned(),
-                None => todo!(),
-            };
-
-            let shapes_graph_iri = match solution.get("shapes_graph") {
-                Some(shapes_graph) => shapes_graph.to_owned(),
-                None => todo!(),
-            };
-
-            // TODO: explain this
-            let term = shapes_graph_iri.to_string().replace("file:/", "");
-            let mut chars = term.chars();
-            chars.next();
-            chars.next_back();
-            let path = chars.as_str().to_string();
-
-            let rdf = SRDFGraph::from_path(
-                Path::new(&path),
-                &RDFFormat::Turtle,
-                Some(Iri::from_str(&self.base)?),
-            )?;
-
-            let schema = match ShaclParser::new(rdf).parse() {
-                Ok(shapes_graph) => shapes_graph,
-                Err(_) => return Err(ManifestError::ShaclParser),
-            };
-
-            // TODO: explain this
-            let term = data_graph_iri.to_string();
-            let mut chars = term.chars();
-            chars.next();
-            chars.next_back();
-            let path = chars.as_str().to_string();
-
-            let mut data_store = self.store.clone(); // explicit copy
-            if path != self.base {
-                data_store = Store::new()?;
-                data_store.bulk_loader().load_graph(
-                    BufReader::new(File::open(path.replace("file:/", ""))?),
-                    RdfFormat::Turtle,
-                    GraphNameRef::DefaultGraph,
-                    Some(&self.base),
-                )?;
-            }
-
-            ans.push(ShaclTest::new(
-                entry.to_owned(),
-                self.store.to_owned(), // TODO: can this be removed?
-                data_store,
-                schema,
-                ValidationReport::parse(&self.store, result)?,
-                label,
-            ))
+    fn load_data_graph(path: &Path, base: &str) -> SRDFGraph {
+        match GraphValidator::new(
+            Path::new(path),
+            RDFFormat::Turtle,
+            Some(base),
+            Mode::Default,
+        ) {
+            Ok(validator) => validator,
+            Err(_) => todo!(),
         }
-        Ok(ans)
+        .store()
+        .to_owned()
     }
 
-    // TODO: Change load_graph by load_from_read
-    #[allow(deprecated)]
-    pub fn load(file: &str) -> Result<Manifest, ManifestError> {
-        let path = Path::new(file);
-
-        let base = match path.canonicalize()?.to_str() {
-            Some(path) => format!("file:/{}", path),
-            None => todo!(),
-        };
-
-        let store = Store::new()?;
-
-        store.bulk_loader().load_graph(
-            BufReader::new(File::open(path)?),
-            RdfFormat::Turtle,
-            GraphNameRef::DefaultGraph,
-            Some(&base),
-        )?;
-
-        let subject = Term::NamedNode(NamedNode::new_unchecked(base.clone()));
-
-        let query = formatdoc! {
-            "
-                SELECT ?this
-                WHERE {{
-                    {} {} ?this
-                }}
-            ", 
-            subject, shacl_validation_vocab::MF_INCLUDE.as_named_node(),
-        };
-
-        let mut includes = Vec::new();
-        for manifest in select_many(&store, query)? {
-            let file = manifest.to_string().replace("file:/", ""); // TODO: fn
-            let mut chars = file.chars();
-            chars.next();
-            chars.next_back();
-            if let Ok(child_manifest) = Self::load(chars.as_str()) {
-                includes.push(child_manifest);
-            }
-        }
-
-        let query = formatdoc! {
-            "
-                SELECT ?this
-                WHERE {{
-                    {} {} ?this
-                }}
-            ", 
-            subject, shacl_validation_vocab::MF_ENTRIES.as_named_node(),
-        };
-
-        let mut entries = HashSet::new();
-        if let Ok(query_result) = select(&store, query) {
-            let query = formatdoc! {"
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                SELECT ?this
-                WHERE {{
-                    {} rdf:rest*/rdf:first ?this
-                }}
-                ", query_result.get("this").unwrap()
-            };
-
-            for entry in select_many(&store, query)? {
-                if let Term::NamedNode(_) = entry {
-                    entries.insert(entry);
-                }
-            }
-        }
-
-        Ok(Manifest::new(base, store, includes, entries))
+    fn base(&self) -> String {
+        self.base.to_owned()
     }
 
-    pub fn flatten<'a>(manifest: &'a Manifest, manifests: &mut Vec<&'a Manifest>) {
-        manifests.push(manifest);
-        for manifest in &manifest.includes {
-            Self::flatten(manifest, manifests);
-        }
+    fn store(&self) -> &SRDFGraph {
+        &self.store
+    }
+
+    fn includes(&self) -> Vec<GraphManifest> {
+        self.includes.to_owned()
+    }
+
+    fn entries(&self) -> HashSet<Term> {
+        self.entries.to_owned()
     }
 }

@@ -1,184 +1,115 @@
-use std::collections::HashSet;
+use std::path::Path;
 
-use indoc::formatdoc;
-use oxigraph::{model::Term, store::Store};
-use prefixmap::IriRef;
-use shacl_ast::{
-    node_shape::NodeShape, property_shape::PropertyShape, shape::Shape, target::Target, Schema,
-};
+use clap::ValueEnum;
+use shacl_ast::shape::Shape;
+use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDFSparql};
 
-use crate::{
-    constraints::ConstraintFactory,
-    helper::sparql::select,
-    validate_error::ValidateError::{
-        self, TargetClassBlankNode, TargetClassLiteral, TargetNodeBlankNode,
-    },
-    validation_report::report::ValidationReport,
-};
+use crate::helper::srdf::load_shapes_graph;
+use crate::runner::sparql_runner::SparqlValidatorRunner;
+use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::shape::Validate;
+use crate::store::graph::Graph;
+use crate::store::sparql::Sparql;
+use crate::validate_error::ValidateError;
+use crate::validation_report::report::ValidationReport;
 
-trait Validate {
-    fn validate(&self, store: &Store, report: &mut ValidationReport);
+#[derive(ValueEnum, Copy, Clone, Debug)]
+pub enum Mode {
+    Default,
+    SPARQL,
+}
 
-    fn focus_nodes(
+pub trait Validator<'a, S: SRDFBasic> {
+    fn store(&self) -> &S;
+    fn runner(&self) -> &dyn ValidatorRunner<S>;
+    fn base(&self) -> Option<&'a str>;
+
+    fn validate(
         &self,
-        store: &Store,
-        targets: &[Target],
-    ) -> Result<HashSet<Term>, ValidateError> {
-        let mut ans = HashSet::new();
-        for target in targets.iter().cloned() {
-            match target {
-                Target::TargetNode(node) => self.target_node(store, node, &mut ans)?,
-                Target::TargetClass(class) => self.target_class(store, class, &mut ans)?,
-                Target::TargetSubjectsOf(pred) => self.target_subject_of(store, pred, &mut ans)?,
-                Target::TargetObjectsOf(pred) => self.target_object_of(store, pred, &mut ans)?,
-            }
+        shapes: &Path,
+        shapes_format: RDFFormat,
+    ) -> Result<ValidationReport<S>, ValidateError> {
+        let schema = load_shapes_graph(shapes, shapes_format, self.base())?;
+
+        let mut ans: ValidationReport<S> = ValidationReport::default(); // conformant by default...
+        for (_, shape) in schema.iter() {
+            match shape {
+                Shape::NodeShape(s) => s.validate(self.store(), self.runner(), &mut ans)?,
+                Shape::PropertyShape(s) => s.validate(self.store(), self.runner(), &mut ans)?,
+            };
         }
         Ok(ans)
     }
+}
 
-    fn target_node(
-        &self,
-        store: &Store,
-        node: srdf::Object,
-        focus_nodes: &mut HashSet<Term>,
-    ) -> Result<(), ValidateError> {
-        let node = match &node {
-            srdf::Object::Iri(iri_s) => iri_s.as_named_node().to_string(),
-            srdf::Object::BlankNode(_) => return Err(TargetNodeBlankNode),
-            srdf::Object::Literal(literal) => literal.to_string(),
-        };
-        let query = formatdoc! {"
-                SELECT DISTINCT ?this
-                WHERE {{
-                    BIND ({} AS ?this)
-                }}
-            ",
-            node
-        };
-        focus_nodes.extend(select(store, query)?);
-        Ok(())
-    }
+pub struct GraphValidator<'a> {
+    store: Graph,
+    runner: &'a dyn ValidatorRunner<SRDFGraph>,
+    base: Option<&'a str>,
+}
 
-    fn target_class(
-        &self,
-        store: &Store,
-        class: srdf::Object,
-        focus_nodes: &mut HashSet<Term>,
-    ) -> Result<(), ValidateError> {
-        match class {
-            srdf::Object::Iri(iri) => {
-                let query = formatdoc! {"
-                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-                    SELECT DISTINCT ?this
-                    WHERE {{
-                        ?this rdf:type/rdfs:subClassOf* {} .
-                    }}
-                ", iri.as_named_node()};
-                focus_nodes.extend(select(store, query)?);
-                Ok(())
-            }
-            srdf::Object::BlankNode(_) => Err(TargetClassBlankNode),
-            srdf::Object::Literal(_) => Err(TargetClassLiteral),
-        }
-    }
-
-    fn target_subject_of(
-        &self,
-        store: &Store,
-        predicate: IriRef,
-        focus_nodes: &mut HashSet<Term>,
-    ) -> Result<(), ValidateError> {
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                ?this {} ?any .
-            }}
-        ", predicate};
-        focus_nodes.extend(select(store, query)?);
-        Ok(())
-    }
-
-    fn target_object_of(
-        &self,
-        store: &Store,
-        predicate: IriRef,
-        focus_nodes: &mut HashSet<Term>,
-    ) -> Result<(), ValidateError> {
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                ?any {} ?this .
-            }}
-        ", predicate};
-        focus_nodes.extend(select(store, query)?);
-        Ok(())
+impl<'a> GraphValidator<'a> {
+    pub fn new(
+        data: &Path,
+        data_format: RDFFormat,
+        base: Option<&'a str>,
+        mode: Mode,
+    ) -> Result<Self, ValidateError> {
+        Ok(GraphValidator {
+            store: Graph::new(data, data_format, base)?,
+            runner: match mode {
+                Mode::Default => &DefaultValidatorRunner,
+                Mode::SPARQL => return Err(ValidateError::UnsupportedMode),
+            },
+            base,
+        })
     }
 }
 
-impl Validate for NodeShape {
-    fn validate(&self, store: &Store, report: &mut ValidationReport) {
-        if *self.is_deactivated() {
-            // skipping because it is deactivated
-            return;
-        }
+impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
+    fn store(&self) -> &SRDFGraph {
+        self.store.store()
+    }
 
-        for component in self.components() {
-            let constraint = ConstraintFactory::new_constraint(component);
+    fn runner(&self) -> &dyn ValidatorRunner<SRDFGraph> {
+        self.runner
+    }
 
-            let value_nodes = match self.focus_nodes(store, self.targets()) {
-                Ok(focus_nodes) => focus_nodes,
-                Err(_) => todo!(),
-            };
-
-            // TODO: The let _ assignment has been added to make clippy happy
-            let _ = constraint.evaluate(store, value_nodes, report);
-        }
+    fn base(&self) -> Option<&'a str> {
+        self.base
     }
 }
 
-impl Validate for PropertyShape {
-    fn validate(&self, store: &Store, report: &mut ValidationReport) {
-        if *self.is_deactivated() {
-            return;
-        }
+pub struct SparqlValidator<'a> {
+    store: Sparql,
+    runner: &'a dyn ValidatorRunner<SRDFSparql>,
+    base: Option<&'a str>,
+}
 
-        for component in self.components() {
-            let constraint = ConstraintFactory::new_constraint(component);
-
-            let focus_nodes = match self.focus_nodes(store, self.targets()) {
-                Ok(focus_nodes) => focus_nodes,
-                Err(_) => todo!(),
-            };
-
-            let value_nodes = HashSet::new();
-
-            for _focus_node in focus_nodes {
-                match self.path() {
-                    srdf::SHACLPath::Predicate { pred: _ } => todo!(),
-                    srdf::SHACLPath::Alternative { paths: _ } => todo!(),
-                    srdf::SHACLPath::Sequence { paths: _ } => todo!(),
-                    srdf::SHACLPath::Inverse { path: _ } => todo!(),
-                    srdf::SHACLPath::ZeroOrMore { path: _ } => todo!(),
-                    srdf::SHACLPath::OneOrMore { path: _ } => todo!(),
-                    srdf::SHACLPath::ZeroOrOne { path: _ } => todo!(),
-                }
-            }
-
-            // TODO: The let _ assignment has been added to make clippy happy
-            let _ = constraint.evaluate(store, value_nodes, report);
-        }
+impl<'a> SparqlValidator<'a> {
+    pub fn new(data: &str, mode: Mode) -> Result<Self, ValidateError> {
+        Ok(SparqlValidator {
+            store: Sparql::new(data)?,
+            runner: match mode {
+                Mode::Default => &DefaultValidatorRunner,
+                Mode::SPARQL => &SparqlValidatorRunner,
+            },
+            base: None,
+        })
     }
 }
 
-pub fn validate(store: &Store, shapes_graph: Schema) -> Result<ValidationReport, ValidateError> {
-    let mut ans = ValidationReport::default(); // conformant by default...
-    for (_, shape) in shapes_graph.iter() {
-        match shape {
-            Shape::NodeShape(node_shape) => node_shape.validate(store, &mut ans),
-            Shape::PropertyShape(property_shape) => property_shape.validate(store, &mut ans),
-        };
+impl<'a> Validator<'a, SRDFSparql> for SparqlValidator<'a> {
+    fn store(&self) -> &SRDFSparql {
+        self.store.store()
     }
-    Ok(ans)
+
+    fn runner(&self) -> &dyn ValidatorRunner<SRDFSparql> {
+        self.runner
+    }
+
+    fn base(&self) -> Option<&'a str> {
+        self.base
+    }
 }

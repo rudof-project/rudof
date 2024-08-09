@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use oxigraph::io::RdfFormat as GraphFormat;
+use shacl_validation::validate::Mode;
 use srdf::RDFFormat;
-use std::convert::TryFrom;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
 
@@ -144,6 +143,23 @@ pub enum Command {
         endpoint: Option<String>,
 
         #[arg(
+            long = "max-steps",
+            value_name = "max steps to run",
+            default_value_t = 100
+        )]
+        max_steps: usize,
+
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
@@ -234,6 +250,19 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
 
         #[arg(
             short = 'o',
@@ -505,19 +534,6 @@ impl From<DataFormat> for RDFFormat {
             DataFormat::TriG => RDFFormat::TriG,
             DataFormat::N3 => RDFFormat::N3,
             DataFormat::NQuads => RDFFormat::NQuads,
-        }
-    }
-}
-
-impl TryFrom<DataFormat> for GraphFormat {
-    type Error = &'static str;
-
-    fn try_from(val: DataFormat) -> Result<Self, Self::Error> {
-        match val {
-            DataFormat::Turtle => Ok(GraphFormat::Turtle),
-            DataFormat::NTriples => Ok(GraphFormat::NTriples),
-            DataFormat::RDFXML => Ok(GraphFormat::RdfXml),
-            _ => Err("Not a valid format"),
         }
     }
 }

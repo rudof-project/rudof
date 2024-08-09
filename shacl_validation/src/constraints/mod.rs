@@ -1,161 +1,156 @@
-use core::{
-    cardinality::{MaxCountConstraintComponent, MinCountConstraintComponent},
-    logical::{
-        AndConstraintComponent, NotConstraintComponent, OrConstraintComponent,
-        XoneConstraintComponent,
-    },
-    other::{ClosedConstraintComponent, HasValueConstraintComponent, InConstraintComponent},
-    property_pair::{
-        DisjointConstraintComponent, EqualsConstraintComponent, LessThanConstraintComponent,
-        LessThanOrEqualsConstraintComponent,
-    },
-    shape_based::{NodeConstraintComponent, QualifiedValueShapeConstraintComponent},
-    string_based::{
-        LanguageInConstraintComponent, MaxLengthConstraintComponent, MinLengthConstraintComponent,
-        PatternConstraintComponent, UniqueLangConstraintComponent,
-    },
-    value::{ClassConstraintComponent, DatatypeConstraintComponent, NodeKindConstraintComponent},
-    value_range::{
-        MaxExclusiveConstraintComponent, MaxInclusiveConstraintComponent,
-        MinExclusiveConstraintComponent, MinInclusiveConstraintComponent,
-    },
-};
 use std::collections::HashSet;
 
 use constraint_error::ConstraintError;
-use oxigraph::{model::Term, store::Store};
+use core::cardinality::max_count::MaxCount;
+use core::cardinality::min_count::MinCount;
+use core::logical::and::And;
+use core::logical::not::Not;
+use core::logical::or::Or;
+use core::logical::xone::Xone;
+use core::other::closed::Closed;
+use core::other::has_value::HasValue;
+use core::other::r#in::In;
+use core::property_pair::disjoint::Disjoint;
+use core::property_pair::equals::Equals;
+use core::property_pair::less_than::LessThan;
+use core::property_pair::less_than_or_equals::LessThanOrEquals;
+use core::shape_based::node::Node;
+use core::shape_based::qualified_value_shape::QualifiedValue;
+use core::string_based::language_in::LanguageIn;
+use core::string_based::max_length::MaxLength;
+use core::string_based::min_length::MinLength;
+use core::string_based::pattern::Pattern;
+use core::string_based::unique_lang::UniqueLang;
+use core::value::class::Class;
+use core::value::datatype::Datatype;
+use core::value::node_kind::Nodekind;
+use core::value_range::max_exclusive::MaxExclusive;
+use core::value_range::max_inclusive::MaxInclusive;
+use core::value_range::min_exclusive::MinExclusive;
+use core::value_range::min_inclusive::MinInclusive;
 use shacl_ast::component::Component;
+use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
-use crate::validation_report::{report::ValidationReport, result::ValidationResultBuilder};
+use crate::validation_report::report::ValidationReport;
 
 pub(crate) mod constraint_error;
 pub mod core;
 
-pub trait Evaluate {
+pub(crate) trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
         &self,
-        store: &Store,
-        value_nodes: HashSet<Term>,
-        report: &mut ValidationReport,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<(), ConstraintError>;
-
-    fn make_validation_result(&self, value_node: Option<&Term>, report: &mut ValidationReport) {
-        let mut builder = ValidationResultBuilder::default();
-
-        if let Some(focus_node) = value_node {
-            builder.focus_node(focus_node.to_owned());
-        }
-
-        // let severity = match shape {
-        //     Shape::NodeShape(shape) => shape.severity(),
-        //     Shape::PropertyShape(shape) => shape.severity(),
-        // };
-        // let result_path = match shape {
-        //     Shape::NodeShape(shape) => shape.path(),
-        //     Shape::PropertyShape(shape) => shape.path(),
-        // };
-        // let source_constraint = match shape {
-        //     Shape::NodeShape(shape) => shape.source_constraint(),
-        //     Shape::PropertyShape(shape) => shape.source_constraint(),
-        // };
-        // let source_constraint_component = match shape {
-        //     Shape::NodeShape(shape) => shape.source_constraint_component(),
-        //     Shape::PropertyShape(shape) => shape.source_constraint_component(),
-        // };
-        // let value = match shape {
-        //     Shape::NodeShape(shape) => shape.value(),
-        //     Shape::PropertyShape(shape) => shape.value(),
-        // };
-
-        let result = builder.build();
-        report.add_result(result);
-    }
 }
 
-pub struct ConstraintFactory;
+pub trait DefaultConstraintComponent<S: SRDF> {
+    fn evaluate_default(
+        &self,
+        store: &S,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError>;
+}
 
-impl ConstraintFactory {
-    pub fn new_constraint(component: &Component) -> Box<dyn Evaluate> {
-        match component {
-            Component::Class(node) => Box::new(ClassConstraintComponent::new(node.to_owned())),
-            Component::Datatype(iri_ref) => {
-                Box::new(DatatypeConstraintComponent::new(iri_ref.to_owned()))
-            }
-            Component::NodeKind(node_kind) => {
-                Box::new(NodeKindConstraintComponent::new(node_kind.to_owned()))
-            }
-            Component::MinCount(min_count) => {
-                Box::new(MinCountConstraintComponent::new(min_count.to_owned()))
-            }
-            Component::MaxCount(max_count) => {
-                Box::new(MaxCountConstraintComponent::new(max_count.to_owned()))
-            }
-            Component::MinExclusive(literal) => {
-                Box::new(MinExclusiveConstraintComponent::new(literal.to_owned()))
-            }
-            Component::MaxExclusive(literal) => {
-                Box::new(MaxExclusiveConstraintComponent::new(literal.to_owned()))
-            }
-            Component::MinInclusive(literal) => {
-                Box::new(MinInclusiveConstraintComponent::new(literal.to_owned()))
-            }
-            Component::MaxInclusive(literal) => {
-                Box::new(MaxInclusiveConstraintComponent::new(literal.to_owned()))
-            }
-            Component::MinLength(min_length) => {
-                Box::new(MinLengthConstraintComponent::new(min_length.to_owned()))
-            }
-            Component::MaxLength(max_lenth) => {
-                Box::new(MaxLengthConstraintComponent::new(max_lenth.to_owned()))
-            }
-            Component::Pattern { pattern, flags } => Box::new(PatternConstraintComponent::new(
-                pattern.to_owned(),
-                flags.to_owned(),
-            )),
-            Component::UniqueLang(unique_lang) => {
-                Box::new(UniqueLangConstraintComponent::new(unique_lang.to_owned()))
-            }
-            Component::LanguageIn { langs } => {
-                Box::new(LanguageInConstraintComponent::new(langs.to_owned()))
-            }
-            Component::Equals(iri_ref) => {
-                Box::new(EqualsConstraintComponent::new(iri_ref.to_owned()))
-            }
-            Component::Disjoint(iri_ref) => {
-                Box::new(DisjointConstraintComponent::new(iri_ref.to_owned()))
-            }
-            Component::LessThan(iri_ref) => {
-                Box::new(LessThanConstraintComponent::new(iri_ref.to_owned()))
-            }
-            Component::LessThanOrEquals(iri_ref) => {
-                Box::new(LessThanOrEqualsConstraintComponent::new(iri_ref.to_owned()))
-            }
-            Component::Or { shapes } => Box::new(OrConstraintComponent::new(shapes.to_owned())),
-            Component::And { shapes } => Box::new(AndConstraintComponent::new(shapes.to_owned())),
-            Component::Not { shape } => Box::new(NotConstraintComponent::new(shape.to_owned())),
-            Component::Xone { shapes } => Box::new(XoneConstraintComponent::new(shapes.to_owned())),
+pub trait SparqlConstraintComponent<S: QuerySRDF> {
+    fn evaluate_sparql(
+        &self,
+        store: &S,
+        value_nodes: HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<(), ConstraintError>;
+}
+
+impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {
+    fn from(value: &Component) -> Self {
+        match value.to_owned() {
+            Component::Class(node) => Box::new(Class::new(node)),
+            Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
+            Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),
+            Component::MinCount(min_count) => Box::new(MinCount::new(min_count)),
+            Component::MaxCount(max_count) => Box::new(MaxCount::new(max_count)),
+            Component::MinExclusive(literal) => Box::new(MinExclusive::new(literal)),
+            Component::MaxExclusive(literal) => Box::new(MaxExclusive::new(literal)),
+            Component::MinInclusive(literal) => Box::new(MinInclusive::new(literal)),
+            Component::MaxInclusive(literal) => Box::new(MaxInclusive::new(literal)),
+            Component::MinLength(min_length) => Box::new(MinLength::new(min_length)),
+            Component::MaxLength(max_lenth) => Box::new(MaxLength::new(max_lenth)),
+            Component::Pattern { pattern, flags } => Box::new(Pattern::new(pattern, flags)),
+            Component::UniqueLang(lang) => Box::new(UniqueLang::new(lang)),
+            Component::LanguageIn { langs } => Box::new(LanguageIn::new(langs)),
+            Component::Equals(iri_ref) => Box::new(Equals::new(iri_ref)),
+            Component::Disjoint(iri_ref) => Box::new(Disjoint::new(iri_ref)),
+            Component::LessThan(iri_ref) => Box::new(LessThan::new(iri_ref)),
+            Component::LessThanOrEquals(iri) => Box::new(LessThanOrEquals::new(iri)),
+            Component::Or { shapes } => Box::new(Or::new(shapes)),
+            Component::And { shapes } => Box::new(And::new(shapes)),
+            Component::Not { shape } => Box::new(Not::new(shape)),
+            Component::Xone { shapes } => Box::new(Xone::new(shapes)),
             Component::Closed {
                 is_closed,
                 ignored_properties,
-            } => Box::new(ClosedConstraintComponent::new(
-                is_closed.to_owned(),
-                ignored_properties.to_owned(),
-            )),
-            Component::Node { shape } => Box::new(NodeConstraintComponent::new(shape.to_owned())),
-            Component::HasValue { value } => {
-                Box::new(HasValueConstraintComponent::new(value.to_owned()))
-            }
-            Component::In { values } => Box::new(InConstraintComponent::new(values.to_owned())),
+            } => Box::new(Closed::new(is_closed, ignored_properties)),
+            Component::Node { shape } => Box::new(Node::new(shape)),
+            Component::HasValue { value } => Box::new(HasValue::new(value)),
+            Component::In { values } => Box::new(In::new(values)),
             Component::QualifiedValueShape {
                 shape,
                 qualified_min_count,
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
-            } => Box::new(QualifiedValueShapeConstraintComponent::new(
-                shape.to_owned(),
-                qualified_min_count.to_owned(),
-                qualified_max_count.to_owned(),
-                qualified_value_shapes_disjoint.to_owned(),
+            } => Box::new(QualifiedValue::new(
+                shape,
+                qualified_min_count,
+                qualified_max_count,
+                qualified_value_shapes_disjoint,
+            )),
+        }
+    }
+}
+
+impl<S: QuerySRDF + 'static> From<&Component> for Box<dyn SparqlConstraintComponent<S>> {
+    fn from(value: &Component) -> Self {
+        match value.to_owned() {
+            Component::Class(node) => Box::new(Class::new(node)),
+            Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
+            Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),
+            Component::MinCount(min_count) => Box::new(MinCount::new(min_count)),
+            Component::MaxCount(max_count) => Box::new(MaxCount::new(max_count)),
+            Component::MinExclusive(literal) => Box::new(MinExclusive::new(literal)),
+            Component::MaxExclusive(literal) => Box::new(MaxExclusive::new(literal)),
+            Component::MinInclusive(literal) => Box::new(MinInclusive::new(literal)),
+            Component::MaxInclusive(literal) => Box::new(MaxInclusive::new(literal)),
+            Component::MinLength(min_length) => Box::new(MinLength::new(min_length)),
+            Component::MaxLength(max_lenth) => Box::new(MaxLength::new(max_lenth)),
+            Component::Pattern { pattern, flags } => Box::new(Pattern::new(pattern, flags)),
+            Component::UniqueLang(lang) => Box::new(UniqueLang::new(lang)),
+            Component::LanguageIn { langs } => Box::new(LanguageIn::new(langs)),
+            Component::Equals(iri_ref) => Box::new(Equals::new(iri_ref)),
+            Component::Disjoint(iri_ref) => Box::new(Disjoint::new(iri_ref)),
+            Component::LessThan(iri_ref) => Box::new(LessThan::new(iri_ref)),
+            Component::LessThanOrEquals(iri) => Box::new(LessThanOrEquals::new(iri)),
+            Component::Or { shapes } => Box::new(Or::new(shapes)),
+            Component::And { shapes } => Box::new(And::new(shapes)),
+            Component::Not { shape } => Box::new(Not::new(shape)),
+            Component::Xone { shapes } => Box::new(Xone::new(shapes)),
+            Component::Closed {
+                is_closed,
+                ignored_properties,
+            } => Box::new(Closed::new(is_closed, ignored_properties)),
+            Component::Node { shape } => Box::new(Node::new(shape)),
+            Component::HasValue { value } => Box::new(HasValue::new(value)),
+            Component::In { values } => Box::new(In::new(values)),
+            Component::QualifiedValueShape {
+                shape,
+                qualified_min_count,
+                qualified_max_count,
+                qualified_value_shapes_disjoint,
+            } => Box::new(QualifiedValue::new(
+                shape,
+                qualified_min_count,
+                qualified_max_count,
+                qualified_value_shapes_disjoint,
             )),
         }
     }
