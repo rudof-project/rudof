@@ -27,32 +27,31 @@ pub trait ValidatorRunner<S: SRDFBasic> {
     ) -> Result<bool>;
 
     fn focus_nodes(&self, store: &S, shape: &S::Term, targets: &[Target]) -> Result<FocusNode<S>> {
-        let mut ans = FocusNode::<S>::new();
+        let mut target_nodes = FocusNode::<S>::new();
         for target in targets.iter() {
             match target {
                 Target::TargetNode(node) => {
                     let node = &S::object_as_term(node);
-                    self.target_node(store, node, &mut ans)?
+                    self.target_node(store, node, &mut target_nodes)?
                 }
                 Target::TargetClass(class) => {
                     let class = &S::object_as_term(class);
-                    self.target_class(store, class, &mut ans)?
+                    self.target_class(store, class, &mut target_nodes)?
                 }
                 Target::TargetSubjectsOf(predicate) => {
                     let predicate = S::iri_s2iri(&predicate.get_iri()?);
-                    self.target_subject_of(store, &predicate, &mut ans)?
+                    self.target_subject_of(store, &predicate, &mut target_nodes)?
                 }
                 Target::TargetObjectsOf(predicate) => {
                     let predicate = S::iri_s2iri(&predicate.get_iri()?);
-                    self.target_object_of(store, &predicate, &mut ans)?
+                    self.target_object_of(store, &predicate, &mut target_nodes)?
                 }
             }
         }
         // we have to also look for implicit class targets, which are a "special"
         // kind of target declarations...
-        self.implicit_target_class(store, shape, &mut ans)?;
-        println!("{:?}", ans);
-        Ok(ans)
+        self.implicit_target_class(store, shape, &mut target_nodes)?;
+        Ok(target_nodes)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

@@ -121,7 +121,18 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         subclasses.insert(S::iri_s2term(&RDFS_CLASS));
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
-            focus_nodes.insert(shape.to_owned());
+            focus_nodes.extend(get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape)?); // the actual class
+
+            let subclass_targets = // transitive classes (i.e subClassOf)
+                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape)?
+                    .into_iter()
+                    .flat_map(|subclass| {
+                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
+                    })
+                    .flatten()
+                    .collect::<HashSet<_>>();
+
+            focus_nodes.extend(subclass_targets);
         }
 
         Ok(())

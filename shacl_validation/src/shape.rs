@@ -106,7 +106,7 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
         let mut ans = true; // validation status of the current Shape
         let mut value_nodes = HashSet::new();
         let focus_nodes =
-            runner.focus_nodes(store, &S::object_as_term(&self.id()), self.targets())?;
+            runner.focus_nodes(store, &S::object_as_term(self.id()), self.targets())?;
         for focus_node in match targets {
             Some(focus_nodes) => focus_nodes,
             None => &focus_nodes,

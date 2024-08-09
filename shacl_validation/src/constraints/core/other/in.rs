@@ -17,7 +17,6 @@ use crate::validation_report::report::ValidationReport;
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct In<S: SRDFBasic> {
     values: Vec<S::Term>,
 }
