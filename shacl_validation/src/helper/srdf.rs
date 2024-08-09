@@ -36,6 +36,20 @@ pub(crate) fn get_objects_for<S: SRDF>(
     }
 }
 
+pub(crate) fn get_subjects_for<S: SRDF>(
+    store: &S,
+    predicate: &S::IRI,
+    object: &S::Term,
+) -> Result<HashSet<S::Term>, SRDFError> {
+    match store.subjects_with_predicate_object(predicate, object) {
+        Ok(ans) => Ok(ans
+            .into_iter()
+            .map(|subject| S::subject_as_term(&subject))
+            .collect()),
+        Err(_) => Err(SRDFError::Srdf),
+    }
+}
+
 pub fn load_shapes_graph(
     path: &Path,
     rdf_format: RDFFormat,

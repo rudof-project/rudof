@@ -12,6 +12,7 @@ pub const RDF_REST_STR: &str = concatcp!(RDF, "rest");
 pub const RDF_NIL_STR: &str = concatcp!(RDF, "nil");
 pub const RDFS_LABEL_STR: &str = concatcp!(RDFS, "label");
 pub const RDFS_SUBCLASS_OF_STR: &str = concatcp!(RDFS, "subClassOf");
+pub const RDFS_CLASS_STR: &str = concatcp!(RDFS, "Class");
 pub const XSD_BOOLEAN_STR: &str = concatcp!(XSD, "boolean");
 pub const XSD_INTEGER_STR: &str = concatcp!(XSD, "integer");
 pub const XSD_DECIMAL_STR: &str = concatcp!(XSD, "decimal");
@@ -24,6 +25,7 @@ lazy_static! {
     pub static ref RDF_NIL: IriS = IriS::new_unchecked(RDF_NIL_STR);
     pub static ref RDFS_LABEL: IriS = IriS::new_unchecked(RDFS_LABEL_STR);
     pub static ref RDFS_SUBCLASS_OF: IriS = IriS::new_unchecked(RDFS_SUBCLASS_OF_STR);
+    pub static ref RDFS_CLASS: IriS = IriS::new_unchecked(RDFS_CLASS_STR);
     pub static ref XSD_BOOLEAN: IriS = IriS::new_unchecked(XSD_BOOLEAN_STR);
     pub static ref XSD_INTEGER: IriS = IriS::new_unchecked(XSD_INTEGER_STR);
     pub static ref XSD_DECIMAL: IriS = IriS::new_unchecked(XSD_DECIMAL_STR);

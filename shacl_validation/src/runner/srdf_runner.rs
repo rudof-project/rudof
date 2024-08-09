@@ -5,10 +5,14 @@ use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::Schema;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
+use srdf::RDFS_CLASS;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
 use srdf::SRDF;
 
 use crate::constraints::DefaultConstraintComponent;
 use crate::helper::srdf::get_objects_for;
+use crate::helper::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
@@ -99,6 +103,27 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
             .map(|triple| triple.obj())
             .collect::<HashSet<_>>();
         focus_nodes.extend(ans);
+        Ok(())
+    }
+
+    fn implicit_target_class(
+        &self,
+        store: &S,
+        shape: &S::Term,
+        focus_nodes: &mut FocusNode<S>,
+    ) -> Result<()> {
+        let ctypes = get_objects_for(store, shape, &S::iri_s2iri(&RDF_TYPE))?;
+        let mut subclasses = get_subjects_for(
+            store,
+            &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+            &S::iri_s2term(&RDFS_CLASS),
+        )?;
+        subclasses.insert(S::iri_s2term(&RDFS_CLASS));
+
+        if ctypes.iter().any(|t| subclasses.contains(t)) {
+            focus_nodes.insert(shape.to_owned());
+        }
+
         Ok(())
     }
 

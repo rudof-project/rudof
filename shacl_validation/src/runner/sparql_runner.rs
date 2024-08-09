@@ -103,6 +103,15 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         Ok(())
     }
 
+    fn implicit_target_class(
+        &self,
+        _store: &S,
+        _shape: &S::Term,
+        _focus_nodes: &mut FocusNode<S>,
+    ) -> Result<()> {
+        todo!()
+    }
+
     fn predicate(
         &self,
         _store: &S,

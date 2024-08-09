@@ -54,7 +54,8 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ValidateError> {
         let mut ans = true; // validation status of the current Shape
-        let focus_nodes = runner.focus_nodes(store, self.targets())?;
+        let focus_nodes =
+            runner.focus_nodes(store, &S::object_as_term(&self.id()), self.targets())?;
         let value_nodes = match value_nodes {
             Some(value_nodes) => value_nodes,
             None => &focus_nodes,
@@ -104,7 +105,8 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
     ) -> Result<bool, ValidateError> {
         let mut ans = true; // validation status of the current Shape
         let mut value_nodes = HashSet::new();
-        let focus_nodes = runner.focus_nodes(store, self.targets())?;
+        let focus_nodes =
+            runner.focus_nodes(store, &S::object_as_term(&self.id()), self.targets())?;
         for focus_node in match targets {
             Some(focus_nodes) => focus_nodes,
             None => &focus_nodes,

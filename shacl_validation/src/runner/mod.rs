@@ -26,7 +26,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         report: &mut ValidationReport<S>,
     ) -> Result<bool>;
 
-    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNode<S>> {
+    fn focus_nodes(&self, store: &S, shape: &S::Term, targets: &[Target]) -> Result<FocusNode<S>> {
         let mut ans = FocusNode::<S>::new();
         for target in targets.iter() {
             match target {
@@ -48,6 +48,10 @@ pub trait ValidatorRunner<S: SRDFBasic> {
                 }
             }
         }
+        // we have to also look for implicit class targets, which are a "special"
+        // kind of target declarations...
+        self.implicit_target_class(store, shape, &mut ans)?;
+        println!("{:?}", ans);
         Ok(ans)
     }
 
@@ -73,6 +77,13 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
+    ) -> Result<()>;
+
+    fn implicit_target_class(
+        &self,
+        store: &S,
+        shape: &S::Term,
         focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
