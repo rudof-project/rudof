@@ -426,7 +426,7 @@ fn run_validate_shacl(
             mode,
         ) {
             Ok(validator) => validator,
-            Err(_) => bail!("Error during the creation of the Graph"),
+            Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let result = match shacl_validation::validate::Validator::validate(
             &validator,
@@ -442,14 +442,14 @@ fn run_validate_shacl(
             },
         ) {
             Ok(result) => result,
-            Err(_) => bail!("Error validating the graph"),
+            Err(e) => bail!("Error validating the graph: {e}"),
         };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
         let validator = match SparqlValidator::new(endpoint, mode) {
             Ok(validator) => validator,
-            Err(_) => bail!("Error during the creation of the Graph"),
+            Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let result = match shacl_validation::validate::Validator::validate(
             &validator,
@@ -465,7 +465,7 @@ fn run_validate_shacl(
             },
         ) {
             Ok(result) => result,
-            Err(_) => bail!("Error validating the graph"),
+            Err(e) => bail!("Error validating the graph: {e}"),
         };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
