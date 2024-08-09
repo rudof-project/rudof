@@ -6,10 +6,11 @@ use srdf::{QuerySRDF, SRDF};
 use srdf::{RDFNode, SRDFBasic};
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::constraints::{ConstraintComponent, DefaultConstraintComponent};
 use crate::runner::sparql_runner::SparqlValidatorRunner;
 use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:in specifies the condition that each value node is a member of a provided
@@ -35,12 +36,12 @@ impl<S: SRDFBasic> In<S> {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for In<S> {
-    fn evaluate_default(
+impl<S: SRDFBasic> ConstraintComponent<S> for In<S> {
+    fn evaluate(
         &self,
-        _store: &S,
-        _schema: &Schema,
-        _: &DefaultValidatorRunner,
+        _: &S,
+        _: &Schema,
+        _: &dyn ValidatorRunner<S>,
         value_nodes: &HashSet<S::Term>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
@@ -57,15 +58,28 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for In<S> {
     }
 }
 
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for In<S> {
+    fn evaluate_default(
+        &self,
+        store: &S,
+        schema: &Schema,
+        runner: &DefaultValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(store, schema, runner, value_nodes, report)
+    }
+}
+
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for In<S> {
     fn evaluate_sparql(
         &self,
-        _store: &S,
-        _schema: &Schema,
-        _: &SparqlValidatorRunner,
-        _value_nodes: &HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
+        store: &S,
+        schema: &Schema,
+        runner: &SparqlValidatorRunner,
+        value_nodes: &HashSet<S::Term>,
+        report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        todo!()
+        self.evaluate(store, schema, runner, value_nodes, report)
     }
 }
