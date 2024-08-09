@@ -2,7 +2,14 @@
 
 ## Current changes without release yet
 
-## [0.1.4] - 2024-07-30
+## [0.1.6] - 2024-08-09
+
+- Added more features to SHACL validation: #94
+- Added more control about syntax highlighting on terminal:
+  - Avoiding to include colors when the output goes to a file in ShEx generation options
+- Added config parameter to some of the options in the Command line tool so the user can configure the behaviour: validate, convert, dctap, node
+
+## [0.1.5] - 2024-07-30
 
 - Added options in command line to pass config files in YAML
 - Repaired bug in DCTAP resolution of IRIs
