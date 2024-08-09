@@ -51,6 +51,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Information about ShEx schemas
@@ -86,6 +93,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// RDF Validation using ShEx or SHACL
@@ -165,6 +179,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// RDF Validation using ShEx schemas
@@ -225,6 +246,13 @@ pub enum Command {
         /// Config file path, if unset it assumes default config
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
         config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// RDF Validation using SHACL shapes
@@ -270,6 +298,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Information about RDF data
@@ -291,6 +326,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Information about RDF nodes which are part of RDF Graphs
@@ -335,6 +377,13 @@ pub enum Command {
 
         #[arg(short = 'c', long = "config", value_name = "Path to config file")]
         config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Information about SHACL shapes
@@ -364,6 +413,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Information and processing of DCTAP files
@@ -398,6 +454,13 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
     /// Conversion between different Data modeling technologies
@@ -408,6 +471,13 @@ pub enum Command {
 
         #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
         input_mode: InputConvertMode,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
 
         #[arg(short = 's', long = "source-file", value_name = "Source file name")]
         file: PathBuf,

@@ -34,7 +34,7 @@ use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter}
 use shex_validation::{Validator, ValidatorConfig};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{SRDFSparql, SRDF};
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
@@ -82,13 +82,15 @@ fn main() -> Result<()> {
             output,
             show_time,
             show_statistics,
-        }) => run_schema(
+            force_overwrite,
+        }) => run_shex(
             schema,
             schema_format,
             result_schema_format,
             output,
             *show_time,
             *show_statistics,
+            *force_overwrite,
         ),
         Some(Command::Validate {
             validation_mode,
@@ -104,6 +106,7 @@ fn main() -> Result<()> {
             max_steps,
             mode,
             output,
+            force_overwrite,
         }) => match validation_mode {
             ValidationMode::ShEx => run_validate_shex(
                 schema,
@@ -118,6 +121,7 @@ fn main() -> Result<()> {
                 cli.debug,
                 output,
                 &ValidatorConfig::default(),
+                *force_overwrite,
             ),
             ValidationMode::SHACL => {
                 let shacl_format = match schema_format {
@@ -144,6 +148,7 @@ fn main() -> Result<()> {
                     *mode,
                     cli.debug,
                     output,
+                    *force_overwrite,
                 )
             }
         },
@@ -159,6 +164,7 @@ fn main() -> Result<()> {
             shapemap_format,
             output,
             config,
+            force_overwrite,
         }) => {
             let config = match config {
                 Some(config_path) => match ValidatorConfig::from_path(config_path) {
@@ -183,6 +189,7 @@ fn main() -> Result<()> {
                 cli.debug,
                 output,
                 &config,
+                *force_overwrite,
             )
         }
         Some(Command::ShaclValidate {
@@ -193,6 +200,7 @@ fn main() -> Result<()> {
             endpoint,
             mode,
             output,
+            force_overwrite,
         }) => run_validate_shacl(
             shapes,
             shapes_format,
@@ -202,12 +210,14 @@ fn main() -> Result<()> {
             *mode,
             cli.debug,
             output,
+            *force_overwrite,
         ),
         Some(Command::Data {
             data,
             data_format,
             output,
-        }) => run_data(data, data_format, cli.debug, output),
+            force_overwrite,
+        }) => run_data(data, data_format, cli.debug, output, *force_overwrite),
         Some(Command::Node {
             data,
             data_format,
@@ -218,6 +228,7 @@ fn main() -> Result<()> {
             show_hyperlinks,
             output,
             config,
+            force_overwrite,
         }) => run_node(
             data,
             data_format,
@@ -229,26 +240,49 @@ fn main() -> Result<()> {
             cli.debug,
             output,
             config,
+            *force_overwrite,
         ),
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
             result_shapemap_format,
             output,
-        }) => run_shapemap(shapemap, shapemap_format, result_shapemap_format, output),
+            force_overwrite,
+        }) => run_shapemap(
+            shapemap,
+            shapemap_format,
+            result_shapemap_format,
+            output,
+            *force_overwrite,
+        ),
         Some(Command::Shacl {
             shapes,
             shapes_format,
             result_shapes_format,
             output,
-        }) => run_shacl(shapes, shapes_format, result_shapes_format, output),
+            force_overwrite,
+        }) => run_shacl(
+            shapes,
+            shapes_format,
+            result_shapes_format,
+            output,
+            *force_overwrite,
+        ),
         Some(Command::DCTap {
             file,
             format,
             result_format,
             config,
             output,
-        }) => run_dctap(file, format, result_format, output, config),
+            force_overwrite,
+        }) => run_dctap(
+            file,
+            format,
+            result_format,
+            output,
+            config,
+            *force_overwrite,
+        ),
         Some(Command::Convert {
             file,
             format,
@@ -258,6 +292,7 @@ fn main() -> Result<()> {
             output,
             output_mode,
             target_folder,
+            force_overwrite,
             config,
         }) => run_convert(
             file,
@@ -269,6 +304,7 @@ fn main() -> Result<()> {
             output_mode,
             target_folder,
             config,
+            *force_overwrite,
         ),
         None => {
             println!("Command not specified");
@@ -277,16 +313,17 @@ fn main() -> Result<()> {
     }
 }
 
-fn run_schema(
+fn run_shex(
     schema_path: &Path,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
     show_time: bool,
     show_statistics: bool,
+    force_overwrite: bool,
 ) -> Result<()> {
     let begin = Instant::now();
-    let (writer, color) = get_writer(output)?;
+    let (writer, color) = get_writer(output, force_overwrite)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
@@ -348,8 +385,9 @@ fn run_validate_shex(
     debug: u8,
     output: &Option<PathBuf>,
     config: &ValidatorConfig,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let schema_json = parse_schema(schema_path, schema_format)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
@@ -409,8 +447,9 @@ fn run_validate_shacl(
     mode: Mode,
     _debug: u8,
     output: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     if let Some(data) = data {
         let validator = match GraphValidator::new(
             data,
@@ -479,8 +518,9 @@ fn run_shacl(
     shapes_format: &ShaclFormat,
     result_shapes_format: &ShaclFormat,
     output: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
@@ -503,8 +543,9 @@ fn run_dctap(
     result_format: &DCTapResultFormat,
     output: &Option<PathBuf>,
     config: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let tap_config = match config {
         Some(config_path) => TapConfig::from_path(config_path),
         None => Ok(TapConfig::default()),
@@ -535,6 +576,7 @@ fn run_convert(
     output_mode: &OutputConvertMode,
     target_folder: &Option<PathBuf>,
     config: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
     // let mut writer = get_writer(output)?;
     let converter_config = match config {
@@ -543,7 +585,7 @@ fn run_convert(
     }?;
     match (input_mode, output_mode) {
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input_path, format, output, result_format, &converter_config)
+            run_tap2shex(input_path, format, output, result_format, &converter_config, force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
@@ -553,10 +595,10 @@ fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config())
+            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config())
+            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -569,7 +611,7 @@ fn run_convert(
             }
         }
         (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input_path, format, output, result_format, &converter_config)
+            run_tap2uml(input_path, format, output, result_format, &converter_config, force_overwrite)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -593,6 +635,7 @@ fn run_shex2uml(
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ShEx2UmlConfig,
+    force_overwrite: bool,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
@@ -601,7 +644,7 @@ fn run_shex2uml(
     let schema = parse_schema(input_path, &schema_format)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     generate_uml_output(converter, &mut writer, result_format)?;
     Ok(())
 }
@@ -701,6 +744,7 @@ fn run_shex2sparql(
     output: &Option<PathBuf>,
     _result_format: &OutputConvertFormat,
     config: &ShEx2SparqlConfig,
+    force_overwrite: bool,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
@@ -709,7 +753,7 @@ fn run_shex2sparql(
     let schema = parse_schema(input_path, &schema_format)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     write!(writer, "{}", sparql)?;
     Ok(())
 }
@@ -720,6 +764,7 @@ fn run_tap2shex(
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ConverterConfig,
+    force_overwrite: bool,
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
@@ -735,7 +780,7 @@ fn run_tap2shex(
         OutputConvertFormat::Turtle => Ok(ShExFormat::Turtle),
         _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
     }?;
-    let (writer, color) = get_writer(output)?;
+    let (writer, color) = get_writer(output, force_overwrite)?;
     show_schema(&shex, &result_schema_format, writer, color)?;
     Ok(())
 }
@@ -746,6 +791,7 @@ fn run_tap2uml(
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &ConverterConfig,
+    force_overwrite: bool,
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
@@ -756,7 +802,7 @@ fn run_tap2uml(
     let shex = converter_shex.convert(&dctap)?;
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     converter_uml.as_plantuml(&mut writer)?;
     generate_uml_output(converter_uml, &mut writer, result_format)?;
     Ok(())
@@ -768,7 +814,10 @@ enum ColorSupport {
     WithColor,
 }
 
-fn get_writer(output: &Option<PathBuf>) -> Result<(Box<dyn Write>, ColorSupport)> {
+fn get_writer(
+    output: &Option<PathBuf>,
+    force_overwrite: bool,
+) -> Result<(Box<dyn Write>, ColorSupport)> {
     match output {
         None => {
             let stdout = io::stdout();
@@ -780,7 +829,15 @@ fn get_writer(output: &Option<PathBuf>) -> Result<(Box<dyn Write>, ColorSupport)
             Ok((Box::new(handle), color_support))
         }
         Some(path) => {
-            let file = File::create(path)?;
+            let file = if Path::exists(path) {
+                if force_overwrite {
+                    OpenOptions::new().write(true).open(path)
+                } else {
+                    bail!("File {} already exists. If you want to overwrite it, use the `force-overwrite` option", path.display());
+                }
+            } else {
+                File::create(path)
+            }?;
             let writer = BufWriter::new(file);
             Ok((Box::new(writer), ColorSupport::NoColor))
         }
@@ -841,8 +898,9 @@ fn run_node(
     debug: u8,
     output: &Option<PathBuf>,
     _config: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, endpoint, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
@@ -966,8 +1024,9 @@ fn run_shapemap(
     shapemap_format: &ShapeMapFormat,
     result_format: &ShapeMapFormat,
     output: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let shapemap = parse_shapemap(shapemap_path, shapemap_format)?;
     match result_format {
         ShapeMapFormat::Compact => {
@@ -1011,8 +1070,9 @@ fn run_data(
     data_format: &DataFormat,
     _debug: u8,
     output: &Option<PathBuf>,
+    force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = parse_data(data, data_format)?;
     writeln!(writer, "Data\n{data:?}\n")?;
     Ok(())
