@@ -3,7 +3,7 @@ use iri_s::IriS;
 use lazy_static::lazy_static;
 
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
-pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "blanknode");
+pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");
 pub const SH_BLANK_NODE_OR_IRI_STR: &str = concatcp!(SH_STR, "BlankNodeOrIRI");
 pub const SH_BLANK_NODE_OR_LITERAL_STR: &str = concatcp!(SH_STR, "BlankNodeOrLiteral");
 pub const SH_INFO_STR: &str = concatcp!(SH_STR, "Info");

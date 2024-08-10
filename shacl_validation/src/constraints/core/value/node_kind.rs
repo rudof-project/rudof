@@ -29,12 +29,43 @@ impl Nodekind {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
     fn evaluate_default(
         &self,
-        _executor: &DefaultExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
+        _: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
+        report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                let is_valid = match (
+                    S::term_is_bnode(value_node),
+                    S::term_is_iri(value_node),
+                    S::term_is_literal(value_node),
+                ) {
+                    (true, false, false) => matches!(
+                        self.node_kind,
+                        NodeKind::BlankNode
+                            | NodeKind::BlankNodeOrIri
+                            | NodeKind::BlankNodeOrLiteral
+                    ),
+                    (false, true, false) => matches!(
+                        self.node_kind,
+                        NodeKind::Iri | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrIri
+                    ),
+                    (false, false, true) => matches!(
+                        self.node_kind,
+                        NodeKind::Literal | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrLiteral
+                    ),
+                    _ => false,
+                };
+
+                if !is_valid {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                }
+            }
+        }
+        Ok(ans)
     }
 }
 

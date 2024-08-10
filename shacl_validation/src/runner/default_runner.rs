@@ -39,7 +39,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     ) -> Result<()> {
         if S::term_as_iri(class).is_some() {
             let subjects =
-                match store.subjects_with_predicate_object(&S::iri_s2iri(&srdf::RDF_TYPE), class) {
+                match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
                     Ok(subjects) => subjects,
                     Err(_) => return Err(ValidateError::SRDF),
                 };
