@@ -25,7 +25,7 @@ pub trait Validate<S: SRDFBasic> {
     fn check_shape(
         &self,
         executor: &dyn SHACLExecutor<S>,
-        value_nodes: Option<&ValueNode<S>>,
+        focus_nodes: Option<&FocusNode<S>>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ValidateError>;
 }
@@ -46,28 +46,25 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
     fn check_shape(
         &self,
         executor: &dyn SHACLExecutor<S>,
-        value_nodes: Option<&ValueNode<S>>,
+        focus_nodes: Option<&FocusNode<S>>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ValidateError> {
         let mut ans = true; // validation status of the current Shape
-        let focus_nodes = executor.runner().focus_nodes(
-            executor.store(),
-            &S::object_as_term(&self.id()),
-            self.targets(),
-        )?;
-        let value_nodes = match value_nodes {
-            Some(value_nodes) => value_nodes.to_owned(),
-            None => {
-                let mut new_value_nodes = ValueNode::<S>::new();
-                for focus_node in focus_nodes {
-                    new_value_nodes.insert(
-                        focus_node.to_owned(),
-                        vec![focus_node].into_iter().collect(),
-                    );
-                }
-                new_value_nodes
-            }
+        let focus_nodes = match focus_nodes {
+            Some(focus_nodes) => focus_nodes.to_owned(),
+            None => executor.runner().focus_nodes(
+                executor.store(),
+                &S::object_as_term(&self.id()),
+                self.targets(),
+            )?,
         };
+        let mut value_nodes = ValueNode::<S>::new();
+        for focus_node in &focus_nodes {
+            value_nodes.insert(
+                focus_node.to_owned(),
+                vec![focus_node.to_owned()].into_iter().collect(),
+            );
+        }
         // we validate the components defined in the current Shape...
         for component in self.components() {
             ans = executor.evaluate(
@@ -83,7 +80,7 @@ impl<S: SRDFBasic> Validate<S> for NodeShape {
         {
             ans = match shape {
                 Shape::NodeShape(_) => todo!(),
-                Shape::PropertyShape(ps) => ps.check_shape(executor, Some(&value_nodes), report)?,
+                Shape::PropertyShape(ps) => ps.check_shape(executor, Some(&focus_nodes), report)?,
             }
         }
         Ok(ans)
@@ -106,27 +103,24 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
     fn check_shape(
         &self,
         executor: &dyn SHACLExecutor<S>,
-        value_nodes: Option<&ValueNode<S>>,
+        focus_nodes: Option<&FocusNode<S>>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ValidateError> {
         let mut ans = true; // validation status of the current Shape
-        let value_nodes = match value_nodes {
-            Some(value_nodes) => value_nodes.to_owned(),
-            None => {
-                let mut value_nodes = ValueNode::<S>::new();
-                let focus_nodes = executor.runner().focus_nodes(
-                    executor.store(),
-                    &S::object_as_term(self.id()),
-                    self.targets(),
-                )?;
-                for focus_node in &focus_nodes {
-                    executor
-                        .runner()
-                        .path(executor.store(), self, focus_node, &mut value_nodes)?;
-                }
-                value_nodes
-            }
+        let focus_nodes = match focus_nodes {
+            Some(focus_nodes) => focus_nodes.to_owned(),
+            None => executor.runner().focus_nodes(
+                executor.store(),
+                &S::object_as_term(self.id()),
+                self.targets(),
+            )?,
         };
+        let mut value_nodes = ValueNode::<S>::new();
+        for focus_node in &focus_nodes {
+            executor
+                .runner()
+                .path(executor.store(), self, focus_node, &mut value_nodes)?;
+        }
         // we validate the components defined in the current Shape...
         for component in self.components() {
             ans = executor.evaluate(
@@ -142,7 +136,7 @@ impl<S: SRDFBasic> Validate<S> for PropertyShape {
         {
             ans = match shape {
                 Shape::NodeShape(_) => todo!(),
-                Shape::PropertyShape(ps) => ps.check_shape(executor, Some(&value_nodes), report)?,
+                Shape::PropertyShape(ps) => ps.check_shape(executor, Some(&focus_nodes), report)?,
             }
         }
         Ok(ans)

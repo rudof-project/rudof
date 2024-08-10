@@ -43,31 +43,29 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Or {
         let shapes = get_shapes_ref(&self.shapes, executor.schema());
         let mut is_valid = true;
 
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
-                let single_value_nodes =
-                    std::iter::once((focus_node.to_owned(), value_nodes.to_owned())).collect();
-                let any_valid = shapes.iter().flatten().any(|shape| {
-                    let result = match shape {
-                        Shape::NodeShape(shape) => shape.check_shape(
-                            executor,
-                            Some(&single_value_nodes),
-                            &mut ValidationReport::default(),
-                        ),
-                        Shape::PropertyShape(shape) => shape.check_shape(
-                            executor,
-                            Some(&single_value_nodes),
-                            &mut ValidationReport::default(),
-                        ),
-                    };
+        for focus_node in value_nodes.keys() {
+            let single_value_nodes = std::iter::once(focus_node.to_owned()).collect();
 
-                    result.unwrap_or(false)
-                });
+            let any_valid = shapes.iter().flatten().any(|shape| {
+                let result = match shape {
+                    Shape::NodeShape(shape) => shape.check_shape(
+                        executor,
+                        Some(&single_value_nodes),
+                        &mut ValidationReport::default(),
+                    ),
+                    Shape::PropertyShape(shape) => shape.check_shape(
+                        executor,
+                        Some(&single_value_nodes),
+                        &mut ValidationReport::default(),
+                    ),
+                };
 
-                if !any_valid {
-                    is_valid = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
-                }
+                result.unwrap_or(false)
+            });
+
+            if !any_valid {
+                is_valid = false;
+                report.make_validation_result(focus_node, context, None);
             }
         }
 

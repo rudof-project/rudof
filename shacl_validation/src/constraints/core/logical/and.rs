@@ -43,9 +43,8 @@ impl<S: SRDFBasic> ConstraintComponent<S> for And {
         let shapes = get_shapes_ref(&self.shapes, schema);
         let mut is_valid = true;
 
-        for (focus_node, value_nodes) in value_nodes {
-            let single_value_nodes =
-                std::iter::once((focus_node.to_owned(), value_nodes.to_owned())).collect::<_>();
+        for focus_node in value_nodes.keys() {
+            let single_value_nodes = std::iter::once(focus_node.to_owned()).collect();
 
             // Iterate through shapes and validate them
             let all_valid = shapes.iter().flatten().all(|shape| {
