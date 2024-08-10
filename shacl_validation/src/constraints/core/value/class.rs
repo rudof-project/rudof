@@ -40,6 +40,14 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
         let mut ans = true;
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
+                // if the node is a literal...
+                if S::term_is_literal(value_node) {
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                    ans = false;
+                    continue;
+                }
+                // or a non-literal that is not a SHACL instance of the provided
+                // class...
                 let is_class_valid =
                     get_objects_for(executor.store(), value_node, &S::iri_s2iri(&RDF_TYPE))?
                         .iter()
@@ -53,6 +61,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
                                 .unwrap_or_default()
                                 .contains(&self.class_rule)
                         });
+                // ... validation result
                 if !is_class_valid {
                     report.make_validation_result(focus_node, context, Some(value_node));
                     ans = false;
