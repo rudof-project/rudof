@@ -1,15 +1,18 @@
-use std::collections::HashSet;
-
 use indoc::formatdoc;
-use shacl_ast::Schema;
 use srdf::literal::Literal;
-use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::runner::sparql_runner::SparqlValidatorRunner;
-use crate::runner::srdf_runner::DefaultValidatorRunner;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
@@ -28,10 +31,9 @@ impl<S: SRDFBasic> MaxExclusive<S> {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxExclusive<S> {
     fn evaluate_default(
         &self,
-        _store: &S,
-        _: &Schema,
-        _: &DefaultValidatorRunner,
-        _value_nodes: &HashSet<S::Term>,
+        _executor: &DefaultExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -41,25 +43,26 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxExclusive<S> {
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxExclusive<S> {
     fn evaluate_sparql(
         &self,
-        store: &S,
-        _: &Schema,
-        _: &SparqlValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         let mut ans = true;
-        for node in value_nodes {
-            let query = formatdoc! {
-                " ASK {{ FILTER ({} < {}) }} ",
-                node, self.max_exclusive
-            };
-            let ask = match store.query_ask(&query) {
-                Ok(ask) => ask,
-                Err(_) => return Err(ConstraintError::Query),
-            };
-            if !ask {
-                ans = false;
-                report.make_validation_result(Some(node));
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                let query = formatdoc! {
+                    " ASK {{ FILTER ({} < {}) }} ",
+                    value_node, self.max_exclusive
+                };
+                let ask = match executor.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return Err(ConstraintError::Query),
+                };
+                if !ask {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                }
             }
         }
         Ok(ans)

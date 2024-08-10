@@ -1,31 +1,18 @@
-use std::collections::HashSet;
-
-use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::target::Target;
-use shacl_ast::Schema;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
 
+use crate::shape::FocusNode;
+use crate::shape::ValueNode;
 use crate::validate_error::ValidateError;
-use crate::validation_report::report::ValidationReport;
 
-pub mod sparql_runner;
-pub mod srdf_runner;
+pub mod default_runner;
+pub mod query_runner;
 
-type Result<T> = std::result::Result<T, ValidateError>;
-pub type FocusNode<S> = HashSet<<S as SRDFBasic>::Term>;
+pub type Result<T> = std::result::Result<T, ValidateError>;
 
 pub trait ValidatorRunner<S: SRDFBasic> {
-    fn evaluate(
-        &self,
-        store: &S,
-        schema: &Schema,
-        component: &Component,
-        value_nodes: &HashSet<S::Term>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool>;
-
     fn focus_nodes(&self, store: &S, shape: &S::Term, targets: &[Target]) -> Result<FocusNode<S>> {
         let mut target_nodes = FocusNode::<S>::new();
         for target in targets.iter() {
@@ -90,22 +77,32 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        focus: &S::Term,
-        values: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        values_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         match shape.path() {
             SHACLPath::Predicate { pred } => {
                 let predicate = S::iri_s2iri(pred);
-                self.predicate(store, shape, &predicate, focus, values)
+                self.predicate(store, shape, &predicate, focus_node, values_nodes)
             }
             SHACLPath::Alternative { paths } => {
-                self.alternative(store, shape, paths, focus, values)
+                self.alternative(store, shape, paths, focus_node, values_nodes)
             }
-            SHACLPath::Sequence { paths } => self.sequence(store, shape, paths, focus, values),
-            SHACLPath::Inverse { path } => self.inverse(store, shape, path, focus, values),
-            SHACLPath::ZeroOrMore { path } => self.zero_or_more(store, shape, path, focus, values),
-            SHACLPath::OneOrMore { path } => self.one_or_more(store, shape, path, focus, values),
-            SHACLPath::ZeroOrOne { path } => self.zero_or_one(store, shape, path, focus, values),
+            SHACLPath::Sequence { paths } => {
+                self.sequence(store, shape, paths, focus_node, values_nodes)
+            }
+            SHACLPath::Inverse { path } => {
+                self.inverse(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::ZeroOrMore { path } => {
+                self.zero_or_more(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::OneOrMore { path } => {
+                self.one_or_more(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::ZeroOrOne { path } => {
+                self.zero_or_one(store, shape, path, focus_node, values_nodes)
+            }
         }
     }
 
@@ -115,7 +112,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         predicate: &S::IRI,
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn alternative(
@@ -124,7 +121,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn sequence(
@@ -133,7 +130,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn inverse(
@@ -142,7 +139,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn zero_or_more(
@@ -151,7 +148,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn one_or_more(
@@ -160,7 +157,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn zero_or_one(
@@ -169,6 +166,6 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 }

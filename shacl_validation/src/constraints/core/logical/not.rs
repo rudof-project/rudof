@@ -1,15 +1,17 @@
-use std::collections::HashSet;
-
-use shacl_ast::Schema;
-use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::runner::sparql_runner::SparqlValidatorRunner;
-use crate::runner::srdf_runner::DefaultValidatorRunner;
-use crate::runner::ValidatorRunner;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:not specifies the condition that each value node cannot conform to a
@@ -30,10 +32,9 @@ impl Not {
 impl<S: SRDFBasic> ConstraintComponent<S> for Not {
     fn evaluate(
         &self,
-        _: &S,
-        _schema: &Schema,
-        _runner: &dyn ValidatorRunner<S>,
-        _value_nodes: &HashSet<S::Term>,
+        _executor: &dyn SHACLExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -43,25 +44,23 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Not {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Not {
     fn evaluate_default(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &DefaultValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        self.evaluate(store, schema, runner, value_nodes, report)
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Not {
     fn evaluate_sparql(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &SparqlValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        self.evaluate(store, schema, runner, value_nodes, report)
+        self.evaluate(executor, context, value_nodes, report)
     }
 }

@@ -76,6 +76,10 @@ impl NodeShape {
         &self.deactivated
     }
 
+    pub fn severity(&self) -> Option<Severity> {
+        self.severity.to_owned()
+    }
+
     pub fn components(&self) -> &Vec<Component> {
         &self.components
     }

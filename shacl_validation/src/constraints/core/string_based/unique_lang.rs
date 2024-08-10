@@ -1,15 +1,19 @@
 use std::collections::HashSet;
 
-use shacl_ast::Schema;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use crate::shape::ValueNode;
+
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::runner::sparql_runner::SparqlValidatorRunner;
-use crate::runner::srdf_runner::DefaultValidatorRunner;
-use crate::runner::ValidatorRunner;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
 use crate::validation_report::report::ValidationReport;
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
@@ -29,10 +33,9 @@ impl UniqueLang {
 impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
     fn evaluate(
         &self,
-        _: &S,
-        _: &Schema,
-        _: &dyn ValidatorRunner<S>,
-        value_nodes: &HashSet<S::Term>,
+        _: &dyn SHACLExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
         if !self.unique_lang {
@@ -40,14 +43,16 @@ impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
         }
         let mut ans = true;
         let mut langs = HashSet::new();
-        for node in value_nodes {
-            if let Some(literal) = S::term_as_literal(node) {
-                if let Some(lang) = S::lang(&literal) {
-                    if langs.contains(&lang) {
-                        ans = false;
-                        report.make_validation_result(Some(node));
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                if let Some(literal) = S::term_as_literal(value_node) {
+                    if let Some(lang) = S::lang(&literal) {
+                        if langs.contains(&lang) {
+                            ans = false;
+                            report.make_validation_result(focus_node, context, Some(value_node));
+                        }
+                        langs.insert(lang);
                     }
-                    langs.insert(lang);
                 }
             }
         }
@@ -58,25 +63,23 @@ impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
     fn evaluate_default(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &DefaultValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        self.evaluate(store, schema, runner, value_nodes, report)
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
     fn evaluate_sparql(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &SparqlValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        self.evaluate(store, schema, runner, value_nodes, report)
+        self.evaluate(executor, context, value_nodes, report)
     }
 }

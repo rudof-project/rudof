@@ -1,37 +1,19 @@
-use std::collections::HashSet;
-
 use indoc::formatdoc;
-use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
-use shacl_ast::Schema;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
-use crate::constraints::SparqlConstraintComponent;
 use crate::helper::sparql::select;
+use crate::shape::FocusNode;
+use crate::shape::ValueNode;
 use crate::validate_error::ValidateError;
-use crate::validation_report::report::ValidationReport;
 
-use super::FocusNode;
+use super::Result;
 use super::ValidatorRunner;
 
-type Result<T> = std::result::Result<T, ValidateError>;
+pub struct QueryValidatorRunner;
 
-pub struct SparqlValidatorRunner;
-
-impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
-    fn evaluate(
-        &self,
-        store: &S,
-        schema: &Schema,
-        component: &Component,
-        value_nodes: &HashSet<S::Term>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool> {
-        let component: Box<dyn SparqlConstraintComponent<S>> = component.into();
-        Ok(component.evaluate_sparql(store, schema, self, value_nodes, report)?)
-    }
-
+impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, store: &S, node: &S::Term, focus_nodes: &mut FocusNode<S>) -> Result<()> {
@@ -118,7 +100,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -129,7 +111,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -140,7 +122,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -151,7 +133,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -162,7 +144,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -173,7 +155,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -184,7 +166,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         _shape: &PropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }

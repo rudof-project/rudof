@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use constraint_error::ConstraintError;
 use core::cardinality::max_count::MaxCount;
 use core::cardinality::min_count::MinCount;
@@ -29,12 +27,15 @@ use core::value_range::max_inclusive::MaxInclusive;
 use core::value_range::min_exclusive::MinExclusive;
 use core::value_range::min_inclusive::MinInclusive;
 use shacl_ast::component::Component;
-use shacl_ast::Schema;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
-use crate::runner::sparql_runner::SparqlValidatorRunner;
-use crate::runner::srdf_runner::DefaultValidatorRunner;
-use crate::runner::ValidatorRunner;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 pub(crate) mod constraint_error;
@@ -43,10 +44,9 @@ pub mod core;
 pub(crate) trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &dyn ValidatorRunner<S>,
-        value_nodes: &HashSet<S::Term>,
+        executor: &dyn SHACLExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError>;
 }
@@ -54,10 +54,9 @@ pub(crate) trait ConstraintComponent<S: SRDFBasic> {
 pub trait DefaultConstraintComponent<S: SRDF> {
     fn evaluate_default(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &DefaultValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError>;
 }
@@ -65,10 +64,9 @@ pub trait DefaultConstraintComponent<S: SRDF> {
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
     fn evaluate_sparql(
         &self,
-        store: &S,
-        schema: &Schema,
-        runner: &SparqlValidatorRunner,
-        value_nodes: &HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError>;
 }

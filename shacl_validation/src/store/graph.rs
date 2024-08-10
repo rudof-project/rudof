@@ -5,6 +5,8 @@ use srdf::{RDFFormat, SRDFGraph};
 
 use crate::validate_error::ValidateError;
 
+use super::Store;
+
 pub struct Graph {
     store: SRDFGraph,
 }
@@ -31,8 +33,10 @@ impl Graph {
         };
         Ok(Self { store })
     }
+}
 
-    pub(crate) fn store(&self) -> &SRDFGraph {
+impl Store<SRDFGraph> for Graph {
+    fn store(&self) -> &SRDFGraph {
         &self.store
     }
 }
