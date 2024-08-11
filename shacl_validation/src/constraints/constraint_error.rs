@@ -19,4 +19,6 @@ pub enum ConstraintError {
     ClassNotDefined,
     #[error("Error during some SRDF operation")]
     SRDF(#[from] SRDFError),
+    #[error("Error the shape could not be found")]
+    MissingShape,
 }

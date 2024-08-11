@@ -1,3 +1,4 @@
+use shacl_ast::shape::Shape;
 use srdf::QuerySRDF;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
@@ -11,6 +12,8 @@ use crate::context::Context;
 use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
+use crate::helper::shapes::get_shape_ref;
+use crate::shape::Validate;
 use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
@@ -18,7 +21,6 @@ use crate::validation_report::report::ValidationReport;
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[allow(dead_code)] // TODO: Remove when it is used
 pub(crate) struct Node {
     shape: RDFNode,
 }
@@ -32,12 +34,40 @@ impl Node {
 impl<S: SRDFBasic> ConstraintComponent<S> for Node {
     fn evaluate(
         &self,
-        _executor: &dyn SHACLExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
+        executor: &dyn SHACLExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
+        report: &mut ValidationReport<S>,
     ) -> Result<bool, ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        let mut ans = true;
+        let shape = match get_shape_ref(&self.shape, executor.schema()) {
+            Some(shape) => shape,
+            None => return Err(ConstraintError::MissingShape),
+        };
+
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                let single_value_nodes = std::iter::once(value_node.to_owned()).collect();
+                let mut inner_report = ValidationReport::default();
+
+                let is_valid = match shape {
+                    Shape::NodeShape(shape) => {
+                        shape.check_shape(executor, Some(&single_value_nodes), &mut inner_report)
+                    }
+                    Shape::PropertyShape(shape) => {
+                        shape.check_shape(executor, Some(&single_value_nodes), &mut inner_report)
+                    }
+                }
+                .unwrap_or(false);
+
+                if !inner_report.is_conformant() || !is_valid {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                }
+            }
+        }
+
+        Ok(ans)
     }
 }
 
