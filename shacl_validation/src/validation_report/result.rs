@@ -9,7 +9,6 @@ pub struct ValidationResultBuilder<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,
     result_path: Option<S::Term>,
-    source_constraint: Option<S::Term>,
     source_constraint_component: Option<S::Term>,
     source_shape: Option<S::Term>,
     value: Option<S::Term>,
@@ -26,10 +25,6 @@ impl<S: SRDFBasic> ValidationResultBuilder<S> {
 
     pub fn result_path(&mut self, result_path: S::Term) {
         self.result_path = Some(result_path);
-    }
-
-    pub fn source_constraint(&mut self, source_constraint: S::Term) {
-        self.source_constraint = Some(source_constraint);
     }
 
     pub fn source_constraint_component(&mut self, source_constraint_component: S::Term) {
@@ -49,7 +44,6 @@ impl<S: SRDFBasic> ValidationResultBuilder<S> {
             self.focus_node,
             self.result_severity,
             self.result_path,
-            self.source_constraint,
             self.source_constraint_component,
             self.source_shape,
             self.value,
@@ -63,7 +57,6 @@ impl<S: SRDFBasic> Default for ValidationResultBuilder<S> {
             focus_node: None,
             result_severity: None,
             result_path: None,
-            source_constraint: None,
             source_constraint_component: None,
             source_shape: None,
             value: None,
@@ -75,7 +68,6 @@ pub struct ValidationResult<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,
     result_path: Option<S::Term>,
-    source_constraint: Option<S::Term>,
     source_constraint_component: Option<S::Term>,
     source_shape: Option<S::Term>,
     value: Option<S::Term>,
@@ -86,7 +78,6 @@ impl<S: SRDFBasic> ValidationResult<S> {
         focus_node: Option<S::Term>,
         result_severity: Option<S::Term>,
         result_path: Option<S::Term>,
-        source_constraint: Option<S::Term>,
         source_constraint_component: Option<S::Term>,
         source_shape: Option<S::Term>,
         value: Option<S::Term>,
@@ -95,7 +86,6 @@ impl<S: SRDFBasic> ValidationResult<S> {
             focus_node,
             result_severity,
             result_path,
-            source_constraint,
             source_constraint_component,
             source_shape,
             value,
@@ -112,10 +102,6 @@ impl<S: SRDFBasic> ValidationResult<S> {
 
     pub(crate) fn result_path(&self) -> Option<S::Term> {
         self.result_path.to_owned()
-    }
-
-    pub(crate) fn source_constraint(&self) -> Option<S::Term> {
-        self.source_constraint.to_owned()
     }
 
     pub(crate) fn source_constraint_component(&self) -> Option<S::Term> {
@@ -143,9 +129,6 @@ impl<S: SRDF> ValidationResult<S> {
         };
         if let Some(term) = get_object_for(store, subject, &S::iri_s2iri(&SH_RESULT_PATH))? {
             builder.result_path(term)
-        };
-        if let Some(term) = get_object_for(store, subject, &S::iri_s2iri(&SH_SOURCE_CONSTRAINT))? {
-            builder.source_constraint(term)
         };
         if let Some(term) = get_object_for(
             store,

@@ -1,12 +1,17 @@
-use std::collections::HashSet;
-
 use srdf::lang::Lang;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// The condition specified by sh:languageIn is that the allowed language tags
@@ -26,42 +31,51 @@ impl LanguageIn {
 impl<S: SRDFBasic> ConstraintComponent<S> for LanguageIn {
     fn evaluate(
         &self,
-        value_nodes: HashSet<S::Term>,
+        _executor: &dyn SHACLExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
-            if let Some(literal) = S::term_as_literal(node) {
-                if let Some(lang) = S::lang(&literal) {
-                    if !self.langs.contains(&Lang::new(&lang)) {
-                        report.make_validation_result(Some(node));
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                if let Some(literal) = S::term_as_literal(value_node) {
+                    if let Some(lang) = S::lang(&literal) {
+                        if !self.langs.contains(&Lang::new(&lang)) {
+                            ans = false;
+                            report.make_validation_result(focus_node, context, Some(value_node));
+                        }
                     }
+                } else {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
                 }
-            } else {
-                report.make_validation_result(Some(node))
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for LanguageIn {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LanguageIn {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for LanguageIn {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LanguageIn {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }

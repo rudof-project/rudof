@@ -118,12 +118,20 @@ impl PropertyShape {
         &self.deactivated
     }
 
+    pub fn severity(&self) -> Option<Severity> {
+        self.severity.to_owned()
+    }
+
     pub fn components(&self) -> &Vec<Component> {
         &self.components
     }
 
     pub fn targets(&self) -> &Vec<Target> {
         &self.targets
+    }
+
+    pub fn property_shapes(&self) -> &Vec<RDFNode> {
+        &self.property_shapes
     }
 
     pub fn get_value_nodes(

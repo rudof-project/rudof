@@ -1,12 +1,14 @@
-use std::collections::HashSet;
-
 use prefixmap::IriRef;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:lessThanOrEquals specifies the condition that each value node is smaller
@@ -25,34 +27,26 @@ impl LessThanOrEquals {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for LessThanOrEquals {
-    fn evaluate(
-        &self,
-        _value_nodes: HashSet<S::Term>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
-    }
-}
-
-impl<S: SRDF> DefaultConstraintComponent<S> for LessThanOrEquals {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_default(
         &self,
-        _: &S,
-        _value_nodes: HashSet<S::Term>,
+        _executor: &DefaultExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for LessThanOrEquals {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        _value_nodes: HashSet<S::Term>,
+        _executor: &QueryExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }

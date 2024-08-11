@@ -1,12 +1,18 @@
-use std::collections::HashSet;
-
 use indoc::formatdoc;
 use srdf::literal::Literal;
-use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
@@ -22,37 +28,43 @@ impl<S: SRDFBasic> MinExclusive<S> {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MinExclusive<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinExclusive<S> {
     fn evaluate_default(
         &self,
-        _store: &S,
-        _value_nodes: HashSet<S::Term>,
+        _executor: &DefaultExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinExclusive<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinExclusive<S> {
     fn evaluate_sparql(
         &self,
-        store: &S,
-        value_nodes: HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
-            let query = formatdoc! {
-                " ASK {{ FILTER ({} < {}) }} ",
-                node, self.min_inclusive
-            };
-            let ans = match store.query_ask(&query) {
-                Ok(ans) => ans,
-                Err(_) => return Err(ConstraintError::Query),
-            };
-            if !ans {
-                report.make_validation_result(Some(node));
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                let query = formatdoc! {
+                    " ASK {{ FILTER ({} < {}) }} ",
+                    value_node, self.min_inclusive
+                };
+                let ask = match executor.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return Err(ConstraintError::Query),
+                };
+                if !ask {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                }
             }
         }
-        Ok(())
+        Ok(ans)
     }
 }

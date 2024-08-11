@@ -1,12 +1,17 @@
-use std::collections::HashSet;
-
 use prefixmap::IriRef;
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// The RDF data model offers a huge amount of flexibility. Any node can in
@@ -36,31 +41,35 @@ impl Closed {
 impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
     fn evaluate(
         &self,
-        _value_nodes: HashSet<S::Term>,
+        _executor: &dyn SHACLExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Closed {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Closed {
     fn evaluate_default(
         &self,
-        _store: &S,
-        _value_nodes: HashSet<<S>::Term>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Closed {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Closed {
     fn evaluate_sparql(
         &self,
-        _store: &S,
-        _value_nodes: HashSet<<S>::Term>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }

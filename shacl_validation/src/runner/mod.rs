@@ -1,94 +1,108 @@
-use std::collections::HashSet;
-
-use iri_s::IriS;
-use prefixmap::IriRef;
-use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::target::Target;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
 
+use crate::shape::FocusNode;
+use crate::shape::ValueNode;
 use crate::validate_error::ValidateError;
-use crate::validation_report::report::ValidationReport;
 
-pub mod sparql_runner;
-pub mod srdf_runner;
+pub mod default_runner;
+pub mod query_runner;
 
-type Result<T> = std::result::Result<T, ValidateError>;
+pub type Result<T> = std::result::Result<T, ValidateError>;
 
 pub trait ValidatorRunner<S: SRDFBasic> {
-    fn evaluate(
-        &self,
-        store: &S,
-        component: &Component,
-        value_nodes: HashSet<S::Term>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<()>;
-
-    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<HashSet<S::Term>> {
-        let mut ans = HashSet::new();
+    fn focus_nodes(&self, store: &S, shape: &S::Term, targets: &[Target]) -> Result<FocusNode<S>> {
+        let mut target_nodes = FocusNode::<S>::new();
         for target in targets.iter() {
             match target {
-                Target::TargetNode(e) => {
-                    let node = &S::object_as_term(e);
-                    self.target_node(store, node, &mut ans)?
+                Target::TargetNode(node) => {
+                    let node = &S::object_as_term(node);
+                    self.target_node(store, node, &mut target_nodes)?
                 }
                 Target::TargetClass(class) => {
                     let class = &S::object_as_term(class);
-                    self.target_class(store, class, &mut ans)?
+                    self.target_class(store, class, &mut target_nodes)?
                 }
-                Target::TargetSubjectsOf(e) => self.target_subject_of(store, e, &mut ans)?,
-                Target::TargetObjectsOf(e) => self.target_object_of(store, e, &mut ans)?,
+                Target::TargetSubjectsOf(predicate) => {
+                    let predicate = S::iri_s2iri(&predicate.get_iri()?);
+                    self.target_subject_of(store, &predicate, &mut target_nodes)?
+                }
+                Target::TargetObjectsOf(predicate) => {
+                    let predicate = S::iri_s2iri(&predicate.get_iri()?);
+                    self.target_object_of(store, &predicate, &mut target_nodes)?
+                }
             }
         }
-        Ok(ans)
+        // we have to also look for implicit class targets, which are a "special"
+        // kind of target declarations...
+        self.implicit_target_class(store, shape, &mut target_nodes)?;
+        Ok(target_nodes)
     }
 
-    fn target_node(
-        &self,
-        store: &S,
-        node: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
-    ) -> Result<()>;
+    /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
+    /// in SG then { t } is a target from any data graph for s in SG.
+    fn target_node(&self, store: &S, node: &S::Term, focus_nodes: &mut FocusNode<S>) -> Result<()>;
 
     fn target_class(
         &self,
         store: &S,
         class: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
+    ) -> Result<()>;
+
+    fn implicit_target_class(
+        &self,
+        store: &S,
+        shape: &S::Term,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()>;
 
     fn path(
         &self,
         store: &S,
         shape: &PropertyShape,
-        focus: S::Term,
-        values: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        values_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         match shape.path() {
-            SHACLPath::Predicate { pred } => self.predicate(store, shape, pred, focus, values),
-            SHACLPath::Alternative { paths } => {
-                self.alternative(store, shape, paths, focus, values)
+            SHACLPath::Predicate { pred } => {
+                let predicate = S::iri_s2iri(pred);
+                self.predicate(store, shape, &predicate, focus_node, values_nodes)
             }
-            SHACLPath::Sequence { paths } => self.sequence(store, shape, paths, focus, values),
-            SHACLPath::Inverse { path } => self.inverse(store, shape, path, focus, values),
-            SHACLPath::ZeroOrMore { path } => self.zero_or_more(store, shape, path, focus, values),
-            SHACLPath::OneOrMore { path } => self.one_or_more(store, shape, path, focus, values),
-            SHACLPath::ZeroOrOne { path } => self.zero_or_one(store, shape, path, focus, values),
+            SHACLPath::Alternative { paths } => {
+                self.alternative(store, shape, paths, focus_node, values_nodes)
+            }
+            SHACLPath::Sequence { paths } => {
+                self.sequence(store, shape, paths, focus_node, values_nodes)
+            }
+            SHACLPath::Inverse { path } => {
+                self.inverse(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::ZeroOrMore { path } => {
+                self.zero_or_more(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::OneOrMore { path } => {
+                self.one_or_more(store, shape, path, focus_node, values_nodes)
+            }
+            SHACLPath::ZeroOrOne { path } => {
+                self.zero_or_one(store, shape, path, focus_node, values_nodes)
+            }
         }
     }
 
@@ -96,9 +110,9 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         &self,
         store: &S,
         shape: &PropertyShape,
-        predicate: &IriS,
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn alternative(
@@ -106,8 +120,8 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn sequence(
@@ -115,8 +129,8 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn inverse(
@@ -124,8 +138,8 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn zero_or_more(
@@ -133,8 +147,8 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn one_or_more(
@@ -142,8 +156,8 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 
     fn zero_or_one(
@@ -151,7 +165,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
-        focus_node: S::Term,
-        value_nodes: &mut HashSet<S::Term>,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()>;
 }

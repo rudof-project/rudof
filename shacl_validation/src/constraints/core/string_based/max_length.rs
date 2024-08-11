@@ -1,11 +1,15 @@
-use std::collections::HashSet;
-
 use indoc::formatdoc;
-use srdf::{QuerySRDF, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:maxLength specifies the maximum string length of each value node that
@@ -23,48 +27,59 @@ impl MaxLength {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MaxLength {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxLength {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        _executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
-            if S::term_is_bnode(node) {
-                report.make_validation_result(Some(node))
-            } else {
-                return Err(ConstraintError::NotImplemented);
-            }
-        }
-        Ok(())
-    }
-}
-
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxLength {
-    fn evaluate_sparql(
-        &self,
-        store: &S,
-        value_nodes: HashSet<S::Term>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        for node in &value_nodes {
-            if S::term_is_bnode(node) {
-                report.make_validation_result(Some(node));
-            } else {
-                let query = formatdoc! {
-                    " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
-                    node, self.max_length
-                };
-                let ans = match store.query_ask(&query) {
-                    Ok(ans) => ans,
-                    Err(_) => return Err(ConstraintError::Query),
-                };
-                if !ans {
-                    report.make_validation_result(Some(node));
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                if S::term_is_bnode(value_node) {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                } else {
+                    return Err(ConstraintError::NotImplemented);
                 }
             }
         }
-        Ok(())
+        Ok(ans)
+    }
+}
+
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxLength {
+    fn evaluate_sparql(
+        &self,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
+        report: &mut ValidationReport<S>,
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                if S::term_is_bnode(value_node) {
+                    ans = false;
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                } else {
+                    let query = formatdoc! {
+                        " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
+                        value_node, self.max_length
+                    };
+                    let ask = match executor.store().query_ask(&query) {
+                        Ok(ask) => ask,
+                        Err(_) => return Err(ConstraintError::Query),
+                    };
+                    if !ask {
+                        ans = false;
+                        report.make_validation_result(focus_node, context, Some(value_node));
+                    }
+                }
+            }
+        }
+        Ok(ans)
     }
 }

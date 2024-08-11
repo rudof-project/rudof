@@ -3,6 +3,7 @@ use std::fmt;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
+use crate::context::Context;
 use crate::helper::srdf::get_objects_for;
 
 use super::result::ValidationResult;
@@ -15,19 +16,36 @@ pub struct ValidationReport<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> ValidationReport<S> {
+    pub(crate) fn is_conformant(&self) -> bool {
+        self.results.is_empty()
+    }
+
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {
-        // We add a result --> make the Report non-conformant
         if self.conforms {
-            self.conforms = false;
+            self.conforms = false; // we add a result --> make the Report non-conformant
         }
         self.results.push(result)
     }
 
-    pub(crate) fn make_validation_result(&mut self, value_node: Option<&S::Term>) {
+    pub(crate) fn make_validation_result(
+        &mut self,
+        focus_node: &S::Term,
+        context: &Context,
+        value_node: Option<&S::Term>,
+    ) {
         let mut builder = ValidationResultBuilder::default();
 
-        if let Some(focus_node) = value_node {
-            builder.focus_node(focus_node.to_owned());
+        builder.focus_node(focus_node.to_owned());
+        builder.source_constraint_component(context.source_constraint_component::<S>());
+
+        if let Some(result_severity) = context.result_severity::<S>() {
+            builder.result_severity(result_severity);
+        }
+        if let Some(source_shape) = context.source_shape::<S>() {
+            builder.source_shape(source_shape);
+        }
+        if let Some(value) = value_node {
+            builder.value(value.to_owned());
         }
 
         self.add_result(builder.build());
@@ -81,9 +99,6 @@ impl<S: SRDFBasic> fmt::Display for ValidationReport<S> {
             }
             if let Some(term) = &result.result_severity() {
                 writeln!(f, "\t\t\tresult_severity: {},", term)?;
-            }
-            if let Some(term) = &result.source_constraint() {
-                writeln!(f, "\t\t\tsource_constraint: {},", term)?;
             }
             if let Some(term) = &result.source_constraint_component() {
                 writeln!(f, "\t\t\tsource_constraint_component: {},", term)?;

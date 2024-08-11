@@ -4,9 +4,8 @@ use std::path::Path;
 use iri_s::IriS;
 use oxrdf::Term;
 use shacl_validation::shacl_validation_vocab;
-use shacl_validation::validate::GraphValidator;
-use shacl_validation::validate::Mode;
-use shacl_validation::validate::Validator;
+use shacl_validation::store::graph::Graph;
+use shacl_validation::store::Store;
 use shacl_validation::validation_report::report::ValidationReport;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
@@ -190,17 +189,10 @@ impl Manifest<SRDFGraph> for GraphManifest {
     }
 
     fn load_data_graph(path: &Path, base: &str) -> SRDFGraph {
-        match GraphValidator::new(
-            Path::new(path),
-            RDFFormat::Turtle,
-            Some(base),
-            Mode::Default,
-        ) {
-            Ok(validator) => validator,
-            Err(_) => todo!(),
-        }
-        .store()
-        .to_owned()
+        Graph::new(Path::new(path), RDFFormat::Turtle, Some(base))
+            .unwrap()
+            .store()
+            .to_owned()
     }
 
     fn base(&self) -> String {

@@ -1,17 +1,24 @@
-use std::collections::HashSet;
-
-use srdf::{QuerySRDF, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
 /// condition.
 ///
-/// https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
+/// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
+/// - DEF: If the number of value nodes is greater than $maxCount, there is a
+///   validation result.
 pub(crate) struct MaxCount {
     max_count: isize,
 }
@@ -25,34 +32,42 @@ impl MaxCount {
 impl<S: SRDFBasic> ConstraintComponent<S> for MaxCount {
     fn evaluate(
         &self,
-        value_nodes: HashSet<S::Term>,
+        _: &dyn SHACLExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        if (value_nodes.len() as isize) > self.max_count {
-            report.make_validation_result(None);
+    ) -> Result<bool, ConstraintError> {
+        let mut ans = true;
+        for (focus_node, value_nodes) in value_nodes {
+            if (value_nodes.len() as isize) > self.max_count {
+                ans = false;
+                report.make_validation_result(focus_node, context, None);
+            }
         }
-        Ok(())
+        Ok(ans)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MaxCount {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxCount {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxCount {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxCount {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<S::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }

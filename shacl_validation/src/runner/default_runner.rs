@@ -1,36 +1,28 @@
 use std::collections::HashSet;
 
-use iri_s::IriS;
-use prefixmap::IriRef;
-use shacl_ast::component::Component;
 use shacl_ast::property_shape::PropertyShape;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
+use srdf::RDFS_CLASS;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
 use srdf::SRDF;
 
-use crate::constraints::DefaultConstraintComponent;
+use crate::helper::srdf::get_objects_for;
+use crate::helper::srdf::get_subjects_for;
+use crate::shape::ValueNode;
 use crate::validate_error::ValidateError;
-use crate::validation_report::report::ValidationReport;
 
+use super::FocusNode;
+use super::Result;
 use super::ValidatorRunner;
-
-type Result<T> = std::result::Result<T, ValidateError>;
 
 pub struct DefaultValidatorRunner;
 
 impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
-    fn evaluate(
-        &self,
-        store: &S,
-        component: &Component,
-        value_nodes: HashSet<S::Term>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<()> {
-        let component: Box<dyn DefaultConstraintComponent<S>> = component.into();
-        Ok(component.evaluate_default(store, value_nodes, report)?)
-    }
-
-    fn target_node(&self, _: &S, node: &S::Term, focus_nodes: &mut HashSet<S::Term>) -> Result<()> {
+    /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
+    /// in SG then { t } is a target from any data graph for s in SG.
+    fn target_node(&self, _: &S, node: &S::Term, focus_nodes: &mut FocusNode<S>) -> Result<()> {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -43,11 +35,11 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         &self,
         store: &S,
         class: &S::Term,
-        focus_nodes: &mut HashSet<S::Term>,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
         if S::term_as_iri(class).is_some() {
             let subjects =
-                match store.subjects_with_predicate_object(&S::iri_s2iri(&srdf::RDF_TYPE), class) {
+                match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
                     Ok(subjects) => subjects,
                     Err(_) => return Err(ValidateError::SRDF),
                 };
@@ -65,10 +57,10 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
-        let triples = match store.triples_with_predicate(&S::iri_s2iri(&predicate.get_iri()?)) {
+        let triples = match store.triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -83,10 +75,10 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &IriRef,
-        focus_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_nodes: &mut FocusNode<S>,
     ) -> Result<()> {
-        let triples = match store.triples_with_predicate(&S::iri_s2iri(&predicate.get_iri()?)) {
+        let triples = match store.triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -98,15 +90,51 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         Ok(())
     }
 
+    fn implicit_target_class(
+        &self,
+        store: &S,
+        shape: &S::Term,
+        focus_nodes: &mut FocusNode<S>,
+    ) -> Result<()> {
+        let ctypes = get_objects_for(store, shape, &S::iri_s2iri(&RDF_TYPE))?;
+        let mut subclasses = get_subjects_for(
+            store,
+            &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+            &S::iri_s2term(&RDFS_CLASS),
+        )?;
+        subclasses.insert(S::iri_s2term(&RDFS_CLASS));
+
+        if ctypes.iter().any(|t| subclasses.contains(t)) {
+            focus_nodes.extend(get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape)?); // the actual class
+
+            let subclass_targets = // transitive classes (i.e subClassOf)
+                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape)?
+                    .into_iter()
+                    .flat_map(|subclass| {
+                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
+                    })
+                    .flatten()
+                    .collect::<HashSet<_>>();
+
+            focus_nodes.extend(subclass_targets);
+        }
+
+        Ok(())
+    }
+
     fn predicate(
         &self,
-        _store: &S,
+        store: &S,
         _shape: &PropertyShape,
-        _predicate: &IriS,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        predicate: &S::IRI,
+        focus_node: &S::Term,
+        value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
-        todo!()
+        value_nodes.insert(
+            focus_node.to_owned(),
+            get_objects_for(store, focus_node, predicate)?,
+        );
+        Ok(())
     }
 
     fn alternative(
@@ -114,8 +142,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -125,8 +153,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _paths: &[SHACLPath],
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -136,8 +164,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -147,8 +175,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -158,8 +186,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }
@@ -169,8 +197,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         _store: &S,
         _shape: &PropertyShape,
         _path: &SHACLPath,
-        _focus_node: S::Term,
-        _value_nodes: &mut HashSet<S::Term>,
+        _focus_node: &S::Term,
+        _value_nodes: &mut ValueNode<S>,
     ) -> Result<()> {
         todo!()
     }

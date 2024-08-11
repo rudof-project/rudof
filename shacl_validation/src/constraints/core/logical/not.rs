@@ -1,11 +1,17 @@
-use std::collections::HashSet;
-
-use srdf::{QuerySRDF, RDFNode, SRDFBasic, SRDF};
+use srdf::QuerySRDF;
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::context::Context;
+use crate::executor::DefaultExecutor;
+use crate::executor::QueryExecutor;
+use crate::executor::SHACLExecutor;
+use crate::shape::ValueNode;
 use crate::validation_report::report::ValidationReport;
 
 /// sh:not specifies the condition that each value node cannot conform to a
@@ -26,31 +32,35 @@ impl Not {
 impl<S: SRDFBasic> ConstraintComponent<S> for Not {
     fn evaluate(
         &self,
-        _value_nodes: HashSet<S::Term>,
+        _executor: &dyn SHACLExecutor<S>,
+        _context: &Context,
+        _value_nodes: &ValueNode<S>,
         _report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
+    ) -> Result<bool, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Not {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Not {
     fn evaluate_default(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        executor: &DefaultExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Not {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Not {
     fn evaluate_sparql(
         &self,
-        _: &S,
-        value_nodes: HashSet<<S>::Term>,
+        executor: &QueryExecutor<S>,
+        context: &Context,
+        value_nodes: &ValueNode<S>,
         report: &mut ValidationReport<S>,
-    ) -> Result<(), ConstraintError> {
-        self.evaluate(value_nodes, report)
+    ) -> Result<bool, ConstraintError> {
+        self.evaluate(executor, context, value_nodes, report)
     }
 }
