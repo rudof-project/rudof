@@ -43,31 +43,33 @@ impl<S: SRDFBasic> ConstraintComponent<S> for And {
         let shapes = get_shapes_ref(&self.shapes, schema);
         let mut is_valid = true;
 
-        for focus_node in value_nodes.keys() {
-            let single_value_nodes = std::iter::once(focus_node.to_owned()).collect();
+        for (focus_node, value_nodes) in value_nodes {
+            for value_node in value_nodes {
+                let single_value_nodes = std::iter::once(value_node.to_owned()).collect();
 
-            // Iterate through shapes and validate them
-            let all_valid = shapes.iter().flatten().all(|shape| {
-                let result = match shape {
-                    Shape::NodeShape(shape) => shape.check_shape(
-                        executor,
-                        Some(&single_value_nodes),
-                        &mut ValidationReport::default(),
-                    ),
-                    Shape::PropertyShape(shape) => shape.check_shape(
-                        executor,
-                        Some(&single_value_nodes),
-                        &mut ValidationReport::default(),
-                    ),
-                };
+                // Iterate through shapes and validate them
+                let all_valid = shapes.iter().flatten().all(|shape| {
+                    let result = match shape {
+                        Shape::NodeShape(shape) => shape.check_shape(
+                            executor,
+                            Some(&single_value_nodes),
+                            &mut ValidationReport::default(),
+                        ),
+                        Shape::PropertyShape(shape) => shape.check_shape(
+                            executor,
+                            Some(&single_value_nodes),
+                            &mut ValidationReport::default(),
+                        ),
+                    };
 
-                result.unwrap_or(false)
-            });
+                    result.unwrap_or(false)
+                });
 
-            if !all_valid {
-                is_valid = false;
-                // Mutable borrow of executor for making validation results
-                report.make_validation_result(focus_node, context, None);
+                if !all_valid {
+                    is_valid = false;
+                    // Mutable borrow of executor for making validation results
+                    report.make_validation_result(focus_node, context, Some(value_node));
+                }
             }
         }
 
