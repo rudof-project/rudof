@@ -17,7 +17,7 @@ pub struct ValidationReport<S: SRDFBasic> {
 
 impl<S: SRDFBasic> ValidationReport<S> {
     pub(crate) fn is_conformant(&self) -> bool {
-        self.results.len() == 0
+        self.results.is_empty()
     }
 
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {
