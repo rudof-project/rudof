@@ -7,7 +7,7 @@ pub mod pyshapes {
     use super::*;
 
     #[pymodule_export]
-    use super::shacl::parse;
+    use super::shacl::{parse, validate};
 
     #[pymodule_init]
     fn pymodule_init(module: &Bound<'_, PyModule>) -> PyResult<()> {
