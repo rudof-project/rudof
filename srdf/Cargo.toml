@@ -30,12 +30,12 @@ rust_decimal_macros = "1.32"
 const_format = "0.2"
 lazy_static = "1"
 
-oxttl = { version = "0.1.0-alpha.5", features = [ "rdf-star" ] }
-oxrdfio = { version = "0.1.0-alpha.5", features = [ "rdf-star" ] }
-oxrdf = { workspace = true, features = ["rdf-star", "oxsdatatypes"] }
+oxttl = { version = "0.1.0-alpha.5"  }
+oxrdfio = { version = "0.1.0-alpha.5"}
+oxrdf = { workspace = true, features = [ "rdf-star", "oxsdatatypes"] }
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
-sparesults = { version = "0.2.0-alpha.5", features = ["rdf-star" ] }
+sparesults = { version = "0.2.0-alpha.5" }
 tokio = { version = "1.38", features = ["full"] }
 colored = "2"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
