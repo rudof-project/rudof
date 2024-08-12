@@ -1,10 +1,6 @@
 name: Python
 
 on:
-  push:
-    branches:
-      - issue9
-      - master
   release:
     types:
       - published
