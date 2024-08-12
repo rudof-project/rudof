@@ -1,6 +1,6 @@
 [package]
 name = "rudof"
-version = "0.1.8"
+version = "0.1.9"
 documentation = "https://www.weso.es/shapes-rs/"
 license.workspace = true
 authors.workspace = true
@@ -25,4 +25,4 @@ openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies.pyo3]
 version = "0.22.0"
-features = ["abi3-py37"]
+features = ["abi3", "extension-module"]
