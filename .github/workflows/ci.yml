@@ -2,7 +2,7 @@
 #
 on: [push, pull_request]
 
-name: shapes-rs
+name: CI
 
 jobs:
   check:
