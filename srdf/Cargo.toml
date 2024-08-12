@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.7"
+version = "0.1.8"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -35,7 +35,7 @@ oxrdfio = "0.1.0-alpha.5"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
-sparesults = "0.2.0-alpha.5"
+sparesults = { version = "0.2.0-alpha.5", features = ["rdf-star" ] }
 tokio = { version = "1.38", features = ["full"] }
 colored = "2"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
