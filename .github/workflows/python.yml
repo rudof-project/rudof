@@ -39,6 +39,7 @@ jobs:
           working-directory: python
           target: ${{ matrix.target }}
           manylinux: auto
+          OPENSSL_DIR: /usr/local/ssl
           args: --release --out dist --interpreter ${{ matrix.python-version }}
 
       - name: Upload wheels
