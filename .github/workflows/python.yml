@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+        python-version: 3.12
         target: [ x86_64, x64, aarch64, armv7 ]
 
     steps:
@@ -53,15 +53,15 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.target }}-${{ matrix.python-version }}
-          path: python/dist
+          name: wheels
+          path: dist
           if-no-files-found: error
           
   windows:
     runs-on: Windows-2022
     strategy:
       matrix:
-        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+        python-version: 3.12
         target: [ x64, x86 ]
 
     steps:
@@ -82,8 +82,8 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.target }}-${{ matrix.python-version }}
-          path: python/dist
+          name: wheels
+          path: dist
           if-no-files-found: error
 
   macos:
@@ -94,7 +94,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.7 - 3.11'
+          python-version: 3.12
           architecture: x64
 
       - name: Build wheels
@@ -102,13 +102,13 @@ jobs:
         with:
           working-directory: python
           target: x86_64
-          args: --release --out dist --interpreter 3.7 3.8 3.9 3.10 3.11
+          args: --release --out dist --interpreter 3.12
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.python-version }}
-          path: python/dist
+          name: wheels
+          path: dist
           if-no-files-found: error
 
   sdist:
@@ -124,7 +124,7 @@ jobs:
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-sdist
+          name: dist
           path: dist
           if-no-files-found: error
 
@@ -135,13 +135,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with: 
-          path: dist
-          merge-multiple: true
+          name: dist
+      - name: List artifacts
+        run: ls -lhs
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
-          working-directory: dist
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
