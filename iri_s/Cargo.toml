@@ -9,8 +9,12 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+default = []
+rdf-star = [ "oxrdf/rdf-star" ]
+
 [dependencies]
-oxrdf = { version = "0.2.0-alpha.2", features = ["rdf-star"] }
+oxrdf = { version = "0.2.0-alpha.5" }
 oxiri = "0.2.3-alpha.1"
 thiserror = "1.0.0"
 serde = "1.0"
