@@ -6,7 +6,7 @@ use std::{fmt::Formatter, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "rdfsx")]
+// #[command(name = "rudof")]
 // #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
 // #[command(version = "0.1")]
 #[command(

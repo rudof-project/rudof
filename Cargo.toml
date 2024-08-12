@@ -10,7 +10,7 @@ members = [
     "srdf",
     "shex_ast",
     "shex_compact",
-    "rdfsx_cli",
+    "rudof_cli",
     "shex_testsuite",
     "shex_validation",
     "shapemap",
@@ -29,7 +29,7 @@ exclude = [
 ]
 
 default-members = [
-    "rdfsx_cli"
+    "rudof_cli"
 ]
 
 [workspace.package]

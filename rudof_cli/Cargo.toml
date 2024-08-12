@@ -1,5 +1,5 @@
 [package]
-name = "rdfsx_cli"
+name = "rudof_cli"
 version = "0.1.6"
 authors.workspace = true
 description.workspace = true
@@ -11,7 +11,7 @@ repository.workspace = true
 
 [[bin]]
 path = "src/main.rs"
-name = "rdfsx"
+name = "rudof"
 
 [dependencies]
 shex_ast = { workspace = true }

@@ -6,7 +6,7 @@
 This repo contains an RDF data shapes library implemented in Rust.
 The implementation supports [ShEx](http://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTap](https://www.dublincore.org/specifications/dctap/) and conversions between different RDF data modeling formalisms.
 
-The code can be used as a Rust library but it also contains a binary called `rdfsx` which can be used as an RDF playground.
+The code can be used as a Rust library but it also contains a binary called `rudof` which can be used as an RDF playground.
 
 We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)), as well as Python bindings.
 
@@ -27,8 +27,8 @@ You can download a binary from the [latest release](https://github.com/weso/shap
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
-wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rdfsx_vX.X.X_amd64.deb
-sudo dpkg -i rdfsx_vX.X.X_amd64.deb
+wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rudof_vX.X.X_amd64.deb
+sudo dpkg -i rudof_vX.X.X_amd64.deb
 ```
 
 #### Windows
@@ -87,7 +87,7 @@ The folder `examples` contains several example files with ShEx schemas and RDF d
 ### Validate a simple RDF file with a ShEx schema using a ShapeMap
 
 ```sh
-rdfsx validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
+rudof validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides).
@@ -107,7 +107,7 @@ where `value` can be `debug` to show more verbose information or `info` to show 
 ```sh
 RDF Data shapes implementation in Rust
 
-Usage: rdfsx [OPTIONS] [COMMAND]
+Usage: rudof [OPTIONS] [COMMAND]
 
 Commands:
   shapemap        Information about ShEx shapemaps
@@ -131,10 +131,10 @@ Options:
 ### Obtaining information about a ShEx schema
 
 ```sh
-$ rdfsx shex --help
+$ rudof shex --help
 Information about ShEx schemas
 
-Usage: rdfsx shex [OPTIONS] --schema <Schema file name>
+Usage: rudof shex [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
@@ -156,10 +156,10 @@ Options:
 ### Obtaining information about RDF data
 
 ```sh
-$ rdfsx data --help
+$ rudof data --help
 Information about RDF data
 
-Usage: rdfsx data [OPTIONS] --data <RDF data path>
+Usage: rudof data [OPTIONS] --data <RDF data path>
 
 Options:
   -d, --data <RDF data path>
@@ -177,10 +177,10 @@ Options:
 This command can be useful to obtain the neighbourhood of a node.
 
 ```sh
-$ rdfsx node --help
+$ rudof node --help
 Information about RDF nodes which are part of RDF Graphs
 
-Usage: rdfsx node [OPTIONS] --node <NODE>
+Usage: rudof node [OPTIONS] --node <NODE>
 
 Options:
   -n, --node <NODE>
@@ -206,16 +206,16 @@ Options:
 For example, the following command shows the neighbourhood of node `wd:Q80` in the Wikidata endpoint.
 
 ```sh
-rdfsx node -e wikidata -n wd:Q80
+rudof node -e wikidata -n wd:Q80
 ```
 
 ### Validating an RDF node against some data
 
 ```sh
-$ rdfsx validate --help
+$ rudof validate --help
 RDF Validation using ShEx or SHACL
 
-Usage: rdfsx validate [OPTIONS] --schema <Schema file name>
+Usage: rudof validate [OPTIONS] --schema <Schema file name>
 
 Options:
   -M, --mode <Validation mode>
@@ -249,28 +249,28 @@ Options:
 Example: Assuming there a ShEx file in `examples/user.shex` and an RDF turtle file in `examples/user.ttl` we can ask to validate node `:a` with shape label `:User` using:
 
 ```sh
-rdfsx validate -s examples/user.shex -d examples/user.ttl -n :a -l :User
+rudof validate -s examples/user.shex -d examples/user.ttl -n :a -l :User
 ```
 
 If there is a shapemap in `examples/user.sm`, we can validate using:
 
 ```sh
-rdfsx validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
+rudof validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
 ```
 
 ### Validating an RDF node against some SHACL Shape
 
 ```sh
-rdfsx shacl-validate --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+rudof shacl-validate --shapes examples/simple_shacl.ttl --data examples/simple.ttl
 ```
 
 ### Conversion between shapes formalisms
 
 ```sh
-$ rdfsx convert --help
+$ rudof convert --help
 Conversion between different Data modeling technologies
 
-Usage: rdfsx convert [OPTIONS] --input-mode <Input mode> --source-file <Source file name> --export-mode <Result mode>
+Usage: rudof convert [OPTIONS] --input-mode <Input mode> --source-file <Source file name> --export-mode <Result mode>
 
 Options:
   -m, --input-mode <Input mode>

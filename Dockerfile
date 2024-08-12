@@ -1,4 +1,4 @@
-ARG BINARY_NAME_DEFAULT=rdfsx
+ARG BINARY_NAME_DEFAULT=rudof
 
 FROM clux/muslrust:latest as builder
 RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser

@@ -3,6 +3,7 @@
 ## Current changes without release yet
 
 - Repaired error #91 adding a force-overwrite option to the command line
+- Changed command line name from `rdfsx` to `rudof`
 
 ## [0.1.6] - 2024-08-09
 

@@ -6,7 +6,7 @@
 !/srdf
 !/shex_ast
 !/shex_compact
-!/rdfsx_cli
+!/rudof_cli
 !/shacl_ast
 !/srdf_sparql
 !/shex_testsuite
