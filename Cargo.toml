@@ -29,7 +29,7 @@ exclude = [
 ]
 
 default-members = [
-    "rdfsx_cli"
+    "rudof_cli"
 ]
 
 [workspace.package]
