@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: 3.12
+        python-version: [ 3.12 ]
         target: [ x86_64, x64, aarch64, armv7 ]
 
     steps:
@@ -61,7 +61,7 @@ jobs:
     runs-on: Windows-2022
     strategy:
       matrix:
-        python-version: 3.12
+        python-version: [ 3.12 ]
         target: [ x64, x86 ]
 
     steps:
@@ -94,7 +94,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: [ 3.12 ] 
           architecture: x64
 
       - name: Build wheels
@@ -102,7 +102,7 @@ jobs:
         with:
           working-directory: python
           target: x86_64
-          args: --release --out dist --interpreter 3.12
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
