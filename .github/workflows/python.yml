@@ -53,7 +53,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.target }}
+          name: wheels-linux-${{ matrix.target }}-${{ matrix.python-version }}
           path: python/dist
           if-no-files-found: error
           
@@ -82,7 +82,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.target }}
+          name: wheels-windows-${{ matrix.target }}-${{ matrix.python-version }}
           path: python/dist
           if-no-files-found: error
 
@@ -107,7 +107,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos
+          name: wheels-macos-${{ matrix.python-version }}
           path: python/dist
           if-no-files-found: error
 
