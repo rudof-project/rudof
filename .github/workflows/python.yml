@@ -3,7 +3,7 @@ name: Python
 on:
   push:
     branches:
-      - main
+      - issue9
       - master
   release:
     types:
@@ -16,89 +16,93 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - runner: ubuntu-latest
-            target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
+        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+        target: [ x86_64, x64, aarch64, armv7 ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
-          manylinux: musllinux_1_2
           working-directory: python
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-musllinux-${{ matrix.platform.target }}
+          name: wheels-linux-${{ matrix.target }}
           path: python/dist
           if-no-files-found: error
           
   windows:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: Windows-2022
     strategy:
       matrix:
-        platform:
-          - runner: windows-latest
-            target: x64
-          - runner: windows-latest
-            target: x86
+        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+        target: [ x64, x86 ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
-          architecture: ${{ matrix.platform.target }}
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.target }}
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
           working-directory: python
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.platform.target }}
+          name: wheels-windows-${{ matrix.target }}
           path: python/dist
           if-no-files-found: error
 
   macos:
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: macos-12
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
+    runs-on: macos-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
-      - name: Build wheels
+          python-version: '3.7 - 3.11'
+          architecture: x64
+
+      - name: Build wheels - 3.7
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
           working-directory: python
+          target: x86_64
+          args: --release --out dist --interpreter 3.7
+
+      - name: Build wheels - 3.11
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: python
+          target: x86_64
+          args: --release --out dist --interpreter 3.11
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.platform.target }}
+          name: wheels-macos
           path: python/dist
           if-no-files-found: error
 
