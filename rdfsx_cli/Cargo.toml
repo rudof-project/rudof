@@ -19,7 +19,7 @@ shapemap = { path = "../shapemap", version = "0.1.0" }
 shex_compact = { path = "../shex_compact", version = "0.1.0" }
 shacl_ast = { path = "../shacl_ast", version = "0.1.0", features = ["rdf-star"] }
 dctap = { path = "../dctap", version = "0.1.0" }
-shapes_converter = { path = "../shapes_converter", version = "0.1.0" }
+shapes_converter = { path = "../shapes_converter", version = "0.1.0", features = ["rdf-star"] }
 shacl_validation = { path = "../shacl_validation", version = "0.1.0" }
 
 serde = "1.0"

@@ -9,6 +9,13 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+rdf-star = [
+    "spargebra/rdf-star",
+    "srdf/rdf-star",
+]
+
+
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.1.5" }
 dctap = { path = "../dctap", version = "0.1.0" }

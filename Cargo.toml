@@ -84,7 +84,7 @@ shaper_converter = { version = "0.0.12", path = "./shapes_converter" }
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
 anyhow = "1.0"
-shapes_converter = { path = "./shapes_converter" }
+shapes_converter = { path = "./shapes_converter", features = ["rdf-star"] }
 shex_ast = { path = "./shex_ast" }
 shex_validation = { path = "./shex_validation" }
 shacl_validation = { path = "./shacl_validation" }

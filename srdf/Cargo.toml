@@ -10,7 +10,12 @@ homepage.workspace = true
 repository.workspace = true
 
 [features]
-rdf-star = ["oxrdf/rdf-star"]
+rdf-star = [
+    "oxrdf/rdf-star",
+    "oxrdfio/rdf-star",
+    "oxttl/rdf-star",
+    "sparesults/rdf-star",
+]
 
 [dependencies]
 iri_s = { path = "../iri_s", version = "0.1.5" }

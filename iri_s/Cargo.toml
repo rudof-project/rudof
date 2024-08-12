@@ -10,7 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-oxrdf = "0.2.0-alpha.2"
+oxrdf = { version = "0.2.0-alpha.2", features = ["rdf-star"] }
 oxiri = "0.2.3-alpha.1"
 thiserror = "1.0.0"
 serde = "1.0"
