@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.9"
+version = "0.1.10"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -31,8 +31,8 @@ const_format = "0.2"
 lazy_static = "1"
 
 oxttl = { version = "0.1.0-alpha.5", features = [ "rdf-star" ] }
-oxrdfio = "0.1.0-alpha.5"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+oxrdfio = { version = "0.1.0-alpha.5", features = [ "rdf-star" ] }
+oxrdf = { workspace = true, features = ["rdf-star", "oxsdatatypes"] }
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
 sparesults = { version = "0.2.0-alpha.5", features = ["rdf-star" ] }
