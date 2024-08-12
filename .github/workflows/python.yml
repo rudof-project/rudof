@@ -35,6 +35,7 @@ jobs:
           target: ${{ matrix.target }}
           manylinux: auto
           args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
           before-script-linux: |
             # If we're running on rhel centos, install needed packages.
             if command -v yum &> /dev/null; then
@@ -55,7 +56,6 @@ jobs:
         with:
           name: wheels
           path: dist
-          if-no-files-found: error
           
   windows:
     runs-on: Windows-2022
@@ -78,13 +78,13 @@ jobs:
           working-directory: python
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
           
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: dist
-          if-no-files-found: error
 
   macos:
     runs-on: macos-latest
@@ -107,13 +107,13 @@ jobs:
           working-directory: python
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: dist
-          if-no-files-found: error
 
   sdist:
     runs-on: ubuntu-latest
@@ -128,7 +128,7 @@ jobs:
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: wheels
           path: dist
 
   release:
@@ -138,7 +138,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with: 
-          name: dist
+          name: wheels
       - name: List artifacts
         run: ls -lhs
       - name: Publish to PyPI
@@ -147,4 +147,4 @@ jobs:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
           command: upload
-          args: --non-interactive --skip-existing wheels-*/*
+          args: --non-interactive --skip-existing *
