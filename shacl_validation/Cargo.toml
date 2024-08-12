@@ -12,15 +12,15 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.1.0" }
-shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
-iri_s = { path = "../iri_s", version = "0.1.5" }
-prefixmap = { path = "../prefixmap", version = "0.1.0" }
+srdf = { workspace = true }
+shacl_ast = { workspace = true }
+iri_s = { workspace = true }
+prefixmap = { workspace = true }
 
 thiserror = "1.0.63"
 lazy_static = "1"
 const_format = "0.2"
 indoc = "2"
-oxrdf = { version = "0.2.0-alpha.2", features = [ "oxsdatatypes" ] }
+oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
-clap = { version = "4.2.1", features = ["derive"] }
+clap = { workspace = true }

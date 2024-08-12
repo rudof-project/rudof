@@ -10,7 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { path = "../iri_s", version = "0.1.5" }
+iri_s = { workspace = true }
 indexmap = { version = "2", features = ["serde"] }
 thiserror = "1"
 colored = "2"

@@ -17,8 +17,8 @@ name = "pyshapes"
 crate-type = ["cdylib"]
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.1.0" }
-shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
+srdf = { workspace = true }
+shacl_ast = { workspace = true }
 openssl = { version = "0.10.57", features = ["vendored"] }
 
 [dependencies.pyo3]

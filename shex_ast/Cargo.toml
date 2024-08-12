@@ -10,10 +10,10 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.1.0" }
-iri_s = { path = "../iri_s", version = "0.1.5" }
-rbe = { path = "../rbe", version = "0.0.13" }
-prefixmap = { path = "../prefixmap", version = "0.1.0" }
+srdf = { workspace = true }
+iri_s = { workspace = true }
+rbe = { workspace = true }
+prefixmap = { workspace = true }
 serde = "1"
 serde_derive = "1"
 void = "1"
@@ -22,9 +22,8 @@ lazy_static = "1"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
 regex = "1.10"
-serde_json = "1"
+serde_json = { workspace = true }
 const_format = "0.2"
-tracing = "0.1"
-
+tracing = { workspace = true }
 
 [dev-dependencies]
