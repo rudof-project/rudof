@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels
-          path: dist
+          path: python/dist
           
   windows:
     runs-on: Windows-2022
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels
-          path: dist
+          path: python/dist
 
   macos:
     runs-on: macos-latest
@@ -113,23 +113,25 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels
-          path: dist
+          path: python/dist
 
   sdist:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: python
           command: sdist
           args: --out dist
-          working-directory: python
+
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
           name: wheels
-          path: dist
+          path: python/dist
 
   release:
     name: Release
@@ -138,7 +140,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with: 
-          name: wheels
+          pattern: wheels-*
+          merge-multiple: true
       - name: List artifacts
         run: ls -lhs
       - name: Publish to PyPI
