@@ -1,6 +1,9 @@
 on:
+  push:
+    branches:
+      - issue99
   release:
-    types: [push, published]
+    types: [published]
 
 name: Publish
 
