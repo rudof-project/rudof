@@ -4,7 +4,8 @@ use pyo3::prelude::*;
 
 // Rudof Python bindings
 #[pymodule]
-pub mod rudof {
+#[pyo3(name = "rudof")]
+mod rudof {
     use super::*;
 
     #[pymodule_export]
