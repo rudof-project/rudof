@@ -51,8 +51,8 @@ categories = ["rdf"]
 
 [workspace.dependencies]
 # Internal dependencies
-rbe = { version = "0.0.13", path = "./rbe" }
-rbe_testsuite = { version = "0.0.13", path = "./rbe_testsuite" }
+rbe = { version = "0.1.7", path = "./rbe" }
+rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
 iri_s = { version = "0.1.5", path = "./iri_s" }
 prefixmap = { version = "0.1.0", path = "./prefixmap" }
 srdf = { version = "0.1.0", path = "./srdf" }

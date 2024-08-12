@@ -1,6 +1,6 @@
 [package]
 name = "pyshapes"
-version = "0.1.0"
+version = "0.1.7"
 documentation = "https://www.weso.es/shapes-rs/"
 license.workspace = true
 authors.workspace = true
