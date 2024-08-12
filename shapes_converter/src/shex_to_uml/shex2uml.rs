@@ -1,11 +1,19 @@
-use std::io::Write;
+use std::{
+    fs::File,
+    io::{self, Write},
+    process::Command,
+};
 
 use prefixmap::{IriRef, PrefixMap};
 use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use tracing::debug;
 
 use crate::shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml};
 
-use super::{Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint};
+use super::{
+    Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint, PLANTUML,
+};
+use tempfile::TempDir;
 
 pub struct ShEx2Uml {
     config: ShEx2UmlConfig,
@@ -13,9 +21,9 @@ pub struct ShEx2Uml {
 }
 
 impl ShEx2Uml {
-    pub fn new(config: ShEx2UmlConfig) -> ShEx2Uml {
+    pub fn new(config: &ShEx2UmlConfig) -> ShEx2Uml {
         ShEx2Uml {
-            config,
+            config: config.clone(),
             current_uml: Uml::new(),
         }
     }
@@ -23,6 +31,65 @@ impl ShEx2Uml {
     pub fn as_plantuml<W: Write>(&self, writer: &mut W) -> Result<(), ShEx2UmlError> {
         self.current_uml.as_plantuml(writer)?;
         Ok(())
+    }
+
+    pub fn as_image<W: Write>(
+        &self,
+        writer: &mut W,
+        image_format: ImageFormat,
+    ) -> Result<(), ShEx2UmlError> {
+        let tempdir = TempDir::new().map_err(|e| ShEx2UmlError::TempFileError { err: e })?;
+        let tempdir_path = tempdir.path();
+        let tempfile_path = tempdir_path.join("temp.uml");
+        let tempfile_name = tempfile_path.display().to_string();
+        let mut tempfile =
+            File::create(tempfile_path).map_err(|e| ShEx2UmlError::CreatingTempUMLFile {
+                tempfile_name: tempfile_name.clone(),
+                error: e,
+            })?;
+        self.current_uml.as_plantuml(&mut tempfile)?;
+        debug!("ShEx contents stored in temporary file:{}", tempfile_name);
+
+        let (out_param, out_file_name) = match image_format {
+            ImageFormat::PNG => ("-png", tempdir_path.join("temp.png")),
+            ImageFormat::SVG => ("-svg", tempdir_path.join("temp.svg")),
+        };
+        if let Some(plantuml_path) = &self.config.plantuml_path {
+            let mut command = Command::new("java");
+            command
+                .arg("-jar")
+                .arg(plantuml_path)
+                .arg("-o")
+                .arg(tempdir_path.to_string_lossy().to_string())
+                .arg(out_param)
+                .arg(tempfile_name);
+            let command_name = format!("{:?}", &command);
+            debug!("PLANTUML COMMAND:\n{command_name}");
+            let result = command.output();
+            match result {
+                Ok(_) => {
+                    let mut temp_file = File::open(out_file_name.as_path()).map_err(|e| {
+                        ShEx2UmlError::CantOpenGeneratedTempFile {
+                            generated_name: out_file_name.display().to_string(),
+                            error: e,
+                        }
+                    })?;
+                    copy(&mut temp_file, writer).map_err(|e| ShEx2UmlError::CopyingTempFile {
+                        temp_name: out_file_name.display().to_string(),
+                        error: e,
+                    })?;
+                    Ok(())
+                }
+                Err(e) => Err(ShEx2UmlError::PlantUMLCommandError {
+                    command: command_name,
+                    error: e,
+                }),
+            }
+        } else {
+            Err(ShEx2UmlError::NoPlantUMLPath {
+                env_name: PLANTUML.to_string(),
+            })
+        }
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2UmlError> {
@@ -251,6 +318,16 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<UmlCardinality, ShEx2
         (m, n) if m >= 0 && n > m => Ok(UmlCardinality::Range(m, n)),
         _ => Err(ShEx2UmlError::WrongCardinality { min, max }),
     }
+}
+
+fn copy<W: Write>(file: &mut File, writer: &mut W) -> Result<(), io::Error> {
+    io::copy(file, writer)?;
+    Ok(())
+}
+
+pub enum ImageFormat {
+    SVG,
+    PNG,
 }
 
 #[cfg(test)]

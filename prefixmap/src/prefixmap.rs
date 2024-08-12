@@ -55,6 +55,13 @@ impl PrefixMap {
         self
     }
 
+    pub fn without_rich_qualifying(self) -> Self {
+        self.with_hyperlink(false)
+            .with_qualify_localname_color(None)
+            .with_qualify_prefix_color(None)
+            .with_qualify_semicolon_color(None)
+    }
+
     /// Inserts an alias association to an IRI
     pub fn insert(&mut self, alias: &str, iri: &IriS) {
         self.map.insert(alias.to_owned(), iri.clone());
@@ -276,14 +283,17 @@ impl PrefixMap {
         PrefixMap::from_hashmap(&HashMap::from([
             ("", "http://example.org/"),
             ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("dc", "http://purl.org/dc/elements/1.1/"),
         ]))
         .unwrap()
-        .without_default_colors()
-        .with_hyperlink(true)
+        // .without_default_colors()
+        // .with_hyperlink(true)
     }
 
     /// Default Wikidata prefixmap
-    /// This source of this list is https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
+    /// This source of this list is <https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
     pub fn wikidata() -> PrefixMap {
         PrefixMap::from_hashmap(&HashMap::from([
             ("bd", "http://www.bigdata.com/rdf#"),
@@ -389,7 +399,7 @@ mod tests {
         pm.insert("rdf", &ex_rdf);
         assert_eq!(
             pm.to_string(),
-            "ex <http://example.org/>\nrdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            "prefix ex: <http://example.org/>\nprefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
         );
     }
 

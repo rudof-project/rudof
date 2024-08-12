@@ -44,10 +44,6 @@ impl NodeShape {
         }
     }
 
-    pub fn id(&self) -> RDFNode {
-        self.id.clone()
-    }
-
     pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
         self.targets = targets;
         self
@@ -70,6 +66,30 @@ impl NodeShape {
     pub fn with_closed(mut self, closed: bool) -> Self {
         self.closed = closed;
         self
+    }
+
+    pub fn id(&self) -> RDFNode {
+        self.id.clone()
+    }
+
+    pub fn is_deactivated(&self) -> &bool {
+        &self.deactivated
+    }
+
+    pub fn severity(&self) -> Option<Severity> {
+        self.severity.to_owned()
+    }
+
+    pub fn components(&self) -> &Vec<Component> {
+        &self.components
+    }
+
+    pub fn targets(&self) -> &Vec<Target> {
+        &self.targets
+    }
+
+    pub fn property_shapes(&self) -> &Vec<RDFNode> {
+        &self.property_shapes
     }
 
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>

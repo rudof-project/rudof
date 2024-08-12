@@ -2,6 +2,45 @@
 
 ## Current changes without release yet
 
+- Repaired error #91 adding a force-overwrite option to the command line
+- Changed command line name from `rdfsx` to `rudof`
+
+## [0.1.6] - 2024-08-09
+
+- Added more features to SHACL validation: #94
+- Added more control about syntax highlighting on terminal:
+  - Avoiding to include colors when the output goes to a file in ShEx generation options
+- Added config parameter to some of the options in the Command line tool so the user can configure the behaviour: validate, convert, dctap, node
+
+## [0.1.5] - 2024-07-30
+
+- Added options in command line to pass config files in YAML
+- Repaired bug in DCTAP resolution of IRIs
+
+## [0.1.4] - 2024-07-28
+
+- Added 2 separate options for shacl-validate and shex-validate, keeping the generic validate option
+- Repaired bug on UML visualization that didn't show link names
+- Added direct SVG/JPG generation from DCTAP files
+
+## [0.1.3] - 2024-07-27
+
+- Generation of HTML views from ShEx based on Minininja templates which allow better customization
+- Direct conversion from DCTAP to UML and HTML views
+- Generation of UML visualizations in SVG and PNG
+- Basic support for SHACL validation and added shacl-validation crate
+
+## [0.1.2] - 2024-07-17
+
+- Added descriptions to subcommands in command line
+- Added more options in DCTAP: property and shape labels, and value constraints
+- Added direct conversion from DCTAP to HTML and UML
+- More options for HTML views
+
+## [0.1.1] - 2024-07-12
+
+- Added basic support for generating HTML views from ShEx schemas, #60
+
 ## [0.1.0] - 2024-07-05
 
 - Added fields: mandatory, repeatable, valueDatatype and valueShape to DCTAP

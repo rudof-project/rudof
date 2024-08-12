@@ -57,6 +57,14 @@ impl Shape {
         self
     }
 
+    pub fn add_annotation(&mut self, annotation: Annotation) {
+        if let Some(annotations) = &mut self.annotations {
+            annotations.push(annotation)
+        } else {
+            self.annotations = Some(vec![annotation])
+        }
+    }
+
     pub fn with_extends(mut self, extends: Option<Vec<ShapeExprLabel>>) -> Self {
         self.extends = extends;
         self

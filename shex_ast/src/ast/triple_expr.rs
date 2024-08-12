@@ -441,6 +441,33 @@ impl TripleExpr {
         };
         self
     }
+
+    pub fn add_annotation(&mut self, annotation: Annotation) {
+        match self {
+            Self::EachOf { annotations, .. } => {
+                if let Some(anns) = annotations {
+                    anns.push(annotation)
+                } else {
+                    *annotations = Some(vec![annotation])
+                }
+            }
+            Self::TripleConstraint { annotations, .. } => {
+                if let Some(anns) = annotations {
+                    anns.push(annotation)
+                } else {
+                    *annotations = Some(vec![annotation])
+                }
+            }
+            Self::OneOf { annotations, .. } => {
+                if let Some(anns) = annotations {
+                    anns.push(annotation)
+                } else {
+                    *annotations = Some(vec![annotation])
+                }
+            }
+            _ => todo!(),
+        }
+    }
 }
 
 impl Deref for TripleExpr {

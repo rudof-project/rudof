@@ -1,21 +1,6 @@
-[package]
-name = "shapes-rs"
-version = "0.1.0"
-description = "RDF Data shapes implementation in Rust"
-license = "MIT OR Apache-2.0"
-authors = [
-    "Jose Emilio Labra Gayo <labra@uniovi.es>",
-    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
-    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
-]
-repository = "https://github.com/weso/shapes-rs"
-homepage = "https://www.weso.es/shapes-rs/"
-
-[[bin]]
-path = "rdfsx_cli/src/main.rs"
-name = "rdfsx"
 
 [workspace]
+resolver = "2"
 members = [
     "dctap",
     "rbe",
@@ -25,11 +10,13 @@ members = [
     "srdf",
     "shex_ast",
     "shex_compact",
-    "rdfsx_cli",
+    "rudof_cli",
     "shex_testsuite",
     "shex_validation",
     "shapemap",
     "shacl_ast",
+    "shacl_validation",
+    "shacl_testsuite",
     "shapes_converter",
     "python",
     # "shapemap_oxgraph",
@@ -41,9 +28,9 @@ exclude = [
     "shex_compact_winnow"
 ]
 
-#default-members = [
-#    "rdfsx_cli"
-#]
+default-members = [
+    "rudof_cli"
+]
 
 [workspace.package]
 # version = "0.0.6"
@@ -64,9 +51,9 @@ categories = ["rdf"]
 
 [workspace.dependencies]
 # Internal dependencies
-rbe = { version = "0.0.13", path = "./rbe" }
-rbe_testsuite = { version = "0.0.13", path = "./rbe_testsuite" }
-iri_s = { version = "0.0.13", path = "./iri_s" }
+rbe = { version = "0.1.7", path = "./rbe" }
+rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
+iri_s = { version = "0.1.5", path = "./iri_s" }
 prefixmap = { version = "0.1.0", path = "./prefixmap" }
 srdf = { version = "0.1.0", path = "./srdf" }
 dctap = { version = "0.1.0", path = "./dctap" }
@@ -76,23 +63,28 @@ shex_validation = { version = "0.1.0", path = "./shex_validation" }
 shex_compact = { version = "0.1.0", path = "./shex_compact" }
 shapemap = { version = "0.1.0", path = "./shapemap" }
 shacl_ast = { version = "0.1.0", path = "./shacl_ast" }
-shaper_converter = { version = "0.0.12", path = "./shapes_converter" }
+shacl_validation = { version = "0.1.0", path = "./shacl_validation" }
+shapes_converter = { version = "0.1.6", path = "./shapes_converter" }
 
-[dependencies]
+# [dependencies]
+# External dependencies
 clap = { version = "4.2.1", features = ["derive"] }
 anyhow = "1.0"
-shapes_converter = { path = "./shapes_converter" }
-shex_ast = { path = "./shex_ast" }
-shex_validation = { path = "./shex_validation" }
-shex_compact = { path = "./shex_compact" }
-prefixmap = { path = "./prefixmap" }
-shapemap = { path = "./shapemap" }
-srdf = { path = "./srdf" }
-iri_s = { path = "./iri_s" }
-shacl_ast = { path = "./shacl_ast" }
-dctap = { path = "./dctap" }
+# shapes_converter = { path = "./shapes_converter", features = ["rdf-star"] }
+# shex_ast = { path = "./shex_ast" }
+# shex_validation = { path = "./shex_validation" }
+# shacl_validation = { path = "./shacl_validation" }
+# shex_compact = { path = "./shex_compact" }
+# prefixmap = { path = "./prefixmap" }
+# shapemap = { path = "./shapemap" }
+# srdf = { path = "./srdf", features = ["rdf-star"] }
+# iri_s = { path = "./iri_s" }
+# shacl_ast = { path = "./shacl_ast", features = ["rdf-star"] }
+# dctap = { path = "./dctap" }
 oxrdf = "0.2.0-alpha.2"
+# oxigraph = "0.4.0-alpha.7"
 serde_json = "1.0"
 regex = "1.10.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+supports-color = "3.0.0"

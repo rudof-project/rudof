@@ -1,6 +1,11 @@
 [package]
+<<<<<<< HEAD
 name = "rdfsx"
 version = "0.1.0"
+=======
+name = "pyshapes"
+version = "0.1.7"
+>>>>>>> 3bb845ff0bab894cfdc3727646f92deb54d48253
 documentation = "https://www.weso.es/shapes-rs/"
 license.workspace = true
 authors.workspace = true
@@ -17,8 +22,8 @@ name = "rdfsx"
 crate-type = ["cdylib"]
 
 [dependencies]
-srdf = { path = "../srdf", version = "0.1.0" }
-shacl_ast = { path = "../shacl_ast", version = "0.1.0" }
+srdf = { workspace = true }
+shacl_ast = { workspace = true }
 openssl = { version = "0.10.57", features = ["vendored"] }
 
 [dependencies.pyo3]

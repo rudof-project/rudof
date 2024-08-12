@@ -1,6 +1,6 @@
 [package]
 name = "shex_compact"
-version = "0.1.0"
+version = "0.1.7"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_compact"
@@ -10,18 +10,18 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-shex_ast = { path = "../shex_ast", version = "0.1.0" }
-rbe = { path = "../rbe", version = "0.0.13" }
-iri_s = { path = "../iri_s", version = "0.0.13" }
-srdf = { path = "../srdf", version = "0.1.0" }
-prefixmap = { path = "../prefixmap", version = "0.1.0" } 
-shapemap = { path = "../shapemap", version = "0.1.0" } 
+shex_ast = { workspace = true }
+rbe = { workspace = true }
+iri_s = { workspace = true }
+srdf = { workspace = true }
+prefixmap = { workspace = true }
+shapemap = { workspace = true }
 nom = "7"
 nom-regex = "0.2"
 nom_locate = "4"
 regex = "1.10.3"
 thiserror = "1"
-tracing = "0.1"
+tracing = { workspace = true }
 colored = "2"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"

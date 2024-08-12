@@ -1,0 +1,26 @@
+[package]
+name = "shacl_validation"
+version = "0.1.7"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+srdf = { workspace = true }
+shacl_ast = { workspace = true }
+iri_s = { workspace = true }
+prefixmap = { workspace = true }
+
+thiserror = "1.0.63"
+lazy_static = "1"
+const_format = "0.2"
+indoc = "2"
+oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
+oxiri = "0.2.0-alpha.2"
+clap = { workspace = true }

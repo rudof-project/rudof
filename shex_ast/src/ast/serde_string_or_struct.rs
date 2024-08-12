@@ -1,6 +1,6 @@
 //! Tools for working with fields that might contain a string, or might
 //! contain a struct.
-//! This code is based on: https://github.com/emk/compose_yml/blob/7e8e0f47dcc41cf08e15fe082ef4c40b5f0475eb/src/v2/string_or_struct.rs
+//! This code is based on: <https://github.com/emk/compose_yml/blob/7e8e0f47dcc41cf08e15fe082ef4c40b5f0475eb/src/v2/string_or_struct.rs>
 
 use serde::de::{self, Deserialize, DeserializeSeed, Deserializer, SeqAccess};
 use serde::ser::{Serialize, Serializer};

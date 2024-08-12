@@ -3,7 +3,7 @@ use iri_s::IriS;
 use lazy_static::lazy_static;
 
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
-pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "blanknode");
+pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");
 pub const SH_BLANK_NODE_OR_IRI_STR: &str = concatcp!(SH_STR, "BlankNodeOrIRI");
 pub const SH_BLANK_NODE_OR_LITERAL_STR: &str = concatcp!(SH_STR, "BlankNodeOrLiteral");
 pub const SH_INFO_STR: &str = concatcp!(SH_STR, "Info");
@@ -76,6 +76,7 @@ pub const SH_TARGET_OBJECTS_OF_STR: &str = concatcp!(SH_STR, "targetObjectsOf");
 pub const SH_TEXT_STR: &str = concatcp!(SH_STR, "text");
 pub const SH_UNIQUE_LANG_STR: &str = concatcp!(SH_STR, "uniqueLang");
 pub const SH_XONE_STR: &str = concatcp!(SH_STR, "xone");
+pub const SH_SOURCE_CONSTRAINT_STR: &str = concatcp!(SH_STR, "sourceConstraint");
 
 lazy_static! {
     pub static ref SH: IriS = IriS::new_unchecked(SH_STR);
@@ -155,4 +156,5 @@ lazy_static! {
     pub static ref SH_TEXT: IriS = IriS::new_unchecked(SH_TEXT_STR);
     pub static ref SH_UNIQUE_LANG: IriS = IriS::new_unchecked(SH_UNIQUE_LANG_STR);
     pub static ref SH_XONE: IriS = IriS::new_unchecked(SH_XONE_STR);
+    pub static ref SH_SOURCE_CONSTRAINT: IriS = IriS::new_unchecked(SH_SOURCE_CONSTRAINT_STR);
 }

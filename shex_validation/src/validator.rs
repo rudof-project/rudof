@@ -5,6 +5,7 @@ use crate::validator_runner::ValidatorRunner;
 use crate::PosAtom;
 use crate::Reason;
 use crate::ResultValue;
+use crate::ValidatorConfig;
 use either::Either;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
@@ -28,10 +29,10 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new(schema: CompiledSchema) -> Validator {
+    pub fn new(schema: CompiledSchema, config: &ValidatorConfig) -> Validator {
         Validator {
             schema,
-            runner: ValidatorRunner::new(),
+            runner: ValidatorRunner::new(config),
         }
     }
 

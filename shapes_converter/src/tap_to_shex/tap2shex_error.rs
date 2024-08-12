@@ -1,4 +1,4 @@
-use dctap::{DatatypeId, ShapeId, TapShape};
+use dctap::{DatatypeId, PropertyId, ShapeId, TapShape};
 use prefixmap::PrefixMapError;
 use thiserror::Error;
 
@@ -16,11 +16,15 @@ pub enum Tap2ShExError {
         err: iri_s::IriSError,
     },
 
-    #[error(transparent)]
-    PrefixMapError {
-        #[from]
+    #[error("PrefixMap error: {err} at line: {line}, field: {field}")]
+    ResolvingPrefixError {
         err: PrefixMapError,
+        line: u64,
+        field: String,
     },
+
+    #[error("No base IRI trying to resolve IRI for {str}")]
+    NoBaseIRI { str: String },
 
     #[error("Multiple value expressions in statement: value_datatype: {value_datatype:?}, value_shape: {value_shape} ")]
     MultipleValueExprInStatement {
@@ -30,6 +34,15 @@ pub enum Tap2ShExError {
 
     #[error("Converting value datatype to IRI, no prefix declaration: {datatype_id:?}")]
     DatatypeId2IriNoPrefix { datatype_id: DatatypeId },
+
+    #[error("Converting shape to IRI, no prefix declaration: {shape_id:?}")]
+    ShapeId2IriNoPrefix { shape_id: ShapeId },
+
+    #[error("No base IRI converting {str} to IRI. Line: {line}")]
+    IriNoPrefix { str: String, line: u64 },
+
+    #[error("Converting property to IRI, no prefix declaration: {property_id:?}")]
+    PropertyId2IriNoPrefix { property_id: PropertyId },
 }
 
 impl Tap2ShExError {

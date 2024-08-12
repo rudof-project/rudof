@@ -1,0 +1,20 @@
+prefix :       <http://example.org/>
+prefix schema: <http://schema.org/>
+prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+prefix foaf:   <http://xmlns.com/foaf/0.1/>
+
+:alice a :User;                             #Passes as a :UserShape     
+       schema:name           "Alice" ;
+       schema:gender         schema:Female ;
+       schema:knows          :bob .
+
+:bob   a :User;                             #Passes as a :UserShape     
+       schema:gender         schema:Male ;
+       schema:name           "Robert";
+       schema:birthDate      "1980-03-10"^^xsd:date .
+
+:carol a :User;                             #Passes as a :UserShape     
+       schema:name           "Carol" ;
+       schema:gender         schema:Female ;
+       foaf:name             "Carol" .

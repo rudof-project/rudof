@@ -10,8 +10,8 @@ use shex_ast::compiled::shape_label::ShapeLabel;
 use shex_ast::{
     ast::Schema as SchemaJson, compiled::schema_json_compiler::SchemaJsonCompiler, Node,
 };
-use shex_validation::ResultValue;
 use shex_validation::Validator;
+use shex_validation::{ResultValue, ValidatorConfig};
 use srdf::literal::Literal;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::Object;
@@ -192,7 +192,7 @@ impl ValidationEntry {
         compiler
             .compile(&schema, &mut compiled_schema)
             .map_err(Box::new)?;
-        let mut validator = Validator::new(compiled_schema);
+        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default());
         validator.validate_node_shape(&node, &shape, &graph)?;
         let type_ = parse_type(&self.type_)?;
         let result = validator.get_result(&node, &shape)?;

@@ -1,6 +1,7 @@
 use super::shape_expr::ShapeExpr;
 use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
+use crate::Annotation;
 use crate::ShapeExprLabel;
 use prefixmap::Deref;
 use prefixmap::DerefError;
@@ -41,6 +42,10 @@ impl ShapeDecl {
     pub fn with_is_abstract(mut self, is_abstract: bool) -> Self {
         self.is_abstract = is_abstract;
         self
+    }
+
+    pub fn add_annotation(&mut self, annotation: Annotation) {
+        self.shape_expr.add_annotation(annotation);
     }
 }
 

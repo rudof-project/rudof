@@ -1,0 +1,33 @@
+@prefix :       <http://example.org/> .
+@prefix schema: <http://schema.org/> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+:UserShape a sh:NodeShape;
+   sh:targetClass :User ;
+   sh:property [                  # Blank node 1
+    sh:path     schema:name ;
+    sh:minCount 1;
+    sh:maxCount 1;
+    sh:datatype xsd:string ;
+  ] ;
+  sh:property [                   # Blank node 2
+   sh:path schema:gender ;
+   sh:minCount 1;
+   sh:maxCount 1;
+   sh:or (
+    [ sh:in (schema:Male schema:Female) ]
+    [ sh:datatype xsd:string]
+   )
+  ] ;
+  sh:property [                   # Blank node 3  
+   sh:path     schema:birthDate ;
+   sh:maxCount 1;
+   sh:datatype xsd:date ;
+  ] ;
+  sh:property [                   # Blank node 4 
+   sh:path     schema:knows ;
+   sh:nodeKind sh:IRI ;
+   sh:class    :User ;
+  ] .

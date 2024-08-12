@@ -27,7 +27,7 @@ use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::TurtleParser;
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
     graph: Graph,
@@ -194,8 +194,8 @@ impl SRDFBasic for SRDFGraph {
         match subject {
             OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
             OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            // #[cfg(feature = "rdf-star")]
-            // _ => unimplemented!(),
+            #[cfg(feature = "rdf-star")]
+            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -263,8 +263,8 @@ impl SRDFBasic for SRDFGraph {
                 }
             }
             OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
-            // #[cfg(feature = "rdf-star")]
-            // _ => unimplemented!(),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -282,8 +282,8 @@ impl SRDFBasic for SRDFGraph {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            // #[cfg(feature = "rdf-star")]
-            // _ => unimplemented!(),
+            #[cfg(feature = "rdf-star")]
+            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -292,8 +292,8 @@ impl SRDFBasic for SRDFGraph {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            // #[cfg(feature = "rdf-star")]
-            // _ => unimplemented!(),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -349,8 +349,8 @@ impl SRDFBasic for SRDFGraph {
     }
 }
 
-fn cnv_iri_ref(_iri_ref: &IriRef) -> OxNamedNode {
-    todo!()
+fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
+    OxNamedNode::new_unchecked(iri_ref.to_string())
 }
 
 fn cnv_decimal(_d: &Decimal) -> OxDecimal {

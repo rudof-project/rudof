@@ -1,0 +1,23 @@
+prefix :       <http://example.org/>
+prefix schema: <http://schema.org/>
+prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+prefix foaf:   <http://xmlns.com/foaf/0.1/>
+
+:dave  a :User ;                        #Fails as a :UserShape     
+       schema:name       "Dave";
+       schema:gender     :Unknown ;
+       schema:birthDate  1980 ;
+       schema:knows      :grace .
+
+:emily a :User ;                        #Fails as a :UserShape          
+       schema:name       "Emily", "Emilee";
+       schema:gender     schema:Female .
+
+:frank a :User ;                        #Fails as a :UserShape     
+       foaf:name         "Frank" ;
+       schema:gender     schema:Male .
+
+_:x    a :User;                         #Fails as a :UserShape          
+       schema:name       "Unknown" ;
+       schema:gender     schema:Male ;
+       schema:knows      _:x .

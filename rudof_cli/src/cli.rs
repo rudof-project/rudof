@@ -1,12 +1,12 @@
+use clap::{Parser, Subcommand, ValueEnum};
+use shacl_validation::validate::Mode;
+use srdf::RDFFormat;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
 
-use clap::{Parser, Subcommand, ValueEnum};
-use srdf::RDFFormat;
-
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "rdfsx")]
+// #[command(name = "rudof")]
 // #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
 // #[command(version = "0.1")]
 #[command(
@@ -24,19 +24,22 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Information about ShEx shapemaps
     Shapemap {
         #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
         shapemap: PathBuf,
 
         #[arg(
-            long = "shapemap-format",
+            short = 'f',
+            long = "format",
             value_name = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact
         )]
         shapemap_format: ShapeMapFormat,
 
         #[arg(
-            long = "result-shapemap-format",
+            short = 'r',
+            long = "result-format",
             value_name = "Result shapemap format",
             default_value_t = ShapeMapFormat::Compact
         )]
@@ -48,15 +51,23 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
-    Schema {
+    /// Information about ShEx schemas
+    Shex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "schema-format",
+            long = "format",
             value_name = "Schema format",
             default_value_t = ShExFormat::ShExC
         )]
@@ -64,7 +75,7 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "result-schema-format",
+            long = "result-format",
             value_name = "Result schema format",
             default_value_t = ShExFormat::ShExJ
         )]
@@ -82,9 +93,23 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// RDF Validation using ShEx or SHACL
     Validate {
+        #[arg(short = 'M', long = "mode", 
+            value_name = "Validation mode",
+            default_value_t = ValidationMode::ShEx
+        )]
+        validation_mode: ValidationMode,
+
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -138,14 +163,151 @@ pub enum Command {
         )]
         max_steps: usize,
 
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
+
         #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// RDF Validation using ShEx schemas
+    ShexValidate {
+        #[arg(short = 's', long = "schema", value_name = "Schema file name")]
+        schema: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "schema-format",
+            value_name = "Schema format",
+            default_value_t = ShExFormat::ShExC
+        )]
+        schema_format: ShExFormat,
+
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
+        shapemap: Option<PathBuf>,
+
+        #[arg(
+            long = "shapemap-format",
+            value_name = "ShapeMap format",
+            default_value_t = ShapeMapFormat::Compact,
+        )]
+        shapemap_format: ShapeMapFormat,
+
+        #[arg(short = 'n', long = "node")]
+        node: Option<String>,
+
+        #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "shape label (default = START)",
+            group = "node_shape"
+        )]
+        shape: Option<String>,
+
+        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        data: Option<PathBuf>,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
+
+    /// RDF Validation using SHACL shapes
+    ShaclValidate {
+        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
+        shapes: PathBuf,
+
+        #[arg(
+            short = 'f',
+            long = "shapes-format",
+            value_name = "Shapes file format",
+            default_value_t = ShaclFormat::Turtle
+        )]
+        shapes_format: ShaclFormat,
+
+        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        data: Option<PathBuf>,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
+        /// Execution mode
+        #[arg(
+            short = 'm',
+            long = "mode",
+            value_name = "Execution mode",
+            default_value_t = Mode::Default,
+            value_enum
+        )]
+        mode: Mode,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
+
+    /// Information about RDF data
     Data {
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
         data: PathBuf,
@@ -164,8 +326,16 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// Information about RDF nodes which are part of RDF Graphs
     Node {
         #[arg(short = 'n', long = "node")]
         node: String,
@@ -204,8 +374,19 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// Information about SHACL shapes
     Shacl {
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
@@ -232,16 +413,24 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// Information and processing of DCTAP files
     #[command(name = "dctap")]
     DCTap {
-        #[arg(short = 'd', long = "DCTap file", value_name = "DCTap file name")]
+        #[arg(short = 'd', long = "data", value_name = "DCTap file name")]
         file: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "File format",
+            long = "format",
             value_name = "DCTap file format",
             default_value_t = DCTapFormat::CSV
         )]
@@ -249,11 +438,15 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "Result format",
+            long = "result-format",
             value_name = "Ouput results format",
             default_value_t = DCTapResultFormat::Internal
         )]
         result_format: DCTapResultFormat,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
 
         #[arg(
             short = 'o',
@@ -261,19 +454,37 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 
+    /// Conversion between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
+        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        config: Option<PathBuf>,
+
         #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
         input_mode: InputConvertMode,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
 
         #[arg(short = 's', long = "source-file", value_name = "Source file name")]
         file: PathBuf,
 
         #[arg(
             short = 'f',
-            long = "input-format",
+            long = "format",
             value_name = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
@@ -281,8 +492,8 @@ pub enum Command {
 
         #[arg(
             short = 'r',
-            long = "export-format",
-            value_name = "Ouput result format",
+            long = "result-format",
+            value_name = "Result format",
             default_value_t = OutputConvertFormat::Default
         )]
         result_format: OutputConvertFormat,
@@ -293,6 +504,9 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(short = 't', long = "target-folder", value_name = "Target folder")]
+        target_folder: Option<PathBuf>,
 
         #[arg(
             short = 'l',
@@ -331,6 +545,11 @@ pub enum ShExFormat {
     ShExC,
     ShExJ,
     Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
 }
 
 impl Display for ShExFormat {
@@ -340,6 +559,11 @@ impl Display for ShExFormat {
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
             ShExFormat::Turtle => write!(dest, "turtle"),
+            ShExFormat::NTriples => write!(dest, "ntriples"),
+            ShExFormat::RDFXML => write!(dest, "rdfxml"),
+            ShExFormat::TriG => write!(dest, "trig"),
+            ShExFormat::N3 => write!(dest, "n3"),
+            ShExFormat::NQuads => write!(dest, "nquads"),
         }
     }
 }
@@ -475,6 +699,22 @@ impl Display for InputConvertFormat {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
+pub enum ValidationMode {
+    ShEx,
+    SHACL,
+}
+
+impl Display for ValidationMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ValidationMode::ShEx => write!(dest, "shex"),
+            ValidationMode::SHACL => write!(dest, "shacl"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
 pub enum InputConvertMode {
     ShEx,
     DCTAP,
@@ -495,6 +735,7 @@ pub enum OutputConvertMode {
     SPARQL,
     ShEx,
     UML,
+    HTML,
 }
 
 impl Display for OutputConvertMode {
@@ -503,6 +744,7 @@ impl Display for OutputConvertMode {
             OutputConvertMode::SPARQL => write!(dest, "sparql"),
             OutputConvertMode::ShEx => write!(dest, "shex"),
             OutputConvertMode::UML => write!(dest, "uml"),
+            OutputConvertMode::HTML => write!(dest, "html"),
         }
     }
 }
@@ -517,6 +759,9 @@ pub enum OutputConvertFormat {
     ShExJ,
     Turtle,
     PlantUML,
+    HTML,
+    SVG,
+    PNG,
 }
 
 impl Display for OutputConvertFormat {
@@ -529,6 +774,9 @@ impl Display for OutputConvertFormat {
             OutputConvertFormat::ShExJ => write!(dest, "shexj"),
             OutputConvertFormat::Turtle => write!(dest, "turtle"),
             OutputConvertFormat::PlantUML => write!(dest, "uml"),
+            OutputConvertFormat::HTML => write!(dest, "html"),
+            OutputConvertFormat::PNG => write!(dest, "png"),
+            OutputConvertFormat::SVG => write!(dest, "svg"),
         }
     }
 }

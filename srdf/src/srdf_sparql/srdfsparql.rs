@@ -1,5 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, SRDFBasic, SRDF};
+use crate::{AsyncSRDF, QuerySRDF, QuerySolutionIter, SRDFBasic, SRDF};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -17,6 +17,7 @@ use reqwest::{
 use sparesults::{
     FromReadQueryResultsReader, QueryResultsFormat, QueryResultsParser, QuerySolution,
 };
+use std::rc::Rc;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt::Display,
@@ -196,6 +197,9 @@ impl SRDFBasic for SRDFSparql {
                 }
             },
             Self::Term::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -220,6 +224,8 @@ impl SRDFBasic for SRDFSparql {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
+            #[cfg(feature = "rdf-star")]
+            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -228,6 +234,8 @@ impl SRDFBasic for SRDFSparql {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
@@ -377,6 +385,36 @@ impl SRDF for SRDFSparql {
         _pred: &Self::IRI,
     ) -> std::prelude::v1::Result<Vec<crate::Triple<Self>>, Self::Err> {
         todo!()
+    }
+}
+
+impl QuerySRDF for SRDFSparql {
+    fn query_select(&self, query: &str) -> Result<QuerySolutionIter<SRDFSparql>> {
+        let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
+        let mut variables = Vec::new();
+        let mut values = Vec::new();
+        for solution in solutions {
+            if variables.is_empty() {
+                variables.extend(solution.variables().iter().map(|v| v.to_string().into()))
+            }
+            values.push(Ok(solution.values().to_vec()))
+        }
+        Ok(QuerySolutionIter::new(
+            Rc::new(variables),
+            values.into_iter(),
+        ))
+    }
+
+    fn query_ask(&self, query: &str) -> Result<bool> {
+        make_sparql_query(query, &self.client, &self.endpoint_iri)?
+            .first()
+            .and_then(|query_solution| query_solution.get(0))
+            .and_then(|term| match term {
+                OxTerm::Literal(literal) => Some(literal.value()),
+                _ => None,
+            })
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| todo!())
     }
 }
 
@@ -623,8 +661,9 @@ fn subject_as_term(subject: &OxSubject) -> OxTerm {
     match subject {
         OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
         OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-        // #[cfg(feature = "rdf-star")]
-        // _ => unimplemented!(),
+        #[cfg(feature = "rdf-star")]
+        #[cfg(feature = "rdf-star")]
+        OxSubject::Triple(_) => unimplemented!(),
     }
 }
 

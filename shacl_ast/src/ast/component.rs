@@ -1,13 +1,13 @@
 use crate::{
     node_kind::NodeKind, value::Value, SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR,
     SH_DISJOINT_STR, SH_EQUALS_STR, SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR,
-    SH_IRI_STR, SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR, SH_MAX_COUNT_STR,
-    SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR, SH_MIN_COUNT_STR,
-    SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR, SH_OR_STR,
-    SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
+    SH_IN_STR, SH_IRI_STR, SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR,
+    SH_MAX_COUNT_STR, SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR,
+    SH_MIN_COUNT_STR, SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR,
+    SH_NOT_STR, SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
-use iri_s::iri;
+use iri_s::{iri, IriS};
 use itertools::Itertools;
 use oxrdf::{Literal as OxLiteral, NamedNode, Term as OxTerm};
 use prefixmap::IriRef;
@@ -360,6 +360,42 @@ impl Display for Component {
                 write!(f, "In [{str}]")
             }
             Component::QualifiedValueShape { .. } => todo!(),
+        }
+    }
+}
+
+impl From<Component> for IriS {
+    fn from(value: Component) -> Self {
+        match value {
+            Component::Class(_) => IriS::new_unchecked(SH_CLASS_STR),
+            Component::Datatype(_) => IriS::new_unchecked(SH_DATATYPE_STR),
+            Component::NodeKind(_) => IriS::new_unchecked(SH_IRI_STR),
+            Component::MinCount(_) => IriS::new_unchecked(SH_MIN_COUNT_STR),
+            Component::MaxCount(_) => IriS::new_unchecked(SH_MAX_COUNT_STR),
+            Component::MinExclusive(_) => IriS::new_unchecked(SH_MIN_EXCLUSIVE_STR),
+            Component::MaxExclusive(_) => IriS::new_unchecked(SH_MAX_EXCLUSIVE_STR),
+            Component::MinInclusive(_) => IriS::new_unchecked(SH_MIN_INCLUSIVE_STR),
+            Component::MaxInclusive(_) => IriS::new_unchecked(SH_MAX_INCLUSIVE_STR),
+            Component::MinLength(_) => IriS::new_unchecked(SH_MIN_LENGTH_STR),
+            Component::MaxLength(_) => IriS::new_unchecked(SH_MAX_LENGTH_STR),
+            Component::Pattern { .. } => IriS::new_unchecked(SH_PATTERN_STR),
+            Component::UniqueLang(_) => IriS::new_unchecked(SH_UNIQUE_LANG_STR),
+            Component::LanguageIn { .. } => IriS::new_unchecked(SH_LANGUAGE_IN_STR),
+            Component::Equals(_) => IriS::new_unchecked(SH_EQUALS_STR),
+            Component::Disjoint(_) => IriS::new_unchecked(SH_DISJOINT_STR),
+            Component::LessThan(_) => IriS::new_unchecked(SH_LESS_THAN_STR),
+            Component::LessThanOrEquals(_) => IriS::new_unchecked(SH_LESS_THAN_OR_EQUALS_STR),
+            Component::Or { .. } => IriS::new_unchecked(SH_OR_STR),
+            Component::And { .. } => IriS::new_unchecked(SH_AND_STR),
+            Component::Not { .. } => IriS::new_unchecked(SH_NOT_STR),
+            Component::Xone { .. } => IriS::new_unchecked(SH_XONE_STR),
+            Component::Closed { .. } => IriS::new_unchecked(SH_CLOSED_STR),
+            Component::Node { .. } => IriS::new_unchecked(SH_NODE_STR),
+            Component::HasValue { .. } => IriS::new_unchecked(SH_HAS_VALUE_STR),
+            Component::In { .. } => IriS::new_unchecked(SH_IN_STR),
+            Component::QualifiedValueShape { .. } => {
+                IriS::new_unchecked(SH_QUALIFIED_VALUE_SHAPE_STR)
+            }
         }
     }
 }

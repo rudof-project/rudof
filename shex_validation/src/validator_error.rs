@@ -49,6 +49,12 @@ pub enum ValidatorError {
         node: Node,
         errors: ValidatorErrors,
     },
+
+    #[error("Error reading config file from path {path}: {error}")]
+    ValidatorConfigFromPathError { path: String, error: String },
+
+    #[error("Error reading config file from path {path}: {error}")]
+    ValidatorConfigYamlError { path: String, error: String },
 }
 
 #[derive(Debug, Clone)]

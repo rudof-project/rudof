@@ -7,7 +7,7 @@ edition.workspace = true
 
 
 [dependencies]
-shapemap = { path = "../shapemap" }
+shapemap = { workspace = true }
 oxrdf = "0.1.7"
 thiserror = "1.0"
 

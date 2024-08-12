@@ -1,6 +1,6 @@
 use crate::{tap_config::TapConfig, tap_error::TapError, TapReaderBuilder, TapShape};
 use serde_derive::{Deserialize, Serialize};
-use std::{io, path::Path};
+use std::{fmt::Display, io, path::Path};
 use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,10 +31,10 @@ impl DCTap {
         self.shapes.push(shape.clone());
     }
 
-    pub fn from_path(path: &Path, _config: TapConfig) -> Result<DCTap, TapError> {
+    pub fn from_path<P: AsRef<Path>>(path: P, config: &TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new().flexible(true).from_path(path)?;
+        let mut tap_reader = TapReaderBuilder::from_path(path, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -45,7 +45,7 @@ impl DCTap {
     pub fn from_reader<R: io::Read>(reader: R) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::new().flexible(true).from_reader(reader)?;
+        let mut tap_reader = TapReaderBuilder::from_reader(reader, &TapConfig::default())?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -55,6 +55,15 @@ impl DCTap {
 
     pub fn shapes(&self) -> impl Iterator<Item = &TapShape> {
         self.shapes.iter()
+    }
+}
+
+impl Display for DCTap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for shape in self.shapes() {
+            write!(f, "{shape}")?;
+        }
+        Ok(())
     }
 }
 
@@ -71,9 +80,10 @@ shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,knowsLabel
 ";
         let dctap = DCTap::from_reader(data.as_bytes()).unwrap();
-        let mut expected_shape = TapShape::new();
-        expected_shape.set_shape_id(&ShapeId::new("Person"));
-        let mut statement = TapStatement::new(PropertyId::new("knows"));
+        let mut expected_shape = TapShape::new(2);
+        expected_shape.set_shape_id(&ShapeId::new("Person", 2));
+        expected_shape.set_shape_label("PersonLabel");
+        let mut statement = TapStatement::new(PropertyId::new("knows", 2));
         statement.set_property_label("knowsLabel");
         expected_shape.add_statement(statement);
         let mut expected_dctap = DCTap::new();
