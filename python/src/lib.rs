@@ -2,8 +2,9 @@ mod shacl;
 
 use pyo3::prelude::*;
 
+// Rudof Python bindings
 #[pymodule]
-pub mod pyshapes {
+pub mod rudof {
     use super::*;
 
     #[pymodule_export]
