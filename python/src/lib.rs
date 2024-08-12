@@ -1,20 +1,19 @@
-mod shacl;
-
 use pyo3::prelude::*;
+
+use crate::shacl::parse;
+use crate::shacl::validate;
+
+mod shacl;
 
 // Rudof Python bindings
 #[pymodule]
-#[pyo3(name = "rudof")]
-mod rudof {
-    use super::*;
+fn rudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add("__package__", "rudof")?;
+    module.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))?;
 
-    #[pymodule_export]
-    use super::shacl::{parse, validate};
+    module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(validate, module)?)?;
 
-    #[pymodule_init]
-    fn init(module: &Bound<'_, PyModule>) -> PyResult<()> {
-        module.add("__package__", "rudof")?;
-        module.add("__version__", env!("CARGO_PKG_VERSION"))?;
-        module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))
-    }
+    Ok(())
 }
