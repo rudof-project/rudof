@@ -19,6 +19,8 @@ crate-type = ["cdylib"]
 [dependencies]
 srdf = { workspace = true }
 shacl_ast = { workspace = true }
+shacl_validation = { workspace = true }
+
 openssl = { version = "0.10.66", features = ["vendored"] }
 
 [dependencies.pyo3]
