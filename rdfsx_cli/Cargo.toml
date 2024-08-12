@@ -9,30 +9,34 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[dependencies]
-shex_ast = { path = "../shex_ast", version = "0.1.0" }
-shex_validation = { path = "../shex_validation", version = "0.1.0" }
-srdf = { path = "../srdf", version = "0.1.0", features = ["rdf-star"] }
-prefixmap = { path = "../prefixmap", version = "0.1.0" }
-iri_s = { path = "../iri_s", version = "0.1.5" }
-shapemap = { path = "../shapemap", version = "0.1.0" }
-shex_compact = { path = "../shex_compact", version = "0.1.0" }
-shacl_ast = { path = "../shacl_ast", version = "0.1.0", features = ["rdf-star"] }
-dctap = { path = "../dctap", version = "0.1.0" }
-shapes_converter = { path = "../shapes_converter", version = "0.1.0", features = ["rdf-star"] }
-shacl_validation = { path = "../shacl_validation", version = "0.1.0" }
+[[bin]]
+path = "src/main.rs"
+name = "rdfsx"
 
+[dependencies]
+shex_ast = { workspace = true }
+shex_validation = { workspace = true }
+srdf = { workspace = true, features = ["rdf-star"] }
+prefixmap = { workspace = true }
+iri_s = { workspace = true }
+shapemap = { workspace = true }
+shex_compact = { workspace = true }
+shacl_ast = { workspace = true, features = ["rdf-star"] }
+dctap = { workspace = true }
+shapes_converter = { workspace = true, features = ["rdf-star"] }
+shacl_validation = { workspace = true }
+ 
 serde = "1.0"
 serde_derive = "1.0"
-serde_json = "1.0"
+serde_json = { workspace = true }
 serde_yaml = "0.9.21"
 anyhow = "1.0"
 thiserror = "1.0"
 void = "1"
-clap = { version = "4.2.1", features = ["derive"] }
-oxrdf = "0.2.0-alpha.2"
+clap = { workspace = true }
+oxrdf = { workspace = true }
 oxiri = "0.2.3-alpha.1"
 regex = "^1.10"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
-supports-color = "3.0.0"
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+supports-color = { workspace = true }
