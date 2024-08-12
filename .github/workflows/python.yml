@@ -1,9 +1,6 @@
 name: Python
 
 on:
-  push:
-    branches:
-      - main
   release:
     types:
       - published
@@ -13,108 +10,124 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - runner: ubuntu-latest
-            target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
+        python-version: [ 3.12 ]
+        target: [ x86_64, x64, aarch64, armv7 ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
-          manylinux: musllinux_1_2
           working-directory: python
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
+          before-script-linux: |
+            # If we're running on rhel centos, install needed packages.
+            if command -v yum &> /dev/null; then
+                yum update -y && yum install -y perl-core openssl openssl-devel pkgconfig libatomic
+
+                # If we're running on i686 we need to symlink libatomic
+                # in order to build openssl with -latomic flag.
+                if [[ ! -d "/usr/lib64" ]]; then
+                    ln -s /usr/lib/libatomic.so.1 /usr/lib/libatomic.so
+                fi
+            else
+                # If we're running on debian-based system.
+                apt update -y && apt-get install -y libssl-dev openssl pkg-config
+            fi
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-musllinux-${{ matrix.platform.target }}
+          name: wheels-linux-${{ matrix.target }}
           path: python/dist
-          if-no-files-found: error
           
   windows:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: Windows-2022
     strategy:
       matrix:
-        platform:
-          - runner: windows-latest
-            target: x64
-          - runner: windows-latest
-            target: x86
+        python-version: [ 3.12 ]
+        target: [ x64, x86 ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
-          architecture: ${{ matrix.platform.target }}
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.target }}
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
           working-directory: python
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
+          
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.platform.target }}
+          name: wheels-windows-${{ matrix.target }}
           path: python/dist
-          if-no-files-found: error
 
   macos:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: macos-latest
     strategy:
       matrix:
-        platform:
-          - runner: macos-12
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
+        python-version: [ 3.12 ]
+        target: [ x64 ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.target }}
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
           working-directory: python
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.platform.target }}
+          name: wheels-macos-${{ matrix.target }}
           path: python/dist
-          if-no-files-found: error
 
   sdist:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: python
           command: sdist
           args: --out dist
-          working-directory: python
+
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-sdist
+          name: wheels
           path: python/dist
-          if-no-files-found: error
 
   release:
     name: Release
@@ -122,11 +135,15 @@ jobs:
     needs: [linux, windows, macos, sdist]
     steps:
       - uses: actions/download-artifact@v4
+        with: 
+          pattern: wheels-*
+          merge-multiple: true
+      - name: List artifacts
+        run: ls -lhs
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
           command: upload
-          args: --non-interactive --skip-existing wheels-*/*
-          working-directory: python
+          args: --non-interactive --skip-existing *

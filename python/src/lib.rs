@@ -1,18 +1,19 @@
-mod shacl;
-
 use pyo3::prelude::*;
 
+use crate::shacl::parse;
+use crate::shacl::validate;
+
+mod shacl;
+
+// Rudof Python bindings
 #[pymodule]
-pub mod pyshapes {
-    use super::*;
+fn rudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add("__package__", "rudof")?;
+    module.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))?;
 
-    #[pymodule_export]
-    use super::shacl::parse;
+    module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(validate, module)?)?;
 
-    #[pymodule_init]
-    fn pymodule_init(module: &Bound<'_, PyModule>) -> PyResult<()> {
-        module.add("__package__", "pyshapes")?;
-        module.add("__version__", env!("CARGO_PKG_VERSION"))?;
-        module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))
-    }
+    Ok(())
 }
