@@ -2,7 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.12] - 2024-08-13
+
 - Changed the one line description of the commands according to issue #77
+- First version which allows several RDF data files in the command line #100
+- Repaired small bug in the validate option because two options had the same long name: mode
 
 ## [0.1.11] - 2024-08-12
 
