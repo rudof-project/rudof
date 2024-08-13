@@ -173,10 +173,14 @@ mod tests {
     fn test_prefix() {
         let str = r#":a@:S"#;
         let mut nodes_prefixmap = PrefixMap::new();
-        nodes_prefixmap.insert("", &IriS::new_unchecked("http://example.org/"));
+        nodes_prefixmap
+            .insert("", &IriS::new_unchecked("http://example.org/"))
+            .unwrap();
 
         let mut shapes_prefixmap = PrefixMap::new();
-        shapes_prefixmap.insert("", &IriS::new_unchecked("http://example.org/shapes/"));
+        shapes_prefixmap
+            .insert("", &IriS::new_unchecked("http://example.org/shapes/"))
+            .unwrap();
 
         let parsed_shapemap = ShapeMapParser::parse(
             str,

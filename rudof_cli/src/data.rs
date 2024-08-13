@@ -2,6 +2,7 @@ use prefixmap::PrefixMap;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::srdf_sparql::SRDFSparql;
 
+#[derive(Debug)]
 pub enum Data {
     Endpoint(SRDFSparql),
     RDFData(SRDFGraph),

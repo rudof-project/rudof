@@ -27,6 +27,7 @@ use std::{
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
 /// Implements SRDF interface as a SPARQL endpoint
+#[derive(Debug)]
 pub struct SRDFSparql {
     endpoint_iri: IriS,
     prefixmap: PrefixMap,

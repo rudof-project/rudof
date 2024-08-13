@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+- Changed the one line description of the commands according to issue #77
+
 ## [0.1.11] - 2024-08-12
 
 - Repaired error #91 adding a force-overwrite option to the command line

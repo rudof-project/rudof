@@ -63,19 +63,30 @@ impl PrefixMap {
     }
 
     /// Inserts an alias association to an IRI
-    pub fn insert(&mut self, alias: &str, iri: &IriS) {
-        self.map.insert(alias.to_owned(), iri.clone());
+    pub fn insert(&mut self, alias: &str, iri: &IriS) -> Result<(), PrefixMapError> {
+        match self.map.entry(alias.to_string()) {
+            indexmap::map::Entry::Occupied(mut e) => {
+                // TODO: Possible error with repeated aliases??
+                e.insert(iri.to_owned());
+                ()
+            }
+            indexmap::map::Entry::Vacant(v) => {
+                v.insert(iri.to_owned());
+                ()
+            }
+        };
+        Ok(())
     }
 
     pub fn find(&self, str: &str) -> Option<&IriS> {
         self.map.get(str)
     }
 
-    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, IriSError> {
+    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
         let mut pm = PrefixMap::new();
         for (a, s) in hm.iter() {
             let iri = IriS::from_str(s)?;
-            pm.insert(a, &iri);
+            pm.insert(a, &iri)?;
         }
         Ok(pm)
     }
@@ -361,6 +372,13 @@ impl PrefixMap {
         self.hyperlink = hyperlink;
         self
     }
+
+    pub fn merge(&mut self, other: PrefixMap) -> Result<(), PrefixMapError> {
+        for (alias, iri) in other.iter() {
+            self.insert(alias, iri)?
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Display for PrefixMap {
@@ -385,7 +403,7 @@ mod tests {
     fn prefix_map1() {
         let mut pm = PrefixMap::new();
         let binding = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", &binding);
+        pm.insert("ex", &binding).unwrap();
         let expected = IriS::from_str("http://example.org/name").unwrap();
         assert_eq!(pm.resolve("ex:name").unwrap(), expected);
     }
@@ -394,9 +412,9 @@ mod tests {
     fn prefixmap_display() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", &ex_iri);
+        pm.insert("ex", &ex_iri).unwrap();
         let ex_rdf = IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap();
-        pm.insert("rdf", &ex_rdf);
+        pm.insert("rdf", &ex_rdf).unwrap();
         assert_eq!(
             pm.to_string(),
             "prefix ex: <http://example.org/>\nprefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
@@ -407,7 +425,7 @@ mod tests {
     fn prefixmap_resolve() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://example.org/").unwrap();
-        pm.insert("ex", &ex_iri);
+        pm.insert("ex", &ex_iri).unwrap();
         assert_eq!(
             pm.resolve("ex:pepe").unwrap(),
             IriS::from_str("http://example.org/pepe").unwrap()
@@ -418,7 +436,7 @@ mod tests {
     fn prefixmap_resolve_xsd() {
         let mut pm = PrefixMap::new();
         let ex_iri = IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap();
-        pm.insert("xsd", &ex_iri);
+        pm.insert("xsd", &ex_iri).unwrap();
         assert_eq!(
             pm.resolve_prefix_local("xsd", "string").unwrap(),
             IriS::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap()
@@ -428,11 +446,13 @@ mod tests {
     #[test]
     fn qualify() {
         let mut pm = PrefixMap::new();
-        pm.insert("", &IriS::from_str("http://example.org/").unwrap());
+        pm.insert("", &IriS::from_str("http://example.org/").unwrap())
+            .unwrap();
         pm.insert(
             "shapes",
             &IriS::from_str("http://example.org/shapes/").unwrap(),
-        );
+        )
+        .unwrap();
         assert_eq!(
             pm.qualify(&IriS::from_str("http://example.org/alice").unwrap()),
             ":alice"
