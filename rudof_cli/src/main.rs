@@ -23,7 +23,7 @@ use clap::Parser;
 use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
-use shacl_validation::validate::{GraphValidator, Mode, SparqlValidator};
+use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -45,9 +45,11 @@ use tracing::debug;
 
 pub mod cli;
 pub mod data;
+pub mod input_spec;
 
 pub use cli::*;
 pub use data::*;
+pub use input_spec::*;
 
 use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
 use tracing_subscriber::prelude::*;
@@ -104,7 +106,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
-            mode,
+            shacl_validation_mode,
             output,
             force_overwrite,
         }) => match validation_mode {
@@ -145,7 +147,7 @@ fn main() -> Result<()> {
                     data,
                     data_format,
                     endpoint,
-                    *mode,
+                    *shacl_validation_mode,
                     cli.debug,
                     output,
                     *force_overwrite,
@@ -375,7 +377,7 @@ fn show_schema(
 fn run_validate_shex(
     schema_path: &Path,
     schema_format: &ShExFormat,
-    data: &Option<PathBuf>,
+    data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
     maybe_node: &Option<String>,
@@ -441,18 +443,22 @@ fn run_validate_shex(
 fn run_validate_shacl(
     shapes_path: &Path,
     shapes_format: &ShaclFormat,
-    data: &Option<PathBuf>,
+    data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
-    mode: Mode,
+    mode: ShaclValidationMode,
     _debug: u8,
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
+
+    // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
+    let data = cast_to_data_path(data)?;
+
     if let Some(data) = data {
         let validator = match GraphValidator::new(
-            data,
+            &data,
             match data_format {
                 DataFormat::Turtle => srdf::RDFFormat::Turtle,
                 DataFormat::NTriples => srdf::RDFFormat::NTriples,
@@ -845,25 +851,26 @@ fn get_writer(
 }
 
 fn get_data(
-    data: &Option<PathBuf>,
+    data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
     _debug: u8,
 ) -> Result<Data> {
-    match (data, endpoint) {
-        (None, None) => {
+    match (data.is_empty(), endpoint) {
+        (true, None) => {
             bail!("None of `data` or `endpoint` parameters have been specified for validation")
         }
-        (Some(data), None) => {
+        (false, None) => {
+            // let data_path = cast_to_data_path(data)?;
             let data = parse_data(data, data_format)?;
             Ok(Data::RDFData(data))
         }
-        (None, Some(endpoint)) => {
+        (true, Some(endpoint)) => {
             let endpoint = SRDFSparql::from_str(endpoint)?;
             Ok(Data::Endpoint(endpoint))
         }
-        (Some(_), Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' parameters supported at the same time")
+        (false, Some(_)) => {
+            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
         }
     }
 }
@@ -888,7 +895,7 @@ fn start() -> ShapeSelector {
 
 #[allow(clippy::too_many_arguments)]
 fn run_node(
-    data: &Option<PathBuf>,
+    data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
     node_str: &str,
@@ -1066,14 +1073,14 @@ where
 }
 
 fn run_data(
-    data: &Path,
+    data: &Vec<InputSpec>,
     data_format: &DataFormat,
-    _debug: u8,
+    debug: u8,
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data = parse_data(data, data_format)?;
+    let data = get_data(data, data_format, &None, debug)?;
     writeln!(writer, "Data\n{data:?}\n")?;
     Ok(())
 }
@@ -1103,7 +1110,7 @@ fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<Schema
             Ok(schema_json)
         }
         ShExFormat::Turtle => {
-            let rdf = parse_data(schema_path, &DataFormat::Turtle)?;
+            let rdf = parse_data(&vec![InputSpec::path(schema_path)], &DataFormat::Turtle)?;
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1116,7 +1123,7 @@ fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclS
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         _ => {
             let data_format = shacl_format_to_data_format(shapes_format)?;
-            let rdf = parse_data(shapes_path, &data_format)?;
+            let rdf = parse_data(&vec![InputSpec::path(shapes_path)], &data_format)?;
             let schema = ShaclParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1149,15 +1156,24 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
     }
 }
 
-fn parse_data(data: &Path, data_format: &DataFormat) -> Result<SRDFGraph> {
-    match data_format {
-        DataFormat::Turtle => {
-            let rdf_format = (*data_format).into();
-            let graph = SRDFGraph::from_path(data, &rdf_format, None)?;
-            Ok(graph)
+fn parse_data(data: &Vec<InputSpec>, data_format: &DataFormat) -> Result<SRDFGraph> {
+    let mut graph = SRDFGraph::new();
+    for d in data {
+        match d {
+            InputSpec::Path(data_path) => match data_format {
+                DataFormat::Turtle => {
+                    let rdf_format = (*data_format).into();
+                    // let graph = SRDFGraph::from_path(data, &rdf_format, None)?;
+                    graph.merge_from_path(data_path, &rdf_format, None)?;
+                    // Ok(graph)
+                }
+                _ => bail!("Not implemented reading from other RDF formats yet..."),
+            },
+            InputSpec::Stdin => bail!("Not implemented input from Stdin yet"),
+            InputSpec::Url(url) => bail!("Not implemented input from URLs yet. {url:?}"),
         }
-        _ => bail!("Not implemented reading from other RDF formats yet..."),
     }
+    Ok(graph)
 }
 
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
@@ -1173,4 +1189,16 @@ fn parse_shape_label(label_str: &str) -> Result<ShapeSelector> {
 fn parse_iri_ref(iri: &str) -> Result<IriRef> {
     let iri = ShapeMapParser::parse_iri_ref(iri)?;
     Ok(iri)
+}
+
+fn cast_to_data_path(data: &Vec<InputSpec>) -> Result<Option<PathBuf>> {
+    match &data[..] {
+        [elem] => match elem {
+            InputSpec::Path(path) => Ok(Some(path.clone())),
+            InputSpec::Stdin => bail!("Not supported data from stdin yet"),
+            InputSpec::Url(url) => bail!("Not supported data from url yet. Url: {url}"),
+        },
+        [] => Ok(None),
+        _ => bail!("More than one value for data: {data:?}"),
+    }
 }

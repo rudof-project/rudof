@@ -21,9 +21,9 @@ where
 
     pub fn write(&mut self, schema: &Schema) -> Result<(), RDF::Err> {
         let mut prefix_map = schema.prefix_map();
-        prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
-        prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());
-        prefix_map.insert("sh", &IriS::from_str(SH_STR).unwrap());
+        let _ = prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
+        let _ = prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());
+        let _ = prefix_map.insert("sh", &IriS::from_str(SH_STR).unwrap());
 
         self.rdf.add_prefix_map(prefix_map)?;
         self.rdf.add_base(&schema.base())?;

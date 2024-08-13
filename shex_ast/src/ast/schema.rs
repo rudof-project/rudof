@@ -1,7 +1,7 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
 use iri_s::IriS;
-use prefixmap::{IriRef, PrefixMap};
+use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -70,15 +70,16 @@ impl Schema {
         self
     }
 
-    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
+    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), PrefixMapError> {
         match self.prefixmap {
             None => {
                 let mut pm = PrefixMap::new();
-                pm.insert(alias, iri);
+                pm.insert(alias, iri)?;
                 self.prefixmap = Some(pm);
             }
-            Some(ref mut pm) => pm.insert(alias, iri),
-        }
+            Some(ref mut pm) => pm.insert(alias, iri)?,
+        };
+        Ok(())
     }
 
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {

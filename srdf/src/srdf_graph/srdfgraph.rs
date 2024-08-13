@@ -48,6 +48,35 @@ impl SRDFGraph {
         self.graph.is_empty()
     }
 
+    pub fn merge_from_reader<R: BufRead>(
+        &mut self,
+        read: R,
+        _format: &RDFFormat,
+        base: Option<Iri<String>>,
+    ) -> Result<(), SRDFGraphError> {
+        // TODO: check format and use oxrdfio...
+        let turtle_parser = match base {
+            None => TurtleParser::new(),
+            Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
+        };
+        // let mut graph = Graph::default();
+        let mut reader = turtle_parser.parse_read(read);
+        for triple_result in reader.by_ref() {
+            self.graph.insert(triple_result?.as_ref());
+        }
+        let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+        // TODO: Merge base IRIs???
+        self.base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
+        let pm = PrefixMap::from_hashmap(&prefixes)?;
+        self.merge_prefixes(pm)?;
+        Ok(())
+    }
+
+    pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), SRDFGraphError> {
+        self.pm.merge(prefixmap)?;
+        Ok(())
+    }
+
     pub fn from_reader<R: BufRead>(
         read: R,
         _format: &RDFFormat,
@@ -101,13 +130,30 @@ impl SRDFGraph {
         OxNamedNode::new_unchecked(iri.as_str())
     }
 
-    pub fn from_path(
-        path: &Path,
+    pub fn merge_from_path<P: AsRef<Path>>(
+        &mut self,
+        path: P,
+        format: &RDFFormat,
+        base: Option<Iri<String>>,
+    ) -> Result<(), SRDFGraphError> {
+        let path_name = path.as_ref().display();
+        let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
+            path_name: path_name.to_string(),
+            error: e,
+        })?;
+        let reader = BufReader::new(file);
+        Self::merge_from_reader(self, reader, format, base)?;
+        Ok(())
+    }
+
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
         format: &RDFFormat,
         base: Option<Iri<String>>,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        let file = File::open(path).map_err(|e| SRDFGraphError::ReadingPathError {
-            path_name: path.display().to_string(),
+        let path_name = path.as_ref().display();
+        let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
+            path_name: path_name.to_string(),
             error: e,
         })?;
         let reader = BufReader::new(file);
@@ -550,7 +596,7 @@ impl SRDFBuilder for SRDFGraph {
     }
 
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.pm.insert(alias, iri);
+        self.pm.insert(alias, iri)?;
         Ok(())
     }
 

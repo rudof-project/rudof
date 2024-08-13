@@ -1,5 +1,5 @@
 use iri_s::IriSError;
-use prefixmap::DerefError;
+use prefixmap::{DerefError, PrefixMapError};
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},
@@ -17,6 +17,12 @@ pub enum ParseError {
     IOError {
         #[from]
         err: io::Error,
+    },
+
+    #[error(transparent)]
+    PrefixMapError {
+        #[from]
+        err: PrefixMapError,
     },
 
     #[error("{msg}")]

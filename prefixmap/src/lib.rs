@@ -55,7 +55,7 @@ mod tests {
     fn it_works() -> Result<(), PrefixMapError> {
         let mut pm = PrefixMap::new();
         let schema_iri = IriS::from_str("http://schema.org/")?;
-        pm.insert("schema", &schema_iri);
+        pm.insert("schema", &schema_iri).unwrap();
         let resolved = pm.resolve("schema:knows")?;
         let schema_knows = IriS::from_str("http://schema.org/knows")?;
         assert_eq!(resolved, schema_knows);

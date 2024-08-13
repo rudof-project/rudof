@@ -1,5 +1,6 @@
+use crate::input_spec::InputSpec;
 use clap::{Parser, Subcommand, ValueEnum};
-use shacl_validation::validate::Mode;
+use shacl_validation::validate::ShaclValidationMode;
 use srdf::RDFFormat;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
@@ -104,6 +105,9 @@ pub enum Command {
 
     /// Validate RDF data using ShEx or SHACL
     Validate {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
         #[arg(short = 'M', long = "mode", 
             value_name = "Validation mode",
             default_value_t = ValidationMode::ShEx
@@ -142,9 +146,6 @@ pub enum Command {
         )]
         shape: Option<String>,
 
-        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: Option<PathBuf>,
-
         #[arg(
             short = 't',
             long = "data-format",
@@ -165,13 +166,13 @@ pub enum Command {
 
         /// Execution mode
         #[arg(
-            short = 'm',
-            long = "mode",
-            value_name = "Execution mode",
-            default_value_t = Mode::Default,
+            short = 'S',
+            long = "shacl-mode",
+            value_name = "SHACL validation mode",
+            default_value_t = ShaclValidationMode::Default,
             value_enum
         )]
-        mode: Mode,
+        shacl_validation_mode: ShaclValidationMode,
 
         #[arg(
             short = 'o',
@@ -190,6 +191,9 @@ pub enum Command {
 
     /// Validate RDF using ShEx schemas
     ShexValidate {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
 
@@ -221,9 +225,6 @@ pub enum Command {
             group = "node_shape"
         )]
         shape: Option<String>,
-
-        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: Option<PathBuf>,
 
         #[arg(
             short = 't',
@@ -257,6 +258,9 @@ pub enum Command {
 
     /// Validate RDF data using SHACL shapes
     ShaclValidate {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
 
@@ -267,9 +271,6 @@ pub enum Command {
             default_value_t = ShaclFormat::Turtle
         )]
         shapes_format: ShaclFormat,
-
-        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: Option<PathBuf>,
 
         #[arg(
             short = 't',
@@ -287,10 +288,10 @@ pub enum Command {
             short = 'm',
             long = "mode",
             value_name = "Execution mode",
-            default_value_t = Mode::Default,
+            default_value_t = ShaclValidationMode::Default,
             value_enum
         )]
-        mode: Mode,
+        mode: ShaclValidationMode,
 
         #[arg(
             short = 'o',
@@ -309,9 +310,11 @@ pub enum Command {
 
     /// Show information about RDF data
     Data {
-        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: PathBuf,
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
 
+        // #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        // data: PathBuf,
         #[arg(
             short = 't',
             long = "data-format",
@@ -337,11 +340,11 @@ pub enum Command {
 
     /// Show information about a node in an RDF Graph
     Node {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
         #[arg(short = 'n', long = "node")]
         node: String,
-
-        #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        data: Option<PathBuf>,
 
         #[arg(
             short = 't',

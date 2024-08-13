@@ -3,7 +3,7 @@ use std::path::Path;
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
-    validate::{GraphValidator, Mode, Validator},
+    validate::{GraphValidator, ShaclValidationMode, Validator},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};
@@ -30,10 +30,10 @@ struct Cli {
         short = 'm',
         long = "mode",
         value_name = "Execution mode",
-        default_value_t = Mode::Default,
+        default_value_t = ShaclValidationMode::Default,
         value_enum
     )]
-    mode: Mode,
+    mode: ShaclValidationMode,
 }
 
 struct ShaclTest<S: SRDF + SRDFBasic> {
