@@ -24,7 +24,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Information about ShEx shapemaps
+    /// Show information about ShEx ShapeMaps
     Shapemap {
         #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
         shapemap: PathBuf,
@@ -60,7 +60,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Information about ShEx schemas
+    /// Show information about ShEx schemas
     Shex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
@@ -102,7 +102,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// RDF Validation using ShEx or SHACL
+    /// Validate RDF data using ShEx or SHACL
     Validate {
         #[arg(short = 'M', long = "mode", 
             value_name = "Validation mode",
@@ -188,7 +188,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// RDF Validation using ShEx schemas
+    /// Validate RDF using ShEx schemas
     ShexValidate {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
         schema: PathBuf,
@@ -255,7 +255,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// RDF Validation using SHACL shapes
+    /// Validate RDF data using SHACL shapes
     ShaclValidate {
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
@@ -307,7 +307,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Information about RDF data
+    /// Show information about RDF data
     Data {
         #[arg(short = 'd', long = "data", value_name = "RDF data path")]
         data: PathBuf,
@@ -335,7 +335,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Information about RDF nodes which are part of RDF Graphs
+    /// Show information about a node in an RDF Graph
     Node {
         #[arg(short = 'n', long = "node")]
         node: String,
@@ -386,7 +386,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Information about SHACL shapes
+    /// Show information about SHACL shapes
     Shacl {
         #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
         shapes: PathBuf,
@@ -422,7 +422,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Information and processing of DCTAP files
+    /// Show information and process DCTAP files
     #[command(name = "dctap")]
     DCTap {
         #[arg(short = 'd', long = "data", value_name = "DCTap file name")]
@@ -463,7 +463,7 @@ pub enum Command {
         force_overwrite: bool,
     },
 
-    /// Conversion between different Data modeling technologies
+    /// Convert between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
         #[arg(short = 'c', long = "config", value_name = "Path to config file")]
