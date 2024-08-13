@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.7"
+version = "0.1.12"
 authors.workspace = true
 description.workspace = true
 documentation = "https://www.weso.es/shapes-rs/"
