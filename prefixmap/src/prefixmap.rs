@@ -68,11 +68,9 @@ impl PrefixMap {
             indexmap::map::Entry::Occupied(mut e) => {
                 // TODO: Possible error with repeated aliases??
                 e.insert(iri.to_owned());
-                ()
             }
             indexmap::map::Entry::Vacant(v) => {
                 v.insert(iri.to_owned());
-                ()
             }
         };
         Ok(())

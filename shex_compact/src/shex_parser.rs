@@ -39,7 +39,7 @@ impl<'a> ShExParser<'a> {
                     schema = schema.with_base(Some(iri));
                 }
                 ShExStatement::PrefixDecl { alias, iri } => {
-                    let _ = schema.add_prefix(alias, &iri)?;
+                    schema.add_prefix(alias, &iri)?;
                 }
                 ShExStatement::StartDecl { shape_expr } => {
                     schema = schema.with_start(Some(shape_expr))
