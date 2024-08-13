@@ -23,7 +23,7 @@ use clap::Parser;
 use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
-use shacl_validation::validate::{GraphValidator, Mode, SparqlValidator};
+use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -106,7 +106,7 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             max_steps,
-            mode,
+            shacl_validation_mode,
             output,
             force_overwrite,
         }) => match validation_mode {
@@ -147,7 +147,7 @@ fn main() -> Result<()> {
                     data,
                     data_format,
                     endpoint,
-                    *mode,
+                    *shacl_validation_mode,
                     cli.debug,
                     output,
                     *force_overwrite,
@@ -446,7 +446,7 @@ fn run_validate_shacl(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
-    mode: Mode,
+    mode: ShaclValidationMode,
     _debug: u8,
     output: &Option<PathBuf>,
     force_overwrite: bool,

@@ -2,7 +2,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use shacl_ast::{ShaclParser, ShaclWriter};
 use shacl_validation::validate::GraphValidator;
-use shacl_validation::validate::Mode;
+use shacl_validation::validate::ShaclValidationMode;
 use shacl_validation::validate::Validator;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
@@ -60,10 +60,11 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         let shapes = Path::new(shapes);
         let shapes_format = obtain_format(shapes.extension())?;
 
-        let validator = match GraphValidator::new(data, data_format, None, Mode::Default) {
-            Ok(validator) => validator,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
+        let validator =
+            match GraphValidator::new(data, data_format, None, ShaclValidationMode::Default) {
+                Ok(validator) => validator,
+                Err(error) => return Err(PyValueError::new_err(error.to_string())),
+            };
 
         let report = match validator.validate(shapes, shapes_format) {
             Ok(report) => report,

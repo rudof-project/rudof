@@ -17,7 +17,7 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
 #[derive(ValueEnum, Copy, Clone, Debug)]
-pub enum Mode {
+pub enum ShaclValidationMode {
     Default,
     SPARQL,
 }
@@ -45,7 +45,7 @@ pub trait Validator<'a, S: SRDFBasic> {
 
 pub struct GraphValidator<'a> {
     store: Graph,
-    mode: Mode,
+    mode: ShaclValidationMode,
     base: Option<&'a str>,
 }
 
@@ -54,7 +54,7 @@ impl<'a> GraphValidator<'a> {
         data: &Path,
         data_format: RDFFormat,
         base: Option<&'a str>,
-        mode: Mode,
+        mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
         Ok(GraphValidator {
             store: Graph::new(data, data_format, base)?,
@@ -71,20 +71,22 @@ impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
 
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFGraph> + '_> {
         match self.mode {
-            Mode::Default => Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned())),
-            Mode::SPARQL => todo!(),
+            ShaclValidationMode::Default => {
+                Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned()))
+            }
+            ShaclValidationMode::SPARQL => todo!(),
         }
     }
 }
 
 pub struct SparqlValidator<'a> {
     store: Sparql,
-    mode: Mode,
+    mode: ShaclValidationMode,
     base: Option<&'a str>,
 }
 
 impl<'a> SparqlValidator<'a> {
-    pub fn new(data: &str, mode: Mode) -> Result<Self, ValidateError> {
+    pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
         Ok(SparqlValidator {
             store: Sparql::new(data)?,
             mode,
@@ -100,8 +102,12 @@ impl<'a> Validator<'a, SRDFSparql> for SparqlValidator<'a> {
 
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFSparql> + '_> {
         match self.mode {
-            Mode::Default => Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned())),
-            Mode::SPARQL => Box::new(QueryExecutor::new(self.store.store(), schema.to_owned())),
+            ShaclValidationMode::Default => {
+                Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned()))
+            }
+            ShaclValidationMode::SPARQL => {
+                Box::new(QueryExecutor::new(self.store.store(), schema.to_owned()))
+            }
         }
     }
 }

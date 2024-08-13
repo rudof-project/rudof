@@ -1,6 +1,6 @@
 use crate::input_spec::InputSpec;
 use clap::{Parser, Subcommand, ValueEnum};
-use shacl_validation::validate::Mode;
+use shacl_validation::validate::ShaclValidationMode;
 use srdf::RDFFormat;
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
@@ -166,13 +166,13 @@ pub enum Command {
 
         /// Execution mode
         #[arg(
-            short = 'm',
-            long = "mode",
-            value_name = "Execution mode",
-            default_value_t = Mode::Default,
+            short = 'S',
+            long = "shacl-mode",
+            value_name = "SHACL validation mode",
+            default_value_t = ShaclValidationMode::Default,
             value_enum
         )]
-        mode: Mode,
+        shacl_validation_mode: ShaclValidationMode,
 
         #[arg(
             short = 'o',
@@ -288,10 +288,10 @@ pub enum Command {
             short = 'm',
             long = "mode",
             value_name = "Execution mode",
-            default_value_t = Mode::Default,
+            default_value_t = ShaclValidationMode::Default,
             value_enum
         )]
-        mode: Mode,
+        mode: ShaclValidationMode,
 
         #[arg(
             short = 'o',
