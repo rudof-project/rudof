@@ -40,3 +40,4 @@ regex = "^1.10"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 supports-color = { workspace = true }
+either = "1.13"

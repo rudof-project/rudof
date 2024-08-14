@@ -1,8 +1,12 @@
+use either::Either;
 use std::{
+    fs::{self, File},
+    io::{self, BufRead, BufReader, StdinLock},
     path::{Path, PathBuf},
     str::FromStr,
 };
 
+// Consider using clio
 #[derive(Debug, Clone)]
 pub enum InputSpec {
     Path(PathBuf),
@@ -13,6 +17,15 @@ pub enum InputSpec {
 impl InputSpec {
     pub fn path<P: AsRef<Path>>(path: P) -> InputSpec {
         InputSpec::Path(PathBuf::from(path.as_ref()))
+    }
+
+    // The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
+    pub fn open_read(&self) -> io::Result<InputSpecReader> {
+        Ok(match self {
+            InputSpec::Stdin => Either::Left(io::stdin().lock()),
+            InputSpec::Path(p) => Either::Right(BufReader::new(fs::File::open(p)?)),
+            InputSpec::Url(_) => todo!(),
+        })
     }
 }
 
@@ -32,3 +45,6 @@ impl FromStr for InputSpec {
         }
     }
 }
+
+/// This type implements [`std::io::BufRead`].
+pub type InputSpecReader = Either<StdinLock<'static>, BufReader<fs::File>>;

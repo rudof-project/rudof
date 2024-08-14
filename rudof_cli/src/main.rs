@@ -1171,18 +1171,13 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
 fn parse_data(data: &Vec<InputSpec>, data_format: &DataFormat) -> Result<SRDFGraph> {
     let mut graph = SRDFGraph::new();
     for d in data {
-        match d {
-            InputSpec::Path(data_path) => match data_format {
-                DataFormat::Turtle => {
-                    let rdf_format = (*data_format).into();
-                    // let graph = SRDFGraph::from_path(data, &rdf_format, None)?;
-                    graph.merge_from_path(data_path, &rdf_format, None)?;
-                    // Ok(graph)
-                }
-                _ => bail!("Not implemented reading from other RDF formats yet..."),
-            },
-            InputSpec::Stdin => bail!("Not implemented input from Stdin yet"),
-            InputSpec::Url(url) => bail!("Not implemented input from URLs yet. {url:?}"),
+        let reader = d.open_read()?;
+        match data_format {
+            DataFormat::Turtle => {
+                let rdf_format = (*data_format).into();
+                graph.merge_from_reader(reader, &rdf_format, None)?;
+            }
+            _ => bail!("Not implemented reading from {data_format:?} yet"),
         }
     }
     Ok(graph)

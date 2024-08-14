@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+- `data` option now serializes the RDF data to one of the existing RDF data formats (previous version were generating an internal representation of the graph).
+
 ## [0.1.12] - 2024-08-13
 
 - Changed the one line description of the commands according to issue #77
