@@ -83,6 +83,10 @@ pub enum ValueConstraintType {
     MinExclusive,
     MaxInclusive,
     MaxExclusive,
+    Unknown {
+        value: String,
+        line: u64,
+    },
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

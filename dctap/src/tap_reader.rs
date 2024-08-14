@@ -236,7 +236,9 @@ impl<R: io::Read> TapReader<R> {
                 ValueConstraintType::Pattern => {
                     statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
                 }
-                _ => todo!(),
+                _ => {
+                    debug!("Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored")
+                }
             }
         };
         Ok(())
@@ -260,10 +262,13 @@ impl<R: io::Read> TapReader<R> {
                     "MINEXCLUSIVE" => Ok(ValueConstraintType::MinExclusive),
                     "MAXINCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
                     "MAXEXCLUSIVE" => Ok(ValueConstraintType::MaxExclusive),
-                    _ => Err(TapError::UnexpectedValueConstraintType {
-                        value: str.clone(),
-                        pos: pos.clone(),
-                    }),
+                    _ => {
+                        debug!("UnexpectedValueConstraintType: {str}");
+                        Ok(ValueConstraintType::Unknown {
+                            value: str.clone(),
+                            line: pos.line(),
+                        })
+                    }
                 }
             } else {
                 Ok(ValueConstraintType::default())
@@ -314,6 +319,7 @@ fn is_empty(str: &Option<ShapeId>) -> bool {
 
 fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
     match str.to_uppercase().as_str() {
+        "URI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
         "IRI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
         "BNODE" => Ok(NodeType::Basic(BasicNodeType::BNode)),
         "LITERAL" => Ok(NodeType::Basic(BasicNodeType::Literal)),
@@ -330,6 +336,9 @@ fn same_shape_id(shape_id: &Option<ShapeId>, new_shape_id: Option<ShapeId>) -> b
 
 fn parse_boolean(str: &str, field: &str, pos: &Position) -> Result<bool> {
     match str.trim().to_uppercase().as_str() {
+        "" => Ok(false),
+        "YES" => Ok(true),
+        "NO" => Ok(false),
         "TRUE" => Ok(true),
         "FALSE" => Ok(false),
         "1" => Ok(true),

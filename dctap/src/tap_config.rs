@@ -6,10 +6,10 @@ use crate::TapError;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct TapConfig {
-    delimiter: char,
-    quote: char,
-    flexible: bool,
-    picklist_delimiter: char,
+    delimiter: Option<char>,
+    quote: Option<char>,
+    flexible: Option<bool>,
+    picklist_delimiter: Option<char>,
 }
 
 impl TapConfig {
@@ -29,29 +29,38 @@ impl TapConfig {
     }
 
     pub fn picklist_delimiter(&self) -> &char {
-        &self.picklist_delimiter
+        match &self.picklist_delimiter {
+            None => &'|',
+            Some(c) => c,
+        }
     }
 
     pub fn delimiter(&self) -> u8 {
-        self.delimiter as u8
+        match self.delimiter {
+            None => ',' as u8,
+            Some(c) => c as u8,
+        }
     }
 
     pub fn quote(&self) -> u8 {
-        self.quote as u8
+        match self.quote {
+            None => '"' as u8,
+            Some(c) => c as u8,
+        }
     }
 
     pub fn flexible(&self) -> bool {
-        self.flexible
+        self.flexible.unwrap_or_else(|| true)
     }
 }
 
 impl Default for TapConfig {
     fn default() -> Self {
         Self {
-            picklist_delimiter: '|',
-            delimiter: ',',
-            flexible: true,
-            quote: '"',
+            picklist_delimiter: None,
+            delimiter: None,
+            flexible: None,
+            quote: None,
         }
     }
 }
