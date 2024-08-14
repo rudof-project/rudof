@@ -3,15 +3,15 @@ use srdf::RDF_TYPE;
 use srdf::{QuerySRDF, RDFNode, SRDFBasic, RDFS_SUBCLASS_OF, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
+use crate::constraints::{ConstraintResult, DefaultConstraintComponent};
 use crate::context::Context;
 use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::helper::srdf::get_objects_for;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.
@@ -35,15 +35,13 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 // if the node is a literal...
                 if S::term_is_literal(value_node) {
-                    report.make_validation_result(focus_node, context, Some(value_node));
-                    ans = false;
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                     continue;
                 }
                 // or a non-literal that is not a SHACL instance of the provided
@@ -63,12 +61,11 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
                         });
                 // ... validation result
                 if !is_class_valid {
-                    report.make_validation_result(focus_node, context, Some(value_node));
-                    ans = false;
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
-        Ok(ans)
+        Ok(results)
     }
 }
 
@@ -78,9 +75,8 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 let query = formatdoc! {"
@@ -94,12 +90,11 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
                     Err(_) => return Err(ConstraintError::Query),
                 };
                 if !ask {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
 
-        Ok(ans)
+        Ok(results)
     }
 }

@@ -3,6 +3,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -10,7 +11,7 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// sh:minLength specifies the minimum string length of each value node that
 /// satisfies the condition. This can be applied to any literals and IRIs, but
@@ -33,20 +34,18 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinLength {
         _executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 if S::term_is_bnode(value_node) {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 } else {
                     return Err(ConstraintError::NotImplemented);
                 }
             }
         }
-        Ok(ans)
+        Ok(results)
     }
 }
 
@@ -56,14 +55,12 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinLength {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 if S::term_is_bnode(value_node) {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 } else {
                     let query = formatdoc! {
                         " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
@@ -74,12 +71,11 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinLength {
                         Err(_) => return Err(ConstraintError::Query),
                     };
                     if !ask {
-                        ans = false;
-                        report.make_validation_result(focus_node, context, Some(value_node));
+                        results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                     }
                 }
             }
         }
-        Ok(ans)
+        Ok(results)
     }
 }

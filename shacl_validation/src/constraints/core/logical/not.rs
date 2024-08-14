@@ -5,6 +5,7 @@ use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -12,7 +13,6 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
 
 /// sh:not specifies the condition that each value node cannot conform to a
 /// given shape. This is comparable to negation and the logical "not" operator.
@@ -35,8 +35,7 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Not {
         _executor: &dyn SHACLExecutor<S>,
         _context: &Context,
         _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+    ) -> ConstraintResult<S> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -47,9 +46,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Not {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -59,8 +57,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Not {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

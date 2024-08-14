@@ -2,8 +2,8 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -11,7 +11,7 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
 /// condition.
@@ -35,16 +35,14 @@ impl<S: SRDFBasic> ConstraintComponent<S> for MaxCount {
         _: &dyn SHACLExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
         for (focus_node, value_nodes) in value_nodes {
             if (value_nodes.len() as isize) > self.max_count {
-                ans = false;
-                report.make_validation_result(focus_node, context, None);
+                results.push(ValidationResult::new(focus_node, context, None));
             }
         }
-        Ok(ans)
+        Ok(results)
     }
 }
 
@@ -54,9 +52,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxCount {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -66,8 +63,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxCount {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

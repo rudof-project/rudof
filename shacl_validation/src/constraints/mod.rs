@@ -36,10 +36,12 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 pub(crate) mod constraint_error;
 pub mod core;
+
+pub type ConstraintResult<S> = Result<Vec<ValidationResult<S>>, ConstraintError>;
 
 pub(crate) trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
@@ -47,8 +49,7 @@ pub(crate) trait ConstraintComponent<S: SRDFBasic> {
         executor: &dyn SHACLExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+    ) -> ConstraintResult<S>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
@@ -57,8 +58,7 @@ pub trait DefaultConstraintComponent<S: SRDF> {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+    ) -> ConstraintResult<S>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
@@ -67,10 +67,10 @@ pub trait SparqlConstraintComponent<S: QuerySRDF> {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+    ) -> ConstraintResult<S>;
 }
 
+// TODO: can this be improved?
 impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {
     fn from(value: &Component) -> Self {
         match value.to_owned() {
@@ -118,6 +118,7 @@ impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<
     }
 }
 
+// TODO: can this be improved?
 impl<S: QuerySRDF + 'static> From<&Component> for Box<dyn SparqlConstraintComponent<S>> {
     fn from(value: &Component) -> Self {
         match value.to_owned() {

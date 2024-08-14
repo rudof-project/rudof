@@ -3,6 +3,7 @@ use shacl_ast::node_kind::NodeKind;
 use srdf::{QuerySRDF, SRDF};
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -10,7 +11,7 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
@@ -32,9 +33,9 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
         _: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
+
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 let is_valid = match (
@@ -60,12 +61,12 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
                 };
 
                 if !is_valid {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
-        Ok(ans)
+
+        Ok(results)
     }
 }
 
@@ -75,9 +76,9 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
+
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 let query = if S::term_is_iri(value_node) {
@@ -104,11 +105,11 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
                     Err(_) => return Err(ConstraintError::Query),
                 };
                 if !ask {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
-        Ok(ans)
+
+        Ok(results)
     }
 }

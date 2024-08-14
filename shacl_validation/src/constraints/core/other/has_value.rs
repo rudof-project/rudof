@@ -5,6 +5,7 @@ use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -12,7 +13,6 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
 
 /// sh:hasValue specifies the condition that at least one value node is equal to
 ///  the given RDF term.
@@ -35,8 +35,7 @@ impl<S: SRDFBasic> ConstraintComponent<S> for HasValue {
         _executor: &dyn SHACLExecutor<S>,
         _context: &Context,
         _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+    ) -> ConstraintResult<S> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -47,9 +46,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for HasValue {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -59,8 +57,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for HasValue {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

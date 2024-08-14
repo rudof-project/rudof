@@ -5,6 +5,7 @@ use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -12,7 +13,6 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
 
 /// The RDF data model offers a huge amount of flexibility. Any node can in
 /// principle have values for any property. However, in some cases it makes
@@ -44,8 +44,7 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
         _executor: &dyn SHACLExecutor<S>,
         _context: &Context,
         _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+    ) -> ConstraintResult<S> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -56,9 +55,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Closed {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -68,8 +66,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Closed {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

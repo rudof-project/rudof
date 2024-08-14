@@ -1,7 +1,7 @@
 use shacl_ast::*;
 use srdf::{SRDFBasic, SRDF};
 
-use crate::helper::srdf::get_object_for;
+use crate::{context::Context, helper::srdf::get_object_for};
 
 use super::validation_report_error::ResultError;
 
@@ -40,14 +40,14 @@ impl<S: SRDFBasic> ValidationResultBuilder<S> {
     }
 
     pub fn build(self) -> ValidationResult<S> {
-        ValidationResult::new(
-            self.focus_node,
-            self.result_severity,
-            self.result_path,
-            self.source_constraint_component,
-            self.source_shape,
-            self.value,
-        )
+        ValidationResult {
+            focus_node: self.focus_node,
+            result_severity: self.result_severity,
+            result_path: self.result_path,
+            source_constraint_component: self.source_constraint_component,
+            source_shape: self.source_shape,
+            value: self.value,
+        }
     }
 }
 
@@ -75,21 +75,26 @@ pub struct ValidationResult<S: SRDFBasic> {
 
 impl<S: SRDFBasic> ValidationResult<S> {
     pub(crate) fn new(
-        focus_node: Option<S::Term>,
-        result_severity: Option<S::Term>,
-        result_path: Option<S::Term>,
-        source_constraint_component: Option<S::Term>,
-        source_shape: Option<S::Term>,
-        value: Option<S::Term>,
+        focus_node: &S::Term,
+        context: &Context,
+        value_node: Option<&S::Term>,
     ) -> Self {
-        ValidationResult {
-            focus_node,
-            result_severity,
-            result_path,
-            source_constraint_component,
-            source_shape,
-            value,
+        let mut builder = ValidationResultBuilder::default();
+
+        builder.focus_node(focus_node.to_owned());
+        builder.source_constraint_component(context.source_constraint_component::<S>());
+
+        if let Some(result_severity) = context.result_severity::<S>() {
+            builder.result_severity(result_severity);
         }
+        if let Some(source_shape) = context.source_shape::<S>() {
+            builder.source_shape(source_shape);
+        }
+        if let Some(value) = value_node {
+            builder.value(value.to_owned());
+        }
+
+        builder.build()
     }
 
     pub(crate) fn focus_node(&self) -> Option<S::Term> {

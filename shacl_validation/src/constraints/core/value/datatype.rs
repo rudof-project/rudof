@@ -4,8 +4,8 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -13,7 +13,7 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// sh:datatype specifies a condition to be satisfied with regards to the
 /// datatype of each value node.
@@ -37,23 +37,22 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Datatype<S> {
         _executor: &dyn SHACLExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
+
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 if let Some(literal) = S::term_as_literal(value_node) {
                     if S::datatype(&literal) != self.datatype {
-                        ans = false;
-                        report.make_validation_result(focus_node, context, Some(value_node));
+                        results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                     }
                 } else {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
-        Ok(ans)
+
+        Ok(results)
     }
 }
 
@@ -63,9 +62,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Datatype<S> {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -75,8 +73,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Datatype<S> {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

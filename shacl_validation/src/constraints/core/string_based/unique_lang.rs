@@ -1,12 +1,13 @@
 use std::collections::HashSet;
 
+use crate::constraints::ConstraintResult;
 use crate::shape::ValueNode;
+use crate::validation_report::result::ValidationResult;
 
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
@@ -14,7 +15,6 @@ use crate::context::Context;
 use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
-use crate::validation_report::report::ValidationReport;
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
 ///  value nodes may use the same language tag.
@@ -36,27 +36,31 @@ impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
         _: &dyn SHACLExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+    ) -> ConstraintResult<S> {
         if !self.unique_lang {
-            return Ok(true);
+            return Ok(Vec::new());
         }
-        let mut ans = true;
+
+        let mut results = Vec::new();
         let mut langs = HashSet::new();
+
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 if let Some(literal) = S::term_as_literal(value_node) {
                     if let Some(lang) = S::lang(&literal) {
                         if langs.contains(&lang) {
-                            ans = false;
-                            report.make_validation_result(focus_node, context, Some(value_node));
+                            results.push(ValidationResult::new(
+                                focus_node,
+                                context,
+                                Some(value_node),
+                            ));
                         }
                         langs.insert(lang);
                     }
                 }
             }
         }
-        Ok(ans)
+        Ok(results)
     }
 }
 
@@ -66,9 +70,8 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
         executor: &DefaultExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }
 
@@ -78,8 +81,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+    ) -> ConstraintResult<S> {
+        self.evaluate(executor, context, value_nodes)
     }
 }

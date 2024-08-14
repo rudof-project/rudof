@@ -3,28 +3,20 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::shape::ValidateResult;
 use crate::shape::ValueNode;
-use crate::{
-    constraints::{DefaultConstraintComponent, SparqlConstraintComponent},
-    runner::{
-        default_runner::DefaultValidatorRunner, query_runner::QueryValidatorRunner, ValidatorRunner,
-    },
-    validate_error::ValidateError,
-    validation_report::report::ValidationReport,
-};
 
 pub trait SHACLExecutor<S: SRDFBasic> {
     fn store(&self) -> &S;
     fn schema(&self) -> &Schema;
     fn runner(&self) -> &dyn ValidatorRunner<S>;
-
-    fn evaluate(
-        &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError>;
+    fn evaluate(&self, context: &Context, value_nodes: &ValueNode<S>) -> ValidateResult<S>;
 }
 
 pub struct DefaultExecutor<'a, S: SRDF> {
@@ -56,14 +48,10 @@ impl<'a, S: SRDF + 'static> SHACLExecutor<S> for DefaultExecutor<'a, S> {
         &self.runner
     }
 
-    fn evaluate(
-        &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError> {
+    fn evaluate(&self, context: &Context, value_nodes: &ValueNode<S>) -> ValidateResult<S> {
         let component: Box<dyn DefaultConstraintComponent<S>> = context.component().into();
-        Ok(component.evaluate_default(self, context, value_nodes, report)?)
+        let evaluate = component.evaluate_default(self, context, value_nodes)?;
+        Ok(evaluate)
     }
 }
 
@@ -96,13 +84,9 @@ impl<'a, S: QuerySRDF + 'static> SHACLExecutor<S> for QueryExecutor<'a, S> {
         &self.runner
     }
 
-    fn evaluate(
-        &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError> {
+    fn evaluate(&self, context: &Context, value_nodes: &ValueNode<S>) -> ValidateResult<S> {
         let component: Box<dyn SparqlConstraintComponent<S>> = context.component().into();
-        Ok(component.evaluate_sparql(self, context, value_nodes, report)?)
+        let evaluate = component.evaluate_sparql(self, context, value_nodes)?;
+        Ok(evaluate)
     }
 }

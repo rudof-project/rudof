@@ -25,14 +25,19 @@ pub trait Validator<S: SRDFBasic> {
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<S> + '_>;
 
     fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
-        let mut ans: ValidationReport<S> = ValidationReport::default(); // conformant by default...
-        for (_, shape) in schema.iter() {
-            match shape {
-                Shape::NodeShape(s) => s.validate(self.executor(&schema).as_ref(), &mut ans)?,
-                Shape::PropertyShape(s) => s.validate(self.executor(&schema).as_ref(), &mut ans)?,
-            };
-        }
-        Ok(ans)
+        let results = schema
+            .iter()
+            .flat_map(|(_, shape)| match shape {
+                Shape::NodeShape(s) => s.validate(self.executor(&schema).as_ref()),
+                Shape::PropertyShape(s) => s.validate(self.executor(&schema).as_ref()),
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        let mut report = ValidationReport::default();
+        report.add_results(results);
+
+        Ok(report)
     }
 }
 

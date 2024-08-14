@@ -6,6 +6,7 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::Context;
@@ -13,7 +14,7 @@ use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
 use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::validation_report::result::ValidationResult;
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 pub(crate) struct MinInclusive<S: SRDFBasic> {
@@ -34,8 +35,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinInclusive<S> {
         _executor: &DefaultExecutor<S>,
         _context: &Context,
         _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+    ) -> ConstraintResult<S> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -46,9 +46,9 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinInclusive<S> {
         executor: &QueryExecutor<S>,
         context: &Context,
         value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
+    ) -> ConstraintResult<S> {
+        let mut results = Vec::new();
+
         for (focus_node, value_nodes) in value_nodes {
             for value_node in value_nodes {
                 let query = formatdoc! {
@@ -60,11 +60,11 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinInclusive<S> {
                     Err(_) => return Err(ConstraintError::Query),
                 };
                 if !ask {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
                 }
             }
         }
-        Ok(ans)
+
+        Ok(results)
     }
 }
