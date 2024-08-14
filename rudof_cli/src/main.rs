@@ -33,7 +33,7 @@ use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{SRDFSparql, SRDF};
+use srdf::{RDFFormat, SRDFBuilder, SRDFSparql, SRDF};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -218,8 +218,16 @@ fn main() -> Result<()> {
             data,
             data_format,
             output,
+            result_format,
             force_overwrite,
-        }) => run_data(data, data_format, cli.debug, output, *force_overwrite),
+        }) => run_data(
+            data,
+            data_format,
+            cli.debug,
+            output,
+            result_format,
+            *force_overwrite,
+        ),
         Some(Command::Node {
             data,
             data_format,
@@ -1077,11 +1085,15 @@ fn run_data(
     data_format: &DataFormat,
     debug: u8,
     output: &Option<PathBuf>,
+    result_format: &DataFormat,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, &None, debug)?;
-    writeln!(writer, "Data\n{data:?}\n")?;
+    match data {
+        Data::Endpoint(e) => writeln!(writer, "Endpoint {e:?}")?,
+        Data::RDFData(graph) => graph.serialize(RDFFormat::from(*result_format), writer)?,
+    }
     Ok(())
 }
 

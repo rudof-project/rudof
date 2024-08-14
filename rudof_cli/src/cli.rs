@@ -331,6 +331,14 @@ pub enum Command {
         output: Option<PathBuf>,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = DataFormat::Turtle
+        )]
+        result_format: DataFormat,
+
+        #[arg(
             long = "force-overwrite",
             value_name = "Force overwrite mode",
             default_value_t = false

@@ -65,8 +65,11 @@ impl SRDFGraph {
             self.graph.insert(triple_result?.as_ref());
         }
         let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
-        // TODO: Merge base IRIs???
-        self.base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
+        self.base = match (&self.base, base) {
+            (None, None) => None,
+            (Some(b), None) => Some(b.clone()),
+            (_, Some(b)) => Some(IriS::new_unchecked(b.as_str())),
+        };
         let pm = PrefixMap::from_hashmap(&prefixes)?;
         self.merge_prefixes(pm)?;
         Ok(())
