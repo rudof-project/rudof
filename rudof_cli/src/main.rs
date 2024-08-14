@@ -23,6 +23,7 @@ use clap::Parser;
 use dctap::{DCTap, TapConfig};
 use prefixmap::IriRef;
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
+use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
@@ -464,6 +465,20 @@ fn run_validate_shacl(
     // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
     let data = cast_to_data_path(data)?;
 
+    let schema = ShaclDataManager::load(
+        shapes_path,
+        match shapes_format {
+            ShaclFormat::Internal => todo!(),
+            ShaclFormat::Turtle => srdf::RDFFormat::Turtle,
+            ShaclFormat::NTriples => srdf::RDFFormat::NTriples,
+            ShaclFormat::RDFXML => srdf::RDFFormat::RDFXML,
+            ShaclFormat::TriG => srdf::RDFFormat::TriG,
+            ShaclFormat::N3 => srdf::RDFFormat::N3,
+            ShaclFormat::NQuads => srdf::RDFFormat::NQuads,
+        },
+        None,
+    )?;
+
     if let Some(data) = data {
         let validator = match GraphValidator::new(
             &data,
@@ -481,19 +496,7 @@ fn run_validate_shacl(
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(
-            &validator,
-            shapes_path,
-            match shapes_format {
-                ShaclFormat::Internal => todo!(),
-                ShaclFormat::Turtle => srdf::RDFFormat::Turtle,
-                ShaclFormat::NTriples => srdf::RDFFormat::NTriples,
-                ShaclFormat::RDFXML => srdf::RDFFormat::RDFXML,
-                ShaclFormat::TriG => srdf::RDFFormat::TriG,
-                ShaclFormat::N3 => srdf::RDFFormat::N3,
-                ShaclFormat::NQuads => srdf::RDFFormat::NQuads,
-            },
-        ) {
+        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
@@ -504,19 +507,7 @@ fn run_validate_shacl(
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(
-            &validator,
-            shapes_path,
-            match shapes_format {
-                ShaclFormat::Internal => todo!(),
-                ShaclFormat::Turtle => srdf::RDFFormat::Turtle,
-                ShaclFormat::NTriples => srdf::RDFFormat::NTriples,
-                ShaclFormat::RDFXML => srdf::RDFFormat::RDFXML,
-                ShaclFormat::TriG => srdf::RDFFormat::TriG,
-                ShaclFormat::N3 => srdf::RDFFormat::N3,
-                ShaclFormat::NQuads => srdf::RDFFormat::NQuads,
-            },
-        ) {
+        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };

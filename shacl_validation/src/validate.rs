@@ -8,7 +8,6 @@ use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDFSparql};
 use crate::executor::DefaultExecutor;
 use crate::executor::QueryExecutor;
 use crate::executor::SHACLExecutor;
-use crate::helper::srdf::load_shapes_graph;
 use crate::shape::Validate;
 use crate::store::graph::Graph;
 use crate::store::sparql::Sparql;
@@ -22,16 +21,10 @@ pub enum ShaclValidationMode {
     SPARQL,
 }
 
-pub trait Validator<'a, S: SRDFBasic> {
-    fn base(&self) -> Option<&'a str>;
+pub trait Validator<S: SRDFBasic> {
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<S> + '_>;
 
-    fn validate(
-        &self,
-        shapes: &Path,
-        shapes_format: RDFFormat,
-    ) -> Result<ValidationReport<S>, ValidateError> {
-        let schema = load_shapes_graph(shapes, shapes_format, self.base())?;
+    fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
         let mut ans: ValidationReport<S> = ValidationReport::default(); // conformant by default...
         for (_, shape) in schema.iter() {
             match shape {
@@ -43,32 +36,26 @@ pub trait Validator<'a, S: SRDFBasic> {
     }
 }
 
-pub struct GraphValidator<'a> {
+pub struct GraphValidator {
     store: Graph,
     mode: ShaclValidationMode,
-    base: Option<&'a str>,
 }
 
-impl<'a> GraphValidator<'a> {
+impl GraphValidator {
     pub fn new(
         data: &Path,
         data_format: RDFFormat,
-        base: Option<&'a str>,
+        base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
         Ok(GraphValidator {
             store: Graph::new(data, data_format, base)?,
             mode,
-            base,
         })
     }
 }
 
-impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
-    fn base(&self) -> Option<&'a str> {
-        self.base
-    }
-
+impl Validator<SRDFGraph> for GraphValidator {
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFGraph> + '_> {
         match self.mode {
             ShaclValidationMode::Default => {
@@ -79,27 +66,21 @@ impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
     }
 }
 
-pub struct SparqlValidator<'a> {
+pub struct SparqlValidator {
     store: Sparql,
     mode: ShaclValidationMode,
-    base: Option<&'a str>,
 }
 
-impl<'a> SparqlValidator<'a> {
+impl SparqlValidator {
     pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
         Ok(SparqlValidator {
             store: Sparql::new(data)?,
             mode,
-            base: None,
         })
     }
 }
 
-impl<'a> Validator<'a, SRDFSparql> for SparqlValidator<'a> {
-    fn base(&self) -> Option<&'a str> {
-        self.base
-    }
-
+impl Validator<SRDFSparql> for SparqlValidator {
     fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFSparql> + '_> {
         match self.mode {
             ShaclValidationMode::Default => {

@@ -3,6 +3,7 @@ use std::path::Path;
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
+    store::ShaclDataManager,
     validate::{GraphValidator, ShaclValidationMode, Validator},
     validation_report::report::ValidationReport,
 };
@@ -85,11 +86,16 @@ fn main() -> Result<(), TestSuiteError> {
             test.base.as_deref(),
             cli.mode,
         )?;
+        let schema = ShaclDataManager::load(
+            Path::new(&test.shapes),
+            srdf::RDFFormat::Turtle,
+            test.base.as_deref(),
+        )?;
         let label = match test.label {
             Some(label) => label,
             None => String::from("Test"),
         };
-        match validator.validate(Path::new(&test.shapes), srdf::RDFFormat::Turtle) {
+        match validator.validate(schema) {
             Ok(actual) => {
                 if actual == test.result {
                     println!("{} succeeded", label);
