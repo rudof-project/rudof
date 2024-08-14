@@ -309,13 +309,13 @@ impl<R: io::Read> TapReader<R> {
     }
 }
 
-fn is_empty(str: &Option<ShapeId>) -> bool {
+/*fn is_empty(str: &Option<ShapeId>) -> bool {
     match str {
         None => true,
         Some(s) if s.is_empty() => true,
         _ => false,
     }
-}
+}*/
 
 fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
     match str.to_uppercase().as_str() {
@@ -331,7 +331,12 @@ fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
 }
 
 fn same_shape_id(shape_id: &Option<ShapeId>, new_shape_id: Option<ShapeId>) -> bool {
-    is_empty(&new_shape_id) || new_shape_id == *shape_id
+    match (shape_id, new_shape_id) {
+        (None, None) => true,
+        (Some(_), None) => true,
+        (Some(s1), Some(s2)) => s1.str() == s2.str(),
+        (None, Some(_)) => false,
+    }
 }
 
 fn parse_boolean(str: &str, field: &str, pos: &Position) -> Result<bool> {

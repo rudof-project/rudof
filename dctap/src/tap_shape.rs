@@ -14,6 +14,8 @@ pub struct TapShape {
 
     statements: Vec<TapStatement>,
 
+    extends: Vec<ShapeId>,
+
     start_line: u64,
 }
 
@@ -24,6 +26,7 @@ impl TapShape {
             shape_label: Option::None,
             statements: Vec::new(),
             start_line: line,
+            extends: Vec::new(),
         }
     }
 

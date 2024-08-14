@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -10,6 +10,8 @@ pub struct TapConfig {
     quote: Option<char>,
     flexible: Option<bool>,
     picklist_delimiter: Option<char>,
+    property_placeholders: HashMap<String, String>,
+    empty_property_placeholder: Option<String>,
 }
 
 impl TapConfig {
@@ -61,6 +63,8 @@ impl Default for TapConfig {
             delimiter: None,
             flexible: None,
             quote: None,
+            empty_property_placeholder: None,
+            property_placeholders: HashMap::new(),
         }
     }
 }

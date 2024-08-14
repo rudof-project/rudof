@@ -7,7 +7,7 @@ pub struct TapReaderState {
     current_shape: TapShape,
     cached_next_record: Option<(StringRecord, Position)>,
     headers: TapHeaders,
-    _position: Position,
+    placeholder_id: u64,
 }
 
 impl TapReaderState {
@@ -16,7 +16,7 @@ impl TapReaderState {
             current_shape: TapShape::new(0),
             cached_next_record: None,
             headers: TapHeaders::new(),
-            _position: Position::new(),
+            placeholder_id: 0,
         }
     }
 
@@ -49,6 +49,14 @@ impl TapReaderState {
         } else {
             None
         }
+    }
+
+    pub fn placeholder_id(&self) -> u64 {
+        self.placeholder_id
+    }
+
+    pub fn increment_placeholder_id(&mut self) {
+        self.placeholder_id += 1;
     }
 }
 
