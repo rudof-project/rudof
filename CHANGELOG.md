@@ -2,7 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.13] - 2024-08-13
+
 - `data` option now serializes the RDF data to one of the existing RDF data formats (previous version were generating an internal representation of the graph).
+- Added support for using `-` as a marker for stdin so `rudof` can be used in a Linux pipe
 
 ## [0.1.12] - 2024-08-13
 

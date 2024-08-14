@@ -1,7 +1,7 @@
 use either::Either;
 use std::{
-    fs::{self, File},
-    io::{self, BufRead, BufReader, StdinLock},
+    fs,
+    io::{self, BufReader, StdinLock},
     path::{Path, PathBuf},
     str::FromStr,
 };
