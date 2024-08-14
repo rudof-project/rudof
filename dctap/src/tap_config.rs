@@ -4,7 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::TapError;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct TapConfig {
     delimiter: Option<char>,
     quote: Option<char>,
@@ -39,23 +39,24 @@ impl TapConfig {
 
     pub fn delimiter(&self) -> u8 {
         match self.delimiter {
-            None => ',' as u8,
+            None => b',',
             Some(c) => c as u8,
         }
     }
 
     pub fn quote(&self) -> u8 {
         match self.quote {
-            None => '"' as u8,
+            None => b'"',
             Some(c) => c as u8,
         }
     }
 
     pub fn flexible(&self) -> bool {
-        self.flexible.unwrap_or_else(|| true)
+        self.flexible.unwrap_or(true)
     }
 }
 
+/*
 impl Default for TapConfig {
     fn default() -> Self {
         Self {
@@ -67,4 +68,4 @@ impl Default for TapConfig {
             property_placeholders: HashMap::new(),
         }
     }
-}
+}*/
