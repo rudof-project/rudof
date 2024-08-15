@@ -1,3 +1,5 @@
+use std::collections::{hash_map::Entry, HashMap};
+
 use crate::tap_headers::TapHeaders;
 use crate::TapShape;
 use csv::{Position, StringRecord};
@@ -7,7 +9,7 @@ pub struct TapReaderState {
     current_shape: TapShape,
     cached_next_record: Option<(StringRecord, Position)>,
     headers: TapHeaders,
-    placeholder_id: u64,
+    placeholder_ids: HashMap<String, u64>,
 }
 
 impl TapReaderState {
@@ -16,7 +18,7 @@ impl TapReaderState {
             current_shape: TapShape::new(0),
             cached_next_record: None,
             headers: TapHeaders::new(),
-            placeholder_id: 0,
+            placeholder_ids: HashMap::new(),
         }
     }
 
@@ -51,12 +53,20 @@ impl TapReaderState {
         }
     }
 
-    pub fn placeholder_id(&self) -> u64 {
-        self.placeholder_id
-    }
-
-    pub fn increment_placeholder_id(&mut self) {
-        self.placeholder_id += 1;
+    // Get a value for placeholder_id and increment its counter
+    pub fn placeholder_id(&mut self, str: &str) -> u64 {
+        match self.placeholder_ids.entry(str.to_string()) {
+            Entry::Occupied(mut r) => {
+                let v = r.get_mut();
+                *v += 1;
+                *v
+            }
+            Entry::Vacant(v) => {
+                let initial = 0;
+                v.insert(initial);
+                initial
+            }
+        }
     }
 }
 

@@ -8,6 +8,7 @@
 pub mod datatype_id;
 pub mod dctap;
 pub mod node_type;
+pub mod placeholder_resolver;
 pub mod prefix_cc;
 pub mod property_id;
 pub mod shape_id;
@@ -23,6 +24,7 @@ pub mod value_constraint;
 
 pub use crate::datatype_id::*;
 pub use crate::node_type::*;
+pub use crate::placeholder_resolver::*;
 pub use crate::prefix_cc::*;
 pub use crate::property_id::*;
 pub use crate::shape_id::*;

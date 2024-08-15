@@ -25,4 +25,4 @@ thiserror = "1"
 tracing = { workspace = true }
 
 [dev-dependencies]
-tracing-test = "0.1"
+tracing-test = "0.2.5"
