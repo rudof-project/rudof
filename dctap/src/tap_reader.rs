@@ -1,7 +1,7 @@
 use crate::tap_error::Result;
 use crate::{
-    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapConfig, TapError, TapReaderState,
-    TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
+    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
+    TapError, TapReaderState, TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
 use csv::{Position, Reader, StringRecord};
 use tracing::debug;
@@ -125,16 +125,35 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn get_property_id(&self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
+    fn get_property_id(&mut self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
         if let Some(str) = self.state.headers().property_id(rcd) {
-            let property_id = PropertyId::new(&str, pos.line());
-            Some(property_id)
+            if let Some(placeholder) = self.config.get_property_placeholder(&str) {
+                self.generate_property_id(str.as_str(), &placeholder, pos)
+            } else {
+                let property_id = PropertyId::new(&str, pos.line());
+                Some(property_id)
+            }
         } else {
             None
         }
     }
 
-    fn record2statement(&self, rcd: &StringRecord, pos: &Position) -> Result<Option<TapStatement>> {
+    fn generate_property_id(
+        &mut self,
+        value: &str,
+        placeholder: &PlaceholderResolver,
+        pos: &Position,
+    ) -> Option<PropertyId> {
+        let id = self.state.placeholder_id(value);
+        let generated = placeholder.generate(id);
+        Some(PropertyId::new(generated.as_str(), pos.line()))
+    }
+
+    fn record2statement(
+        &mut self,
+        rcd: &StringRecord,
+        pos: &Position,
+    ) -> Result<Option<TapStatement>> {
         if let Some(property_id) = self.get_property_id(rcd, pos) {
             let mut statement = TapStatement::new(property_id);
             self.read_property_label(&mut statement, rcd);
