@@ -1,7 +1,7 @@
 use std::collections::{hash_map::Entry, HashMap};
 
-use crate::tap_headers::TapHeaders;
 use crate::TapShape;
+use crate::{tap_headers::TapHeaders, TapReaderWarning};
 use csv::{Position, StringRecord};
 
 #[derive(Debug)]
@@ -10,6 +10,7 @@ pub struct TapReaderState {
     cached_next_record: Option<(StringRecord, Position)>,
     headers: TapHeaders,
     placeholder_ids: HashMap<String, u64>,
+    warnings: Vec<TapReaderWarning>,
 }
 
 impl TapReaderState {
@@ -19,6 +20,7 @@ impl TapReaderState {
             cached_next_record: None,
             headers: TapHeaders::new(),
             placeholder_ids: HashMap::new(),
+            warnings: Vec::new(),
         }
     }
 
@@ -67,6 +69,14 @@ impl TapReaderState {
                 initial
             }
         }
+    }
+
+    pub fn warnings(&self) -> impl Iterator<Item = &TapReaderWarning> {
+        self.warnings.iter()
+    }
+
+    pub fn add_warning(&mut self, warning: TapReaderWarning) {
+        self.warnings.push(warning)
     }
 }
 

@@ -1,7 +1,8 @@
 use crate::tap_error::Result;
 use crate::{
     BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
-    TapError, TapReaderState, TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
+    TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint,
+    ValueConstraintType,
 };
 use csv::{Position, Reader, StringRecord};
 use tracing::debug;
@@ -127,6 +128,27 @@ impl<R: io::Read> TapReader<R> {
 
     fn get_property_id(&mut self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
         if let Some(str) = self.state.headers().property_id(rcd) {
+            if str.is_empty() {
+                if let Some(str_label) = self.state.headers().property_label(rcd) {
+                    if str_label.is_empty() {
+                        // TODO!, there is a property label and an empty property id
+                        // Generate new property based on property label?
+                        // If we don't do nothing here, it generates from empty_property_placeholder
+                        debug!(
+                            "Empty property id and empty property label at line {}",
+                            pos.line()
+                        );
+                        self.state
+                            .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
+                        return None;
+                    } else {
+                        debug!(
+                            "Empty property id with property label {str_label} at line {}",
+                            pos.line()
+                        );
+                    }
+                }
+            }
             if let Some(placeholder) = self.config.get_property_placeholder(&str) {
                 self.generate_property_id(str.as_str(), &placeholder, pos)
             } else {

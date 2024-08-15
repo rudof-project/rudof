@@ -1,4 +1,4 @@
-use dctap::PrefixCC;
+use dctap::{PrefixCC, TapConfig};
 use iri_s::{iri, IriS};
 use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
@@ -10,6 +10,8 @@ pub struct Tap2ShExConfig {
     pub base_iri: Option<IriS>,
     pub datatype_base_iri: Option<IriS>,
     prefixmap: Option<PrefixMap>,
+
+    dctap: Option<TapConfig>,
 
     #[serde(skip)]
     prefix_cc: Option<PrefixCC>,
@@ -82,6 +84,7 @@ impl Default for Tap2ShExConfig {
         Self {
             base_iri: Some(iri!("http://example.org/")),
             datatype_base_iri: None,
+            dctap: None,
             prefixmap: Some(PrefixMap::basic()),
             prefix_cc: None,
         }
