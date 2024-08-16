@@ -1,7 +1,7 @@
 use crate::{tap_config::TapConfig, tap_error::TapError, TapReaderBuilder, TapShape};
 use serde_derive::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TapShapeId(String);
@@ -33,11 +33,15 @@ impl DCTap {
 
     pub fn from_path<P: AsRef<Path>>(path: P, config: &TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
-        debug!("DCTap parsed: {:?}", dctap);
         let mut tap_reader = TapReaderBuilder::from_path(path, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
+        }
+        if tap_reader.has_warnings() {
+            for warning in tap_reader.warnings() {
+                info!("Warning: {warning}");
+            }
         }
         Ok(dctap)
     }

@@ -70,6 +70,13 @@ impl Shape {
         self
     }
 
+    pub fn add_extend(&mut self, extend: ShapeExprLabel) {
+        match &mut self.extends {
+            None => self.extends = Some(vec![extend]),
+            Some(ref mut es) => es.push(extend),
+        }
+    }
+
     pub fn is_closed(&self) -> bool {
         self.closed.unwrap_or(false)
     }

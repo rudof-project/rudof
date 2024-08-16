@@ -35,6 +35,14 @@ impl Annotation {
             object: ObjectValue::str(str),
         }
     }
+
+    pub fn predicate(&self) -> IriRef {
+        self.predicate.clone()
+    }
+
+    pub fn object(&self) -> ObjectValue {
+        self.object.clone()
+    }
 }
 
 impl Deref for Annotation {

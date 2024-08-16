@@ -7,6 +7,7 @@
 //!
 pub mod datatype_id;
 pub mod dctap;
+pub mod extends_id;
 pub mod node_type;
 pub mod placeholder_resolver;
 pub mod prefix_cc;
@@ -24,6 +25,7 @@ pub mod tap_statement;
 pub mod value_constraint;
 
 pub use crate::datatype_id::*;
+pub use crate::extends_id::*;
 pub use crate::node_type::*;
 pub use crate::placeholder_resolver::*;
 pub use crate::prefix_cc::*;

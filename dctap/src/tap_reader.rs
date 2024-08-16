@@ -23,8 +23,17 @@ impl<R: io::Read> TapReader<R> {
             config: config.clone(),
         }
     }
+
     pub fn shapes(&mut self) -> ShapesIter<R> {
         ShapesIter::new(self)
+    }
+
+    pub fn warnings(&self) -> impl Iterator<Item = &TapReaderWarning> {
+        self.state.warnings()
+    }
+
+    pub fn has_warnings(&self) -> bool {
+        self.state.has_warnings()
     }
 
     pub fn read_shape(&mut self) -> Result<bool> {
@@ -33,14 +42,12 @@ impl<R: io::Read> TapReader<R> {
             let maybe_shape_id = self.get_shape_id(&record, pos.line())?;
             if let Some(shape_id) = &maybe_shape_id {
                 self.state.current_shape().set_shape_id(shape_id);
-                self.state.current_shape().set_start_line(pos.line())
+                self.state.current_shape().set_start_line(pos.line());
+                self.state.current_shape().reset_extends()
             }
-            if let Some(shapelabel) = self.get_shape_label(&record)? {
-                self.state
-                    .current_shape()
-                    .set_shape_label(shapelabel.as_str());
-            }
-
+            self.read_shape_label(&record)?;
+            self.read_extends_id(&record, pos.line());
+            self.read_extends_label(&record, &pos);
             debug!("1st record2statement: {pos:?}, record: {record:?}");
             let maybe_statement = self.record2statement(&record, &pos)?;
             if let Some(statement) = maybe_statement {
@@ -126,6 +133,15 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
+    fn read_shape_label(&mut self, rcd: &StringRecord) -> Result<()> {
+        if let Some(shapelabel) = self.get_shape_label(&rcd)? {
+            self.state
+                .current_shape()
+                .set_shape_label(shapelabel.as_str());
+        };
+        Ok(())
+    }
+
     fn get_property_id(&mut self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
         if let Some(str) = self.state.headers().property_id(rcd) {
             if str.is_empty() {
@@ -195,7 +211,8 @@ impl<R: io::Read> TapReader<R> {
     fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers().property_label(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                statement.set_property_label(clean_str);
+                let without_new_line = str::replace(clean_str, "\n", " ");
+                statement.set_property_label(without_new_line.as_str());
             }
         }
     }
@@ -204,6 +221,30 @@ impl<R: io::Read> TapReader<R> {
         if let Some(str) = self.state.headers().note(rcd) {
             if !str.is_empty() {
                 statement.set_note(&str);
+            }
+        }
+    }
+
+    fn read_extends_id(&mut self, rcd: &StringRecord, line: u64) {
+        if let Some(str) = self.state.headers().extends_id(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                let shape_id = ShapeId::new(clean_str, line);
+                self.state.current_shape().add_extends_id(&shape_id, line);
+            }
+        }
+    }
+
+    fn read_extends_label(&mut self, rcd: &StringRecord, pos: &Position) {
+        if let Some(str) = self.state.headers().extends_label(rcd) {
+            if !str.is_empty() {
+                match self
+                    .state
+                    .current_shape()
+                    .add_extends_label(&str, pos.line())
+                {
+                    Ok(()) => (),
+                    Err(warning) => self.state.add_warning(warning),
+                }
             }
         }
     }

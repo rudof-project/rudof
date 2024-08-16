@@ -1150,7 +1150,6 @@ fn parse_dctap<P: AsRef<Path>>(
     match format {
         DCTapFormat::CSV => {
             let dctap = DCTap::from_path(input_path, config)?;
-            debug!("DCTAP read {dctap:?}");
             Ok(dctap)
         }
     }

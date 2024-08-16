@@ -75,6 +75,10 @@ impl TapReaderState {
         self.warnings.iter()
     }
 
+    pub fn has_warnings(&self) -> bool {
+        !self.warnings.is_empty()
+    }
+
     pub fn add_warning(&mut self, warning: TapReaderWarning) {
         self.warnings.push(warning)
     }
