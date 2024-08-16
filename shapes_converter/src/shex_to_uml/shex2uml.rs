@@ -4,8 +4,9 @@ use std::{
     process::Command,
 };
 
+use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
-use shex_ast::{ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use shex_ast::{Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use srdf::literal::Literal;
 use tracing::debug;
 
@@ -113,7 +114,7 @@ impl ShEx2Uml {
         prefixmap: &PrefixMap,
     ) -> Result<Name, ShEx2UmlError> {
         match label {
-            ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, prefixmap),
+            ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, &None, prefixmap),
             ShapeExprLabel::BNode { value: _ } => todo!(),
             ShapeExprLabel::Start => todo!(),
         }
@@ -143,9 +144,9 @@ impl ShEx2Uml {
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
     ) -> Result<UmlComponent, ShEx2UmlError> {
-        let mut name = Name::new(name.name().as_str(), None);
-        if let Some(label) = get_label(shape, prefixmap, &self.config)? {
-            name.add_href(label.as_str())
+        let mut name = Name::new(name.name().as_str());
+        if let Some(label) = get_label(&shape.annotations, prefixmap, &self.config)? {
+            name.add_label(label.as_str())
         }
         let mut uml_class = UmlClass::new(name.clone());
         if let Some(te) = &shape.expression {
@@ -169,9 +170,10 @@ impl ShEx2Uml {
                                 min,
                                 max,
                                 sem_acts: _,
-                                annotations: _,
+                                annotations,
                             } => {
-                                let pred_name = iri_ref2name(predicate, &self.config, prefixmap)?;
+                                let pred_name =
+                                    mk_name(&predicate, annotations, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
@@ -214,9 +216,9 @@ impl ShEx2Uml {
                     min,
                     max,
                     sem_acts: _,
-                    annotations: _,
+                    annotations,
                 } => {
-                    let pred_name = iri_ref2name(predicate, &self.config, prefixmap)?;
+                    let pred_name = mk_name(&predicate, annotations, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
                         self.value_expr2value_constraint(
@@ -259,7 +261,7 @@ impl ShEx2Uml {
             ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
             ShapeExpr::NodeConstraint(nc) => {
                 if let Some(datatype) = nc.datatype() {
-                    let name = iri_ref2name(&datatype, &self.config, prefixmap)?;
+                    let name = iri_ref2name(&datatype, &self.config, &None, prefixmap)?;
                     Ok(ValueConstraint::datatype(name))
                 } else {
                     todo!()
@@ -269,7 +271,7 @@ impl ShEx2Uml {
             ShapeExpr::External => todo!(),
             ShapeExpr::Ref(r) => match &r {
                 ShapeExprLabel::IriRef { value } => {
-                    let ref_name = iri_ref2name(value, &self.config, prefixmap)?;
+                    let ref_name = iri_ref2name(value, &self.config, &None, prefixmap)?;
                     self.current_uml.add_link(
                         *current_node_id,
                         ref_name,
@@ -297,18 +299,17 @@ impl ShEx2Uml {
 fn iri_ref2name(
     iri_ref: &IriRef,
     _config: &ShEx2UmlConfig,
+    label: &Option<String>,
     prefixmap: &PrefixMap,
 ) -> Result<Name, ShEx2UmlError> {
-    match iri_ref {
-        IriRef::Iri(iri) => Ok(Name::new(
-            prefixmap.qualify(iri).as_str(),
-            Some(iri.as_str()),
-        )),
-        IriRef::Prefixed { prefix: _, local } => {
+    let name = match iri_ref {
+        IriRef::Iri(iri) => Name::new(prefixmap.qualify(iri).as_str()),
+        IriRef::Prefixed { prefix, local } => {
             // TODO: Check if we could replace href as None by a proper IRI
-            Ok(Name::new(local, None))
+            Name::new(format!("{prefix}:{local}").as_str())
         }
-    }
+    };
+    Ok(name)
 }
 
 fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<UmlCardinality, ShEx2UmlError> {
@@ -330,17 +331,46 @@ fn copy<W: Write>(file: &mut File, writer: &mut W) -> Result<(), io::Error> {
     Ok(())
 }
 
+fn mk_name(
+    iri: &IriRef,
+    annotations: &Option<Vec<Annotation>>,
+    config: &ShEx2UmlConfig,
+    prefixmap: &PrefixMap,
+) -> Result<Name, ShEx2UmlError> {
+    let label = get_label(&annotations, prefixmap, &config)?;
+    let name = iri_ref2name(iri, &config, &label, prefixmap)?;
+    Ok(name)
+}
+
 fn get_label(
-    shape: &Shape,
+    annotations: &Option<Vec<Annotation>>,
     prefixmap: &PrefixMap,
     config: &ShEx2UmlConfig,
 ) -> Result<Option<String>, PrefixMapError> {
     for label in config.annotation_label.iter() {
-        if let Some(value) = shape.find_annotation(label, prefixmap)? {
+        if let Some(value) = find_annotation(annotations, label, prefixmap)? {
             return Ok(Some(object_value2string(&value)));
         }
     }
     Ok(None)
+}
+
+pub fn find_annotation(
+    annotations: &Option<Vec<Annotation>>,
+    predicate: &IriS,
+    prefixmap: &PrefixMap,
+) -> Result<Option<ObjectValue>, PrefixMapError> {
+    if let Some(anns) = annotations {
+        for a in anns.iter() {
+            let iri_predicate = prefixmap.resolve_iriref(&a.predicate())?;
+            if *predicate == iri_predicate {
+                return Ok(Some(a.object()));
+            }
+        }
+        Ok(None)
+    } else {
+        Ok(None)
+    }
 }
 
 fn object_value2string(object_value: &ObjectValue) -> String {

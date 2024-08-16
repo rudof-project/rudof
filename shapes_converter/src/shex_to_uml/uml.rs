@@ -89,7 +89,11 @@ fn component2plantuml<W: Write>(
 ) -> Result<(), UmlError> {
     match component {
         UmlComponent::UmlClass(class) => {
-            let name = class.name();
+            let name = if let Some(label) = class.label() {
+                label
+            } else {
+                class.name()
+            };
             let href = if let Some(href) = class.href() {
                 format!("[[{href} {name}]]")
             } else {
@@ -128,8 +132,13 @@ fn entry2plantuml<W: Write>(entry: &UmlEntry, writer: &mut W) -> Result<(), UmlE
 }
 
 fn name2plantuml(name: &Name) -> String {
+    let str = if let Some(label) = name.label() {
+        label
+    } else {
+        name.name()
+    };
     if let Some(href) = name.href() {
-        format!("[[{href} {}]]", name.name())
+        format!("[[{href} {}]]", str)
     } else {
         name.name()
     }

@@ -54,6 +54,13 @@ impl Shape {
         self
     }
 
+    pub fn annotations(&self) -> impl Iterator<Item = &Annotation> {
+        match &self.annotations {
+            None => todo!(),
+            Some(anns) => anns.iter(),
+        }
+    }
+
     pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {
         self.annotations = annotations;
         self
@@ -85,24 +92,6 @@ impl Shape {
 
     pub fn triple_expr(&self) -> Option<TripleExpr> {
         self.expression.as_ref().map(|tew| tew.te.clone())
-    }
-
-    pub fn find_annotation(
-        &self,
-        predicate: &IriS,
-        prefixmap: &PrefixMap,
-    ) -> Result<Option<ObjectValue>, PrefixMapError> {
-        if let Some(anns) = &self.annotations {
-            for a in anns.iter() {
-                let iri_predicate = prefixmap.resolve_iriref(&a.predicate())?;
-                if *predicate == iri_predicate {
-                    return Ok(Some(a.object()));
-                }
-            }
-            Ok(None)
-        } else {
-            Ok(None)
-        }
     }
 }
 

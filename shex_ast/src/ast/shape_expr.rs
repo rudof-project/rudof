@@ -150,6 +150,20 @@ impl ShapeExpr {
             _ => todo!(),
         };
     }
+
+    pub fn has_annotations(&self) -> bool {
+        match self {
+            Self::Shape(s) => s.has_annotations(),
+            _ => todo!(),
+        }
+    }
+
+    pub fn annotations(&self) -> impl Iterator<Item = Annotation> {
+        match self {
+            Self::Shape(s) => s.annotations(),
+            _ => todo!(),
+        }
+    }
 }
 
 impl Default for ShapeExpr {

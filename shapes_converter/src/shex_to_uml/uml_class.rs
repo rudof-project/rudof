@@ -23,6 +23,10 @@ impl UmlClass {
         self.name.name()
     }
 
+    pub fn label(&self) -> Option<String> {
+        self.name.label()
+    }
+
     pub fn href(&self) -> Option<String> {
         self.name.href()
     }
