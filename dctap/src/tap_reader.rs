@@ -134,7 +134,7 @@ impl<R: io::Read> TapReader<R> {
     }
 
     fn read_shape_label(&mut self, rcd: &StringRecord) -> Result<()> {
-        if let Some(shapelabel) = self.get_shape_label(&rcd)? {
+        if let Some(shapelabel) = self.get_shape_label(rcd)? {
             self.state
                 .current_shape()
                 .set_shape_label(shapelabel.as_str());

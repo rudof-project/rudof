@@ -4,8 +4,9 @@ use std::{
     process::Command,
 };
 
-use prefixmap::{IriRef, PrefixMap};
-use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use shex_ast::{ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use srdf::literal::Literal;
 use tracing::debug;
 
 use crate::shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml};
@@ -142,6 +143,10 @@ impl ShEx2Uml {
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
     ) -> Result<UmlComponent, ShEx2UmlError> {
+        let mut name = Name::new(name.name().as_str(), None);
+        if let Some(label) = get_label(shape, prefixmap, &self.config)? {
+            name.add_href(label.as_str())
+        }
         let mut uml_class = UmlClass::new(name.clone());
         if let Some(te) = &shape.expression {
             match &te.te {
@@ -323,6 +328,30 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<UmlCardinality, ShEx2
 fn copy<W: Write>(file: &mut File, writer: &mut W) -> Result<(), io::Error> {
     io::copy(file, writer)?;
     Ok(())
+}
+
+fn get_label(
+    shape: &Shape,
+    prefixmap: &PrefixMap,
+    config: &ShEx2UmlConfig,
+) -> Result<Option<String>, PrefixMapError> {
+    for label in config.annotation_label.iter() {
+        if let Some(value) = shape.find_annotation(label, prefixmap)? {
+            return Ok(Some(object_value2string(&value)));
+        }
+    }
+    Ok(None)
+}
+
+fn object_value2string(object_value: &ObjectValue) -> String {
+    match object_value {
+        ObjectValue::IriRef(_) => todo!(),
+        ObjectValue::Literal(lit) => lit_2string(lit),
+    }
+}
+
+fn lit_2string(lit: &Literal) -> String {
+    lit.lexical_form()
 }
 
 pub enum ImageFormat {

@@ -19,4 +19,8 @@ impl Name {
     pub fn href(&self) -> Option<String> {
         self.href.clone()
     }
+
+    pub fn add_href(&mut self, href: &str) {
+        self.href = Some(href.to_string());
+    }
 }

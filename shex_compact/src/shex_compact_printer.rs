@@ -314,7 +314,7 @@ where
         move |vs, printer| {
             let mut docs = Vec::new();
             for a in vs {
-                docs.push(printer.pp_annotation(&a))
+                docs.push(printer.pp_annotation(a))
             }
             printer
                 .doc

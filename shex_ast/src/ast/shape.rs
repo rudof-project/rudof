@@ -1,9 +1,11 @@
 use iri_s::IriS;
-use prefixmap::PrefixMap;
+use prefixmap::{PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};
+
+use super::ObjectValue;
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
@@ -83,6 +85,24 @@ impl Shape {
 
     pub fn triple_expr(&self) -> Option<TripleExpr> {
         self.expression.as_ref().map(|tew| tew.te.clone())
+    }
+
+    pub fn find_annotation(
+        &self,
+        predicate: &IriS,
+        prefixmap: &PrefixMap,
+    ) -> Result<Option<ObjectValue>, PrefixMapError> {
+        if let Some(anns) = &self.annotations {
+            for a in anns.iter() {
+                let iri_predicate = prefixmap.resolve_iriref(&a.predicate())?;
+                if *predicate == iri_predicate {
+                    return Ok(Some(a.object()));
+                }
+            }
+            Ok(None)
+        } else {
+            Ok(None)
+        }
     }
 }
 

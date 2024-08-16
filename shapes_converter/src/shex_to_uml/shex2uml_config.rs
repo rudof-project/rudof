@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
 pub const PLANTUML: &str = "PLANTUML";
@@ -12,6 +14,7 @@ pub const PLANTUML: &str = "PLANTUML";
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
+    pub annotation_label: Vec<IriS>,
 }
 
 impl ShEx2UmlConfig {
@@ -20,7 +23,10 @@ impl ShEx2UmlConfig {
             Ok(value) => Some(Path::new(value.as_str()).to_path_buf()),
             Err(_) => None,
         };
-        Self { plantuml_path }
+        Self {
+            plantuml_path,
+            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+        }
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {

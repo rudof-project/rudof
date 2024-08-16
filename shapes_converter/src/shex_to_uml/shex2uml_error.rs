@@ -1,6 +1,6 @@
 use std::io;
 
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 
@@ -35,6 +35,12 @@ pub enum ShEx2UmlError {
     UmlError {
         #[from]
         err: UmlError,
+    },
+
+    #[error(transparent)]
+    PrefixMapError {
+        #[from]
+        err: PrefixMapError,
     },
 
     #[error("Couldn't create temporary file to generate PlantUML content")]
