@@ -282,7 +282,6 @@ mod tests {
 
         let schema: Schema = serde_json::from_str(str).unwrap();
         let serialized = serde_json::to_string_pretty(&schema).unwrap();
-        println!("{}", serialized);
         let schema_after_serialization = serde_json::from_str(&serialized).unwrap();
         assert_eq!(schema, schema_after_serialization);
     }

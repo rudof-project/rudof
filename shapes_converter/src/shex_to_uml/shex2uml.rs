@@ -31,7 +31,7 @@ impl ShEx2Uml {
     }
 
     pub fn as_plantuml<W: Write>(&self, writer: &mut W) -> Result<(), ShEx2UmlError> {
-        self.current_uml.as_plantuml(writer)?;
+        self.current_uml.as_plantuml(&self.config, writer)?;
         Ok(())
     }
 
@@ -49,7 +49,7 @@ impl ShEx2Uml {
                 tempfile_name: tempfile_name.clone(),
                 error: e,
             })?;
-        self.current_uml.as_plantuml(&mut tempfile)?;
+        self.current_uml.as_plantuml(&self.config, &mut tempfile)?;
         debug!("ShEx contents stored in temporary file:{}", tempfile_name);
 
         let (out_param, out_file_name) = match image_format {
@@ -98,11 +98,15 @@ impl ShEx2Uml {
         let prefixmap = shex.prefixmap().unwrap_or_default();
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
-                let name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
-                let node_id = self.current_uml.add_label(&name);
-                let component =
-                    self.shape_expr2component(&name, &shape_decl.shape_expr, &prefixmap, &node_id)?;
-                self.current_uml.add_component(node_id, component)?;
+                let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
+                let (node_id, found) = self.current_uml.get_node_adding_label(&name.name());
+                let component = self.shape_expr2component(
+                    &mut name,
+                    &shape_decl.shape_expr,
+                    &prefixmap,
+                    &node_id,
+                )?;
+                self.current_uml.update_component(node_id, component)?;
             }
         }
         Ok(())
@@ -122,7 +126,7 @@ impl ShEx2Uml {
 
     fn shape_expr2component(
         &mut self,
-        name: &Name,
+        name: &mut Name,
         shape_expr: &ShapeExpr,
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
@@ -139,16 +143,32 @@ impl ShEx2Uml {
 
     fn shape2component(
         &mut self,
-        name: &Name,
+        name: &mut Name,
         shape: &Shape,
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
     ) -> Result<UmlComponent, ShEx2UmlError> {
-        let mut name = Name::new(name.name().as_str());
         if let Some(label) = get_label(&shape.annotations, prefixmap, &self.config)? {
             name.add_label(label.as_str())
         }
         let mut uml_class = UmlClass::new(name.clone());
+        if let Some(extends) = &shape.extends {
+            for e in extends.iter() {
+                let extended_name = self.shape_label2name(e, prefixmap)?;
+                let (extended_node, found) = self
+                    .current_uml
+                    .get_node_adding_label(&extended_name.name());
+                self.current_uml
+                    .add_extends(current_node_id, &extended_node);
+                uml_class.add_extends(&extended_node);
+                if !found {
+                    self.current_uml.add_component(
+                        extended_node,
+                        UmlComponent::class(UmlClass::new(extended_name)),
+                    )?;
+                }
+            }
+        }
         if let Some(te) = &shape.expression {
             match &te.te {
                 TripleExpr::EachOf {
@@ -282,16 +302,7 @@ impl ShEx2Uml {
                 }
                 ShapeExprLabel::BNode { value: _ } => todo!(),
                 ShapeExprLabel::Start => todo!(),
-            }, /*
-               // TODO: If we want to embed some references...
-               match &r {
-                   ShapeExprLabel::IriRef { value } => {
-                       let name = iri_ref2name(value, config, prefixmap)?;
-                       Ok(ValueConstraint::Ref(name))
-                   }
-                   ShapeExprLabel::BNode { value: _ } => todo!(),
-                   ShapeExprLabel::Start => todo!(),
-               }*/
+            },
         }
     }
 }
@@ -299,15 +310,18 @@ impl ShEx2Uml {
 fn iri_ref2name(
     iri_ref: &IriRef,
     _config: &ShEx2UmlConfig,
-    label: &Option<String>,
+    maybe_label: &Option<String>,
     prefixmap: &PrefixMap,
 ) -> Result<Name, ShEx2UmlError> {
-    let name = match iri_ref {
-        IriRef::Iri(iri) => Name::new(prefixmap.qualify(iri).as_str()),
+    let mut name = match iri_ref {
+        IriRef::Iri(iri) => Name::new(prefixmap.qualify(iri).as_str(), Some(iri.as_str())),
         IriRef::Prefixed { prefix, local } => {
-            // TODO: Check if we could replace href as None by a proper IRI
-            Name::new(format!("{prefix}:{local}").as_str())
+            let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+            Name::new(format!("{prefix}:{local}").as_str(), Some(iri.as_str()))
         }
+    };
+    if let Some(label) = maybe_label {
+        name.add_label(label)
     };
     Ok(name)
 }

@@ -158,7 +158,7 @@ impl ShapeExpr {
         }
     }
 
-    pub fn annotations(&self) -> impl Iterator<Item = Annotation> {
+    pub fn annotations(&self) -> Option<impl Iterator<Item = &Annotation>> {
         match self {
             Self::Shape(s) => s.annotations(),
             _ => todo!(),

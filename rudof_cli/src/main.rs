@@ -317,8 +317,7 @@ fn main() -> Result<()> {
             *force_overwrite,
         ),
         None => {
-            println!("Command not specified");
-            Ok(())
+            bail!("Command not specified")
         }
     }
 }
@@ -437,8 +436,7 @@ fn run_validate_shex(
                 Ok(())
             }
             Err(err) => {
-                println!("Error generating result_map after validation: {err}");
-                bail!("{err}");
+                bail!("Error generating result_map after validation: {err}");
             }
         },
         Result::Err(err) => {
@@ -817,7 +815,6 @@ fn run_tap2uml(
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    converter_uml.as_plantuml(&mut writer)?;
     generate_uml_output(converter_uml, &mut writer, result_format)?;
     Ok(())
 }

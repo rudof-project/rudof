@@ -38,7 +38,6 @@ impl<R: io::Read> TapReader<R> {
 
     pub fn read_shape(&mut self) -> Result<bool> {
         if let Some((record, pos)) = self.next_record()? {
-            debug!("Read shape: {pos:?}, record: {record:?}");
             let maybe_shape_id = self.get_shape_id(&record, pos.line())?;
             if let Some(shape_id) = &maybe_shape_id {
                 self.state.current_shape().set_shape_id(shape_id);
@@ -48,14 +47,12 @@ impl<R: io::Read> TapReader<R> {
             self.read_shape_label(&record)?;
             self.read_extends_id(&record, pos.line());
             self.read_extends_label(&record, &pos);
-            debug!("1st record2statement: {pos:?}, record: {record:?}");
             let maybe_statement = self.record2statement(&record, &pos)?;
             if let Some(statement) = maybe_statement {
                 self.state.current_shape().add_statement(statement);
             }
             self.reset_next_record();
             while let Some((record, pos)) = self.next_record_with_id(&maybe_shape_id)? {
-                debug!("In loop record2statement: {pos:?}, record: {record:?}");
                 let maybe_statement = self.record2statement(&record, &pos)?;
                 if let Some(statement) = maybe_statement {
                     self.state.current_shape().add_statement(statement);
@@ -69,7 +66,6 @@ impl<R: io::Read> TapReader<R> {
 
     fn next_record(&mut self) -> Result<Option<(StringRecord, Position)>> {
         if let Some((rcd, pos)) = &self.state.get_cached_next_record() {
-            debug!("Cached record {rcd:?}, at {pos:?}");
             Ok(Some(((*rcd).clone(), (*pos).clone())))
         } else {
             let mut record = StringRecord::new();

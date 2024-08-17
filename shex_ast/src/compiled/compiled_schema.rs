@@ -124,13 +124,10 @@ impl CompiledSchema {
                     let iri =
                         self.prefixmap
                             .resolve_prefix_local(prefix, local)
-                            .map_err(|err| {
-                                println!("find_ref...error!");
-                                CompiledSchemaError::PrefixedNotFound {
-                                    prefix: prefix.clone(),
-                                    local: local.clone(),
-                                    err: Box::new(err),
-                                }
+                            .map_err(|err| CompiledSchemaError::PrefixedNotFound {
+                                prefix: prefix.clone(),
+                                local: local.clone(),
+                                err: Box::new(err),
                             })?;
                     Ok::<ShapeLabel, CompiledSchemaError>(ShapeLabel::iri(iri))
                 }

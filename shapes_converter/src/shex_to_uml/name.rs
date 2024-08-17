@@ -7,10 +7,10 @@ pub struct Name {
 }
 
 impl Name {
-    pub fn new(str: &str) -> Name {
+    pub fn new(str: &str, href: Option<&str>) -> Name {
         Name {
             str: str.to_string(),
-            href: None,
+            href: href.map(|c| c.to_string()),
             local_href: None,
             label: None,
         }

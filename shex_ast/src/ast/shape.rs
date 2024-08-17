@@ -1,11 +1,9 @@
 use iri_s::IriS;
-use prefixmap::{PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};
-
-use super::ObjectValue;
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
@@ -54,10 +52,17 @@ impl Shape {
         self
     }
 
-    pub fn annotations(&self) -> impl Iterator<Item = &Annotation> {
+    pub fn annotations(&self) -> Option<impl Iterator<Item = &Annotation>> {
         match &self.annotations {
-            None => todo!(),
-            Some(anns) => anns.iter(),
+            None => None,
+            Some(anns) => Some(anns.iter()),
+        }
+    }
+
+    pub fn has_annotations(&self) -> bool {
+        match &self.annotations {
+            None => false,
+            Some(_) => true,
         }
     }
 
