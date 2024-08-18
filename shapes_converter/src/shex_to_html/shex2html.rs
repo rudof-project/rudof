@@ -150,7 +150,7 @@ impl ShEx2Html {
                                 annotations,
                             } => {
                                 let pred_name =
-                                    mk_name(&predicate, annotations, &self.config, prefixmap)?;
+                                    mk_name(predicate, annotations, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
@@ -194,7 +194,7 @@ impl ShEx2Html {
                     sem_acts: _,
                     annotations,
                 } => {
-                    let pred_name = mk_name(&predicate, annotations, &self.config, prefixmap)?;
+                    let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
                         self.value_expr2value_constraint(
@@ -373,8 +373,8 @@ fn mk_name(
     config: &ShEx2HtmlConfig,
     prefixmap: &PrefixMap,
 ) -> Result<Name, ShEx2HtmlError> {
-    let label = get_label(&annotations, prefixmap, &config)?;
-    let name = iri_ref2name(iri, &config, &label, prefixmap)?;
+    let label = get_label(annotations, prefixmap, config)?;
+    let name = iri_ref2name(iri, config, &label, prefixmap)?;
     Ok(name)
 }
 

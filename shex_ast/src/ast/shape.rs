@@ -53,17 +53,11 @@ impl Shape {
     }
 
     pub fn annotations(&self) -> Option<impl Iterator<Item = &Annotation>> {
-        match &self.annotations {
-            None => None,
-            Some(anns) => Some(anns.iter()),
-        }
+        self.annotations.as_ref().map(|anns| anns.iter())
     }
 
     pub fn has_annotations(&self) -> bool {
-        match &self.annotations {
-            None => false,
-            Some(_) => true,
-        }
+        self.annotations.is_some()
     }
 
     pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {

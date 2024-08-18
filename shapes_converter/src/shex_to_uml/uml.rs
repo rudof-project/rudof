@@ -87,12 +87,12 @@ impl Uml {
     }
 
     pub fn add_extends(&mut self, source: &NodeId, target: &NodeId) {
-        match self.extends.entry(source.clone()) {
+        match self.extends.entry(*source) {
             Entry::Occupied(mut v) => {
-                v.get_mut().insert(target.clone());
+                v.get_mut().insert(*target);
             }
             Entry::Vacant(vacant) => {
-                vacant.insert(HashSet::from([target.clone()]));
+                vacant.insert(HashSet::from([*target]));
             }
         }
     }

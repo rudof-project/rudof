@@ -55,11 +55,7 @@ impl Name {
     }
 
     pub fn as_relative_href(&self) -> Option<String> {
-        if let Some(href) = &self.relative_href {
-            Some(href.to_string())
-        } else {
-            None
-        }
+        self.relative_href.as_ref().map(|href| href.to_string())
     }
 
     pub fn label(&self) -> Option<String> {

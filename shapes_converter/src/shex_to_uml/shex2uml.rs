@@ -4,9 +4,8 @@ use std::{
     process::Command,
 };
 
-use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
-use shex_ast::{Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use tracing::debug;
 
 use crate::{
@@ -195,7 +194,7 @@ impl ShEx2Uml {
                                 annotations,
                             } => {
                                 let pred_name =
-                                    mk_name(&predicate, annotations, &self.config, prefixmap)?;
+                                    mk_name(predicate, annotations, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
@@ -240,7 +239,7 @@ impl ShEx2Uml {
                     sem_acts: _,
                     annotations,
                 } => {
-                    let pred_name = mk_name(&predicate, annotations, &self.config, prefixmap)?;
+                    let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
                         self.value_expr2value_constraint(
@@ -353,8 +352,8 @@ fn mk_name(
     config: &ShEx2UmlConfig,
     prefixmap: &PrefixMap,
 ) -> Result<Name, ShEx2UmlError> {
-    let label = get_label(&annotations, prefixmap, &config)?;
-    let name = iri_ref2name(iri, &config, &label, prefixmap)?;
+    let label = get_label(annotations, prefixmap, config)?;
+    let name = iri_ref2name(iri, config, &label, prefixmap)?;
     Ok(name)
 }
 

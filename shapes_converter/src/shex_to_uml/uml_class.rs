@@ -22,7 +22,7 @@ impl UmlClass {
     }
 
     pub fn add_extends(&mut self, node: &NodeId) {
-        self.extends.push(node.clone())
+        self.extends.push(*node)
     }
 
     pub fn name(&self) -> String {
