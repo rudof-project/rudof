@@ -5,6 +5,7 @@ use shex_ast::Iri;
 use shex_ast::Schema;
 use std::fs;
 use std::path::Path;
+use tracing::debug;
 
 use crate::grammar_structs::ShExStatement;
 use crate::shex_statement;
@@ -111,7 +112,7 @@ impl<'a> Iterator for StatementIterator<'a> {
                 self.src = left;
             }
             Err(Err::Incomplete(needed)) => {
-                println!("Incomplete! shex_statement. Needed: {needed:?}");
+                debug!("Incomplete! shex_statement. Needed: {needed:?}");
                 self.done = true;
                 r = None;
             }
@@ -127,7 +128,7 @@ impl<'a> Iterator for StatementIterator<'a> {
                 self.src = left;
             }
             Err(Err::Incomplete(needed)) => {
-                println!("Incomplete on tws: needed {needed:?}");
+                debug!("Incomplete on tws: needed {needed:?}");
                 self.done = true;
             }
             Err(e) => {

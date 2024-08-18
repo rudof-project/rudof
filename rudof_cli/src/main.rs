@@ -317,8 +317,7 @@ fn main() -> Result<()> {
             *force_overwrite,
         ),
         None => {
-            println!("Command not specified");
-            Ok(())
+            bail!("Command not specified")
         }
     }
 }
@@ -437,8 +436,7 @@ fn run_validate_shex(
                 Ok(())
             }
             Err(err) => {
-                println!("Error generating result_map after validation: {err}");
-                bail!("{err}");
+                bail!("Error generating result_map after validation: {err}");
             }
         },
         Result::Err(err) => {
@@ -707,7 +705,7 @@ fn run_shex2html<P: AsRef<Path>>(
     let schema = parse_schema(input_path.as_ref(), &schema_format)?;
     let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
-    debug!("Landing page {landing_page}\nConverter...");
+    debug!("Landing page will be generated at {landing_page}\nStarted converter...");
     let mut converter = ShEx2Html::new(config);
     converter.convert(&schema)?;
     converter.export_schema()?;
@@ -817,7 +815,6 @@ fn run_tap2uml(
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    converter_uml.as_plantuml(&mut writer)?;
     generate_uml_output(converter_uml, &mut writer, result_format)?;
     Ok(())
 }

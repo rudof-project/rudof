@@ -97,7 +97,6 @@ where
 {
     has_type(sx_shape()).with({
         closed().then(|maybe_closed| {
-            println!("Value of closed: {maybe_closed:?}");
             let extra = None; // TODO
             let expression = None; // TODO
             ok(&ShapeExpr::shape(Shape::new(

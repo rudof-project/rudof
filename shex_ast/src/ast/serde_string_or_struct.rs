@@ -287,10 +287,8 @@ where
         where
             A: SeqAccess<'de>,
         {
-            println!("Visiting sequence");
             let mut values = Vec::new();
             while let Some(value) = visitor.next_element()? {
-                println!("Visiting element");
                 values.push(value);
             }
             Ok(values)

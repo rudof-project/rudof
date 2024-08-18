@@ -6,6 +6,7 @@ use super::{Entry, Name};
 pub struct HtmlShape {
     name: Name,
     entries: Vec<Entry>,
+    extends: Vec<Name>,
 }
 
 impl HtmlShape {
@@ -13,6 +14,7 @@ impl HtmlShape {
         HtmlShape {
             name,
             entries: Vec::new(),
+            extends: Vec::new(),
         }
     }
 
@@ -26,5 +28,13 @@ impl HtmlShape {
 
     pub fn entries(&self) -> impl Iterator<Item = &Entry> {
         self.entries.iter()
+    }
+
+    pub fn add_extends(&mut self, name: &Name) {
+        self.extends.push(name.clone())
+    }
+
+    pub fn extends(&self) -> impl Iterator<Item = &Name> {
+        self.extends.iter()
     }
 }

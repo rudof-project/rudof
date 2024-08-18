@@ -17,12 +17,20 @@
         <a href="{{ name.href }}">{{ name.repr}}</a>
         {% else %}
         {{ name.repr }}
-        {% endif %}
+        {% endif %} {{ name.label }}
     </h1>
+    <h2>Parents</h2>
+    {% for e in extends %}
+    <ul>
+        <li><a href="{{ e.relative_href }}">{{ e.repr }}</a></li>
+    </ul>
+    {% endfor %}
+    <h2>List of properties</h2>
     <table class="table">
         <thead>
             <tr>
                 <th>Property</th>
+                <th>Property label</th>
                 <th>Expected value</th>
                 <th>Cardinality</th>
             </tr>
@@ -31,11 +39,12 @@
         <tr>
             <td>
                 {% if entry.name.href %}
-                <a href="{{ entry.name.href }}">{{ entry.name.repr}}</a>
+                <a href="{{ entry.name.relative_href }}">{{ entry.name.repr}}</a>
                 {% else %}
                 {{ entry.name.repr }}
                 {% endif %}
             </td>
+            <td>{{ entry.name.label }}</td>
             <td>
                 {% if entry.value_constraint.Datatype %}
                 {% with datatype = entry.value_constraint.Datatype %}

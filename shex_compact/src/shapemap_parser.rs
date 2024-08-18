@@ -13,6 +13,7 @@ use shapemap::NodeSelector;
 use shapemap::ShapeSelector;
 use std::fs;
 use std::path::Path;
+use tracing::debug;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -140,7 +141,7 @@ impl<'a> Iterator for ShapeMapStatementIterator<'a> {
                 self.src = left;
             }
             Err(Err::Incomplete(_)) => {
-                println!("Incomplete! shapemap_statement");
+                debug!("Incomplete! shapemap_statement");
                 self.done = true;
                 r = None;
             }
