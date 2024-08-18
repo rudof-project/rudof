@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash, Serialize, Deserialize)]
 pub struct NodeId {
     n: usize,
 }

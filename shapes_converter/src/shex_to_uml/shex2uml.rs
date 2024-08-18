@@ -7,10 +7,12 @@ use std::{
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
-use srdf::literal::Literal;
 use tracing::debug;
 
-use crate::shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml};
+use crate::{
+    find_annotation, object_value2string,
+    shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml},
+};
 
 use super::{
     Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint, PLANTUML,
@@ -99,7 +101,7 @@ impl ShEx2Uml {
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
-                let (node_id, found) = self.current_uml.get_node_adding_label(&name.name());
+                let (node_id, _found) = self.current_uml.get_node_adding_label(&name.name());
                 let component = self.shape_expr2component(
                     &mut name,
                     &shape_decl.shape_expr,
@@ -367,35 +369,6 @@ fn get_label(
         }
     }
     Ok(None)
-}
-
-pub fn find_annotation(
-    annotations: &Option<Vec<Annotation>>,
-    predicate: &IriS,
-    prefixmap: &PrefixMap,
-) -> Result<Option<ObjectValue>, PrefixMapError> {
-    if let Some(anns) = annotations {
-        for a in anns.iter() {
-            let iri_predicate = prefixmap.resolve_iriref(&a.predicate())?;
-            if *predicate == iri_predicate {
-                return Ok(Some(a.object()));
-            }
-        }
-        Ok(None)
-    } else {
-        Ok(None)
-    }
-}
-
-fn object_value2string(object_value: &ObjectValue) -> String {
-    match object_value {
-        ObjectValue::IriRef(_) => todo!(),
-        ObjectValue::Literal(lit) => lit_2string(lit),
-    }
-}
-
-fn lit_2string(lit: &Literal) -> String {
-    lit.lexical_form()
 }
 
 pub enum ImageFormat {
