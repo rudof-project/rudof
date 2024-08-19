@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:="http://example.org/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:sh="http://www.w3.org/ns/shacl#">
+	<rdf:Description rdf:about="http://example.org/Person">
+		<sh:property rdf:nodeID="a36aeebf5fd286dedddffe183efc4e15"/>
+		<sh:property rdf:nodeID="adf1b35e1304ab8b1bb29662eabf0162"/>
+		<sh:property rdf:nodeID="cc3b891334be48f4d12034a0d30cbf3e"/>
+		<sh:closed rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">true</sh:closed>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#NodeShape"/>
+	</rdf:Description>
+	<rdf:Description rdf:about="http://example.org/Course">
+		<sh:property rdf:nodeID="d10cee3fbb6f80279433b213d35939b3"/>
+		<sh:closed rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">true</sh:closed>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#NodeShape"/>
+	</rdf:Description>
+	<rdf:Description rdf:nodeID="a36aeebf5fd286dedddffe183efc4e15">
+		<sh:path rdf:resource="http://example.org/name"/>
+		<sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+		<sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+		<sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#PropertyShape"/>
+	</rdf:Description>
+	<rdf:Description rdf:nodeID="adf1b35e1304ab8b1bb29662eabf0162">
+		<sh:path rdf:resource="http://example.org/birthDate"/>
+		<sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+		<sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#PropertyShape"/>
+	</rdf:Description>
+	<rdf:Description rdf:nodeID="cc3b891334be48f4d12034a0d30cbf3e">
+		<sh:path rdf:resource="http://example.org/enrolledIn"/>
+		<sh:node rdf:resource="http://example.org/Course"/>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#PropertyShape"/>
+	</rdf:Description>
+	<rdf:Description rdf:nodeID="d10cee3fbb6f80279433b213d35939b3">
+		<sh:path rdf:resource="http://example.org/name"/>
+		<sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+		<sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+		<sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+		<rdf:type rdf:resource="http://www.w3.org/ns/shacl#PropertyShape"/>
+	</rdf:Description>
+</rdf:RDF>
