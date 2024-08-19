@@ -2,17 +2,18 @@ use prefixmap::IriRef;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
+use std::sync::Arc;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
-use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::validation_report::result::LazyValidationIterator;
+use crate::value_nodes::ValueNodes;
 
 /// sh:equals specifies the condition that the set of all value nodes is equal
 /// to the set of objects of the triples that have the focus node as subject and
@@ -30,35 +31,35 @@ impl Equals {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Equals {
+impl< S: SRDFBasic, R: ValidatorRunner< S>> ConstraintComponent< S, R> for Equals {
     fn evaluate(
-        &self,
-        _executor: &dyn SHACLExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        Err(ConstraintError::NotImplemented)
+        & self,
+        validation_context: Arc<ValidationContext< S, R>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        unimplemented!()
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Equals {
+impl< S: SRDF> DefaultConstraintComponent< S> for Equals {
     fn evaluate_default(
-        &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        self.evaluate(executor, context, value_nodes)
+        & self,
+        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Equals {
+impl< S: QuerySRDF> SparqlConstraintComponent< S> for Equals {
     fn evaluate_sparql(
-        &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        self.evaluate(executor, context, value_nodes)
+        & self,
+        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

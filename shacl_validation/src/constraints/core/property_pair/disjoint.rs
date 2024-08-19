@@ -1,15 +1,16 @@
 use prefixmap::IriRef;
 use srdf::QuerySRDF;
 use srdf::SRDF;
+use std::sync::Arc;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::shape::ValueNode;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::validation_report::result::LazyValidationIterator;
+use crate::value_nodes::ValueNodes;
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
 /// with the set of objects of the triples that have the focus node as subject
@@ -27,24 +28,24 @@ impl Disjoint {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Disjoint {
+impl< S: SRDF> DefaultConstraintComponent< S> for Disjoint {
     fn evaluate_default(
-        &self,
-        _executor: &DefaultExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        Err(ConstraintError::NotImplemented)
+        & self,
+        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        unimplemented!()
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Disjoint {
+impl< S: QuerySRDF> SparqlConstraintComponent< S> for Disjoint {
     fn evaluate_sparql(
-        &self,
-        _executor: &QueryExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        Err(ConstraintError::NotImplemented)
+        & self,
+        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        unimplemented!()
     }
 }

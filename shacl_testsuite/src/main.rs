@@ -4,7 +4,7 @@ use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
     store::ShaclDataManager,
-    validate::{GraphValidator, ShaclValidationMode, Validator},
+    validate::{GraphValidator, ShaclValidationMode, ShapeValidator},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};

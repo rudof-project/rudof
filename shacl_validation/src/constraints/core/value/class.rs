@@ -1,17 +1,18 @@
 use indoc::formatdoc;
 use srdf::RDF_TYPE;
 use srdf::{QuerySRDF, RDFNode, SRDFBasic, RDFS_SUBCLASS_OF, SRDF};
+use std::collections::HashSet;
+use std::sync::Arc;
 
-use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::constraints::{ConstraintResult, DefaultConstraintComponent};
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
 use crate::helper::srdf::get_objects_for;
-use crate::shape::ValueNode;
-use crate::validation_report::result::ValidationResult;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::validation_report::result::{LazyValidationIterator, ValidationResult};
+use crate::value_nodes::ValueNodes;
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.
@@ -29,72 +30,93 @@ impl<S: SRDFBasic> Class<S> {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
+impl< S: SRDF> DefaultConstraintComponent< S> for Class<S> {
     fn evaluate_default(
-        &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        let mut results = Vec::new();
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
-                // if the node is a literal...
-                if S::term_is_literal(value_node) {
-                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
-                    continue;
+        & self,
+        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        let results = value_nodes
+            .iter_full()
+            .flat_map(move |(focus_node, value_node)| {
+                if S::term_is_literal(&value_node) {
+                    let result = ValidationResult::new(
+                        &focus_node,
+                        Arc::clone(&evaluation_context),
+                        Some(&value_node),
+                    );
+                    Some(result)
+                } else {
+                    let objects = match get_objects_for(
+                        validation_context.store(),
+                        &value_node,
+                        &S::iri_s2iri(&RDF_TYPE),
+                    ) {
+                        Ok(objects) => objects,
+                        Err(_) => HashSet::new(),
+                    };
+
+                    let is_class_valid = objects.iter().any(|ctype| {
+                        ctype == &self.class_rule
+                            || get_objects_for(
+                                validation_context.store(),
+                                ctype,
+                                &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+                            )
+                            .unwrap_or_default()
+                            .contains(&self.class_rule)
+                    });
+
+                    if !is_class_valid {
+                        Some(ValidationResult::new(
+                            &focus_node,
+                            Arc::clone(&evaluation_context),
+                            Some(&value_node),
+                        ))
+                    } else {
+                        None
+                    }
                 }
-                // or a non-literal that is not a SHACL instance of the provided
-                // class...
-                let is_class_valid =
-                    get_objects_for(executor.store(), value_node, &S::iri_s2iri(&RDF_TYPE))?
-                        .iter()
-                        .any(|ctype| {
-                            ctype == &self.class_rule
-                                || get_objects_for(
-                                    executor.store(),
-                                    ctype,
-                                    &S::iri_s2iri(&RDFS_SUBCLASS_OF),
-                                )
-                                .unwrap_or_default()
-                                .contains(&self.class_rule)
-                        });
-                // ... validation result
-                if !is_class_valid {
-                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
-                }
-            }
-        }
-        Ok(results)
+            });
+
+        LazyValidationIterator::new(results)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
+impl< S: QuerySRDF> SparqlConstraintComponent< S> for Class<S> {
     fn evaluate_sparql(
-        &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        let mut results = Vec::new();
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        & self,
+        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        let results = value_nodes
+            .iter_full()
+            .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {"
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                     ASK {{ {} rdf:type/rdfs:subClassOf* {} }}
                 ", value_node, self.class_rule,
                 };
-                let ask = match executor.store().query_ask(&query) {
-                    Ok(ask) => ask,
-                    Err(_) => return Err(ConstraintError::Query),
-                };
-                if !ask {
-                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
-                }
-            }
-        }
 
-        Ok(results)
+                let ask = match validation_context.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return None,
+                };
+
+                if !ask {
+                    Some(ValidationResult::new(
+                        &focus_node,
+                        Arc::clone(&evaluation_context),
+                        Some(&value_node),
+                    ))
+                } else {
+                    None
+                }
+            });
+
+        LazyValidationIterator::new(results)
     }
 }

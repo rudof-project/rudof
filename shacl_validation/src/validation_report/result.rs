@@ -1,9 +1,40 @@
+use std::sync::Arc;
+
 use shacl_ast::*;
 use srdf::{SRDFBasic, SRDF};
 
-use crate::{context::Context, helper::srdf::get_object_for};
+use crate::context::EvaluationContext;
+use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
+
+pub struct LazyValidationIterator<S: SRDFBasic> {
+    iter: Box<dyn Iterator<Item = ValidationResult<S>> + 'static>,
+}
+
+impl<S: SRDFBasic> Default for LazyValidationIterator<S> {
+    fn default() -> Self {
+        Self {
+            iter: Box::new(std::iter::empty()),
+        }
+    }
+}
+
+impl<S: SRDFBasic> LazyValidationIterator<S> {
+    pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
+        Self {
+            iter: Box::new(iter),
+        }
+    }
+}
+
+impl<S: SRDFBasic> Iterator for LazyValidationIterator<S> {
+    type Item = ValidationResult<S>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
 
 pub struct ValidationResultBuilder<S: SRDFBasic> {
     focus_node: Option<S::Term>,
@@ -76,19 +107,17 @@ pub struct ValidationResult<S: SRDFBasic> {
 impl<S: SRDFBasic> ValidationResult<S> {
     pub(crate) fn new(
         focus_node: &S::Term,
-        context: &Context,
+        context: Arc<EvaluationContext>,
         value_node: Option<&S::Term>,
     ) -> Self {
         let mut builder = ValidationResultBuilder::default();
 
         builder.focus_node(focus_node.to_owned());
+        builder.source_shape(context.shape::<S>());
         builder.source_constraint_component(context.source_constraint_component::<S>());
 
         if let Some(result_severity) = context.result_severity::<S>() {
             builder.result_severity(result_severity);
-        }
-        if let Some(source_shape) = context.source_shape::<S>() {
-            builder.source_shape(source_shape);
         }
         if let Some(value) = value_node {
             builder.value(value.to_owned());

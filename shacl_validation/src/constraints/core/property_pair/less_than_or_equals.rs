@@ -1,15 +1,16 @@
 use prefixmap::IriRef;
 use srdf::QuerySRDF;
 use srdf::SRDF;
+use std::sync::Arc;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintResult;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::shape::ValueNode;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::validation_report::result::LazyValidationIterator;
+use crate::value_nodes::ValueNodes;
 
 /// sh:lessThanOrEquals specifies the condition that each value node is smaller
 /// than or equal to all the objects of the triples that have the focus node
@@ -27,24 +28,24 @@ impl LessThanOrEquals {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
+impl< S: SRDF> DefaultConstraintComponent< S> for LessThanOrEquals {
     fn evaluate_default(
-        &self,
-        _executor: &DefaultExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        Err(ConstraintError::NotImplemented)
+        & self,
+        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        unimplemented!()
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
+impl< S: QuerySRDF> SparqlConstraintComponent< S> for LessThanOrEquals {
     fn evaluate_sparql(
-        &self,
-        _executor: &QueryExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        Err(ConstraintError::NotImplemented)
+        & self,
+        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        unimplemented!()
     }
 }

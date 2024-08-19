@@ -4,7 +4,7 @@ use shacl_ast::{ShaclParser, ShaclWriter};
 use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate::GraphValidator;
 use shacl_validation::validate::ShaclValidationMode;
-use shacl_validation::validate::Validator;
+use shacl_validation::validate::ShapeValidator;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
 use std::fs::File;

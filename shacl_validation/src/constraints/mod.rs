@@ -1,4 +1,3 @@
-use constraint_error::ConstraintError;
 use core::cardinality::max_count::MaxCount;
 use core::cardinality::min_count::MinCount;
 use core::logical::and::And;
@@ -30,50 +29,48 @@ use shacl_ast::component::Component;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
+use std::sync::Arc;
 
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::result::ValidationResult;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::validation_report::result::LazyValidationIterator;
+use crate::value_nodes::ValueNodes;
 
-pub(crate) mod constraint_error;
 pub mod core;
 
-pub type ConstraintResult<S> = Result<Vec<ValidationResult<S>>, ConstraintError>;
-
-pub(crate) trait ConstraintComponent<S: SRDFBasic> {
+pub(crate) trait ConstraintComponent<S: SRDFBasic, R: ValidatorRunner<S>> {
     fn evaluate(
         &self,
-        executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S>;
+        validation_context: Arc<ValidationContext<S, R>>,
+        evaluation_context: Arc<EvaluationContext>,
+        value_nodes: Arc<ValueNodes<S>>,
+    ) -> LazyValidationIterator<S>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S>;
+        validation_context: Arc<ValidationContext<S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext>,
+        value_nodes: Arc<ValueNodes<S>>,
+    ) -> LazyValidationIterator<S>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S>;
+        validation_context: Arc<ValidationContext<S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext>,
+        value_nodes: Arc<ValueNodes<S>>,
+    ) -> LazyValidationIterator<S>;
 }
 
-// TODO: can this be improved?
-impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {
-    fn from(value: &Component) -> Self {
-        match value.to_owned() {
+impl<S: SRDF> From<Component> for Box<dyn DefaultConstraintComponent<S>> {
+    fn from(value: Component) -> Self {
+        match value {
             Component::Class(node) => Box::new(Class::new(node)),
             Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
             Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),
@@ -118,10 +115,9 @@ impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<
     }
 }
 
-// TODO: can this be improved?
-impl<S: QuerySRDF + 'static> From<&Component> for Box<dyn SparqlConstraintComponent<S>> {
-    fn from(value: &Component) -> Self {
-        match value.to_owned() {
+impl<S: QuerySRDF> From<Component> for Box<dyn SparqlConstraintComponent<S>> {
+    fn from(value: Component) -> Self {
+        match value {
             Component::Class(node) => Box::new(Class::new(node)),
             Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
             Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),

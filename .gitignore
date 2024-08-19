@@ -17,6 +17,9 @@ Cargo.lock
 .vscode/
 .cargo/
 
+# JetBrains
+.idea/
+
 # Added by cargo
 target/
 

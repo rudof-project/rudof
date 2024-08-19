@@ -1,21 +1,23 @@
-use shacl_ast::shape::Shape;
+use std::sync::Arc;
+
+use crate::constraints::ConstraintComponent;
+use crate::constraints::DefaultConstraintComponent;
+use crate::constraints::SparqlConstraintComponent;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::helper::shapes::get_shapes_ref;
+use crate::runner::default_runner::DefaultValidatorRunner;
+use crate::runner::query_runner::QueryValidatorRunner;
+use crate::runner::ValidatorRunner;
+use crate::shape::ShapeValidator;
+use crate::targets::Targets;
+use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodes;
 use srdf::QuerySRDF;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
 use srdf::SRDF;
-
-use crate::constraints::ConstraintComponent;
-use crate::constraints::ConstraintResult;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::helper::shapes::get_shapes_ref;
-use crate::shape::Validate;
-use crate::shape::ValueNode;
-use crate::validation_report::result::ValidationResult;
 
 /// sh:or specifies the condition that each value node conforms to at least one
 /// of the provided shapes. This is comparable to disjunction and the logical
@@ -32,64 +34,64 @@ impl Or {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Or {
+impl< S: SRDFBasic, R: ValidatorRunner< S>> ConstraintComponent< S, R> for Or {
     fn evaluate(
-        &self,
-        executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        let shapes = get_shapes_ref(&self.shapes, executor.schema());
-        let mut results = Vec::new();
+        & self,
+        validation_context: Arc<ValidationContext< S, R>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        let shapes = get_shapes_ref(&self.shapes, validation_context.schema());
 
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
-                let single_value_nodes = std::iter::once(value_node.to_owned()).collect();
+        let results = value_nodes
+            .iter_full()
+            .flat_map(move |(focus_node, value_node)| {
+                let single_value_nodes = std::iter::once(value_node.to_owned());
+                let focus_nodes = Targets::new(single_value_nodes);
+                let focus_nodes = Arc::new(focus_nodes);
 
                 let any_valid = shapes.iter().flatten().any(|shape| {
-                    let result = match shape {
-                        Shape::NodeShape(shape) => {
-                            shape.check_shape(executor, Some(&single_value_nodes))
-                        }
-                        Shape::PropertyShape(shape) => {
-                            shape.check_shape(executor, Some(&single_value_nodes))
-                        }
-                    };
-
-                    match result {
-                        Ok(results) => results.is_empty(),
+                    match ShapeValidator::new(shape, Arc::clone(&validation_context))
+                        .validate(Arc::clone(&focus_nodes))
+                    {
+                        Ok(results) => results.peekable().peek().is_none(),
                         Err(_) => false,
                     }
                 });
 
                 if !any_valid {
-                    results.push(ValidationResult::new(focus_node, context, Some(value_node)));
+                    Some(ValidationResult::new(
+                        &focus_node,
+                        Arc::clone(&evaluation_context),
+                        Some(&value_node),
+                    ))
+                } else {
+                    None
                 }
-            }
-        }
+            });
 
-        Ok(results)
+        LazyValidationIterator::new(results)
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Or {
+impl< S: SRDF> DefaultConstraintComponent< S> for Or {
     fn evaluate_default(
-        &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        self.evaluate(executor, context, value_nodes)
+        & self,
+        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Or {
+impl< S: QuerySRDF> SparqlConstraintComponent< S> for Or {
     fn evaluate_sparql(
-        &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-    ) -> ConstraintResult<S> {
-        self.evaluate(executor, context, value_nodes)
+        & self,
+        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
+        evaluation_context: Arc<EvaluationContext<>>,
+        value_nodes: Arc<ValueNodes< S>>,
+    ) -> LazyValidationIterator< S> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
