@@ -11,6 +11,13 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::str::FromStr;
 
+#[pymodule]
+pub fn shacl(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(validate, module)?)?;
+    Ok(())
+}
+
 #[pyfunction]
 #[pyo3(signature = (input, output))]
 pub fn parse(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
@@ -66,12 +73,10 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
-        let report = match validator.validate(shapes, shapes_format) {
+        let _ = match validator.validate(shapes, shapes_format) {
             Ok(report) => report,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };
-
-        println!("{}", report);
 
         Ok(())
     })
