@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.15] - 2024-08-19
+
+- Solves issue #115 adding annotations to the ShEx compact printer
+- Takes into account annotations to generate labels in HTML and UML conversion from ShEx
+
 ## [0.1.14] - 2024-08-14
 
 - Added support for using URLs in command line. The system attempts to dereference the URI and parses its content.
