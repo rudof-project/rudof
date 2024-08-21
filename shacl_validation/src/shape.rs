@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use shacl_ast::component::Component;
 use shacl_ast::node_shape::NodeShape;
 use shacl_ast::property_shape::PropertyShape;
@@ -11,19 +9,18 @@ use srdf::SRDFBasic;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shapes_ref;
-use crate::runner::ValidatorRunner;
 use crate::targets::Targets;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::value_nodes::ValueNodes;
 
-pub struct ShapeValidator<S: SRDFBasic, R: ValidatorRunner<S>> {
-    shape: Shape,
-    validation_context: ValidationContext<S, R>,
+pub struct ShapeValidator<'a, S: SRDFBasic> {
+    shape: &'a Shape,
+    validation_context: &'a ValidationContext<'a, S>,
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> ShapeValidator<S, R> {
-    pub fn new(shape: Shape, validation_context: ValidationContext<S, R>) -> Self {
+impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
+    pub fn new(shape: &'a Shape, validation_context: &'a ValidationContext<S>) -> Self {
         ShapeValidator {
             shape,
             validation_context,
@@ -31,45 +28,39 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ShapeValidator<S, R> {
     }
 
     pub fn validate(
-        &self,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Result<LazyValidationIterator<S>, ValidateError> {
+        &'a self,
+        focus_nodes: Option<&'a Targets<S>>,
+    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
         if *self.shape.is_deactivated() {
             // skipping because it is deactivated
             return Ok(LazyValidationIterator::default());
         }
 
-        let focus_nodes = self
-            .shape
-            .focus_nodes(Arc::clone(&self.validation_context), focus_nodes);
-        let value_nodes = self.shape.value_nodes(
-            Arc::clone(&self.validation_context),
-            Arc::clone(&focus_nodes),
-        );
+        let focus_nodes = focus_nodes.unwrap_or(&self.shape.focus_nodes(self.validation_context));
+        let value_nodes = self.shape.value_nodes(self.validation_context, focus_nodes);
 
-        let component_results = self.validate_components(value_nodes)?;
-        let property_shapes_results = self.validate_property_shapes(Arc::clone(&focus_nodes))?;
-        let results = LazyValidationIterator::new(component_results.chain(property_shapes_results));
+        let components = self.validate_components(&value_nodes)?;
+        let property_shapes = self.validate_property_shapes(focus_nodes)?;
 
-        Ok(results)
+        Ok(LazyValidationIterator::new(
+            components.chain(property_shapes),
+        ))
     }
 
     fn validate_components(
-        &self,
-        value_nodes: Arc<ValueNodes<S>>,
-    ) -> Result<LazyValidationIterator<S>, ValidateError> {
-        let contexts = <Shape as ValueNodesOps<S, R>>::components(&self.shape)
+        &'a self,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
+        let contexts = self
+            .shape
+            .components()
             .iter()
             .map(|component| EvaluationContext::new(component, &self.shape));
 
         let evaluated_components = contexts.flat_map(move |context| {
             self.validation_context
                 .runner()
-                .evaluate(
-                    Arc::clone(&self.validation_context),
-                    Arc::new(context),
-                    Arc::clone(&value_nodes),
-                )
+                .evaluate(self.validation_context, context, value_nodes)
                 .unwrap_or_else(|_| LazyValidationIterator::default())
         });
 
@@ -77,20 +68,17 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ShapeValidator<S, R> {
     }
 
     fn validate_property_shapes(
-        &self,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Result<LazyValidationIterator<S>, ValidateError> {
+        &'a self,
+        focus_nodes: &'a Targets<S>,
+    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
         let shapes = get_shapes_ref(
-            <Shape as ValueNodesOps<S, R>>::property_shapes(&self.shape),
+            self.shape.property_shapes(),
             self.validation_context.schema(),
         );
 
-        let contexts = shapes.iter().flatten().filter_map(|shape| {
+        let contexts = shapes.into_iter().flatten().filter_map(|shape| {
             if let Shape::PropertyShape(_) = shape {
-                Some(ShapeValidator::new(
-                    Arc::new(shape),
-                    Arc::clone(&self.validation_context),
-                ))
+                Some(ShapeValidator::new(shape, self.validation_context))
             } else {
                 None
             }
@@ -98,7 +86,7 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ShapeValidator<S, R> {
 
         let evaluated_shapes = contexts
             .flat_map(move |context| {
-                match context.validate(Arc::clone(&focus_nodes)) {
+                match context.validate(Some(&focus_nodes)) {
                     Ok(results) => Some(results),
                     Err(_) => None, // handle validation errors if necessary
                 }
@@ -109,44 +97,24 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ShapeValidator<S, R> {
     }
 }
 
-pub trait FocusNodesOps<S: SRDFBasic, R: ValidatorRunner<S>> {
-    fn focus_nodes(
-        &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<Targets<S>>;
+pub trait FocusNodesOps<S: SRDFBasic> {
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S>;
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> FocusNodesOps<S, R> for Shape {
-    fn focus_nodes(
-        &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<Targets<S>> {
-        if focus_nodes.peekable().peek().is_some() {
-            focus_nodes
-        } else {
-            let result = validation_context
-                .runner()
-                .focus_nodes(
-                    validation_context.store(),
-                    &S::object_as_term(<Shape as ValueNodesOps<S, R>>::id(self)),
-                    <Shape as ValueNodesOps<S, R>>::targets(self),
-                )
-                .expect("Failed to retrieve focus nodes");
-
-            Arc::new(result)
-        }
+impl<S: SRDFBasic> FocusNodesOps<S> for Shape {
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S> {
+        validation_context
+            .runner()
+            .focus_nodes(
+                validation_context.store(),
+                &S::object_as_term(self.id()),
+                self.targets(),
+            )
+            .expect("Failed to retrieve focus nodes")
     }
 }
 
-pub trait ValueNodesOps<S: SRDFBasic, R: ValidatorRunner<S>> {
-    fn value_nodes(
-        &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<ValueNodes<S>>;
-
+pub trait ShapeInfo {
     fn is_deactivated(&self) -> &bool;
     fn id(&self) -> &RDFNode;
     fn targets(&self) -> &Vec<Target>;
@@ -154,18 +122,7 @@ pub trait ValueNodesOps<S: SRDFBasic, R: ValidatorRunner<S>> {
     fn property_shapes(&self) -> &Vec<RDFNode>;
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> ValueNodesOps<S, R> for Shape {
-    fn value_nodes(
-        &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<ValueNodes<S>> {
-        match self {
-            Shape::NodeShape(ns) => ns.value_nodes(validation_context, focus_nodes),
-            Shape::PropertyShape(ps) => ps.value_nodes(validation_context, focus_nodes),
-        }
-    }
-
+impl ShapeInfo for Shape {
     fn is_deactivated(&self) -> &bool {
         match self {
             Shape::NodeShape(ref ns) => ns.is_deactivated(),
@@ -202,49 +159,46 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ValueNodesOps<S, R> for Shape {
     }
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> ValueNodesOps<S, R> for NodeShape {
+pub trait ValueNodesOps<S: SRDFBasic> {
     fn value_nodes(
         &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<ValueNodes<S>> {
-        let value_nodes = focus_nodes.map(|focus_node| {
-            (
-                focus_node.clone(),
-                Targets::new(std::iter::once(focus_node.clone())),
-            )
-        });
+        validation_context: &ValidationContext<S>,
+        focus_nodes: &Targets<S>,
+    ) -> ValueNodes<S>;
+}
 
-        Arc::new(ValueNodes::new(value_nodes))
-    }
-
-    fn is_deactivated(&self) -> &bool {
-        self.is_deactivated()
-    }
-
-    fn id(&self) -> &RDFNode {
-        self.id()
-    }
-
-    fn targets(&self) -> &Vec<Target> {
-        self.targets()
-    }
-
-    fn components(&self) -> &Vec<Component> {
-        self.components()
-    }
-
-    fn property_shapes(&self) -> &Vec<RDFNode> {
-        self.property_shapes()
+impl<S: SRDFBasic> ValueNodesOps<S> for Shape {
+    fn value_nodes(
+        &self,
+        validation_context: &ValidationContext<S>,
+        focus_nodes: &Targets<S>,
+    ) -> ValueNodes<S> {
+        match self {
+            Shape::NodeShape(ns) => ns.value_nodes(validation_context, focus_nodes),
+            Shape::PropertyShape(ps) => ps.value_nodes(validation_context, focus_nodes),
+        }
     }
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> ValueNodesOps<S, R> for PropertyShape {
+impl<S: SRDFBasic> ValueNodesOps<S> for NodeShape {
     fn value_nodes(
         &self,
-        validation_context: Arc<ValidationContext<S, R>>,
-        focus_nodes: Arc<Targets<S>>,
-    ) -> Arc<ValueNodes<S>> {
+        validation_context: &ValidationContext<S>,
+        focus_nodes: &Targets<S>,
+    ) -> ValueNodes<S> {
+        let value_nodes =
+            focus_nodes.map(|focus_node| (focus_node, Targets::new(std::iter::once(focus_node))));
+
+        ValueNodes::new(value_nodes)
+    }
+}
+
+impl<S: SRDFBasic> ValueNodesOps<S> for PropertyShape {
+    fn value_nodes(
+        &self,
+        validation_context: &ValidationContext<S>,
+        focus_nodes: &Targets<S>,
+    ) -> ValueNodes<S> {
         let value_nodes = focus_nodes.filter_map(move |focus_node| {
             match validation_context
                 .runner()
@@ -256,26 +210,6 @@ impl<S: SRDFBasic, R: ValidatorRunner<S>> ValueNodesOps<S, R> for PropertyShape 
             }
         });
 
-        Arc::new(ValueNodes::new(value_nodes))
-    }
-
-    fn is_deactivated(&self) -> &bool {
-        self.is_deactivated()
-    }
-
-    fn id(&self) -> &RDFNode {
-        self.id()
-    }
-
-    fn targets(&self) -> &Vec<Target> {
-        self.targets()
-    }
-
-    fn components(&self) -> &Vec<Component> {
-        self.components()
-    }
-
-    fn property_shapes(&self) -> &Vec<RDFNode> {
-        self.property_shapes()
+        ValueNodes::new(value_nodes)
     }
 }

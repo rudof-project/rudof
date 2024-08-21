@@ -1,18 +1,25 @@
-use std::sync::Arc;
-
 use shacl_ast::*;
-use srdf::{SRDFBasic, SRDF};
+use srdf::SRDFBasic;
+use srdf::SRDF;
 
 use crate::context::EvaluationContext;
 use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-pub struct LazyValidationIterator<S: SRDFBasic> {
-    iter: Box<dyn Iterator<Item = ValidationResult<S>> + 'static>,
+pub struct LazyValidationIterator<'a, S: SRDFBasic + 'a> {
+    iter: Box<dyn Iterator<Item = ValidationResult<S>> + 'a>,
 }
 
-impl<S: SRDFBasic> Default for LazyValidationIterator<S> {
+impl<'a, S: SRDFBasic + 'a> LazyValidationIterator<'a, S> {
+    pub fn new(iter: impl Iterator<Item = ValidationResult<S>> + 'a) -> Self {
+        Self {
+            iter: Box::new(iter),
+        }
+    }
+}
+
+impl<S: SRDFBasic> Default for LazyValidationIterator<'_, S> {
     fn default() -> Self {
         Self {
             iter: Box::new(std::iter::empty()),
@@ -20,15 +27,7 @@ impl<S: SRDFBasic> Default for LazyValidationIterator<S> {
     }
 }
 
-impl<S: SRDFBasic> LazyValidationIterator<S> {
-    pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
-        Self {
-            iter: Box::new(iter),
-        }
-    }
-}
-
-impl<S: SRDFBasic> Iterator for LazyValidationIterator<S> {
+impl<'a, S: SRDFBasic + 'a> Iterator for LazyValidationIterator<'a, S> {
     type Item = ValidationResult<S>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -107,7 +106,7 @@ pub struct ValidationResult<S: SRDFBasic> {
 impl<S: SRDFBasic> ValidationResult<S> {
     pub(crate) fn new(
         focus_node: &S::Term,
-        context: Arc<EvaluationContext>,
+        context: &EvaluationContext,
         value_node: Option<&S::Term>,
     ) -> Self {
         let mut builder = ValidationResultBuilder::default();

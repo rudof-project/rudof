@@ -4,14 +4,11 @@ use srdf::QuerySRDF;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
 use srdf::SRDF;
-use std::sync::Arc;
 
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -29,47 +26,45 @@ impl<S: SRDFBasic> MinInclusive<S> {
     }
 }
 
-impl< S: SRDF> DefaultConstraintComponent< S> for MinInclusive<S> {
-    fn evaluate_default(
-        & self,
-        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: SRDF> DefaultConstraintComponent<S> for MinInclusive<S> {
+    fn evaluate_default<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         unimplemented!()
     }
 }
 
-impl< S: QuerySRDF> SparqlConstraintComponent< S> for MinInclusive<S> {
-    fn evaluate_sparql(
-        & self,
-        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
-        let results = value_nodes
-            .iter_full()
-            .filter_map(move |(focus_node, value_node)| {
-                let query = formatdoc! {
-                    " ASK {{ FILTER ({} <= {}) }} ",
-                    value_node, self.min_inclusive
-                };
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinInclusive<S> {
+    fn evaluate_sparql<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
+        let results = value_nodes.filter_map(move |(focus_node, value_node)| {
+            let query = formatdoc! {
+                " ASK {{ FILTER ({} <= {}) }} ",
+                value_node, self.min_inclusive
+            };
 
-                let ask = match validation_context.store().query_ask(&query) {
-                    Ok(ask) => ask,
-                    Err(_) => return None,
-                };
+            let ask = match validation_context.store().query_ask(&query) {
+                Ok(ask) => ask,
+                Err(_) => return None,
+            };
 
-                if !ask {
-                    Some(ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
-                    ))
-                } else {
-                    None
-                }
-            });
+            if !ask {
+                Some(ValidationResult::new(
+                    focus_node,
+                    &evaluation_context,
+                    Some(value_node),
+                ))
+            } else {
+                None
+            }
+        });
 
         LazyValidationIterator::new(results)
     }

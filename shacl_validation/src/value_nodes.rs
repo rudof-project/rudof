@@ -1,42 +1,33 @@
+use std::collections::HashMap;
+
 use srdf::SRDFBasic;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::targets::Targets;
 
-pub struct ValueNodes<S: SRDFBasic>
-where
-    S::Term:,
-{
-    iter: Rc<RefCell<dyn Iterator<Item = (S::Term, Targets<S>)>>>,
+pub struct ValueNodes<'a, S: SRDFBasic> {
+    iter: HashMap<&'a S::Term, Targets<'a, S>>,
 }
 
-impl<S: SRDFBasic> ValueNodes<S>
-where
-    S:,
-{
-    pub fn new(iter: impl Iterator<Item = (S::Term, Targets<S>)>) -> Self {
+impl<'a, S: SRDFBasic> ValueNodes<'a, S> {
+    pub fn new(iter: impl Iterator<Item = (&'a S::Term, Targets<'a, S>)> + 'a) -> Self {
         Self {
-            iter: Rc::new(RefCell::new(iter)),
+            iter: HashMap::from_iter(iter),
         }
     }
+}
 
-    pub fn iter_outer(&self) -> impl Iterator<Item = (S::Term, Targets<S>)> {
-        let iter_clone = Rc::clone(&self.iter);
-        std::iter::from_fn(move || {
-            let mut iter = iter_clone.borrow_mut();
-            iter.next()
-                .map(|(focus_nodes, value_nodes)| (focus_nodes, value_nodes))
-        })
-    }
+impl<'a, S: SRDFBasic> Iterator for ValueNodes<'a, S> {
+    type Item = (&'a S::Term, &'a S::Term);
 
-    pub fn iter_full(&self) -> impl Iterator<Item = (S::Term, S::Term)> {
-        let iter_clone = Rc::clone(&self.iter);
-        std::iter::from_fn(move || {
-            let mut iter = iter_clone.borrow_mut();
-            iter.next()
-                .map(|(outer, inner_iter)| inner_iter.map(move |inner| (outer.clone(), inner)))?
-                .next()
-        })
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((outer_term, mut targets_iter)) = self.iter.iter().next() {
+            if let Some(inner_term) = targets_iter.next() {
+                Some((outer_term, inner_term))
+            } else {
+                self.next()
+            }
+        } else {
+            None
+        }
     }
 }

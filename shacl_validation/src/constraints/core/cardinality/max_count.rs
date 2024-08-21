@@ -1,16 +1,13 @@
+use itertools::Itertools;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
-use std::sync::Arc;
 
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
-use crate::runner::ValidatorRunner;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -31,22 +28,19 @@ impl MaxCount {
     }
 }
 
-impl< S: SRDFBasic, R: ValidatorRunner< S>> ConstraintComponent< S, R> for MaxCount {
-    fn evaluate(
-        & self,
-        validation_context: Arc<ValidationContext< S, R>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: SRDFBasic> ConstraintComponent<S> for MaxCount {
+    fn evaluate<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         let results = value_nodes
-            .iter_outer()
+            .chunk_by(|(focus_node, _)| focus_node.clone())
+            .into_iter()
             .filter_map(move |(focus_node, value_nodes)| {
                 if (value_nodes.count() as isize) > self.max_count {
-                    Some(ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        None,
-                    ))
+                    Some(ValidationResult::new(focus_node, &evaluation_context, None))
                 } else {
                     None
                 }
@@ -56,24 +50,24 @@ impl< S: SRDFBasic, R: ValidatorRunner< S>> ConstraintComponent< S, R> for MaxCo
     }
 }
 
-impl< S: SRDF> DefaultConstraintComponent< S> for MaxCount {
-    fn evaluate_default(
-        & self,
-        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: SRDF> DefaultConstraintComponent<S> for MaxCount {
+    fn evaluate_default<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl< S: QuerySRDF> SparqlConstraintComponent< S> for MaxCount {
-    fn evaluate_sparql(
-        & self,
-        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxCount {
+    fn evaluate_sparql<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

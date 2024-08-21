@@ -30,22 +30,19 @@ impl<S: SRDFBasic> Class<S> {
     }
 }
 
-impl< S: SRDF> DefaultConstraintComponent< S> for Class<S> {
-    fn evaluate_default(
-        & self,
-        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: SRDF> DefaultConstraintComponent<S> for Class<S> {
+    fn evaluate_default<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         let results = value_nodes
-            .iter_full()
+            .into_iter()
             .flat_map(move |(focus_node, value_node)| {
                 if S::term_is_literal(&value_node) {
-                    let result = ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
-                    );
+                    let result =
+                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
                     Some(result)
                 } else {
                     let objects = match get_objects_for(
@@ -70,9 +67,9 @@ impl< S: SRDF> DefaultConstraintComponent< S> for Class<S> {
 
                     if !is_class_valid {
                         Some(ValidationResult::new(
-                            &focus_node,
-                            Arc::clone(&evaluation_context),
-                            Some(&value_node),
+                            focus_node,
+                            &evaluation_context,
+                            Some(value_node),
                         ))
                     } else {
                         None
@@ -84,15 +81,15 @@ impl< S: SRDF> DefaultConstraintComponent< S> for Class<S> {
     }
 }
 
-impl< S: QuerySRDF> SparqlConstraintComponent< S> for Class<S> {
-    fn evaluate_sparql(
-        & self,
-        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for Class<S> {
+    fn evaluate_sparql<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         let results = value_nodes
-            .iter_full()
+            .into_iter()
             .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {"
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -108,9 +105,9 @@ impl< S: QuerySRDF> SparqlConstraintComponent< S> for Class<S> {
 
                 if !ask {
                     Some(ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
                     ))
                 } else {
                     None

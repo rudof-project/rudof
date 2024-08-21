@@ -1,14 +1,11 @@
 use indoc::formatdoc;
 use srdf::QuerySRDF;
 use srdf::SRDF;
-use std::sync::Arc;
 
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -28,76 +25,69 @@ impl Pattern {
     }
 }
 
-impl< S: SRDF> DefaultConstraintComponent< S> for Pattern {
-    fn evaluate_default(
-        & self,
-        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
-        let results = value_nodes
-            .iter_full()
-            .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(&value_node) {
-                    let result = ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
-                    );
-                    Some(result)
-                } else {
-                    None
-                }
-            });
+impl<S: SRDF> DefaultConstraintComponent<S> for Pattern {
+    fn evaluate_default<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
+        let results = value_nodes.flat_map(move |(focus_node, value_node)| {
+            if S::term_is_bnode(&value_node) {
+                let result =
+                    ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                Some(result)
+            } else {
+                None
+            }
+        });
 
         LazyValidationIterator::new(results)
     }
 }
 
-impl< S: QuerySRDF> SparqlConstraintComponent< S> for Pattern {
-    fn evaluate_sparql(
-        & self,
-        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
-        let results = value_nodes
-            .iter_full()
-            .filter_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(&value_node) {
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for Pattern {
+    fn evaluate_sparql<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
+        let results = value_nodes.filter_map(move |(focus_node, value_node)| {
+            if S::term_is_bnode(&value_node) {
+                Some(ValidationResult::new(
+                    focus_node,
+                    &evaluation_context,
+                    Some(value_node),
+                ))
+            } else {
+                let query = match &self.flags {
+                    Some(flags) => formatdoc! {
+                        "ASK {{ FILTER (regex(str({}), {}, {})) }}",
+                        value_node, self.pattern, flags
+                    },
+                    None => formatdoc! {
+                        "ASK {{ FILTER (regex(str({}), {})) }}",
+                        value_node, self.pattern
+                    },
+                };
+
+                let ask = match validation_context.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return None,
+                };
+
+                if !ask {
                     Some(ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
                     ))
                 } else {
-                    let query = match &self.flags {
-                        Some(flags) => formatdoc! {
-                            "ASK {{ FILTER (regex(str({}), {}, {})) }}",
-                            value_node, self.pattern, flags
-                        },
-                        None => formatdoc! {
-                            "ASK {{ FILTER (regex(str({}), {})) }}",
-                            value_node, self.pattern
-                        },
-                    };
-
-                    let ask = match validation_context.store().query_ask(&query) {
-                        Ok(ask) => ask,
-                        Err(_) => return None,
-                    };
-
-                    if !ask {
-                        Some(ValidationResult::new(
-                            &focus_node,
-                            Arc::clone(&evaluation_context),
-                            Some(&value_node),
-                        ))
-                    } else {
-                        None
-                    }
+                    None
                 }
-            });
+            }
+        });
 
         LazyValidationIterator::new(results)
     }

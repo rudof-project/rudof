@@ -8,44 +8,45 @@ use srdf::SRDF;
 use crate::runner::default_runner::DefaultValidatorRunner;
 use crate::runner::query_runner::QueryValidatorRunner;
 use crate::runner::ValidatorRunner;
+use crate::store::Store;
 
-pub struct ValidationContext<S: SRDFBasic, R: ValidatorRunner<S>> {
-    store: S,
-    schema: Schema,
-    runner: R,
+pub struct ValidationContext<'a, S: SRDFBasic> {
+    store: &'a dyn Store<S>,
+    schema: &'a Schema,
+    runner: &'a dyn ValidatorRunner<S>,
 }
 
-impl<S: SRDF> ValidationContext<S, DefaultValidatorRunner> {
-    pub(crate) fn new_default(store: S, schema: Schema) -> Self {
+impl<'a, S: SRDF + 'static> ValidationContext<'a, S> {
+    pub(crate) fn new_default(store: &'a dyn Store<S>, schema: &'a Schema) -> Self {
         Self {
             store,
             schema,
-            runner: DefaultValidatorRunner,
+            runner: &DefaultValidatorRunner,
         }
     }
 }
 
-impl<S: QuerySRDF> ValidationContext<S, QueryValidatorRunner> {
-    pub(crate) fn new_query(store: S, schema: Schema) -> Self {
+impl<'a, S: QuerySRDF + 'static> ValidationContext<'a, S> {
+    pub(crate) fn new_sparql(store: &'a dyn Store<S>, schema: &'a Schema) -> Self {
         Self {
             store,
             schema,
-            runner: QueryValidatorRunner,
+            runner: &QueryValidatorRunner,
         }
     }
 }
 
-impl<S: SRDFBasic, R: ValidatorRunner<S>> ValidationContext<S, R> {
+impl<'a, S: SRDFBasic> ValidationContext<'a, S> {
     pub(crate) fn store(&self) -> &S {
-        &self.store
+        self.store.store()
     }
 
     pub(crate) fn schema(&self) -> &Schema {
         &self.schema
     }
 
-    pub(crate) fn runner(&self) -> &R {
-        &self.runner
+    pub(crate) fn runner(&self) -> &dyn ValidatorRunner<S> {
+        self.runner
     }
 }
 

@@ -27,15 +27,15 @@ impl Nodekind {
     }
 }
 
-impl< S: SRDF> DefaultConstraintComponent< S> for Nodekind {
-    fn evaluate_default(
-        & self,
-        validation_context: Arc<ValidationContext< S, DefaultValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: SRDF> DefaultConstraintComponent<S> for Nodekind {
+    fn evaluate_default<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         let results = value_nodes
-            .iter_full()
+            .into_iter()
             .flat_map(move |(focus_node, value_node)| {
                 let is_valid = match (
                     S::term_is_bnode(&value_node),
@@ -60,11 +60,8 @@ impl< S: SRDF> DefaultConstraintComponent< S> for Nodekind {
                 };
 
                 if !is_valid {
-                    let result = ValidationResult::new(
-                        &focus_node,
-                        Arc::clone(&evaluation_context),
-                        Some(&value_node),
-                    );
+                    let result =
+                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
                     Some(result)
                 } else {
                     None
@@ -75,15 +72,15 @@ impl< S: SRDF> DefaultConstraintComponent< S> for Nodekind {
     }
 }
 
-impl< S: QuerySRDF> SparqlConstraintComponent< S> for Nodekind {
-    fn evaluate_sparql(
-        & self,
-        validation_context: Arc<ValidationContext< S, QueryValidatorRunner>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> LazyValidationIterator< S> {
+impl<S: QuerySRDF> SparqlConstraintComponent<S> for Nodekind {
+    fn evaluate_sparql<'a>(
+        &'a self,
+        validation_context: &'a ValidationContext<'a, S>,
+        evaluation_context: EvaluationContext<'a>,
+        value_nodes: &'a ValueNodes<S>,
+    ) -> LazyValidationIterator<'a, S> {
         let results = value_nodes
-            .iter_full()
+            .into_iter()
             .filter_map(move |(focus_node, value_node)| {
             let query = if S::term_is_iri(&value_node) {
                 formatdoc! {"
@@ -111,7 +108,7 @@ impl< S: QuerySRDF> SparqlConstraintComponent< S> for Nodekind {
             };
 
             if !ask {
-                Some(ValidationResult::new(&focus_node, Arc::clone(&evaluation_context), Some(&value_node)))
+                Some(ValidationResult::new(focus_node, &evaluation_context, Some(value_node)))
             } else {
                 None
             }

@@ -1,21 +1,24 @@
+use std::collections::hash_set;
+use std::collections::HashSet;
+
 use srdf::SRDFBasic;
 
-pub struct Targets<S: SRDFBasic> {
-    iter: Box<dyn Iterator<Item = S::Term>>,
+pub struct Targets<'a, S: SRDFBasic> {
+    iter: hash_set::Iter<'a, &'a S::Term>,
 }
 
-impl<S: SRDFBasic> Targets<S> {
-    pub fn new(iter: impl Iterator<Item = S::Term>) -> Self {
+impl<'a, S: SRDFBasic> Targets<'a, S> {
+    pub fn new(iter: impl Iterator<Item = &'a S::Term> + 'a) -> Self {
         Self {
-            iter: Box::new(iter),
+            iter: HashSet::<&'a S::Term>::from_iter(iter).iter(),
         }
     }
 }
 
-impl<S: SRDFBasic> Iterator for Targets<S> {
-    type Item = S::Term;
+impl<'a, S: SRDFBasic> Iterator for Targets<'a, S> {
+    type Item = &'a S::Term;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().copied()
     }
 }

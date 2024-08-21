@@ -2,7 +2,6 @@ use indoc::formatdoc;
 use shacl_ast::property_shape::PropertyShape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
-use std::sync::Arc;
 
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
@@ -17,12 +16,12 @@ use super::ValidatorRunner;
 
 pub struct QueryValidatorRunner;
 
-impl<S: QuerySRDF> ValidatorRunner<S> for QueryValidatorRunner {
+impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
     fn evaluate(
         &self,
-        validation_context: Arc<ValidationContext<S, Self>>,
-        evaluation_context: Arc<EvaluationContext>,
-        value_nodes: Arc<ValueNodes<S>>,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ValidateError> {
         let component: Box<dyn SparqlConstraintComponent<S>> =
             evaluation_context.component().to_owned().into();

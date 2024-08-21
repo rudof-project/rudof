@@ -2,7 +2,6 @@ use shacl_ast::property_shape::PropertyShape;
 use shacl_ast::target::Target;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
-use std::sync::Arc;
 
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
@@ -14,22 +13,20 @@ use crate::value_nodes::ValueNodes;
 pub mod default_runner;
 pub mod query_runner;
 
-pub trait ValidatorRunner< S: SRDFBasic> {
+pub trait ValidatorRunner<S: SRDFBasic> {
     fn evaluate(
         &self,
-        validation_context: Arc<ValidationContext< S, Self>>,
-        evaluation_context: Arc<EvaluationContext<>>,
-        value_nodes: Arc<ValueNodes< S>>,
-    ) -> Result<LazyValidationIterator< S>, ValidateError>
-    where
-        Self: Sized;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<LazyValidationIterator<S>, ValidateError>;
 
     fn focus_nodes(
-        & self,
-        store: & S,
+        &self,
+        store: &S,
         shape: &S::Term,
-        targets: & [Target],
-    ) -> Result<Targets< S>, ValidateError> {
+        targets: &[Target],
+    ) -> Result<Targets<S>, ValidateError> {
         let explicit = targets
             .iter()
             .filter_map(move |target| match target {
@@ -77,34 +74,27 @@ pub trait ValidatorRunner< S: SRDFBasic> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: & S, node: &S::Term) -> Result<Targets< S>, ValidateError>;
+    fn target_node(&self, store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError>;
 
-    fn target_class(&self, store: & S, class: &S::Term) -> Result<Targets< S>, ValidateError>;
+    fn target_class(&self, store: &S, class: &S::Term) -> Result<Targets<S>, ValidateError>;
 
-    fn target_subject_of(
-        &self,
-        store: & S,
-        predicate: &S::IRI,
-    ) -> Result<Targets< S>, ValidateError>;
+    fn target_subject_of(&self, store: &S, predicate: &S::IRI)
+        -> Result<Targets<S>, ValidateError>;
 
-    fn target_object_of(
-        &self,
-        store: & S,
-        predicate: &S::IRI,
-    ) -> Result<Targets< S>, ValidateError>;
+    fn target_object_of(&self, store: &S, predicate: &S::IRI) -> Result<Targets<S>, ValidateError>;
 
     fn implicit_target_class(
         &self,
-        store: & S,
+        store: &S,
         shape: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn path(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError> {
+    ) -> Result<Targets<S>, ValidateError> {
         match shape.path() {
             SHACLPath::Predicate { pred } => {
                 let predicate = S::iri_s2iri(pred);
@@ -121,57 +111,57 @@ pub trait ValidatorRunner< S: SRDFBasic> {
 
     fn predicate(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         predicate: &S::IRI,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn alternative(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn sequence(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn inverse(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn zero_or_more(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn one_or_more(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 
     fn zero_or_one(
         &self,
-        store: & S,
+        store: &S,
         shape: &PropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
-    ) -> Result<Targets< S>, ValidateError>;
+    ) -> Result<Targets<S>, ValidateError>;
 }
