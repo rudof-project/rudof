@@ -55,14 +55,11 @@ impl<S: SRDFBasic> ValueNodes<S> {
     }
 
     fn iter_value_nodes(&self) -> impl Iterator<Item = (&S::Term, &S::Term)> {
-        self.0
-            .iter()
-            .map(|(focus_node, value_nodes)| {
-                value_nodes
-                    .iter()
-                    .map(move |value_node| (focus_node, value_node))
-            })
-            .flatten()
+        self.0.iter().flat_map(|(focus_node, value_nodes)| {
+            value_nodes
+                .iter()
+                .map(move |value_node| (focus_node, value_node))
+        })
     }
 
     fn iter_focus_nodes(&self) -> impl Iterator<Item = (&S::Term, &Targets<S>)> {
