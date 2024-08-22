@@ -29,13 +29,13 @@ impl Node {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Node {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Node {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let shape = get_shape_ref(&self.shape, validation_context.schema()).expect("Missing Shape");
 
         let results = value_nodes
@@ -53,7 +53,13 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Node {
                         &evaluation_context,
                         Some(value_node),
                     ))
-                } else if inner_results.unwrap().peekable().peek().is_some() {
+                } else if inner_results
+                    .unwrap()
+                    .into_iter()
+                    .peekable()
+                    .peek()
+                    .is_some()
+                {
                     Some(ValidationResult::new(
                         focus_node,
                         &evaluation_context,
@@ -62,30 +68,31 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Node {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Node {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Node {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Node {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Node {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

@@ -34,7 +34,7 @@ impl<S: SRDFBasic> In<S> {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for In<S> {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for In<S> {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
@@ -49,30 +49,31 @@ impl<S: SRDFBasic> ConstraintComponent<S> for In<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for In<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for In<S> {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for In<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for In<S> {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

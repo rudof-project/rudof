@@ -29,13 +29,13 @@ impl MinCount {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for MinCount {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MinCount {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         if self.min_count == 0 {
             // If min_count is 0, then it always passes
             return LazyValidationIterator::default();
@@ -58,24 +58,24 @@ impl<S: SRDFBasic> ConstraintComponent<S> for MinCount {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MinCount {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinCount {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MinCount {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinCount {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

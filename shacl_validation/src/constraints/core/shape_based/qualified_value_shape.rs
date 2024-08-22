@@ -41,7 +41,7 @@ impl QualifiedValue {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for QualifiedValue {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for QualifiedValue {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
@@ -52,24 +52,24 @@ impl<S: SRDFBasic> ConstraintComponent<S> for QualifiedValue {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for QualifiedValue {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for QualifiedValue {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for QualifiedValue {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for QualifiedValue {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

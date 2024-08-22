@@ -7,6 +7,7 @@ use crate::validate_error::ValidateError;
 
 use super::Store;
 
+#[derive(Clone)]
 pub struct Graph {
     store: SRDFGraph,
 }

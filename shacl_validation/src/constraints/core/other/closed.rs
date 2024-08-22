@@ -35,7 +35,7 @@ impl Closed {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Closed {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
@@ -46,24 +46,24 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Closed {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Closed {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Closed {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Closed {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

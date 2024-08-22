@@ -25,13 +25,13 @@ impl Nodekind {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Nodekind {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
@@ -64,53 +64,54 @@ impl<S: SRDF> DefaultConstraintComponent<S> for Nodekind {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Nodekind {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let results = value_nodes.iter()
             .filter_map(move |(focus_node, value_node)| {
-            let query = if S::term_is_iri(&value_node) {
-                formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
-                    ", self.node_kind
-                }
-            } else if S::term_is_bnode(&value_node) {
-                formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
-                    ", self.node_kind
-                }
-            } else {
-                formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) ) }}
-                    ", self.node_kind
-                }
-            };
+                let query = if S::term_is_iri(&value_node) {
+                    formatdoc! {"
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
+                        ", self.node_kind
+                    }
+                } else if S::term_is_bnode(&value_node) {
+                    formatdoc! {"
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
+                        ", self.node_kind
+                    }
+                } else {
+                    formatdoc! {"
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) ) }}
+                        ", self.node_kind
+                    }
+                };
 
-            let ask = match validation_context.store().query_ask(&query) {
-                Ok(ask) => ask,
-                Err(_) => return None,
-            };
+                let ask = match validation_context.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return None,
+                };
 
-            if !ask {
-                Some(ValidationResult::new(focus_node, &evaluation_context, Some(value_node)))
-            } else {
-                None
-            }
-        });
+                if !ask {
+                    Some(ValidationResult::new(focus_node, &evaluation_context, Some(value_node)))
+                } else {
+                    None
+                }
+            }).collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }

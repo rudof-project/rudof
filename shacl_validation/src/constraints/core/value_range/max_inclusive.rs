@@ -26,24 +26,24 @@ impl<S: SRDFBasic> MaxInclusive<S> {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for MaxInclusive<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxInclusive<S> {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxInclusive<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxInclusive<S> {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let results = value_nodes
             .iter()
             .filter_map(move |(focus_node, value_node)| {
@@ -66,8 +66,9 @@ impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxInclusive<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }

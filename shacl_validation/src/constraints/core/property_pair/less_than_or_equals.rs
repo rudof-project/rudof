@@ -25,24 +25,24 @@ impl LessThanOrEquals {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for LessThanOrEquals {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for LessThanOrEquals {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }

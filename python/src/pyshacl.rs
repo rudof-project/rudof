@@ -4,7 +4,7 @@ use shacl_ast::{ShaclParser, ShaclWriter};
 use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate::GraphValidator;
 use shacl_validation::validate::ShaclValidationMode;
-use shacl_validation::validate::ShapeValidator;
+use shacl_validation::validate::Validator;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
 use std::fs::File;
@@ -68,30 +68,22 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         let shapes = Path::new(shapes);
         let shapes_format = obtain_format(shapes.extension())?;
 
+        let schema = match ShaclDataManager::load(Path::new(&shapes), shapes_format, None) {
+            Ok(schema) => schema,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
         let validator =
             match GraphValidator::new(data, data_format, None, ShaclValidationMode::Default) {
                 Ok(validator) => validator,
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
-<<<<<<< HEAD:python/src/shacl.rs
-        let schema = match ShaclDataManager::load(shapes, shapes_format, None) {
-            Ok(schema) => schema,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
-
         let _ = match validator.validate(schema) {
             Ok(report) => report,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };
 
-=======
-        let _ = match validator.validate(shapes, shapes_format) {
-            Ok(report) => report,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
-
->>>>>>> 80757654842b929b341e1f836a4253c9fe8c1a87:python/src/pyshacl.rs
         Ok(())
     })
 }

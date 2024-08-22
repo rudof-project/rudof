@@ -17,7 +17,7 @@ use crate::ValueNodes;
 pub struct ShapeValidator<'a, S: SRDFBasic> {
     shape: &'a Shape,
     validation_context: &'a ValidationContext<'a, S>,
-    focus_nodes: &'a Targets<S>,
+    focus_nodes: Targets<S>,
 }
 
 impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
@@ -27,7 +27,7 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         focus_nodes: Option<&'a Targets<S>>,
     ) -> Self {
         let focus_nodes = match focus_nodes {
-            Some(focus) => focus,
+            Some(focus) => focus.to_owned(),
             None => {
                 let generated_focus_nodes = shape.focus_nodes(validation_context);
                 generated_focus_nodes
@@ -41,7 +41,7 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         }
     }
 
-    pub fn validate(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
+    pub fn validate(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
         if *self.shape.is_deactivated() {
             // skipping because it is deactivated
             return Ok(LazyValidationIterator::default());
@@ -51,32 +51,36 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         let property_shapes = self.validate_property_shapes()?;
 
         Ok(LazyValidationIterator::new(
-            components.chain(property_shapes),
+            components.into_iter().chain(property_shapes.into_iter()),
         ))
     }
 
-    fn validate_components(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
+    fn validate_components(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
         let value_nodes = self
             .shape
             .value_nodes(self.validation_context, &self.focus_nodes);
 
-        let contexts = self
+        let runner = self.validation_context.runner();
+        let validation_context = self.validation_context;
+
+        // Mover la creación del contexto fuera del cierre
+        let contexts: Vec<_> = self
             .shape
             .components()
             .iter()
-            .map(|component| EvaluationContext::new(component, &self.shape));
+            .map(|component| EvaluationContext::new(component, &self.shape))
+            .collect();
 
-        let evaluated_components = contexts.flat_map(move |context| {
-            self.validation_context
-                .runner()
-                .evaluate(self.validation_context, context, &value_nodes)
+        let evaluated_components = contexts.into_iter().flat_map(move |context| {
+            runner
+                .evaluate(validation_context, context, &value_nodes)
                 .unwrap_or_else(|_| LazyValidationIterator::default())
         });
 
         Ok(LazyValidationIterator::new(evaluated_components))
     }
 
-    fn validate_property_shapes(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
+    fn validate_property_shapes(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
         let shapes = get_shapes_ref(
             self.shape.property_shapes(),
             self.validation_context.schema(),
@@ -90,7 +94,7 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
                     Some(ShapeValidator::new(
                         shape,
                         self.validation_context,
-                        Some(self.focus_nodes),
+                        Some(&self.focus_nodes),
                     ))
                 } else {
                     None
@@ -110,11 +114,11 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
 }
 
 pub trait FocusNodesOps<S: SRDFBasic> {
-    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> &Targets<S>;
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S>;
 }
 
 impl<S: SRDFBasic> FocusNodesOps<S> for Shape {
-    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> &Targets<S> {
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S> {
         validation_context
             .runner()
             .focus_nodes(
@@ -137,29 +141,29 @@ pub trait ShapeInfo {
 impl ShapeInfo for Shape {
     fn is_deactivated(&self) -> &bool {
         match self {
-            Shape::NodeShape(ref ns) => ns.is_deactivated(),
-            Shape::PropertyShape(ref ps) => ps.is_deactivated(),
+            Shape::NodeShape(ns) => ns.is_deactivated(),
+            Shape::PropertyShape(ps) => ps.is_deactivated(),
         }
     }
 
     fn id(&self) -> &RDFNode {
         match self {
-            Shape::NodeShape(ref ns) => &ns.id(),
-            Shape::PropertyShape(ref ps) => ps.id(),
+            Shape::NodeShape(ns) => ns.id(),
+            Shape::PropertyShape(ps) => ps.id(),
         }
     }
 
     fn targets(&self) -> &Vec<Target> {
         match self {
-            Shape::NodeShape(ref ns) => ns.targets(),
-            Shape::PropertyShape(ref ps) => ps.targets(),
+            Shape::NodeShape(ns) => ns.targets(),
+            Shape::PropertyShape(ps) => ps.targets(),
         }
     }
 
     fn components(&self) -> &Vec<Component> {
         match self {
-            Shape::NodeShape(ref ns) => ns.components(),
-            Shape::PropertyShape(ref ps) => ps.components(),
+            Shape::NodeShape(ns) => ns.components(),
+            Shape::PropertyShape(ps) => ps.components(),
         }
     }
 

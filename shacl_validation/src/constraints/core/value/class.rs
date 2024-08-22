@@ -31,13 +31,13 @@ impl<S: SRDFBasic> Class<S> {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Class<S> {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
@@ -76,19 +76,20 @@ impl<S: SRDF> DefaultConstraintComponent<S> for Class<S> {
                         None
                     }
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Class<S> {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         let results = value_nodes
             .iter()
             .filter_map(move |(focus_node, value_node)| {
@@ -113,8 +114,9 @@ impl<S: QuerySRDF> SparqlConstraintComponent<S> for Class<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }

@@ -27,7 +27,7 @@ impl Xone {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Xone {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Xone {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
@@ -38,24 +38,24 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Xone {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Xone {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Xone {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Xone {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Xone {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

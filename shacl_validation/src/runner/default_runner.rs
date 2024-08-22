@@ -28,7 +28,11 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
     ) -> Result<LazyValidationIterator<S>, ValidateError> {
         let component: Box<dyn DefaultConstraintComponent<S>> =
             evaluation_context.component().into();
-        Ok(component.evaluate_default(validation_context, evaluation_context, value_nodes))
+
+        let result =
+            component.evaluate_default(validation_context, evaluation_context, value_nodes);
+
+        Ok(result)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

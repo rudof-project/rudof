@@ -22,17 +22,12 @@ impl<S: SRDFBasic> ValidationReport<S> {
         self.results.push(result)
     }
 
-    pub(crate) fn add_results<'a>(
-        &mut self,
-        results: impl Iterator<Item = LazyValidationIterator<'a, S>>,
-    ) where
-        S: 'a,
-    {
-        let mut results = results.peekable();
+    pub(crate) fn add_results<'a>(&mut self, results: LazyValidationIterator<S>) {
+        let mut results = results.into_iter().peekable();
         if self.conforms && results.peek().is_some() {
             self.conforms = false; // we add a result --> make the Report non-conformant
         }
-        self.results.extend(results.into_iter().flatten())
+        self.results.extend(results)
     }
 }
 

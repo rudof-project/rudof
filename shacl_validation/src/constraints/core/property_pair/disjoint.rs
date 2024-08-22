@@ -25,24 +25,24 @@ impl Disjoint {
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for Disjoint {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Disjoint {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for Disjoint {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Disjoint {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }

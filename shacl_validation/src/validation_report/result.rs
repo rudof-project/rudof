@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::hash::Hash;
+
 use shacl_ast::*;
 use srdf::SRDFBasic;
 use srdf::SRDF;
@@ -7,31 +10,30 @@ use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-pub struct LazyValidationIterator<'a, S: SRDFBasic + 'a> {
-    iter: Box<dyn Iterator<Item = ValidationResult<S>> + 'a>,
-}
+pub(crate) struct LazyValidationIterator<S: SRDFBasic>(Vec<ValidationResult<S>>);
 
-impl<'a, S: SRDFBasic + 'a> LazyValidationIterator<'a, S> {
-    pub fn new(iter: impl Iterator<Item = ValidationResult<S>> + 'a) -> Self {
-        Self {
-            iter: Box::new(iter),
-        }
+impl<S: SRDFBasic> LazyValidationIterator<S> {
+    pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
+        Self(Vec::from_iter(iter))
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &ValidationResult<S>> {
+        self.0.iter()
     }
 }
 
-impl<S: SRDFBasic> Default for LazyValidationIterator<'_, S> {
+impl<S: SRDFBasic> Default for LazyValidationIterator<S> {
     fn default() -> Self {
-        Self {
-            iter: Box::new(std::iter::empty()),
-        }
+        Self(Vec::from_iter(std::iter::empty()))
     }
 }
 
-impl<'a, S: SRDFBasic + 'a> Iterator for LazyValidationIterator<'_, S> {
+impl<S: SRDFBasic> IntoIterator for LazyValidationIterator<S> {
     type Item = ValidationResult<S>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -94,6 +96,7 @@ impl<S: SRDFBasic> Default for ValidationResultBuilder<S> {
     }
 }
 
+#[derive(Eq, PartialEq, Hash)]
 pub struct ValidationResult<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,

@@ -28,13 +28,13 @@ impl UniqueLang {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         if !self.unique_lang {
             return LazyValidationIterator::default();
         }
@@ -65,30 +65,31 @@ impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results)
+        LazyValidationIterator::new(results.into_iter())
     }
 }
 
-impl<S: SRDF> DefaultConstraintComponent<S> for UniqueLang {
+impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
     fn evaluate_default(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF> SparqlConstraintComponent<S> for UniqueLang {
+impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
     fn evaluate_sparql(
         &self,
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<'_, S> {
+    ) -> LazyValidationIterator<S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
