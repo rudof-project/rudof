@@ -2,6 +2,8 @@
 
 This module is based on [pyo3](https://pyo3.rs/)
 
-# Running the code
+## Build the development version
 
-# Running the tests
+To build and install the development version of pyoxigraph you need to clone this git repository and to run `pip install .` in the `python` directory (the one this README is in).
+
+## Running the tests
