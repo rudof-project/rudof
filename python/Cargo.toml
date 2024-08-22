@@ -2,12 +2,12 @@
 name = "pyrudof"
 version = "0.1.16"
 documentation = "https://www.weso.es/shapes-rs/"
+readme = "README.md"
 license.workspace = true
 authors.workspace = true
 description.workspace = true
 repository.workspace = true
 homepage.workspace = true
-readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
