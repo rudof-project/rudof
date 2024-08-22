@@ -30,14 +30,14 @@ impl LanguageIn {
 impl<S: SRDFBasic + 'static> ConstraintComponent<S> for LanguageIn {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
-                if let Some(literal) = S::term_as_literal(&value_node) {
+                if let Some(literal) = S::term_as_literal(value_node) {
                     if let Some(lang) = S::lang(&literal) {
                         if !self.langs.contains(&Lang::new(&lang)) {
                             let result = ValidationResult::new(

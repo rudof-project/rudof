@@ -29,7 +29,7 @@ impl Nodekind {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
     fn evaluate_default(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
@@ -37,9 +37,9 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
             .iter()
             .flat_map(move |(focus_node, value_node)| {
                 let is_valid = match (
-                    S::term_is_bnode(&value_node),
-                    S::term_is_iri(&value_node),
-                    S::term_is_literal(&value_node),
+                    S::term_is_bnode(value_node),
+                    S::term_is_iri(value_node),
+                    S::term_is_literal(value_node),
                 ) {
                     (true, false, false) => matches!(
                         self.node_kind,
@@ -81,13 +81,13 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes.iter()
             .filter_map(move |(focus_node, value_node)| {
-                let query = if S::term_is_iri(&value_node) {
+                let query = if S::term_is_iri(value_node) {
                     formatdoc! {"
                             PREFIX sh: <http://www.w3.org/ns/shacl#>
                             ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
                         ", self.node_kind
                     }
-                } else if S::term_is_bnode(&value_node) {
+                } else if S::term_is_bnode(value_node) {
                     formatdoc! {"
                             PREFIX sh: <http://www.w3.org/ns/shacl#>
                             ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}

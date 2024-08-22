@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::hash::Hash;
 
 use shacl_ast::*;
@@ -10,15 +9,11 @@ use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-pub(crate) struct LazyValidationIterator<S: SRDFBasic>(Vec<ValidationResult<S>>);
+pub struct LazyValidationIterator<S: SRDFBasic>(Vec<ValidationResult<S>>);
 
 impl<S: SRDFBasic> LazyValidationIterator<S> {
     pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
         Self(Vec::from_iter(iter))
-    }
-
-    fn iter(&self) -> impl Iterator<Item = &ValidationResult<S>> {
-        self.0.iter()
     }
 }
 

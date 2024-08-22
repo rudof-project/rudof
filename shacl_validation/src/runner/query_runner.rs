@@ -99,78 +99,78 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
 
     fn implicit_target_class(
         &self,
-        store: &S,
-        shape: &S::Term,
+        _store: &S,
+        _shape: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn predicate(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        predicate: &S::IRI,
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _predicate: &S::IRI,
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn alternative(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        paths: &[SHACLPath],
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _paths: &[SHACLPath],
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn sequence(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        paths: &[SHACLPath],
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _paths: &[SHACLPath],
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn inverse(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        path: &SHACLPath,
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _path: &SHACLPath,
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_more(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        path: &SHACLPath,
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _path: &SHACLPath,
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn one_or_more(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        path: &SHACLPath,
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _path: &SHACLPath,
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_one(
         &self,
-        store: &S,
-        shape: &PropertyShape,
-        path: &SHACLPath,
-        focus_node: &S::Term,
+        _store: &S,
+        _shape: &PropertyShape,
+        _path: &SHACLPath,
+        _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }

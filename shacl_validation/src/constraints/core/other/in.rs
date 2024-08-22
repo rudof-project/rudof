@@ -38,14 +38,14 @@ impl<S: SRDFBasic> In<S> {
 impl<S: SRDFBasic + 'static> ConstraintComponent<S> for In<S> {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
-                if !self.values.contains(&value_node) {
+                if !self.values.contains(value_node) {
                     Some(ValidationResult::new(focus_node, &evaluation_context, None))
                 } else {
                     None

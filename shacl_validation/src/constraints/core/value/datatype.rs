@@ -33,14 +33,14 @@ impl<S: SRDFBasic> Datatype<S> {
 impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Datatype<S> {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
-                if let Some(literal) = S::term_as_literal(&value_node) {
+                if let Some(literal) = S::term_as_literal(value_node) {
                     if S::datatype(&literal) != self.datatype {
                         let result = ValidationResult::new(
                             focus_node,

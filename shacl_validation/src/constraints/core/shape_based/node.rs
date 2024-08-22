@@ -48,18 +48,13 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Node {
 
                 let inner_results = shape_validator.validate();
 
-                if inner_results.is_err() {
-                    Some(ValidationResult::new(
-                        focus_node,
-                        &evaluation_context,
-                        Some(value_node),
-                    ))
-                } else if inner_results
-                    .unwrap()
-                    .into_iter()
-                    .peekable()
-                    .peek()
-                    .is_some()
+                if inner_results.is_err()
+                    || inner_results
+                        .unwrap()
+                        .into_iter()
+                        .peekable()
+                        .peek()
+                        .is_some()
                 {
                     Some(ValidationResult::new(
                         focus_node,

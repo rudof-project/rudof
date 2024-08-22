@@ -30,9 +30,9 @@ impl<S: SRDFBasic> MinExclusive<S> {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinExclusive<S> {
     fn evaluate_default(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
-        value_nodes: &ValueNodes<S>,
+        _validation_context: &ValidationContext<S>,
+        _evaluation_context: EvaluationContext,
+        _value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }

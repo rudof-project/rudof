@@ -32,13 +32,13 @@ impl MaxCount {
 impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MaxCount {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
-            .chunk_by(|(focus_node, _)| focus_node.clone())
+            .chunk_by(|(ref focus_node, _)| focus_node.to_owned())
             .into_iter()
             .filter_map(move |(focus_node, value_nodes)| {
                 if (value_nodes.count() as isize) > self.max_count {

@@ -42,14 +42,14 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_literal(&value_node) {
+                if S::term_is_literal(value_node) {
                     let result =
                         ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
                     Some(result)
                 } else {
                     let objects = match get_objects_for(
                         validation_context.store(),
-                        &value_node,
+                        value_node,
                         &S::iri_s2iri(&RDF_TYPE),
                     ) {
                         Ok(objects) => objects,

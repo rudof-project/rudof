@@ -31,13 +31,13 @@ pub trait ValidatorRunner<S: SRDFBasic> {
             .iter()
             .filter_map(move |target| match target {
                 Target::TargetNode(node) => {
-                    match self.target_node(&store, &S::object_as_term(node)) {
+                    match self.target_node(store, &S::object_as_term(node)) {
                         Ok(target_node) => Some(target_node),
                         Err(_) => None,
                     }
                 }
                 Target::TargetClass(class) => {
-                    match self.target_class(&store, &S::object_as_term(class)) {
+                    match self.target_class(store, &S::object_as_term(class)) {
                         Ok(target_node) => Some(target_node),
                         Err(_) => None,
                     }
@@ -47,7 +47,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
                         Ok(predicate) => S::iri_s2iri(&predicate),
                         Err(_) => return None,
                     };
-                    match self.target_subject_of(&store, &predicate) {
+                    match self.target_subject_of(store, &predicate) {
                         Ok(target_subject_of) => Some(target_subject_of),
                         Err(_) => None,
                     }
@@ -57,7 +57,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
                         Ok(predicate) => S::iri_s2iri(&predicate),
                         Err(_) => return None,
                     };
-                    match self.target_object_of(&store, &predicate) {
+                    match self.target_object_of(store, &predicate) {
                         Ok(target_node) => Some(target_node),
                         Err(_) => None,
                     }
@@ -67,7 +67,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
 
         // we have to also look for implicit class targets, which are a "special"
         // kind of target declarations...
-        let implicit = self.implicit_target_class(&store, shape)?;
+        let implicit = self.implicit_target_class(store, shape)?;
 
         Ok(Targets::new(implicit.into_iter().chain(explicit)))
     }

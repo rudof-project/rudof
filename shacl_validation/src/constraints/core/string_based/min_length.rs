@@ -29,14 +29,14 @@ impl MinLength {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinLength {
     fn evaluate_default<'a>(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(&value_node) {
+                if S::term_is_bnode(value_node) {
                     let result =
                         ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
                     Some(result)
@@ -60,7 +60,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinLength {
         let results = value_nodes
             .iter()
             .filter_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(&value_node) {
+                if S::term_is_bnode(value_node) {
                     Some(ValidationResult::new(
                         focus_node,
                         &evaluation_context,

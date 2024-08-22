@@ -32,7 +32,7 @@ impl UniqueLang {
 impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
+        _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
@@ -48,7 +48,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
                 let langs = Rc::clone(&langs);
                 let mut langs = langs.borrow_mut();
 
-                if let Some(literal) = S::term_as_literal(&value_node) {
+                if let Some(literal) = S::term_as_literal(value_node) {
                     if let Some(lang) = S::lang(&literal) {
                         if langs.contains(&lang) {
                             Some(ValidationResult::new(

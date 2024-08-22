@@ -14,7 +14,7 @@ pub mod validate;
 pub mod validate_error;
 pub mod validation_report;
 
-pub(crate) struct Targets<S: SRDFBasic>(HashSet<S::Term>);
+pub struct Targets<S: SRDFBasic>(HashSet<S::Term>);
 
 impl<S: SRDFBasic> Targets<S> {
     pub fn new(iter: impl Iterator<Item = S::Term>) -> Self {
@@ -47,7 +47,7 @@ impl<S: SRDFBasic> IntoIterator for Targets<S> {
     }
 }
 
-pub(crate) struct ValueNodes<S: SRDFBasic>(HashMap<S::Term, S::Term>);
+pub struct ValueNodes<S: SRDFBasic>(HashMap<S::Term, S::Term>);
 
 impl<S: SRDFBasic> ValueNodes<S> {
     pub fn new(iter: impl Iterator<Item = (S::Term, Targets<S>)>) -> Self {
