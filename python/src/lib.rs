@@ -1,8 +1,10 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 
+use crate::pyconvert::convert;
 use crate::pyshacl::shacl;
 
+mod pyconvert;
 mod pyshacl;
 
 // Rudof Python bindings
@@ -13,6 +15,7 @@ fn rudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))?;
 
     module.add_wrapped(wrap_pymodule!(shacl))?;
+    module.add_wrapped(wrap_pymodule!(convert))?;
 
     Ok(())
 }
