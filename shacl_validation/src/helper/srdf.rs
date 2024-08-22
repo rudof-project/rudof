@@ -1,8 +1,6 @@
-use std::{collections::HashSet, path::Path, str::FromStr};
+use std::collections::HashSet;
 
-use oxiri::Iri;
-use shacl_ast::{Schema, ShaclParser};
-use srdf::{RDFFormat, SRDFGraph, SRDF};
+use srdf::SRDF;
 
 use super::helper_error::SRDFError;
 
@@ -46,26 +44,6 @@ pub(crate) fn get_subjects_for<S: SRDF>(
             .into_iter()
             .map(|subject| S::subject_as_term(&subject))
             .collect()),
-        Err(_) => Err(SRDFError::Srdf),
-    }
-}
-
-pub fn load_shapes_graph(
-    path: &Path,
-    rdf_format: RDFFormat,
-    base: Option<&str>,
-) -> Result<Schema, SRDFError> {
-    let rdf = SRDFGraph::from_path(
-        path,
-        &rdf_format,
-        match base {
-            Some(base) => Some(Iri::from_str(base)?),
-            None => None,
-        },
-    )?;
-
-    match ShaclParser::new(rdf).parse() {
-        Ok(schema) => Ok(schema),
         Err(_) => Err(SRDFError::Srdf),
     }
 }

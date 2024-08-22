@@ -1,4 +1,3 @@
-use shacl_ast::shape::Shape;
 use srdf::QuerySRDF;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
@@ -8,14 +7,14 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
 use crate::helper::shapes::get_shape_ref;
-use crate::shape::Validate;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::shape::ShapeValidator;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::Targets;
+use crate::ValueNodes;
 
 /// sh:node specifies the condition that each value node conforms to the given
 /// node shape.
@@ -31,66 +30,58 @@ impl Node {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Node {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Node {
     fn evaluate(
         &self,
-        executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        let shape = match get_shape_ref(&self.shape, executor.schema()) {
-            Some(shape) => shape,
-            None => return Err(ConstraintError::MissingShape),
-        };
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let shape = get_shape_ref(&self.shape, validation_context.schema()).expect("Missing Shape");
 
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
-                let single_value_nodes = std::iter::once(value_node.to_owned()).collect();
-                let mut inner_report = ValidationReport::default();
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
+                let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
+                let shape_validator =
+                    ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
 
-                let is_valid = match shape {
-                    Shape::NodeShape(shape) => {
-                        shape.check_shape(executor, Some(&single_value_nodes), &mut inner_report)
-                    }
-                    Shape::PropertyShape(shape) => {
-                        shape.check_shape(executor, Some(&single_value_nodes), &mut inner_report)
-                    }
+                let inner_results = shape_validator.validate();
+
+                if inner_results.is_err() || inner_results.unwrap().is_empty() {
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else {
+                    None
                 }
-                .unwrap_or(false);
+            })
+            .collect::<Vec<_>>();
 
-                if !inner_report.is_conformant() || !is_valid {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
-                }
-            }
-        }
-
-        Ok(ans)
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Node {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Node {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

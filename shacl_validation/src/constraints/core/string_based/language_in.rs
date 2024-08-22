@@ -7,12 +7,11 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// The condition specified by sh:languageIn is that the allowed language tags
 /// for each value node are limited by a given list of language tags.
@@ -28,54 +27,61 @@ impl LanguageIn {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for LanguageIn {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for LanguageIn {
     fn evaluate(
         &self,
-        _executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        _validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
                 if let Some(literal) = S::term_as_literal(value_node) {
                     if let Some(lang) = S::lang(&literal) {
                         if !self.langs.contains(&Lang::new(&lang)) {
-                            ans = false;
-                            report.make_validation_result(focus_node, context, Some(value_node));
+                            let result = ValidationResult::new(
+                                focus_node,
+                                &evaluation_context,
+                                Some(value_node),
+                            );
+                            Some(result)
+                        } else {
+                            None
                         }
+                    } else {
+                        None
                     }
                 } else {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    let result =
+                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    Some(result)
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LanguageIn {
-    fn evaluate_default(
+    fn evaluate_default<'a>(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LanguageIn {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

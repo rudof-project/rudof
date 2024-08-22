@@ -1,4 +1,3 @@
-use shacl_ast::shape::Shape;
 use srdf::QuerySRDF;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
@@ -8,14 +7,14 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
 use crate::helper::shapes::get_shapes_ref;
-use crate::shape::Validate;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::shape::ShapeValidator;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::Targets;
+use crate::ValueNodes;
 
 /// sh:or specifies the condition that each value node conforms to at least one
 /// of the provided shapes. This is comparable to disjunction and the logical
@@ -32,68 +31,64 @@ impl Or {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for Or {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Or {
     fn evaluate(
         &self,
-        executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let shapes = get_shapes_ref(&self.shapes, executor.schema());
-        let mut is_valid = true;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
+                let any_valid = get_shapes_ref(&self.shapes, validation_context.schema())
+                    .into_iter()
+                    .flatten()
+                    .any(|shape| {
+                        let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
+                        let shape_validator =
+                            ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
 
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
-                let single_value_nodes = std::iter::once(value_node.to_owned()).collect();
-
-                let any_valid = shapes.iter().flatten().any(|shape| {
-                    let result = match shape {
-                        Shape::NodeShape(shape) => shape.check_shape(
-                            executor,
-                            Some(&single_value_nodes),
-                            &mut ValidationReport::default(),
-                        ),
-                        Shape::PropertyShape(shape) => shape.check_shape(
-                            executor,
-                            Some(&single_value_nodes),
-                            &mut ValidationReport::default(),
-                        ),
-                    };
-                    result.unwrap_or(false)
-                });
+                        match shape_validator.validate() {
+                            Ok(results) => results.is_empty(),
+                            Err(_) => false,
+                        }
+                    });
 
                 if !any_valid {
-                    is_valid = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else {
+                    None
                 }
-            }
-        }
+            })
+            .collect::<Vec<_>>();
 
-        Ok(is_valid)
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Or {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Or {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

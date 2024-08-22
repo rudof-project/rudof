@@ -14,7 +14,7 @@ use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder, XSD_INTEGER_STR};
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Component {
     Class(RDFNode),
     Datatype(IriRef),

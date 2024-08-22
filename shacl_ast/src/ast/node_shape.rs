@@ -68,8 +68,8 @@ impl NodeShape {
         self
     }
 
-    pub fn id(&self) -> RDFNode {
-        self.id.clone()
+    pub fn id(&self) -> &RDFNode {
+        &self.id
     }
 
     pub fn is_deactivated(&self) -> &bool {

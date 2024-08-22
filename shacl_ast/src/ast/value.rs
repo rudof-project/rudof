@@ -4,7 +4,7 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use srdf::literal::Literal;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value {
     Iri(IriRef),
     Literal(Literal),

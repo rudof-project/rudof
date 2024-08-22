@@ -3,11 +3,10 @@ use std::fmt;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::context::Context;
 use crate::helper::srdf::get_objects_for;
 
 use super::result::ValidationResult;
-use super::result::ValidationResultBuilder;
+use super::result::ValidationResults;
 use super::validation_report_error::ReportError;
 
 pub struct ValidationReport<S: SRDFBasic> {
@@ -16,10 +15,6 @@ pub struct ValidationReport<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> ValidationReport<S> {
-    pub(crate) fn is_conformant(&self) -> bool {
-        self.results.is_empty()
-    }
-
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {
         if self.conforms {
             self.conforms = false; // we add a result --> make the Report non-conformant
@@ -27,28 +22,12 @@ impl<S: SRDFBasic> ValidationReport<S> {
         self.results.push(result)
     }
 
-    pub(crate) fn make_validation_result(
-        &mut self,
-        focus_node: &S::Term,
-        context: &Context,
-        value_node: Option<&S::Term>,
-    ) {
-        let mut builder = ValidationResultBuilder::default();
-
-        builder.focus_node(focus_node.to_owned());
-        builder.source_constraint_component(context.source_constraint_component::<S>());
-
-        if let Some(result_severity) = context.result_severity::<S>() {
-            builder.result_severity(result_severity);
+    pub(crate) fn add_results(&mut self, results: ValidationResults<S>) {
+        let mut results = results.into_iter().peekable();
+        if self.conforms && results.peek().is_some() {
+            self.conforms = false; // we add a result --> make the Report non-conformant
         }
-        if let Some(source_shape) = context.source_shape::<S>() {
-            builder.source_shape(source_shape);
-        }
-        if let Some(value) = value_node {
-            builder.value(value.to_owned());
-        }
-
-        self.add_result(builder.build());
+        self.results.extend(results)
     }
 }
 

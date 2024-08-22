@@ -3,8 +3,10 @@ use prefixmap::Underef;
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::helper::helper_error::{SPARQLError, SRDFError};
+use crate::{
+    constraints::constraint_error::ConstraintError,
+    helper::helper_error::{SPARQLError, SRDFError},
+};
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
@@ -36,4 +38,8 @@ pub enum ValidateError {
     UnsupportedMode,
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SPARQLError),
+    #[error("Implicit class not found")]
+    ImplicitClassNotFound,
+    #[error("Not yet implemented")]
+    NotImplemented,
 }

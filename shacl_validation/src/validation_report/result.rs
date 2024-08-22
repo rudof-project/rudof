@@ -1,9 +1,42 @@
-use shacl_ast::*;
-use srdf::{SRDFBasic, SRDF};
+use std::fmt::Debug;
+use std::hash::Hash;
 
+use shacl_ast::*;
+use srdf::SRDFBasic;
+use srdf::SRDF;
+
+use crate::context::EvaluationContext;
 use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
+
+#[derive(Debug)]
+pub struct ValidationResults<S: SRDFBasic>(Vec<ValidationResult<S>>);
+
+impl<S: SRDFBasic> ValidationResults<S> {
+    pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
+        Self(Vec::from_iter(iter))
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl<S: SRDFBasic> Default for ValidationResults<S> {
+    fn default() -> Self {
+        Self(Vec::from_iter(std::iter::empty()))
+    }
+}
+
+impl<S: SRDFBasic> IntoIterator for ValidationResults<S> {
+    type Item = ValidationResult<S>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
 
 pub struct ValidationResultBuilder<S: SRDFBasic> {
     focus_node: Option<S::Term>,
@@ -40,14 +73,14 @@ impl<S: SRDFBasic> ValidationResultBuilder<S> {
     }
 
     pub fn build(self) -> ValidationResult<S> {
-        ValidationResult::new(
-            self.focus_node,
-            self.result_severity,
-            self.result_path,
-            self.source_constraint_component,
-            self.source_shape,
-            self.value,
-        )
+        ValidationResult {
+            focus_node: self.focus_node,
+            result_severity: self.result_severity,
+            result_path: self.result_path,
+            source_constraint_component: self.source_constraint_component,
+            source_shape: self.source_shape,
+            value: self.value,
+        }
     }
 }
 
@@ -64,6 +97,7 @@ impl<S: SRDFBasic> Default for ValidationResultBuilder<S> {
     }
 }
 
+#[derive(Eq, PartialEq, Hash, Debug)]
 pub struct ValidationResult<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,
@@ -75,21 +109,24 @@ pub struct ValidationResult<S: SRDFBasic> {
 
 impl<S: SRDFBasic> ValidationResult<S> {
     pub(crate) fn new(
-        focus_node: Option<S::Term>,
-        result_severity: Option<S::Term>,
-        result_path: Option<S::Term>,
-        source_constraint_component: Option<S::Term>,
-        source_shape: Option<S::Term>,
-        value: Option<S::Term>,
+        focus_node: &S::Term,
+        context: &EvaluationContext,
+        value_node: Option<&S::Term>,
     ) -> Self {
-        ValidationResult {
-            focus_node,
-            result_severity,
-            result_path,
-            source_constraint_component,
-            source_shape,
-            value,
+        let mut builder = ValidationResultBuilder::default();
+
+        builder.focus_node(focus_node.to_owned());
+        builder.source_shape(context.shape::<S>());
+        builder.source_constraint_component(context.source_constraint_component::<S>());
+
+        if let Some(result_severity) = context.result_severity::<S>() {
+            builder.result_severity(result_severity);
         }
+        if let Some(value) = value_node {
+            builder.value(value.to_owned());
+        }
+
+        builder.build()
     }
 
     pub(crate) fn focus_node(&self) -> Option<S::Term> {

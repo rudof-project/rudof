@@ -1,16 +1,16 @@
 use indoc::formatdoc;
 use shacl_ast::node_kind::NodeKind;
-use srdf::{QuerySRDF, SRDF};
+use srdf::QuerySRDF;
+use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
@@ -29,14 +29,13 @@ impl Nodekind {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
     fn evaluate_default(
         &self,
-        _: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        _validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
                 let is_valid = match (
                     S::term_is_bnode(value_node),
                     S::term_is_iri(value_node),
@@ -60,55 +59,60 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
                 };
 
                 if !is_valid {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    let result =
+                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    Some(result)
+                } else {
+                    None
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes.iter_value_nodes()
+            .filter_map(move |(focus_node, value_node)| {
                 let query = if S::term_is_iri(value_node) {
                     formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
-                    ", self.node_kind
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
+                        ", self.node_kind
                     }
                 } else if S::term_is_bnode(value_node) {
                     formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
-                    ", self.node_kind
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
+                        ", self.node_kind
                     }
                 } else {
                     formatdoc! {"
-                        PREFIX sh: <http://www.w3.org/ns/shacl#>
-                        ASK {{ FILTER ({} IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) ) }}
-                    ", self.node_kind
+                            PREFIX sh: <http://www.w3.org/ns/shacl#>
+                            ASK {{ FILTER ({} IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) ) }}
+                        ", self.node_kind
                     }
                 };
-                let ask = match executor.store().query_ask(&query) {
+
+                let ask = match validation_context.store().query_ask(&query) {
                     Ok(ask) => ask,
-                    Err(_) => return Err(ConstraintError::Query),
+                    Err(_) => return None,
                 };
+
                 if !ask {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    Some(ValidationResult::new(focus_node, &evaluation_context, Some(value_node)))
+                } else {
+                    None
                 }
-            }
-        }
-        Ok(ans)
+            }).collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }

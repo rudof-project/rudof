@@ -1,113 +1,100 @@
 use std::path::Path;
 
 use clap::ValueEnum;
-use shacl_ast::shape::Shape;
 use shacl_ast::Schema;
-use srdf::{RDFFormat, SRDFBasic, SRDFGraph, SRDFSparql};
+use srdf::RDFFormat;
+use srdf::SRDFBasic;
+use srdf::SRDFGraph;
+use srdf::SRDFSparql;
 
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::helper::srdf::load_shapes_graph;
-use crate::shape::Validate;
+use crate::context::ValidationContext;
+use crate::shape::ShapeValidator;
 use crate::store::graph::Graph;
 use crate::store::sparql::Sparql;
-use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-#[derive(ValueEnum, Copy, Clone, Debug)]
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq)]
 pub enum ShaclValidationMode {
     Default,
     SPARQL,
 }
 
-pub trait Validator<'a, S: SRDFBasic> {
-    fn base(&self) -> Option<&'a str>;
-    fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<S> + '_>;
+pub trait Validator<S: SRDFBasic> {
+    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, S>;
 
-    fn validate(
-        &self,
-        shapes: &Path,
-        shapes_format: RDFFormat,
-    ) -> Result<ValidationReport<S>, ValidateError> {
-        let schema = load_shapes_graph(shapes, shapes_format, self.base())?;
-        let mut ans: ValidationReport<S> = ValidationReport::default(); // conformant by default...
+    fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
+        let validation_context = self.validation_context(&schema);
+        let mut report = ValidationReport::default();
+
         for (_, shape) in schema.iter() {
-            match shape {
-                Shape::NodeShape(s) => s.validate(self.executor(&schema).as_ref(), &mut ans)?,
-                Shape::PropertyShape(s) => s.validate(self.executor(&schema).as_ref(), &mut ans)?,
+            let shape_validator = ShapeValidator::new(shape, &validation_context, None);
+
+            match shape_validator.validate() {
+                Ok(validation_results) => {
+                    report.add_results(validation_results);
+                }
+                Err(err) => {
+                    return Err(err);
+                }
             };
         }
-        Ok(ans)
+
+        Ok(report)
     }
 }
 
-pub struct GraphValidator<'a> {
+pub struct GraphValidator {
     store: Graph,
     mode: ShaclValidationMode,
-    base: Option<&'a str>,
 }
 
-impl<'a> GraphValidator<'a> {
+impl GraphValidator {
     pub fn new(
         data: &Path,
         data_format: RDFFormat,
-        base: Option<&'a str>,
+        base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
+        if mode == ShaclValidationMode::SPARQL {
+            return Err(ValidateError::UnsupportedMode);
+        }
+
         Ok(GraphValidator {
             store: Graph::new(data, data_format, base)?,
             mode,
-            base,
         })
     }
 }
 
-impl<'a> Validator<'a, SRDFGraph> for GraphValidator<'a> {
-    fn base(&self) -> Option<&'a str> {
-        self.base
-    }
-
-    fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFGraph> + '_> {
+impl Validator<SRDFGraph> for GraphValidator {
+    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, SRDFGraph> {
         match self.mode {
-            ShaclValidationMode::Default => {
-                Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned()))
-            }
+            ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
             ShaclValidationMode::SPARQL => todo!(),
         }
     }
 }
 
-pub struct SparqlValidator<'a> {
+pub struct SparqlValidator {
     store: Sparql,
     mode: ShaclValidationMode,
-    base: Option<&'a str>,
 }
 
-impl<'a> SparqlValidator<'a> {
+impl SparqlValidator {
     pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
         Ok(SparqlValidator {
             store: Sparql::new(data)?,
             mode,
-            base: None,
         })
     }
 }
 
-impl<'a> Validator<'a, SRDFSparql> for SparqlValidator<'a> {
-    fn base(&self) -> Option<&'a str> {
-        self.base
-    }
-
-    fn executor(&self, schema: &Schema) -> Box<dyn SHACLExecutor<SRDFSparql> + '_> {
+impl Validator<SRDFSparql> for SparqlValidator {
+    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<SRDFSparql> {
         match self.mode {
-            ShaclValidationMode::Default => {
-                Box::new(DefaultExecutor::new(self.store.store(), schema.to_owned()))
-            }
-            ShaclValidationMode::SPARQL => {
-                Box::new(QueryExecutor::new(self.store.store(), schema.to_owned()))
-            }
+            ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
+            ShaclValidationMode::SPARQL => ValidationContext::new_sparql(&self.store, schema),
         }
     }
 }
