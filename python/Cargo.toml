@@ -24,6 +24,7 @@ dctap = { workspace = true }
 shapes_converter = { workspace = true }
 shex_ast = { workspace = true }
 shex_compact = { workspace = true }
+
 openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies.pyo3]
