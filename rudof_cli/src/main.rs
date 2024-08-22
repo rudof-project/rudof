@@ -45,11 +45,15 @@ use tracing::debug;
 
 pub mod cli;
 pub mod data;
+pub mod input_convert_format;
 pub mod input_spec;
+pub mod output_convert_format;
 
 pub use cli::*;
 pub use data::*;
+pub use input_convert_format::InputConvertFormat;
 pub use input_spec::*;
+pub use output_convert_format::OutputConvertFormat;
 
 use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
 use tracing_subscriber::prelude::*;
