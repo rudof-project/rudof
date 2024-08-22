@@ -1,10 +1,12 @@
+use dctap::{DCTap, TapConfig};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use shacl_ast::{ShaclParser, ShaclWriter};
-use srdf::{RDFFormat, SRDFGraph};
-use std::ffi::OsStr;
+use shapes_converter::{Tap2ShEx, Tap2ShExConfig};
+use shex_compact::ShExFormatter;
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufWriter;
+use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -19,33 +21,23 @@ pub fn convert(module: &Bound<'_, PyModule>) -> PyResult<()> {
 pub fn dctap2shex(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
     py.allow_threads(|| {
         let input = Path::new(input);
-        let input_format = obtain_format(input.extension())?;
-
-        let graph = match SRDFGraph::from_path(input, &input_format, None) {
-            Ok(graph) => graph,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
-
-        let schema = match ShaclParser::new(graph).parse() {
-            Ok(schema) => schema,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
-
-        let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
-
-        if let Err(error) = shacl_writer.write(&schema) {
-            return Err(PyValueError::new_err(error.to_string()));
-        }
+        let dctap = DCTap::from_path(input, &TapConfig::default())
+            .map_err(|e| PyValueError::new_err(format!("Error reading DCTAP {e}")))?;
+        let converter = Tap2ShEx::new(&Tap2ShExConfig::default());
+        let schema = converter
+            .convert(&dctap)
+            .map_err(|e| PyValueError::new_err(format!("Error converting DCTAP to ShEx: {e}")))?;
+        let formatter = ShExFormatter::default().without_colors();
+        let str = formatter.format_schema(&schema);
 
         let output = Path::new(output);
-        let output_format = obtain_format(output.extension())?;
 
-        let writer = match File::create(output) {
+        let mut writer = match File::create(output) {
             Ok(file) => BufWriter::new(file),
             Err(_) => return Err(PyValueError::new_err("Output file could not be created")),
         };
 
-        if let Err(error) = shacl_writer.serialize(output_format, writer) {
+        if let Err(error) = writeln!(writer, "{str}") {
             return Err(PyValueError::new_err(error.to_string()));
         }
 
@@ -53,15 +45,29 @@ pub fn dctap2shex(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
     })
 }
 
-fn obtain_format(extension: Option<&OsStr>) -> PyResult<RDFFormat> {
-    match extension {
-        None => Err(PyValueError::new_err("No ouput format is provided")),
-        Some(os_str) => match os_str.to_str() {
-            Some(str) => match RDFFormat::from_str(str) {
-                Ok(format) => Ok(format),
-                Err(error) => Err(PyValueError::new_err(error.to_string())),
-            },
-            None => Err(PyValueError::new_err("{os_str} is not supported")),
-        },
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum ShExFormat {
+    ShExC,
+    ShExJ,
+}
+
+impl Display for ShExFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShExFormat::ShExC => write!(dest, "shexc"),
+            ShExFormat::ShExJ => write!(dest, "shexj"),
+        }
+    }
+}
+
+impl FromStr for ShExFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "shexc" => Ok(ShExFormat::ShExC),
+            "shexj" => Ok(ShExFormat::ShExJ),
+            _ => Err(format!("Unsupported ShExFormat: {s}")),
+        }
     }
 }

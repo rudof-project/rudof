@@ -44,20 +44,21 @@ authors = [
 ]
 
 [workspace.dependencies]
+iri_s = { version = "0.1.8", path = "./iri_s" }
+dctap = { version = "0.1.0", path = "./dctap" }
+prefixmap = { version = "0.1.0", path = "./prefixmap" }
 rbe = { version = "0.1.7", path = "./rbe" }
 rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
-iri_s = { version = "0.1.8", path = "./iri_s" }
-prefixmap = { version = "0.1.0", path = "./prefixmap" }
-srdf = { version = "0.1.0", path = "./srdf" }
-dctap = { version = "0.1.0", path = "./dctap" }
+rudof_cli = { version = "0.1.12", path = "./rudof_cli" }
 shex_ast = { version = "0.1.0", path = "./shex_ast" }
-shex_testsuite = { version = "0.1.0", path = "./shex_testsuite" }
-shex_validation = { version = "0.1.0", path = "./shex_validation" }
-shex_compact = { version = "0.1.0", path = "./shex_compact" }
 shapemap = { version = "0.1.0", path = "./shapemap" }
 shacl_ast = { version = "0.1.0", path = "./shacl_ast" }
 shacl_validation = { version = "0.1.0", path = "./shacl_validation" }
 shapes_converter = { version = "0.1.6", path = "./shapes_converter" }
+shex_testsuite = { version = "0.1.0", path = "./shex_testsuite" }
+shex_validation = { version = "0.1.0", path = "./shex_validation" }
+shex_compact = { version = "0.1.0", path = "./shex_compact" }
+srdf = { version = "0.1.0", path = "./srdf" }
 
 # [dependencies]
 # External dependencies

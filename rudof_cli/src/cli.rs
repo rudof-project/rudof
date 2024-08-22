@@ -1,4 +1,5 @@
 use crate::input_spec::InputSpec;
+use crate::{InputConvertFormat, OutputConvertFormat};
 use clap::{Parser, Subcommand, ValueEnum};
 use shacl_validation::validate::ShaclValidationMode;
 use srdf::RDFFormat;
@@ -690,26 +691,6 @@ impl Display for DCTapResultFormat {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
-pub enum InputConvertFormat {
-    CSV,
-    ShExC,
-    ShExJ,
-    Turtle,
-}
-
-impl Display for InputConvertFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            InputConvertFormat::CSV => write!(dest, "csv"),
-            InputConvertFormat::ShExC => write!(dest, "shexc"),
-            InputConvertFormat::ShExJ => write!(dest, "shexj"),
-            InputConvertFormat::Turtle => write!(dest, "turtle"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
 pub enum ValidationMode {
     ShEx,
     SHACL,
@@ -756,38 +737,6 @@ impl Display for OutputConvertMode {
             OutputConvertMode::ShEx => write!(dest, "shex"),
             OutputConvertMode::UML => write!(dest, "uml"),
             OutputConvertMode::HTML => write!(dest, "html"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum OutputConvertFormat {
-    Default,
-    Internal,
-    JSON,
-    ShExC,
-    ShExJ,
-    Turtle,
-    PlantUML,
-    HTML,
-    SVG,
-    PNG,
-}
-
-impl Display for OutputConvertFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            OutputConvertFormat::Internal => write!(dest, "internal"),
-            OutputConvertFormat::JSON => write!(dest, "json"),
-            OutputConvertFormat::Default => write!(dest, "default"),
-            OutputConvertFormat::ShExC => write!(dest, "shexc"),
-            OutputConvertFormat::ShExJ => write!(dest, "shexj"),
-            OutputConvertFormat::Turtle => write!(dest, "turtle"),
-            OutputConvertFormat::PlantUML => write!(dest, "uml"),
-            OutputConvertFormat::HTML => write!(dest, "html"),
-            OutputConvertFormat::PNG => write!(dest, "png"),
-            OutputConvertFormat::SVG => write!(dest, "svg"),
         }
     }
 }

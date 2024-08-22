@@ -9,8 +9,8 @@ mod pyshacl;
 
 // Rudof Python bindings
 #[pymodule]
-fn rudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
-    module.add("__package__", "rudof")?;
+fn pyrudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add("__package__", "pyrudof")?;
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))?;
 
