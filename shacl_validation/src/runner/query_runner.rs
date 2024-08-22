@@ -25,7 +25,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
     ) -> Result<LazyValidationIterator<S>, ValidateError> {
         let component: Box<dyn SparqlConstraintComponent<S>> =
             evaluation_context.component().into();
-        Ok(component.evaluate_sparql(validation_context, evaluation_context, value_nodes))
+        Ok(component.evaluate_sparql(validation_context, evaluation_context, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

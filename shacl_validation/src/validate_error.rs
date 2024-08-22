@@ -3,7 +3,10 @@ use prefixmap::Underef;
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
-use crate::helper::helper_error::{SPARQLError, SRDFError};
+use crate::{
+    constraints::constraint_error::ConstraintError,
+    helper::helper_error::{SPARQLError, SRDFError},
+};
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
@@ -17,6 +20,8 @@ pub enum ValidateError {
     SRDFGraph(#[from] SRDFGraphError),
     #[error("Error during the creation of the Shacl shapes")]
     ShaclParser,
+    #[error("Error during the constraint evaluation")]
+    Constraint(#[from] ConstraintError),
     #[error("Error parsing the IRI")]
     IriParse(#[from] IriParseError),
     #[error("Error during some I/O operation")]
