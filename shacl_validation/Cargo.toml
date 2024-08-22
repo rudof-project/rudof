@@ -24,4 +24,3 @@ indoc = "2"
 oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
 clap = { workspace = true }
-itertools = "0.13.0"

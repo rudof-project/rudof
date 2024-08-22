@@ -11,8 +11,8 @@ use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
@@ -35,15 +35,15 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
         _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         if !self.unique_lang {
-            return Ok(LazyValidationIterator::default());
+            return Ok(ValidationResults::default());
         }
 
         let langs = Rc::new(RefCell::new(Vec::new()));
 
         let results = value_nodes
-            .iter()
+            .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
                 let langs = Rc::clone(&langs);
                 let mut langs = langs.borrow_mut();
@@ -69,7 +69,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
             })
             .collect::<Vec<_>>();
 
-        Ok(LazyValidationIterator::new(results.into_iter()))
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
@@ -79,7 +79,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
@@ -90,7 +90,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

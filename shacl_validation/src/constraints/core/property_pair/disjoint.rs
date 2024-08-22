@@ -7,7 +7,7 @@ use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
@@ -32,7 +32,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Disjoint {
         _validation_context: &ValidationContext<S>,
         _evaluation_context: EvaluationContext,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -43,7 +43,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Disjoint {
         _validation_context: &ValidationContext<S>,
         _evaluation_context: EvaluationContext,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }

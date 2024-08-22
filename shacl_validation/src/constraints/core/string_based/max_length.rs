@@ -7,8 +7,8 @@ use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 /// sh:maxLength specifies the maximum string length of each value node that
@@ -32,9 +32,9 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxLength {
         _validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
-            .iter()
+            .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
                     let result =
@@ -46,7 +46,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxLength {
             })
             .collect::<Vec<_>>();
 
-        Ok(LazyValidationIterator::new(results.into_iter()))
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
@@ -56,9 +56,9 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxLength {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
-            .iter()
+            .iter_value_nodes()
             .filter_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
                     Some(ValidationResult::new(
@@ -90,6 +90,6 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxLength {
             })
             .collect::<Vec<_>>();
 
-        Ok(LazyValidationIterator::new(results.into_iter()))
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }

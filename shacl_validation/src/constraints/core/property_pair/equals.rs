@@ -9,7 +9,7 @@ use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 /// sh:equals specifies the condition that the set of all value nodes is equal
@@ -34,7 +34,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Equals {
         _validation_context: &ValidationContext<S>,
         _evaluation_context: EvaluationContext,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -45,7 +45,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Equals {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
@@ -56,7 +56,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Equals {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use shacl_ast::*;
@@ -9,21 +10,26 @@ use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-pub struct LazyValidationIterator<S: SRDFBasic>(Vec<ValidationResult<S>>);
+#[derive(Debug)]
+pub struct ValidationResults<S: SRDFBasic>(Vec<ValidationResult<S>>);
 
-impl<S: SRDFBasic> LazyValidationIterator<S> {
+impl<S: SRDFBasic> ValidationResults<S> {
     pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
         Self(Vec::from_iter(iter))
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
-impl<S: SRDFBasic> Default for LazyValidationIterator<S> {
+impl<S: SRDFBasic> Default for ValidationResults<S> {
     fn default() -> Self {
         Self(Vec::from_iter(std::iter::empty()))
     }
 }
 
-impl<S: SRDFBasic> IntoIterator for LazyValidationIterator<S> {
+impl<S: SRDFBasic> IntoIterator for ValidationResults<S> {
     type Item = ValidationResult<S>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -91,7 +97,7 @@ impl<S: SRDFBasic> Default for ValidationResultBuilder<S> {
     }
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq, Hash, Debug)]
 pub struct ValidationResult<S: SRDFBasic> {
     focus_node: Option<S::Term>,
     result_severity: Option<S::Term>,

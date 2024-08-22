@@ -10,8 +10,8 @@ use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
@@ -33,7 +33,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxExclusive<S> {
         _validation_context: &ValidationContext<S>,
         _evaluation_context: EvaluationContext,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -44,9 +44,9 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxExclusive<S> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
-            .iter()
+            .iter_value_nodes()
             .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {
                     " ASK {{ FILTER ({} < {}) }} ",
@@ -70,6 +70,6 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxExclusive<S> {
             })
             .collect::<Vec<_>>();
 
-        Ok(LazyValidationIterator::new(results.into_iter()))
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }

@@ -33,7 +33,7 @@ use srdf::SRDF;
 
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 pub mod constraint_error;
@@ -45,7 +45,7 @@ pub(crate) trait ConstraintComponent<S: SRDFBasic> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError>;
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
@@ -54,7 +54,7 @@ pub trait DefaultConstraintComponent<S: SRDF> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError>;
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
@@ -63,7 +63,7 @@ pub trait SparqlConstraintComponent<S: QuerySRDF> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ConstraintError>;
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {

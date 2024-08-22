@@ -5,8 +5,8 @@ use srdf::SRDF;
 
 use crate::helper::srdf::get_objects_for;
 
-use super::result::LazyValidationIterator;
 use super::result::ValidationResult;
+use super::result::ValidationResults;
 use super::validation_report_error::ReportError;
 
 pub struct ValidationReport<S: SRDFBasic> {
@@ -22,7 +22,7 @@ impl<S: SRDFBasic> ValidationReport<S> {
         self.results.push(result)
     }
 
-    pub(crate) fn add_results(&mut self, results: LazyValidationIterator<S>) {
+    pub(crate) fn add_results(&mut self, results: ValidationResults<S>) {
         let mut results = results.into_iter().peekable();
         if self.conforms && results.peek().is_some() {
             self.conforms = false; // we add a result --> make the Report non-conformant

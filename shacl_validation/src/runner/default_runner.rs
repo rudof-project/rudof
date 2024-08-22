@@ -11,7 +11,7 @@ use crate::context::ValidationContext;
 use crate::helper::srdf::get_objects_for;
 use crate::helper::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
@@ -25,7 +25,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ValidateError> {
+    ) -> Result<ValidationResults<S>, ValidateError> {
         let component: Box<dyn DefaultConstraintComponent<S>> =
             evaluation_context.component().into();
         Ok(component.evaluate_default(validation_context, evaluation_context, value_nodes)?)

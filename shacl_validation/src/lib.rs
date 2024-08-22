@@ -47,20 +47,25 @@ impl<S: SRDFBasic> IntoIterator for Targets<S> {
     }
 }
 
-pub struct ValueNodes<S: SRDFBasic>(HashMap<S::Term, S::Term>);
+pub struct ValueNodes<S: SRDFBasic>(HashMap<S::Term, Targets<S>>);
 
 impl<S: SRDFBasic> ValueNodes<S> {
     pub fn new(iter: impl Iterator<Item = (S::Term, Targets<S>)>) -> Self {
-        let flatten = iter.flat_map(|(key, values)| {
-            values
-                .into_iter()
-                .map(move |value: <S as SRDFBasic>::Term| (key.clone(), value))
-                .collect::<HashMap<S::Term, S::Term>>()
-        });
-        Self(HashMap::from_iter(flatten))
+        Self(HashMap::from_iter(iter))
     }
 
-    fn iter(&self) -> impl Iterator<Item = (&S::Term, &S::Term)> {
+    fn iter_value_nodes(&self) -> impl Iterator<Item = (&S::Term, &S::Term)> {
+        self.0
+            .iter()
+            .map(|(focus_node, value_nodes)| {
+                value_nodes
+                    .iter()
+                    .map(move |value_node| (focus_node, value_node))
+            })
+            .flatten()
+    }
+
+    fn iter_focus_nodes(&self) -> impl Iterator<Item = (&S::Term, &Targets<S>)> {
         self.0.iter()
     }
 }

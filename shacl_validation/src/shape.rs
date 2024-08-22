@@ -10,7 +10,7 @@ use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shapes_ref;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
@@ -38,21 +38,21 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         }
     }
 
-    pub fn validate(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
+    pub fn validate(&self) -> Result<ValidationResults<S>, ValidateError> {
         if *self.shape.is_deactivated() {
             // skipping because it is deactivated
-            return Ok(LazyValidationIterator::default());
+            return Ok(ValidationResults::default());
         }
 
         let components = self.validate_components()?;
         let property_shapes = self.validate_property_shapes()?;
 
-        Ok(LazyValidationIterator::new(
+        Ok(ValidationResults::new(
             components.into_iter().chain(property_shapes),
         ))
     }
 
-    fn validate_components(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
+    fn validate_components(&self) -> Result<ValidationResults<S>, ValidateError> {
         let value_nodes = self
             .shape
             .value_nodes(self.validation_context, &self.focus_nodes);
@@ -71,13 +71,13 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         let evaluated_components = contexts.into_iter().flat_map(move |context| {
             runner
                 .evaluate(validation_context, context, &value_nodes)
-                .unwrap_or_else(|_| LazyValidationIterator::default())
+                .unwrap_or_else(|_| ValidationResults::default())
         });
 
-        Ok(LazyValidationIterator::new(evaluated_components))
+        Ok(ValidationResults::new(evaluated_components))
     }
 
-    fn validate_property_shapes(&self) -> Result<LazyValidationIterator<S>, ValidateError> {
+    fn validate_property_shapes(&self) -> Result<ValidationResults<S>, ValidateError> {
         let shapes = get_shapes_ref(
             self.shape.property_shapes(),
             self.validation_context.schema(),
@@ -106,7 +106,7 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
                     .collect::<Vec<_>>()
             });
 
-        Ok(LazyValidationIterator::new(evaluated_shapes))
+        Ok(ValidationResults::new(evaluated_shapes))
     }
 }
 

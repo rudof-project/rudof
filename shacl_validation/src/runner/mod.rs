@@ -6,7 +6,7 @@ use srdf::SRDFBasic;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::LazyValidationIterator;
+use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
@@ -19,7 +19,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<S>, ValidateError>;
+    ) -> Result<ValidationResults<S>, ValidateError>;
 
     fn focus_nodes(
         &self,
