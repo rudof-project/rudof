@@ -8,12 +8,11 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 pub(crate) struct MinExclusive<S: SRDFBasic> {
@@ -31,11 +30,10 @@ impl<S: SRDFBasic> MinExclusive<S> {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinExclusive<S> {
     fn evaluate_default(
         &self,
-        _executor: &DefaultExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+        _validation_context: &ValidationContext<S>,
+        _evaluation_context: EvaluationContext,
+        _value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -43,28 +41,35 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinExclusive<S> {
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinExclusive<S> {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {
                     " ASK {{ FILTER ({} < {}) }} ",
                     value_node, self.min_inclusive
                 };
-                let ask = match executor.store().query_ask(&query) {
+
+                let ask = match validation_context.store().query_ask(&query) {
                     Ok(ask) => ask,
-                    Err(_) => return Err(ConstraintError::Query),
+                    Err(_) => return None,
                 };
+
                 if !ask {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else {
+                    None
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }

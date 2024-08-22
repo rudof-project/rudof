@@ -7,12 +7,11 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlConstraintComponent;
 use crate::constraints::{ConstraintComponent, DefaultConstraintComponent};
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// sh:in specifies the condition that each value node is a member of a provided
 /// SHACL list.
@@ -36,49 +35,46 @@ impl<S: SRDFBasic> In<S> {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for In<S> {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for In<S> {
     fn evaluate(
         &self,
-        _: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let ans = value_nodes.iter().all(|(focus_node, value_nodes)| {
-            value_nodes.iter().all(|value_node| {
+        _validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
                 if !self.values.contains(value_node) {
-                    report.make_validation_result(focus_node, context, Some(value_node));
-                    false
+                    Some(ValidationResult::new(focus_node, &evaluation_context, None))
                 } else {
-                    true
+                    None
                 }
             })
-        });
+            .collect::<Vec<_>>();
 
-        Ok(ans)
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for In<S> {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for In<S> {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
-use crate::shape::ValueNode;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
@@ -10,11 +9,11 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
 ///  value nodes may use the same language tag.
@@ -30,56 +29,68 @@ impl UniqueLang {
     }
 }
 
-impl<S: SRDFBasic> ConstraintComponent<S> for UniqueLang {
+impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
     fn evaluate(
         &self,
-        _: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+        _validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         if !self.unique_lang {
-            return Ok(true);
+            return Ok(ValidationResults::default());
         }
-        let mut ans = true;
-        let mut langs = HashSet::new();
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+
+        let langs = Rc::new(RefCell::new(Vec::new()));
+
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
+                let langs = Rc::clone(&langs);
+                let mut langs = langs.borrow_mut();
+
                 if let Some(literal) = S::term_as_literal(value_node) {
                     if let Some(lang) = S::lang(&literal) {
                         if langs.contains(&lang) {
-                            ans = false;
-                            report.make_validation_result(focus_node, context, Some(value_node));
+                            Some(ValidationResult::new(
+                                focus_node,
+                                &evaluation_context,
+                                Some(value_node),
+                            ))
+                        } else {
+                            langs.push(lang);
+                            None
                         }
-                        langs.insert(lang);
+                    } else {
+                        None
                     }
+                } else {
+                    None
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        self.evaluate(executor, context, value_nodes, report)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

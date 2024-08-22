@@ -1,108 +1,43 @@
-use shacl_ast::Schema;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::{QuerySRDF, SRDFBasic, SRDF};
 
-use crate::context::Context;
-use crate::shape::ValueNode;
+use crate::context::ValidationContext;
 use crate::{
     constraints::{DefaultConstraintComponent, SparqlConstraintComponent},
-    runner::{
-        default_runner::DefaultValidatorRunner, query_runner::QueryValidatorRunner, ValidatorRunner,
-    },
+    context::EvaluationContext,
     validate_error::ValidateError,
-    validation_report::report::ValidationReport,
+    validation_report::result::LazyValidationIterator,
+    value_nodes::ValueNodes,
 };
 
-pub trait SHACLExecutor<S: SRDFBasic> {
-    fn store(&self) -> &S;
-    fn schema(&self) -> &Schema;
-    fn runner(&self) -> &dyn ValidatorRunner<S>;
-
+pub trait ComponentEvaluator<S: SRDFBasic> {
     fn evaluate(
         &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError>;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: &EvaluationContext,
+        value_nodes: ValueNodes<S>,
+    ) -> Result<LazyValidationIterator<S>, ValidateError>;
 }
 
-pub struct DefaultExecutor<'a, S: SRDF> {
-    store: &'a S,
-    schema: Schema,
-    runner: DefaultValidatorRunner,
-}
-
-impl<'a, S: SRDF> DefaultExecutor<'a, S> {
-    pub(crate) fn new(store: &'a S, schema: Schema) -> Self {
-        Self {
-            store,
-            schema,
-            runner: DefaultValidatorRunner,
-        }
-    }
-}
-
-impl<'a, S: SRDF + 'static> SHACLExecutor<S> for DefaultExecutor<'a, S> {
-    fn store(&self) -> &S {
-        self.store
-    }
-
-    fn schema(&self) -> &Schema {
-        &self.schema
-    }
-
-    fn runner(&self) -> &dyn ValidatorRunner<S> {
-        &self.runner
-    }
-
+impl<S: SRDF> ComponentEvaluator<S, DefaultValidatorRunner> for dyn DefaultConstraintComponent<S> {
     fn evaluate(
         &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError> {
-        let component: Box<dyn DefaultConstraintComponent<S>> = context.component().into();
-        Ok(component.evaluate_default(self, context, value_nodes, report)?)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: &EvaluationContext,
+        value_nodes: ValueNodes<S>,
+    ) -> Result<LazyValidationIterator<S>, ValidateError> {
+        Ok(self.evaluate_default(validation_context, evaluation_context, value_nodes))
     }
 }
 
-pub struct QueryExecutor<'a, S: QuerySRDF> {
-    store: &'a S,
-    schema: Schema,
-    runner: QueryValidatorRunner,
-}
-
-impl<'a, S: QuerySRDF> QueryExecutor<'a, S> {
-    pub(crate) fn new(store: &'a S, schema: Schema) -> Self {
-        Self {
-            store,
-            schema,
-            runner: QueryValidatorRunner,
-        }
-    }
-}
-
-impl<'a, S: QuerySRDF + 'static> SHACLExecutor<S> for QueryExecutor<'a, S> {
-    fn store(&self) -> &S {
-        self.store
-    }
-
-    fn schema(&self) -> &Schema {
-        &self.schema
-    }
-
-    fn runner(&self) -> &dyn ValidatorRunner<S> {
-        &self.runner
-    }
-
+impl<S: QuerySRDF> ComponentEvaluator<S, QueryValidatorRunner>
+    for dyn SparqlConstraintComponent<S>
+{
     fn evaluate(
         &self,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ValidateError> {
-        let component: Box<dyn SparqlConstraintComponent<S>> = context.component().into();
-        Ok(component.evaluate_sparql(self, context, value_nodes, report)?)
+        validation_context: &ValidationContext<S>,
+        evaluation_context: &EvaluationContext,
+        value_nodes: ValueNodes<S>,
+    ) -> Result<LazyValidationIterator<S>, ValidateError> {
+        Ok(self.evaluate_sparql(validation_context, evaluation_context, value_nodes))
     }
 }

@@ -5,12 +5,11 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResult;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// sh:property can be used to specify that each value node has a given property
 /// shape.
@@ -28,42 +27,45 @@ impl Pattern {
 }
 
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Pattern {
-    fn evaluate_default(
+    fn evaluate_default<'a>(
         &self,
-        _executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        _validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .flat_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    let result =
+                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    Some(result)
                 } else {
-                    return Err(ConstraintError::NotImplemented);
+                    None
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Pattern {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
-        let mut ans = true;
-        for (focus_node, value_nodes) in value_nodes {
-            for value_node in value_nodes {
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
+        let results = value_nodes
+            .iter_value_nodes()
+            .filter_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
-                    ans = false;
-                    report.make_validation_result(focus_node, context, Some(value_node));
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
                 } else {
                     let query = match &self.flags {
                         Some(flags) => formatdoc! {
@@ -75,17 +77,25 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Pattern {
                             value_node, self.pattern
                         },
                     };
-                    let ask = match executor.store().query_ask(&query) {
+
+                    let ask = match validation_context.store().query_ask(&query) {
                         Ok(ask) => ask,
-                        Err(_) => return Err(ConstraintError::Query),
+                        Err(_) => return None,
                     };
+
                     if !ask {
-                        ans = false;
-                        report.make_validation_result(focus_node, context, Some(value_node));
+                        Some(ValidationResult::new(
+                            focus_node,
+                            &evaluation_context,
+                            Some(value_node),
+                        ))
+                    } else {
+                        None
                     }
                 }
-            }
-        }
-        Ok(ans)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }

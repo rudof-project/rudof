@@ -31,44 +31,39 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::executor::SHACLExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
-pub(crate) mod constraint_error;
+pub mod constraint_error;
 pub mod core;
 
 pub(crate) trait ConstraintComponent<S: SRDFBasic> {
     fn evaluate(
         &self,
-        executor: &dyn SHACLExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
     fn evaluate_default(
         &self,
-        executor: &DefaultExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
     fn evaluate_sparql(
         &self,
-        executor: &QueryExecutor<S>,
-        context: &Context,
-        value_nodes: &ValueNode<S>,
-        report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError>;
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError>;
 }
 
 impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {

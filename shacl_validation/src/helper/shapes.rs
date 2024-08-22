@@ -1,4 +1,5 @@
-use shacl_ast::{shape::Shape, Schema};
+use shacl_ast::shape::Shape;
+use shacl_ast::Schema;
 use srdf::RDFNode;
 
 pub fn get_shape_ref<'a>(sref: &'a RDFNode, schema: &'a Schema) -> Option<&'a Shape> {

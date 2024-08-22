@@ -1,6 +1,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use shacl_ast::{ShaclParser, ShaclWriter};
+use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate::GraphValidator;
 use shacl_validation::validate::ShaclValidationMode;
 use shacl_validation::validate::Validator;
@@ -67,13 +68,18 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         let shapes = Path::new(shapes);
         let shapes_format = obtain_format(shapes.extension())?;
 
+        let schema = match ShaclDataManager::load(Path::new(&shapes), shapes_format, None) {
+            Ok(schema) => schema,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
         let validator =
             match GraphValidator::new(data, data_format, None, ShaclValidationMode::Default) {
                 Ok(validator) => validator,
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
-        let _ = match validator.validate(shapes, shapes_format) {
+        let _ = match validator.validate(schema) {
             Ok(report) => report,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };

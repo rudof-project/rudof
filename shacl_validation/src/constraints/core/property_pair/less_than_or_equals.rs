@@ -5,11 +5,10 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
-use crate::context::Context;
-use crate::executor::DefaultExecutor;
-use crate::executor::QueryExecutor;
-use crate::shape::ValueNode;
-use crate::validation_report::report::ValidationReport;
+use crate::context::EvaluationContext;
+use crate::context::ValidationContext;
+use crate::validation_report::result::ValidationResults;
+use crate::ValueNodes;
 
 /// sh:lessThanOrEquals specifies the condition that each value node is smaller
 /// than or equal to all the objects of the triples that have the focus node
@@ -30,11 +29,10 @@ impl LessThanOrEquals {
 impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_default(
         &self,
-        _executor: &DefaultExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+        _validation_context: &ValidationContext<S>,
+        _evaluation_context: EvaluationContext,
+        _value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -42,11 +40,10 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
 impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
     fn evaluate_sparql(
         &self,
-        _executor: &QueryExecutor<S>,
-        _context: &Context,
-        _value_nodes: &ValueNode<S>,
-        _report: &mut ValidationReport<S>,
-    ) -> Result<bool, ConstraintError> {
+        _validation_context: &ValidationContext<S>,
+        _evaluation_context: EvaluationContext,
+        _value_nodes: &ValueNodes<S>,
+    ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
