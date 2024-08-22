@@ -27,7 +27,7 @@ impl<S: SRDFBasic> Default for LazyValidationIterator<'_, S> {
     }
 }
 
-impl<'a, S: SRDFBasic + 'a> Iterator for LazyValidationIterator<'a, S> {
+impl<'a, S: SRDFBasic + 'a> Iterator for LazyValidationIterator<'_, S> {
     type Item = ValidationResult<S>;
 
     fn next(&mut self) -> Option<Self::Item> {

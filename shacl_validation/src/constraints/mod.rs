@@ -33,40 +33,40 @@ use srdf::SRDF;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 pub mod core;
 
 pub(crate) trait ConstraintComponent<S: SRDFBasic> {
-    fn evaluate<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S>;
+    fn evaluate(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S>;
 }
 
 pub trait DefaultConstraintComponent<S: SRDF> {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S>;
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S>;
 }
 
 pub trait SparqlConstraintComponent<S: QuerySRDF> {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S>;
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S>;
 }
 
-impl<S: SRDF + 'static> From<Component> for Box<dyn DefaultConstraintComponent<S>> {
-    fn from(value: Component) -> Self {
-        match value {
+impl<S: SRDF + 'static> From<&Component> for Box<dyn DefaultConstraintComponent<S>> {
+    fn from(value: &Component) -> Self {
+        match value.to_owned() {
             Component::Class(node) => Box::new(Class::new(node)),
             Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
             Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),
@@ -111,9 +111,9 @@ impl<S: SRDF + 'static> From<Component> for Box<dyn DefaultConstraintComponent<S
     }
 }
 
-impl<S: QuerySRDF + 'static> From<Component> for Box<dyn SparqlConstraintComponent<S>> {
-    fn from(value: Component) -> Self {
-        match value {
+impl<S: QuerySRDF + 'static> From<&Component> for Box<dyn SparqlConstraintComponent<S>> {
+    fn from(value: &Component) -> Self {
+        match value.to_owned() {
             Component::Class(node) => Box::new(Class::new(node)),
             Component::Datatype(iri_ref) => Box::new(Datatype::new(iri_ref)),
             Component::NodeKind(node_kind) => Box::new(Nodekind::new(node_kind)),

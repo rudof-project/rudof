@@ -1,17 +1,15 @@
 use indoc::formatdoc;
 use shacl_ast::node_kind::NodeKind;
-use srdf::{QuerySRDF, SRDF};
-use std::sync::Arc;
+use srdf::QuerySRDF;
+use srdf::SRDF;
 
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
@@ -28,14 +26,14 @@ impl Nodekind {
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Nodekind {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         let results = value_nodes
-            .into_iter()
+            .iter()
             .flat_map(move |(focus_node, value_node)| {
                 let is_valid = match (
                     S::term_is_bnode(&value_node),
@@ -73,14 +71,13 @@ impl<S: SRDF> DefaultConstraintComponent<S> for Nodekind {
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Nodekind {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
-        let results = value_nodes
-            .into_iter()
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
+        let results = value_nodes.iter()
             .filter_map(move |(focus_node, value_node)| {
             let query = if S::term_is_iri(&value_node) {
                 formatdoc! {"

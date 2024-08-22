@@ -1,3 +1,9 @@
+use iri_s::IriS;
+use prefixmap::IriRef;
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
+
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
@@ -5,13 +11,7 @@ use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
-use iri_s::IriS;
-use prefixmap::IriRef;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
-use std::sync::Arc;
+use crate::ValueNodes;
 
 /// sh:datatype specifies a condition to be satisfied with regards to the
 /// datatype of each value node.
@@ -30,14 +30,14 @@ impl<S: SRDFBasic> Datatype<S> {
 }
 
 impl<S: SRDFBasic> ConstraintComponent<S> for Datatype<S> {
-    fn evaluate<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         let results = value_nodes
-            .into_iter()
+            .iter()
             .flat_map(move |(focus_node, value_node)| {
                 if let Some(literal) = S::term_as_literal(&value_node) {
                     if S::datatype(&literal) != self.datatype {
@@ -62,23 +62,23 @@ impl<S: SRDFBasic> ConstraintComponent<S> for Datatype<S> {
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Datatype<S> {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Datatype<S> {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

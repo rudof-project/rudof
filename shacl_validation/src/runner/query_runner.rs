@@ -7,10 +7,10 @@ use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::sparql::select;
-use crate::targets::Targets;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::Targets;
+use crate::ValueNodes;
 
 use super::ValidatorRunner;
 
@@ -24,7 +24,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ValidateError> {
         let component: Box<dyn SparqlConstraintComponent<S>> =
-            evaluation_context.component().to_owned().into();
+            evaluation_context.component().into();
         Ok(component.evaluate_sparql(validation_context, evaluation_context, value_nodes))
     }
 

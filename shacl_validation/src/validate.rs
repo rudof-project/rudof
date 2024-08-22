@@ -20,14 +20,14 @@ pub enum ShaclValidationMode {
 }
 
 pub trait Validator<S: SRDFBasic> {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, S>;
+    fn validation_context<'a>(&self, schema: &'a Schema) -> ValidationContext<'a, S>;
 
     fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
         let validation_context = self.validation_context(&schema);
 
         // Ensure that ShapeValidator and its methods accept the appropriate lifetimes
         let results = schema.iter().flat_map(|(_, shape)| {
-            match ShapeValidator::new(shape, &validation_context).validate(None) {
+            match ShapeValidator::new(shape, &validation_context, None).validate() {
                 Ok(validation_results) => Some(validation_results),
                 Err(_) => None, // Handle errors as needed
             }
@@ -64,7 +64,7 @@ impl GraphValidator {
 }
 
 impl Validator<SRDFGraph> for GraphValidator {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, SRDFGraph> {
+    fn validation_context<'a>(&self, schema: &'a Schema) -> ValidationContext<'a, SRDFGraph> {
         match self.mode {
             ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
             ShaclValidationMode::SPARQL => todo!(),
@@ -87,7 +87,7 @@ impl SparqlValidator {
 }
 
 impl Validator<SRDFSparql> for SparqlValidator {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, SRDFSparql> {
+    fn validation_context<'a>(&self, schema: &'a Schema) -> ValidationContext<'a, SRDFSparql> {
         match self.mode {
             ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
             ShaclValidationMode::SPARQL => ValidationContext::new_sparql(&self.store, schema),

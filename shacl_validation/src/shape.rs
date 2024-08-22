@@ -9,48 +9,57 @@ use srdf::SRDFBasic;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shapes_ref;
-use crate::targets::Targets;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::Targets;
+use crate::ValueNodes;
 
 pub struct ShapeValidator<'a, S: SRDFBasic> {
     shape: &'a Shape,
     validation_context: &'a ValidationContext<'a, S>,
+    focus_nodes: &'a Targets<S>,
 }
 
 impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
-    pub fn new(shape: &'a Shape, validation_context: &'a ValidationContext<S>) -> Self {
+    pub fn new(
+        shape: &'a Shape,
+        validation_context: &'a ValidationContext<S>,
+        focus_nodes: Option<&'a Targets<S>>,
+    ) -> Self {
+        let focus_nodes = match focus_nodes {
+            Some(focus) => focus,
+            None => {
+                let generated_focus_nodes = shape.focus_nodes(validation_context);
+                generated_focus_nodes
+            }
+        };
+
         ShapeValidator {
             shape,
             validation_context,
+            focus_nodes,
         }
     }
 
-    pub fn validate(
-        &'a self,
-        focus_nodes: Option<&'a Targets<S>>,
-    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
+    pub fn validate(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
         if *self.shape.is_deactivated() {
             // skipping because it is deactivated
             return Ok(LazyValidationIterator::default());
         }
 
-        let focus_nodes = focus_nodes.unwrap_or(&self.shape.focus_nodes(self.validation_context));
-        let value_nodes = self.shape.value_nodes(self.validation_context, focus_nodes);
-
-        let components = self.validate_components(&value_nodes)?;
-        let property_shapes = self.validate_property_shapes(focus_nodes)?;
+        let components = self.validate_components()?;
+        let property_shapes = self.validate_property_shapes()?;
 
         Ok(LazyValidationIterator::new(
             components.chain(property_shapes),
         ))
     }
 
-    fn validate_components(
-        &'a self,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
+    fn validate_components(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
+        let value_nodes = self
+            .shape
+            .value_nodes(self.validation_context, &self.focus_nodes);
+
         let contexts = self
             .shape
             .components()
@@ -60,49 +69,52 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         let evaluated_components = contexts.flat_map(move |context| {
             self.validation_context
                 .runner()
-                .evaluate(self.validation_context, context, value_nodes)
+                .evaluate(self.validation_context, context, &value_nodes)
                 .unwrap_or_else(|_| LazyValidationIterator::default())
         });
 
         Ok(LazyValidationIterator::new(evaluated_components))
     }
 
-    fn validate_property_shapes(
-        &'a self,
-        focus_nodes: &'a Targets<S>,
-    ) -> Result<LazyValidationIterator<'a, S>, ValidateError> {
+    fn validate_property_shapes(&self) -> Result<LazyValidationIterator<'_, S>, ValidateError> {
         let shapes = get_shapes_ref(
             self.shape.property_shapes(),
             self.validation_context.schema(),
         );
 
-        let contexts = shapes.into_iter().flatten().filter_map(|shape| {
-            if let Shape::PropertyShape(_) = shape {
-                Some(ShapeValidator::new(shape, self.validation_context))
-            } else {
-                None
-            }
-        });
-
-        let evaluated_shapes = contexts
-            .flat_map(move |context| {
-                match context.validate(Some(&focus_nodes)) {
-                    Ok(results) => Some(results),
-                    Err(_) => None, // handle validation errors if necessary
+        let evaluated_shapes = shapes
+            .into_iter()
+            .flatten()
+            .filter_map(move |shape| {
+                if let Shape::PropertyShape(_) = shape {
+                    Some(ShapeValidator::new(
+                        shape,
+                        self.validation_context,
+                        Some(self.focus_nodes),
+                    ))
+                } else {
+                    None
                 }
             })
-            .flatten();
+            .flat_map(|context| {
+                context
+                    .validate()
+                    .ok()
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>()
+            });
 
         Ok(LazyValidationIterator::new(evaluated_shapes))
     }
 }
 
 pub trait FocusNodesOps<S: SRDFBasic> {
-    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S>;
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> &Targets<S>;
 }
 
 impl<S: SRDFBasic> FocusNodesOps<S> for Shape {
-    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> Targets<S> {
+    fn focus_nodes(&self, validation_context: &ValidationContext<S>) -> &Targets<S> {
         validation_context
             .runner()
             .focus_nodes(
@@ -186,8 +198,12 @@ impl<S: SRDFBasic> ValueNodesOps<S> for NodeShape {
         validation_context: &ValidationContext<S>,
         focus_nodes: &Targets<S>,
     ) -> ValueNodes<S> {
-        let value_nodes =
-            focus_nodes.map(|focus_node| (focus_node, Targets::new(std::iter::once(focus_node))));
+        let value_nodes = focus_nodes.iter().map(|focus_node| {
+            (
+                focus_node.clone(),
+                Targets::new(std::iter::once(focus_node.clone())),
+            )
+        });
 
         ValueNodes::new(value_nodes)
     }
@@ -199,16 +215,17 @@ impl<S: SRDFBasic> ValueNodesOps<S> for PropertyShape {
         validation_context: &ValidationContext<S>,
         focus_nodes: &Targets<S>,
     ) -> ValueNodes<S> {
-        let value_nodes = focus_nodes.filter_map(move |focus_node| {
-            match validation_context
-                .runner()
-                .path(validation_context.store(), self, &focus_node)
-                .ok()
-            {
-                Some(targets) => Some((focus_node, targets)),
-                None => None,
-            }
-        });
+        let value_nodes =
+            focus_nodes.iter().filter_map(move |focus_node| {
+                match validation_context
+                    .runner()
+                    .path(validation_context.store(), self, &focus_node)
+                    .ok()
+                {
+                    Some(targets) => Some((focus_node.clone(), targets)),
+                    None => None,
+                }
+            });
 
         ValueNodes::new(value_nodes)
     }

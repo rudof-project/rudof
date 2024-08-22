@@ -7,7 +7,7 @@ use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
 /// with the set of objects of the triples that have the focus node as subject
@@ -26,23 +26,23 @@ impl Disjoint {
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Disjoint {
-    fn evaluate_default<'a>(
+    fn evaluate_default(
         &self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         unimplemented!()
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Disjoint {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         unimplemented!()
     }
 }

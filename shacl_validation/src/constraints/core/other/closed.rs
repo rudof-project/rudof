@@ -9,7 +9,7 @@ use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 /// The RDF data model offers a huge amount of flexibility. Any node can in
 /// principle have values for any property. However, in some cases it makes
@@ -36,34 +36,34 @@ impl Closed {
 }
 
 impl<S: SRDFBasic> ConstraintComponent<S> for Closed {
-    fn evaluate<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<S> {
         unimplemented!()
     }
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Closed {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Closed {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

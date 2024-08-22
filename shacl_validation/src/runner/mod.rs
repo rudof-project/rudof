@@ -5,10 +5,10 @@ use srdf::SRDFBasic;
 
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
-use crate::targets::Targets;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::Targets;
+use crate::ValueNodes;
 
 pub mod default_runner;
 pub mod query_runner;
@@ -26,7 +26,7 @@ pub trait ValidatorRunner<S: SRDFBasic> {
         store: &S,
         shape: &S::Term,
         targets: &[Target],
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<&Targets<S>, ValidateError> {
         let explicit = targets
             .iter()
             .filter_map(move |target| match target {
@@ -67,9 +67,9 @@ pub trait ValidatorRunner<S: SRDFBasic> {
 
         // we have to also look for implicit class targets, which are a "special"
         // kind of target declarations...
-        let implicit = self.implicit_target_class(&store, shape)?;
+        let mut implicit = self.implicit_target_class(&store, shape)?;
 
-        Ok(Targets::new(explicit.chain(implicit)))
+        Ok(&Targets::new(implicit.into_iter().chain(explicit)))
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

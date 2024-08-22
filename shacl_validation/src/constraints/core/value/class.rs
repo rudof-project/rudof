@@ -1,18 +1,19 @@
 use indoc::formatdoc;
+use srdf::QuerySRDF;
+use srdf::RDFNode;
+use srdf::SRDFBasic;
+use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::{QuerySRDF, RDFNode, SRDFBasic, RDFS_SUBCLASS_OF, SRDF};
+use srdf::SRDF;
 use std::collections::HashSet;
-use std::sync::Arc;
 
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::srdf::get_objects_for;
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
 use crate::validation_report::result::{LazyValidationIterator, ValidationResult};
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.
@@ -31,14 +32,14 @@ impl<S: SRDFBasic> Class<S> {
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Class<S> {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         let results = value_nodes
-            .into_iter()
+            .iter()
             .flat_map(move |(focus_node, value_node)| {
                 if S::term_is_literal(&value_node) {
                     let result =
@@ -82,14 +83,14 @@ impl<S: SRDF> DefaultConstraintComponent<S> for Class<S> {
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Class<S> {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         let results = value_nodes
-            .into_iter()
+            .iter()
             .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {"
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>

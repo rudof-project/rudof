@@ -10,10 +10,10 @@ use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shape_ref;
 use crate::shape::ShapeValidator;
-use crate::targets::Targets;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
+use crate::Targets;
+use crate::ValueNodes;
 
 /// sh:node specifies the condition that each value node conforms to the given
 /// node shape.
@@ -30,59 +30,62 @@ impl Node {
 }
 
 impl<S: SRDFBasic> ConstraintComponent<S> for Node {
-    fn evaluate<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         let shape = get_shape_ref(&self.shape, validation_context.schema()).expect("Missing Shape");
 
-        let results = value_nodes.flat_map(move |(focus_node, value_node)| {
-            let validate_context = ShapeValidator::new(shape, validation_context);
-            let single_value_nodes = std::iter::once(value_node);
-            let targets = Targets::new(single_value_nodes);
-            let inner_results = validate_context.validate(Some(&targets));
+        let results = value_nodes
+            .iter()
+            .flat_map(move |(focus_node, value_node)| {
+                let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
+                let shape_validator =
+                    ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
 
-            if inner_results.is_err() {
-                Some(ValidationResult::new(
-                    focus_node,
-                    &evaluation_context,
-                    Some(value_node),
-                ))
-            } else if inner_results.unwrap().peekable().peek().is_some() {
-                Some(ValidationResult::new(
-                    focus_node,
-                    &evaluation_context,
-                    Some(value_node),
-                ))
-            } else {
-                None
-            }
-        });
+                let inner_results = shape_validator.validate();
+
+                if inner_results.is_err() {
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else if inner_results.unwrap().peekable().peek().is_some() {
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else {
+                    None
+                }
+            });
 
         LazyValidationIterator::new(results)
     }
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for Node {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for Node {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

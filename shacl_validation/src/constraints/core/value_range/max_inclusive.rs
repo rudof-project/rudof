@@ -11,7 +11,7 @@ use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::validation_report::result::LazyValidationIterator;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
+use crate::ValueNodes;
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 pub(crate) struct MaxInclusive<S: SRDFBasic> {
@@ -27,44 +27,46 @@ impl<S: SRDFBasic> MaxInclusive<S> {
 }
 
 impl<S: SRDF> DefaultConstraintComponent<S> for MaxInclusive<S> {
-    fn evaluate_default<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
+    fn evaluate_default(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
         unimplemented!()
     }
 }
 
 impl<S: QuerySRDF> SparqlConstraintComponent<S> for MaxInclusive<S> {
-    fn evaluate_sparql<'a>(
-        &'a self,
-        validation_context: &'a ValidationContext<'a, S>,
-        evaluation_context: EvaluationContext<'a>,
-        value_nodes: &'a ValueNodes<S>,
-    ) -> LazyValidationIterator<'a, S> {
-        let results = value_nodes.filter_map(move |(focus_node, value_node)| {
-            let query = formatdoc! {
-                " ASK {{ FILTER ({} > {}) }} ",
-                value_node, self.max_inclusive
-            };
+    fn evaluate_sparql(
+        &self,
+        validation_context: &ValidationContext<S>,
+        evaluation_context: EvaluationContext,
+        value_nodes: &ValueNodes<S>,
+    ) -> LazyValidationIterator<'_, S> {
+        let results = value_nodes
+            .iter()
+            .filter_map(move |(focus_node, value_node)| {
+                let query = formatdoc! {
+                    " ASK {{ FILTER ({} > {}) }} ",
+                    value_node, self.max_inclusive
+                };
 
-            let ask = match validation_context.store().query_ask(&query) {
-                Ok(ask) => ask,
-                Err(_) => return None,
-            };
+                let ask = match validation_context.store().query_ask(&query) {
+                    Ok(ask) => ask,
+                    Err(_) => return None,
+                };
 
-            if !ask {
-                Some(ValidationResult::new(
-                    focus_node,
-                    &evaluation_context,
-                    Some(value_node),
-                ))
-            } else {
-                None
-            }
-        });
+                if !ask {
+                    Some(ValidationResult::new(
+                        focus_node,
+                        &evaluation_context,
+                        Some(value_node),
+                    ))
+                } else {
+                    None
+                }
+            });
 
         LazyValidationIterator::new(results)
     }

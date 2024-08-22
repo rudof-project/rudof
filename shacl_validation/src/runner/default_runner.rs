@@ -10,10 +10,10 @@ use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::srdf::get_objects_for;
 use crate::helper::srdf::get_subjects_for;
-use crate::targets::Targets;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::LazyValidationIterator;
-use crate::value_nodes::ValueNodes;
+use crate::Targets;
+use crate::ValueNodes;
 
 use super::ValidatorRunner;
 
@@ -27,7 +27,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ValidateError> {
         let component: Box<dyn DefaultConstraintComponent<S>> =
-            evaluation_context.component().to_owned().into();
+            evaluation_context.component().into();
         Ok(component.evaluate_default(validation_context, evaluation_context, value_nodes))
     }
 
@@ -37,7 +37,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
-            Ok(Targets::new(std::iter::once(node)))
+            Ok(Targets::new(std::iter::once(node.clone())))
         }
     }
 
@@ -51,9 +51,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let targets = subjects
-            .into_iter()
-            .map(|subject| &S::subject_as_term(&subject));
+        let targets = subjects.iter().map(|subject| S::subject_as_term(subject));
 
         Ok(Targets::new(targets))
     }
@@ -69,8 +67,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         };
 
         let targets = triples
-            .into_iter()
-            .map(|triple| &S::subject_as_term(&triple.subj()));
+            .iter()
+            .map(|triple| S::subject_as_term(&triple.subj()));
 
         Ok(Targets::new(targets))
     }
@@ -81,7 +79,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let targets = triples.iter().map(|triple| &triple.obj());
+        let targets = triples.into_iter().map(|triple| triple.obj());
 
         Ok(Targets::new(targets))
     }
@@ -106,14 +104,14 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
 
             let subclass_targets =
                 get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape)?
-                    .iter()
+                    .into_iter()
                     .flat_map(move |subclass| {
                         get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
-                            .iter()
+                            .into_iter()
                             .flatten()
                     });
 
-            let targets = actual_class_nodes.iter().chain(subclass_targets);
+            let targets = actual_class_nodes.into_iter().chain(subclass_targets);
 
             Ok(Targets::new(targets))
         } else {
@@ -129,7 +127,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
         Ok(Targets::new(
-            get_objects_for(store, focus_node, predicate)?.iter(),
+            get_objects_for(store, focus_node, predicate)?.into_iter(),
         ))
     }
 
