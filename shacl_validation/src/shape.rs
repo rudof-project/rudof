@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use shacl_ast::component::Component;
 use shacl_ast::node_shape::NodeShape;
 use shacl_ast::property_shape::PropertyShape;
@@ -59,13 +61,20 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
 
         let runner = self.validation_context.runner();
         let validation_context = self.validation_context;
+        let mut unique_components = HashSet::new();
 
         // Mover la creación del contexto fuera del cierre
         let contexts: Vec<_> = self
             .shape
             .components()
             .iter()
-            .map(|component| EvaluationContext::new(component, self.shape))
+            .filter_map(|component| {
+                if unique_components.insert(component.clone()) {
+                    Some(EvaluationContext::new(component, self.shape))
+                } else {
+                    None
+                }
+            })
             .collect();
 
         let evaluated_components = contexts.into_iter().flat_map(move |context| {
