@@ -41,5 +41,5 @@ pub enum ValidateError {
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
     #[error("Not yet implemented")]
-    Unimplemented,
+    NotImplemented,
 }

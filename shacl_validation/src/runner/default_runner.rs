@@ -137,7 +137,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn sequence(
@@ -147,7 +147,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn inverse(
@@ -157,7 +157,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_more(
@@ -167,7 +167,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn one_or_more(
@@ -177,7 +177,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_one(
@@ -187,6 +187,6 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 }

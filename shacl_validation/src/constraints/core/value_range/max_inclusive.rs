@@ -34,7 +34,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxInclusive<S> {
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
-        unimplemented!()
+        Err(ConstraintError::NotImplemented)
     }
 }
 

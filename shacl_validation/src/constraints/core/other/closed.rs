@@ -43,7 +43,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Closed {
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
-        unimplemented!()
+        Err(ConstraintError::NotImplemented)
     }
 }
 

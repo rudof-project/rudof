@@ -44,7 +44,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
 
         select(store, query, "this")?;
 
-        unimplemented!();
+        Err(ValidateError::NotImplemented)
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<Targets<S>, ValidateError> {
@@ -64,7 +64,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
 
         select(store, query, "this")?;
 
-        unimplemented!();
+        Err(ValidateError::NotImplemented)
     }
 
     fn target_subject_of(
@@ -81,7 +81,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn target_object_of(&self, store: &S, predicate: &S::IRI) -> Result<Targets<S>, ValidateError> {
@@ -94,7 +94,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn implicit_target_class(
@@ -102,7 +102,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         store: &S,
         shape: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn predicate(
@@ -112,7 +112,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn alternative(
@@ -122,7 +122,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn sequence(
@@ -132,7 +132,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn inverse(
@@ -142,7 +142,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_more(
@@ -152,7 +152,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn one_or_more(
@@ -162,7 +162,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_one(
@@ -172,6 +172,6 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::Unimplemented)
+        Err(ValidateError::NotImplemented)
     }
 }

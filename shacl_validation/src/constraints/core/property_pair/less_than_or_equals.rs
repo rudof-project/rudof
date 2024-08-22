@@ -33,7 +33,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LessThanOrEquals {
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
-        unimplemented!()
+        Err(ConstraintError::NotImplemented)
     }
 }
 
@@ -44,6 +44,6 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LessThanOrEquals {
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
     ) -> Result<LazyValidationIterator<S>, ConstraintError> {
-        unimplemented!()
+        Err(ConstraintError::NotImplemented)
     }
 }
