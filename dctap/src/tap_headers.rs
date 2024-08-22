@@ -16,6 +16,9 @@ pub struct TapHeaders {
     value_constraint: Option<usize>,
     value_constraint_type: Option<usize>,
     note: Option<usize>,
+    // The following headers are not part of DCTAP standard but they useful when there are cases of inheritance
+    extends_id: Option<usize>,
+    extends_label: Option<usize>,
 }
 
 impl TapHeaders {
@@ -36,6 +39,8 @@ impl TapHeaders {
         let mut value_constraint_type = None;
         let mut value_shape = None;
         let mut note = None;
+        let mut extends_id = None;
+        let mut extends_label = None;
 
         for (idx, field) in record.iter().enumerate() {
             match clean(field).as_str() {
@@ -51,6 +56,8 @@ impl TapHeaders {
                 "VALUECONSTRAINT" => value_constraint = Some(idx),
                 "VALUECONSTRAINTTYPE" => value_constraint_type = Some(idx),
                 "NOTE" => note = Some(idx),
+                "EXTENDSID" => extends_id = Some(idx),
+                "EXTENDSLABEL" => extends_label = Some(idx),
                 _ => {
                     debug!("Unknown field reading headers: {field}")
                 }
@@ -69,6 +76,8 @@ impl TapHeaders {
             value_constraint,
             value_constraint_type,
             note,
+            extends_id,
+            extends_label,
         })
     }
 
@@ -114,6 +123,14 @@ impl TapHeaders {
     }
     pub fn note(&self, rcd: &StringRecord) -> Option<String> {
         self.note.and_then(|idx| get_str_from_rcd(rcd, idx))
+    }
+
+    pub fn extends_id(&self, rcd: &StringRecord) -> Option<String> {
+        self.extends_id.and_then(|idx| get_str_from_rcd(rcd, idx))
+    }
+    pub fn extends_label(&self, rcd: &StringRecord) -> Option<String> {
+        self.extends_label
+            .and_then(|idx| get_str_from_rcd(rcd, idx))
     }
 }
 

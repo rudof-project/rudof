@@ -1,7 +1,8 @@
 use crate::tap_error::Result;
 use crate::{
-    BasicNodeType, DatatypeId, NodeType, PropertyId, ShapeId, TapConfig, TapError, TapReaderState,
-    TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
+    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
+    TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint,
+    ValueConstraintType,
 };
 use csv::{Position, Reader, StringRecord};
 use tracing::debug;
@@ -22,32 +23,36 @@ impl<R: io::Read> TapReader<R> {
             config: config.clone(),
         }
     }
+
     pub fn shapes(&mut self) -> ShapesIter<R> {
         ShapesIter::new(self)
     }
 
+    pub fn warnings(&self) -> impl Iterator<Item = &TapReaderWarning> {
+        self.state.warnings()
+    }
+
+    pub fn has_warnings(&self) -> bool {
+        self.state.has_warnings()
+    }
+
     pub fn read_shape(&mut self) -> Result<bool> {
         if let Some((record, pos)) = self.next_record()? {
-            debug!("Read shape: {pos:?}, record: {record:?}");
             let maybe_shape_id = self.get_shape_id(&record, pos.line())?;
             if let Some(shape_id) = &maybe_shape_id {
                 self.state.current_shape().set_shape_id(shape_id);
-                self.state.current_shape().set_start_line(pos.line())
+                self.state.current_shape().set_start_line(pos.line());
+                self.state.current_shape().reset_extends()
             }
-            if let Some(shapelabel) = self.get_shape_label(&record)? {
-                self.state
-                    .current_shape()
-                    .set_shape_label(shapelabel.as_str());
-            }
-
-            debug!("1st record2statement: {pos:?}, record: {record:?}");
+            self.read_shape_label(&record)?;
+            self.read_extends_id(&record, pos.line());
+            self.read_extends_label(&record, &pos);
             let maybe_statement = self.record2statement(&record, &pos)?;
             if let Some(statement) = maybe_statement {
                 self.state.current_shape().add_statement(statement);
             }
             self.reset_next_record();
             while let Some((record, pos)) = self.next_record_with_id(&maybe_shape_id)? {
-                debug!("In loop record2statement: {pos:?}, record: {record:?}");
                 let maybe_statement = self.record2statement(&record, &pos)?;
                 if let Some(statement) = maybe_statement {
                     self.state.current_shape().add_statement(statement);
@@ -61,7 +66,6 @@ impl<R: io::Read> TapReader<R> {
 
     fn next_record(&mut self) -> Result<Option<(StringRecord, Position)>> {
         if let Some((rcd, pos)) = &self.state.get_cached_next_record() {
-            debug!("Cached record {rcd:?}, at {pos:?}");
             Ok(Some(((*rcd).clone(), (*pos).clone())))
         } else {
             let mut record = StringRecord::new();
@@ -125,16 +129,65 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn get_property_id(&self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
+    fn read_shape_label(&mut self, rcd: &StringRecord) -> Result<()> {
+        if let Some(shapelabel) = self.get_shape_label(rcd)? {
+            self.state
+                .current_shape()
+                .set_shape_label(shapelabel.as_str());
+        };
+        Ok(())
+    }
+
+    fn get_property_id(&mut self, rcd: &StringRecord, pos: &Position) -> Option<PropertyId> {
         if let Some(str) = self.state.headers().property_id(rcd) {
-            let property_id = PropertyId::new(&str, pos.line());
-            Some(property_id)
+            if str.is_empty() {
+                if let Some(str_label) = self.state.headers().property_label(rcd) {
+                    if str_label.is_empty() {
+                        // TODO!, there is a property label and an empty property id
+                        // Generate new property based on property label?
+                        // If we don't do nothing here, it generates from empty_property_placeholder
+                        debug!(
+                            "Empty property id and empty property label at line {}",
+                            pos.line()
+                        );
+                        self.state
+                            .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
+                        return None;
+                    } else {
+                        debug!(
+                            "Empty property id with property label {str_label} at line {}",
+                            pos.line()
+                        );
+                    }
+                }
+            }
+            if let Some(placeholder) = self.config.get_property_placeholder(&str) {
+                self.generate_property_id(str.as_str(), &placeholder, pos)
+            } else {
+                let property_id = PropertyId::new(&str, pos.line());
+                Some(property_id)
+            }
         } else {
             None
         }
     }
 
-    fn record2statement(&self, rcd: &StringRecord, pos: &Position) -> Result<Option<TapStatement>> {
+    fn generate_property_id(
+        &mut self,
+        value: &str,
+        placeholder: &PlaceholderResolver,
+        pos: &Position,
+    ) -> Option<PropertyId> {
+        let id = self.state.placeholder_id(value);
+        let generated = placeholder.generate(id);
+        Some(PropertyId::new(generated.as_str(), pos.line()))
+    }
+
+    fn record2statement(
+        &mut self,
+        rcd: &StringRecord,
+        pos: &Position,
+    ) -> Result<Option<TapStatement>> {
         if let Some(property_id) = self.get_property_id(rcd, pos) {
             let mut statement = TapStatement::new(property_id);
             self.read_property_label(&mut statement, rcd);
@@ -154,7 +207,8 @@ impl<R: io::Read> TapReader<R> {
     fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
         if let Some(str) = self.state.headers().property_label(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
-                statement.set_property_label(clean_str);
+                let without_new_line = str::replace(clean_str, "\n", " ");
+                statement.set_property_label(without_new_line.as_str());
             }
         }
     }
@@ -163,6 +217,30 @@ impl<R: io::Read> TapReader<R> {
         if let Some(str) = self.state.headers().note(rcd) {
             if !str.is_empty() {
                 statement.set_note(&str);
+            }
+        }
+    }
+
+    fn read_extends_id(&mut self, rcd: &StringRecord, line: u64) {
+        if let Some(str) = self.state.headers().extends_id(rcd) {
+            if let Some(clean_str) = strip_whitespace(&str) {
+                let shape_id = ShapeId::new(clean_str, line);
+                self.state.current_shape().add_extends_id(&shape_id, line);
+            }
+        }
+    }
+
+    fn read_extends_label(&mut self, rcd: &StringRecord, pos: &Position) {
+        if let Some(str) = self.state.headers().extends_label(rcd) {
+            if !str.is_empty() {
+                match self
+                    .state
+                    .current_shape()
+                    .add_extends_label(&str, pos.line())
+                {
+                    Ok(()) => (),
+                    Err(warning) => self.state.add_warning(warning),
+                }
             }
         }
     }
@@ -236,7 +314,9 @@ impl<R: io::Read> TapReader<R> {
                 ValueConstraintType::Pattern => {
                     statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
                 }
-                _ => todo!(),
+                _ => {
+                    debug!("Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored")
+                }
             }
         };
         Ok(())
@@ -260,10 +340,13 @@ impl<R: io::Read> TapReader<R> {
                     "MINEXCLUSIVE" => Ok(ValueConstraintType::MinExclusive),
                     "MAXINCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
                     "MAXEXCLUSIVE" => Ok(ValueConstraintType::MaxExclusive),
-                    _ => Err(TapError::UnexpectedValueConstraintType {
-                        value: str.clone(),
-                        pos: pos.clone(),
-                    }),
+                    _ => {
+                        debug!("UnexpectedValueConstraintType: {str}");
+                        Ok(ValueConstraintType::Unknown {
+                            value: str.clone(),
+                            line: pos.line(),
+                        })
+                    }
                 }
             } else {
                 Ok(ValueConstraintType::default())
@@ -304,16 +387,17 @@ impl<R: io::Read> TapReader<R> {
     }
 }
 
-fn is_empty(str: &Option<ShapeId>) -> bool {
+/*fn is_empty(str: &Option<ShapeId>) -> bool {
     match str {
         None => true,
         Some(s) if s.is_empty() => true,
         _ => false,
     }
-}
+}*/
 
 fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
     match str.to_uppercase().as_str() {
+        "URI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
         "IRI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
         "BNODE" => Ok(NodeType::Basic(BasicNodeType::BNode)),
         "LITERAL" => Ok(NodeType::Basic(BasicNodeType::Literal)),
@@ -325,11 +409,19 @@ fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
 }
 
 fn same_shape_id(shape_id: &Option<ShapeId>, new_shape_id: Option<ShapeId>) -> bool {
-    is_empty(&new_shape_id) || new_shape_id == *shape_id
+    match (shape_id, new_shape_id) {
+        (None, None) => true,
+        (Some(_), None) => true,
+        (Some(s1), Some(s2)) => s1.str() == s2.str(),
+        (None, Some(_)) => false,
+    }
 }
 
 fn parse_boolean(str: &str, field: &str, pos: &Position) -> Result<bool> {
     match str.trim().to_uppercase().as_str() {
+        "" => Ok(false),
+        "YES" => Ok(true),
+        "NO" => Ok(false),
         "TRUE" => Ok(true),
         "FALSE" => Ok(false),
         "1" => Ok(true),

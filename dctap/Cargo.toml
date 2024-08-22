@@ -1,6 +1,6 @@
 [package]
 name = "dctap"
-version = "0.1.7"
+version = "0.1.16"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/dctap"
@@ -25,4 +25,4 @@ thiserror = "1"
 tracing = { workspace = true }
 
 [dev-dependencies]
-tracing-test = "0.1"
+tracing-test = "0.2.5"

@@ -1,6 +1,6 @@
 use std::io;
 
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 
@@ -11,7 +11,7 @@ pub enum ShEx2HtmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
     ShapeNotFound { iri: IriRef, schema: Schema },
 
-    #[error("No local ref for shape name: {name:?}")]
+    #[error("No local referece for shape name: {name:?}")]
     NoLocalRefName { name: Name },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
@@ -32,6 +32,12 @@ pub enum ShEx2HtmlError {
     SchemaError {
         #[from]
         err: SchemaJsonError,
+    },
+
+    #[error(transparent)]
+    PrefixMapError {
+        #[from]
+        err: PrefixMapError,
     },
 
     #[error(transparent)]

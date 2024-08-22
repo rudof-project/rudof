@@ -1,15 +1,17 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::TapError;
+use crate::{PlaceholderResolver, TapError};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct TapConfig {
-    delimiter: char,
-    quote: char,
-    flexible: bool,
-    picklist_delimiter: char,
+    delimiter: Option<char>,
+    quote: Option<char>,
+    flexible: Option<bool>,
+    picklist_delimiter: Option<char>,
+    property_placeholders: HashMap<String, PlaceholderResolver>,
+    empty_property_placeholder: Option<PlaceholderResolver>,
 }
 
 impl TapConfig {
@@ -29,29 +31,78 @@ impl TapConfig {
     }
 
     pub fn picklist_delimiter(&self) -> &char {
-        &self.picklist_delimiter
+        match &self.picklist_delimiter {
+            None => &'|',
+            Some(c) => c,
+        }
     }
 
     pub fn delimiter(&self) -> u8 {
-        self.delimiter as u8
+        match self.delimiter {
+            None => b',',
+            Some(c) => c as u8,
+        }
     }
 
     pub fn quote(&self) -> u8 {
-        self.quote as u8
+        match self.quote {
+            None => b'"',
+            Some(c) => c as u8,
+        }
     }
 
     pub fn flexible(&self) -> bool {
-        self.flexible
+        self.flexible.unwrap_or(true)
+    }
+
+    pub fn with_property_placeholders(
+        mut self,
+        property_place_holders: HashMap<String, PlaceholderResolver>,
+    ) -> Self {
+        self.property_placeholders = property_place_holders;
+        self
+    }
+
+    pub fn with_empty_property_placeholder(mut self, placeholder: PlaceholderResolver) -> Self {
+        self.empty_property_placeholder = Some(placeholder);
+        self
+    }
+
+    pub fn get_property_placeholder(&self, str: &str) -> Option<PlaceholderResolver> {
+        if str.is_empty() {
+            self.empty_property_placeholder.clone()
+        } else {
+            self.property_placeholders.get(str).cloned()
+        }
     }
 }
 
-impl Default for TapConfig {
-    fn default() -> Self {
-        Self {
-            picklist_delimiter: '|',
-            delimiter: ',',
-            flexible: true,
-            quote: '"',
-        }
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    // use tracing::debug;
+    // use tracing_test::traced_test;
+
+    use crate::PlaceholderResolver;
+
+    use super::TapConfig;
+
+    // #[traced_test]
+    #[test]
+    fn test_config() {
+        let key = "nalt";
+        let resolver = PlaceholderResolver::stem("pending");
+        let mut ph = HashMap::new();
+        ph.insert(key.to_string(), resolver.clone());
+        let config = TapConfig::default()
+            .with_property_placeholders(ph)
+            .with_empty_property_placeholder(resolver.clone());
+        // let yaml = serde_yml::to_string(&config).unwrap();
+        // debug!("YAML\n{yaml}");
+        assert_eq!(
+            config.get_property_placeholder("nalt"),
+            Some(resolver.clone())
+        );
+        assert_eq!(config.get_property_placeholder(""), Some(resolver.clone()))
     }
 }

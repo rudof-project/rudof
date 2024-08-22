@@ -1,10 +1,11 @@
-use super::{Name, UmlEntry};
+use super::{Name, NodeId, UmlEntry};
 
 #[derive(Debug, PartialEq)]
 
 pub struct UmlClass {
     name: Name,
     entries: Vec<UmlEntry>,
+    extends: Vec<NodeId>,
 }
 
 impl UmlClass {
@@ -12,6 +13,7 @@ impl UmlClass {
         UmlClass {
             name,
             entries: Vec::new(),
+            extends: Vec::new(),
         }
     }
 
@@ -19,8 +21,16 @@ impl UmlClass {
         self.entries.push(entry)
     }
 
+    pub fn add_extends(&mut self, node: &NodeId) {
+        self.extends.push(*node)
+    }
+
     pub fn name(&self) -> String {
         self.name.name()
+    }
+
+    pub fn label(&self) -> Option<String> {
+        self.name.label()
     }
 
     pub fn href(&self) -> Option<String> {

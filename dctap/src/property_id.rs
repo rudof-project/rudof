@@ -11,7 +11,7 @@ pub struct PropertyId {
 impl PropertyId {
     pub fn new(str: &str, line: u64) -> PropertyId {
         PropertyId {
-            str: str.to_string(),
+            str: replace_newline_by_space(str),
             line,
         }
     }
@@ -30,4 +30,8 @@ impl Display for PropertyId {
         write!(f, "{}", self.str)?;
         Ok(())
     }
+}
+
+fn replace_newline_by_space(str: &str) -> String {
+    str::replace(str, "\n", " ")
 }

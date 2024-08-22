@@ -1,13 +1,14 @@
 use std::{fmt, result};
 
+use iri_s::IriS;
 use prefixmap::IriRef;
+use prefixmap::{Deref, DerefError};
 use serde::ser::SerializeMap;
 use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
-
-use prefixmap::{Deref, DerefError};
+use srdf::RDFS_LABEL_STR;
 
 use super::object_value::ObjectValue;
 
@@ -24,7 +25,7 @@ impl Annotation {
 
     pub fn rdfs_label(str: &str) -> Annotation {
         Annotation {
-            predicate: IriRef::prefixed("rdfs", "label"),
+            predicate: IriRef::iri(IriS::new_unchecked(RDFS_LABEL_STR)),
             object: ObjectValue::str(str),
         }
     }
@@ -34,6 +35,14 @@ impl Annotation {
             predicate: IriRef::prefixed("rdfs", "comment"),
             object: ObjectValue::str(str),
         }
+    }
+
+    pub fn predicate(&self) -> IriRef {
+        self.predicate.clone()
+    }
+
+    pub fn object(&self) -> ObjectValue {
+        self.object.clone()
     }
 }
 

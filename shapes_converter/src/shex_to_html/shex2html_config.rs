@@ -3,26 +3,38 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
+
+pub const DEFAULT_COLOR_PROPERTY_NAME: &str = "blue";
+pub const DEFAULT_LANDING_PAGE_NAME: &str = "index.html";
+pub const DEFAULT_SHAPE_TEMPLATE_NAME: &str = "shape.html";
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2HtmlConfig {
     pub landing_page_name: String,
+    pub shape_template_name: String,
     pub css_file_name: Option<String>,
     pub title: String,
     pub target_folder: Option<PathBuf>,
     pub color_property_name: Option<String>,
+    pub replace_iri_by_label: Option<bool>,
+    pub annotation_label: Vec<IriS>,
 }
 
 impl Default for ShEx2HtmlConfig {
     fn default() -> Self {
         Self {
             title: "Generated shapes".to_string(),
-            landing_page_name: "index.html".to_string(),
+            landing_page_name: DEFAULT_LANDING_PAGE_NAME.to_string(),
+            shape_template_name: DEFAULT_SHAPE_TEMPLATE_NAME.to_string(),
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
-            color_property_name: Some("blue".to_string()),
+            color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
+            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            replace_iri_by_label: None,
         }
     }
 }

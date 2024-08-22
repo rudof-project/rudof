@@ -218,11 +218,8 @@ mod tests {
     fn test_pop() {
         let mut pending = Pending::from(vec![('a', vec![1, 2]), ('b', vec![3])]);
         let (v1, r1) = pending.pop().unwrap();
-        println!("After pop1: {pending:?}...popped: {v1:?},{r1:?}");
         let (v2, r2) = pending.pop().unwrap();
-        println!("After pop2: {pending:?}...popped: {v2:?},{r2:?}");
         let (v3, r3) = pending.pop().unwrap();
-        println!("After pop3: {pending:?}...popped: {v3:?},{r3:?}");
         let final_pop = pending.pop();
         assert_eq!(final_pop, None);
         let mut new_pending = Pending::new();

@@ -5,10 +5,11 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    value_set_value::ValueSetValue, BNode, NodeConstraint, NodeKind, NumericFacet, Pattern, Schema,
-    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+    value_set_value::ValueSetValue, Annotation, BNode, NodeConstraint, NodeKind, NumericFacet,
+    ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet,
+    TripleExpr, XsFacet,
 };
-use srdf::numeric_literal::NumericLiteral;
+use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, marker::PhantomData};
 
 use crate::pp_object_value;
@@ -33,6 +34,7 @@ use crate::pp_object_value;
 #[derive(Debug, Clone)]
 pub struct ShExFormatter {
     keyword_color: Option<Color>,
+    string_color: Option<Color>,
     prefix_color: Option<Color>,
     semicolon_color: Option<Color>,
     localname_color: Option<Color>,
@@ -63,8 +65,14 @@ impl ShExFormatter {
         self.prefix_color = color;
         self
     }
+
     pub fn with_semicolon_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.semicolon_color = color;
+        self
+    }
+
+    pub fn with_string_color(mut self, color: Option<Color>) -> ShExFormatter {
+        self.string_color = color;
         self
     }
 
@@ -77,6 +85,7 @@ impl ShExFormatter {
         self.with_keyword_color(None)
             .with_localname_color(None)
             .with_prefix_color(None)
+            .with_string_color(None)
             .with_semicolon_color(None)
     }
 
@@ -84,6 +93,7 @@ impl ShExFormatter {
         let arena = Arena::<()>::new();
         let mut printer = ShExCompactPrinter::new(schema, &arena);
         printer = printer.with_keyword_color(self.keyword_color);
+        printer = printer.with_string_color(self.string_color);
         printer = printer.with_qualify_localname_color(self.localname_color);
         printer = printer.with_qualify_prefix_color(self.prefix_color);
         printer = printer.with_qualify_semicolon_color(self.semicolon_color);
@@ -97,6 +107,7 @@ impl Default for ShExFormatter {
             keyword_color: DEFAULT_KEYWORD_COLOR,
             prefix_color: DEFAULT_QUALIFY_ALIAS_COLOR,
             semicolon_color: DEFAULT_QUALIFY_SEMICOLON_COLOR,
+            string_color: DEFAULT_STRING_COLOR,
             localname_color: DEFAULT_QUALIFY_LOCALNAME_COLOR,
         }
     }
@@ -109,6 +120,7 @@ where
     width: usize,
     indent: isize,
     keyword_color: Option<Color>,
+    string_color: Option<Color>,
     schema: &'a Schema,
     doc: &'a Arena<'a, A>,
     marker: PhantomData<A>,
@@ -121,6 +133,7 @@ const DEFAULT_QUALIFY_ALIAS_COLOR: Option<Color> = Some(Color::Blue);
 const DEFAULT_QUALIFY_SEMICOLON_COLOR: Option<Color> = Some(Color::BrightGreen);
 const DEFAULT_QUALIFY_LOCALNAME_COLOR: Option<Color> = Some(Color::Black);
 const DEFAULT_KEYWORD_COLOR: Option<Color> = Some(Color::BrightBlue);
+const DEFAULT_STRING_COLOR: Option<Color> = Some(Color::Red);
 
 impl<'a, A> ShExCompactPrinter<'a, A>
 where
@@ -131,6 +144,7 @@ where
             width: DEFAULT_WIDTH,
             indent: DEFAULT_INDENT,
             keyword_color: DEFAULT_KEYWORD_COLOR,
+            string_color: DEFAULT_STRING_COLOR,
             schema,
             doc,
             marker: PhantomData,
@@ -145,6 +159,11 @@ where
 
     pub fn with_keyword_color(mut self, color: Option<Color>) -> Self {
         self.keyword_color = color;
+        self
+    }
+
+    pub fn with_string_color(mut self, color: Option<Color>) -> Self {
+        self.string_color = color;
         self
     }
 
@@ -253,17 +272,56 @@ where
         } else {
             self.doc.nil()
         };
-        let extra = self.opt_pp(s.extra.clone(), self.pp_extra());
+        let extra = self.opt_pp1(&s.extra, self.pp_extra());
+        let extends = self.opt_pp1(&s.extends, self.pp_extends());
+        let annotations = self.opt_pp1(&s.annotations, self.pp_annotations());
         closed
             .append(extra)
-            .append(self.space())
+            .append(extends)
             .append(self.doc.text("{"))
             .append(self.doc.line())
             .append(self.opt_pp(s.triple_expr(), self.pp_triple_expr()))
             .nest(self.indent)
             .append(self.doc.line())
             .append(self.doc.text("}"))
+            .append(annotations)
             .group()
+    }
+
+    fn pp_extends(
+        &self,
+    ) -> impl Fn(&Vec<ShapeExprLabel>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
+    {
+        move |vs, printer| {
+            let mut docs = Vec::new();
+            for v in vs {
+                docs.push(printer.pp_reference(v))
+            }
+            printer
+                .doc
+                .nil()
+                .append(printer.keyword("EXTENDS"))
+                .append(printer.space())
+                .append(printer.doc.intersperse(docs, printer.doc.space()))
+                .append(printer.space())
+        }
+    }
+
+    fn pp_annotations(
+        &self,
+    ) -> impl Fn(&Vec<Annotation>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
+    {
+        move |vs, printer| {
+            let mut docs = Vec::new();
+            for a in vs {
+                docs.push(printer.pp_annotation(a))
+            }
+            printer
+                .doc
+                .nil()
+                .append(printer.space())
+                .append(printer.doc.intersperse(docs, printer.doc.softline()))
+        }
     }
 
     fn pp_triple_expr(
@@ -290,6 +348,7 @@ where
                 min,
                 max,
                 sem_acts,
+                annotations,
                 ..
             } => {
                 let doc_expr = match value_expr {
@@ -305,7 +364,8 @@ where
                     .append(self.doc.space())
                     .append(doc_expr)
                     .append(self.pp_cardinality(min, max))
-                    .append(self.opt_pp((*sem_acts).clone(), self.pp_actions()))
+                    .append(self.opt_pp1(sem_acts, self.pp_actions()))
+                    .append(self.opt_pp1(annotations, self.pp_annotations()))
             }
             TripleExpr::TripleExprRef(_) => todo!(),
         }
@@ -378,6 +438,57 @@ where
                 .nil()
                 .append(printer.keyword("EXTRA "))
                 .append(printer.doc.intersperse(docs, printer.doc.space()))
+        }
+    }
+
+    fn pp_annotation(&self, annotation: &Annotation) -> DocBuilder<'a, Arena<'a, A>, A> {
+        let predicate = self.pp_iri_ref(&annotation.predicate());
+        let object = self.pp_object_value(&annotation.object());
+        self.keyword("//")
+            .append(self.space())
+            .append(predicate)
+            .append(self.space())
+            .append(object)
+    }
+
+    fn pp_object_value(&self, object_value: &ObjectValue) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match object_value {
+            ObjectValue::IriRef(iri_ref) => self.pp_iri_ref(iri_ref),
+            ObjectValue::Literal(lit) => self.pp_literal(lit),
+        }
+    }
+
+    fn pp_literal(&self, literal: &Literal) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match literal {
+            Literal::StringLiteral { lexical_form, lang } => {
+                self.pp_string_literal(lexical_form, lang)
+            }
+            Literal::DatatypeLiteral {
+                lexical_form: _,
+                datatype: _,
+            } => todo!(),
+            Literal::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            Literal::BooleanLiteral(_) => todo!(),
+        }
+    }
+
+    fn pp_string_literal(
+        &self,
+        lexical_form: &str,
+        lang: &Option<Lang>,
+    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match lang {
+            Some(_) => todo!(),
+            None => self.pp_string(lexical_form),
+        }
+    }
+
+    fn pp_string(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
+        let s = format!("\"{str}\"");
+        if let Some(color) = self.string_color {
+            self.doc.text(s.as_str().color(color).to_string())
+        } else {
+            self.doc.text(s)
         }
     }
 
@@ -525,6 +636,10 @@ where
         }
     }
 
+    fn pp_reference(&self, ref_: &ShapeExprLabel) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text("@").append(self.pp_label(ref_))
+    }
+
     fn pp_numeric_literal(&self, value: &NumericLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match value {
             NumericLiteral::Integer(n) => self.pp_isize(n),
@@ -659,6 +774,17 @@ where
     fn opt_pp<V>(
         &self,
         maybe: Option<V>,
+        pp: impl Fn(&V, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>,
+    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match maybe {
+            None => self.doc.nil(),
+            Some(ref v) => pp(v, self),
+        }
+    }
+
+    fn opt_pp1<V>(
+        &self,
+        maybe: &Option<V>,
         pp: impl Fn(&V, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>,
     ) -> DocBuilder<'a, Arena<'a, A>, A> {
         match maybe {

@@ -1,5 +1,7 @@
-use crate::tap_headers::TapHeaders;
+use std::collections::{hash_map::Entry, HashMap};
+
 use crate::TapShape;
+use crate::{tap_headers::TapHeaders, TapReaderWarning};
 use csv::{Position, StringRecord};
 
 #[derive(Debug)]
@@ -7,7 +9,8 @@ pub struct TapReaderState {
     current_shape: TapShape,
     cached_next_record: Option<(StringRecord, Position)>,
     headers: TapHeaders,
-    _position: Position,
+    placeholder_ids: HashMap<String, u64>,
+    warnings: Vec<TapReaderWarning>,
 }
 
 impl TapReaderState {
@@ -16,7 +19,8 @@ impl TapReaderState {
             current_shape: TapShape::new(0),
             cached_next_record: None,
             headers: TapHeaders::new(),
-            _position: Position::new(),
+            placeholder_ids: HashMap::new(),
+            warnings: Vec::new(),
         }
     }
 
@@ -49,6 +53,34 @@ impl TapReaderState {
         } else {
             None
         }
+    }
+
+    // Get a value for placeholder_id and increment its counter
+    pub fn placeholder_id(&mut self, str: &str) -> u64 {
+        match self.placeholder_ids.entry(str.to_string()) {
+            Entry::Occupied(mut r) => {
+                let v = r.get_mut();
+                *v += 1;
+                *v
+            }
+            Entry::Vacant(v) => {
+                let initial = 0;
+                v.insert(initial);
+                initial
+            }
+        }
+    }
+
+    pub fn warnings(&self) -> impl Iterator<Item = &TapReaderWarning> {
+        self.warnings.iter()
+    }
+
+    pub fn has_warnings(&self) -> bool {
+        !self.warnings.is_empty()
+    }
+
+    pub fn add_warning(&mut self, warning: TapReaderWarning) {
+        self.warnings.push(warning)
     }
 }
 

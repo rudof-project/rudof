@@ -52,6 +52,14 @@ impl Shape {
         self
     }
 
+    pub fn annotations(&self) -> Option<impl Iterator<Item = &Annotation>> {
+        self.annotations.as_ref().map(|anns| anns.iter())
+    }
+
+    pub fn has_annotations(&self) -> bool {
+        self.annotations.is_some()
+    }
+
     pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {
         self.annotations = annotations;
         self
@@ -68,6 +76,13 @@ impl Shape {
     pub fn with_extends(mut self, extends: Option<Vec<ShapeExprLabel>>) -> Self {
         self.extends = extends;
         self
+    }
+
+    pub fn add_extend(&mut self, extend: ShapeExprLabel) {
+        match &mut self.extends {
+            None => self.extends = Some(vec![extend]),
+            Some(ref mut es) => es.push(extend),
+        }
     }
 
     pub fn is_closed(&self) -> bool {

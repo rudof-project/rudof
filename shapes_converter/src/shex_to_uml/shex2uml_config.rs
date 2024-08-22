@@ -4,14 +4,21 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
+/// Name of Environment variable where we search for plantuml JAR
 pub const PLANTUML: &str = "PLANTUML";
+
+pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
+    pub annotation_label: Vec<IriS>,
+    pub replace_iri_by_label: Option<bool>,
 }
 
 impl ShEx2UmlConfig {
@@ -20,7 +27,16 @@ impl ShEx2UmlConfig {
             Ok(value) => Some(Path::new(value.as_str()).to_path_buf()),
             Err(_) => None,
         };
-        Self { plantuml_path }
+        Self {
+            plantuml_path,
+            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            replace_iri_by_label: None,
+        }
+    }
+
+    pub fn replace_iri_by_label(&self) -> bool {
+        self.replace_iri_by_label
+            .unwrap_or(DEFAULT_REPLACE_IRI_BY_LABEL)
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {

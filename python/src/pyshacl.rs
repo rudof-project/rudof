@@ -12,6 +12,13 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::str::FromStr;
 
+#[pymodule]
+pub fn shacl(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(validate, module)?)?;
+    Ok(())
+}
+
 #[pyfunction]
 #[pyo3(signature = (input, output))]
 pub fn parse(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
@@ -67,6 +74,7 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
+<<<<<<< HEAD:python/src/shacl.rs
         let schema = match ShaclDataManager::load(shapes, shapes_format, None) {
             Ok(schema) => schema,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
@@ -77,6 +85,13 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };
 
+=======
+        let _ = match validator.validate(shapes, shapes_format) {
+            Ok(report) => report,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
+>>>>>>> 80757654842b929b341e1f836a4253c9fe8c1a87:python/src/pyshacl.rs
         Ok(())
     })
 }

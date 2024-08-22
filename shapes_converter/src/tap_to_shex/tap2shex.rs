@@ -2,7 +2,7 @@
 //!
 //!
 
-use dctap::{DCTap, DatatypeId, PropertyId, ShapeId, TapShape, TapStatement};
+use dctap::{DCTap, DatatypeId, ExtendsId, PropertyId, ShapeId, TapShape, TapStatement};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::{
@@ -67,6 +67,16 @@ fn shape_id2iri<'a>(
 
 // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
 #[allow(clippy::result_large_err)]
+fn extends_id2iri<'a>(
+    extends_id: &'a ExtendsId,
+    config: &'a Tap2ShExConfig,
+) -> Result<IriS, Tap2ShExError> {
+    let iri = config.resolve_iri(extends_id.str(), extends_id.line())?;
+    Ok(iri)
+}
+
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn tapshape_to_shape_expr(
     tap_shape: &TapShape,
     config: &Tap2ShExConfig,
@@ -76,14 +86,19 @@ fn tapshape_to_shape_expr(
         let te = statement_to_triple_expr(statement, config)?;
         tes.push(te)
     }
-    let shape = if tes.is_empty() {
+    let mut shape = if tes.is_empty() {
         Shape::new(None, None, None)
     } else {
         let te = TripleExpr::each_of(tes);
         Shape::new(None, None, Some(te))
     };
-    let se = ShapeExpr::shape(shape);
-    Ok(se)
+    if tap_shape.has_extends() {
+        for e in tap_shape.extends() {
+            let iri = extends_id2iri(e, config)?;
+            shape.add_extend(ShapeExprLabel::iri(iri))
+        }
+    }
+    Ok(ShapeExpr::shape(shape))
 }
 
 // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?

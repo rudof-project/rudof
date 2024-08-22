@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::tap_statement::TapStatement;
-use crate::ShapeId;
+use crate::{tap_statement::TapStatement, ExtendsId};
+use crate::{ShapeId, TapReaderWarning};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
@@ -14,6 +14,8 @@ pub struct TapShape {
 
     statements: Vec<TapStatement>,
 
+    extends: Vec<ExtendsId>,
+
     start_line: u64,
 }
 
@@ -24,6 +26,7 @@ impl TapShape {
             shape_label: Option::None,
             statements: Vec::new(),
             start_line: line,
+            extends: Vec::new(),
         }
     }
 
@@ -51,6 +54,26 @@ impl TapShape {
         self.statements = Vec::new();
     }
 
+    pub fn add_extends_label(&mut self, label: &str, line: u64) -> Result<(), TapReaderWarning> {
+        if let Some(e) = self.extends.get_mut(0) {
+            e.add_label(label);
+            Ok(())
+        } else {
+            Err(TapReaderWarning::ExtendsLabelWithoutExtendsId {
+                label: label.to_string(),
+                line,
+            })
+        }
+    }
+
+    pub fn add_extends_id(&mut self, shape_id: &ShapeId, line: u64) {
+        self.extends.push(ExtendsId::new(shape_id.str(), line));
+    }
+
+    pub fn reset_extends(&mut self) {
+        self.extends.clear();
+    }
+
     pub fn add_statement(&mut self, statement: TapStatement) {
         self.statements.push(statement.clone());
     }
@@ -62,16 +85,31 @@ impl TapShape {
     pub fn start_line(&self) -> u64 {
         self.start_line
     }
+
+    pub fn has_extends(&self) -> bool {
+        !self.extends.is_empty()
+    }
+
+    pub fn extends(&self) -> impl Iterator<Item = &ExtendsId> {
+        self.extends.iter()
+    }
 }
 
 impl Display for TapShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(
+        write!(
             f,
-            "Shape({}) {}",
+            "Shape({}) {} ",
             self.shape_id().unwrap_or_else(|| ShapeId::new("", 0)),
             self.shape_label().unwrap_or_default()
         )?;
+        if !self.extends.is_empty() {
+            write!(f, "extends")?;
+            for e in self.extends.iter() {
+                write!(f, " {e}")?;
+            }
+        }
+        writeln!(f)?;
         for statement in self.statements() {
             writeln!(f, " {statement}")?;
         }

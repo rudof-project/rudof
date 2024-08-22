@@ -1,15 +1,15 @@
 [package]
 name = "shacl_validation"
 version = "0.1.12"
-edition.workspace = true
+readme = "README.md"
 license.workspace = true
 authors.workspace = true
 description.workspace = true
 repository.workspace = true
 homepage.workspace = true
-readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
+edition.workspace = true
 
 [dependencies]
 srdf = { workspace = true }
