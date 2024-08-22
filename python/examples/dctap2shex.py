@@ -1,6 +1,11 @@
 from pyrudof import convert
 
-print("Reading file from examples/simple.csv and generating output in target/simple.shex")
 
-convert.dctap2shex("examples/simple.csv", "target/simple.shex")
+str = """shapeId,shapeLabel,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
+Person,Shape or person,name,true,false,xsd:string, 
+,,birthdate,false,false,xsd:date"""
+
+result = convert.dctap2shex(str)
+
+print(f"Result: {result}")
 

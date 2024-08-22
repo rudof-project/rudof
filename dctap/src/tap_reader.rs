@@ -409,9 +409,10 @@ fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
 }
 
 fn same_shape_id(shape_id: &Option<ShapeId>, new_shape_id: Option<ShapeId>) -> bool {
-    match (shape_id, new_shape_id) {
+    match (shape_id, &new_shape_id) {
         (None, None) => true,
         (Some(_), None) => true,
+        (Some(_), Some(s2)) if s2.str().is_empty() => true,
         (Some(s1), Some(s2)) => s1.str() == s2.str(),
         (None, Some(_)) => false,
     }
@@ -486,7 +487,7 @@ mod tests {
     use crate::{TapReaderBuilder, TapShape};
 
     use super::*;
-    // use tracing_test::traced_test;
+    use tracing_test::traced_test;
 
     #[test]
     fn test_simple() {
@@ -505,6 +506,7 @@ Person,PersonLabel,knows,KnowsLabel";
         assert_eq!(next_shape, expected_shape);
     }
 
+    #[traced_test]
     #[test]
     fn test_2lines() {
         let data = "\

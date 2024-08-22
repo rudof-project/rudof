@@ -2,6 +2,14 @@
 
 ## Current changes without release yet
 
+## [0.1.17] - 2024-08-
+
+- Repaired bug in DCTAP when a row has an empty shape_id and it was creating an empty shape instead of assuming the previous one
+
+## [0.1.16] - 2024-08-22
+
+- This release only changes the name of the python bindings from rudof to pyrudof and adds a first submodule convert for checking if it works
+
 ## [0.1.15] - 2024-08-19
 
 - Solves issue #115 adding annotations to the ShEx compact printer

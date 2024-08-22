@@ -46,10 +46,10 @@ impl DCTap {
         Ok(dctap)
     }
 
-    pub fn from_reader<R: io::Read>(reader: R) -> Result<DCTap, TapError> {
+    pub fn from_reader<R: io::Read>(reader: R, config: &TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
-        let mut tap_reader = TapReaderBuilder::from_reader(reader, &TapConfig::default())?;
+        let mut tap_reader = TapReaderBuilder::from_reader(reader, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
@@ -83,7 +83,7 @@ mod tests {
 shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,knowsLabel
 ";
-        let dctap = DCTap::from_reader(data.as_bytes()).unwrap();
+        let dctap = DCTap::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");

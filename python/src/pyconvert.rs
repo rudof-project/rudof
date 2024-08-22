@@ -4,10 +4,6 @@ use pyo3::prelude::*;
 use shapes_converter::{Tap2ShEx, Tap2ShExConfig};
 use shex_compact::ShExFormatter;
 use std::fmt::{Display, Formatter};
-use std::fs::File;
-use std::io::BufWriter;
-use std::io::Write;
-use std::path::Path;
 use std::str::FromStr;
 
 #[pymodule]
@@ -17,11 +13,11 @@ pub fn convert(module: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 #[pyfunction]
-#[pyo3(signature = (input, output))]
-pub fn dctap2shex(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
+#[pyo3(signature = (input))]
+pub fn dctap2shex(input: &str, py: Python<'_>) -> PyResult<String> {
     py.allow_threads(|| {
-        let input = Path::new(input);
-        let dctap = DCTap::from_path(input, &TapConfig::default())
+        let reader = input.as_bytes();
+        let dctap = DCTap::from_reader(reader, &TapConfig::default())
             .map_err(|e| PyValueError::new_err(format!("Error reading DCTAP {e}")))?;
         let converter = Tap2ShEx::new(&Tap2ShExConfig::default());
         let schema = converter
@@ -29,19 +25,7 @@ pub fn dctap2shex(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
             .map_err(|e| PyValueError::new_err(format!("Error converting DCTAP to ShEx: {e}")))?;
         let formatter = ShExFormatter::default().without_colors();
         let str = formatter.format_schema(&schema);
-
-        let output = Path::new(output);
-
-        let mut writer = match File::create(output) {
-            Ok(file) => BufWriter::new(file),
-            Err(_) => return Err(PyValueError::new_err("Output file could not be created")),
-        };
-
-        if let Err(error) = writeln!(writer, "{str}") {
-            return Err(PyValueError::new_err(error.to_string()));
-        }
-
-        Ok(())
+        Ok(str)
     })
 }
 
