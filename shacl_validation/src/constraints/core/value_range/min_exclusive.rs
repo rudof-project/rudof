@@ -5,6 +5,7 @@ use srdf::RDFNode;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
@@ -32,7 +33,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinExclusive<S> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         unimplemented!()
     }
 }
@@ -43,7 +44,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinExclusive<S> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .filter_map(move |(focus_node, value_node)| {
@@ -69,6 +70,6 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinExclusive<S> {
             })
             .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results.into_iter())
+        Ok(LazyValidationIterator::new(results.into_iter()))
     }
 }

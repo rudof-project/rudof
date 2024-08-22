@@ -32,6 +32,12 @@ impl<S: SRDFBasic> Clone for Targets<S> {
     }
 }
 
+impl<S: SRDFBasic> Default for Targets<S> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
 impl<S: SRDFBasic> IntoIterator for Targets<S> {
     type Item = S::Term;
     type IntoIter = std::collections::hash_set::IntoIter<S::Term>;

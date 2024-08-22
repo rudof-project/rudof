@@ -3,6 +3,7 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
@@ -34,7 +35,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MaxCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .chunk_by(|(focus_node, _)| focus_node.clone())
@@ -48,7 +49,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MaxCount {
             })
             .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results.into_iter())
+        Ok(LazyValidationIterator::new(results.into_iter()))
     }
 }
 
@@ -58,7 +59,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
@@ -69,7 +70,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

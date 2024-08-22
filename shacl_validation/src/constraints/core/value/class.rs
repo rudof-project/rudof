@@ -7,6 +7,7 @@ use srdf::RDF_TYPE;
 use srdf::SRDF;
 use std::collections::HashSet;
 
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
@@ -37,7 +38,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .flat_map(move |(focus_node, value_node)| {
@@ -79,7 +80,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
             })
             .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results.into_iter())
+        Ok(LazyValidationIterator::new(results.into_iter()))
     }
 }
 
@@ -89,7 +90,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         let results = value_nodes
             .iter()
             .filter_map(move |(focus_node, value_node)| {
@@ -117,6 +118,6 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
             })
             .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results.into_iter())
+        Ok(LazyValidationIterator::new(results.into_iter()))
     }
 }

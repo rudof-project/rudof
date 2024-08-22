@@ -1,3 +1,4 @@
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
@@ -35,10 +36,10 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MinCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         if self.min_count == 0 {
             // If min_count is 0, then it always passes
-            return LazyValidationIterator::default();
+            return Ok(LazyValidationIterator::default());
         }
 
         let results = value_nodes
@@ -54,7 +55,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for MinCount {
             })
             .collect::<Vec<_>>();
 
-        LazyValidationIterator::new(results.into_iter())
+        Ok(LazyValidationIterator::new(results.into_iter()))
     }
 }
 
@@ -64,7 +65,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
@@ -75,7 +76,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinCount {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }

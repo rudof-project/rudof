@@ -3,6 +3,7 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::ConstraintComponent;
 use crate::constraints::DefaultConstraintComponent;
 use crate::constraints::SparqlConstraintComponent;
@@ -41,7 +42,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Closed {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         unimplemented!()
     }
 }
@@ -52,7 +53,7 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Closed {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
@@ -63,7 +64,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Closed {
         validation_context: &ValidationContext<S>,
         evaluation_context: EvaluationContext,
         value_nodes: &ValueNodes<S>,
-    ) -> LazyValidationIterator<S> {
+    ) -> Result<LazyValidationIterator<S>, ConstraintError> {
         self.evaluate(validation_context, evaluation_context, value_nodes)
     }
 }
