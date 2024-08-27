@@ -1,9 +1,13 @@
+use srdf::literal::Literal;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Shacl2ShExError {
     #[error("Shacl2ShEx error: Feature not implemented: {msg}")]
     NotImplemented { msg: String },
+
+    #[error("Shacl2ShEx error: Feature not implemented: {literal}")]
+    RDFNode2LabelLiteral { literal: Literal },
 }
 
 impl Shacl2ShExError {
