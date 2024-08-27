@@ -27,7 +27,7 @@ use crate::pp_object_value;
 /// schema.add_shape(ShapeExprLabel::iri_unchecked("http://example.org/S"), ShapeExpr::empty_shape(), false);
 ///
 /// let expected = r#"prefix ex: <http://example.org/>
-/// ex:S  {  }"#;
+/// ex:S {  }"#;
 ///
 /// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
 /// ```

@@ -66,7 +66,7 @@ impl<'a> EvaluationContext<'a> {
 
     pub(crate) fn shape<S: SRDFBasic>(&self) -> S::Term {
         match self.shape {
-            Shape::NodeShape(ns) => S::object_as_term(&ns.id()),
+            Shape::NodeShape(ns) => S::object_as_term(ns.id()),
             Shape::PropertyShape(ps) => S::object_as_term(ps.id()),
         }
     }

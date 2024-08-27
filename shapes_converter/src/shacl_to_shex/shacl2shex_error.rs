@@ -1,3 +1,4 @@
+use shacl_ast::node_shape::NodeShape;
 use srdf::literal::Literal;
 use thiserror::Error;
 
@@ -8,6 +9,9 @@ pub enum Shacl2ShExError {
 
     #[error("Shacl2ShEx error: Feature not implemented: {literal}")]
     RDFNode2LabelLiteral { literal: Literal },
+
+    #[error("Not expected node shape: {node_shape:?}")]
+    NotExpectedNodeShape { node_shape: Box<NodeShape> },
 }
 
 impl Shacl2ShExError {

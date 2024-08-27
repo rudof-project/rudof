@@ -2,9 +2,10 @@
 
 ## Current changes without release yet
 
-## [0.1.17] - 2024-08-
+## [0.1.17] - 2024-08-28
 
 - Repaired bug in DCTAP when a row has an empty shape_id and it was creating an empty shape instead of assuming the previous one
+- Added support for first version of SHACL to ShEx converter
 
 ## [0.1.16] - 2024-08-22
 

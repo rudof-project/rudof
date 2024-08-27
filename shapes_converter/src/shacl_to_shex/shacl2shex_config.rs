@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct Shacl2ShExConfig {
     starting_shapes_mode: Option<StartShapeMode>,
     embed_bnodes: Option<bool>,
@@ -11,15 +11,6 @@ impl Shacl2ShExConfig {
         match &self.starting_shapes_mode {
             None => StartShapeMode::default(),
             Some(sm) => sm.clone(),
-        }
-    }
-}
-
-impl Default for Shacl2ShExConfig {
-    fn default() -> Self {
-        Self {
-            starting_shapes_mode: Default::default(),
-            embed_bnodes: Default::default(),
         }
     }
 }
