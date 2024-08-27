@@ -28,7 +28,8 @@ use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlVali
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
-    ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx,
+    ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
+    Shacl2ShExConfig, Tap2ShEx,
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -608,7 +609,7 @@ fn run_convert(
             run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
-            run_shacl2shex(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
+            run_shacl2shex(input_path, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -644,7 +645,7 @@ fn run_shacl2shex(
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
-    config: &ShEx2UmlConfig,
+    config: &Shacl2ShExConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     let schema_format = match format {
@@ -652,10 +653,24 @@ fn run_shacl2shex(
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
     let schema = parse_shacl(input_path, &schema_format)?;
-    let mut converter = SHACL2ShEx::new(config);
+    let mut converter = Shacl2ShEx::new(config);
     converter.convert(&schema)?;
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    generate_shex_output(converter, &mut writer, result_format)?;
+    let (writer, color) = get_writer(output, force_overwrite)?;
+    let result_schema_format = match &result_format {
+        OutputConvertFormat::Default => ShExFormat::ShExC,
+        OutputConvertFormat::Internal => ShExFormat::Internal,
+        OutputConvertFormat::JSON => ShExFormat::ShExJ,
+        OutputConvertFormat::ShExC => ShExFormat::ShExC,
+        OutputConvertFormat::ShExJ => ShExFormat::ShExJ,
+        OutputConvertFormat::Turtle => ShExFormat::Turtle,
+        _ => bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output"),
+    };
+    show_schema(
+        converter.current_shex(),
+        &result_schema_format,
+        writer,
+        color,
+    )?;
     Ok(())
 }
 
