@@ -607,6 +607,9 @@ fn run_convert(
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
             run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
         }
+        (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
+            run_shacl2shex(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
+        }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
                 None => Err(anyhow!(
@@ -634,6 +637,26 @@ fn run_convert(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
         )),
     }
+}
+
+fn run_shacl2shex(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    output: &Option<PathBuf>,
+    result_format: &OutputConvertFormat,
+    config: &ShEx2UmlConfig,
+    force_overwrite: bool,
+) -> Result<()> {
+    let schema_format = match format {
+        InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
+        _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
+    }?;
+    let schema = parse_shacl(input_path, &schema_format)?;
+    let mut converter = SHACL2ShEx::new(config);
+    converter.convert(&schema)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    generate_shex_output(converter, &mut writer, result_format)?;
+    Ok(())
 }
 
 fn run_shex2uml(
