@@ -3,6 +3,7 @@
 //!
 pub mod converter_config;
 pub mod converter_error;
+pub mod shacl_to_shex;
 pub mod shex_to_html;
 pub mod shex_to_sparql;
 pub mod shex_to_uml;
@@ -16,6 +17,9 @@ use shex_ast::ObjectValue;
 
 pub use crate::converter_config::*;
 pub use crate::converter_error::*;
+pub use crate::shacl_to_shex::shacl2shex::*;
+pub use crate::shacl_to_shex::shacl2shex_config::*;
+pub use crate::shacl_to_shex::shacl2shex_error::*;
 pub use crate::shex_to_html::shex2html::*;
 pub use crate::shex_to_html::shex2html_config::*;
 pub use crate::shex_to_html::shex2html_error::*;

@@ -3,7 +3,10 @@ use std::path::Path;
 use dctap::TapConfig;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Tap2ShExConfig};
+use crate::{
+    ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig,
+    Tap2ShExConfig,
+};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct ConverterConfig {
@@ -11,6 +14,7 @@ pub struct ConverterConfig {
     shex2html: Option<ShEx2HtmlConfig>,
     tap2shex: Option<Tap2ShExConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
+    shacl2shex: Option<Shacl2ShExConfig>,
     shex2uml: Option<ShEx2UmlConfig>,
 }
 
@@ -59,6 +63,14 @@ impl ConverterConfig {
             None => ShEx2UmlConfig::default(),
         }
     }
+
+    pub fn shacl2shex_config(&self) -> Shacl2ShExConfig {
+        match &self.shacl2shex {
+            Some(c) => c.clone(),
+            None => Shacl2ShExConfig::default(),
+        }
+    }
+
     pub fn shex2sparql_config(&self) -> ShEx2SparqlConfig {
         match &self.shex2sparql {
             Some(c) => c.clone(),

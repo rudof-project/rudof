@@ -28,7 +28,8 @@ use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlVali
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
-    ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Tap2ShEx,
+    ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
+    Shacl2ShExConfig, Tap2ShEx,
 };
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
@@ -607,6 +608,9 @@ fn run_convert(
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
             run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
         }
+        (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
+            run_shacl2shex(input_path, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite)
+        }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
                 None => Err(anyhow!(
@@ -634,6 +638,40 @@ fn run_convert(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
         )),
     }
+}
+
+fn run_shacl2shex(
+    input_path: &Path,
+    format: &InputConvertFormat,
+    output: &Option<PathBuf>,
+    result_format: &OutputConvertFormat,
+    config: &Shacl2ShExConfig,
+    force_overwrite: bool,
+) -> Result<()> {
+    let schema_format = match format {
+        InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
+        _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
+    }?;
+    let schema = parse_shacl(input_path, &schema_format)?;
+    let mut converter = Shacl2ShEx::new(config);
+    converter.convert(&schema)?;
+    let (writer, color) = get_writer(output, force_overwrite)?;
+    let result_schema_format = match &result_format {
+        OutputConvertFormat::Default => ShExFormat::ShExC,
+        OutputConvertFormat::Internal => ShExFormat::Internal,
+        OutputConvertFormat::JSON => ShExFormat::ShExJ,
+        OutputConvertFormat::ShExC => ShExFormat::ShExC,
+        OutputConvertFormat::ShExJ => ShExFormat::ShExJ,
+        OutputConvertFormat::Turtle => ShExFormat::Turtle,
+        _ => bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output"),
+    };
+    show_schema(
+        converter.current_shex(),
+        &result_schema_format,
+        writer,
+        color,
+    )?;
+    Ok(())
 }
 
 fn run_shex2uml(
