@@ -12,7 +12,7 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 
 - [Installation](https://github.com/weso/shapes-rs?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/weso/shapes-rs)
-- [Discussion](https://github.com/weso/shapes-rs/discussions/landing)
+- [Discussion](https://github.com/weso/shapes-rs/discussions)
 - [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
 - [How to guides](https://github.com/weso/shapes-rs/wiki/How%E2%80%90to-guides)
 - [Roadmap](https://github.com/weso/shapes-rs/issues/1)
