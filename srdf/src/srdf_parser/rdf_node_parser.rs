@@ -892,16 +892,17 @@ where
         };
         let mut values_iter = p.parse_impl(rdf)?.into_iter();
         if let Some(value1) = values_iter.next() {
-            if let Some(value2) = values_iter.next() {
+            // TODO: Add the following for strict parsing an rdf-list
+            /* if let Some(value2) = values_iter.next() {
                 Err(RDFParseError::MoreThanOneValuePredicate {
                     node: focus_node_str.to_string(),
                     pred: format!("{}", self.property),
                     value1: format!("{value1:?}"),
                     value2: format!("{value2:?}"),
                 })
-            } else {
-                Ok(value1)
-            }
+            } else { */
+            Ok(value1)
+            /* } */
         } else {
             Err(RDFParseError::NoValuesPredicate {
                 node: focus_node_str.to_string(),

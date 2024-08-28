@@ -1199,15 +1199,17 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
 
 fn parse_data(data: &Vec<InputSpec>, data_format: &DataFormat) -> Result<SRDFGraph> {
     let mut graph = SRDFGraph::new();
+    let rdf_format = match data_format {
+        DataFormat::N3 => RDFFormat::N3,
+        DataFormat::NQuads => RDFFormat::NQuads,
+        DataFormat::NTriples => RDFFormat::NTriples,
+        DataFormat::RDFXML => RDFFormat::RDFXML,
+        DataFormat::TriG => RDFFormat::TriG,
+        DataFormat::Turtle => RDFFormat::Turtle,
+    };
     for d in data {
         let reader = d.open_read()?;
-        match data_format {
-            DataFormat::Turtle => {
-                let rdf_format = (*data_format).into();
-                graph.merge_from_reader(reader, &rdf_format, None)?;
-            }
-            _ => bail!("Not implemented reading from {data_format:?} yet"),
-        }
+        graph.merge_from_reader(reader, &rdf_format, None)?;
     }
     Ok(graph)
 }

@@ -33,6 +33,7 @@ lazy_static = "1"
 oxttl = { version = "0.1.0-alpha.6"  }
 oxrdfio = { version = "0.1.0-alpha.5"}
 oxrdf = { workspace = true, features = [ "oxsdatatypes"] }
+oxrdfxml = "0.1.0-rc.1" 
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
 sparesults = { version = "0.2.0-alpha.5" }

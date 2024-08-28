@@ -132,7 +132,12 @@ impl Shacl2ShEx {
                     let se = &ses[0];
                     Ok(Some(se.clone()))
                 }
-                _ => Err(Shacl2ShExError::not_implemented("Conversion of shapes with multiple components is not implemented yet: {components:?}")),
+                _ => {
+                    // Err(Shacl2ShExError::not_implemented("Conversion of shapes with multiple components is not implemented yet: {components:?}"))}
+                    debug!("More than one component: {components:?}, taking only the first one");
+                    let se = &ses[0];
+                    Ok(Some(se.clone()))
+                }
             }
         }
     }
@@ -189,7 +194,10 @@ impl Shacl2ShEx {
             Component::Disjoint(_) => todo!(),
             Component::LessThan(_) => todo!(),
             Component::LessThanOrEquals(_) => todo!(),
-            Component::Or { shapes: _ } => todo!(),
+            Component::Or { shapes: _ } => {
+                debug!("Not implemented OR Shapes");
+                Ok(ShapeExpr::empty_shape())
+            }
             Component::And { shapes: _ } => todo!(),
             Component::Not { shape: _ } => todo!(),
             Component::Xone { shapes: _ } => todo!(),

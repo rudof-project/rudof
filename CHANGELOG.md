@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.18] - 2024-08-28
+
+- Added support for nquads and RDF/XML as input data formats
+- Added more flexibility for NQuads parser to continue parsing in case of errors
+- Added more flexibility of RDF parser to parse RDF lists in case there are more than one rdf:first predicate.
+
 ## [0.1.17] - 2024-08-28
 
 - Repaired bug in DCTAP when a row has an empty shape_id and it was creating an empty shape instead of assuming the previous one

@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
+use tracing::debug;
 // use log::debug;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
@@ -8,6 +9,7 @@ use crate::numeric_literal::NumericLiteral;
 use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
 use oxiri::Iri;
 use oxrdfio::{RdfFormat, RdfSerializer};
+use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -24,7 +26,7 @@ use oxrdf::{
     Subject as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
 use oxsdatatypes::Decimal as OxDecimal;
-use oxttl::TurtleParser;
+use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 
 #[derive(Debug, Default, Clone)]
@@ -51,27 +53,74 @@ impl SRDFGraph {
     pub fn merge_from_reader<R: BufRead>(
         &mut self,
         read: R,
-        _format: &RDFFormat,
+        format: &RDFFormat,
         base: Option<Iri<String>>,
     ) -> Result<(), SRDFGraphError> {
-        // TODO: check format and use oxrdfio...
-        let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
-        };
-        // let mut graph = Graph::default();
-        let mut reader = turtle_parser.parse_read(read);
-        for triple_result in reader.by_ref() {
-            self.graph.insert(triple_result?.as_ref());
+        match format {
+            RDFFormat::Turtle => {
+                let turtle_parser = match base {
+                    None => TurtleParser::new(),
+                    Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
+                };
+                // let mut graph = Graph::default();
+                let mut reader = turtle_parser.parse_read(read);
+                for triple_result in reader.by_ref() {
+                    self.graph.insert(triple_result?.as_ref());
+                }
+                let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+                self.base = match (&self.base, base) {
+                    (None, None) => None,
+                    (Some(b), None) => Some(b.clone()),
+                    (_, Some(b)) => Some(IriS::new_unchecked(b.as_str())),
+                };
+                let pm = PrefixMap::from_hashmap(&prefixes)?;
+                self.merge_prefixes(pm)?;
+            }
+            RDFFormat::NTriples => {
+                let parser = NTriplesParser::new();
+                let mut reader = parser.parse_read(read);
+                for triple_result in reader.by_ref() {
+                    match triple_result {
+                        Err(e) => {
+                            debug!("Error captured: {e:?}")
+                        }
+                        Ok(t) => {
+                            self.graph.insert(t.as_ref());
+                        }
+                    }
+                }
+            }
+            RDFFormat::RDFXML => {
+                let parser = RdfXmlParser::new();
+                let mut reader = parser.parse_read(read);
+                for triple_result in reader.by_ref() {
+                    match triple_result {
+                        Err(e) => {
+                            debug!("Error captured: {e:?}")
+                        }
+                        Ok(t) => {
+                            self.graph.insert(t.as_ref());
+                        }
+                    }
+                }
+            }
+            RDFFormat::TriG => todo!(),
+            RDFFormat::N3 => todo!(),
+            RDFFormat::NQuads => {
+                let parser = NQuadsParser::new();
+                let mut reader = parser.parse_read(read);
+                for triple_result in reader.by_ref() {
+                    match triple_result {
+                        Err(e) => {
+                            debug!("Error captured: {e:?}")
+                        }
+                        Ok(t) => {
+                            self.graph.insert(t.as_ref());
+                        }
+                    }
+                }
+            }
         }
-        let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
-        self.base = match (&self.base, base) {
-            (None, None) => None,
-            (Some(b), None) => Some(b.clone()),
-            (_, Some(b)) => Some(IriS::new_unchecked(b.as_str())),
-        };
-        let pm = PrefixMap::from_hashmap(&prefixes)?;
-        self.merge_prefixes(pm)?;
         Ok(())
     }
 
