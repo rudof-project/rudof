@@ -10,10 +10,11 @@ The code can be used as a Rust library but it also contains a binary called `rud
 
 We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)), as well as Python bindings.
 
+- [Installation](https://github.com/weso/shapes-rs?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/weso/shapes-rs)
 - [Discussion](https://github.com/weso/shapes-rs/discussions/landing)
 - [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
-- [How to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides)
+- [How to guides](https://github.com/weso/shapes-rs/wiki/How%E2%80%90to-guides)
 - [Roadmap](https://github.com/weso/shapes-rs/issues/1)
 
 ## Installation
