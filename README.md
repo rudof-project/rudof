@@ -28,7 +28,7 @@ You can download a binary from the [latest release](https://github.com/weso/shap
 Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
-wget https://github.com/weso/shapes-rs/releases/download/X.X.X/rudof_vX.X.X_amd64.deb
+wget https://github.com/weso/shapes-rs/releases/download/vX.X.X/rudof_vX.X.X_amd64.deb
 sudo dpkg -i rudof_vX.X.X_amd64.deb
 ```
 
