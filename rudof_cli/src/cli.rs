@@ -2,7 +2,7 @@ use crate::input_spec::InputSpec;
 use crate::{InputConvertFormat, OutputConvertFormat};
 use clap::{Parser, Subcommand, ValueEnum};
 use shacl_validation::validate::ShaclValidationMode;
-use srdf::RDFFormat;
+use srdf::{RDFFormat, ReaderMode};
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
 
@@ -96,6 +96,15 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(
             long = "force-overwrite",
             value_name = "Force overwrite mode",
@@ -175,6 +184,15 @@ pub enum Command {
         )]
         shacl_validation_mode: ShaclValidationMode,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(
             short = 'o',
             long = "output-file",
@@ -235,6 +253,15 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
 
@@ -281,6 +308,15 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
 
@@ -324,6 +360,15 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(
             short = 'o',
             long = "output-file",
@@ -365,6 +410,15 @@ pub enum Command {
 
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
 
         #[arg(
             short = 'm',
@@ -425,6 +479,15 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
 
         #[arg(
             long = "force-overwrite",
@@ -527,6 +590,15 @@ pub enum Command {
         )]
         shape: Option<String>,
 
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
         #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
         output_mode: OutputConvertMode,
     },
@@ -554,6 +626,7 @@ impl Display for ShowNodeMode {
 #[clap(rename_all = "lower")]
 pub enum ShExFormat {
     Internal,
+    Simple,
     ShExC,
     ShExJ,
     Turtle,
@@ -568,6 +641,7 @@ impl Display for ShExFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             ShExFormat::Internal => write!(dest, "internal"),
+            ShExFormat::Simple => write!(dest, "simple"),
             ShExFormat::ShExC => write!(dest, "shexc"),
             ShExFormat::ShExJ => write!(dest, "shexj"),
             ShExFormat::Turtle => write!(dest, "turtle"),
@@ -739,6 +813,33 @@ impl Display for OutputConvertMode {
             OutputConvertMode::ShEx => write!(dest, "shex"),
             OutputConvertMode::UML => write!(dest, "uml"),
             OutputConvertMode::HTML => write!(dest, "html"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Default, Debug)]
+#[clap(rename_all = "lower")]
+pub enum RDFReaderMode {
+    Lax,
+
+    #[default]
+    Strict,
+}
+
+impl Into<ReaderMode> for RDFReaderMode {
+    fn into(self) -> ReaderMode {
+        match self {
+            RDFReaderMode::Strict => ReaderMode::Strict,
+            RDFReaderMode::Lax => ReaderMode::Lax,
+        }
+    }
+}
+
+impl Display for RDFReaderMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match &self {
+            RDFReaderMode::Strict => write!(dest, "strict"),
+            RDFReaderMode::Lax => write!(dest, "lax"),
         }
     }
 }

@@ -55,6 +55,7 @@ impl SRDFGraph {
         read: R,
         format: &RDFFormat,
         base: Option<Iri<String>>,
+        reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         match format {
             RDFFormat::Turtle => {
@@ -131,10 +132,14 @@ impl SRDFGraph {
 
     pub fn from_reader<R: BufRead>(
         read: R,
-        _format: &RDFFormat,
+        format: &RDFFormat,
         base: Option<Iri<String>>,
+        reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        // TODO: check format and use oxrdfio...
+        let mut srdf_graph = SRDFGraph::new();
+        srdf_graph.merge_from_reader(read, format, base, reader_mode)?;
+        Ok(srdf_graph)
+        /*  TODO: check format and use oxrdfio...
         let turtle_parser = match base {
             None => TurtleParser::new(),
             Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
@@ -152,7 +157,7 @@ impl SRDFGraph {
             graph,
             pm,
             base,
-        })
+        })*/
     }
 
     pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
@@ -174,8 +179,9 @@ impl SRDFGraph {
         data: &str,
         format: &RDFFormat,
         base: Option<Iri<String>>,
+        reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        Self::from_reader(std::io::Cursor::new(&data), format, base)
+        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {
@@ -187,6 +193,7 @@ impl SRDFGraph {
         path: P,
         format: &RDFFormat,
         base: Option<Iri<String>>,
+        reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         let path_name = path.as_ref().display();
         let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
@@ -194,7 +201,7 @@ impl SRDFGraph {
             error: e,
         })?;
         let reader = BufReader::new(file);
-        Self::merge_from_reader(self, reader, format, base)?;
+        Self::merge_from_reader(self, reader, format, base, reader_mode)?;
         Ok(())
     }
 
@@ -202,6 +209,7 @@ impl SRDFGraph {
         path: P,
         format: &RDFFormat,
         base: Option<Iri<String>>,
+        reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let path_name = path.as_ref().display();
         let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
@@ -209,19 +217,20 @@ impl SRDFGraph {
             error: e,
         })?;
         let reader = BufReader::new(file);
-        Self::from_reader(reader, format, base)
+        Self::from_reader(reader, format, base, reader_mode)
     }
 
     pub fn parse_data(
         data: &String,
         format: &RDFFormat,
         base: &Path,
+        reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
         let base = Some(Iri::parse("base:://".to_owned()).unwrap());
         let data_path = &attempt;
-        let graph = Self::from_path(data_path, format, base)?;
+        let graph = Self::from_path(data_path, format, base, reader_mode)?;
         Ok(graph)
     }
 
@@ -749,7 +758,8 @@ mod tests {
                    schema:knows :bob, :carol ;
                    :age  23 .
          "#;
-        let parsed_graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let parsed_graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
         let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
         let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
@@ -770,7 +780,7 @@ mod tests {
         :x :p [ :p 1 ].
         "#;
 
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
         let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
@@ -789,7 +799,7 @@ mod tests {
         :x :p [ :p 1 ].
         "#;
 
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
         let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
@@ -811,7 +821,7 @@ mod tests {
             ] { ok(&value.clone()) }
         }
         let s = r#"prefix : <http://example.org/>"#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = iri!("http://example.org/x");
         assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
     }
@@ -822,7 +832,7 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3, 2 .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integers(&p);
@@ -835,7 +845,7 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1, 2, 3 .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integers(&p).then_mut(move |ns| {
@@ -855,7 +865,7 @@ mod tests {
           :x :p 1, 2 ;
              :q true .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let q = iri!("http://example.org/q");
@@ -874,7 +884,7 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1 .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let parser_a_bool = property_bool(&p).map(A::Bool);
@@ -894,7 +904,8 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p true .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let parser_a_bool = property_bool(&p).map(A::Bool);
@@ -910,7 +921,8 @@ mod tests {
           :x :p true ;
              :q 1    .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let q = iri!("http://example.org/q");
@@ -924,7 +936,8 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p 1 .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         let mut parser = property_integer(&p).map(|n| n + 1);
@@ -937,7 +950,8 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p "1" .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
         struct IntConversionError(String);
@@ -963,7 +977,8 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
           :x :p "1" .
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let p = iri!("http://example.org/p");
 
@@ -995,7 +1010,8 @@ mod tests {
         let s = r#"prefix : <http://example.org/>
                    :x :p 1.
         "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+        let graph =
+            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
         let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
         let mut parser = is_term(&term);
@@ -1013,7 +1029,7 @@ fn test_rdf_list() {
     let s = r#"prefix : <http://example.org/>
                :x :p (1 2).
     "#;
-    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     let x = iri!("http://example.org/x");
     let p = iri!("http://example.org/p");
     let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
@@ -1027,6 +1043,17 @@ fn test_rdf_list() {
     )
 }
 
+/// Reader mode when parsing RDF data files
+#[derive(Debug, PartialEq, Clone, Default)]
+pub enum ReaderMode {
+    /// Stops when there is an error
+    #[default]
+    Strict,
+
+    /// Emits a warning and continues processing
+    Lax,
+}
+
 #[test]
 fn test_not() {
     use crate::SRDFGraph;
@@ -1036,7 +1063,7 @@ fn test_not() {
     let s = r#"prefix : <http://example.org/>
                :x :p 1 .
     "#;
-    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     let x = iri!("http://example.org/x");
     let q = iri!("http://example.org/q");
     assert!(not(property_value(&q)).parse(&x, graph).is_ok())

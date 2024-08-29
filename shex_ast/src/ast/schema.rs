@@ -1,6 +1,6 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
-use iri_s::IriS;
+use iri_s::{iri, IriS};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -100,6 +100,22 @@ impl Schema {
     pub fn with_shapes(mut self, shapes: Option<Vec<ShapeDecl>>) -> Self {
         self.shapes = shapes;
         self
+    }
+
+    pub fn resolve_iriref(&self, iri_ref: &IriRef) -> IriS {
+        match &self.prefixmap {
+            Some(pm) => match pm.resolve_iriref(&iri_ref) {
+                Err(_) => todo!(),
+                Ok(iri) => iri.clone(),
+            },
+            None => match iri_ref {
+                IriRef::Iri(iri) => iri.clone(),
+                IriRef::Prefixed { prefix, local } => {
+                    let str = format!("{prefix}{local}");
+                    IriS::new_unchecked(str.as_str())
+                }
+            },
+        }
     }
 
     pub fn add_shape(

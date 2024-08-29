@@ -31,6 +31,7 @@ use shapes_converter::{
     ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
     Shacl2ShExConfig, Tap2ShEx,
 };
+use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
@@ -91,6 +92,7 @@ fn main() -> Result<()> {
             show_time,
             show_statistics,
             force_overwrite,
+            reader_mode,
         }) => run_shex(
             schema,
             schema_format,
@@ -99,6 +101,7 @@ fn main() -> Result<()> {
             *show_time,
             *show_statistics,
             *force_overwrite,
+            reader_mode,
         ),
         Some(Command::Validate {
             validation_mode,
@@ -106,6 +109,7 @@ fn main() -> Result<()> {
             schema_format,
             data,
             data_format,
+            reader_mode,
             endpoint,
             node,
             shape,
@@ -122,6 +126,7 @@ fn main() -> Result<()> {
                 data,
                 data_format,
                 endpoint,
+                reader_mode,
                 node,
                 shape,
                 shapemap,
@@ -136,6 +141,9 @@ fn main() -> Result<()> {
                     ShExFormat::Internal => Ok(ShaclFormat::Internal),
                     ShExFormat::ShExC => Err(anyhow!(
                         "Validation using SHACL mode doesn't support ShExC format"
+                    )),
+                    ShExFormat::Simple => Err(anyhow!(
+                        "Validation using SHACL mode doesn't support {schema_format} format"
                     )),
                     ShExFormat::ShExJ => Err(anyhow!(
                         "Validation using SHACL mode doesn't support ShExC format"
@@ -165,6 +173,7 @@ fn main() -> Result<()> {
             schema_format,
             data,
             data_format,
+            reader_mode,
             endpoint,
             node,
             shape,
@@ -190,6 +199,7 @@ fn main() -> Result<()> {
                 data,
                 data_format,
                 endpoint,
+                reader_mode,
                 node,
                 shape,
                 shapemap,
@@ -205,6 +215,7 @@ fn main() -> Result<()> {
             shapes_format,
             data,
             data_format,
+            reader_mode,
             endpoint,
             mode,
             output,
@@ -223,6 +234,7 @@ fn main() -> Result<()> {
         Some(Command::Data {
             data,
             data_format,
+            reader_mode,
             output,
             result_format,
             force_overwrite,
@@ -233,11 +245,13 @@ fn main() -> Result<()> {
             output,
             result_format,
             *force_overwrite,
+            reader_mode,
         ),
         Some(Command::Node {
             data,
             data_format,
             endpoint,
+            reader_mode,
             node,
             predicates,
             show_node_mode,
@@ -249,6 +263,7 @@ fn main() -> Result<()> {
             data,
             data_format,
             endpoint,
+            reader_mode,
             node,
             predicates,
             show_node_mode,
@@ -274,6 +289,7 @@ fn main() -> Result<()> {
         Some(Command::Shacl {
             shapes,
             shapes_format,
+            reader_mode,
             result_shapes_format,
             output,
             force_overwrite,
@@ -283,6 +299,7 @@ fn main() -> Result<()> {
             result_shapes_format,
             output,
             *force_overwrite,
+            reader_mode,
         ),
         Some(Command::DCTap {
             file,
@@ -310,6 +327,7 @@ fn main() -> Result<()> {
             target_folder,
             force_overwrite,
             config,
+            reader_mode,
         }) => run_convert(
             file,
             format,
@@ -321,6 +339,7 @@ fn main() -> Result<()> {
             target_folder,
             config,
             *force_overwrite,
+            reader_mode,
         ),
         None => {
             bail!("Command not specified")
@@ -336,10 +355,11 @@ fn run_shex(
     show_time: bool,
     show_statistics: bool,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema_path, schema_format)?;
+    let schema_json = parse_schema(schema_path, schema_format, reader_mode)?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
@@ -380,6 +400,13 @@ fn show_schema(
             writeln!(writer, "{str}")?;
             Ok(())
         }
+        ShExFormat::Simple => {
+            let mut simplified = SimpleReprSchema::new();
+            simplified.from_schema(schema);
+            let str = serde_json::to_string_pretty(&simplified)?;
+            writeln!(writer, "{str}")?;
+            Ok(())
+        }
         _ => Err(anyhow!(
             "Not implemented conversion to {result_schema_format} yet"
         )),
@@ -393,6 +420,7 @@ fn run_validate_shex(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
     shapemap_path: &Option<PathBuf>,
@@ -403,10 +431,10 @@ fn run_validate_shex(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema_path, schema_format)?;
+    let schema_json = parse_schema(schema_path, schema_format, reader_mode)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
-    let data = get_data(data, data_format, endpoint, debug)?;
+    let data = get_data(data, data_format, endpoint, reader_mode, debug)?;
     let mut shapemap = match shapemap_path {
         None => QueryShapeMap::new(),
         Some(shapemap_buf) => parse_shapemap(shapemap_buf, shapemap_format)?,
@@ -527,9 +555,10 @@ fn run_shacl(
     result_shapes_format: &ShaclFormat,
     output: &Option<PathBuf>,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let shacl_schema = parse_shacl(shapes_path, shapes_format)?;
+    let shacl_schema = parse_shacl(shapes_path, shapes_format, reader_mode)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
             writeln!(writer, "{shacl_schema}")?;
@@ -585,6 +614,7 @@ fn run_convert(
     target_folder: &Option<PathBuf>,
     config: &Option<PathBuf>,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     // let mut writer = get_writer(output)?;
     let converter_config = match config {
@@ -603,13 +633,13 @@ fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite)
+            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite)
+            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
-            run_shacl2shex(input_path, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite)
+            run_shacl2shex(input_path, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -617,7 +647,7 @@ fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input_path, format, output_path, &converter_config.shex2html_config())
+                    run_shex2html(input_path, format, output_path, &converter_config.shex2html_config(), reader_mode)
                 }
             }
         }
@@ -647,12 +677,13 @@ fn run_shacl2shex(
     result_format: &OutputConvertFormat,
     config: &Shacl2ShExConfig,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
-    let schema = parse_shacl(input_path, &schema_format)?;
+    let schema = parse_shacl(input_path, &schema_format, reader_mode)?;
     let mut converter = Shacl2ShEx::new(config);
     converter.convert(&schema)?;
     let (writer, color) = get_writer(output, force_overwrite)?;
@@ -681,12 +712,13 @@ fn run_shex2uml(
     result_format: &OutputConvertFormat,
     config: &ShEx2UmlConfig,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path, &schema_format)?;
+    let schema = parse_schema(input_path, &schema_format, reader_mode)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -729,13 +761,14 @@ fn run_shex2html<P: AsRef<Path>>(
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
     config: &ShEx2HtmlConfig,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     debug!("Starting shex2html");
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path.as_ref(), &schema_format)?;
+    let schema = parse_schema(input_path.as_ref(), &schema_format, reader_mode)?;
     let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
     debug!("Landing page will be generated at {landing_page}\nStarted converter...");
@@ -790,12 +823,13 @@ fn run_shex2sparql(
     _result_format: &OutputConvertFormat,
     config: &ShEx2SparqlConfig,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path, &schema_format)?;
+    let schema = parse_schema(input_path, &schema_format, reader_mode)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -892,6 +926,7 @@ fn get_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
     _debug: u8,
 ) -> Result<Data> {
     match (data.is_empty(), endpoint) {
@@ -900,7 +935,7 @@ fn get_data(
         }
         (false, None) => {
             // let data_path = cast_to_data_path(data)?;
-            let data = parse_data(data, data_format)?;
+            let data = parse_data(data, data_format, reader_mode)?;
             Ok(Data::RDFData(data))
         }
         (true, Some(endpoint)) => {
@@ -936,6 +971,7 @@ fn run_node(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
     node_str: &str,
     predicates: &Vec<String>,
     show_node_mode: &ShowNodeMode,
@@ -946,7 +982,7 @@ fn run_node(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data = get_data(data, data_format, endpoint, debug)?;
+    let data = get_data(data, data_format, endpoint, reader_mode, debug)?;
     let node_selector = parse_node_selector(node_str)?;
     match data {
         Data::Endpoint(endpoint) => show_node_info(
@@ -1117,9 +1153,10 @@ fn run_data(
     output: &Option<PathBuf>,
     result_format: &DataFormat,
     force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data = get_data(data, data_format, &None, debug)?;
+    let data = get_data(data, data_format, &None, reader_mode, debug)?;
     match data {
         Data::Endpoint(e) => writeln!(writer, "Endpoint {e:?}")?,
         Data::RDFData(graph) => graph.serialize(RDFFormat::from(*result_format), writer)?,
@@ -1137,7 +1174,11 @@ fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Res
     }
 }
 
-fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<SchemaJson> {
+fn parse_schema(
+    schema_path: &Path,
+    schema_format: &ShExFormat,
+    reader_mode: &RDFReaderMode,
+) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
@@ -1152,7 +1193,11 @@ fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<Schema
             Ok(schema_json)
         }
         ShExFormat::Turtle => {
-            let rdf = parse_data(&vec![InputSpec::path(schema_path)], &DataFormat::Turtle)?;
+            let rdf = parse_data(
+                &vec![InputSpec::path(schema_path)],
+                &DataFormat::Turtle,
+                reader_mode,
+            )?;
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1160,12 +1205,20 @@ fn parse_schema(schema_path: &Path, schema_format: &ShExFormat) -> Result<Schema
     }
 }
 
-fn parse_shacl(shapes_path: &Path, shapes_format: &ShaclFormat) -> Result<ShaclSchema> {
+fn parse_shacl(
+    shapes_path: &Path,
+    shapes_format: &ShaclFormat,
+    reader_mode: &RDFReaderMode,
+) -> Result<ShaclSchema> {
     match shapes_format {
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         _ => {
             let data_format = shacl_format_to_data_format(shapes_format)?;
-            let rdf = parse_data(&vec![InputSpec::path(shapes_path)], &data_format)?;
+            let rdf = parse_data(
+                &vec![InputSpec::path(shapes_path)],
+                &data_format,
+                reader_mode,
+            )?;
             let schema = ShaclParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1197,7 +1250,11 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
     }
 }
 
-fn parse_data(data: &Vec<InputSpec>, data_format: &DataFormat) -> Result<SRDFGraph> {
+fn parse_data(
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    reader_mode: &RDFReaderMode,
+) -> Result<SRDFGraph> {
     let mut graph = SRDFGraph::new();
     let rdf_format = match data_format {
         DataFormat::N3 => RDFFormat::N3,
@@ -1208,8 +1265,9 @@ fn parse_data(data: &Vec<InputSpec>, data_format: &DataFormat) -> Result<SRDFGra
         DataFormat::Turtle => RDFFormat::Turtle,
     };
     for d in data {
+        use std::convert::Into;
         let reader = d.open_read()?;
-        graph.merge_from_reader(reader, &rdf_format, None)?;
+        graph.merge_from_reader(reader, &rdf_format, None, &(*reader_mode).into())?;
     }
     Ok(graph)
 }

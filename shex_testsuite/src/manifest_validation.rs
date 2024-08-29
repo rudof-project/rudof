@@ -175,7 +175,12 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(&self.action.data, &RDFFormat::Turtle, base)?;
+        let graph = SRDFGraph::parse_data(
+            &self.action.data,
+            &RDFFormat::Turtle,
+            base,
+            &srdf::ReaderMode::Strict,
+        )?;
         debug!("Data obtained from: {}", self.action.data);
 
         let schema = parse_schema(&self.action.schema, base, &self.name)?;

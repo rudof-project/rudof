@@ -26,10 +26,11 @@ pub fn parse(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
         let input = Path::new(input);
         let input_format = obtain_format(input.extension())?;
 
-        let graph = match SRDFGraph::from_path(input, &input_format, None) {
-            Ok(graph) => graph,
-            Err(error) => return Err(PyValueError::new_err(error.to_string())),
-        };
+        let graph =
+            match SRDFGraph::from_path(input, &input_format, None, &srdf::ReaderMode::Strict) {
+                Ok(graph) => graph,
+                Err(error) => return Err(PyValueError::new_err(error.to_string())),
+            };
 
         let schema = match ShaclParser::new(graph).parse() {
             Ok(schema) => schema,

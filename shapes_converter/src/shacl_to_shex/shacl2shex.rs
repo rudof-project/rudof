@@ -3,11 +3,11 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use shacl_ast::{
     component::Component, node_shape::NodeShape, property_shape::PropertyShape,
-    shape::Shape as ShaclShape, Schema as ShaclSchema,
+    shape::Shape as ShaclShape, target::Target, Schema as ShaclSchema,
 };
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,
-    TripleExpr, ValueSetValue,
+    TripleExpr, TripleExprWrapper, ValueSetValue,
 };
 use srdf::{Object, RDFNode, SHACLPath};
 use tracing::debug;
@@ -96,8 +96,190 @@ impl Shacl2ShEx {
         } else {
             Some(TripleExpr::each_of(exprs))
         };
-        let shape = ShExShape::new(is_closed, extra, te);
+        let target_class_expr = self.convert_target_decls(shape.targets(), schema)?;
+        let ter = match (te, target_class_expr) {
+            (None, None) => None,
+            (None, Some(t)) => Some(t),
+            (Some(t), None) => Some(t),
+            (Some(t1), Some(t2)) => Some(self.merge_triple_exprs(&t1, &t2)),
+        };
+        let shape = ShExShape::new(is_closed, extra, ter);
         Ok(ShapeExpr::shape(shape))
+    }
+
+    pub fn convert_target_decls(
+        &self,
+        targets: &Vec<Target>,
+        schema: &ShaclSchema,
+    ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
+        let mut tes = Vec::new();
+        for target in targets {
+            let te = self.target2triple_constraint(target, schema)?;
+            match te {
+                None => (),
+                Some(te) => tes.push(te),
+            }
+        }
+        if tes.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(TripleExpr::each_of(tes)))
+        }
+    }
+
+    pub fn target2triple_constraint(
+        &self,
+        target: &Target,
+        _schema: &ShaclSchema,
+    ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
+        match target {
+            Target::TargetNode(_) => Ok(None),
+            Target::TargetClass(cls) => {
+                let value_set_value = match cls {
+                    Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
+                    Object::BlankNode(bn) => {
+                        Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
+                            bnode: bn.clone(),
+                        })
+                    }
+                    Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
+                        literal: lit.clone(),
+                    }),
+                }?;
+                let value_cls = ShapeExpr::node_constraint(
+                    NodeConstraint::new().with_values(vec![value_set_value]),
+                );
+                let tc = TripleExpr::triple_constraint(
+                    None,
+                    None,
+                    IriRef::iri(IriS::rdf_type()),
+                    Some(value_cls),
+                    None,
+                    None,
+                );
+                Ok(Some(tc))
+            }
+            Target::TargetSubjectsOf(_) => Ok(None),
+            Target::TargetObjectsOf(_) => Ok(None),
+        }
+    }
+
+    pub fn merge_triple_exprs(&self, te1: &TripleExpr, te2: &TripleExpr) -> TripleExpr {
+        match te1 {
+            TripleExpr::EachOf {
+                id,
+                expressions,
+                min,
+                max,
+                sem_acts,
+                annotations,
+            } => match te2 {
+                TripleExpr::EachOf {
+                    id: _,
+                    expressions: exprs,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => TripleExpr::EachOf {
+                    id: id.clone(),
+                    expressions: Self::merge_expressions(expressions, exprs),
+                    min: min.clone(),
+                    max: max.clone(),
+                    sem_acts: sem_acts.clone(),
+                    annotations: annotations.clone(),
+                },
+                tc @ TripleExpr::TripleConstraint {
+                    id,
+                    negated: _,
+                    inverse: _,
+                    predicate: _,
+                    value_expr: _,
+                    min,
+                    max,
+                    sem_acts,
+                    annotations,
+                } => TripleExpr::EachOf {
+                    id: id.clone(),
+                    expressions: Self::merge_expressions(
+                        expressions,
+                        &vec![TripleExprWrapper { te: tc.clone() }],
+                    ),
+                    min: min.clone(),
+                    max: max.clone(),
+                    sem_acts: sem_acts.clone(),
+                    annotations: annotations.clone(),
+                },
+                _ => todo!(),
+            },
+            tc @ TripleExpr::TripleConstraint {
+                id,
+                negated: _,
+                inverse: _,
+                predicate: _,
+                value_expr: _,
+                min,
+                max,
+                sem_acts,
+                annotations,
+            } => match te2 {
+                TripleExpr::EachOf {
+                    id: _,
+                    expressions: exprs,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => TripleExpr::EachOf {
+                    id: id.clone(),
+                    expressions: Self::merge_expressions(
+                        &vec![TripleExprWrapper { te: tc.clone() }],
+                        exprs,
+                    ),
+                    min: min.clone(),
+                    max: max.clone(),
+                    sem_acts: sem_acts.clone(),
+                    annotations: annotations.clone(),
+                },
+                tc2 @ TripleExpr::TripleConstraint {
+                    id,
+                    negated: _,
+                    inverse: _,
+                    predicate: _,
+                    value_expr: _,
+                    min,
+                    max,
+                    sem_acts,
+                    annotations,
+                } => TripleExpr::EachOf {
+                    id: id.clone(),
+                    expressions: vec![
+                        TripleExprWrapper { te: tc.clone() },
+                        TripleExprWrapper { te: tc2.clone() },
+                    ],
+                    min: min.clone(),
+                    max: max.clone(),
+                    sem_acts: sem_acts.clone(),
+                    annotations: annotations.clone(),
+                },
+                _ => todo!(),
+            },
+            _ => todo!(),
+        }
+    }
+
+    pub fn merge_expressions(
+        e1: &Vec<TripleExprWrapper>,
+        e2: &Vec<TripleExprWrapper>,
+    ) -> Vec<TripleExprWrapper> {
+        let mut es = Vec::new();
+        for e in e1 {
+            es.push(e.clone())
+        }
+        for e in e2 {
+            es.push(e.clone())
+        }
+        es
     }
 
     pub fn property_shape2triple_constraint(

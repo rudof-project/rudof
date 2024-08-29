@@ -5,6 +5,7 @@ use oxiri::Iri;
 use shacl_ast::Schema;
 use shacl_ast::ShaclParser;
 use srdf::RDFFormat;
+use srdf::ReaderMode;
 use srdf::SRDFGraph;
 
 use crate::validate_error::ValidateError;
@@ -31,6 +32,7 @@ impl ShaclDataManager {
                 Some(base) => Some(Iri::from_str(base)?),
                 None => None,
             },
+            &ReaderMode::default(),
         )?;
 
         match ShaclParser::new(rdf).parse() {

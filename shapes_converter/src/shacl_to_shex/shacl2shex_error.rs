@@ -12,6 +12,12 @@ pub enum Shacl2ShExError {
 
     #[error("Not expected node shape: {node_shape:?}")]
     NotExpectedNodeShape { node_shape: Box<NodeShape> },
+
+    #[error("Unexpected blank node in target class declaration: {bnode:?}")]
+    UnexpectedBlankNodeForTargetClass { bnode: String },
+
+    #[error("Unexpected literal in target class declaration: {literal:?}")]
+    UnexpectedLiteralForTargetClass { literal: Literal },
 }
 
 impl Shacl2ShExError {

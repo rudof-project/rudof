@@ -1,7 +1,7 @@
 use std::{path::Path, str::FromStr};
 
 use oxiri::Iri;
-use srdf::{RDFFormat, SRDFGraph};
+use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 
 use crate::validate_error::ValidateError;
 
@@ -27,6 +27,7 @@ impl Graph {
                 },
                 None => None,
             },
+            &ReaderMode::default(),
         ) {
             Ok(rdf) => rdf,
             Err(_) => return Err(ValidateError::GraphCreation),
