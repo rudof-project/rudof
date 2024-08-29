@@ -83,7 +83,14 @@ impl SRDFGraph {
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
-                            debug!("Error captured: {e:?}")
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::TurtleError {
+                                    data: "Reading n-quads".to_string(),
+                                    turtle_error: e,
+                                });
+                            } else {
+                                debug!("Error captured: {e:?}")
+                            }
                         }
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
@@ -1052,6 +1059,12 @@ pub enum ReaderMode {
 
     /// Emits a warning and continues processing
     Lax,
+}
+
+impl ReaderMode {
+    pub fn is_strict(&self) -> bool {
+        matches!(self, ReaderMode::Strict)
+    }
 }
 
 #[test]

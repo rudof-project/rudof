@@ -5,12 +5,12 @@ use crate::shex_to_sparql::{
     SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder,
 };
 
-pub struct ShEx2Sparql {
-    config: ShEx2SparqlConfig,
+pub struct ShEx2RdfConfig {
+    config: ShEx2RdfConfig,
 }
 
-impl ShEx2Sparql {
-    pub fn new(config: &ShEx2SparqlConfig) -> ShEx2Sparql {
+impl ShEx2RdfConfig {
+    pub fn new(config: &ShEx2RdfConfigConfig) -> ShEx2Sparql {
         ShEx2Sparql {
             config: config.clone(),
         }

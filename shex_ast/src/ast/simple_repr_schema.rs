@@ -10,6 +10,12 @@ pub struct SimpleReprSchema {
     shapes: Vec<SimpleReprShape>,
 }
 
+impl Default for SimpleReprSchema {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimpleReprSchema {
     pub fn new() -> SimpleReprSchema {
         SimpleReprSchema { shapes: Vec::new() }
@@ -104,10 +110,10 @@ impl SimpleReprSchema {
                 sem_acts: _,
                 annotations: _,
             } => {
-                let iri = schema.resolve_iriref(&predicate);
+                let iri = schema.resolve_iriref(predicate);
                 if iri == IriS::rdf_type() {
                     if let Some(se) = value_expr {
-                        self.extract_class_values(&se, shape);
+                        self.extract_class_values(se, shape);
                     }
                 } else {
                     shape.add_predicate(predicate)

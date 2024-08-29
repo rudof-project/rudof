@@ -1,6 +1,6 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{Iri, Shape, ShapeExprLabel};
-use iri_s::{iri, IriS};
+use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -104,7 +104,7 @@ impl Schema {
 
     pub fn resolve_iriref(&self, iri_ref: &IriRef) -> IriS {
         match &self.prefixmap {
-            Some(pm) => match pm.resolve_iriref(&iri_ref) {
+            Some(pm) => match pm.resolve_iriref(iri_ref) {
                 Err(_) => todo!(),
                 Ok(iri) => iri.clone(),
             },

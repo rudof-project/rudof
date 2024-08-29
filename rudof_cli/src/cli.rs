@@ -826,9 +826,9 @@ pub enum RDFReaderMode {
     Strict,
 }
 
-impl Into<ReaderMode> for RDFReaderMode {
-    fn into(self) -> ReaderMode {
-        match self {
+impl From<RDFReaderMode> for ReaderMode {
+    fn from(value: RDFReaderMode) -> Self {
+        match value {
             RDFReaderMode::Strict => ReaderMode::Strict,
             RDFReaderMode::Lax => ReaderMode::Lax,
         }

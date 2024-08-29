@@ -347,6 +347,7 @@ fn main() -> Result<()> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_shex(
     schema_path: &Path,
     schema_format: &ShExFormat,
@@ -815,6 +816,7 @@ fn run_tap2html<P: AsRef<Path>>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_shex2sparql(
     input_path: &Path,
     format: &InputConvertFormat,
