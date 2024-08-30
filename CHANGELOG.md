@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.19] - 2024-08-30
+
+- Added option to generate simple information about ShEx schemas
+- Repaired bug in strict/lax reader mode that was not being taken into account
+
 ## [0.1.18] - 2024-08-28
 
 - Added support for nquads and RDF/XML as input data formats

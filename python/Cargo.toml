@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.17"
+version = "0.1.19"
 documentation = "https://www.weso.es/shapes-rs/"
 readme = "README.md"
 license.workspace = true
