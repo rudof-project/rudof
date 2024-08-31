@@ -120,7 +120,7 @@
 
 ## [0.0.10] - 2024-01-29
 
-- [issue 32](https://github.com/weso/shapes-rs/issues/32) ShEx parser works as an iterator per statement allowing to show debug information by statement. Debug information can be controlled by the environment variablt RUST_LOG. A value of "debug" for that variable will print more information.
+- [issue 32](https://github.com/rudof-project/rudof/issues/32) ShEx parser works as an iterator per statement allowing to show debug information by statement. Debug information can be controlled by the environment variablt RUST_LOG. A value of "debug" for that variable will print more information.
 - Updated dependency versions
     oxrdf = "0.2.0-alpha.2"
     oxttl = "0.1.0-alpha.2"

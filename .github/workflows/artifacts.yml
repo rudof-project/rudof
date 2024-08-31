@@ -24,7 +24,7 @@ jobs:
         run: rustup update
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
-      - name: Build the release version of `shapes-rs` for the x86 architecture
+      - name: Build the release version of `rudof` for the x86 architecture
         run: cargo build --release
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
@@ -54,9 +54,9 @@ jobs:
           submodules: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
-      - name: Build the release version of `shapes-rs` for the x86 architecture
+      - name: Build the release version of `rudof` for the x86 architecture
         run: cargo build --release
-      - name: Build the release version of `shapes-rs` for the aarch64 architecture
+      - name: Build the release version of `rudof` for the aarch64 architecture
         run: cargo build --release --target aarch64-apple-darwin
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3
@@ -95,7 +95,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
         run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
-      - name: Build the release version of `shapes-rs` for the x86 architecture
+      - name: Build the release version of `rudof` for the x86 architecture
         run: cargo build --release
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
         uses: actions/upload-artifact@v3

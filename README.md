@@ -1,51 +1,51 @@
-# SHAPES-rs
+# rudof
 
-[![Shapes-rs](https://github.com/weso/shapes-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/shapes-rs/actions/workflows/ci.yml)
-[![dependency status](https://deps.rs/repo/github/weso/shapes-rs/status.svg)](https://deps.rs/repo/github/weso/shapes-rs)
+[![rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
+[![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 
 This repo contains an RDF data shapes library implemented in Rust.
 The implementation supports [ShEx](http://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTap](https://www.dublincore.org/specifications/dctap/) and conversions between different RDF data modeling formalisms.
 
 The code can be used as a Rust library but it also contains a binary called `rudof` which can be used as an RDF playground.
 
-We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/weso/shapes-rs/releases)), as well as Python bindings.
+We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/rudof-project/rudof/releases)), as well as Python bindings.
 
-- [Installation](https://github.com/weso/shapes-rs?tab=readme-ov-file#installation)
-- [List of issues](https://github.com/weso/shapes-rs)
-- [Discussion](https://github.com/weso/shapes-rs/discussions)
-- [FAQ](https://github.com/weso/shapes-rs/wiki/FAQ)
-- [How to guides](https://github.com/weso/shapes-rs/wiki/How%E2%80%90to-guides)
-- [Roadmap](https://github.com/weso/shapes-rs/issues/1)
+- [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
+- [List of issues](https://github.com/rudof-project/rudof)
+- [Discussion](https://github.com/rudof-project/rudof/discussions)
+- [FAQ](https://github.com/rudof-project/rudof/wiki/FAQ)
+- [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
+- [Roadmap](https://github.com/rudof-project/rudof/issues/1)
 
 ## Installation
 
 ### Official releases
 
-You can download a binary from the [latest release](https://github.com/weso/shapes-rs/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
+You can download a binary from the [latest release](https://github.com/rudof-project/rudof/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
 
 #### Ubuntu
 
-Download the binary from [https://github.com/weso/shapes-rs/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
+Download the binary from [https://github.com/rudof-project/rudof/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
-wget https://github.com/weso/shapes-rs/releases/download/vX.X.X/rudof_vX.X.X_amd64.deb
+wget https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.X_amd64.deb
 sudo dpkg -i rudof_vX.X.X_amd64.deb
 ```
 
 #### Windows
 
-The binary can be downloaded from [https://github.com/weso/shapes-rs/releases]
+The binary can be downloaded from [https://github.com/rudof-project/rudof/releases]
 
 #### Mac
 
-The binary is available at: [https://github.com/weso/shapes-rs/releases]
+The binary is available at: [https://github.com/rudof-project/rudof/releases]
 
 <details markdown="block">
 <summary>Compiling from source</summary>
 
 ### Compiling from source
 
-`shapes-rs` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
+`rudof` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
 
 For example:
 
@@ -70,7 +70,7 @@ cargo deb
 And run:
 
 ```sh
-sudo dpkg -i target/debian/shapes-rs_0.0.11-1_amd64.deb
+sudo dpkg -i target/debian/rudof_0.0.11-1_amd64.deb
 ```
 
 ## Docker
@@ -91,7 +91,7 @@ The folder `examples` contains several example files with ShEx schemas and RDF d
 rudof validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
-We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/weso/shapes-rs/wiki/Howto-guides).
+We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/rudof-project/rudof/wiki/Howto-guides).
 
 ### Debugging information
 
@@ -298,18 +298,18 @@ Options:
 
 The repo is divided in the following modules:
 
-- [iri_s](https://github.com/weso/shapes-rs/tree/master/iri_s) defines simple IRIs.
-- [srdf](https://github.com/weso/shapes-rs/tree/master/srdf) simple RDF model which will be used for validation.
-- [prefixmap](https://github.com/weso/shapes-rs/tree/master/prefixmap) Prefix maps implementation.
-- [shapemap](https://github.com/weso/shapes-rs/tree/master/shapemap) ShapeMap implementation.
-- [shex_ast](https://github.com/weso/shapes-rs/tree/master/shex_ast) defines the ShEx Abstract syntax
-- [shex_compact](https://github.com/weso/shapes-rs/tree/master/shex_compact) contains the code required to handle ShEx compact syntax.
-- [shex_validation](https://github.com/weso/shapes-rs/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
-- [shex_testsuite](https://github.com/weso/shapes-rs/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
-- [shacl_ast](https://github.com/weso/shapes-rs/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
-- [shacl_validation](https://github.com/weso/shapes-rs/tree/master/shacl_validation) contains the code required to validate RDF using SHACL.
-- [dctap](https://github.com/weso/shapes-rs/tree/master/dctap) contains the code required to do handle DCTAP files.
-- [shapes_converter](https://github.com/weso/shapes-rs/tree/master/shapes_converter) contains the code required to do conversion between different shapes formalisms.
+- [iri_s](https://github.com/rudof-project/rudof/tree/master/iri_s) defines simple IRIs.
+- [srdf](https://github.com/rudof-project/rudof/tree/master/srdf) simple RDF model which will be used for validation.
+- [prefixmap](https://github.com/rudof-project/rudof/tree/master/prefixmap) Prefix maps implementation.
+- [shapemap](https://github.com/rudof-project/rudof/tree/master/shapemap) ShapeMap implementation.
+- [shex_ast](https://github.com/rudof-project/rudof/tree/master/shex_ast) defines the ShEx Abstract syntax
+- [shex_compact](https://github.com/rudof-project/rudof/tree/master/shex_compact) contains the code required to handle ShEx compact syntax.
+- [shex_validation](https://github.com/rudof-project/rudof/tree/master/shex_validation) contains the code required to validate RDF using ShEx.
+- [shex_testsuite](https://github.com/rudof-project/rudof/tree/master/shex_testsuite) contains the code required to run the ShEx testsuite.
+- [shacl_ast](https://github.com/rudof-project/rudof/tree/master/shacl_ast) defines the SHACL core Abstract syntax.
+- [shacl_validation](https://github.com/rudof-project/rudof/tree/master/shacl_validation) contains the code required to validate RDF using SHACL.
+- [dctap](https://github.com/rudof-project/rudof/tree/master/dctap) contains the code required to do handle DCTAP files.
+- [shapes_converter](https://github.com/rudof-project/rudof/tree/master/shapes_converter) contains the code required to do conversion between different shapes formalisms.
 
 ## Publishing the crates
 
