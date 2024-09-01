@@ -482,7 +482,7 @@ fn run_validate_shex(
 
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shacl(
-    shapes_path: &InputSpec,
+    input: &InputSpec,
     shapes_format: &ShaclFormat,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -496,9 +496,10 @@ fn run_validate_shacl(
 
     // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
     let data = cast_to_data_path(data)?;
+    let reader = input.open_read()?;
 
     let schema = ShaclDataManager::load(
-        shapes_path,
+        reader,
         match shapes_format {
             ShaclFormat::Internal => todo!(),
             ShaclFormat::Turtle => srdf::RDFFormat::Turtle,
@@ -551,7 +552,7 @@ fn run_validate_shacl(
 }
 
 fn run_shacl(
-    shapes_path: &Path,
+    input: &InputSpec,
     shapes_format: &ShaclFormat,
     result_shapes_format: &ShaclFormat,
     output: &Option<PathBuf>,
@@ -559,7 +560,7 @@ fn run_shacl(
     reader_mode: &RDFReaderMode,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let shacl_schema = parse_shacl(shapes_path, shapes_format, reader_mode)?;
+    let shacl_schema = parse_shacl(input, shapes_format, reader_mode)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
             writeln!(writer, "{shacl_schema}")?;
@@ -648,12 +649,12 @@ fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input_path, format, output_path, &converter_config.shex2html_config(), reader_mode)
+                    run_shex2html(input, format, output_path, &converter_config.shex2html_config(), reader_mode)
                 }
             }
         }
         (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input_path, format, output, result_format, &converter_config, force_overwrite)
+            run_tap2uml(input, format, output, result_format, &converter_config, force_overwrite)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -661,7 +662,7 @@ fn run_convert(
             "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_tap2html(input_path, format, output_path, &converter_config)
+                    run_tap2html(input, format, output_path, &converter_config)
                 }
             }
         }
@@ -672,7 +673,7 @@ fn run_convert(
 }
 
 fn run_shacl2shex(
-    input_path: &Path,
+    input: &InputSpec,
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
@@ -684,7 +685,7 @@ fn run_shacl2shex(
         InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
-    let schema = parse_shacl(input_path, &schema_format, reader_mode)?;
+    let schema = parse_shacl(input, &schema_format, reader_mode)?;
     let mut converter = Shacl2ShEx::new(config);
     converter.convert(&schema)?;
     let (writer, color) = get_writer(output, force_overwrite)?;
@@ -756,7 +757,7 @@ fn generate_uml_output(
     }
 }
 
-fn run_shex2html(
+fn run_shex2html<P: AsRef<Path>>(
     input: &InputSpec,
     format: &InputConvertFormat,
     // msg_writer: &mut Box<dyn Write>,
@@ -780,7 +781,7 @@ fn run_shex2html(
     Ok(())
 }
 
-fn run_tap2html(
+fn run_tap2html<P: AsRef<Path>>(
     input: &InputSpec,
     format: &InputConvertFormat,
     // msg_writer: &mut Box<dyn Write>,
@@ -1203,7 +1204,7 @@ fn parse_schema(
 }
 
 fn parse_shacl(
-    shapes_path: &Path,
+    input: &InputSpec,
     shapes_format: &ShaclFormat,
     reader_mode: &RDFReaderMode,
 ) -> Result<ShaclSchema> {
@@ -1211,11 +1212,7 @@ fn parse_shacl(
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         _ => {
             let data_format = shacl_format_to_data_format(shapes_format)?;
-            let rdf = parse_data(
-                &vec![InputSpec::path(shapes_path)],
-                &data_format,
-                reader_mode,
-            )?;
+            let rdf = parse_data(&vec![input.clone()], &data_format, reader_mode)?;
             let schema = ShaclParser::new(rdf).parse()?;
             Ok(schema)
         }

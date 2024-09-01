@@ -293,8 +293,12 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
-        shapes: PathBuf,
+        #[arg(
+            short = 's',
+            long = "shapes",
+            value_name = "Shapes graph: file, URI or -"
+        )]
+        shapes: InputSpec,
 
         #[arg(
             short = 'f',
@@ -458,8 +462,12 @@ pub enum Command {
 
     /// Show information about SHACL shapes
     Shacl {
-        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
-        shapes: PathBuf,
+        #[arg(
+            short = 's',
+            long = "shapes",
+            value_name = "Shapes graph (file, URI or -)"
+        )]
+        shapes: InputSpec,
 
         #[arg(
             short = 'f',

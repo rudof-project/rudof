@@ -6,7 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs;
-use std::io;
+use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
 use tracing::debug;
 
@@ -157,7 +157,11 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(rdr: R) -> Result<Schema, SchemaJsonError> {
+    pub fn from_reader<R: BufRead>(rdr: R) -> Result<Schema, SchemaJsonError> {
+        serde_json::from_reader::<Schema>(rdr).map_err(|e| SchemaJsonError::JsonError {
+            path_name: path.display().to_string(),
+            error: e.to_string(),
+        })?;
         todo!()
     }
 
