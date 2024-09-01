@@ -18,36 +18,40 @@
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">rudof</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <a class="nav-link" href="https://rudof-project.github.io/rudof">
+            <img class="logo" src="img/rudof_logo3.svg" alt="rudof" width="100" />
+            <!--<a class="navbar-brand" href="#">rudof</a> -->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-        <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
-            <ul class="navbar-nav ml-auto">
-                <a class="nav-link" href="https://rudof-project.github.io/rudof">
-                    <img class="logo" src="img/rudof_logo3.svg" alt="WESO" width="100" />
-                </a><a class="nav-link" href="https://www.weso.es/">
-                    <img class="logo" src="img/logo-weso.png" alt="WESO" width="100" />
-                </a>
-            </ul>
+            <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+                <ul class="navbar-nav ml-auto">
+                    <!--                <a class="nav-link" href="https://rudof-project.github.io/rudof">
+                    <img class="logo" src="img/rudof_logo3.svg" alt="rudof logo" width="100" /> -->
+        </a><a class="nav-link" href="https://www.weso.es/">
+            <img class="logo" src="img/logo-weso.png" alt="WESO" width="100" />
+        </a>
+        </ul>
         </div>
     </nav>
 
     <div class="container">
         <h1>rudof</h1>
-        <p>rudof is an <a href="https://www.w3.org/RDF/">RDF</a> library that implements
+        <p><code>rudof</code> is a library that implements
             <a href="https://shex.io/">Shape Expressions (ShEx)</a>,
             <a href="https://www.w3.org/TR/shacl/">SHACL</a>,
-            <a href="https://www.dublincore.org/specifications/dctap/">DCTAP</a>, and other technologies in the RDF
+            <a href="https://www.dublincore.org/specifications/dctap/">DCTAP</a>, and other technologies in the <a
+                href="https://www.w3.org/RDF/">RDF</a>
             ecosystem.
         </p>
-        <p>The library is implemented in <a href="https://www.rust-lang.org/">Rust</a></p>
-        <p>The library can be run as a command line tool or can be embedded as a library.</p>
-        <p>It can be used to validate RDF data in different syntaxes like Turtle, NTriples, etc. as well as RDF data
-            queriable from SPARQL endpoints like Wikidata.</p>
-        <p>It can also be used to convert between different RDF data validation technologies like ShEx, SHACL, DCTAP,
+        <p>The library is implemented in <a href="https://www.rust-lang.org/">Rust</a> but we also provide python
+            bindings.</p>
+        <p>rudof can be run as a command line tool or can be embedded as a library.</p>
+        <p>It can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, etc. as well
+            as RDF data available through SPARQL endpoints like Wikidata.</p>
+        <p>rudof can also be used to convert between different RDF data validation technologies like ShEx, SHACL, DCTAP,
             etc. and to generate UML like visualizations and HTML views.</p>
         <ul>
             <li>We publish binaries in Linux, Windows and Apple which can be downloaded <a
@@ -62,10 +66,11 @@
         </ul>
 
         <h2>Modules</h2>
+
+        <p>rudof has been implemented using a modular structure and the different modules are available as Rust crates
+        </p>
         <ul>
             <!--<li><a href="https://docs.rs/shex_cli/">ShEx cli</a>: Command line interface</li>-->
-            <li><a href="https://docs.rs/shex_testsuite/">ShEx testsuite</a>: Code that checks the <a
-                    href="https://shexspec.github.io/test-suite/">ShEx testsuite</a></li>
             <li><a href="https://docs.rs/shex_validation/">ShEx validator</a>: ShEx Validator</li>
             <li><a href="https://docs.rs/shex_compact">ShEx compact</a>: ShEx Compact syntax parser that
                 follows <a href="https://shex.io/shex-semantics/index.html#shexc">ShEx compact grammar</a></li>
@@ -81,11 +86,15 @@
             <li><a href="https://docs.rs/shacl_ast">SHACL ast</a>: Represents <a
                     href="https://www.w3.org/TR/shacl">SHACL core abstract syntax</a></li>
             <li><a href="https://docs.rs/rbe">RBE</a>: Regular Bag Expressions
+            <li><a href="https://docs.rs/shex_testsuite/">ShEx testsuite</a>: Code that checks the <a
+                    href="https://shexspec.github.io/test-suite/">ShEx testsuite</a></li>
             </li>
         </ul>
         </li>
         </ul>
+
         <h2>Related projects</h2>
+        <p>An incomplete list of projects which are related with <code>rudof</code> is the following:</p>
         <ul>
             <li><a href="https://www.weso.es/shex-s/">ShEx-s</a>: Scala implementation of ShEx. This project started as
                 a
@@ -101,6 +110,13 @@
         <h2>Contributors</h2>
         <a href="https://github.com/weso/shapes-rs/graphs/contributors">List of contributors in Github</a>
 
+        <h2>Supporters and adopters</h2>
+
+        <ul>
+            <li><a href="http://www.weso.es/">WESO (WEb Semantics Oviedo)</a>: Most of the contributors are part of this
+                research group at the <a href="http://www.uniovi.es">University of Oviedo</a></li>
+            <!--<li><a href="">DBCLS: Database Center for Life Sciences</a></li>-->
+        </ul>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
