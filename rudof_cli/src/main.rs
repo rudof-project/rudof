@@ -349,7 +349,7 @@ fn main() -> Result<()> {
 
 #[allow(clippy::too_many_arguments)]
 fn run_shex(
-    schema_path: &Path,
+    input: &InputSpec,
     schema_format: &ShExFormat,
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
@@ -360,7 +360,7 @@ fn run_shex(
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema_path, schema_format, reader_mode)?;
+    let schema_json = parse_schema(input, schema_format, reader_mode)?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
@@ -416,7 +416,7 @@ fn show_schema(
 
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shex(
-    schema_path: &Path,
+    schema: &InputSpec,
     schema_format: &ShExFormat,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -432,7 +432,7 @@ fn run_validate_shex(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema_path, schema_format, reader_mode)?;
+    let schema_json = parse_schema(schema, schema_format, reader_mode)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
     let data = get_data(data, data_format, endpoint, reader_mode, debug)?;
@@ -482,7 +482,7 @@ fn run_validate_shex(
 
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shacl(
-    shapes_path: &Path,
+    shapes_path: &InputSpec,
     shapes_format: &ShaclFormat,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -576,7 +576,7 @@ fn run_shacl(
 }
 
 fn run_dctap(
-    input_path: &Path,
+    input: &InputSpec,
     format: &DCTapFormat,
     result_format: &DCTapResultFormat,
     output: &Option<PathBuf>,
@@ -588,7 +588,7 @@ fn run_dctap(
         Some(config_path) => TapConfig::from_path(config_path),
         None => Ok(TapConfig::default()),
     }?;
-    let dctap = parse_dctap(input_path, format, &tap_config)?;
+    let dctap = parse_dctap(input, format, &tap_config)?;
     match result_format {
         DCTapResultFormat::Internal => {
             writeln!(writer, "{dctap}")?;
@@ -605,7 +605,7 @@ fn run_dctap(
 
 #[allow(clippy::too_many_arguments)]
 fn run_convert(
-    input_path: &Path,
+    input: &InputSpec,
     format: &InputConvertFormat,
     input_mode: &InputConvertMode,
     maybe_shape_str: &Option<String>,
@@ -624,7 +624,7 @@ fn run_convert(
     }?;
     match (input_mode, output_mode) {
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input_path, format, output, result_format, &converter_config, force_overwrite)
+            run_tap2shex(input, format, output, result_format, &converter_config, force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
@@ -634,13 +634,13 @@ fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input_path, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite, reader_mode)
+            run_shex2sparql(input, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input_path, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
+            run_shex2uml(input, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
-            run_shacl2shex(input_path, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite, reader_mode)
+            run_shacl2shex(input, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -707,7 +707,7 @@ fn run_shacl2shex(
 }
 
 fn run_shex2uml(
-    input_path: &Path,
+    input: &InputSpec,
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
@@ -719,7 +719,7 @@ fn run_shex2uml(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path, &schema_format, reader_mode)?;
+    let schema = parse_schema(input, &schema_format, reader_mode)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -756,8 +756,8 @@ fn generate_uml_output(
     }
 }
 
-fn run_shex2html<P: AsRef<Path>>(
-    input_path: P,
+fn run_shex2html(
+    input: &InputSpec,
     format: &InputConvertFormat,
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
@@ -769,7 +769,7 @@ fn run_shex2html<P: AsRef<Path>>(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path.as_ref(), &schema_format, reader_mode)?;
+    let schema = parse_schema(input, &schema_format, reader_mode)?;
     let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
     debug!("Landing page will be generated at {landing_page}\nStarted converter...");
@@ -780,8 +780,8 @@ fn run_shex2html<P: AsRef<Path>>(
     Ok(())
 }
 
-fn run_tap2html<P: AsRef<Path>>(
-    input_path: P,
+fn run_tap2html(
+    input: &InputSpec,
     format: &InputConvertFormat,
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
@@ -792,7 +792,7 @@ fn run_tap2html<P: AsRef<Path>>(
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &dctap_format, &config.tap_config())?;
+    let dctap = parse_dctap(input, &dctap_format, &config.tap_config())?;
     let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
     let shex = converter_tap.convert(&dctap)?;
     debug!(
@@ -818,7 +818,7 @@ fn run_tap2html<P: AsRef<Path>>(
 
 #[allow(clippy::too_many_arguments)]
 fn run_shex2sparql(
-    input_path: &Path,
+    input: &InputSpec,
     format: &InputConvertFormat,
     shape: Option<IriRef>,
     output: &Option<PathBuf>,
@@ -831,7 +831,7 @@ fn run_shex2sparql(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input_path, &schema_format, reader_mode)?;
+    let schema = parse_schema(input, &schema_format, reader_mode)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -840,7 +840,7 @@ fn run_shex2sparql(
 }
 
 fn run_tap2shex(
-    input_path: &Path,
+    input_path: &InputSpec,
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
@@ -867,7 +867,7 @@ fn run_tap2shex(
 }
 
 fn run_tap2uml(
-    input_path: &Path,
+    input_path: &InputSpec,
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
@@ -1177,29 +1177,24 @@ fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Res
 }
 
 fn parse_schema(
-    schema_path: &Path,
+    input: &InputSpec,
     schema_format: &ShExFormat,
     reader_mode: &RDFReaderMode,
 ) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
-            let schema = ShExParser::parse_buf(schema_path, None)?;
+            let reader = input.open_read()?;
+            let schema = ShExParser::from_reader(reader, None)?;
             Ok(schema)
         }
         ShExFormat::ShExJ => {
-            let schema_json = SchemaJson::parse_schema_buf(schema_path)?;
-            //let mut schema: CompiledSchema = CompiledSchema::new();
-            // schema.from_schema_json(&schema_json)?;
-            // Ok((&schema_json, &schema))
+            let reader = input.open_read()?;
+            let schema_json = SchemaJson::from_reader(reader)?;
             Ok(schema_json)
         }
         ShExFormat::Turtle => {
-            let rdf = parse_data(
-                &vec![InputSpec::path(schema_path)],
-                &DataFormat::Turtle,
-                reader_mode,
-            )?;
+            let rdf = parse_data(&vec![input.clone()], &DataFormat::Turtle, reader_mode)?;
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1227,14 +1222,11 @@ fn parse_shacl(
     }
 }
 
-fn parse_dctap<P: AsRef<Path>>(
-    input_path: P,
-    format: &DCTapFormat,
-    config: &TapConfig,
-) -> Result<DCTap> {
+fn parse_dctap(input: &InputSpec, format: &DCTapFormat, config: &TapConfig) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let dctap = DCTap::from_path(input_path, config)?;
+            let reader = input.open_read()?;
+            let dctap = DCTap::from_reader(reader, config)?;
             Ok(dctap)
         }
     }

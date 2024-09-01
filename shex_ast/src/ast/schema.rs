@@ -6,6 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use tracing::debug;
 
@@ -154,6 +155,10 @@ impl Schema {
         };
         debug!("SchemaJson parsed: {:?}", schema);
         Ok(schema)
+    }
+
+    pub fn from_reader<R: io::Read>(rdr: R) -> Result<Schema, SchemaJsonError> {
+        todo!()
     }
 
     pub fn parse_schema_name(schema_name: &String, base: &Path) -> Result<Schema, SchemaJsonError> {

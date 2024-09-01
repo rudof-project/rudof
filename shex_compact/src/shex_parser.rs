@@ -4,6 +4,7 @@ use prefixmap::Deref;
 use shex_ast::Iri;
 use shex_ast::Schema;
 use std::fs;
+use std::io;
 use std::path::Path;
 use tracing::debug;
 
@@ -71,6 +72,10 @@ impl<'a> ShExParser<'a> {
         let data = fs::read_to_string(path)?;
         let schema = ShExParser::parse(&data, base)?;
         Ok(schema)
+    }
+
+    pub fn from_reader<R: io::Read>(rdr: R, base: Option<IriS>) -> Result<Schema> {
+        todo!()
     }
 }
 
