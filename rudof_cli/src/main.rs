@@ -1185,8 +1185,8 @@ fn parse_schema(
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
-            let reader = input.open_read()?;
-            let schema = ShExParser::from_reader(reader, None)?;
+            let mut reader = input.open_read()?;
+            let schema = ShExParser::from_reader(&mut reader, None)?;
             Ok(schema)
         }
         ShExFormat::ShExJ => {

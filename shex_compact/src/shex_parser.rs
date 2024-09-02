@@ -74,8 +74,10 @@ impl<'a> ShExParser<'a> {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(rdr: R, base: Option<IriS>) -> Result<Schema> {
-        todo!()
+    pub fn from_reader<R: io::Read>(rdr: &mut R, base: Option<IriS>) -> Result<Schema> {
+        let mut str = String::new();
+        rdr.read_to_string(&mut str)?;
+        Self::parse(&str, base)
     }
 }
 

@@ -8,6 +8,7 @@ use shacl_validation::validate::Validator;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io::BufReader;
 use std::io::BufWriter;
 use std::path::Path;
 use std::str::FromStr;
@@ -66,10 +67,14 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         let data = Path::new(data);
         let data_format = obtain_format(data.extension())?;
 
-        let shapes = Path::new(shapes);
-        let shapes_format = obtain_format(shapes.extension())?;
+        let shapes_path = Path::new(shapes);
 
-        let schema = match ShaclDataManager::load(Path::new(&shapes), shapes_format, None) {
+        // TODO: Consider if it is a good idea to assume a format matches a extension...
+        let shapes_format = obtain_format(shapes_path.extension())?;
+        let file = File::open(shapes).unwrap_or_else(|_| panic!("Unable to open file: {shapes}"));
+        let reader = BufReader::new(file);
+
+        let schema = match ShaclDataManager::load(reader, shapes_format, None) {
             Ok(schema) => schema,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };
