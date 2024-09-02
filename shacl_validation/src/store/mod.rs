@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::io::BufRead;
 use std::str::FromStr;
 
 use oxiri::Iri;
@@ -20,13 +20,13 @@ pub trait Store<S> {
 pub struct ShaclDataManager;
 
 impl ShaclDataManager {
-    pub fn load(
-        path: &Path,
+    pub fn load<R: BufRead>(
+        reader: R,
         rdf_format: RDFFormat,
         base: Option<&str>,
     ) -> Result<Schema, ValidateError> {
-        let rdf = SRDFGraph::from_path(
-            path,
+        let rdf = SRDFGraph::from_reader(
+            reader,
             &rdf_format,
             match base {
                 Some(base) => Some(Iri::from_str(base)?),

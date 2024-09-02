@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fs::File, io::BufReader, path::Path};
 
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
@@ -86,11 +86,10 @@ fn main() -> Result<(), TestSuiteError> {
             test.base.as_deref(),
             cli.mode,
         )?;
-        let schema = ShaclDataManager::load(
-            Path::new(&test.shapes),
-            srdf::RDFFormat::Turtle,
-            test.base.as_deref(),
-        )?;
+        let file = File::open(test.shapes.as_str())
+            .unwrap_or_else(|_| panic!("Unable to open file: {}", test.shapes));
+        let reader = BufReader::new(file);
+        let schema = ShaclDataManager::load(reader, srdf::RDFFormat::Turtle, test.base.as_deref())?;
         let label = match test.label {
             Some(label) => label,
             None => String::from("Test"),

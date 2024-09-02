@@ -14,6 +14,11 @@ pub enum SchemaJsonError {
         error: String, // We need to clone errors so we use String instead of serde_json::Error,
     },
 
+    #[error("Reading JSON from reader. Error: {error:?}")]
+    JsonErrorFromReader {
+        error: String, // We need to clone errors so we use String instead of serde_json::Error,
+    },
+
     #[error("Shape Decl with prefixed shape {prefix:}:{local} but no prefix map declaration")]
     ShapeDeclPrefixNoPrefixMap { prefix: String, local: String },
 

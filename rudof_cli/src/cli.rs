@@ -65,7 +65,7 @@ pub enum Command {
     /// Show information about ShEx schemas
     Shex {
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
-        schema: PathBuf,
+        schema: InputSpec,
 
         #[arg(
             short = 'f',
@@ -125,7 +125,7 @@ pub enum Command {
         validation_mode: ValidationMode,
 
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
-        schema: PathBuf,
+        schema: InputSpec,
 
         #[arg(
             short = 'f',
@@ -213,8 +213,12 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        #[arg(short = 's', long = "schema", value_name = "Schema file name")]
-        schema: PathBuf,
+        #[arg(
+            short = 's',
+            long = "schema",
+            value_name = "Schema file name, URI or -"
+        )]
+        schema: InputSpec,
 
         #[arg(
             short = 'f',
@@ -289,8 +293,12 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
-        shapes: PathBuf,
+        #[arg(
+            short = 's',
+            long = "shapes",
+            value_name = "Shapes graph: file, URI or -"
+        )]
+        shapes: InputSpec,
 
         #[arg(
             short = 'f',
@@ -454,8 +462,12 @@ pub enum Command {
 
     /// Show information about SHACL shapes
     Shacl {
-        #[arg(short = 's', long = "shapes", value_name = "Shapes file name")]
-        shapes: PathBuf,
+        #[arg(
+            short = 's',
+            long = "shapes",
+            value_name = "Shapes graph (file, URI or -)"
+        )]
+        shapes: InputSpec,
 
         #[arg(
             short = 'f',
@@ -500,8 +512,8 @@ pub enum Command {
     /// Show information and process DCTAP files
     #[command(name = "dctap")]
     DCTap {
-        #[arg(short = 'd', long = "data", value_name = "DCTap file name")]
-        file: PathBuf,
+        #[arg(short = 's', long = "source-file", value_name = "DCTap source file")]
+        file: InputSpec,
 
         #[arg(
             short = 'f',
@@ -555,7 +567,7 @@ pub enum Command {
         force_overwrite: bool,
 
         #[arg(short = 's', long = "source-file", value_name = "Source file name")]
-        file: PathBuf,
+        file: InputSpec,
 
         #[arg(
             short = 'f',
