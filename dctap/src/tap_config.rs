@@ -75,6 +75,10 @@ impl TapConfig {
             self.property_placeholders.get(str).cloned()
         }
     }
+
+    pub fn empty_property_placeholder(&self) -> Option<PlaceholderResolver> {
+        self.empty_property_placeholder.clone()
+    }
 }
 
 #[cfg(test)]

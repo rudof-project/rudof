@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.19] - 2024-09-01
+
+- Added option to get schemas from files, URIs or stdin (-) which was also implemented to data, solving issue #135
+
 ## [0.1.19] - 2024-08-30
 
 - Added option to generate simple information about ShEx schemas

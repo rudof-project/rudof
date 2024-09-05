@@ -152,20 +152,31 @@ impl<R: io::Read> TapReader<R> {
                         );
                         self.state
                             .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
-                        return None;
+                        None
                     } else {
                         debug!(
                             "Empty property id with property label {str_label} at line {}",
                             pos.line()
                         );
+                        if let Some(placeholder) = self.config.empty_property_placeholder() {
+                            self.generate_property_id("", &placeholder, pos)
+                        } else {
+                            None
+                        }
                     }
+                } else {
+                    /* Empty property id and no property label header */
+                    self.state
+                        .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
+                    None
                 }
-            }
-            if let Some(placeholder) = self.config.get_property_placeholder(&str) {
-                self.generate_property_id(str.as_str(), &placeholder, pos)
             } else {
-                let property_id = PropertyId::new(&str, pos.line());
-                Some(property_id)
+                if let Some(placeholder) = self.config.get_property_placeholder(&str) {
+                    self.generate_property_id(str.as_str(), &placeholder, pos)
+                } else {
+                    let property_id = PropertyId::new(&str, pos.line());
+                    Some(property_id)
+                }
             }
         } else {
             None
