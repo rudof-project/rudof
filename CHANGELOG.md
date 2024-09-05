@@ -2,6 +2,14 @@
 
 ## Current changes without release yet
 
+## [0.1.21] - 2024-09-05
+
+- Small release with a small improvement in the way we handle empty rows in DCTAP
+
+## [0.1.20] - 2024-09-04
+
+- Small release after moving the project to a standalone rudof-project organization
+
 ## [0.1.19] - 2024-09-01
 
 - Added option to get schemas from files, URIs or stdin (-) which was also implemented to data, solving issue #135
