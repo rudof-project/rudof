@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs::OpenOptions;
 
 use crate::{find_annotation, object_value2string, ShEx2HtmlError};
@@ -8,7 +9,8 @@ use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr}
 use tracing::debug;
 
 use super::{
-    Cardinality, Entry, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ValueConstraint,
+    Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry,
+    ValueConstraint,
 };
 
 pub struct ShEx2Html {
@@ -33,6 +35,7 @@ impl ShEx2Html {
             .prefixmap()
             .unwrap_or_default()
             .without_rich_qualifying();
+        let parent = self.create_name_for_schema(shex);
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
@@ -42,18 +45,38 @@ impl ShEx2Html {
                     &shape_decl.shape_expr,
                     &prefixmap,
                     &node_id,
+                    &parent,
                 )?;
                 self.current_html.add_component(node_id, component)?;
             }
         }
+
+        if self.config.embed_svg_schema {
+            let str = self.create_svg_schema(shex)?;
+            self.current_html.set_svg_schema(str.as_str())
+        }
         Ok(())
+    }
+
+    pub fn create_svg_schema(&mut self, _schema: &Schema) -> Result<String, ShEx2HtmlError> {
+        Ok("Not implemented yet".to_string())
+    }
+
+    pub fn create_name_for_schema(&self, _shex: &Schema) -> Name {
+        let path_name = &self.config.landing_page();
+        let os_str = path_name.file_stem().unwrap_or_else(|| OsStr::new("kiko"));
+        let str = os_str
+            .to_os_string()
+            .into_string()
+            .unwrap_or_else(|_| panic!("Creating name for schema. Should be a string {os_str:?}"));
+        Name::new(&str, None, self.config.landing_page())
     }
 
     pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
         let environment = create_env();
         let landing_page = self.config.landing_page();
         let template = environment.get_template(self.config.landing_page_name.as_str())?;
-        let landing_page_name = landing_page.to_string_lossy().to_string();
+        let landing_page_name = self.config.landing_page_name();
         let out = OpenOptions::new()
             .write(true)
             .truncate(true)
@@ -63,9 +86,11 @@ impl ShEx2Html {
                 name: landing_page_name,
                 error: e,
             })?;
-        let _state = template
-            .render_to_write(self.current_html.to_landing_html_schema(&self.config), out)?;
 
+        /* Generate landing page */
+        template.render_to_write(self.current_html.to_landing_html_schema(&self.config), out)?;
+
+        /* Generate a page for each shape */
         let shape_template = environment.get_template(self.config.shape_template_name.as_str())?;
         for shape in self.current_html.shapes() {
             generate_shape_page(shape, &shape_template, &self.config)?;
@@ -91,13 +116,14 @@ impl ShEx2Html {
         shape_expr: &ShapeExpr,
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
+        parent: &Name,
     ) -> Result<HtmlShape, ShEx2HtmlError> {
         match shape_expr {
             ShapeExpr::Shape(shape) => {
-                self.shape2htmlshape(name, shape, prefixmap, current_node_id)
+                self.shape2htmlshape(name, shape, prefixmap, current_node_id, parent)
             }
             _ => Err(ShEx2HtmlError::NotImplemented {
-                msg: "Complex shape expressions are not implemented yet".to_string(),
+                msg: format!("Complex shape expressions are not implemented yet for conversion to HTML: {shape_expr:?}"),
             }),
         }
     }
@@ -108,11 +134,12 @@ impl ShEx2Html {
         shape: &Shape,
         prefixmap: &PrefixMap,
         current_node_id: &NodeId,
+        parent: &Name,
     ) -> Result<HtmlShape, ShEx2HtmlError> {
         if let Some(label) = get_label(&shape.annotations, prefixmap, &self.config)? {
             name.add_label(label.as_str())
         }
-        let mut html_shape = HtmlShape::new(name.clone());
+        let mut html_shape = HtmlShape::new(name.clone(), parent.clone());
         if let Some(extends) = &shape.extends {
             for e in extends.iter() {
                 let extended_name = self.shape_label2name(e, prefixmap)?;
@@ -121,8 +148,10 @@ impl ShEx2Html {
                     .get_node_adding_label(&extended_name.name());
                 html_shape.add_extends(&extended_name);
                 if !found {
-                    self.current_html
-                        .add_component(extended_node, HtmlShape::new(extended_name))?;
+                    self.current_html.add_component(
+                        extended_node,
+                        HtmlShape::new(extended_name, parent.clone()),
+                    )?;
                 }
             }
         }
@@ -159,6 +188,7 @@ impl ShEx2Html {
                                         current_node_id,
                                         &pred_name,
                                         &card,
+                                        parent,
                                     )?
                                 } else {
                                     ValueConstraint::default()
@@ -166,7 +196,11 @@ impl ShEx2Html {
                                 match value_constraint {
                                     ValueConstraint::None => {}
                                     _ => {
-                                        let entry = Entry::new(pred_name, value_constraint, card);
+                                        let entry = ShapeTemplateEntry::new(
+                                            pred_name,
+                                            value_constraint,
+                                            card,
+                                        );
                                         html_shape.add_entry(entry)
                                     }
                                 }
@@ -174,6 +208,7 @@ impl ShEx2Html {
                             _ => todo!(),
                         }
                     }
+                    Ok(())
                 }
                 TripleExpr::OneOf {
                     id: _,
@@ -203,6 +238,7 @@ impl ShEx2Html {
                             current_node_id,
                             &pred_name,
                             &card,
+                            parent,
                         )?
                     } else {
                         ValueConstraint::default()
@@ -210,13 +246,16 @@ impl ShEx2Html {
                     match value_constraint {
                         ValueConstraint::None => {}
                         _ => {
-                            let entry = Entry::new(pred_name, value_constraint, card);
-                            html_shape.add_entry(entry)
+                            let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
+                            html_shape.add_entry(entry);
                         }
-                    }
+                    };
+                    Ok(())
                 }
-                TripleExpr::TripleExprRef(_) => todo!(),
-            }
+                TripleExpr::TripleExprRef(tref) => Err(ShEx2HtmlError::not_implemented(
+                    format!("Triple expr reference {tref:?} not implemented yet").as_str(),
+                )),
+            }?;
             Ok(html_shape)
         } else {
             Ok(html_shape)
@@ -230,21 +269,35 @@ impl ShEx2Html {
         _current_node_id: &NodeId,
         _current_predicate: &Name,
         _current_card: &Cardinality,
+        parent: &Name,
     ) -> Result<ValueConstraint, ShEx2HtmlError> {
         match value_expr {
-            ShapeExpr::ShapeOr { shape_exprs: _ } => todo!(),
-            ShapeExpr::ShapeAnd { shape_exprs: _ } => todo!(),
-            ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
+            ShapeExpr::ShapeOr { shape_exprs } => Err(ShEx2HtmlError::not_implemented(
+                format!("Shape ORs {shape_exprs:?} not implemented yet").as_str(),
+            )),
+            ShapeExpr::ShapeAnd { shape_exprs } => Err(ShEx2HtmlError::not_implemented(
+                format!("Shape ANDs {shape_exprs:?} not implemented yet").as_str(),
+            )),
+            ShapeExpr::ShapeNot { shape_expr } => Err(ShEx2HtmlError::not_implemented(
+                format!("Shape NOTs {shape_expr:?} not implemented yet").as_str(),
+            )),
             ShapeExpr::NodeConstraint(nc) => {
                 if let Some(datatype) = nc.datatype() {
                     let name = iri_ref2name(&datatype, &self.config, &None, prefixmap)?;
                     Ok(ValueConstraint::datatype(name))
                 } else {
-                    todo!()
+                    Err(ShEx2HtmlError::not_implemented(
+                        format!("Some node constraints like {nc:?} are not implemented yet")
+                            .as_str(),
+                    ))
                 }
             }
-            ShapeExpr::Shape(_) => todo!(),
-            ShapeExpr::External => todo!(),
+            ShapeExpr::Shape(shape) => Err(ShEx2HtmlError::not_implemented(
+                format!("Ref to shape {shape:?} not implemented yet").as_str(),
+            )),
+            ShapeExpr::External => Err(ShEx2HtmlError::not_implemented(
+                "Ref to External not implemented yet",
+            )),
             ShapeExpr::Ref(r) => match &r {
                 ShapeExprLabel::IriRef { value } => {
                     let ref_name = iri_ref2name(value, &self.config, &None, prefixmap)?;
@@ -253,23 +306,15 @@ impl ShEx2Html {
                         .get_node_adding_label(ref_name.name().as_str());
                     if !found {
                         self.current_html
-                            .add_component(node, HtmlShape::new(ref_name.clone()))?
+                            .add_component(node, HtmlShape::new(ref_name.clone(), parent.clone()))?
                     }
-
                     Ok(ValueConstraint::Ref(ref_name))
                 }
-                ShapeExprLabel::BNode { value: _ } => todo!(),
-                ShapeExprLabel::Start => todo!(),
-            }, /*
-               // TODO: If we want to embed some references...
-               match &r {
-                   ShapeExprLabel::IriRef { value } => {
-                       let name = iri_ref2name(value, config, prefixmap)?;
-                       Ok(ValueConstraint::Ref(name))
-                   }
-                   ShapeExprLabel::BNode { value: _ } => todo!(),
-                   ShapeExprLabel::Start => todo!(),
-               }*/
+                ShapeExprLabel::BNode { value } => Err(ShEx2HtmlError::not_implemented(
+                    format!("Ref to bnode: {value}").as_str(),
+                )),
+                ShapeExprLabel::Start => Err(ShEx2HtmlError::not_implemented("Ref to Start")),
+            },
         }
     }
 }
@@ -320,26 +365,6 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
         _ => Err(ShEx2HtmlError::WrongCardinality { min, max }),
     }
 }
-
-/*
-fn generate_css_file(name: &str, config: &ShEx2HtmlConfig) -> Result<(), ShEx2HtmlError> {
-    let css_path = config.target_folder.join(name);
-    let css_path_name = css_path.display().to_string();
-    debug!("Generating css file: {css_path_name}");
-    let mut out_css = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(css_path)
-        .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
-            name: css_path_name,
-            error: e,
-        })?;
-    if let Some(color) = &config.color_property_name {
-        writeln!(out_css, ".property_name {{ {color} }}")?;
-    }
-    Ok(())
-}*/
 
 fn generate_shape_page(
     shape: &HtmlShape,

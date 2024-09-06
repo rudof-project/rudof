@@ -13,12 +13,21 @@
 
 <body>
     <h1>
-        {% if name.href %}
-        <a href="{{ name.href }}">{{ name.repr}}</a>
+        {% if name.relative_href %}
+        <a href="{{ name.relative_href }}">{{ name.repr}}</a>
         {% else %}
         {{ name.repr }}
-        {% endif %} {{ name.label }}
+        {% endif %}
+        {% if name.label %}
+        {{ name.label }}
+        {% endif %}
+        {% if name.href %}
+        <a href="{{ name.href }}">Link to shape</a>
+        {% endif %}
+
+
     </h1>
+    <p><a href="{{ parent.relative_href }}">Back to schema</a></p>
     <h2>Parents</h2>
     {% for e in extends %}
     <ul>
@@ -56,11 +65,12 @@
                 {% endwith %}
                 {% else %}
                 {% if entry.value_constraint.Ref %}
-                Ref {{ entry.value_constraint.Ref }}
+                {% with ref = entry.value_constraint.Ref %}
+                @<a href="{{ ref.relative_href }}">{{ ref.repr}}</a>
+                {% endwith %}
                 {% else %}
                 {{ entry.value_constraint.ref }}
                 {% endif %}
-                {{ entry.value_constraint }}
                 {% endif %}
             </td>
             <td> {{ entry.card }}</td>

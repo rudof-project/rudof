@@ -3,6 +3,7 @@
 //!
 pub mod converter_config;
 pub mod converter_error;
+pub mod landing_html_template;
 pub mod shacl_to_shex;
 pub mod shex_to_html;
 pub mod shex_to_sparql;

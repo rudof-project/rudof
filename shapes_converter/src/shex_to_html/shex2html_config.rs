@@ -22,12 +22,14 @@ pub struct ShEx2HtmlConfig {
     pub color_property_name: Option<String>,
     pub replace_iri_by_label: Option<bool>,
     pub annotation_label: Vec<IriS>,
+    pub embed_svg_schema: bool,
+    pub embed_svg_shape: bool,
 }
 
 impl Default for ShEx2HtmlConfig {
     fn default() -> Self {
         Self {
-            title: "Generated shapes".to_string(),
+            title: "ShEx schema".to_string(),
             landing_page_name: DEFAULT_LANDING_PAGE_NAME.to_string(),
             shape_template_name: DEFAULT_SHAPE_TEMPLATE_NAME.to_string(),
             css_file_name: Some("shex2html.css".to_string()),
@@ -35,6 +37,8 @@ impl Default for ShEx2HtmlConfig {
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
             annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
             replace_iri_by_label: None,
+            embed_svg_schema: true,
+            embed_svg_shape: false,
         }
     }
 }
@@ -57,6 +61,10 @@ impl ShEx2HtmlConfig {
             Some(tf) => tf.as_path().join(self.landing_page_name.as_str()),
             None => Path::new(self.landing_page_name.as_str()).to_path_buf(),
         }
+    }
+
+    pub fn landing_page_name(&self) -> String {
+        self.landing_page().to_string_lossy().to_string()
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2HtmlConfig, ShEx2HtmlConfigError> {

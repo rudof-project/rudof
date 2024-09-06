@@ -170,13 +170,11 @@ impl<R: io::Read> TapReader<R> {
                         .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
                     None
                 }
+            } else if let Some(placeholder) = self.config.get_property_placeholder(&str) {
+                self.generate_property_id(str.as_str(), &placeholder, pos)
             } else {
-                if let Some(placeholder) = self.config.get_property_placeholder(&str) {
-                    self.generate_property_id(str.as_str(), &placeholder, pos)
-                } else {
-                    let property_id = PropertyId::new(&str, pos.line());
-                    Some(property_id)
-                }
+                let property_id = PropertyId::new(&str, pos.line());
+                Some(property_id)
             }
         } else {
             None

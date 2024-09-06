@@ -1,10 +1,16 @@
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    time::SystemTime,
+};
 
+use chrono::{DateTime, Utc};
 use prefixmap::PrefixMap;
-use serde::Serialize;
 
 use super::{HtmlShape, NodeId, ShEx2HtmlConfig};
-use crate::ShEx2HtmlError;
+use crate::{
+    landing_html_template::{LandingHtmlTemplate, ShapeRef},
+    ShEx2HtmlError,
+};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct HtmlSchema {
@@ -12,6 +18,7 @@ pub struct HtmlSchema {
     labels: HashMap<String, NodeId>,
     shapes: HashMap<NodeId, HtmlShape>,
     prefixmap: PrefixMap,
+    svg_schema: String,
 }
 
 impl HtmlSchema {
@@ -37,16 +44,20 @@ impl HtmlSchema {
         }
     }
 
+    pub fn set_svg_schema(&mut self, svg_schema: &str) {
+        self.svg_schema = svg_schema.to_string()
+    }
+
     pub fn add_component(
         &mut self,
         node: NodeId,
         component: HtmlShape,
     ) -> Result<(), ShEx2HtmlError> {
         match self.shapes.entry(node) {
-            Entry::Occupied(c) => Err(ShEx2HtmlError::NodeIdHasShape {
-                node_id: node,
-                shape: Box::new(c.get().clone()),
-            }),
+            Entry::Occupied(mut v) => {
+                v.get_mut().merge(&component);
+                Ok(())
+            }
             Entry::Vacant(v) => {
                 v.insert(component);
                 Ok(())
@@ -58,7 +69,7 @@ impl HtmlSchema {
         self.shapes.values()
     }
 
-    pub fn to_landing_html_schema(&self, config: &ShEx2HtmlConfig) -> LandingHtmlSchema {
+    pub fn to_landing_html_schema(&self, config: &ShEx2HtmlConfig) -> LandingHtmlTemplate {
         let mut shapes = Vec::new();
         for shape in self.shapes.values() {
             shapes.push(ShapeRef::new(
@@ -67,34 +78,17 @@ impl HtmlSchema {
                 shape.name().label().unwrap_or_default().as_str(),
             ))
         }
-        LandingHtmlSchema {
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
+        let curr_time = SystemTime::now();
+        let dt: DateTime<Utc> = curr_time.into();
+        let created_time = dt.format("%Y-&m-%d %H:%M:%S").to_string();
+
+        LandingHtmlTemplate {
             title: config.title.clone(),
+            rudof_version: VERSION.to_string(),
+            created_time,
+            svg_schema: self.svg_schema.clone(),
             shapes,
-        }
-    }
-}
-
-#[derive(Serialize, Debug, PartialEq, Default)]
-
-pub struct LandingHtmlSchema {
-    title: String,
-    shapes: Vec<ShapeRef>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Default)]
-
-pub struct ShapeRef {
-    name: String,
-    href: String,
-    label: String,
-}
-
-impl ShapeRef {
-    pub fn new(name: &str, href: &str, label: &str) -> ShapeRef {
-        ShapeRef {
-            name: name.to_string(),
-            href: href.to_string(),
-            label: label.to_string(),
         }
     }
 }
