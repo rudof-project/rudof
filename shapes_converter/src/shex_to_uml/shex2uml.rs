@@ -36,6 +36,7 @@ impl ShEx2Uml {
         Ok(())
     }
 
+    /// Converts the current UML to an image
     pub fn as_image<W: Write>(
         &self,
         writer: &mut W,

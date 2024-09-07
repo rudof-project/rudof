@@ -1,7 +1,8 @@
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
+use std::io::{BufWriter, Write};
 
-use crate::{find_annotation, object_value2string, ShEx2HtmlError};
+use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, ShEx2UmlConfig};
 use minijinja::Template;
 use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
@@ -58,8 +59,13 @@ impl ShEx2Html {
         Ok(())
     }
 
-    pub fn create_svg_schema(&mut self, _schema: &Schema) -> Result<String, ShEx2HtmlError> {
-        Ok("Not implemented yet".to_string())
+    pub fn create_svg_schema(&mut self, schema: &Schema) -> Result<String, ShEx2HtmlError> {
+        let mut uml_converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        uml_converter.convert(schema)?;
+        let mut str_writer = BufWriter::new(Vec::new());
+        uml_converter.as_image(str_writer.by_ref(), crate::ImageFormat::SVG)?;
+        let str = String::from_utf8(str_writer.into_inner()?)?;
+        Ok(str)
     }
 
     pub fn create_name_for_schema(&self, _shex: &Schema) -> Name {

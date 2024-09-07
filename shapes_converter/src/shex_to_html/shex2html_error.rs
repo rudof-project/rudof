@@ -1,8 +1,13 @@
-use std::io;
+use std::{
+    io::{self, BufWriter, IntoInnerError},
+    string::FromUtf8Error,
+};
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
+
+use crate::ShEx2UmlError;
 
 use super::{HtmlShape, Name, NodeId};
 
@@ -50,6 +55,24 @@ pub enum ShEx2HtmlError {
     IOError {
         #[from]
         err: std::io::Error,
+    },
+
+    #[error(transparent)]
+    UTF8Error {
+        #[from]
+        err: FromUtf8Error,
+    },
+
+    #[error(transparent)]
+    IntoInnerError {
+        #[from]
+        err: IntoInnerError<BufWriter<Vec<u8>>>,
+    },
+
+    #[error(transparent)]
+    ShEx2UmlError {
+        #[from]
+        err: ShEx2UmlError,
     },
 
     #[error("Error creating landing page at: {name}, error: {error}")]

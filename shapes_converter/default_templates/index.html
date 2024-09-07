@@ -13,6 +13,7 @@
     <h1>
         {{ title }}
     </h1>
+    <h2>List of shapes</h2>
     <table class="table">
         <thead>
             <tr>
@@ -32,6 +33,12 @@
         </tr>
         {% endfor %}
     </table>
+    <h2>UML-based diagram</h2>
+    <figure class="figure">
+        {% autoescape false %}{{ svg_schema }}{% endautoescape %}
+        <figcaption class="figure-caption text-end">Generated UML-like diagram of the ShEx schema</figcaption>
+    </figure>
+
     <h2>Metadata</h2>
     <ul>
         <li>rudof_version: {{rudof_version}}</li>
