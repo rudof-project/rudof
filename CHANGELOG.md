@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.22] - 2024-09-07
+
+- Added the possibility to embed the SVG diagram in the HTML pages that are generated
+
 ## [0.1.21] - 2024-09-05
 
 - Small release with a small improvement in the way we handle empty rows in DCTAP
