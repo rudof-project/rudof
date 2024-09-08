@@ -44,13 +44,22 @@ impl ShEx2Html {
             for shape_decl in shapes {
                 let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
                 let (node_id, _found) = self.current_html.get_node_adding_label(&name.name());
-                let component = self.shape_expr2htmlshape(
+                let mut component = self.shape_expr2htmlshape(
                     &mut name,
                     &shape_decl.shape_expr,
                     &prefixmap,
                     &node_id,
                     &parent,
                 )?;
+                if self.config.embed_svg_shape {
+                    let str = self.create_svg_shape(&name.name(), shex)?;
+                    component.set_svg_shape(str.as_str());
+                    println!(
+                        "Created svg_shape {:?}: {}",
+                        component.name(),
+                        component.svg_shape()
+                    );
+                }
                 self.current_html.add_component(node_id, component)?;
             }
         }
@@ -70,6 +79,24 @@ impl ShEx2Html {
             str_writer.by_ref(),
             crate::ImageFormat::SVG,
             &UmlGenerationMode::all(),
+        )?;
+        let str = String::from_utf8(str_writer.into_inner()?)?;
+        Ok(str)
+    }
+
+    pub fn create_svg_shape(
+        &mut self,
+        name: &str,
+        schema: &Schema,
+    ) -> Result<String, ShEx2HtmlError> {
+        // TODO: Move the following two actions to the ShEx2HTML to avoid doing the process each time...
+        let mut uml_converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        uml_converter.convert(schema)?;
+        let mut str_writer = BufWriter::new(Vec::new());
+        uml_converter.as_image(
+            str_writer.by_ref(),
+            crate::ImageFormat::SVG,
+            &UmlGenerationMode::neighs(name),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
@@ -396,8 +423,7 @@ fn generate_shape_page(
                 name: file_name,
                 error: e,
             })?;
-        let state = template.render_to_write(shape, out_shape)?;
-        debug!("Generated state: {state:?}");
+        let _state = template.render_to_write(shape, out_shape)?;
         Ok(())
     } else {
         // It doesn't generate local page because name doesn't have a local ref

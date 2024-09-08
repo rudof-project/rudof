@@ -18,6 +18,9 @@ pub struct HtmlShape {
 
     /// Sequence of shape expressions that extend this shape
     children: Vec<Name>,
+
+    /// SVG visualization of the neighbors of a shape
+    pub svg_shape: String,
 }
 
 impl HtmlShape {
@@ -28,6 +31,7 @@ impl HtmlShape {
             extends: Vec::new(),
             parent,
             children: Vec::new(),
+            svg_shape: "".to_string(),
         }
     }
 
@@ -58,5 +62,13 @@ impl HtmlShape {
         for extend in other.extends() {
             self.add_extends(extend)
         }
+    }
+
+    pub fn svg_shape(&self) -> String {
+        self.svg_shape.to_string()
+    }
+
+    pub fn set_svg_shape(&mut self, str: &str) {
+        self.svg_shape = str.to_string();
     }
 }

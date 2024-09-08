@@ -38,7 +38,7 @@ impl Default for ShEx2HtmlConfig {
             annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
             replace_iri_by_label: None,
             embed_svg_schema: true,
-            embed_svg_shape: false,
+            embed_svg_shape: true,
         }
     }
 }
