@@ -21,6 +21,7 @@ use tempfile::TempDir;
 pub struct ShEx2Uml {
     config: ShEx2UmlConfig,
     current_uml: Uml,
+    current_prefixmap: PrefixMap,
 }
 
 impl ShEx2Uml {
@@ -28,12 +29,30 @@ impl ShEx2Uml {
         ShEx2Uml {
             config: config.clone(),
             current_uml: Uml::new(),
+            current_prefixmap: PrefixMap::new(),
         }
     }
 
-    pub fn as_plantuml<W: Write>(&self, writer: &mut W) -> Result<(), ShEx2UmlError> {
-        self.current_uml.as_plantuml(&self.config, writer)?;
-        Ok(())
+    pub fn as_plantuml<W: Write>(
+        &self,
+        writer: &mut W,
+        mode: &UmlGenerationMode,
+    ) -> Result<(), ShEx2UmlError> {
+        match mode {
+            UmlGenerationMode::AllNodes => {
+                self.current_uml.as_plantuml_all(&self.config, writer)?;
+                Ok(())
+            }
+            UmlGenerationMode::Neighs(str) => {
+                if let Some(node_id) = self.current_uml.get_node(str) {
+                    self.current_uml
+                        .as_plantuml_neighs(&self.config, writer, &node_id)?;
+                    Ok(())
+                } else {
+                    Err(ShEx2UmlError::NotFoundLabel { name: str.clone() })
+                }
+            }
+        }
     }
 
     /// Converts the current UML to an image
@@ -41,6 +60,7 @@ impl ShEx2Uml {
         &self,
         writer: &mut W,
         image_format: ImageFormat,
+        mode: &UmlGenerationMode,
     ) -> Result<(), ShEx2UmlError> {
         let tempdir = TempDir::new().map_err(|e| ShEx2UmlError::TempFileError { err: e })?;
         let tempdir_path = tempdir.path();
@@ -51,7 +71,9 @@ impl ShEx2Uml {
                 tempfile_name: tempfile_name.clone(),
                 error: e,
             })?;
-        self.current_uml.as_plantuml(&self.config, &mut tempfile)?;
+        self.as_plantuml(&mut tempfile, mode)?;
+        /*self.current_uml
+        .as_plantuml(&self.config, &mut tempfile, mode)?;*/
         debug!("ShEx contents stored in temporary file:{}", tempfile_name);
 
         let (out_param, out_file_name) = match image_format {
@@ -97,30 +119,24 @@ impl ShEx2Uml {
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2UmlError> {
-        let prefixmap = shex.prefixmap().unwrap_or_default();
+        self.current_prefixmap = shex.prefixmap().unwrap_or_default();
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
-                let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
+                let mut name = self.shape_label2name(&shape_decl.id)?;
                 let (node_id, _found) = self.current_uml.get_node_adding_label(&name.name());
-                let component = self.shape_expr2component(
-                    &mut name,
-                    &shape_decl.shape_expr,
-                    &prefixmap,
-                    &node_id,
-                )?;
+                let component =
+                    self.shape_expr2component(&mut name, &shape_decl.shape_expr, &node_id)?;
                 self.current_uml.update_component(node_id, component)?;
             }
         }
         Ok(())
     }
 
-    fn shape_label2name(
-        &mut self,
-        label: &ShapeExprLabel,
-        prefixmap: &PrefixMap,
-    ) -> Result<Name, ShEx2UmlError> {
+    fn shape_label2name(&self, label: &ShapeExprLabel) -> Result<Name, ShEx2UmlError> {
         match label {
-            ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, &None, prefixmap),
+            ShapeExprLabel::IriRef { value } => {
+                iri_ref2name(value, &self.config, &None, &self.current_prefixmap)
+            }
             ShapeExprLabel::BNode { value: _ } => todo!(),
             ShapeExprLabel::Start => todo!(),
         }
@@ -130,13 +146,10 @@ impl ShEx2Uml {
         &mut self,
         name: &mut Name,
         shape_expr: &ShapeExpr,
-        prefixmap: &PrefixMap,
         current_node_id: &NodeId,
     ) -> Result<UmlComponent, ShEx2UmlError> {
         match shape_expr {
-            ShapeExpr::Shape(shape) => {
-                self.shape2component(name, shape, prefixmap, current_node_id)
-            }
+            ShapeExpr::Shape(shape) => self.shape2component(name, shape, current_node_id),
             _ => Err(ShEx2UmlError::NotImplemented {
                 msg: "Complex shape expressions are not implemented yet".to_string(),
             }),
@@ -147,16 +160,15 @@ impl ShEx2Uml {
         &mut self,
         name: &mut Name,
         shape: &Shape,
-        prefixmap: &PrefixMap,
         current_node_id: &NodeId,
     ) -> Result<UmlComponent, ShEx2UmlError> {
-        if let Some(label) = get_label(&shape.annotations, prefixmap, &self.config)? {
+        if let Some(label) = get_label(&shape.annotations, &self.current_prefixmap, &self.config)? {
             name.add_label(label.as_str())
         }
         let mut uml_class = UmlClass::new(name.clone());
         if let Some(extends) = &shape.extends {
             for e in extends.iter() {
-                let extended_name = self.shape_label2name(e, prefixmap)?;
+                let extended_name = self.shape_label2name(e)?;
                 let (extended_node, found) = self
                     .current_uml
                     .get_node_adding_label(&extended_name.name());
@@ -194,13 +206,16 @@ impl ShEx2Uml {
                                 sem_acts: _,
                                 annotations,
                             } => {
-                                let pred_name =
-                                    mk_name(predicate, annotations, &self.config, prefixmap)?;
+                                let pred_name = mk_name(
+                                    predicate,
+                                    annotations,
+                                    &self.config,
+                                    &self.current_prefixmap,
+                                )?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
                                         se,
-                                        prefixmap,
                                         current_node_id,
                                         &pred_name,
                                         &card,
@@ -240,16 +255,15 @@ impl ShEx2Uml {
                     sem_acts: _,
                     annotations,
                 } => {
-                    let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
+                    let pred_name = mk_name(
+                        predicate,
+                        annotations,
+                        &self.config,
+                        &self.current_prefixmap,
+                    )?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
-                        self.value_expr2value_constraint(
-                            se,
-                            prefixmap,
-                            current_node_id,
-                            &pred_name,
-                            &card,
-                        )?
+                        self.value_expr2value_constraint(se, current_node_id, &pred_name, &card)?
                     } else {
                         ValueConstraint::default()
                     };
@@ -272,7 +286,6 @@ impl ShEx2Uml {
     fn value_expr2value_constraint(
         &mut self,
         value_expr: &ShapeExpr,
-        prefixmap: &PrefixMap,
         current_node_id: &NodeId,
         current_predicate: &Name,
         current_card: &UmlCardinality,
@@ -283,7 +296,8 @@ impl ShEx2Uml {
             ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
             ShapeExpr::NodeConstraint(nc) => {
                 if let Some(datatype) = nc.datatype() {
-                    let name = iri_ref2name(&datatype, &self.config, &None, prefixmap)?;
+                    let name =
+                        iri_ref2name(&datatype, &self.config, &None, &self.current_prefixmap)?;
                     Ok(ValueConstraint::datatype(name))
                 } else {
                     todo!()
@@ -293,7 +307,8 @@ impl ShEx2Uml {
             ShapeExpr::External => todo!(),
             ShapeExpr::Ref(r) => match &r {
                 ShapeExprLabel::IriRef { value } => {
-                    let ref_name = iri_ref2name(value, &self.config, &None, prefixmap)?;
+                    let ref_name =
+                        iri_ref2name(value, &self.config, &None, &self.current_prefixmap)?;
                     self.current_uml.add_link(
                         *current_node_id,
                         ref_name,
@@ -374,6 +389,24 @@ fn get_label(
 pub enum ImageFormat {
     SVG,
     PNG,
+}
+
+pub enum UmlGenerationMode {
+    /// Show all nodes
+    AllNodes,
+
+    /// Show only the neighbours of a node
+    Neighs(String),
+}
+
+impl UmlGenerationMode {
+    pub fn all() -> UmlGenerationMode {
+        UmlGenerationMode::AllNodes
+    }
+
+    pub fn neighs(str: &str) -> UmlGenerationMode {
+        UmlGenerationMode::Neighs(str.to_string())
+    }
 }
 
 #[cfg(test)]

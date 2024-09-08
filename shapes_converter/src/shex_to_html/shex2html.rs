@@ -2,7 +2,10 @@ use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 
-use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, ShEx2UmlConfig};
+use crate::{
+    find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, ShEx2UmlConfig,
+    UmlGenerationMode,
+};
 use minijinja::Template;
 use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
@@ -63,7 +66,11 @@ impl ShEx2Html {
         let mut uml_converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
         uml_converter.convert(schema)?;
         let mut str_writer = BufWriter::new(Vec::new());
-        uml_converter.as_image(str_writer.by_ref(), crate::ImageFormat::SVG)?;
+        uml_converter.as_image(
+            str_writer.by_ref(),
+            crate::ImageFormat::SVG,
+            &UmlGenerationMode::all(),
+        )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
     }

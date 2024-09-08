@@ -29,7 +29,7 @@ use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
     ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
-    Shacl2ShExConfig, Tap2ShEx,
+    Shacl2ShExConfig, Tap2ShEx, UmlGenerationMode,
 };
 use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
@@ -450,7 +450,7 @@ fn run_validate_shex(
         }
         (Some(node_str), Some(shape_str)) => {
             let node_selector = parse_node_selector(node_str)?;
-            let shape_selector = parse_shape_label(shape_str)?;
+            let shape_selector = parse_shape_selector(shape_str)?;
             shapemap.add_association(node_selector, shape_selector)
         }
         (None, Some(shape_str)) => {
@@ -638,7 +638,7 @@ fn run_convert(
             run_shex2sparql(input, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input, format, output, result_format, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
+            run_shex2uml(input, format, output, result_format, &maybe_shape_str, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
             run_shacl2shex(input, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite, reader_mode)
@@ -654,7 +654,7 @@ fn run_convert(
             }
         }
         (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input, format, output, result_format, &converter_config, force_overwrite)
+            run_tap2uml(input, format, output, maybe_shape_str, result_format, &converter_config, force_overwrite)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -712,6 +712,7 @@ fn run_shex2uml(
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
+    maybe_shape: &Option<String>,
     config: &ShEx2UmlConfig,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
@@ -724,33 +725,38 @@ fn run_shex2uml(
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    generate_uml_output(converter, &mut writer, result_format)?;
+    generate_uml_output(converter, maybe_shape, &mut writer, result_format)?;
     Ok(())
 }
 
 fn generate_uml_output(
     uml_converter: ShEx2Uml,
+    maybe_shape: &Option<String>,
     writer: &mut Box<dyn Write>,
     result_format: &OutputConvertFormat,
 ) -> Result<()> {
+    let mode = if let Some(str) = maybe_shape {
+        UmlGenerationMode::neighs(str)
+    } else {
+        UmlGenerationMode::all()
+    };
     match result_format {
         OutputConvertFormat::PlantUML => {
-            uml_converter.as_plantuml(writer)?;
+            uml_converter.as_plantuml(writer, &mode)?;
             Ok(())
         }
         OutputConvertFormat::SVG => {
-            uml_converter.as_image(writer, ImageFormat::SVG)?;
+            uml_converter.as_image(writer, ImageFormat::SVG, &mode)?;
             Ok(())
         }
         OutputConvertFormat::PNG => {
-            uml_converter.as_image(writer, ImageFormat::PNG)?;
+            uml_converter.as_image(writer, ImageFormat::PNG, &mode)?;
             Ok(())
         }
         OutputConvertFormat::Default => {
-            uml_converter.as_plantuml(writer)?;
+            uml_converter.as_plantuml(writer, &mode)?;
             Ok(())
         }
-        // OutputConvertFormat::JPG => converter.as_image(writer, Image::JPG)?,
         _ => Err(anyhow!(
             "Conversion to UML does not support output format {result_format}"
         )),
@@ -871,6 +877,7 @@ fn run_tap2uml(
     input_path: &InputSpec,
     format: &InputConvertFormat,
     output: &Option<PathBuf>,
+    maybe_shape: &Option<String>,
     result_format: &OutputConvertFormat,
     config: &ConverterConfig,
     force_overwrite: bool,
@@ -885,7 +892,7 @@ fn run_tap2uml(
     let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
     converter_uml.convert(&shex)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    generate_uml_output(converter_uml, &mut writer, result_format)?;
+    generate_uml_output(converter_uml, maybe_shape, &mut writer, result_format)?;
     Ok(())
 }
 
@@ -1268,10 +1275,17 @@ fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     Ok(ns)
 }
 
-fn parse_shape_label(label_str: &str) -> Result<ShapeSelector> {
+fn parse_shape_selector(label_str: &str) -> Result<ShapeSelector> {
     let selector = ShapeMapParser::parse_shape_selector(label_str)?;
     Ok(selector)
 }
+
+/*fn parse_shape_label(label_str: &str) -> Result<ShapeExprLabel> {
+    match ShapeExprLabel::try_from(label_str) {
+        Err(e) => bail!("Error trying to get shape expression label from {label_str}: {e}"),
+        Ok(label) => Ok(label.clone()),
+    }
+}*/
 
 fn parse_iri_ref(iri: &str) -> Result<IriRef> {
     let iri = ShapeMapParser::parse_iri_ref(iri)?;

@@ -4,10 +4,20 @@ use super::{Name, ShapeTemplateEntry};
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct HtmlShape {
+    /// Name of this shape
     name: Name,
+
+    /// Sequence of entries
     entries: Vec<ShapeTemplateEntry>,
+
+    /// Sequence of shape expressions that this shape extends
     extends: Vec<Name>,
+
+    /// Parent represents the name of the schema or shape expression to which this shape belongs
     parent: Name,
+
+    /// Sequence of shape expressions that extend this shape
+    children: Vec<Name>,
 }
 
 impl HtmlShape {
@@ -17,6 +27,7 @@ impl HtmlShape {
             entries: Vec::new(),
             extends: Vec::new(),
             parent,
+            children: Vec::new(),
         }
     }
 
