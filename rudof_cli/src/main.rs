@@ -919,7 +919,7 @@ fn get_writer(
         Some(path) => {
             let file = if Path::exists(path) {
                 if force_overwrite {
-                    OpenOptions::new().write(true).open(path)
+                    OpenOptions::new().write(true).truncate(true).open(path)
                 } else {
                     bail!("File {} already exists. If you want to overwrite it, use the `force-overwrite` option", path.display());
                 }
