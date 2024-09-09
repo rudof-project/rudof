@@ -15,6 +15,14 @@ pub struct ValidationReport<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> ValidationReport<S> {
+    pub fn conforms(&self) -> bool {
+        self.conforms
+    }
+
+    pub fn results_size(&self) -> usize {
+        self.results.len()
+    }
+
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {
         if self.conforms {
             self.conforms = false; // we add a result --> make the Report non-conformant
