@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
+use crate::ShEx2UmlConfig;
+
 pub const DEFAULT_COLOR_PROPERTY_NAME: &str = "blue";
 pub const DEFAULT_LANDING_PAGE_NAME: &str = "index.html";
 pub const DEFAULT_SHAPE_TEMPLATE_NAME: &str = "shape.html";
@@ -24,6 +26,7 @@ pub struct ShEx2HtmlConfig {
     pub annotation_label: Vec<IriS>,
     pub embed_svg_schema: bool,
     pub embed_svg_shape: bool,
+    pub shex2uml: Option<ShEx2UmlConfig>,
 }
 
 impl Default for ShEx2HtmlConfig {
@@ -39,6 +42,7 @@ impl Default for ShEx2HtmlConfig {
             replace_iri_by_label: None,
             embed_svg_schema: true,
             embed_svg_shape: true,
+            shex2uml: Some(ShEx2UmlConfig::new()),
         }
     }
 }
@@ -80,6 +84,13 @@ impl ShEx2HtmlConfig {
                 error: e,
             }
         })
+    }
+
+    pub fn shex2uml_config(&self) -> ShEx2UmlConfig {
+        match &self.shex2uml {
+            None => ShEx2UmlConfig::default(),
+            Some(s) => s.clone(),
+        }
     }
 }
 

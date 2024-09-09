@@ -69,6 +69,10 @@ impl HtmlSchema {
         self.shapes.values()
     }
 
+    pub fn shapes_mut(&mut self) -> impl Iterator<Item = &mut HtmlShape> {
+        self.shapes.values_mut()
+    }
+
     pub fn to_landing_html_schema(&self, config: &ShEx2HtmlConfig) -> LandingHtmlTemplate {
         let mut shapes = Vec::new();
         for shape in self.shapes.values() {

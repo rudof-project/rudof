@@ -2,15 +2,11 @@ use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 
-use crate::{
-    find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, ShEx2UmlConfig,
-    UmlGenerationMode,
-};
+use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, UmlGenerationMode};
 use minijinja::Template;
 use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
-use tracing::debug;
 
 use super::{
     Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry,
@@ -20,13 +16,16 @@ use super::{
 pub struct ShEx2Html {
     config: ShEx2HtmlConfig,
     current_html: HtmlSchema,
+    current_uml_converter: ShEx2Uml,
 }
 
 impl ShEx2Html {
     pub fn new(config: ShEx2HtmlConfig) -> ShEx2Html {
+        let uml_config = config.shex2uml_config();
         ShEx2Html {
             config,
             current_html: HtmlSchema::new(),
+            current_uml_converter: ShEx2Uml::new(&uml_config),
         }
     }
 
@@ -40,42 +39,41 @@ impl ShEx2Html {
             .unwrap_or_default()
             .without_rich_qualifying();
         let parent = self.create_name_for_schema(shex);
+        if self.config.embed_svg_schema || self.config.embed_svg_shape {
+            let _ = self.current_uml_converter.convert(&shex);
+        }
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
                 let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
                 let (node_id, _found) = self.current_html.get_node_adding_label(&name.name());
-                let mut component = self.shape_expr2htmlshape(
+                let component = self.shape_expr2htmlshape(
                     &mut name,
                     &shape_decl.shape_expr,
                     &prefixmap,
                     &node_id,
                     &parent,
                 )?;
-                if self.config.embed_svg_shape {
-                    let str = self.create_svg_shape(&name.name(), shex)?;
-                    component.set_svg_shape(str.as_str());
-                    println!(
-                        "Created svg_shape {:?}: {}",
-                        component.name(),
-                        component.svg_shape()
-                    );
-                }
                 self.current_html.add_component(node_id, component)?;
             }
         }
 
+        if self.config.embed_svg_shape {
+            for shape in self.current_html.shapes_mut() {
+                let str = create_svg_shape(&self.current_uml_converter, &shape.name().name())?;
+                shape.set_svg_shape(str.as_str());
+            }
+        }
+
         if self.config.embed_svg_schema {
-            let str = self.create_svg_schema(shex)?;
+            let str = self.create_svg_schema()?;
             self.current_html.set_svg_schema(str.as_str())
         }
         Ok(())
     }
 
-    pub fn create_svg_schema(&mut self, schema: &Schema) -> Result<String, ShEx2HtmlError> {
-        let mut uml_converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
-        uml_converter.convert(schema)?;
+    pub fn create_svg_schema(&self) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
-        uml_converter.as_image(
+        self.current_uml_converter.as_image(
             str_writer.by_ref(),
             crate::ImageFormat::SVG,
             &UmlGenerationMode::all(),
@@ -84,16 +82,9 @@ impl ShEx2Html {
         Ok(str)
     }
 
-    pub fn create_svg_shape(
-        &mut self,
-        name: &str,
-        schema: &Schema,
-    ) -> Result<String, ShEx2HtmlError> {
-        // TODO: Move the following two actions to the ShEx2HTML to avoid doing the process each time...
-        let mut uml_converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
-        uml_converter.convert(schema)?;
+    pub fn create_svg_shape(&self, name: &str) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
-        uml_converter.as_image(
+        self.current_uml_converter.as_image(
             str_writer.by_ref(),
             crate::ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
@@ -453,6 +444,17 @@ fn get_label(
         }
     }
     Ok(None)
+}
+
+pub fn create_svg_shape(converter: &ShEx2Uml, name: &str) -> Result<String, ShEx2HtmlError> {
+    let mut str_writer = BufWriter::new(Vec::new());
+    converter.as_image(
+        str_writer.by_ref(),
+        crate::ImageFormat::SVG,
+        &UmlGenerationMode::neighs(name),
+    )?;
+    let str = String::from_utf8(str_writer.into_inner()?)?;
+    Ok(str)
 }
 
 #[cfg(test)]
