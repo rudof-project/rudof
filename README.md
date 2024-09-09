@@ -262,7 +262,7 @@ rudof validate -s examples/user.shex -d examples/user.ttl -m examples/user.sm
 ### Validating an RDF node against some SHACL Shape
 
 ```sh
-rudof shacl-validate --shapes examples/simple_shacl.ttl --data examples/simple.ttl
+rudof shacl-validate --shapes examples/simple_shacl.ttl examples/simple.ttl
 ```
 
 ### Conversion between shapes formalisms
