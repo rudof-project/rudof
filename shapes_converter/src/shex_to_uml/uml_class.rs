@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::{Name, NodeId, UmlEntry};
 
 #[derive(Debug, PartialEq)]
@@ -5,7 +7,7 @@ use super::{Name, NodeId, UmlEntry};
 pub struct UmlClass {
     name: Name,
     entries: Vec<UmlEntry>,
-    extends: Vec<NodeId>,
+    extends: HashSet<NodeId>,
 }
 
 impl UmlClass {
@@ -13,7 +15,7 @@ impl UmlClass {
         UmlClass {
             name,
             entries: Vec::new(),
-            extends: Vec::new(),
+            extends: HashSet::new(),
         }
     }
 
@@ -22,7 +24,7 @@ impl UmlClass {
     }
 
     pub fn add_extends(&mut self, node: &NodeId) {
-        self.extends.push(*node)
+        self.extends.insert(*node);
     }
 
     pub fn name(&self) -> String {

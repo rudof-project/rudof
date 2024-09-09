@@ -72,6 +72,9 @@ pub enum ShEx2UmlError {
 
     #[error("ShEx2Uml error: Feature not implemented: {msg}")]
     NotImplemented { msg: String },
+
+    #[error("Not found label: {name}")]
+    NotFoundLabel { name: String },
 }
 
 impl ShEx2UmlError {

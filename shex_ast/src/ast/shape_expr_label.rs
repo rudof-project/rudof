@@ -114,6 +114,12 @@ impl From<ShapeExprLabel> for String {
     }
 }
 
+impl From<&ShapeExprLabel> for String {
+    fn from(val: &ShapeExprLabel) -> Self {
+        val.to_string()
+    }
+}
+
 impl FromStr for ShapeExprLabel {
     type Err = RefError;
 

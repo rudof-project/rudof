@@ -10,36 +10,45 @@
 </head>
 
 <body>
-    <h1>
-        {{ title }}
-    </h1>
-    <h2>List of shapes</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Shape ID</th>
-                <th>Shape Label</th>
-            </tr>
-        </thead>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a href="#shapes">List of shapes</a>
+            <a href="#uml">Visualization</a>
+            <a href="#metadata">Metadata</a>
+    </nav>
 
-        {% for shape in shapes %}
-        <tr>
-            <td>
-                <a href="{{ shape.href }}">{{ shape.name }}</a>
-            </td>
-            <td>
-                {{ shape.label }}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <h2>UML-based diagram</h2>
+    <h1>
+        Schema: {{ title }}
+    </h1>
+    <div class="container">
+        <h2 id="shapes">List of shapes</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Shape ID</th>
+                    <th>Shape Label</th>
+                </tr>
+            </thead>
+
+            {% for shape in shapes %}
+            <tr>
+                <td>
+                    <a href="{{ shape.href }}">{{ shape.name }}</a>
+                </td>
+                <td>
+                    {{ shape.label }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <h2 id="uml">UML-based diagram</h2>
     <figure class="figure">
         {% autoescape false %}{{ svg_schema }}{% endautoescape %}
         <figcaption class="figure-caption text-end">Generated UML-like diagram of the ShEx schema</figcaption>
     </figure>
 
-    <h2>Metadata</h2>
+    <h2 id="metadata">Metadata</h2>
     <ul>
         <li>rudof_version: {{rudof_version}}</li>
         <li>created time: {{ created_time }}</li>

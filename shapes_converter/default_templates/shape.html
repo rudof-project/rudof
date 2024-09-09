@@ -12,7 +12,8 @@
 </head>
 
 <body>
-    <h1>
+    <p><a href="{{ parent.relative_href }}">Back to schema</a></p>
+    <h1>Shape:
         {% if name.relative_href %}
         <a href="{{ name.relative_href }}">{{ name.repr}}</a>
         {% else %}
@@ -21,65 +22,77 @@
         {% if name.label %}
         {{ name.label }}
         {% endif %}
-        {% if name.href %}
-        <a href="{{ name.href }}">Link to shape</a>
-        {% endif %}
-
-
     </h1>
-    <p><a href="{{ parent.relative_href }}">Back to schema</a></p>
+    <p>{% if name.href %}
+        <a href="{{ name.href }}">Concept URI</a>
+        {% endif %}
+    </p>
     <h2>Parents</h2>
     {% for e in extends %}
     <ul>
         <li><a href="{{ e.relative_href }}">{{ e.repr }}</a></li>
     </ul>
     {% endfor %}
-    <h2>List of properties</h2>
-    <table class="table">
-        <thead>
+    <div class="container">
+        <h2>Shape properties</h2>
+        <table class="table table-success table-striped">
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Property label</th>
+                    <th>Expected value</th>
+                    <th>Cardinality</th>
+                </tr>
+            </thead>
+            {% for entry in entries %}
             <tr>
-                <th>Property</th>
-                <th>Property label</th>
-                <th>Expected value</th>
-                <th>Cardinality</th>
+                <td>
+                    {% if entry.name.href %}
+                    <a href="{{ entry.name.relative_href }}">{{ entry.name.repr}}</a>
+                    {% else %}
+                    {{ entry.name.repr }}
+                    {% endif %}
+                </td>
+                <td>{{ entry.name.label }}</td>
+                <td>
+                    {% if entry.value_constraint.Datatype %}
+                    {% with datatype = entry.value_constraint.Datatype %}
+                    {% if datatype.href %}
+                    <a href="{{ datatype.href }}">{{ datatype.repr}}</a>
+                    {% else %}
+                    {{ datatype.repr }}
+                    {% endif %}
+                    {% endwith %}
+                    {% else %}
+                    {% if entry.value_constraint.Ref %}
+                    {% with ref = entry.value_constraint.Ref %}
+                    @<a href="{{ ref.relative_href }}">{{ ref.repr}}</a>
+                    {% endwith %}
+                    {% else %}
+                    {{ entry.value_constraint.ref }}
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td> {{ entry.card }}</td>
             </tr>
-        </thead>
-        {% for entry in entries %}
-        <tr>
-            <td>
-                {% if entry.name.href %}
-                <a href="{{ entry.name.relative_href }}">{{ entry.name.repr}}</a>
-                {% else %}
-                {{ entry.name.repr }}
-                {% endif %}
-            </td>
-            <td>{{ entry.name.label }}</td>
-            <td>
-                {% if entry.value_constraint.Datatype %}
-                {% with datatype = entry.value_constraint.Datatype %}
-                {% if datatype.href %}
-                <a href="{{ datatype.href }}">{{ datatype.repr}}</a>
-                {% else %}
-                {{ datatype.repr }}
-                {% endif %}
-                {% endwith %}
-                {% else %}
-                {% if entry.value_constraint.Ref %}
-                {% with ref = entry.value_constraint.Ref %}
-                @<a href="{{ ref.relative_href }}">{{ ref.repr}}</a>
-                {% endwith %}
-                {% else %}
-                {{ entry.value_constraint.ref }}
-                {% endif %}
-                {% endif %}
-            </td>
-            <td> {{ entry.card }}</td>
-        </tr>
-        {% endfor %}
-        <tbody>
+            {% endfor %}
+            <tbody>
 
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
+    <div class="container">
+        <h2>Partial visualization</h2>
+        {% if svg_shape %}
+        <figure class="figure">
+            {% autoescape false %}{{ svg_shape }}{% endautoescape %}
+            <figcaption class="figure-caption text-end">Partial diagram of shape</figcaption>
+        </figure>
+        {% else %}
+        <p>No SVG</p>
+        {% endif %}
+
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>

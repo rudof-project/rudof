@@ -521,17 +521,7 @@ fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
 
 fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     match nf {
-        ast::NumericFacet::MinInclusive(_min) =>
-           /*MatchCond::simple(
-            format!("minInclusive({min})").as_str(),
-            move |value: &Node| match check_node_min_inclusive(value, min) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MaxLength error: {err}"),
-                }),
-            }
-        ) */
-          todo!(),
+        ast::NumericFacet::MinInclusive(_min) => todo!(),
         ast::NumericFacet::MinExclusive(_) => todo!(),
         ast::NumericFacet::MaxInclusive(_) => todo!(),
         ast::NumericFacet::MaxExclusive(_) => todo!(),

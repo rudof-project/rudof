@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.23] - 2024-09-09
+
+- Added option for partial views of UML class diagrams
+- Repaired a bug in the behaviour of force-overwrite which was appending to the file instead of overwriting its contents
+
 ## [0.1.22] - 2024-09-07
 
 - Added the possibility to embed the SVG diagram in the HTML pages that are generated

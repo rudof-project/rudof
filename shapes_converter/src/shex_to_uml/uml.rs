@@ -10,15 +10,29 @@ use super::ValueConstraint;
 use std::collections::hash_map::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::io::Write;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct Uml {
     labels_counter: usize,
+
     labels: HashMap<String, NodeId>,
+
+    /// Associates a node with an UmlComponent
     components: HashMap<NodeId, UmlComponent>,
+
+    /// List of links
     links: Vec<UmlLink>,
+
+    /// Contains a map that keeps track of all the parents of a node
     extends: HashMap<NodeId, HashSet<NodeId>>,
+
+    /// Outgoing arcs
+    outgoing: HashMap<NodeId, HashSet<NodeId>>,
+
+    /// Incoming arcs
+    incoming: HashMap<NodeId, HashSet<NodeId>>,
 }
 
 impl Uml {
@@ -37,6 +51,11 @@ impl Uml {
                 (n, false)
             }
         }
+    }
+
+    /// Search a node from a label. If it does not exist, returno `None``
+    pub fn get_node(&self, label: &str) -> Option<NodeId> {
+        self.labels.get(label).copied()
     }
 
     pub fn add_component(&mut self, node: NodeId, component: UmlComponent) -> Result<(), UmlError> {
@@ -62,6 +81,19 @@ impl Uml {
         Ok(())
     }
 
+    pub fn children<'a>(
+        &'a self,
+        node: &'a NodeId,
+    ) -> impl Iterator<Item = (&'a NodeId, &'a UmlComponent)> {
+        self.components.iter().filter(|(node_id, _component)| {
+            if let Some(es) = self.extends.get(node_id) {
+                es.contains(node)
+            } else {
+                false
+            }
+        })
+    }
+
     pub fn add_link(
         &mut self,
         source: NodeId,
@@ -71,19 +103,25 @@ impl Uml {
     ) -> Result<(), UmlError> {
         match self.labels.entry(target.name()) {
             Entry::Occupied(entry) => {
-                let link = UmlLink::new(source, *entry.get(), link_name, card);
-                self.links.push(link);
+                let target = *entry.get();
+                self.make_link(source, target, link_name, card);
                 Ok(())
             }
             Entry::Vacant(v) => {
                 self.labels_counter += 1;
                 let target_node_id = NodeId::new(self.labels_counter);
                 v.insert(target_node_id);
-                let link = UmlLink::new(source, target_node_id, link_name, card);
-                self.links.push(link);
+                self.make_link(source, target_node_id, link_name, card);
                 Ok(())
             }
         }
+    }
+
+    pub fn make_link(&mut self, source: NodeId, target: NodeId, name: Name, card: UmlCardinality) {
+        let link = UmlLink::new(source, target, name, card);
+        self.links.push(link);
+        insert_map(&mut self.outgoing, source, target);
+        insert_map(&mut self.incoming, target, source);
     }
 
     pub fn add_extends(&mut self, source: &NodeId, target: &NodeId) {
@@ -103,7 +141,7 @@ impl Uml {
             .flat_map(|(n1, vs)| vs.iter().map(move |n2| (n1, n2)))
     }
 
-    pub fn as_plantuml<W: Write>(
+    pub fn as_plantuml_all<W: Write>(
         &self,
         config: &ShEx2UmlConfig,
         writer: &mut W,
@@ -117,6 +155,42 @@ impl Uml {
         }
         for (n1, n2) in self.extends() {
             writeln!(writer, "{n1} -|> {n2}")?;
+        }
+        writeln!(writer, "@enduml")?;
+        Ok(())
+    }
+
+    pub fn as_plantuml_neighs<W: Write>(
+        &self,
+        config: &ShEx2UmlConfig,
+        writer: &mut W,
+        target_node: &NodeId,
+    ) -> Result<(), UmlError> {
+        writeln!(writer, "@startuml")?;
+        let mut serialized_components = HashSet::new();
+
+        // For all components in schema, check if they are neighbours with target_node
+        for (node_id, component) in self.components.iter() {
+            if node_id == target_node
+                || is_in_extends(&self.extends, node_id, target_node)
+                || is_in_extends(&self.extends, target_node, node_id)
+                || is_in_map(&self.outgoing, target_node, node_id)
+                || is_in_map(&self.incoming, target_node, node_id)
+                    && !serialized_components.contains(node_id)
+            {
+                serialized_components.insert(node_id);
+                component2plantuml(node_id, component, config, writer)?;
+            }
+        }
+        for link in self.links.iter() {
+            if link.source == *target_node || link.target == *target_node {
+                link2plantuml(link, config, writer)?;
+            }
+        }
+        for (n1, n2) in self.extends() {
+            if n1 == target_node || n2 == target_node {
+                writeln!(writer, "{n1} -|> {n2}")?;
+            }
         }
         writeln!(writer, "@enduml")?;
         Ok(())
@@ -219,5 +293,45 @@ fn card2plantuml(card: &UmlCardinality) -> String {
         UmlCardinality::Optional => "?".to_string(),
         UmlCardinality::Range(m, n) => format!("{m}-{n}"),
         UmlCardinality::Fixed(m) => format!("{{{m}}}"),
+    }
+}
+
+fn is_in_extends(
+    extends: &HashMap<NodeId, HashSet<NodeId>>,
+    node: &NodeId,
+    target: &NodeId,
+) -> bool {
+    if let Some(es) = extends.get(node) {
+        es.contains(target)
+    } else {
+        false
+    }
+}
+
+fn insert_map<A, B>(map: &mut HashMap<A, HashSet<B>>, source: A, target: B)
+where
+    A: Eq + Hash,
+    B: Eq + Hash,
+{
+    match map.entry(source) {
+        Entry::Occupied(mut entry) => {
+            let set = entry.get_mut();
+            set.insert(target);
+        }
+        Entry::Vacant(v) => {
+            v.insert(HashSet::from([target]));
+        }
+    }
+}
+
+fn is_in_map<A, B>(map: &HashMap<A, HashSet<B>>, source: &A, target: &B) -> bool
+where
+    A: Eq + Hash,
+    B: Eq + Hash,
+{
+    if let Some(es) = map.get(source) {
+        es.contains(target)
+    } else {
+        false
     }
 }
