@@ -176,11 +176,10 @@ impl Uml {
                 || is_in_extends(&self.extends, target_node, node_id)
                 || is_in_map(&self.outgoing, target_node, node_id)
                 || is_in_map(&self.incoming, target_node, node_id)
+                    && !serialized_components.contains(node_id)
             {
-                if !serialized_components.contains(node_id) {
-                    serialized_components.insert(node_id);
-                    component2plantuml(node_id, component, config, writer)?;
-                }
+                serialized_components.insert(node_id);
+                component2plantuml(node_id, component, config, writer)?;
             }
         }
         for link in self.links.iter() {

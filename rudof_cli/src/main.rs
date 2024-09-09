@@ -638,7 +638,7 @@ fn run_convert(
             run_shex2sparql(input, format, maybe_shape, output, result_format, &converter_config.shex2sparql_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input, format, output, result_format, &maybe_shape_str, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
+            run_shex2uml(input, format, output, result_format, maybe_shape_str, &converter_config.shex2uml_config(), force_overwrite, reader_mode)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
             run_shacl2shex(input, format, output, result_format, &converter_config.shacl2shex_config(), force_overwrite, reader_mode)
@@ -707,6 +707,7 @@ fn run_shacl2shex(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_shex2uml(
     input: &InputSpec,
     format: &InputConvertFormat,

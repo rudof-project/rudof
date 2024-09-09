@@ -40,7 +40,7 @@ impl ShEx2Html {
             .without_rich_qualifying();
         let parent = self.create_name_for_schema(shex);
         if self.config.embed_svg_schema || self.config.embed_svg_shape {
-            let _ = self.current_uml_converter.convert(&shex);
+            let _ = self.current_uml_converter.convert(shex);
         }
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
