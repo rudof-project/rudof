@@ -4,7 +4,8 @@
 
 ## [0.1.23] - 2024-09-09
 
-- Added option for partial views of UML class diagrams
+- Added option for partial views of UML class diagrams which can be useful when visualizing large ShEx schemas
+- Improved the templates so they show metadata about the generation and a navigation bar
 - Repaired a bug in the behaviour of force-overwrite which was appending to the file instead of overwriting its contents
 
 ## [0.1.22] - 2024-09-07
