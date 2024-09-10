@@ -111,6 +111,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Validate RDF data using ShEx or SHACL
@@ -351,6 +355,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Show information about RDF data
@@ -391,6 +399,10 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         result_format: DataFormat,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
@@ -507,6 +519,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Show information and process DCTAP files

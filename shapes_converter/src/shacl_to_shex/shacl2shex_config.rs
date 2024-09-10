@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
+use shacl_validation::shacl_config::ShaclConfig;
 
+/// Defines the configuration of the converter
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct Shacl2ShExConfig {
-    starting_shapes_mode: Option<StartShapeMode>,
-    embed_bnodes: Option<bool>,
+    pub starting_shapes_mode: Option<StartShapeMode>,
+    pub embed_bnodes: Option<bool>,
+    pub shacl: Option<ShaclConfig>,
 }
 
 impl Shacl2ShExConfig {

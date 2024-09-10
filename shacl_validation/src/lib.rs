@@ -7,6 +7,7 @@ pub(crate) mod constraints;
 pub(crate) mod context;
 pub mod helper;
 pub(crate) mod runner;
+pub mod shacl_config;
 pub mod shacl_validation_vocab;
 pub(crate) mod shape;
 pub mod store;
