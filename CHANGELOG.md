@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.24] - 2024-09-10
+
+- Added more configuration parameters for RDF data and Shacl data which allow, for example to define a default base IRI which can be used to resolve relative IRIs solving issue #149
+
 ## [0.1.23] - 2024-09-09
 
 - Added option for partial views of UML class diagrams which can be useful when visualizing large ShEx schemas
