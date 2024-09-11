@@ -287,7 +287,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
 
 fn card2plantuml(card: &UmlCardinality) -> String {
     match card {
-        UmlCardinality::OneOne => "".to_string(),
+        UmlCardinality::OneOne => " ".to_string(),
         UmlCardinality::Star => "*".to_string(),
         UmlCardinality::Plus => "+".to_string(),
         UmlCardinality::Optional => "?".to_string(),
