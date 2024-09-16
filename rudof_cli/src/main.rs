@@ -37,6 +37,7 @@ use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
+use sparql_service::{ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, SRDF};
 use std::fs::{File, OpenOptions};
@@ -86,6 +87,23 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
+        Some(Command::Service {
+            service,
+            service_format,
+            output,
+            result_service_format,
+            config,
+            reader_mode,
+            force_overwrite,
+        }) => run_service(
+            service,
+            service_format,
+            reader_mode,
+            output,
+            result_service_format,
+            config,
+            *force_overwrite,
+        ),
         Some(Command::Shex {
             schema,
             schema_format,
@@ -369,6 +387,38 @@ fn main() -> Result<()> {
             bail!("Command not specified")
         }
     }
+}
+
+fn run_service(
+    input: &InputSpec,
+    data_format: &DataFormat,
+    reader_mode: &RDFReaderMode,
+    output: &Option<PathBuf>,
+    result_format: &ResultServiceFormat,
+    config: &Option<PathBuf>,
+    force_overwrite: bool,
+) -> Result<()> {
+    let reader = input.open_read()?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let config = if let Some(path) = config {
+        ServiceConfig::from_path(path)?
+    } else {
+        ServiceConfig::new()
+    };
+    let rdf_format = data_format2rdf_format(data_format);
+    let base = config
+        .base
+        .as_ref()
+        .map(|iri_s| Iri::parse_unchecked(iri_s.as_str().to_string()));
+
+    let service_description =
+        ServiceDescription::from_reader(reader, &rdf_format, base, &(*reader_mode).into())?;
+    match result_format {
+        ResultServiceFormat::Internal => {
+            writeln!(writer, "{service_description}")?;
+        }
+    }
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1325,6 +1375,17 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
     }
 }
 
+fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
+    match data_format {
+        DataFormat::N3 => RDFFormat::N3,
+        DataFormat::NQuads => RDFFormat::NQuads,
+        DataFormat::NTriples => RDFFormat::NTriples,
+        DataFormat::RDFXML => RDFFormat::RDFXML,
+        DataFormat::TriG => RDFFormat::TriG,
+        DataFormat::Turtle => RDFFormat::Turtle,
+    }
+}
+
 fn parse_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -1332,14 +1393,7 @@ fn parse_data(
     config: &RdfDataConfig,
 ) -> Result<SRDFGraph> {
     let mut graph = SRDFGraph::new();
-    let rdf_format = match data_format {
-        DataFormat::N3 => RDFFormat::N3,
-        DataFormat::NQuads => RDFFormat::NQuads,
-        DataFormat::NTriples => RDFFormat::NTriples,
-        DataFormat::RDFXML => RDFFormat::RDFXML,
-        DataFormat::TriG => RDFFormat::TriG,
-        DataFormat::Turtle => RDFFormat::Turtle,
-    };
+    let rdf_format = data_format2rdf_format(data_format);
     for d in data {
         use std::convert::Into;
         let reader = d.open_read()?;

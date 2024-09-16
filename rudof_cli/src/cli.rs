@@ -630,6 +630,55 @@ pub enum Command {
         #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
         output_mode: OutputConvertMode,
     },
+
+    /// Show information about SPARQL service
+    Service {
+        #[arg(short = 's', long = "service", value_name = "SPARQL service name")]
+        service: InputSpec,
+
+        #[arg(
+            short = 'f',
+            long = "format",
+            value_name = "SPARQL service format",
+            default_value_t = DataFormat::Turtle
+        )]
+        service_format: DataFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Result service format",
+            default_value_t = ResultServiceFormat::Internal
+        )]
+        result_service_format: ResultServiceFormat,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -868,6 +917,20 @@ impl Display for RDFReaderMode {
         match &self {
             RDFReaderMode::Strict => write!(dest, "strict"),
             RDFReaderMode::Lax => write!(dest, "lax"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultServiceFormat {
+    Internal,
+}
+
+impl Display for ResultServiceFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultServiceFormat::Internal => write!(dest, "internal"),
         }
     }
 }
