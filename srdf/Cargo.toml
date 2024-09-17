@@ -38,7 +38,7 @@ oxrdf = { workspace = true, features = [ "oxsdatatypes"] }
 oxrdfxml = "0.1.0-rc.1" 
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
-sparesults = { version = "0.2.0-alpha.5" }
+sparesults = { version = "0.2.0-rc.2" }
 tokio = { version = "1.38", features = ["full"] }
 colored = "2"
 reqwest = { version = "0.12", features = ["blocking", "json"] }

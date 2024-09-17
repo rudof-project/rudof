@@ -15,7 +15,7 @@ use reqwest::{
     Url,
 };
 use sparesults::{
-    FromReadQueryResultsReader, QueryResultsFormat, QueryResultsParser, QuerySolution,
+    QueryResultsFormat, QueryResultsParser, QuerySolution, ReaderQueryResultsParserOutput,
 };
 use std::rc::Rc;
 use std::{
@@ -442,8 +442,8 @@ fn make_sparql_query(
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) =
-        json_parser.parse_read(body.as_bytes())?
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
+        json_parser.for_reader(body.as_bytes())?
     {
         for solution in solutions {
             let sol = solution?;
@@ -484,8 +484,8 @@ fn outgoing_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) =
-        json_parser.parse_read(body.as_bytes())?
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
+        json_parser.for_reader(body.as_bytes())?
     {
         for solution in solutions {
             let sol = solution?;
@@ -566,8 +566,8 @@ fn incoming_neighs(
     let body = client.get(url).send()?.text()?;
     let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let FromReadQueryResultsReader::Solutions(solutions) =
-        json_parser.parse_read(body.as_bytes())?
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
+        json_parser.for_reader(body.as_bytes())?
     {
         for solution in solutions {
             let sol = solution?;
