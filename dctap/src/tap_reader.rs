@@ -458,7 +458,7 @@ fn strip_whitespace(str: &str) -> Option<&str> {
 }
 
 fn get_strs(str: &str) -> impl Iterator<Item = &str> {
-    str.split(|c| c == ' ').filter(|&x| !x.is_empty())
+    str.split([' ']).filter(|&x| !x.is_empty())
 }
 
 /// A borrowed iterator over Shapes
