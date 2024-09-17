@@ -1,0 +1,33 @@
+[package]
+name = "sparql_service"
+version = "0.1.15"
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation = "https://docs.rs/sparql_service"
+homepage.workspace = true
+repository.workspace = true
+
+[features]
+rdf-star = [
+    "sparesults/rdf-star",
+]
+
+[dependencies]
+const_format = "0.2"
+thiserror = "1"
+hashbag = { version = "0.1.11"}
+lazy_static = "1"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { workspace = true }
+serde_yml = "0.0.11"
+itertools = "0.13"
+indexmap = { version = "2"}
+iri_s = { workspace = true }
+srdf = { workspace = true }
+tracing = { workspace = true }
+oxiri = "0.2.3-alpha.1"
+sparesults = { version = "0.2.0-alpha.5" }
+
