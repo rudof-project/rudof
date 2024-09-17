@@ -68,7 +68,7 @@ macro_rules! int {
 ///
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf::srdf_graph::SRDFGraph;
 ///
 /// rdf_parser!{
@@ -83,7 +83,7 @@ macro_rules! int {
 /// let s = r#"prefix : <http://example.org/>
 ///            :x :p 1.
 /// "#;
-/// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+/// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
 /// let x = IriS::new_unchecked("http://example.org/x");
 /// let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
 /// assert_eq!(is_term(&term).parse(&x, graph).unwrap(), ())
