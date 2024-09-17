@@ -38,7 +38,15 @@ The binary can be downloaded from [https://github.com/rudof-project/rudof/releas
 
 #### Mac
 
-The binary is available at: [https://github.com/rudof-project/rudof/releases]
+The binary is available at: [https://github.com/rudof-project/rudof/releases] so you can download the corresponding binary to your machine.
+
+The usual way to run/install a binary in Mac is to download it in a folder, add that folder to your PATH and activating the binary using:
+
+```
+chmod +x <binary_file>
+```
+
+After that, I think the processor may complain the first time about security and you have to agree to use it...once you agree, it should work.
 
 <details markdown="block">
 <summary>Compiling from source</summary>
