@@ -37,7 +37,7 @@ use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
-use sparql_service::{ServiceConfig, ServiceDescription};
+use sparql_service::{QueryConfig, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, SRDF};
 use std::fs::{File, OpenOptions};
@@ -383,6 +383,29 @@ fn main() -> Result<()> {
             *force_overwrite,
             reader_mode,
         ),
+        Some(Command::Query {
+            query,
+            data,
+            data_format,
+            reader_mode,
+            output,
+            result_query_format,
+            config,
+            force_overwrite,
+        }) => {
+            let query_config = get_query_config(config)?;
+            run_query(
+                data,
+                data_format,
+                reader_mode,
+                query,
+                result_query_format,
+                output,
+                &query_config,
+                cli.debug,
+                *force_overwrite,
+            )
+        }
         None => {
             bail!("Command not specified")
         }
@@ -1289,6 +1312,31 @@ fn run_data(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
+fn run_query(
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    reader_mode: &RDFReaderMode,
+    _query: &InputSpec,
+    _result_query_format: &ResultQueryFormat,
+    output: &Option<PathBuf>,
+    config: &QueryConfig,
+    debug: u8,
+    force_overwrite: bool,
+) -> Result<()> {
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let data_config = match &config.data_config {
+        None => RdfDataConfig::default(),
+        Some(dc) => dc.clone(),
+    };
+    let data = get_data(data, data_format, &None, reader_mode, debug, &data_config)?;
+    write!(
+        writer,
+        "SPARQL Querying over {data:?} not yet implemented..."
+    )?;
+    Ok(())
+}
+
 fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Result<QueryShapeMap> {
     match shapemap_format {
         ShapeMapFormat::Internal => Err(anyhow!("Cannot read internal ShapeMap format yet")),
@@ -1459,11 +1507,24 @@ fn get_shacl_config(config: &Option<PathBuf>) -> Result<ShaclConfig> {
         Some(config_path) => match ShaclConfig::from_path(config_path) {
             Ok(c) => Ok(c),
             Err(e) => Err(anyhow!(
-                "Error obtaining Data config from {}: {e}",
+                "Error obtaining SHACL config from {}: {e}",
                 config_path.display()
             )),
         },
         None => Ok(ShaclConfig::default()),
+    }
+}
+
+fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
+    match config {
+        Some(config_path) => match QueryConfig::from_path(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(
+                "Error obtaining Query config from {}: {e}",
+                config_path.display()
+            )),
+        },
+        None => Ok(QueryConfig::default()),
     }
 }
 

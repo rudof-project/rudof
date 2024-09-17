@@ -679,6 +679,60 @@ pub enum Command {
         )]
         force_overwrite: bool,
     },
+
+    /// Run SPARQL queries
+    Query {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
+        // #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        // data: PathBuf,
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
+        #[arg(short = 'q', long = "query", value_name = "SPARQL query")]
+        query: InputSpec,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Result query format",
+            default_value_t = ResultQueryFormat::Internal
+        )]
+        result_query_format: ResultQueryFormat,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -931,6 +985,20 @@ impl Display for ResultServiceFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             ResultServiceFormat::Internal => write!(dest, "internal"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultQueryFormat {
+    Internal,
+}
+
+impl Display for ResultQueryFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultQueryFormat::Internal => write!(dest, "internal"),
         }
     }
 }
