@@ -64,7 +64,7 @@ impl SRDFGraph {
                     Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
                 };
                 // let mut graph = Graph::default();
-                let mut reader = turtle_parser.parse_read(read);
+                let mut reader = turtle_parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     self.graph.insert(triple_result?.as_ref());
                 }
@@ -79,7 +79,7 @@ impl SRDFGraph {
             }
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -100,7 +100,7 @@ impl SRDFGraph {
             }
             RDFFormat::RDFXML => {
                 let parser = RdfXmlParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -116,7 +116,7 @@ impl SRDFGraph {
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
                 let parser = NQuadsParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -724,9 +724,9 @@ impl SRDFBuilder for SRDFGraph {
             serializer = serializer.with_prefix(prefix, iri.as_str()).unwrap();
         }
 
-        let mut writer = serializer.serialize_to_write(write);
+        let mut writer = serializer.for_writer(write);
         for triple in self.graph.iter() {
-            writer.write_triple(triple)?;
+            writer.serialize_triple(triple)?;
         }
         writer.finish()?;
         Ok(())
