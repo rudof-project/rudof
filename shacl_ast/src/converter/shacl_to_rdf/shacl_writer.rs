@@ -35,7 +35,7 @@ where
         Ok(())
     }
 
-    pub fn serialize<W: Write>(&self, format: RDFFormat, writer: W) -> Result<(), RDF::Err> {
+    pub fn serialize<W: Write>(&self, format: RDFFormat, writer: &mut W) -> Result<(), RDF::Err> {
         self.rdf.serialize(format, writer)
     }
 }

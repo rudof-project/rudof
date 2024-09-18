@@ -1,6 +1,8 @@
+use std::io;
+
 use thiserror::Error;
 
-use crate::SRDFSparqlError;
+use crate::{SRDFGraphError, SRDFSparqlError};
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
@@ -8,5 +10,17 @@ pub enum RdfDataError {
     SRDFSparqlError {
         #[from]
         err: SRDFSparqlError,
+    },
+
+    #[error(transparent)]
+    SRDFGraphError {
+        #[from]
+        err: SRDFGraphError,
+    },
+
+    #[error(transparent)]
+    IOError {
+        #[from]
+        err: io::Error,
     },
 }

@@ -1,5 +1,8 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolutionIter, SRDFBasic, SRDF};
+use crate::{
+    AsyncSRDF, QuerySRDF, QuerySRDF2, QuerySolution2, QuerySolutionIter, QuerySolutions, SRDFBasic,
+    SRDF,
+};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -15,7 +18,8 @@ use reqwest::{
     Url,
 };
 use sparesults::{
-    QueryResultsFormat, QueryResultsParser, QuerySolution, ReaderQueryResultsParserOutput,
+    QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution,
+    ReaderQueryResultsParserOutput,
 };
 use std::rc::Rc;
 use std::{
@@ -44,6 +48,10 @@ impl SRDFSparql {
         })
     }
 
+    pub fn iri(&self) -> &IriS {
+        &self.endpoint_iri
+    }
+
     pub fn wikidata() -> Result<SRDFSparql> {
         let endpoint = SRDFSparql::new(&IriS::new_unchecked("https://query.wikidata.org/sparql"))?;
         Ok(endpoint.with_prefixmap(PrefixMap::wikidata()))
@@ -62,10 +70,6 @@ impl SRDFSparql {
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
-    }
-
-    pub fn prefixmap(&self) -> PrefixMap {
-        self.prefixmap.clone()
     }
 }
 
@@ -377,7 +381,7 @@ impl SRDF for SRDFSparql {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: Vec<Self::IRI>,
+        preds: &Vec<Self::IRI>,
     ) -> std::prelude::v1::Result<
         (HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>),
         Self::Err,
@@ -423,6 +427,31 @@ impl QuerySRDF for SRDFSparql {
     }
 }
 
+impl QuerySRDF2 for SRDFSparql {
+    fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
+        let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
+        let qs: Vec<QuerySolution2<SRDFSparql>> =
+            solutions.iter().map(|s| cnv_query_solution(s)).collect();
+        Ok(QuerySolutions::new(qs))
+    }
+
+    fn query_ask(&self, query: &str) -> Result<bool> {
+        make_sparql_query(query, &self.client, &self.endpoint_iri)?
+            .first()
+            .and_then(|query_solution| query_solution.get(0))
+            .and_then(|term| match term {
+                OxTerm::Literal(literal) => Some(literal.value()),
+                _ => None,
+            })
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| todo!())
+    }
+}
+
+fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution2<SRDFSparql> {
+    todo!()
+}
+
 fn sparql_client() -> Result<Client> {
     let mut headers = header::HeaderMap::new();
     headers.insert(
@@ -440,7 +469,7 @@ fn make_sparql_query(
     query: &str,
     client: &Client,
     endpoint_iri: &IriS,
-) -> Result<Vec<QuerySolution>> {
+) -> Result<Vec<OxQuerySolution>> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
     tracing::debug!("SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
@@ -537,7 +566,7 @@ type OutputNodes = HashMap<OxNamedNode, HashSet<OxTerm>>;
 
 fn outgoing_neighs_from_list(
     subject: &OxSubject,
-    preds: Vec<OxNamedNode>,
+    preds: &Vec<OxNamedNode>,
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<(OutputNodes, Vec<OxNamedNode>)> {
@@ -618,7 +647,7 @@ fn incoming_neighs(
     }
 }
 
-fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<OxNamedNode> {
+fn get_iri_solution(solution: OxQuerySolution, name: &str) -> Result<OxNamedNode> {
     match solution.get(name) {
         Some(v) => match v {
             OxTerm::NamedNode(n) => Ok(n.clone()),
@@ -631,7 +660,7 @@ fn get_iri_solution(solution: QuerySolution, name: &str) -> Result<OxNamedNode> 
     }
 }
 
-fn get_object_solution(solution: QuerySolution, name: &str) -> Result<OxTerm> {
+fn get_object_solution(solution: OxQuerySolution, name: &str) -> Result<OxTerm> {
     match solution.get(name) {
         Some(v) => Ok(v.clone()),
         None => Err(SRDFSparqlError::NotFoundInSolution {
@@ -641,7 +670,7 @@ fn get_object_solution(solution: QuerySolution, name: &str) -> Result<OxTerm> {
     }
 }
 
-fn get_subject_solution(solution: QuerySolution, name: &str) -> Result<OxSubject> {
+fn get_subject_solution(solution: OxQuerySolution, name: &str) -> Result<OxSubject> {
     match solution.get(name) {
         Some(v) => match term_as_subject(v) {
             Some(s) => Ok(s),

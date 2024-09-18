@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{SRDFBasic, Triple};
 
-type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
-type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
+pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
+pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
 
 type OutgoingArcs<I, T> = (HasMapOfIriAndItem<I, T>, Vec<I>);
 
@@ -76,6 +76,6 @@ pub trait SRDF: SRDFBasic {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: Vec<Self::IRI>,
+        preds: &Vec<Self::IRI>,
     ) -> Result<OutgoingArcs<Self::IRI, Self::Term>, Self::Err>;
 }

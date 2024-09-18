@@ -1,16 +1,18 @@
 use crate::lang::Lang;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::query_srdf::QuerySolution;
+use crate::ListOfIriAndTerms;
 use crate::Object;
-use crate::QuerySRDF;
-use crate::QuerySolutionIter;
+use crate::QuerySRDF2;
+use crate::QuerySolution2;
+use crate::QuerySolutions;
 use crate::RDFFormat;
 use crate::SRDFBasic;
+use crate::SRDFBuilder;
 use crate::SRDFGraph;
 use crate::SRDFSparql;
-use crate::SRDFSparqlError;
 use crate::RDF_TYPE_STR;
+use crate::SRDF;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
@@ -21,6 +23,9 @@ use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use rust_decimal::Decimal;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::fmt::Write;
 // use sparesults::QuerySolution as SparQuerySolution;
 use std::str::FromStr;
 
@@ -30,7 +35,7 @@ use super::RdfDataError;
 #[derive(Debug, Clone)]
 pub struct RdfData {
     endpoints: Vec<SRDFSparql>,
-    _graph: Option<SRDFGraph>,
+    graph: Option<SRDFGraph>,
     prefixmap: PrefixMap,
 }
 
@@ -38,8 +43,26 @@ impl RdfData {
     pub fn new() -> RdfData {
         RdfData {
             endpoints: Vec::new(),
-            _graph: None,
+            graph: None,
             prefixmap: PrefixMap::new(),
+        }
+    }
+
+    pub fn from_graph(graph: SRDFGraph) -> RdfData {
+        let prefixmap = graph.prefixmap();
+        RdfData {
+            endpoints: Vec::new(),
+            graph: Some(graph),
+            prefixmap,
+        }
+    }
+
+    pub fn from_endpoint(endpoint: SRDFSparql) -> RdfData {
+        let prefixmap = endpoint.prefixmap();
+        RdfData {
+            endpoints: vec![endpoint],
+            graph: None,
+            prefixmap: prefixmap.unwrap_or_default(),
         }
     }
 
@@ -284,18 +307,19 @@ impl SRDFBasic for RdfData {
     }
 }
 
-impl QuerySRDF for RdfData {
-    fn query_select(&self, query: &str) -> Result<QuerySolutionIter<RdfData>, RdfDataError>
+impl QuerySRDF2 for RdfData {
+    fn query_select(&self, query: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
     {
-        // let iter = QuerySolutionIter::empty();
+        let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         for endpoint in &self.endpoints {
-            let iter1 = endpoint.query_select(query)?;
-            let _iter2 = iter1.map(|s| cnv_sol(s));
-            // iter.chain(iter2);
+            let new_sols = endpoint.query_select(query)?;
+            let new_sols_converted: Vec<QuerySolution2<RdfData>> =
+                new_sols.iter().map(|s| cnv_sol(s)).collect();
+            sols.extend(new_sols_converted)
         }
-        todo!() // Ok(iter))
+        Ok(sols)
     }
 
     fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {
@@ -303,10 +327,8 @@ impl QuerySRDF for RdfData {
     }
 }
 
-fn cnv_sol(
-    _sol: Result<QuerySolution<SRDFSparql>, SRDFSparqlError>,
-) -> Result<QuerySolution<RdfData>, RdfDataError> {
-    todo!()
+fn cnv_sol(sol: &QuerySolution2<SRDFSparql>) -> QuerySolution2<RdfData> {
+    sol.convert(|t| t.clone())
 }
 
 fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
@@ -329,5 +351,149 @@ fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
 }
 
 fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
+    todo!()
+}
+
+impl SRDF for RdfData {
+    fn predicates_for_subject(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<std::collections::HashSet<Self::IRI>, Self::Err> {
+        todo!()
+    }
+
+    fn objects_for_subject_predicate(
+        &self,
+        subject: &Self::Subject,
+        pred: &Self::IRI,
+    ) -> Result<std::collections::HashSet<Self::Term>, Self::Err> {
+        todo!()
+    }
+
+    fn subjects_with_predicate_object(
+        &self,
+        pred: &Self::IRI,
+        object: &Self::Term,
+    ) -> Result<std::collections::HashSet<Self::Subject>, Self::Err> {
+        todo!()
+    }
+
+    fn triples_with_predicate(
+        &self,
+        pred: &Self::IRI,
+    ) -> Result<Vec<crate::Triple<Self>>, Self::Err> {
+        todo!()
+    }
+
+    fn outgoing_arcs(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
+        todo!()
+    }
+
+    fn incoming_arcs(
+        &self,
+        object: &Self::Term,
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
+        todo!()
+    }
+
+    fn outgoing_arcs_from_list(
+        &self,
+        subject: &Self::Subject,
+        preds: &Vec<Self::IRI>,
+    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
+        let mut result = (HashMap::new(), Vec::new());
+        if let Some(graph) = &self.graph {
+            merge_outgoing_arcs(&mut result, graph.outgoing_arcs_from_list(subject, preds)?);
+        }
+        for endpoint in &self.endpoints {
+            let next = endpoint.outgoing_arcs_from_list(subject, preds)?;
+            merge_outgoing_arcs(&mut result, next)
+        }
+        Ok(result)
+    }
+
+    fn neighs(
+        &self,
+        node: &Self::Term,
+    ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
+        match Self::term_as_subject(node) {
+            None => Ok(Vec::new()),
+            Some(subject) => {
+                let mut result = Vec::new();
+                let preds = self.predicates_for_subject(&subject)?;
+                for pred in preds {
+                    let objs = self.objects_for_subject_predicate(&subject, &pred)?;
+                    result.push((pred.clone(), objs));
+                }
+                Ok(result)
+            }
+        }
+    }
+}
+
+impl SRDFBuilder for RdfData {
+    fn empty() -> Self {
+        todo!()
+    }
+
+    fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_triple(
+        &mut self,
+        subj: &Self::Subject,
+        pred: &Self::IRI,
+        obj: &Self::Term,
+    ) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn remove_triple(
+        &mut self,
+        subj: &Self::Subject,
+        pred: &Self::IRI,
+        obj: &Self::Term,
+    ) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn add_type(&mut self, node: &crate::RDFNode, type_: Self::Term) -> Result<(), Self::Err> {
+        todo!()
+    }
+
+    fn serialize<W: std::io::Write>(
+        &self,
+        format: RDFFormat,
+        writer: &mut W,
+    ) -> Result<(), Self::Err> {
+        if let Some(graph) = &self.graph {
+            graph.serialize(format, writer)?;
+            Ok::<(), Self::Err>(())
+        } else {
+            Ok(())
+        }?;
+        for endpoint in &self.endpoints {
+            writeln!(writer, "Endpoint {}", endpoint.iri())?;
+        }
+        Ok(())
+    }
+}
+
+fn merge_outgoing_arcs<I, T>(
+    current: &mut (HashMap<I, HashSet<T>>, Vec<I>),
+    next: (HashMap<I, HashSet<T>>, Vec<I>),
+) {
     todo!()
 }

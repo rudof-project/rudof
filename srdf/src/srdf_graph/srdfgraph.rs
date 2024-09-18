@@ -555,7 +555,7 @@ impl SRDF for SRDFGraph {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: Vec<Self::IRI>,
+        preds: &Vec<Self::IRI>,
     ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
         let mut remainder = Vec::new();
@@ -717,7 +717,7 @@ impl SRDFBuilder for SRDFGraph {
         }
     }
 
-    fn serialize<W: Write>(&self, format: RDFFormat, write: W) -> Result<(), Self::Err> {
+    fn serialize<W: Write>(&self, format: RDFFormat, write: &mut W) -> Result<(), Self::Err> {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {

@@ -567,12 +567,9 @@ fn run_validate_shex(
         }
     };
     let mut validator = Validator::new(schema, config);
-    let result = match &data {
-        RdfData::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
-        RdfData::RDFData(data) => validator.validate_shapemap(&shapemap, data),
-    };
+    let result = validator.validate_shapemap(&shapemap, &data);
     match result {
-        Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
+        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
             Result::Ok(result_map) => {
                 writeln!(writer, "Result:\n{}", result_map)?;
                 Ok(())
@@ -682,7 +679,7 @@ fn run_shacl(
             let data_format = shacl_format_to_data_format(result_shapes_format)?;
             let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
             shacl_writer.write(&shacl_schema)?;
-            shacl_writer.serialize(data_format.into(), writer)?;
+            shacl_writer.serialize(data_format.into(), &mut writer)?;
             Ok(())
         }
     }
@@ -1080,11 +1077,11 @@ fn get_data(
         (false, None) => {
             // let data_path = cast_to_data_path(data)?;
             let data = parse_data(data, data_format, reader_mode, config)?;
-            Ok(RdfData::RDFData(data))
+            Ok(RdfData::from_graph(data))
         }
         (true, Some(endpoint)) => {
             let endpoint = SRDFSparql::from_str(endpoint)?;
-            Ok(RdfData::Endpoint(endpoint))
+            Ok(RdfData::from_endpoint(endpoint))
         }
         (false, Some(_)) => {
             bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
@@ -1128,24 +1125,14 @@ fn run_node(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, endpoint, reader_mode, debug, config)?;
     let node_selector = parse_node_selector(node_str)?;
-    match data {
-        RdfData::Endpoint(endpoint) => show_node_info(
-            node_selector,
-            predicates,
-            &endpoint,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-        RdfData::RDFData(data) => show_node_info(
-            node_selector,
-            predicates,
-            &data,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-    }
+    show_node_info(
+        node_selector,
+        predicates,
+        &data,
+        show_node_mode,
+        show_hyperlinks,
+        &mut writer,
+    )
 }
 
 fn show_node_info<S, W: Write>(
@@ -1174,7 +1161,7 @@ where
                     }
                 } else {
                     let preds = cnv_predicates(predicates, rdf)?;
-                    match rdf.outgoing_arcs_from_list(&subject, preds) {
+                    match rdf.outgoing_arcs_from_list(&subject, &preds) {
                         Result::Ok((rs, _)) => rs,
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
@@ -1303,10 +1290,7 @@ fn run_data(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, &None, reader_mode, debug, config)?;
-    match data {
-        RdfData::Endpoint(e) => writeln!(writer, "Endpoint {e:?}")?,
-        RdfData::RDFData(graph) => graph.serialize(RDFFormat::from(*result_format), writer)?,
-    }
+    data.serialize(RDFFormat::from(*result_format), &mut writer)?;
     Ok(())
 }
 

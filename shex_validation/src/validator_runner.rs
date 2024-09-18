@@ -380,7 +380,7 @@ impl ValidatorRunner {
         let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
         if let Some(subject) = S::term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf
-                .outgoing_arcs_from_list(&subject, list)
+                .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
             for (pred, values) in outgoing_arcs.into_iter() {
