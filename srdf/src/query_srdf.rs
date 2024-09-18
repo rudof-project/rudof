@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{marker::PhantomData, rc::Rc};
 
 use crate::SRDFBasic;
 
@@ -76,7 +76,13 @@ pub struct QuerySolutionIter<S: SRDFBasic> {
     iter: Box<dyn Iterator<Item = Result<QuerySolution<S>, S::Err>>>,
 }
 
-impl<S: SRDFBasic> QuerySolutionIter<S> {
+impl<S: SRDFBasic + 'static> QuerySolutionIter<S> {
+    pub(crate) fn empty() -> Self {
+        Self {
+            iter: Box::new(EmptyQuerySolutionIter::<S>::new()),
+        }
+    }
+
     pub(crate) fn new(
         variables: Rc<Vec<VarName>>,
         iter: impl Iterator<Item = Result<Vec<Option<S::Term>>, S::Err>> + 'static,
@@ -86,6 +92,28 @@ impl<S: SRDFBasic> QuerySolutionIter<S> {
                 iter.map(move |t| t.map(|values| (Rc::clone(&variables), values).into())),
             ),
         }
+    }
+}
+
+struct EmptyQuerySolutionIter<S: SRDFBasic> {
+    marker: PhantomData<S>,
+}
+
+impl<S> EmptyQuerySolutionIter<S>
+where
+    S: SRDFBasic,
+{
+    pub fn new() -> EmptyQuerySolutionIter<S> {
+        EmptyQuerySolutionIter {
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<S: SRDFBasic> Iterator for EmptyQuerySolutionIter<S> {
+    type Item = Result<QuerySolution<S>, S::Err>;
+    fn next(&mut self) -> Option<Self::Item> {
+        None
     }
 }
 

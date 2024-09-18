@@ -387,7 +387,7 @@ impl SRDFBasic for SRDFGraph {
         Ok(iri.clone())
     }
 
-    fn qualify_iri(&self, node: &OxNamedNode) -> String {
+    fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
         self.pm.qualify(&iri)
     }

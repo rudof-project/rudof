@@ -26,6 +26,7 @@ serde_yml = "0.0.11"
 itertools = "0.13"
 indexmap = { version = "2"}
 iri_s = { workspace = true }
+prefixmap = { workspace = true }
 srdf = { workspace = true }
 tracing = { workspace = true }
 oxiri = "0.2.3-alpha.1"

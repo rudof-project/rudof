@@ -63,6 +63,10 @@ impl SRDFSparql {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
     }
+
+    pub fn prefixmap(&self) -> PrefixMap {
+        self.prefixmap.clone()
+    }
 }
 
 impl FromStr for SRDFSparql {
