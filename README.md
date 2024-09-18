@@ -1,5 +1,7 @@
 # rudof
 
+[![Latest Version](https://img.shields.io/crates/v/rudof-cli.svg)](https://crates.io/crates/rudof-cli)
+[![PyPI](https://img.shields.io/pypi/v/pyrudof)](https://pypi.org/project/pyrudof/)
 [![rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 
