@@ -381,7 +381,7 @@ impl SRDF for SRDFSparql {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: &Vec<Self::IRI>,
+        preds: &[Self::IRI],
     ) -> std::prelude::v1::Result<
         (HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>),
         Self::Err,
@@ -431,7 +431,7 @@ impl QuerySRDF2 for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution2<SRDFSparql>> =
-            solutions.iter().map(|s| cnv_query_solution(s)).collect();
+            solutions.iter().map(cnv_query_solution).collect();
         Ok(QuerySolutions::new(qs))
     }
 
@@ -452,14 +452,11 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution2<SRDFSparql> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {
-        let varname = VarName2::from_str(v.as_str());
+        let varname = VarName2::new(v.as_str());
         variables.push(varname);
     }
     for t in qs.values() {
-        let term = match &t {
-            None => None,
-            Some(t) => Some(t.clone()),
-        };
+        let term = t.clone();
         values.push(term)
     }
     QuerySolution2::new(Rc::new(variables), values)
@@ -579,7 +576,7 @@ type OutputNodes = HashMap<OxNamedNode, HashSet<OxTerm>>;
 
 fn outgoing_neighs_from_list(
     subject: &OxSubject,
-    preds: &Vec<OxNamedNode>,
+    preds: &[OxNamedNode],
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<(OutputNodes, Vec<OxNamedNode>)> {

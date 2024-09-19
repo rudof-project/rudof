@@ -377,7 +377,7 @@ impl ValidatorRunner {
         S: SRDF,
     {
         let node = self.get_rdf_node(node, rdf);
-        let list = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
+        let list: Vec<_> = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
         if let Some(subject) = S::term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)

@@ -76,6 +76,6 @@ pub trait SRDF: SRDFBasic {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: &Vec<Self::IRI>,
+        preds: &[Self::IRI],
     ) -> Result<OutgoingArcs<Self::IRI, Self::Term>, Self::Err>;
 }

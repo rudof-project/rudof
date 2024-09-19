@@ -23,7 +23,7 @@ impl Display for VarName2 {
 }
 
 impl VarName2 {
-    pub fn from_str(str: &str) -> VarName2 {
+    pub fn new(str: &str) -> VarName2 {
         VarName2 {
             str: str.to_string(),
         }
@@ -88,10 +88,7 @@ impl<S: SRDFBasic> QuerySolution2<S> {
         let cnv_values: Vec<Option<T::Term>> = self
             .values
             .iter()
-            .map(|s| match s {
-                None => None,
-                Some(s) => Some(cnv_term(s)),
-            })
+            .map(|s| s.as_ref().map(&cnv_term))
             .collect();
         QuerySolution2 {
             variables: self.variables.clone(),

@@ -93,6 +93,12 @@ impl RdfData {
     }
 }
 
+impl Default for RdfData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SRDFBasic for RdfData {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
@@ -366,11 +372,11 @@ fn cnv_query_solution(qs: QuerySolution) -> QuerySolution2<RdfData> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {
-        let varname = VarName2::from_str(v.as_str());
+        let varname = VarName2::new(v.as_str());
         variables.push(varname);
     }
     for t in qs.values() {
-        let term = t.as_ref().map(|t| t.clone());
+        let term = t.clone();
         values.push(term)
     }
     QuerySolution2::new(Rc::new(variables), values)
@@ -447,7 +453,7 @@ impl SRDF for RdfData {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: &Vec<Self::IRI>,
+        preds: &[Self::IRI],
     ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut result = (HashMap::new(), Vec::new());
         if let Some(graph) = &self.graph {

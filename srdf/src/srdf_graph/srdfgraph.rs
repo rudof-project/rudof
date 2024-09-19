@@ -562,7 +562,7 @@ impl SRDF for SRDFGraph {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: &Vec<Self::IRI>,
+        preds: &[Self::IRI],
     ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
         let mut remainder = Vec::new();
