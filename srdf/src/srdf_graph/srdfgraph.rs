@@ -22,8 +22,8 @@ use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::Object;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
+    Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
@@ -44,6 +44,13 @@ impl SRDFGraph {
 
     pub fn len(&self) -> usize {
         self.graph.len()
+    }
+
+    pub fn quads(&self) -> impl Iterator<Item = Quad> + '_ {
+        let graph_name = GraphName::DefaultGraph;
+        self.graph
+            .iter()
+            .map(move |t| triple_to_quad(t, graph_name.clone()))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -1048,6 +1055,13 @@ fn test_rdf_list() {
             OxTerm::from(OxLiteral::from(2))
         ]
     )
+}
+
+fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
+    let subj: oxrdf::Subject = t.subject.into();
+    let pred: oxrdf::NamedNode = t.predicate.into();
+    let obj: oxrdf::Term = t.object.into();
+    Quad::new(subj, pred, obj, graph_name)
 }
 
 /// Reader mode when parsing RDF data files

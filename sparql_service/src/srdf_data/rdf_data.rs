@@ -1,20 +1,8 @@
-use crate::lang::Lang;
-use crate::literal::Literal;
-use crate::numeric_literal::NumericLiteral;
-use crate::ListOfIriAndTerms;
-use crate::Object;
-use crate::QuerySRDF2;
-use crate::QuerySolution2;
-use crate::QuerySolutions;
-use crate::RDFFormat;
-use crate::SRDFBasic;
-use crate::SRDFBuilder;
-use crate::SRDFGraph;
-use crate::SRDFSparql;
-use crate::RDF_TYPE_STR;
-use crate::SRDF;
 use colored::*;
 use iri_s::IriS;
+use oxigraph::sparql::Query;
+use oxigraph::sparql::QueryResults;
+use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm,
@@ -23,20 +11,39 @@ use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use rust_decimal::Decimal;
+use sparesults::QuerySolution;
+use srdf::lang::Lang;
+use srdf::literal::Literal;
+use srdf::numeric_literal::NumericLiteral;
+use srdf::ListOfIriAndTerms;
+use srdf::Object;
+use srdf::QuerySRDF2;
+use srdf::QuerySolution2;
+use srdf::QuerySolutions;
+use srdf::RDFFormat;
+use srdf::SRDFBasic;
+use srdf::SRDFBuilder;
+use srdf::SRDFGraph;
+use srdf::SRDFSparql;
+use srdf::VarName2;
+use srdf::RDF_TYPE_STR;
+use srdf::SRDF;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::fmt::Write;
+use std::hash::Hash;
+use std::rc::Rc;
 // use sparesults::QuerySolution as SparQuerySolution;
 use std::str::FromStr;
 
 use super::RdfDataError;
 
 /// Generic abstraction that represents RDF Data which can be either behind SPARQL endpoints or an in-memory graph
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RdfData {
     endpoints: Vec<SRDFSparql>,
     graph: Option<SRDFGraph>,
     prefixmap: PrefixMap,
+    store: Option<Store>,
 }
 
 impl RdfData {
@@ -45,16 +52,20 @@ impl RdfData {
             endpoints: Vec::new(),
             graph: None,
             prefixmap: PrefixMap::new(),
+            store: None,
         }
     }
 
-    pub fn from_graph(graph: SRDFGraph) -> RdfData {
+    pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
         let prefixmap = graph.prefixmap();
-        RdfData {
+        let store = Store::new()?;
+        store.bulk_loader().load_quads(graph.quads())?;
+        Ok(RdfData {
             endpoints: Vec::new(),
             graph: Some(graph),
             prefixmap,
-        }
+            store: Some(store),
+        })
     }
 
     pub fn from_endpoint(endpoint: SRDFSparql) -> RdfData {
@@ -63,6 +74,7 @@ impl RdfData {
             endpoints: vec![endpoint],
             graph: None,
             prefixmap: prefixmap.unwrap_or_default(),
+            store: None,
         }
     }
 
@@ -132,7 +144,7 @@ impl SRDFBasic for RdfData {
         }
     }
 
-    fn term_as_object(term: &Self::Term) -> crate::Object {
+    fn term_as_object(term: &Self::Term) -> srdf::Object {
         match term {
             OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),
             OxTerm::Literal(lit) => {
@@ -156,12 +168,12 @@ impl SRDFBasic for RdfData {
                 }
             }
             OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
-            #[cfg(feature = "rdf-star")]
+            // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
-    fn object_as_term(obj: &crate::Object) -> Self::Term {
+    fn object_as_term(obj: &srdf::Object) -> Self::Term {
         match obj {
             Object::Iri(iri) => Self::iri_s2term(iri),
             Object::BlankNode(bn) => Self::bnode_id2term(bn),
@@ -220,7 +232,7 @@ impl SRDFBasic for RdfData {
         match subject {
             OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
             OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            #[cfg(feature = "rdf-star")]
+            // #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => unimplemented!(),
         }
     }
@@ -278,7 +290,7 @@ impl SRDFBasic for RdfData {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
+            // #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => unimplemented!(),
         }
     }
@@ -288,7 +300,7 @@ impl SRDFBasic for RdfData {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
+            // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
     }
@@ -308,15 +320,21 @@ impl SRDFBasic for RdfData {
 }
 
 impl QuerySRDF2 for RdfData {
-    fn query_select(&self, query: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
+        let query = Query::parse(query_str, None)?;
+        if let Some(store) = &self.store {
+            let new_sol = store.query(query)?;
+            let sol = cnv_query_results(new_sol)?;
+            sols.extend(sol)
+        }
         for endpoint in &self.endpoints {
-            let new_sols = endpoint.query_select(query)?;
+            let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution2<RdfData>> =
-                new_sols.iter().map(|s| cnv_sol(s)).collect();
+                new_sols.iter().map(cnv_sol).collect();
             sols.extend(new_sols_converted)
         }
         Ok(sols)
@@ -329,6 +347,33 @@ impl QuerySRDF2 for RdfData {
 
 fn cnv_sol(sol: &QuerySolution2<SRDFSparql>) -> QuerySolution2<RdfData> {
     sol.convert(|t| t.clone())
+}
+
+fn cnv_query_results(
+    query_results: QueryResults,
+) -> Result<Vec<QuerySolution2<RdfData>>, RdfDataError> {
+    let mut results = Vec::new();
+    if let QueryResults::Solutions(solutions) = query_results {
+        for solution in solutions {
+            let result = cnv_query_solution(solution?);
+            results.push(result)
+        }
+    }
+    Ok(results)
+}
+
+fn cnv_query_solution(qs: QuerySolution) -> QuerySolution2<RdfData> {
+    let mut variables = Vec::new();
+    let mut values = Vec::new();
+    for v in qs.variables() {
+        let varname = VarName2::from_str(v.as_str());
+        variables.push(varname);
+    }
+    for t in qs.values() {
+        let term = t.as_ref().map(|t| t.clone());
+        values.push(term)
+    }
+    QuerySolution2::new(Rc::new(variables), values)
 }
 
 fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
@@ -357,44 +402,44 @@ fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
 impl SRDF for RdfData {
     fn predicates_for_subject(
         &self,
-        subject: &Self::Subject,
+        _subject: &Self::Subject,
     ) -> Result<std::collections::HashSet<Self::IRI>, Self::Err> {
         todo!()
     }
 
     fn objects_for_subject_predicate(
         &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
+        _subject: &Self::Subject,
+        _pred: &Self::IRI,
     ) -> Result<std::collections::HashSet<Self::Term>, Self::Err> {
         todo!()
     }
 
     fn subjects_with_predicate_object(
         &self,
-        pred: &Self::IRI,
-        object: &Self::Term,
+        _pred: &Self::IRI,
+        _object: &Self::Term,
     ) -> Result<std::collections::HashSet<Self::Subject>, Self::Err> {
         todo!()
     }
 
     fn triples_with_predicate(
         &self,
-        pred: &Self::IRI,
-    ) -> Result<Vec<crate::Triple<Self>>, Self::Err> {
+        _pred: &Self::IRI,
+    ) -> Result<Vec<srdf::Triple<Self>>, Self::Err> {
         todo!()
     }
 
     fn outgoing_arcs(
         &self,
-        subject: &Self::Subject,
+        _subject: &Self::Subject,
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
         todo!()
     }
 
     fn incoming_arcs(
         &self,
-        object: &Self::Term,
+        _object: &Self::Term,
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
         todo!()
     }
@@ -439,37 +484,37 @@ impl SRDFBuilder for RdfData {
         todo!()
     }
 
-    fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
+    fn add_base(&mut self, _base: &Option<IriS>) -> Result<(), Self::Err> {
         todo!()
     }
 
-    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
+    fn add_prefix(&mut self, _alias: &str, _iri: &IriS) -> Result<(), Self::Err> {
         todo!()
     }
 
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+    fn add_prefix_map(&mut self, _prefix_map: PrefixMap) -> Result<(), Self::Err> {
         todo!()
     }
 
     fn add_triple(
         &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
+        _subj: &Self::Subject,
+        _pred: &Self::IRI,
+        _obj: &Self::Term,
     ) -> Result<(), Self::Err> {
         todo!()
     }
 
     fn remove_triple(
         &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
+        _subj: &Self::Subject,
+        _pred: &Self::IRI,
+        _obj: &Self::Term,
     ) -> Result<(), Self::Err> {
         todo!()
     }
 
-    fn add_type(&mut self, node: &crate::RDFNode, type_: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, _node: &srdf::RDFNode, _type_: Self::Term) -> Result<(), Self::Err> {
         todo!()
     }
 
@@ -494,6 +539,21 @@ impl SRDFBuilder for RdfData {
 fn merge_outgoing_arcs<I, T>(
     current: &mut (HashMap<I, HashSet<T>>, Vec<I>),
     next: (HashMap<I, HashSet<T>>, Vec<I>),
-) {
-    todo!()
+) where
+    I: Eq + Hash,
+    T: Eq + Hash,
+{
+    let (next_map, next_vs) = next;
+    let (ref mut current_map, ref mut current_vs) = current;
+    for v in next_vs {
+        current_vs.push(v)
+    }
+    for (key, values) in next_map {
+        current_map
+            .entry(key)
+            .and_modify(|current_values| {
+                let _ = current_values.union(&values);
+            })
+            .or_insert(values);
+    }
 }

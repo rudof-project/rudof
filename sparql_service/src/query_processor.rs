@@ -1,7 +1,9 @@
 use prefixmap::PrefixMap;
-use srdf::{QuerySolutionIter, RdfData, SRDF};
+use srdf::{QuerySolutionIter, SRDF};
 
-#[derive(Debug, Clone)]
+use crate::RdfData;
+
+#[derive(Clone)]
 pub struct QueryProcessor {
     rdf_data: RdfData,
 }

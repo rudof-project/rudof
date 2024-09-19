@@ -1,7 +1,7 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
 use crate::{
     AsyncSRDF, QuerySRDF, QuerySRDF2, QuerySolution2, QuerySolutionIter, QuerySolutions, SRDFBasic,
-    SRDF,
+    VarName2, SRDF,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -449,7 +449,20 @@ impl QuerySRDF2 for SRDFSparql {
 }
 
 fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution2<SRDFSparql> {
-    todo!()
+    let mut variables = Vec::new();
+    let mut values = Vec::new();
+    for v in qs.variables() {
+        let varname = VarName2::from_str(v.as_str());
+        variables.push(varname);
+    }
+    for t in qs.values() {
+        let term = match &t {
+            None => None,
+            Some(t) => Some(t.clone()),
+        };
+        values.push(term)
+    }
+    QuerySolution2::new(Rc::new(variables), values)
 }
 
 fn sparql_client() -> Result<Client> {

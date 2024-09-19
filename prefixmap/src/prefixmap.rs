@@ -247,6 +247,75 @@ impl PrefixMap {
         }
     }
 
+    /// Qualifies an IRI against a prefix map
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use prefixmap::PrefixMap;
+    /// # use prefixmap::PrefixMapError;
+    /// # use iri_s::*;
+    /// # use std::str::FromStr;
+    /// let pm = PrefixMap::from_hashmap(
+    ///   &HashMap::from([
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
+    /// )?;
+    /// let a = IriS::from_str("http://example.org/a")?;
+    /// assert_eq!(pm.qualify(&a), ":a");
+    ///
+    /// let knows = IriS::from_str("http://schema.org/knows")?;
+    /// assert_eq!(pm.qualify(&knows), "schema:knows");
+    ///
+    /// let other = IriS::from_str("http://other.org/foo")?;
+    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
+    /// # Ok::<(), PrefixMapError>(())
+    /// ```
+    pub fn qualify_and_length(&self, iri: &IriS) -> (String, usize) {
+        let mut founds: Vec<_> = self
+            .map
+            .iter()
+            .filter_map(|(alias, pm_iri)| {
+                iri.as_str()
+                    .strip_prefix(pm_iri.as_str())
+                    .map(|rest| (alias, rest))
+            })
+            .collect();
+        founds.sort_by_key(|(_, iri)| iri.len());
+        let (str, length) = if let Some((alias, rest)) = founds.first() {
+            let prefix_colored = match self.qualify_prefix_color {
+                Some(color) => alias.color(color),
+                None => ColoredString::from(alias.as_str()),
+            };
+            let rest_colored = match self.qualify_localname_color {
+                Some(color) => rest.color(color),
+                None => ColoredString::from(*rest),
+            };
+            let semicolon_colored = match self.qualify_semicolon_color {
+                Some(color) => ":".color(color),
+                None => ColoredString::from(":"),
+            };
+            let length = prefix_colored.len() + 1 + rest_colored.len();
+            (
+                format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored),
+                length,
+            )
+        } else {
+            let length = format!("{iri}").len();
+            (format!("<{iri}>"), length)
+        };
+        if self.hyperlink {
+            (
+                format!(
+                    "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+                    iri.as_str(),
+                    str
+                ),
+                length,
+            )
+        } else {
+            (str, length)
+        }
+    }
+
     /// Qualify an IRI against a prefix map and obtains the local name
     /// ```
     /// # use std::collections::HashMap;

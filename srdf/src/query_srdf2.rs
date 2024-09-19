@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 
 use crate::SRDFBasic;
 
@@ -16,31 +16,45 @@ pub struct VarName2 {
     str: String,
 }
 
+impl Display for VarName2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "?{}", self.str)
+    }
+}
+
+impl VarName2 {
+    pub fn from_str(str: &str) -> VarName2 {
+        VarName2 {
+            str: str.to_string(),
+        }
+    }
+}
+
 impl From<String> for VarName2 {
     fn from(value: String) -> Self {
         VarName2 { str: value }
     }
 }
 
-pub trait VariableSolutionIndex<S: SRDFBasic> {
+pub trait VariableSolutionIndex2<S: SRDFBasic> {
     fn index(self, solution: &QuerySolution2<S>) -> Option<usize>;
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for usize {
+impl<S: SRDFBasic> VariableSolutionIndex2<S> for usize {
     #[inline]
     fn index(self, _: &QuerySolution2<S>) -> Option<usize> {
         Some(self)
     }
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for &str {
+impl<S: SRDFBasic> VariableSolutionIndex2<S> for &str {
     #[inline]
     fn index(self, solution: &QuerySolution2<S>) -> Option<usize> {
         solution.variables.iter().position(|v| v.str == self)
     }
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for &VarName2 {
+impl<S: SRDFBasic> VariableSolutionIndex2<S> for &VarName2 {
     #[inline]
     fn index(self, solution: &QuerySolution2<S>) -> Option<usize> {
         solution.variables.iter().position(|v| *v.str == self.str)
@@ -56,12 +70,17 @@ impl<S: SRDFBasic> QuerySolution2<S> {
     pub fn new(variables: Rc<Vec<VarName2>>, values: Vec<Option<S::Term>>) -> QuerySolution2<S> {
         QuerySolution2 { variables, values }
     }
-    pub fn find_solution(&self, index: impl VariableSolutionIndex<S>) -> Option<&S::Term> {
+    pub fn find_solution(&self, index: impl VariableSolutionIndex2<S>) -> Option<&S::Term> {
         match self.values.get(index.index(self)?) {
             Some(value) => value.as_ref(),
             None => None,
         }
     }
+
+    pub fn variables(&self) -> impl Iterator<Item = &VarName2> {
+        self.variables.iter()
+    }
+
     pub fn convert<T: SRDFBasic, F>(&self, cnv_term: F) -> QuerySolution2<T>
     where
         F: Fn(&S::Term) -> T::Term,
@@ -98,13 +117,13 @@ pub struct QuerySolutions<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> QuerySolutions<S> {
-    pub(crate) fn empty() -> QuerySolutions<S> {
+    pub fn empty() -> QuerySolutions<S> {
         QuerySolutions {
             solutions: Vec::new(),
         }
     }
 
-    pub(crate) fn new(solutions: Vec<QuerySolution2<S>>) -> QuerySolutions<S> {
+    pub fn new(solutions: Vec<QuerySolution2<S>>) -> QuerySolutions<S> {
         QuerySolutions { solutions }
     }
 
