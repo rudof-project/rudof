@@ -707,6 +707,9 @@ pub enum Command {
         #[arg(short = 'q', long = "query", value_name = "SPARQL query")]
         query: InputSpec,
 
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
         #[arg(
             short = 'o',
             long = "output-file",

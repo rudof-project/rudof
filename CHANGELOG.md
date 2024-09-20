@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.26] - 2024-09-20
+
+- Added support for SPARQL query options. New command called: `query`
+- Added support for handling SPARQL service descriptions. New command called: `service`
+- Changed the TAPConfig parameter of command `dctap` so it can use the same config file as option `tap2shex`
+
 ## [0.1.25] - 2024-09-11
 
 - Small change removing an empty config file to solve issue #155

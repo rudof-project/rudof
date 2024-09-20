@@ -44,7 +44,7 @@ The binary is available at: [https://github.com/rudof-project/rudof/releases] so
 
 The usual way to run/install a binary in Mac is to download it in a folder, add that folder to your PATH and activating the binary using:
 
-```
+```sh
 chmod +x <binary_file>
 ```
 

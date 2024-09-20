@@ -1,0 +1,10 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+select * where {
+  ?person wdt:P31 wd:Q5 ;
+          wdt:P19 ?birth_place ;
+       rdfs:label ?label .
+  ?birth_place rdfs:label ?birth_place_name 
+  Filter(Lang(?label)='en' && Lang(?birth_place_name)='en')
+} limit 10

@@ -11,6 +11,9 @@ repository.workspace = true
 
 [features]
 rdf-star = [
+    "srdf/rdf-star",
+    "oxrdf/rdf-star",
+    "oxrdfio/rdf-star",
     "sparesults/rdf-star",
 ]
 
@@ -26,8 +29,16 @@ serde_yml = "0.0.11"
 itertools = "0.13"
 indexmap = { version = "2"}
 iri_s = { workspace = true }
-srdf = { workspace = true }
+prefixmap = { workspace = true }
+srdf = { workspace = true, features = [ "rdf-star"] }
 tracing = { workspace = true }
 oxiri = "0.2.3-alpha.1"
-sparesults = { version = "0.2.0-alpha.5" }
+oxsdatatypes = "0.2.0-alpha.2"
+oxigraph = { version = "0.4.0-rc.2", default-features = false }
+oxrdf = { workspace = true, features = [ "oxsdatatypes", "rdf-star"] }
+oxrdfio = { version = "0.1.0-alpha.5", features = [ "rdf-star" ]}
+colored = "2"
+sparesults = { version = "0.2.0-alpha.5", features = [ "rdf-star" ] }
+rust_decimal = "1.32"
+rust_decimal_macros = "1.32"
 

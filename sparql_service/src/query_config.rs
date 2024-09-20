@@ -3,6 +3,7 @@ use std::{io, path::Path};
 use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
+
 use srdf::RdfDataConfig;
 
 /// This struct can be used to define configuration of RDF data readers

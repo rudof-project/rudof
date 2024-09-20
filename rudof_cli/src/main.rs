@@ -20,9 +20,10 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use dctap::{DCTap, TapConfig};
+use dctap::{DCTap, DCTapConfig, TapConfig};
+use iri_s::IriS;
 use oxiri::Iri;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::shacl_config::ShaclConfig;
 use shacl_validation::store::ShaclDataManager;
@@ -37,11 +38,11 @@ use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
-use sparql_service::{QueryConfig, ServiceConfig, ServiceDescription};
+use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, SRDF};
+use srdf::{QuerySolution2, RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, VarName2, SRDF};
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use std::str::FromStr;
@@ -50,13 +51,11 @@ use supports_color::Stream;
 use tracing::debug;
 
 pub mod cli;
-pub mod data;
 pub mod input_convert_format;
 pub mod input_spec;
 pub mod output_convert_format;
 
 pub use cli::*;
-pub use data::*;
 pub use input_convert_format::InputConvertFormat;
 pub use input_spec::*;
 pub use output_convert_format::OutputConvertFormat;
@@ -387,6 +386,7 @@ fn main() -> Result<()> {
             query,
             data,
             data_format,
+            endpoint,
             reader_mode,
             output,
             result_query_format,
@@ -397,6 +397,7 @@ fn main() -> Result<()> {
             run_query(
                 data,
                 data_format,
+                endpoint,
                 reader_mode,
                 query,
                 result_query_format,
@@ -569,12 +570,9 @@ fn run_validate_shex(
         }
     };
     let mut validator = Validator::new(schema, config);
-    let result = match &data {
-        Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
-        Data::RDFData(data) => validator.validate_shapemap(&shapemap, data),
-    };
+    let result = validator.validate_shapemap(&shapemap, &data);
     match result {
-        Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
+        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
             Result::Ok(result_map) => {
                 writeln!(writer, "Result:\n{}", result_map)?;
                 Ok(())
@@ -684,7 +682,7 @@ fn run_shacl(
             let data_format = shacl_format_to_data_format(result_shapes_format)?;
             let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
             shacl_writer.write(&shacl_schema)?;
-            shacl_writer.serialize(data_format.into(), writer)?;
+            shacl_writer.serialize(data_format.into(), &mut writer)?;
             Ok(())
         }
     }
@@ -699,10 +697,11 @@ fn run_dctap(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let tap_config = match config {
-        Some(config_path) => TapConfig::from_path(config_path),
-        None => Ok(TapConfig::default()),
+    let dctap_config = match config {
+        Some(config_path) => DCTapConfig::from_path(config_path),
+        None => Ok(DCTapConfig::default()),
     }?;
+    let tap_config = dctap_config.dctap.unwrap_or_default();
     let dctap = parse_dctap(input, format, &tap_config)?;
     match result_format {
         DCTapResultFormat::Internal => {
@@ -1074,7 +1073,7 @@ fn get_data(
     reader_mode: &RDFReaderMode,
     _debug: u8,
     config: &RdfDataConfig,
-) -> Result<Data> {
+) -> Result<RdfData> {
     match (data.is_empty(), endpoint) {
         (true, None) => {
             bail!("None of `data` or `endpoint` parameters have been specified for validation")
@@ -1082,16 +1081,23 @@ fn get_data(
         (false, None) => {
             // let data_path = cast_to_data_path(data)?;
             let data = parse_data(data, data_format, reader_mode, config)?;
-            Ok(Data::RDFData(data))
+            Ok(RdfData::from_graph(data)?)
         }
         (true, Some(endpoint)) => {
             let endpoint = SRDFSparql::from_str(endpoint)?;
-            Ok(Data::Endpoint(endpoint))
+            Ok(RdfData::from_endpoint(endpoint))
         }
         (false, Some(_)) => {
             bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
         }
     }
+}
+
+fn get_str(input: &InputSpec) -> Result<String> {
+    let mut str = String::new();
+    let mut data = input.open_read()?;
+    data.read_to_string(&mut str)?;
+    Ok(str)
 }
 
 /*fn make_node_selector(node: Node) -> Result<NodeSelector> {
@@ -1130,24 +1136,14 @@ fn run_node(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, endpoint, reader_mode, debug, config)?;
     let node_selector = parse_node_selector(node_str)?;
-    match data {
-        Data::Endpoint(endpoint) => show_node_info(
-            node_selector,
-            predicates,
-            &endpoint,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-        Data::RDFData(data) => show_node_info(
-            node_selector,
-            predicates,
-            &data,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-    }
+    show_node_info(
+        node_selector,
+        predicates,
+        &data,
+        show_node_mode,
+        show_hyperlinks,
+        &mut writer,
+    )
 }
 
 fn show_node_info<S, W: Write>(
@@ -1176,7 +1172,7 @@ where
                     }
                 } else {
                     let preds = cnv_predicates(predicates, rdf)?;
-                    match rdf.outgoing_arcs_from_list(&subject, preds) {
+                    match rdf.outgoing_arcs_from_list(&subject, &preds) {
                         Result::Ok((rs, _)) => rs,
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
@@ -1305,10 +1301,7 @@ fn run_data(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data = get_data(data, data_format, &None, reader_mode, debug, config)?;
-    match data {
-        Data::Endpoint(e) => writeln!(writer, "Endpoint {e:?}")?,
-        Data::RDFData(graph) => graph.serialize(RDFFormat::from(*result_format), writer)?,
-    }
+    data.serialize(RDFFormat::from(*result_format), &mut writer)?;
     Ok(())
 }
 
@@ -1316,24 +1309,77 @@ fn run_data(
 fn run_query(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    endpoint: &Option<String>,
     reader_mode: &RDFReaderMode,
-    _query: &InputSpec,
+    query: &InputSpec,
     _result_query_format: &ResultQueryFormat,
     output: &Option<PathBuf>,
     config: &QueryConfig,
     debug: u8,
     force_overwrite: bool,
 ) -> Result<()> {
+    use crate::srdf::QuerySRDF2;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data_config = match &config.data_config {
         None => RdfDataConfig::default(),
         Some(dc) => dc.clone(),
     };
-    let data = get_data(data, data_format, &None, reader_mode, debug, &data_config)?;
-    write!(
-        writer,
-        "SPARQL Querying over {data:?} not yet implemented..."
+    let data = get_data(
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        debug,
+        &data_config,
     )?;
+    let query = get_str(query)?;
+    let results = data.query_select(query.as_str())?;
+    let mut results_iter = results.iter().peekable();
+    if let Some(first) = results_iter.peek() {
+        show_variables(&mut writer, first.variables())?;
+        for result in results_iter {
+            show_result(&mut writer, result, &data.prefixmap())?
+        }
+    } else {
+        write!(writer, "No results")?;
+    }
+    Ok(())
+}
+
+fn show_variables<'a, W: Write>(
+    writer: &mut W,
+    vars: impl Iterator<Item = &'a VarName2>,
+) -> Result<()> {
+    for var in vars {
+        let str = format!("{}", var);
+        write!(writer, "{:15}", str)?;
+    }
+    writeln!(writer)?;
+    Ok(())
+}
+
+fn show_result<W: Write>(
+    writer: &mut W,
+    result: &QuerySolution2<RdfData>,
+    prefixmap: &PrefixMap,
+) -> Result<()> {
+    for (idx, _variable) in result.variables().enumerate() {
+        let str = match result.find_solution(idx) {
+            Some(term) => match term {
+                oxrdf::Term::NamedNode(named_node) => {
+                    let (str, length) =
+                        prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
+                    format!("{}{}", " ".repeat(15 - length), str)
+                }
+                oxrdf::Term::BlankNode(blank_node) => format!("  {}", blank_node),
+                oxrdf::Term::Literal(literal) => format!("  {}", literal),
+                oxrdf::Term::Triple(triple) => format!("  {}", triple),
+            },
+            None => String::new(),
+        };
+        write!(writer, "{:15}", str)?;
+    }
+    writeln!(writer)?;
     Ok(())
 }
 
