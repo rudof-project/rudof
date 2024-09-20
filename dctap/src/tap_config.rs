@@ -5,6 +5,28 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{PlaceholderResolver, TapError};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
+pub struct DCTapConfig {
+    pub dctap: Option<TapConfig>,
+}
+
+impl DCTapConfig {
+    /// Obtain a DCTapConfig from a path file in YAML
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<DCTapConfig, TapError> {
+        let path_name = path.as_ref().display().to_string();
+        let f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
+            path: path_name.clone(),
+            error: e,
+        })?;
+        let config: DCTapConfig =
+            serde_yml::from_reader(f).map_err(|e| TapError::TapConfigYamlError {
+                path: path_name.clone(),
+                error: e,
+            })?;
+        Ok(config)
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct TapConfig {
     delimiter: Option<char>,
     quote: Option<char>,
@@ -15,21 +37,6 @@ pub struct TapConfig {
 }
 
 impl TapConfig {
-    /// Obtain a TapConfig from a path file in YAML
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<TapConfig, TapError> {
-        let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
-            path: path_name.clone(),
-            error: e,
-        })?;
-        let config: TapConfig =
-            serde_yml::from_reader(f).map_err(|e| TapError::TapConfigYamlError {
-                path: path_name.clone(),
-                error: e,
-            })?;
-        Ok(config)
-    }
-
     pub fn picklist_delimiter(&self) -> &char {
         match &self.picklist_delimiter {
             None => &'|',

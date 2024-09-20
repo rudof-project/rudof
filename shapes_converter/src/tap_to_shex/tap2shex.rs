@@ -57,6 +57,16 @@ fn tapshape_to_shape(
 
 // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
 #[allow(clippy::result_large_err)]
+fn _shape_id2shape_expr<'a>(
+    shape_id: &'a ShapeId,
+    config: &'a Tap2ShExConfig,
+) -> Result<IriS, Tap2ShExError> {
+    let iri = config.resolve_iri(shape_id.str(), shape_id.line())?;
+    Ok(iri)
+}
+
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
 fn shape_id2iri<'a>(
     shape_id: &'a ShapeId,
     config: &'a Tap2ShExConfig,
@@ -118,7 +128,11 @@ fn statement_to_triple_expr(
             )))
         }
         (None, Some(shape_id)) => {
-            let iri = shape_id2iri(&shape_id, config)?;
+            let iri =
+                shape_id2iri(&shape_id, config).map_err(|e| Tap2ShExError::ParsingValueShape {
+                    line: statement.source_line_number(),
+                    error: Box::new(e),
+                })?;
             Ok(Some(ShapeExpr::iri_ref(IriRef::iri(iri))))
         }
         (None, None) => Ok(None),

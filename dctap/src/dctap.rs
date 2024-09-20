@@ -87,7 +87,8 @@ Person,PersonLabel,knows,knowsLabel
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");
-        let mut statement = TapStatement::new(PropertyId::new("knows", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("knowsLabel");
         expected_shape.add_statement(statement);
         let mut expected_dctap = DCTap::new();

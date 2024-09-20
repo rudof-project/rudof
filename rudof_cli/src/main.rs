@@ -20,7 +20,7 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use dctap::{DCTap, TapConfig};
+use dctap::{DCTap, DCTapConfig, TapConfig};
 use iri_s::IriS;
 use oxiri::Iri;
 use prefixmap::{IriRef, PrefixMap};
@@ -697,10 +697,11 @@ fn run_dctap(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let tap_config = match config {
-        Some(config_path) => TapConfig::from_path(config_path),
-        None => Ok(TapConfig::default()),
+    let dctap_config = match config {
+        Some(config_path) => DCTapConfig::from_path(config_path),
+        None => Ok(DCTapConfig::default()),
     }?;
+    let tap_config = dctap_config.dctap.unwrap_or_default();
     let dctap = parse_dctap(input, format, &tap_config)?;
     match result_format {
         DCTapResultFormat::Internal => {

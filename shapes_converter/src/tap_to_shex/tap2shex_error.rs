@@ -43,6 +43,12 @@ pub enum Tap2ShExError {
 
     #[error("Converting property to IRI, no prefix declaration: {property_id:?}")]
     PropertyId2IriNoPrefix { property_id: PropertyId },
+
+    #[error("Parsing ValueShape at line: {line}: {error}")]
+    ParsingValueShape {
+        line: u64,
+        error: Box<Tap2ShExError>,
+    },
 }
 
 impl Tap2ShExError {
