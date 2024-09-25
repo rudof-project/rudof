@@ -70,6 +70,11 @@ impl TapConfig {
         self
     }
 
+    pub fn with_picklist_delimiter(mut self, c: char) -> Self {
+        self.picklist_delimiter = Some(c);
+        self
+    }
+
     pub fn with_empty_property_placeholder(mut self, placeholder: PlaceholderResolver) -> Self {
         self.empty_property_placeholder = Some(placeholder);
         self

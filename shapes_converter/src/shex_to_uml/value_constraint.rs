@@ -4,6 +4,7 @@ use super::Name;
 pub enum ValueConstraint {
     #[default]
     Any,
+    ValueSet(Vec<Name>),
     Datatype(Name),
     Ref(Name),
     None,

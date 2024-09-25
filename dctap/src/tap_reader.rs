@@ -575,4 +575,30 @@ Company,CompanyLabel,founder,FounderLabel
         let next_shape2 = tap_reader.shapes().next().unwrap().unwrap();
         assert_eq!(next_shape2, expected_shape2);
     }
+
+    #[test]
+    fn test_picklist() {
+        let data = "\
+shapeId,propertyId,valueConstraint,valueConstraintType
+Person,gender,male female other,picklist
+";
+        let mut tap_reader = TapReaderBuilder::from_reader(
+            data.as_bytes(),
+            &TapConfig::default().with_picklist_delimiter(' '),
+        )
+        .unwrap();
+        let mut expected_shape1 = TapShape::new(2);
+        expected_shape1.set_shape_id(&ShapeId::new("Person", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("gender", 2)).with_source_line_number(2);
+        let vc = ValueConstraint::picklist(vec![
+            Value::new("male"),
+            Value::new("female"),
+            Value::new("other"),
+        ]);
+        statement.set_value_constraint(&vc);
+        expected_shape1.add_statement(statement);
+        let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();
+        assert_eq!(next_shape1, expected_shape1);
+    }
 }

@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.27] - 2024-09-25
+
+- Added support for picklist values in DCTAP
+- Added support for picklist values in DCTAP2ShEx
+- Added support for simple value set values in ShEx to UML
+
 ## [0.1.26] - 2024-09-20
 
 - Added support for SPARQL query options. New command called: `query`
