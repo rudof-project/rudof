@@ -47,7 +47,7 @@ impl<'a> ShExParser<'a> {
                     schema = schema.with_start(Some(shape_expr))
                 }
                 ShExStatement::ImportDecl { iri } => {
-                    schema = schema.with_import(Iri::new(iri.as_str()));
+                    schema = schema.with_import(iri);
                 }
                 ShExStatement::ShapeDecl {
                     is_abstract,

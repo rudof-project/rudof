@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 use void::Void;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "String", into = "String")]
 pub enum Iri {
     String(String),
