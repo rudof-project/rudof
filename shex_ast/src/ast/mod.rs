@@ -1,7 +1,6 @@
 pub mod annotation;
 pub mod bnode;
 pub mod exclusion;
-pub mod iri;
 pub mod iri_ref_or_wildcard;
 pub mod lang_or_wildcard;
 pub mod node_constraint;
@@ -30,7 +29,6 @@ use crate::ast::serde_string_or_struct::*;
 pub use crate::exclusion::*;
 pub use annotation::*;
 pub use bnode::*;
-pub use iri::*;
 pub use iri_ref_or_wildcard::*;
 pub use lang_or_wildcard::*;
 pub use node_constraint::*;

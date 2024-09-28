@@ -1,5 +1,5 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Iri, Shape, ShapeExprLabel};
+use crate::{Shape, ShapeExprLabel};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ pub struct Schema {
     type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    imports: Option<Vec<Iri>>,
+    imports: Option<Vec<IriS>>,
 
     #[serde(
         default,
@@ -42,6 +42,11 @@ pub struct Schema {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     base: Option<IriS>,
+
+    /// imports_map contains an optional map of the imported shape expressions
+    /// If the map is `None`, it means the schema didn't resolve the import declarations
+    #[serde(skip)]
+    imports_map: Option<HashMap<IriS, ShapeExpr>>,
 }
 
 impl Schema {
@@ -55,10 +60,42 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
+            imports_map: None,
         }
     }
 
-    pub fn with_import(mut self, i: Iri) -> Self {
+    pub fn resolved_imports(&self) -> bool {
+        self.imports_map.is_some()
+    }
+
+    pub fn resolve_imports(&mut self) -> Result<(), SchemaJsonError> {
+        let mut visited = Vec::new();
+        if let Some(imports) = &self.imports {
+            let mut pending = imports.to_vec();
+            self.resolve_imports_visited(&mut pending, &mut visited)?;
+        }
+        Ok(())
+    }
+
+    pub fn resolve_imports_visited(
+        &mut self,
+        pending: &mut Vec<IriS>,
+        visited: &mut Vec<IriS>,
+    ) -> Result<(), SchemaJsonError> {
+        while let Some(candidate) = pending.pop() {
+            if !visited.contains(&candidate) {
+                let new_schema = Schema::from_iri(&candidate)?;
+                visited.push(candidate);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
+        todo!()
+    }
+
+    pub fn with_import(mut self, i: IriS) -> Self {
         match self.imports {
             None => self.imports = Some(vec![i]),
             Some(ref mut imports) => imports.push(i),
