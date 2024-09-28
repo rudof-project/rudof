@@ -43,10 +43,11 @@ pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     base: Option<IriS>,
 
-    /// imports_map contains an optional map of the imported shape expressions
-    /// If the map is `None`, it means the schema didn't resolve the import declarations
     #[serde(skip)]
-    imports_map: Option<HashMap<IriS, ShapeExpr>>,
+    resolved_imports: bool,
+
+    #[serde(skip)]
+    shapes_map: HashMap<ShapeExprLabel, ShapeExpr>,
 }
 
 impl Schema {
@@ -60,12 +61,13 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
-            imports_map: None,
+            resolved_imports: false,
+            shapes_map: HashMap::new(),
         }
     }
 
     pub fn resolved_imports(&self) -> bool {
-        self.imports_map.is_some()
+        self.resolved_imports
     }
 
     pub fn resolve_imports(&mut self) -> Result<(), SchemaJsonError> {
@@ -77,6 +79,14 @@ impl Schema {
         Ok(())
     }
 
+    pub fn imports(&self) -> impl Iterator<Item = &IriS> {
+        if let Some(imports) = &self.imports {
+            imports.iter()
+        } else {
+            todo!()
+        }
+    }
+
     pub fn resolve_imports_visited(
         &mut self,
         pending: &mut Vec<IriS>,
@@ -85,6 +95,14 @@ impl Schema {
         while let Some(candidate) = pending.pop() {
             if !visited.contains(&candidate) {
                 let new_schema = Schema::from_iri(&candidate)?;
+                for i in new_schema.imports() {
+                    if !visited.contains(i) {
+                        pending.push(i.clone())
+                    }
+                }
+                /*for shape_decl in new_schema.shapes_map().keys() {
+                    match self.shapes_map.entry(shape_decl.)
+                }*/
                 visited.push(candidate);
             }
         }
