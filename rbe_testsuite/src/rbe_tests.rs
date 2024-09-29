@@ -76,7 +76,7 @@ impl RbeTests
         let data = std::str::from_utf8(data)
             .with_context(|| format!("data in {} is not valid UTF-8", group_name))?;
         let mut index = 1;
-        let mut tests: RbeTests = serde_yaml::from_str(data)
+        let mut tests: RbeTests = serde_yml::from_str(data)
             .with_context(|| format!("error decoding YAML for '{}'", group_name))?;
         for t in &mut tests.tests {
             t.set_group(group_name.to_string());
