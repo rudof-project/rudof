@@ -1,9 +1,6 @@
 name: Python
 
-on:
-  release:
-    types:
-      - published
+on: [push, pull_request]
 
 permissions:
   contents: write
