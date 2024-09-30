@@ -1,5 +1,6 @@
 use std::{io, result};
 
+use calamine::{XlsError, XlsxError};
 use csv::{Position, StringRecord};
 use thiserror::Error;
 
@@ -47,4 +48,16 @@ pub enum TapError {
         path: String,
         error: serde_yml::Error,
     },
+
+    #[error("Reading Excel file from {path}: {error}")]
+    ReadingExcelError { path: String, error: io::Error },
+
+    #[error(transparent)]
+    XlsxError {
+        #[from]
+        error: XlsxError,
+    },
+
+    #[error("No headers found in Excel file: {path}")]
+    NoHeadersExcel { path: String },
 }

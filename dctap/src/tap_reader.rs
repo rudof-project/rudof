@@ -1,24 +1,72 @@
 use crate::tap_error::Result;
 use crate::{
-    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
-    TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint,
-    ValueConstraintType,
+    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ReaderRange, ShapeId,
+    TapConfig, TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value,
+    ValueConstraint, ValueConstraintType,
 };
-use csv::{Position, Reader, StringRecord};
+use calamine::{Data, Range};
+use csv::{Position, Reader as CsvReader, StringRecord};
 use tracing::debug;
 // use indexmap::IndexSet;
 use std::io::{self};
 
+enum StringRecordReader<R> {
+    CsvReader(CsvReader<R>),
+    RangeReader(ReaderRange<R>),
+}
+
+impl<R: io::Read> StringRecordReader<R> {
+    pub fn new_csv_reader(reader: CsvReader<R>) -> StringRecordReader<R> {
+        StringRecordReader::CsvReader(reader)
+    }
+
+    pub fn new_range_reader(range: Range<Data>) -> StringRecordReader<R> {
+        StringRecordReader::RangeReader(ReaderRange::new(range))
+    }
+
+    pub fn read_record(&mut self, record: &mut StringRecord) -> Result<bool> {
+        match self {
+            StringRecordReader::CsvReader(reader) => {
+                let b = reader.read_record(record)?;
+                Ok(b)
+            }
+            StringRecordReader::RangeReader(ranger) => {
+                let b = ranger.read_record(record);
+                Ok(false)
+            }
+        }
+    }
+
+    pub fn position(&mut self) -> &Position {
+        match self {
+            StringRecordReader::CsvReader(reader) => reader.position(),
+            StringRecordReader::RangeReader(range) => range.position(),
+        }
+    }
+}
+
 pub struct TapReader<R> {
-    reader: Reader<R>,
+    reader: StringRecordReader<R>,
     state: TapReaderState,
     config: TapConfig,
 }
 
 impl<R: io::Read> TapReader<R> {
-    pub fn new(reader: Reader<R>, state: TapReaderState, config: &TapConfig) -> Self {
+    pub fn new_csv_reader(reader: CsvReader<R>, state: TapReaderState, config: &TapConfig) -> Self {
         TapReader {
-            reader,
+            reader: StringRecordReader::new_csv_reader(reader),
+            state,
+            config: config.clone(),
+        }
+    }
+
+    pub fn new_range_reader(
+        reader: Range<Data>,
+        state: TapReaderState,
+        config: &TapConfig,
+    ) -> Self {
+        TapReader {
+            reader: StringRecordReader::new_range_reader(reader),
             state,
             config: config.clone(),
         }
@@ -70,11 +118,7 @@ impl<R: io::Read> TapReader<R> {
         } else {
             let mut record = StringRecord::new();
             let pos = self.reader.position().clone();
-            if self
-                .reader
-                .read_record(&mut record)
-                .map_err(|e| TapError::CSVError { err: e })?
-            {
+            if self.reader.read_record(&mut record)? {
                 Ok(Some((record, pos.clone())))
             } else {
                 Ok(None)
@@ -391,7 +435,7 @@ impl<R: io::Read> TapReader<R> {
         Ok(())
     }
 
-    fn position(&self) -> &Position {
+    fn position(&mut self) -> &Position {
         self.reader.position()
     }
 }

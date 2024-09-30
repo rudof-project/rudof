@@ -13,6 +13,7 @@ pub mod node_type;
 pub mod placeholder_resolver;
 pub mod prefix_cc;
 pub mod property_id;
+pub mod reader_range;
 pub mod shape_id;
 pub mod tap_config;
 pub mod tap_error;
@@ -32,6 +33,7 @@ pub use crate::node_type::*;
 pub use crate::placeholder_resolver::*;
 pub use crate::prefix_cc::*;
 pub use crate::property_id::*;
+pub use crate::reader_range::*;
 pub use crate::shape_id::*;
 pub use crate::tap_config::*;
 pub use crate::tap_error::*;
@@ -43,3 +45,14 @@ pub use crate::tap_shape::*;
 pub use crate::tap_statement::*;
 pub use crate::value_constraint::*;
 pub use dctap::*;
+
+/// DCTAP available formats
+#[derive(Debug, Default, PartialEq)]
+pub enum DCTAPFormat {
+    #[default]
+    CSV,
+    XLSX,
+    XLSB,
+    XLSM,
+    XLS,
+}

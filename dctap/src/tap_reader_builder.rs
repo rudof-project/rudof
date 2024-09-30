@@ -1,9 +1,10 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{TapConfig, TapReader, TapReaderState};
-use csv::ReaderBuilder;
+use crate::{ReaderRange, TapConfig, TapError, TapReader, TapReaderState};
+use calamine::{open_workbook, Data, DataType, Range, Reader as XlsxReader, Xls, Xlsx};
+use csv::{ReaderBuilder, StringRecord};
 use std::fs::File;
 // use indexmap::IndexSet;
-use std::io::{self};
+use std::io::{self, BufReader};
 use std::path::Path;
 
 #[derive(Default)]
@@ -69,7 +70,7 @@ impl TapReaderBuilder {
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader::new(reader, state, config))
+        Ok(TapReader::new_csv_reader(reader, state, config))
     }
 
     pub fn from_reader<R: io::Read>(rdr: R, config: &TapConfig) -> Result<TapReader<R>> {
@@ -81,6 +82,50 @@ impl TapReaderBuilder {
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader::new(reader, state, config))
+        Ok(TapReader::new_csv_reader(reader, state, config))
+    }
+
+    pub fn from_excel<R: io::Read, P: AsRef<Path>>(
+        path: P,
+        sheet_name: Option<&str>,
+        config: &TapConfig,
+    ) -> Result<TapReader<R>> {
+        let path_name = path.as_ref().to_string_lossy().to_string();
+        let mut excel: Xlsx<_> = match open_workbook(path) {
+            Ok(xls) => Ok::<calamine::Xlsx<BufReader<File>>, TapError>(xls),
+            Err(e) => todo!(),
+        }?;
+        let mut range = match sheet_name {
+            None => match excel.worksheet_range_at(0) {
+                Some(range) => range,
+                None => todo!(),
+            },
+            Some(name) => excel.worksheet_range(name),
+        }?;
+        let reader_range: ReaderRange<io::Empty> = ReaderRange::new(range);
+        if let Some(rcd) = range_to_record_headers(reader_range) {
+            let headers = TapHeaders::from_record(&rcd)?;
+            println!("Headers: {headers:?}");
+            let state = TapReaderState::new().with_headers(headers);
+            Ok(TapReader::new_range_reader(range, state, config))
+        } else {
+            Err(TapError::NoHeadersExcel { path: path_name })
+        }
+    }
+}
+
+fn range_to_record_headers<R>(range: &mut ReaderRange<R>) -> Option<StringRecord> {
+    if let Some(row) = range.rows().next() {
+        let mut rcd = StringRecord::new();
+        for cell in row {
+            if let Some(str) = cell.as_string() {
+                rcd.push_field(&str);
+            } else {
+                rcd.push_field("");
+            }
+        }
+        Some(rcd)
+    } else {
+        None
     }
 }
