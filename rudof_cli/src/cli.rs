@@ -111,6 +111,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Validate RDF data using ShEx or SHACL
@@ -351,6 +355,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Show information about RDF data
@@ -391,6 +399,10 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         result_format: DataFormat,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
@@ -507,6 +519,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Show information and process DCTAP files
@@ -613,6 +629,112 @@ pub enum Command {
 
         #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
         output_mode: OutputConvertMode,
+    },
+
+    /// Show information about SPARQL service
+    Service {
+        #[arg(short = 's', long = "service", value_name = "SPARQL service name")]
+        service: InputSpec,
+
+        #[arg(
+            short = 'f',
+            long = "format",
+            value_name = "SPARQL service format",
+            default_value_t = DataFormat::Turtle
+        )]
+        service_format: DataFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Result service format",
+            default_value_t = ResultServiceFormat::Internal
+        )]
+        result_service_format: ResultServiceFormat,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
+
+    /// Run SPARQL queries
+    Query {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
+        // #[arg(short = 'd', long = "data", value_name = "RDF data path")]
+        // data: PathBuf,
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
+        #[arg(short = 'q', long = "query", value_name = "SPARQL query")]
+        query: InputSpec,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Result query format",
+            default_value_t = ResultQueryFormat::Internal
+        )]
+        result_query_format: ResultQueryFormat,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
     },
 }
 
@@ -852,6 +974,34 @@ impl Display for RDFReaderMode {
         match &self {
             RDFReaderMode::Strict => write!(dest, "strict"),
             RDFReaderMode::Lax => write!(dest, "lax"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultServiceFormat {
+    Internal,
+}
+
+impl Display for ResultServiceFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultServiceFormat::Internal => write!(dest, "internal"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultQueryFormat {
+    Internal,
+}
+
+impl Display for ResultQueryFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultQueryFormat::Internal => write!(dest, "internal"),
         }
     }
 }

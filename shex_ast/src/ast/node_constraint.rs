@@ -37,6 +37,14 @@ impl NodeConstraint {
         self
     }
 
+    pub fn add_datatype(&mut self, datatype: IriRef) {
+        self.datatype = Some(datatype);
+    }
+
+    pub fn add_values(&mut self, values: Vec<ValueSetValue>) {
+        self.values = Some(values);
+    }
+
     pub fn datatype(&self) -> Option<IriRef> {
         self.datatype.clone()
     }

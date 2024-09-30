@@ -1,0 +1,7 @@
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+
+select ?person ?name ?status where {
+  ?person schema:name ?name ;
+          :status ?status .
+}

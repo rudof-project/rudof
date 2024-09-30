@@ -133,7 +133,7 @@ pub trait SRDFBasic {
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;
-    fn qualify_term(&self, subj: &Self::Term) -> String;
+    fn qualify_term(&self, term: &Self::Term) -> String;
 
     fn prefixmap(&self) -> Option<PrefixMap>;
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;

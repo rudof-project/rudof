@@ -594,7 +594,7 @@ mod tests {
                    min: 1
                    max: 2
               "# };
-        let rbe: String = serde_yaml::to_string(&rbe).unwrap();
+        let rbe: String = serde_yml::to_string(&rbe).unwrap();
         assert_eq!(rbe, expected);
     }
 

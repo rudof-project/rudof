@@ -20,9 +20,12 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use dctap::{DCTap, TapConfig};
-use prefixmap::IriRef;
+use dctap::{DCTap, DCTapConfig, TapConfig};
+use iri_s::IriS;
+use oxiri::Iri;
+use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
+use shacl_validation::shacl_config::ShaclConfig;
 use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
@@ -35,10 +38,11 @@ use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{Validator, ValidatorConfig};
+use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{RDFFormat, SRDFBuilder, SRDFSparql, SRDF};
+use srdf::{QuerySolution2, RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, VarName2, SRDF};
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use std::str::FromStr;
@@ -47,13 +51,11 @@ use supports_color::Stream;
 use tracing::debug;
 
 pub mod cli;
-pub mod data;
 pub mod input_convert_format;
 pub mod input_spec;
 pub mod output_convert_format;
 
 pub use cli::*;
-pub use data::*;
 pub use input_convert_format::InputConvertFormat;
 pub use input_spec::*;
 pub use output_convert_format::OutputConvertFormat;
@@ -84,6 +86,23 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
+        Some(Command::Service {
+            service,
+            service_format,
+            output,
+            result_service_format,
+            config,
+            reader_mode,
+            force_overwrite,
+        }) => run_service(
+            service,
+            service_format,
+            reader_mode,
+            output,
+            result_service_format,
+            config,
+            *force_overwrite,
+        ),
         Some(Command::Shex {
             schema,
             schema_format,
@@ -93,16 +112,21 @@ fn main() -> Result<()> {
             show_statistics,
             force_overwrite,
             reader_mode,
-        }) => run_shex(
-            schema,
-            schema_format,
-            result_schema_format,
-            output,
-            *show_time,
-            *show_statistics,
-            *force_overwrite,
-            reader_mode,
-        ),
+            config,
+        }) => {
+            let config = get_shex_config(config)?;
+            run_shex(
+                schema,
+                schema_format,
+                result_schema_format,
+                output,
+                *show_time,
+                *show_statistics,
+                *force_overwrite,
+                reader_mode,
+                &config,
+            )
+        }
         Some(Command::Validate {
             validation_mode,
             schema,
@@ -187,7 +211,7 @@ fn main() -> Result<()> {
                 Some(config_path) => match ValidatorConfig::from_path(config_path) {
                     Ok(c) => Ok(c),
                     Err(e) => Err(anyhow!(
-                        "Error obtaining ShEx validation confir from {}: {e}",
+                        "Error obtaining ShEx validation config from {}: {e}",
                         config_path.display()
                     )),
                 },
@@ -220,17 +244,21 @@ fn main() -> Result<()> {
             mode,
             output,
             force_overwrite,
-        }) => run_validate_shacl(
-            shapes,
-            shapes_format,
-            data,
-            data_format,
-            endpoint,
-            *mode,
-            cli.debug,
-            output,
-            *force_overwrite,
-        ),
+            config,
+        }) => {
+            let shacl_config = get_shacl_config(config)?;
+            run_validate_shacl(
+                shapes,
+                shapes_format,
+                data,
+                data_format,
+                endpoint,
+                *mode,
+                cli.debug,
+                output,
+                *force_overwrite,
+            )
+        }
         Some(Command::Data {
             data,
             data_format,
@@ -238,15 +266,20 @@ fn main() -> Result<()> {
             output,
             result_format,
             force_overwrite,
-        }) => run_data(
-            data,
-            data_format,
-            cli.debug,
-            output,
-            result_format,
-            *force_overwrite,
-            reader_mode,
-        ),
+            config,
+        }) => {
+            let config = get_rdf_data_config(config)?;
+            run_data(
+                data,
+                data_format,
+                cli.debug,
+                output,
+                result_format,
+                *force_overwrite,
+                reader_mode,
+                &config,
+            )
+        }
         Some(Command::Node {
             data,
             data_format,
@@ -259,20 +292,23 @@ fn main() -> Result<()> {
             output,
             config,
             force_overwrite,
-        }) => run_node(
-            data,
-            data_format,
-            endpoint,
-            reader_mode,
-            node,
-            predicates,
-            show_node_mode,
-            show_hyperlinks,
-            cli.debug,
-            output,
-            config,
-            *force_overwrite,
-        ),
+        }) => {
+            let config = get_rdf_data_config(config)?;
+            run_node(
+                data,
+                data_format,
+                endpoint,
+                reader_mode,
+                node,
+                predicates,
+                show_node_mode,
+                show_hyperlinks,
+                cli.debug,
+                output,
+                &config,
+                *force_overwrite,
+            )
+        }
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
@@ -293,14 +329,19 @@ fn main() -> Result<()> {
             result_shapes_format,
             output,
             force_overwrite,
-        }) => run_shacl(
-            shapes,
-            shapes_format,
-            result_shapes_format,
-            output,
-            *force_overwrite,
-            reader_mode,
-        ),
+            config,
+        }) => {
+            let shacl_config = get_shacl_config(config)?;
+            run_shacl(
+                shapes,
+                shapes_format,
+                result_shapes_format,
+                output,
+                *force_overwrite,
+                reader_mode,
+                &shacl_config,
+            )
+        }
         Some(Command::DCTap {
             file,
             format,
@@ -341,10 +382,67 @@ fn main() -> Result<()> {
             *force_overwrite,
             reader_mode,
         ),
+        Some(Command::Query {
+            query,
+            data,
+            data_format,
+            endpoint,
+            reader_mode,
+            output,
+            result_query_format,
+            config,
+            force_overwrite,
+        }) => {
+            let query_config = get_query_config(config)?;
+            run_query(
+                data,
+                data_format,
+                endpoint,
+                reader_mode,
+                query,
+                result_query_format,
+                output,
+                &query_config,
+                cli.debug,
+                *force_overwrite,
+            )
+        }
         None => {
             bail!("Command not specified")
         }
     }
+}
+
+fn run_service(
+    input: &InputSpec,
+    data_format: &DataFormat,
+    reader_mode: &RDFReaderMode,
+    output: &Option<PathBuf>,
+    result_format: &ResultServiceFormat,
+    config: &Option<PathBuf>,
+    force_overwrite: bool,
+) -> Result<()> {
+    let reader = input.open_read()?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let config = if let Some(path) = config {
+        ServiceConfig::from_path(path)?
+    } else {
+        ServiceConfig::new()
+    };
+    let rdf_format = data_format2rdf_format(data_format);
+    let base = config
+        .base
+        .as_ref()
+        .map(|iri_s| Iri::parse_unchecked(iri_s.as_str().to_string()));
+
+    let service_description =
+        ServiceDescription::from_reader(reader, &rdf_format, base, &(*reader_mode).into())?;
+    match result_format {
+        ResultServiceFormat::Internal => {
+            writeln!(writer, "{service_description}")?;
+        }
+    }
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -357,10 +455,11 @@ fn run_shex(
     show_statistics: bool,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
+    config: &ValidatorConfig,
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(input, schema_format, reader_mode)?;
+    let schema_json = parse_schema(input, schema_format, reader_mode, config)?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
@@ -432,10 +531,21 @@ fn run_validate_shex(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema, schema_format, reader_mode)?;
+    let schema_json = parse_schema(schema, schema_format, reader_mode, config)?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
-    let data = get_data(data, data_format, endpoint, reader_mode, debug)?;
+    let rdf_data_config = match &config.data_config {
+        None => RdfDataConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let data = get_data(
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        debug,
+        &rdf_data_config,
+    )?;
     let mut shapemap = match shapemap_path {
         None => QueryShapeMap::new(),
         Some(shapemap_buf) => parse_shapemap(shapemap_buf, shapemap_format)?,
@@ -460,12 +570,9 @@ fn run_validate_shex(
         }
     };
     let mut validator = Validator::new(schema, config);
-    let result = match &data {
-        Data::Endpoint(endpoint) => validator.validate_shapemap(&shapemap, endpoint),
-        Data::RDFData(data) => validator.validate_shapemap(&shapemap, data),
-    };
+    let result = validator.validate_shapemap(&shapemap, &data);
     match result {
-        Result::Ok(_t) => match validator.result_map(data.prefixmap()) {
+        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
             Result::Ok(result_map) => {
                 writeln!(writer, "Result:\n{}", result_map)?;
                 Ok(())
@@ -558,9 +665,14 @@ fn run_shacl(
     output: &Option<PathBuf>,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
+    config: &ShaclConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let shacl_schema = parse_shacl(input, shapes_format, reader_mode)?;
+    let data_config = match &config.data {
+        None => RdfDataConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let shacl_schema = parse_shacl(input, shapes_format, reader_mode, &data_config)?;
     match result_shapes_format {
         ShaclFormat::Internal => {
             writeln!(writer, "{shacl_schema}")?;
@@ -570,7 +682,7 @@ fn run_shacl(
             let data_format = shacl_format_to_data_format(result_shapes_format)?;
             let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
             shacl_writer.write(&shacl_schema)?;
-            shacl_writer.serialize(data_format.into(), writer)?;
+            shacl_writer.serialize(data_format.into(), &mut writer)?;
             Ok(())
         }
     }
@@ -585,10 +697,11 @@ fn run_dctap(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let tap_config = match config {
-        Some(config_path) => TapConfig::from_path(config_path),
-        None => Ok(TapConfig::default()),
+    let dctap_config = match config {
+        Some(config_path) => DCTapConfig::from_path(config_path),
+        None => Ok(DCTapConfig::default()),
     }?;
+    let tap_config = dctap_config.dctap.unwrap_or_default();
     let dctap = parse_dctap(input, format, &tap_config)?;
     match result_format {
         DCTapResultFormat::Internal => {
@@ -685,7 +798,15 @@ fn run_shacl2shex(
         InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
-    let schema = parse_shacl(input, &schema_format, reader_mode)?;
+    let shacl_config = match &config.shacl {
+        None => ShaclConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let data_config = match &shacl_config.data {
+        None => RdfDataConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let schema = parse_shacl(input, &schema_format, reader_mode, &data_config)?;
     let mut converter = Shacl2ShEx::new(config);
     converter.convert(&schema)?;
     let (writer, color) = get_writer(output, force_overwrite)?;
@@ -722,7 +843,11 @@ fn run_shex2uml(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input, &schema_format, reader_mode)?;
+    let shex_config = match &config.shex_config {
+        None => ValidatorConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -777,7 +902,11 @@ fn run_shex2html<P: AsRef<Path>>(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input, &schema_format, reader_mode)?;
+    let shex_config = match &config.shex {
+        None => ValidatorConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
     let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
     debug!("Landing page will be generated at {landing_page}\nStarted converter...");
@@ -839,7 +968,11 @@ fn run_shex2sparql(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let schema = parse_schema(input, &schema_format, reader_mode)?;
+    let shex_config = match &config.shex {
+        None => ValidatorConfig::default(),
+        Some(cfg) => cfg.clone(),
+    };
+    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -939,24 +1072,32 @@ fn get_data(
     endpoint: &Option<String>,
     reader_mode: &RDFReaderMode,
     _debug: u8,
-) -> Result<Data> {
+    config: &RdfDataConfig,
+) -> Result<RdfData> {
     match (data.is_empty(), endpoint) {
         (true, None) => {
             bail!("None of `data` or `endpoint` parameters have been specified for validation")
         }
         (false, None) => {
             // let data_path = cast_to_data_path(data)?;
-            let data = parse_data(data, data_format, reader_mode)?;
-            Ok(Data::RDFData(data))
+            let data = parse_data(data, data_format, reader_mode, config)?;
+            Ok(RdfData::from_graph(data)?)
         }
         (true, Some(endpoint)) => {
             let endpoint = SRDFSparql::from_str(endpoint)?;
-            Ok(Data::Endpoint(endpoint))
+            Ok(RdfData::from_endpoint(endpoint))
         }
         (false, Some(_)) => {
             bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
         }
     }
+}
+
+fn get_str(input: &InputSpec) -> Result<String> {
+    let mut str = String::new();
+    let mut data = input.open_read()?;
+    data.read_to_string(&mut str)?;
+    Ok(str)
 }
 
 /*fn make_node_selector(node: Node) -> Result<NodeSelector> {
@@ -989,30 +1130,20 @@ fn run_node(
     show_hyperlinks: &bool,
     debug: u8,
     output: &Option<PathBuf>,
-    _config: &Option<PathBuf>,
+    config: &RdfDataConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data = get_data(data, data_format, endpoint, reader_mode, debug)?;
+    let data = get_data(data, data_format, endpoint, reader_mode, debug, config)?;
     let node_selector = parse_node_selector(node_str)?;
-    match data {
-        Data::Endpoint(endpoint) => show_node_info(
-            node_selector,
-            predicates,
-            &endpoint,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-        Data::RDFData(data) => show_node_info(
-            node_selector,
-            predicates,
-            &data,
-            show_node_mode,
-            show_hyperlinks,
-            &mut writer,
-        ),
-    }
+    show_node_info(
+        node_selector,
+        predicates,
+        &data,
+        show_node_mode,
+        show_hyperlinks,
+        &mut writer,
+    )
 }
 
 fn show_node_info<S, W: Write>(
@@ -1041,7 +1172,7 @@ where
                     }
                 } else {
                     let preds = cnv_predicates(predicates, rdf)?;
-                    match rdf.outgoing_arcs_from_list(&subject, preds) {
+                    match rdf.outgoing_arcs_from_list(&subject, &preds) {
                         Result::Ok((rs, _)) => rs,
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
@@ -1157,6 +1288,7 @@ where
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -1165,13 +1297,89 @@ fn run_data(
     result_format: &DataFormat,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
+    config: &RdfDataConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data = get_data(data, data_format, &None, reader_mode, debug)?;
-    match data {
-        Data::Endpoint(e) => writeln!(writer, "Endpoint {e:?}")?,
-        Data::RDFData(graph) => graph.serialize(RDFFormat::from(*result_format), writer)?,
+    let data = get_data(data, data_format, &None, reader_mode, debug, config)?;
+    data.serialize(RDFFormat::from(*result_format), &mut writer)?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_query(
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
+    query: &InputSpec,
+    _result_query_format: &ResultQueryFormat,
+    output: &Option<PathBuf>,
+    config: &QueryConfig,
+    debug: u8,
+    force_overwrite: bool,
+) -> Result<()> {
+    use crate::srdf::QuerySRDF2;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let data_config = match &config.data_config {
+        None => RdfDataConfig::default(),
+        Some(dc) => dc.clone(),
+    };
+    let data = get_data(
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        debug,
+        &data_config,
+    )?;
+    let query = get_str(query)?;
+    let results = data.query_select(query.as_str())?;
+    let mut results_iter = results.iter().peekable();
+    if let Some(first) = results_iter.peek() {
+        show_variables(&mut writer, first.variables())?;
+        for result in results_iter {
+            show_result(&mut writer, result, &data.prefixmap())?
+        }
+    } else {
+        write!(writer, "No results")?;
     }
+    Ok(())
+}
+
+fn show_variables<'a, W: Write>(
+    writer: &mut W,
+    vars: impl Iterator<Item = &'a VarName2>,
+) -> Result<()> {
+    for var in vars {
+        let str = format!("{}", var);
+        write!(writer, "{:15}", str)?;
+    }
+    writeln!(writer)?;
+    Ok(())
+}
+
+fn show_result<W: Write>(
+    writer: &mut W,
+    result: &QuerySolution2<RdfData>,
+    prefixmap: &PrefixMap,
+) -> Result<()> {
+    for (idx, _variable) in result.variables().enumerate() {
+        let str = match result.find_solution(idx) {
+            Some(term) => match term {
+                oxrdf::Term::NamedNode(named_node) => {
+                    let (str, length) =
+                        prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
+                    format!("{}{}", " ".repeat(15 - length), str)
+                }
+                oxrdf::Term::BlankNode(blank_node) => format!("  {}", blank_node),
+                oxrdf::Term::Literal(literal) => format!("  {}", literal),
+                oxrdf::Term::Triple(triple) => format!("  {}", triple),
+            },
+            None => String::new(),
+        };
+        write!(writer, "{:15}", str)?;
+    }
+    writeln!(writer)?;
     Ok(())
 }
 
@@ -1189,11 +1397,13 @@ fn parse_schema(
     input: &InputSpec,
     schema_format: &ShExFormat,
     reader_mode: &RDFReaderMode,
+    config: &ValidatorConfig,
 ) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
             let mut reader = input.open_read()?;
+            // TODO: Check base from ShEx config...
             let schema = ShExParser::from_reader(&mut reader, None)?;
             Ok(schema)
         }
@@ -1203,7 +1413,16 @@ fn parse_schema(
             Ok(schema_json)
         }
         ShExFormat::Turtle => {
-            let rdf = parse_data(&vec![input.clone()], &DataFormat::Turtle, reader_mode)?;
+            let data_config = match &config.data_config {
+                None => RdfDataConfig::default(),
+                Some(cfg) => cfg.clone(),
+            };
+            let rdf = parse_data(
+                &vec![input.clone()],
+                &DataFormat::Turtle,
+                reader_mode,
+                &data_config,
+            )?;
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1215,12 +1434,13 @@ fn parse_shacl(
     input: &InputSpec,
     shapes_format: &ShaclFormat,
     reader_mode: &RDFReaderMode,
+    config: &RdfDataConfig,
 ) -> Result<ShaclSchema> {
     match shapes_format {
         ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         _ => {
             let data_format = shacl_format_to_data_format(shapes_format)?;
-            let rdf = parse_data(&vec![input.clone()], &data_format, reader_mode)?;
+            let rdf = parse_data(&vec![input.clone()], &data_format, reader_mode, config)?;
             let schema = ShaclParser::new(rdf).parse()?;
             Ok(schema)
         }
@@ -1249,24 +1469,33 @@ fn shacl_format_to_data_format(shacl_format: &ShaclFormat) -> Result<DataFormat>
     }
 }
 
-fn parse_data(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    reader_mode: &RDFReaderMode,
-) -> Result<SRDFGraph> {
-    let mut graph = SRDFGraph::new();
-    let rdf_format = match data_format {
+fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
+    match data_format {
         DataFormat::N3 => RDFFormat::N3,
         DataFormat::NQuads => RDFFormat::NQuads,
         DataFormat::NTriples => RDFFormat::NTriples,
         DataFormat::RDFXML => RDFFormat::RDFXML,
         DataFormat::TriG => RDFFormat::TriG,
         DataFormat::Turtle => RDFFormat::Turtle,
-    };
+    }
+}
+
+fn parse_data(
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    reader_mode: &RDFReaderMode,
+    config: &RdfDataConfig,
+) -> Result<SRDFGraph> {
+    let mut graph = SRDFGraph::new();
+    let rdf_format = data_format2rdf_format(data_format);
     for d in data {
         use std::convert::Into;
         let reader = d.open_read()?;
-        graph.merge_from_reader(reader, &rdf_format, None, &(*reader_mode).into())?;
+        let base = config
+            .base
+            .as_ref()
+            .map(|iri_s| Iri::parse_unchecked(iri_s.as_str().to_string()));
+        graph.merge_from_reader(reader, &rdf_format, base, &(*reader_mode).into())?;
     }
     Ok(graph)
 }
@@ -1291,6 +1520,58 @@ fn parse_shape_selector(label_str: &str) -> Result<ShapeSelector> {
 fn parse_iri_ref(iri: &str) -> Result<IriRef> {
     let iri = ShapeMapParser::parse_iri_ref(iri)?;
     Ok(iri)
+}
+
+fn get_rdf_data_config(config: &Option<PathBuf>) -> Result<RdfDataConfig> {
+    match config {
+        Some(config_path) => match RdfDataConfig::from_path(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(
+                "Error obtaining Data config from {}: {e}",
+                config_path.display()
+            )),
+        },
+        None => Ok(RdfDataConfig::default()),
+    }
+}
+
+fn get_shex_config(config: &Option<PathBuf>) -> Result<ValidatorConfig> {
+    match config {
+        Some(config_path) => match ValidatorConfig::from_path(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(
+                "Error obtaining Data config from {}: {e}",
+                config_path.display()
+            )),
+        },
+        None => Ok(ValidatorConfig::default()),
+    }
+}
+
+fn get_shacl_config(config: &Option<PathBuf>) -> Result<ShaclConfig> {
+    match config {
+        Some(config_path) => match ShaclConfig::from_path(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(
+                "Error obtaining SHACL config from {}: {e}",
+                config_path.display()
+            )),
+        },
+        None => Ok(ShaclConfig::default()),
+    }
+}
+
+fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
+    match config {
+        Some(config_path) => match QueryConfig::from_path(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(
+                "Error obtaining Query config from {}: {e}",
+                config_path.display()
+            )),
+        },
+        None => Ok(QueryConfig::default()),
+    }
 }
 
 fn cast_to_data_path(data: &Vec<InputSpec>) -> Result<Option<PathBuf>> {

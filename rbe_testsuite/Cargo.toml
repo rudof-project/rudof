@@ -12,7 +12,7 @@ rbe = { workspace = true }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { workspace = true }
-serde_yaml = "0.9"
+serde_yml = "0.0.11"
 anyhow = "1.0.27"
 tracing = { workspace = true }
 

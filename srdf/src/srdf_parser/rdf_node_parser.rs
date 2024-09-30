@@ -43,11 +43,11 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::{IriS, iri};
     /// # use srdf::SRDFGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, property_string, PResult};
+    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, ReaderMode, property_string, PResult};
     ///     let s = r#"prefix : <http://example.org/>
     ///     :x :p "1" .
     ///   "#;
-    ///   let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    ///   let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///   let x = iri!("http://example.org/x");
     ///   let p = iri!("http://example.org/p");
     ///   fn cnv_int(s: String) -> PResult<isize> {
@@ -70,11 +70,11 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::{IriS, iri};
     /// # use srdf::srdf_graph::SRDFGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, property_string};
+    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, ReaderMode, property_string};
     /// let s = r#"prefix : <http://example.org/>
     ///        :x :p "1" .
     ///   "#;
-    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     /// let x = iri!("http://example.org/x");
     /// let p = iri!("http://example.org/p");
     ///
@@ -108,11 +108,11 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::{IriS, iri};
     /// # use srdf::srdf_graph::SRDFGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, property_integer};
+    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_integer};
     /// let s = r#"prefix : <http://example.org/>
     ///          :x :p 1 .
     ///  "#;
-    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     /// let p = iri!("http://example.org/p");
     /// let mut parser = property_integer(&p).map(|n| n + 1);
     /// assert_eq!(parser.parse(&iri!("http://example.org/x"), graph).unwrap(), 2)
@@ -132,12 +132,12 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::IriS;
     /// # use srdf::srdf_graph::SRDFGraph;
-    /// # use srdf::{RDFNodeParse, RDFFormat, property_bool, property_integer};
+    /// # use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_bool, property_integer};
     /// let s = r#"prefix : <http://example.org/>
     ///       :x :p true ;
     ///          :q 1    .
     ///     "#;
-    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// let p = IriS::new_unchecked("http://example.org/p");
     /// let q = IriS::new_unchecked("http://example.org/q");
@@ -182,11 +182,11 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// # use srdf::srdf_graph::SRDFGraph;
     /// # use oxrdf::Term;
     /// # use std::collections::HashSet;
-    /// use srdf::{RDFNodeParse, RDFFormat, ok, property_integers};
+    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, ok, property_integers};
     ///       let s = r#"prefix : <http://example.org/>
     ///       :x :p 1, 2, 3 .
     ///     "#;
-    ///     let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    ///     let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///     let x = IriS::new_unchecked("http://example.org/x");
     ///     let p = IriS::new_unchecked("http://example.org/p");
     ///     let mut parser = property_integers(&p).then_mut(move |ns| {
@@ -209,13 +209,13 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// ```
     /// # use iri_s::IriS;
     /// # use srdf::srdf_graph::SRDFGraph;
-    /// # use srdf::{RDFNodeParse, RDFFormat, property_bool};
+    /// # use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_bool};
     /// # use std::collections::HashSet;
     ///  let s = r#"prefix : <http://example.org/>
     ///       :x :p 1, 2 ;
     ///          :q true .
     ///     "#;
-    ///  let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    ///  let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///  let x = IriS::new_unchecked("http://example.org/x");
     ///  let p = IriS::new_unchecked("http://example.org/p");
     ///  let q = IriS::new_unchecked("http://example.org/q");
@@ -242,12 +242,12 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
+    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
     /// # use srdf::srdf_graph::SRDFGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
     /// "#;
-    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+    /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     /// let p = IriS::new_unchecked("http://example.org/p");
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// assert_eq!(
@@ -1150,13 +1150,13 @@ where
 /// ```
 /// use iri_s::{IriS, iri};
 /// use srdf::SRDFGraph;
-/// use srdf::{property_value, then, RDFFormat, RDFNodeParse, rdf_list, set_focus};
+/// use srdf::{property_value, then, RDFFormat, ReaderMode, RDFNodeParse, rdf_list, set_focus};
 /// use oxrdf::{Literal, Term};
 
 /// let s = r#"prefix : <http://example.org/>
 ///  :x :p (1 2).
 /// "#;
-/// let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+/// let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
 /// let x = iri!("http://example.org/x");
 /// let p = iri!("http://example.org/p");
 /// let mut parser = property_value(&p).then(move |obj| {

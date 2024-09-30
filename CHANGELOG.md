@@ -2,6 +2,26 @@
 
 ## Current changes without release yet
 
+## [0.1.27] - 2024-09-25
+
+- Added support for picklist values in DCTAP
+- Added support for picklist values in DCTAP2ShEx
+- Added support for simple value set values in ShEx to UML
+
+## [0.1.26] - 2024-09-20
+
+- Added support for SPARQL query options. New command called: `query`
+- Added support for handling SPARQL service descriptions. New command called: `service`
+- Changed the TAPConfig parameter of command `dctap` so it can use the same config file as option `tap2shex`
+
+## [0.1.25] - 2024-09-11
+
+- Small change removing an empty config file to solve issue #155
+
+## [0.1.24] - 2024-09-10
+
+- Added more configuration parameters for RDF data and Shacl data which allow, for example to define a default base IRI which can be used to resolve relative IRIs solving issue #149
+
 ## [0.1.23] - 2024-09-09
 
 - Added option for partial views of UML class diagrams which can be useful when visualizing large ShEx schemas

@@ -5,7 +5,6 @@ use srdf::SRDFBasic;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use srdf::SRDF;
-use std::collections::HashSet;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::DefaultConstraintComponent;
@@ -47,15 +46,12 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
                         ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
                     Some(result)
                 } else {
-                    let objects = match get_objects_for(
+                    let objects = get_objects_for(
                         validation_context.store(),
                         value_node,
                         &S::iri_s2iri(&RDF_TYPE),
-                    ) {
-                        Ok(objects) => objects,
-                        Err(_) => HashSet::new(),
-                    };
-
+                    )
+                    .unwrap_or_default();
                     let is_class_valid = objects.iter().any(|ctype| {
                         ctype == &self.class_rule
                             || get_objects_for(

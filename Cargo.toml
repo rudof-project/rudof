@@ -17,6 +17,7 @@ members = [
     "shacl_validation",
     "shacl_testsuite",
     "shapes_converter",
+    "sparql_service",
     "python",
 ]
 
@@ -59,6 +60,7 @@ shex_testsuite = { version = "0.1.0", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.0", path = "./shex_validation" }
 shex_compact = { version = "0.1.0", path = "./shex_compact" }
 srdf = { version = "0.1.0", path = "./srdf" }
+sparql_service = { version = "0.1.15", path = "./sparql_service" }
 
 # [dependencies]
 # External dependencies
