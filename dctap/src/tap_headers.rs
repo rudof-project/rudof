@@ -135,7 +135,7 @@ impl TapHeaders {
 }
 
 fn clean(str: &str) -> String {
-    str.to_uppercase()
+    str.trim().to_uppercase()
 }
 
 fn get_str_from_rcd(rcd: &StringRecord, idx: usize) -> Option<String> {

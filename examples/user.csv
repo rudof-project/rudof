@@ -1,6 +1,7 @@
-shapeId,shapeLabel,propertyId,propertyLabel, valueShape
-Person,PersonLabel,knows,KnowsLabel, @Person
-,,name,name of person, http://www.w3.org/2001/XMLSchema#string
-,,worksFor, works for, @Company
-Company,,founder, founder person, @Person
-
+shapeId,shapeLabel,propertyId,propertyLabel,valueShape, valueDatatype, valueConstraint, valueConstraintType
+Person,PersonLabel,knows,knows property, @Person,,
+,,rdf:type,instance of,,,male other,picklist,
+,,name,name of person,,xsd:string,
+,,worksFor, works for, @Company,,
+,,,,,
+Company,,founder, founder person, @Person,,
