@@ -22,8 +22,8 @@ use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::Object;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Subject as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
+    Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
 use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
@@ -46,6 +46,13 @@ impl SRDFGraph {
         self.graph.len()
     }
 
+    pub fn quads(&self) -> impl Iterator<Item = Quad> + '_ {
+        let graph_name = GraphName::DefaultGraph;
+        self.graph
+            .iter()
+            .map(move |t| triple_to_quad(t, graph_name.clone()))
+    }
+
     pub fn is_empty(&self) -> bool {
         self.graph.is_empty()
     }
@@ -64,7 +71,7 @@ impl SRDFGraph {
                     Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
                 };
                 // let mut graph = Graph::default();
-                let mut reader = turtle_parser.parse_read(read);
+                let mut reader = turtle_parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     self.graph.insert(triple_result?.as_ref());
                 }
@@ -79,7 +86,7 @@ impl SRDFGraph {
             }
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -100,7 +107,7 @@ impl SRDFGraph {
             }
             RDFFormat::RDFXML => {
                 let parser = RdfXmlParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -116,7 +123,7 @@ impl SRDFGraph {
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
                 let parser = NQuadsParser::new();
-                let mut reader = parser.parse_read(read);
+                let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -387,7 +394,7 @@ impl SRDFBasic for SRDFGraph {
         Ok(iri.clone())
     }
 
-    fn qualify_iri(&self, node: &OxNamedNode) -> String {
+    fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
         self.pm.qualify(&iri)
     }
@@ -555,7 +562,7 @@ impl SRDF for SRDFGraph {
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
-        preds: Vec<Self::IRI>,
+        preds: &[Self::IRI],
     ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
         let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
         let mut remainder = Vec::new();
@@ -717,16 +724,16 @@ impl SRDFBuilder for SRDFGraph {
         }
     }
 
-    fn serialize<W: Write>(&self, format: RDFFormat, write: W) -> Result<(), Self::Err> {
+    fn serialize<W: Write>(&self, format: RDFFormat, write: &mut W) -> Result<(), Self::Err> {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
             serializer = serializer.with_prefix(prefix, iri.as_str()).unwrap();
         }
 
-        let mut writer = serializer.serialize_to_write(write);
+        let mut writer = serializer.for_writer(write);
         for triple in self.graph.iter() {
-            writer.write_triple(triple)?;
+            writer.serialize_triple(triple)?;
         }
         writer.finish()?;
         Ok(())
@@ -1048,6 +1055,13 @@ fn test_rdf_list() {
             OxTerm::from(OxLiteral::from(2))
         ]
     )
+}
+
+fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
+    let subj: oxrdf::Subject = t.subject.into();
+    let pred: oxrdf::NamedNode = t.predicate.into();
+    let obj: oxrdf::Term = t.object.into();
+    Quad::new(subj, pred, obj, graph_name)
 }
 
 /// Reader mode when parsing RDF data files

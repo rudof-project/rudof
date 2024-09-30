@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.23"
+version = "0.1.27"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -24,6 +24,8 @@ srdf = { workspace = true }
 shacl_ast = { workspace = true }
 shex_ast = { workspace = true }
 shex_compact = { workspace = true }
+shex_validation = { workspace = true }
+shacl_validation = { workspace = true }
 shapemap = { workspace = true }
 prefixmap = { workspace = true }
 colored = "2"

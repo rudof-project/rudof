@@ -2,11 +2,15 @@
 //!
 //!
 
-use dctap::{DCTap, DatatypeId, ExtendsId, PropertyId, ShapeId, TapShape, TapStatement};
+use dctap::{
+    DCTap, DatatypeId, ExtendsId, PropertyId, ShapeId, TapShape, TapStatement, Value,
+    ValueConstraint,
+};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::{
-    Annotation, NodeConstraint, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, TripleExpr,
+    Annotation, NodeConstraint, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
+    TripleExpr, ValueSetValue,
 };
 
 use crate::{Tap2ShExConfig, Tap2ShExError};
@@ -53,6 +57,16 @@ fn tapshape_to_shape(
             tap_shape: tap_shape.clone(),
         })
     }
+}
+
+// TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
+#[allow(clippy::result_large_err)]
+fn _shape_id2shape_expr<'a>(
+    shape_id: &'a ShapeId,
+    config: &'a Tap2ShExConfig,
+) -> Result<IriS, Tap2ShExError> {
+    let iri = config.resolve_iri(shape_id.str(), shape_id.line())?;
+    Ok(iri)
 }
 
 // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
@@ -110,23 +124,11 @@ fn statement_to_triple_expr(
     let pred = property_id2iri(&statement.property_id(), config)?;
     let min = get_min(statement.mandatory());
     let max = get_max(statement.repeatable());
-    let value_expr = match (statement.value_datatype(), statement.value_shape()) {
-        (Some(datatype), None) => {
-            let iri = datatype_id2iri(&datatype, config)?;
-            Ok(Some(ShapeExpr::node_constraint(
-                NodeConstraint::new().with_datatype(IriRef::iri(iri)),
-            )))
-        }
-        (None, Some(shape_id)) => {
-            let iri = shape_id2iri(&shape_id, config)?;
-            Ok(Some(ShapeExpr::iri_ref(IriRef::iri(iri))))
-        }
-        (None, None) => Ok(None),
-        (Some(datatype), Some(valueshape)) => Err(Tap2ShExError::MultipleValueExprInStatement {
-            value_datatype: datatype.clone(),
-            value_shape: valueshape.clone(),
-        }),
-    }?;
+    let value_expr = if let Some(nc) = parse_node_constraint(statement, config)? {
+        Some(ShapeExpr::node_constraint(nc))
+    } else {
+        parse_shape_ref(statement, config)?.map(ShapeExpr::iri_ref)
+    };
     let mut te = TripleExpr::triple_constraint(None, None, IriRef::Iri(pred), value_expr, min, max);
     if let Some(label) = statement.property_label() {
         te.add_annotation(Annotation::rdfs_label(label))
@@ -168,4 +170,86 @@ fn property_id2iri<'a>(
 ) -> Result<IriS, Tap2ShExError> {
     let iri = config.resolve_iri(property_id.str(), property_id.line())?;
     Ok(iri)
+}
+
+#[allow(clippy::result_large_err)]
+fn parse_node_constraint(
+    statement: &TapStatement,
+    config: &Tap2ShExConfig,
+) -> Result<Option<NodeConstraint>, Tap2ShExError> {
+    let mut nc = NodeConstraint::new();
+    let mut changed = false;
+    if let Some(datatype) = statement.value_datatype() {
+        let iri = datatype_id2iri(&datatype, config)?;
+        changed = true;
+        nc.add_datatype(IriRef::iri(iri));
+    }
+    if let Some(constraint) = statement.value_constraint() {
+        parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
+        changed = true;
+    }
+    if changed {
+        Ok(Some(nc))
+    } else {
+        Ok(None)
+    }
+}
+
+#[allow(clippy::result_large_err)]
+fn parse_constraint(
+    constraint: &ValueConstraint,
+    config: &Tap2ShExConfig,
+    node_constraint: &mut NodeConstraint,
+    line: u64,
+) -> Result<(), Tap2ShExError> {
+    match constraint {
+        ValueConstraint::PickList(values) => {
+            let mut value_set_values: Vec<ValueSetValue> = Vec::new();
+            for v in values {
+                let value_set_value = parse_value_set_value(v, config, line)?;
+                value_set_values.push(value_set_value)
+            }
+            node_constraint.add_values(value_set_values);
+            Ok(())
+        }
+        _ => Err(Tap2ShExError::NotImplemented {
+            msg: format!("ValueConstraint: {:?}", constraint),
+        }),
+    }
+}
+
+#[allow(clippy::result_large_err)]
+fn parse_value_set_value(
+    value: &Value,
+    config: &Tap2ShExConfig,
+    line: u64,
+) -> Result<ValueSetValue, Tap2ShExError> {
+    match value {
+        Value::Str(str) => {
+            let iri = config.resolve_iri(str, line)?;
+            Ok(ValueSetValue::ObjectValue(ObjectValue::IriRef(
+                IriRef::iri(iri),
+            )))
+        }
+        Value::Iri(iri) => Ok(ValueSetValue::ObjectValue(ObjectValue::IriRef(
+            IriRef::iri(iri.clone()),
+        ))),
+    }
+}
+
+#[allow(clippy::result_large_err)]
+fn parse_shape_ref(
+    statement: &TapStatement,
+    config: &Tap2ShExConfig,
+) -> Result<Option<IriRef>, Tap2ShExError> {
+    if let Some(shape_id) = statement.value_shape() {
+        let iri =
+            shape_id2iri(&shape_id, config).map_err(|e| Tap2ShExError::ParsingValueShape {
+                line: statement.source_line_number(),
+                error: Box::new(e),
+            })?;
+        Ok(Some(IriRef::iri(iri)))
+    } else {
+        Ok(None)
+    }
 }

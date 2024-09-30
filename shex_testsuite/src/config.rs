@@ -18,7 +18,7 @@ pub enum ConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml::Error,
+        error: serde_yml::Error,
     },
 }
 
@@ -29,7 +29,7 @@ impl Config {
                 path_name: file_name.to_string(),
                 error: e,
             })?;
-        serde_yaml::from_str::<Config>(&config_str).map_err(|e| ConfigError::YamlError {
+        serde_yml::from_str::<Config>(&config_str).map_err(|e| ConfigError::YamlError {
             path_name: file_name.to_string(),
             error: e,
         })

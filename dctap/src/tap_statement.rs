@@ -31,11 +31,23 @@ pub struct TapStatement {
 
     #[serde(rename = "note", skip_serializing_if = "Option::is_none")]
     note: Option<String>,
+
+    #[serde(skip)]
+    source_line_number: Option<u64>,
 }
 
 impl TapStatement {
     pub fn new(property_id: PropertyId) -> TapStatement {
         TapStatement::default().with_property_id(property_id)
+    }
+
+    pub fn with_source_line_number(mut self, line: u64) -> Self {
+        self.source_line_number = Some(line);
+        self
+    }
+
+    pub fn source_line_number(&self) -> u64 {
+        self.source_line_number.unwrap_or_default()
     }
 
     pub fn with_property_id(mut self, property_id: PropertyId) -> Self {

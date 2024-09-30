@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.19"
+version = "0.1.26"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -24,6 +24,8 @@ async-trait = "0.1.68"
 hashbag = "0.1.11"
 serde = "1.0"
 serde_derive = "1.0"
+serde_yml = "0.0.11"
+
 thiserror = "1"
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
@@ -36,7 +38,7 @@ oxrdf = { workspace = true, features = [ "oxsdatatypes"] }
 oxrdfxml = "0.1.0-rc.1" 
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
-sparesults = { version = "0.2.0-alpha.5" }
+sparesults = { version = "0.2.0-rc.2" }
 tokio = { version = "1.38", features = ["full"] }
 colored = "2"
 reqwest = { version = "0.12", features = ["blocking", "json"] }

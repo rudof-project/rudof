@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.20"
+version = "0.1.26"
 readme = "README.md"
 license.workspace = true
 authors.workspace = true
@@ -24,3 +24,5 @@ indoc = "2"
 oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
 clap = { workspace = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_yml = "0.0.11"

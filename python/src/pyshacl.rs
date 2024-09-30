@@ -47,12 +47,12 @@ pub fn parse(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
         let output = Path::new(output);
         let output_format = obtain_format(output.extension())?;
 
-        let writer = match File::create(output) {
+        let mut writer = match File::create(output) {
             Ok(file) => BufWriter::new(file),
             Err(_) => return Err(PyValueError::new_err("Output file could not be created")),
         };
 
-        if let Err(error) = shacl_writer.serialize(output_format, writer) {
+        if let Err(error) = shacl_writer.serialize(output_format, &mut writer) {
             return Err(PyValueError::new_err(error.to_string()));
         }
 

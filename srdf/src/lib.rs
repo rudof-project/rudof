@@ -13,7 +13,9 @@ pub mod neighs;
 pub mod numeric_literal;
 pub mod object;
 pub mod query_srdf;
+pub mod query_srdf2;
 pub mod rdf;
+pub mod rdf_data_config;
 pub mod rdf_format;
 pub mod shacl_path;
 pub mod srdf;
@@ -29,6 +31,8 @@ pub mod vocab;
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
 pub use crate::query_srdf::*;
+pub use crate::query_srdf2::*;
+pub use crate::rdf_data_config::*;
 pub use crate::srdf::*;
 pub use crate::srdf_basic::*;
 pub use bnode::*;
@@ -66,7 +70,7 @@ macro_rules! int {
 ///
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf::srdf_graph::SRDFGraph;
 ///
 /// rdf_parser!{
@@ -81,7 +85,7 @@ macro_rules! int {
 /// let s = r#"prefix : <http://example.org/>
 ///            :x :p 1.
 /// "#;
-/// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None).unwrap();
+/// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
 /// let x = IriS::new_unchecked("http://example.org/x");
 /// let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
 /// assert_eq!(is_term(&term).parse(&x, graph).unwrap(), ())

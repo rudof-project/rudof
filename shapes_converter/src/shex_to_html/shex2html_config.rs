@@ -5,6 +5,7 @@ use std::{
 
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use shex_validation::ValidatorConfig;
 use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
@@ -27,6 +28,7 @@ pub struct ShEx2HtmlConfig {
     pub embed_svg_schema: bool,
     pub embed_svg_shape: bool,
     pub shex2uml: Option<ShEx2UmlConfig>,
+    pub shex: Option<ValidatorConfig>,
 }
 
 impl Default for ShEx2HtmlConfig {
@@ -43,6 +45,7 @@ impl Default for ShEx2HtmlConfig {
             embed_svg_schema: true,
             embed_svg_shape: true,
             shex2uml: Some(ShEx2UmlConfig::new()),
+            shex: Some(ValidatorConfig::default()),
         }
     }
 }

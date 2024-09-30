@@ -282,12 +282,23 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
         ValueConstraint::Datatype(dt) => name2plantuml(dt, config),
         ValueConstraint::Ref(r) => format!("@{}", name2plantuml(r, config)),
         ValueConstraint::None => "".to_string(),
+        ValueConstraint::ValueSet(values) => {
+            let mut str = String::new();
+            str.push_str("[ ");
+            for value in values {
+                let name_puml = name2plantuml(value, config);
+                str.push_str(name_puml.as_str());
+                str.push_str(", ");
+            }
+            str.push_str(" ]");
+            str.to_string()
+        }
     }
 }
 
 fn card2plantuml(card: &UmlCardinality) -> String {
     match card {
-        UmlCardinality::OneOne => "".to_string(),
+        UmlCardinality::OneOne => " ".to_string(),
         UmlCardinality::Star => "*".to_string(),
         UmlCardinality::Plus => "+".to_string(),
         UmlCardinality::Optional => "?".to_string(),

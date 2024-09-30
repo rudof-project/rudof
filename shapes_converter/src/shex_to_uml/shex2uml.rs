@@ -5,7 +5,9 @@ use std::{
 };
 
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
-use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use shex_ast::{
+    Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue,
+};
 use tracing::debug;
 
 use crate::{
@@ -299,6 +301,13 @@ impl ShEx2Uml {
                     let name =
                         iri_ref2name(&datatype, &self.config, &None, &self.current_prefixmap)?;
                     Ok(ValueConstraint::datatype(name))
+                } else if let Some(value_set) = nc.values() {
+                    let value_set_constraint = value_set2value_constraint(
+                        &value_set,
+                        &self.config,
+                        &self.current_prefixmap,
+                    )?;
+                    Ok(ValueConstraint::ValueSet(value_set_constraint))
                 } else {
                     todo!()
                 }
@@ -322,6 +331,33 @@ impl ShEx2Uml {
             },
         }
     }
+}
+
+fn value_set2value_constraint(
+    value_set: &Vec<ValueSetValue>,
+    config: &ShEx2UmlConfig,
+    prefixmap: &PrefixMap,
+) -> Result<Vec<Name>, ShEx2UmlError> {
+    let mut result = Vec::new();
+    for value in value_set {
+        match value {
+            ValueSetValue::ObjectValue(ObjectValue::IriRef(iri)) => {
+                let name = iri_ref2name(iri, config, &None, prefixmap)?;
+                result.push(name)
+            }
+            ValueSetValue::ObjectValue(ObjectValue::Literal(lit)) => {
+                return Err(ShEx2UmlError::not_implemented(
+                    format!("value_set2value_constraint with literal value: {lit:?}").as_str(),
+                ))
+            }
+            _ => {
+                return Err(ShEx2UmlError::not_implemented(
+                    format!("value_set2value_constraint with value: {value:?}").as_str(),
+                ))
+            }
+        }
+    }
+    Ok(result)
 }
 
 fn iri_ref2name(

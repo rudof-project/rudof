@@ -198,7 +198,7 @@ impl<R: io::Read> TapReader<R> {
         pos: &Position,
     ) -> Result<Option<TapStatement>> {
         if let Some(property_id) = self.get_property_id(rcd, pos) {
-            let mut statement = TapStatement::new(property_id);
+            let mut statement = TapStatement::new(property_id).with_source_line_number(pos.line());
             self.read_property_label(&mut statement, rcd);
             self.read_mandatory(&mut statement, rcd, pos)?;
             self.read_repeatable(&mut statement, rcd, pos)?;
@@ -458,7 +458,7 @@ fn strip_whitespace(str: &str) -> Option<&str> {
 }
 
 fn get_strs(str: &str) -> impl Iterator<Item = &str> {
-    str.split(|c| c == ' ').filter(|&x| !x.is_empty())
+    str.split([' ']).filter(|&x| !x.is_empty())
 }
 
 /// A borrowed iterator over Shapes
@@ -508,7 +508,8 @@ Person,PersonLabel,knows,KnowsLabel";
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");
-        let mut statement = TapStatement::new(PropertyId::new("knows", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
@@ -528,10 +529,12 @@ Person,PersonLabel,knows,KnowsLabel
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");
-        let mut statement = TapStatement::new(PropertyId::new("knows", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
-        let mut statement = TapStatement::new(PropertyId::new("name", 3));
+        let mut statement =
+            TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
         statement.set_property_label("NameLabel");
         expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
@@ -551,10 +554,12 @@ Company,CompanyLabel,founder,FounderLabel
         let mut expected_shape1 = TapShape::new(2);
         expected_shape1.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape1.set_shape_label("PersonLabel");
-        let mut statement = TapStatement::new(PropertyId::new("knows", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape1.add_statement(statement);
-        let mut statement = TapStatement::new(PropertyId::new("name", 3));
+        let mut statement =
+            TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
         statement.set_property_label("NameLabel");
         expected_shape1.add_statement(statement);
         let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();
@@ -563,10 +568,37 @@ Company,CompanyLabel,founder,FounderLabel
         let mut expected_shape2 = TapShape::new(4);
         expected_shape2.set_shape_id(&ShapeId::new("Company", 4));
         expected_shape2.set_shape_label("CompanyLabel");
-        let mut statement = TapStatement::new(PropertyId::new("founder", 4));
+        let mut statement =
+            TapStatement::new(PropertyId::new("founder", 4)).with_source_line_number(4);
         statement.set_property_label("FounderLabel");
         expected_shape2.add_statement(statement);
         let next_shape2 = tap_reader.shapes().next().unwrap().unwrap();
         assert_eq!(next_shape2, expected_shape2);
+    }
+
+    #[test]
+    fn test_picklist() {
+        let data = "\
+shapeId,propertyId,valueConstraint,valueConstraintType
+Person,gender,male female other,picklist
+";
+        let mut tap_reader = TapReaderBuilder::from_reader(
+            data.as_bytes(),
+            &TapConfig::default().with_picklist_delimiter(' '),
+        )
+        .unwrap();
+        let mut expected_shape1 = TapShape::new(2);
+        expected_shape1.set_shape_id(&ShapeId::new("Person", 2));
+        let mut statement =
+            TapStatement::new(PropertyId::new("gender", 2)).with_source_line_number(2);
+        let vc = ValueConstraint::picklist(vec![
+            Value::new("male"),
+            Value::new("female"),
+            Value::new("other"),
+        ]);
+        statement.set_value_constraint(&vc);
+        expected_shape1.add_statement(statement);
+        let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();
+        assert_eq!(next_shape1, expected_shape1);
     }
 }
