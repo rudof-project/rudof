@@ -37,7 +37,7 @@ impl ShaclDataManager {
 
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => Ok(schema),
-            Err(_) => Err(ValidateError::GraphCreation),
+            Err(error) => Err(ValidateError::ShaclParser(error)),
         }
     }
 }

@@ -17,9 +17,9 @@ use crate::ValueNodes;
 
 use super::ValidatorRunner;
 
-pub struct DefaultValidatorRunner;
+pub struct NativeValidatorRunner;
 
-impl<S: SRDF + 'static> ValidatorRunner<S> for DefaultValidatorRunner {
+impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,

@@ -8,48 +8,52 @@ use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 
 use crate::context::ValidationContext;
-use crate::shape::ShapeValidator;
+use crate::shape::ShapeValidation;
 use crate::store::graph::Graph;
-use crate::store::sparql::Sparql;
+use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq)]
+/// According to the SHACL Recommendation, there exists no concrete method for
+/// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
+/// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
+    /// We use a Rust native engine in an imperative manner
     Default,
+    /// We use a  SPARQL-based engine, which is declarative
     SPARQL,
 }
 
-pub trait Validator<S: SRDFBasic> {
+/// The Validation trait is the one in charge of applying the SHACL Validation
+/// algorithm. For this, first, the validation report is initiliazed to empty,
+/// and, for each shape in the schema, the target nodes are selected, and then,
+/// each validator for each constraint is applied.
+pub trait Validation<S: SRDFBasic> {
     fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, S>;
 
     fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
         let validation_context = self.validation_context(&schema);
-        let mut report = ValidationReport::default();
 
+        // we initialize the validation report to empty
+        let mut validation_report = ValidationReport::default();
+
+        // for each shape in the schema
         for (_, shape) in schema.iter() {
-            let shape_validator = ShapeValidator::new(shape, &validation_context, None);
-
-            match shape_validator.validate() {
-                Ok(validation_results) => {
-                    report.add_results(validation_results);
-                }
-                Err(err) => {
-                    return Err(err);
-                }
-            };
+            let shape_validator = ShapeValidation::new(shape, &validation_context, None);
+            validation_report.add_results(shape_validator.validate()?);
         }
 
-        Ok(report)
+        Ok(validation_report) // return the possibly empty validation report
     }
 }
 
-pub struct GraphValidator {
+pub struct GraphValidation {
     store: Graph,
     mode: ShaclValidationMode,
 }
 
-impl GraphValidator {
+impl GraphValidation {
     pub fn new(
         data: &Path,
         data_format: RDFFormat,
@@ -60,14 +64,14 @@ impl GraphValidator {
             return Err(ValidateError::UnsupportedMode);
         }
 
-        Ok(GraphValidator {
+        Ok(GraphValidation {
             store: Graph::new(data, data_format, base)?,
             mode,
         })
     }
 }
 
-impl Validator<SRDFGraph> for GraphValidator {
+impl Validation<SRDFGraph> for GraphValidation {
     fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, SRDFGraph> {
         match self.mode {
             ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
@@ -76,21 +80,21 @@ impl Validator<SRDFGraph> for GraphValidator {
     }
 }
 
-pub struct SparqlValidator {
-    store: Sparql,
+pub struct EndpointValidation {
+    store: Endpoint,
     mode: ShaclValidationMode,
 }
 
-impl SparqlValidator {
+impl EndpointValidation {
     pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
-        Ok(SparqlValidator {
-            store: Sparql::new(data)?,
+        Ok(EndpointValidation {
+            store: Endpoint::new(data)?,
             mode,
         })
     }
 }
 
-impl Validator<SRDFSparql> for SparqlValidator {
+impl Validation<SRDFSparql> for EndpointValidation {
     fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<SRDFSparql> {
         match self.mode {
             ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),

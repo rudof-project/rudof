@@ -14,9 +14,9 @@ use crate::ValueNodes;
 
 use super::ValidatorRunner;
 
-pub struct QueryValidatorRunner;
+pub struct SparqlValidatorRunner;
 
-impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
+impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
     fn evaluate(
         &self,
         validation_context: &ValidationContext<S>,

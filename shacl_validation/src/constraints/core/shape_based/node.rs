@@ -10,7 +10,7 @@ use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shape_ref;
-use crate::shape::ShapeValidator;
+use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::Targets;
@@ -44,7 +44,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Node {
             .flat_map(move |(focus_node, value_node)| {
                 let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
                 let shape_validator =
-                    ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
+                    ShapeValidation::new(shape, validation_context, Some(&focus_nodes));
 
                 let inner_results = shape_validator.validate();
 

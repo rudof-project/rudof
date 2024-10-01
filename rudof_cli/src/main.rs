@@ -27,7 +27,7 @@ use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::shacl_config::ShaclConfig;
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
+use shacl_validation::validate::{EndpointValidation, GraphValidation, ShaclValidationMode};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -620,7 +620,7 @@ fn run_validate_shacl(
     )?;
 
     if let Some(data) = data {
-        let validator = match GraphValidator::new(
+        let validator = match GraphValidation::new(
             &data,
             match data_format {
                 DataFormat::Turtle => srdf::RDFFormat::Turtle,
@@ -636,18 +636,18 @@ fn run_validate_shacl(
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
+        let result = match shacl_validation::validate::Validation::validate(&validator, schema) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
-        let validator = match SparqlValidator::new(endpoint, mode) {
+        let validator = match EndpointValidation::new(endpoint, mode) {
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
+        let result = match shacl_validation::validate::Validation::validate(&validator, schema) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };

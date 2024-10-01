@@ -4,7 +4,7 @@ use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
     store::ShaclDataManager,
-    validate::{GraphValidator, ShaclValidationMode, Validator},
+    validate::{GraphValidation, ShaclValidationMode, Validation},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};
@@ -80,9 +80,9 @@ fn main() -> Result<(), TestSuiteError> {
     let total = tests.len();
     let mut count = 0;
     for test in tests {
-        let validator = GraphValidator::new(
+        let validator = GraphValidation::new(
             Path::new(&test.data),
-            RDFFormat::NTriples,
+            RDFFormat::Turtle,
             test.base.as_deref(),
             cli.mode,
         )?;

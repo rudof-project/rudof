@@ -16,24 +16,24 @@ use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
-pub struct ShapeValidator<'a, S: SRDFBasic> {
+pub struct ShapeValidation<'a, S: SRDFBasic> {
     shape: &'a Shape,
     validation_context: &'a ValidationContext<'a, S>,
     focus_nodes: Targets<S>,
 }
 
-impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
+impl<'a, S: SRDFBasic + 'a> ShapeValidation<'a, S> {
     pub fn new(
         shape: &'a Shape,
         validation_context: &'a ValidationContext<S>,
-        focus_nodes: Option<&'a Targets<S>>,
+        targets: Option<&'a Targets<S>>,
     ) -> Self {
-        let focus_nodes = match focus_nodes {
-            Some(focus) => focus.to_owned(),
+        let focus_nodes = match targets {
+            Some(targets) => targets.to_owned(),
             None => shape.focus_nodes(validation_context),
         };
 
-        ShapeValidator {
+        ShapeValidation {
             shape,
             validation_context,
             focus_nodes,
@@ -48,13 +48,15 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
 
         let components = self.validate_components()?;
         let property_shapes = self.validate_property_shapes()?;
+        let validation_results = components.into_iter().chain(property_shapes);
 
-        Ok(ValidationResults::new(
-            components.into_iter().chain(property_shapes),
-        ))
+        Ok(ValidationResults::new(validation_results))
     }
 
     fn validate_components(&self) -> Result<ValidationResults<S>, ValidateError> {
+        // 1. First we compute the ValueNodes; that is, the set of nodes that
+        //    are going to be used during the validation stages. This set of
+        //    nodes is obtained from the set of focus nodes
         let value_nodes = self
             .shape
             .value_nodes(self.validation_context, &self.focus_nodes);
@@ -63,7 +65,6 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
         let validation_context = self.validation_context;
         let mut unique_components = HashSet::new();
 
-        // Mover la creación del contexto fuera del cierre
         let contexts: Vec<_> = self
             .shape
             .components()
@@ -97,7 +98,7 @@ impl<'a, S: SRDFBasic + 'a> ShapeValidator<'a, S> {
             .flatten()
             .filter_map(move |shape| {
                 if let Shape::PropertyShape(_) = shape {
-                    Some(ShapeValidator::new(
+                    Some(ShapeValidation::new(
                         shape,
                         self.validation_context,
                         Some(&self.focus_nodes),

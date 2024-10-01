@@ -10,8 +10,8 @@ use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
-pub mod default_runner;
-pub mod query_runner;
+pub mod native;
+pub mod sparql;
 
 pub trait ValidatorRunner<S: SRDFBasic> {
     fn evaluate(

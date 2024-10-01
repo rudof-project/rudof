@@ -10,7 +10,7 @@ use crate::constraints::SparqlConstraintComponent;
 use crate::context::EvaluationContext;
 use crate::context::ValidationContext;
 use crate::helper::shapes::get_shapes_ref;
-use crate::shape::ShapeValidator;
+use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::Targets;
@@ -47,7 +47,7 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Or {
                     .any(|shape| {
                         let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
                         let shape_validator =
-                            ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
+                            ShapeValidation::new(shape, validation_context, Some(&focus_nodes));
 
                         match shape_validator.validate() {
                             Ok(results) => results.is_empty(),

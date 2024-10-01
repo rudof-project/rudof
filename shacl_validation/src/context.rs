@@ -5,8 +5,8 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::runner::default_runner::DefaultValidatorRunner;
-use crate::runner::query_runner::QueryValidatorRunner;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
 use crate::runner::ValidatorRunner;
 use crate::store::Store;
 
@@ -21,7 +21,7 @@ impl<'a, S: SRDF + 'static> ValidationContext<'a, S> {
         Self {
             store,
             schema,
-            runner: &DefaultValidatorRunner,
+            runner: &NativeValidatorRunner,
         }
     }
 }
@@ -31,7 +31,7 @@ impl<'a, S: QuerySRDF + 'static> ValidationContext<'a, S> {
         Self {
             store,
             schema,
-            runner: &QueryValidatorRunner,
+            runner: &SparqlValidatorRunner,
         }
     }
 }
