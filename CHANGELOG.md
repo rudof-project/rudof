@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+- Updated version of serde_yml to 0.0.12
+
 ## [0.1.28] - 2024-09-30
 
 - First version that handles directly Excel spreadsheets in DCTAP. Issue #82

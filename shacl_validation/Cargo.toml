@@ -25,4 +25,4 @@ oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
 oxiri = "0.2.0-alpha.2"
 clap = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
-serde_yml = "0.0.11"
+serde_yml = "0.0.12"
