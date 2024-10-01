@@ -10,7 +10,7 @@ use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use tracing::debug;
 
-use super::{SemAct, ShapeDecl, ShapeExpr};
+use super::{IriOrStr, SemAct, ShapeDecl, ShapeExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Schema {
@@ -21,7 +21,7 @@ pub struct Schema {
     type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    imports: Option<Vec<IriS>>,
+    imports: Option<Vec<IriOrStr>>,
 
     #[serde(
         default,
@@ -79,7 +79,7 @@ impl Schema {
         Ok(())
     }
 
-    pub fn imports(&self) -> impl Iterator<Item = &IriS> {
+    pub fn imports(&self) -> impl Iterator<Item = &IriOrStr> {
         if let Some(imports) = &self.imports {
             imports.iter()
         } else {
@@ -89,12 +89,13 @@ impl Schema {
 
     pub fn resolve_imports_visited(
         &mut self,
-        pending: &mut Vec<IriS>,
-        visited: &mut Vec<IriS>,
+        pending: &mut Vec<IriOrStr>,
+        visited: &mut Vec<IriOrStr>,
     ) -> Result<(), SchemaJsonError> {
         while let Some(candidate) = pending.pop() {
             if !visited.contains(&candidate) {
-                let new_schema = Schema::from_iri(&candidate)?;
+                let candidate_iri = resolve_iri_or_str(&candidate)?;
+                let new_schema = Schema::from_iri(&candidate_iri)?;
                 for i in new_schema.imports() {
                     if !visited.contains(i) {
                         pending.push(i.clone())
@@ -113,7 +114,7 @@ impl Schema {
         todo!()
     }
 
-    pub fn with_import(mut self, i: IriS) -> Self {
+    pub fn with_import(mut self, i: IriOrStr) -> Self {
         match self.imports {
             None => self.imports = Some(vec![i]),
             Some(ref mut imports) => imports.push(i),
@@ -327,6 +328,10 @@ impl Default for Schema {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub fn resolve_iri_or_str(value: &IriOrStr) -> Result<IriS, SchemaJsonError> {
+    todo!()
 }
 
 #[cfg(test)]

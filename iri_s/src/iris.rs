@@ -142,8 +142,15 @@ impl<'de> Visitor<'de> for IriVisitor {
     where
         E: de::Error,
     {
-        IriS::from_str(v)
-            .map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
+        match IriS::from_str(v) {
+            Ok(iri) => Ok(iri),
+            Err(IriSError::IriParseError { str, err }) => Err(E::custom(format!(
+                "Error parsing value \"{v}\" as IRI. String \"{str}\", Error: {err}"
+            ))),
+            Err(other) => Err(E::custom(format!(
+                "Can not parse value \"{v}\" to IRI. Error: {other}"
+            ))),
+        }
     }
 }
 

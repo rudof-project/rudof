@@ -20,6 +20,7 @@ use nom::{
 use regex::Regex;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
+use shex_ast::IriOrStr;
 use shex_ast::{
     object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, BNode, IriExclusion,
     LangOrWildcard, LanguageExclusion, LiteralExclusion, NodeConstraint, NodeKind, NumericFacet,
@@ -151,9 +152,10 @@ fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
         "import_decl",
         map_error(
             move |i| {
-                let (i, (_, _, iri_ref)) = tuple((tag_no_case("IMPORT"), tws0, cut(iri_ref)))(i)?;
-                tracing::debug!("grammar: Import {iri_ref:?}");
-                Ok((i, ShExStatement::ImportDecl { iri: iri_ref }))
+                let (i, (_, _, iri_or_str)) =
+                    tuple((tag_no_case("IMPORT"), tws0, cut(iri_ref_or_str)))(i)?;
+                tracing::debug!("grammar: Import {iri_or_str:?}");
+                Ok((i, ShExStatement::ImportDecl { iri: iri_or_str }))
             },
             || ShExParseError::ExpectedImportDecl,
         ),
@@ -2192,6 +2194,18 @@ fn iri_ref(i: Span) -> IRes<IriS> {
         char('>'),
     )(i)?;
     Ok((i, IriS::new_unchecked(str.as_str())))
+}
+
+/// `[18t] <IRIREF> ::= "<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
+/// iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*
+fn iri_ref_or_str(i: Span) -> IRes<IriOrStr> {
+    let (i, str) = delimited(
+        char('<'),
+        // take_while(is_iri_ref),
+        iri_chars,
+        char('>'),
+    )(i)?;
+    Ok((i, IriOrStr::new(str.as_str())))
 }
 
 /// `iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*`
