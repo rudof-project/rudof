@@ -927,6 +927,7 @@ fn run_tap2html<P: AsRef<Path>>(
     debug!("Starting tap2html");
     let dctap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input, &dctap_format, &config.tap_config())?;
@@ -990,6 +991,7 @@ fn run_tap2shex(
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
@@ -1018,6 +1020,7 @@ fn run_tap2uml(
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;

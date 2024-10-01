@@ -2,6 +2,9 @@
 
 ## Current changes without release yet
 
+## [0.1.29] - 2024-09-30
+
+- Added option to use xlsx directly in tap2shex conversion
 - Updated version of serde_yml to 0.0.12
 
 ## [0.1.28] - 2024-09-30
