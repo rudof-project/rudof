@@ -1,4 +1,4 @@
-use crate::{tap_config::TapConfig, tap_error::TapError, TapReaderBuilder, TapShape};
+use crate::{tap_config::TapConfig, tap_error::TapError, TapReader, TapReaderBuilder, TapShape};
 use serde_derive::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
 use tracing::{debug, info};
@@ -50,6 +50,22 @@ impl DCTap {
         let mut dctap = DCTap::new();
         debug!("DCTap parsed: {:?}", dctap);
         let mut tap_reader = TapReaderBuilder::from_reader(reader, config)?;
+        for maybe_shape in tap_reader.shapes() {
+            let shape = maybe_shape?;
+            dctap.add_shape(&shape)
+        }
+        Ok(dctap)
+    }
+
+    pub fn from_excel<P: AsRef<Path>>(
+        path: P,
+        sheet_name: Option<&str>,
+        config: &TapConfig,
+    ) -> Result<DCTap, TapError> {
+        let mut dctap = DCTap::new();
+        debug!("DCTap parsed: {:?}", dctap);
+        let mut tap_reader: TapReader<io::Empty> =
+            TapReaderBuilder::from_excel(path, sheet_name, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
             dctap.add_shape(&shape)
