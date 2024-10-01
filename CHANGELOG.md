@@ -2,6 +2,14 @@
 
 ## Current changes without release yet
 
+## [0.1.28] - 2024-09-30
+
+- First version that handles directly Excel spreadsheets in DCTAP. Issue #82
+- Repaired small bug in DCTAP where headers with leading or trailing whitespaces where not properly parsed
+- Unified dependencies on serde-yml #160
+- Expose API to retrieve SHACL validation reports #164
+- Fixed github action that was giving errors when publishing Python bindings #151
+
 ## [0.1.27] - 2024-09-25
 
 - Added support for picklist values in DCTAP
