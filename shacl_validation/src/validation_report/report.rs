@@ -19,8 +19,8 @@ impl<S: SRDFBasic> ValidationReport<S> {
         self.conforms
     }
 
-    pub fn results_size(&self) -> usize {
-        self.results.len()
+    pub fn results(&self) -> &Vec<ValidationResult<S>> {
+        &self.results
     }
 
     pub(crate) fn add_result(&mut self, result: ValidationResult<S>) {

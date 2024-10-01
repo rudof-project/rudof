@@ -129,27 +129,27 @@ impl<S: SRDFBasic> ValidationResult<S> {
         builder.build()
     }
 
-    pub(crate) fn focus_node(&self) -> Option<S::Term> {
+    pub fn focus_node(&self) -> Option<S::Term> {
         self.focus_node.to_owned()
     }
 
-    pub(crate) fn result_severity(&self) -> Option<S::Term> {
+    pub fn result_severity(&self) -> Option<S::Term> {
         self.result_severity.to_owned()
     }
 
-    pub(crate) fn result_path(&self) -> Option<S::Term> {
+    pub fn result_path(&self) -> Option<S::Term> {
         self.result_path.to_owned()
     }
 
-    pub(crate) fn source_constraint_component(&self) -> Option<S::Term> {
+    pub fn source_constraint_component(&self) -> Option<S::Term> {
         self.source_constraint_component.to_owned()
     }
 
-    pub(crate) fn source_shape(&self) -> Option<S::Term> {
+    pub fn source_shape(&self) -> Option<S::Term> {
         self.source_shape.to_owned()
     }
 
-    pub(crate) fn value(&self) -> Option<S::Term> {
+    pub fn value(&self) -> Option<S::Term> {
         self.value.to_owned()
     }
 }
