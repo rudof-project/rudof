@@ -1,6 +1,6 @@
 use std::{io, result};
 
-use calamine::{XlsError, XlsxError};
+use calamine::XlsxError;
 use csv::{Position, StringRecord};
 use thiserror::Error;
 
@@ -60,4 +60,20 @@ pub enum TapError {
 
     #[error("No headers found in Excel file: {path}")]
     NoHeadersExcel { path: String },
+
+    #[error("Cannot open work_book {path}: {error}")]
+    OpeningWorkbook { path: String, error: XlsxError },
+
+    #[error("Sheet not found in {path} when looking for first sheet")]
+    Sheet0NotFound { path: String },
+
+    #[error("Error obtaining sheet 0 from {path}. Error: {error}")]
+    Sheet0Error { path: String, error: XlsxError },
+
+    #[error("Error processing sheet {sheet_name} from {path}. Error: {error}")]
+    SheetNameError {
+        path: String,
+        sheet_name: String,
+        error: XlsxError,
+    },
 }

@@ -4,7 +4,6 @@ use crate::{
     TapConfig, TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value,
     ValueConstraint, ValueConstraintType,
 };
-use calamine::{Data, Range};
 use csv::{Position, Reader as CsvReader, StringRecord};
 use tracing::debug;
 // use indexmap::IndexSet;
@@ -20,8 +19,8 @@ impl<R: io::Read> StringRecordReader<R> {
         StringRecordReader::CsvReader(reader)
     }
 
-    pub fn new_range_reader(range: Range<Data>) -> StringRecordReader<R> {
-        StringRecordReader::RangeReader(ReaderRange::new(range))
+    pub fn new_range_reader(range: ReaderRange<R>) -> StringRecordReader<R> {
+        StringRecordReader::RangeReader(range)
     }
 
     pub fn read_record(&mut self, record: &mut StringRecord) -> Result<bool> {
@@ -30,9 +29,13 @@ impl<R: io::Read> StringRecordReader<R> {
                 let b = reader.read_record(record)?;
                 Ok(b)
             }
-            StringRecordReader::RangeReader(ranger) => {
-                let b = ranger.read_record(record);
-                Ok(false)
+            StringRecordReader::RangeReader(reader_range) => {
+                if let Some(rcd) = reader_range.next_record() {
+                    *record = rcd;
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
             }
         }
     }
@@ -61,7 +64,7 @@ impl<R: io::Read> TapReader<R> {
     }
 
     pub fn new_range_reader(
-        reader: Range<Data>,
+        reader: ReaderRange<R>,
         state: TapReaderState,
         config: &TapConfig,
     ) -> Self {

@@ -2,10 +2,12 @@ use std::marker::PhantomData;
 
 use calamine::{Data, DataType, Range};
 use csv::{Position, StringRecord};
+use tracing::debug;
 
 pub struct ReaderRange<R> {
     range: Range<Data>,
     marker: PhantomData<R>,
+    current_line: usize,
     position: Position,
 }
 
@@ -15,42 +17,34 @@ impl<R> ReaderRange<R> {
             range,
             marker: PhantomData,
             position: Position::new(),
+            current_line: 0,
         }
     }
 
-    pub fn iter(&mut self) -> impl Iterator<Item = StringRecord> + '_ {
-        self.range.rows().map(cnv_row)
-    }
-
-    pub fn read_record(&mut self, record: &mut StringRecord) -> bool {
-        if let Some(row) = self.range.rows().next() {
-            record.clear();
-            for cell in row {
-                if let Some(str) = cell.as_string() {
-                    record.push_field(&str);
+    pub fn next_record(&mut self) -> Option<StringRecord> {
+        if self.current_line == self.range.height() {
+            None
+        } else {
+            let mut rcd = StringRecord::new();
+            for column in 0..self.range.width() {
+                let row = self.current_line as u32;
+                if let Some(data) = self.range.get_value((row, column as u32)) {
+                    if let Some(str) = data.as_string() {
+                        rcd.push_field(&str);
+                    } else {
+                        debug!("Processing excel, data can not converted to string: {data:?} at ({row},{column})");
+                        rcd.push_field("");
+                    }
                 } else {
-                    record.push_field("");
+                    rcd.push_field("");
                 }
             }
-            true
-        } else {
-            false
+            self.current_line += 1;
+            Some(rcd)
         }
     }
 
     pub fn position(&self) -> &Position {
         &self.position
     }
-}
-
-fn cnv_row(row: &[Data]) -> StringRecord {
-    let mut rcd = StringRecord::new();
-    for cell in row {
-        if let Some(str) = cell.as_string() {
-            rcd.push_field(&str);
-        } else {
-            rcd.push_field("");
-        }
-    }
-    rcd
 }
