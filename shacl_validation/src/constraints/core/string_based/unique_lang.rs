@@ -1,42 +1,27 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use shacl_ast::compiled::component::UniqueLang;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
-/// The property sh:uniqueLang can be set to true to specify that no pair of
-///  value nodes may use the same language tag.
-///
-/// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-pub(crate) struct UniqueLang {
-    unique_lang: bool,
-}
-
-impl UniqueLang {
-    pub fn new(unique_lang: bool) -> Self {
-        UniqueLang { unique_lang }
-    }
-}
-
-impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
-    fn evaluate(
+impl<S: SRDFBasic + 'static> Validator<S> for UniqueLang {
+    fn validate(
         &self,
-        _validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        if !self.unique_lang {
+        if !self.unique_lang() {
             return Ok(ValidationResults::default());
         }
 
@@ -73,24 +58,22 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for UniqueLang {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for UniqueLang {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for UniqueLang {
+    fn validate_native(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(evaluation_context, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for UniqueLang {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for UniqueLang {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(evaluation_context, value_nodes)
     }
 }

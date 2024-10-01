@@ -1,41 +1,22 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::Class;
 use srdf::QuerySRDF;
-use srdf::RDFNode;
-use srdf::SRDFBasic;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::context::Context;
 use crate::helper::srdf::get_objects_for;
 use crate::validation_report::result::{ValidationResult, ValidationResults};
 use crate::ValueNodes;
 
-/// The condition specified by sh:class is that each value node is a SHACL
-/// instance of a given type.
-///
-/// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-pub(crate) struct Class<S: SRDFBasic> {
-    class_rule: S::Term,
-}
-
-impl<S: SRDFBasic> Class<S> {
-    pub fn new(class_rule: RDFNode) -> Self {
-        Class {
-            class_rule: S::object_as_term(&class_rule),
-        }
-    }
-}
-
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
+    fn validate_native(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -53,14 +34,14 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
                     )
                     .unwrap_or_default();
                     let is_class_valid = objects.iter().any(|ctype| {
-                        ctype == &self.class_rule
+                        ctype == self.class_rule()
                             || get_objects_for(
                                 validation_context.store(),
                                 ctype,
                                 &S::iri_s2iri(&RDFS_SUBCLASS_OF),
                             )
                             .unwrap_or_default()
-                            .contains(&self.class_rule)
+                            .contains(self.class_rule())
                     });
 
                     if !is_class_valid {
@@ -80,11 +61,10 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Class<S> {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -94,7 +74,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Class<S> {
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                     ASK {{ {} rdf:type/rdfs:subClassOf* {} }}
-                ", value_node, self.class_rule,
+                ", value_node, self.class_rule(),
                 };
 
                 let ask = match validation_context.store().query_ask(&query) {

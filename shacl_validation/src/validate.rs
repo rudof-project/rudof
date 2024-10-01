@@ -1,13 +1,12 @@
 use std::path::Path;
 
 use clap::ValueEnum;
-use shacl_ast::Schema;
+use shacl_ast::compiled::schema::Schema;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 
-use crate::context::ValidationContext;
 use crate::shape::ShapeValidation;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
@@ -30,17 +29,13 @@ pub enum ShaclValidationMode {
 /// and, for each shape in the schema, the target nodes are selected, and then,
 /// each validator for each constraint is applied.
 pub trait Validation<S: SRDFBasic> {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, S>;
-
-    fn validate(&self, schema: Schema) -> Result<ValidationReport<S>, ValidateError> {
-        let validation_context = self.validation_context(&schema);
-
+    fn validate(&self, schema: Schema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_report = ValidationReport::default();
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
-            let shape_validator = ShapeValidation::new(shape, &validation_context, None);
+            let shape_validator = ShapeValidation::new(shape, None);
             validation_report.add_results(shape_validator.validate()?);
         }
 
@@ -71,15 +66,6 @@ impl GraphValidation {
     }
 }
 
-impl Validation<SRDFGraph> for GraphValidation {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<'a, SRDFGraph> {
-        match self.mode {
-            ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
-            ShaclValidationMode::SPARQL => todo!(),
-        }
-    }
-}
-
 pub struct EndpointValidation {
     store: Endpoint,
     mode: ShaclValidationMode,
@@ -91,14 +77,5 @@ impl EndpointValidation {
             store: Endpoint::new(data)?,
             mode,
         })
-    }
-}
-
-impl Validation<SRDFSparql> for EndpointValidation {
-    fn validation_context<'a>(&'a self, schema: &'a Schema) -> ValidationContext<SRDFSparql> {
-        match self.mode {
-            ShaclValidationMode::Default => ValidationContext::new_default(&self.store, schema),
-            ShaclValidationMode::SPARQL => ValidationContext::new_sparql(&self.store, schema),
-        }
     }
 }

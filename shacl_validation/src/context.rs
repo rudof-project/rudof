@@ -1,85 +1,42 @@
-use shacl_ast::component::Component;
-use shacl_ast::shape::Shape;
-use shacl_ast::Schema;
-use srdf::QuerySRDF;
+use shacl_ast::compiled::component::Component;
+use shacl_ast::compiled::shape::Shape;
 use srdf::SRDFBasic;
-use srdf::SRDF;
 
-use crate::runner::native::NativeValidatorRunner;
-use crate::runner::sparql::SparqlValidatorRunner;
-use crate::runner::ValidatorRunner;
-use crate::store::Store;
-
-pub struct ValidationContext<'a, S: SRDFBasic> {
-    store: &'a dyn Store<S>,
-    schema: &'a Schema,
-    runner: &'a dyn ValidatorRunner<S>,
+/// The context is an auxilary data structure that enables the creation of
+/// detailed Validation Results.
+pub struct Context<'a, S: SRDFBasic> {
+    component: &'a Component<S>,
+    shape: &'a Shape<S>,
 }
 
-impl<'a, S: SRDF + 'static> ValidationContext<'a, S> {
-    pub(crate) fn new_default(store: &'a dyn Store<S>, schema: &'a Schema) -> Self {
-        Self {
-            store,
-            schema,
-            runner: &NativeValidatorRunner,
-        }
-    }
-}
-
-impl<'a, S: QuerySRDF + 'static> ValidationContext<'a, S> {
-    pub(crate) fn new_sparql(store: &'a dyn Store<S>, schema: &'a Schema) -> Self {
-        Self {
-            store,
-            schema,
-            runner: &SparqlValidatorRunner,
-        }
-    }
-}
-
-impl<'a, S: SRDFBasic> ValidationContext<'a, S> {
-    pub(crate) fn store(&self) -> &S {
-        self.store.store()
-    }
-
-    pub(crate) fn schema(&self) -> &Schema {
-        self.schema
-    }
-
-    pub(crate) fn runner(&self) -> &dyn ValidatorRunner<S> {
-        self.runner
-    }
-}
-
-pub struct EvaluationContext<'a> {
-    component: &'a Component,
-    shape: &'a Shape,
-}
-
-impl<'a> EvaluationContext<'a> {
-    pub fn new(component: &'a Component, shape: &'a Shape) -> Self {
+impl<'a, S: SRDFBasic> Context<'a, S> {
+    pub fn new(component: &'a Component<S>, shape: &'a Shape<S>) -> Self {
         Self { component, shape }
     }
 
-    pub fn component(&self) -> &Component {
+    pub fn component(&self) -> &Component<S> {
         self.component
     }
 
-    pub(crate) fn shape<S: SRDFBasic>(&self) -> S::Term {
-        match self.shape {
-            Shape::NodeShape(ns) => S::object_as_term(ns.id()),
-            Shape::PropertyShape(ps) => S::object_as_term(ps.id()),
-        }
+    pub(crate) fn shape(&self) -> S::Term {
+        // match self.shape {
+        //     Shape::NodeShape(ns) => S::object_as_term(ns.id()),
+        //     Shape::PropertyShape(ps) => S::object_as_term(ps.id()),
+        // }
+        todo!()
     }
 
-    pub fn source_constraint_component<S: SRDFBasic>(&self) -> S::Term {
-        S::iri_s2term(&self.component.to_owned().into())
+    pub fn source_constraint_component(&self) -> S::Term {
+        // S::iri_s2term(self.component)
+        todo!()
     }
 
-    pub(crate) fn result_severity<S: SRDFBasic>(&self) -> Option<S::Term> {
-        let severity = match self.shape {
-            Shape::NodeShape(ns) => ns.severity(),
-            Shape::PropertyShape(ps) => ps.severity(),
-        };
-        severity.map(|severity| S::iri_s2term(&severity.to_owned().into()))
+    pub(crate) fn result_severity(&self) -> Option<S::Term> {
+        // let severity = match self.shape {
+        //     Shape::NodeShape(ns) => ns.severity(),
+        //     Shape::PropertyShape(ps) => ps.severity(),
+        // };
+        // severity.map(|severity| S::iri_s2term(&severity.to_owned().into()))
+        todo!()
     }
 }

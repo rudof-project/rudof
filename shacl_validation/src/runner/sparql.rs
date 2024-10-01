@@ -1,11 +1,11 @@
 use indoc::formatdoc;
-use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::compiled::property_shape::PropertyShape;
+use shacl_ast::compiled::shape::Shape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::SparqlDeref;
+use crate::context::Context;
 use crate::helper::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
@@ -16,16 +16,14 @@ use super::ValidatorRunner;
 
 pub struct SparqlValidatorRunner;
 
-impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
+impl<S: QuerySRDF> ValidatorRunner<S> for SparqlValidatorRunner {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
-        let component: Box<dyn SparqlConstraintComponent<S>> =
-            evaluation_context.component().into();
-        Ok(component.evaluate_sparql(validation_context, evaluation_context, value_nodes)?)
+        let validator = evaluation_context.component().deref();
+        Ok(validator.validate_sparql(evaluation_context, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -99,16 +97,16 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn implicit_target_class(
         &self,
-        _store: &S,
-        _shape: &S::Term,
+        store: &S,
+        _shape: &Shape<S>,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn predicate(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -117,8 +115,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn alternative(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -127,8 +125,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn sequence(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -137,8 +135,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn inverse(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -147,8 +145,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn zero_or_more(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -157,8 +155,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn one_or_more(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -167,8 +165,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn zero_or_one(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {

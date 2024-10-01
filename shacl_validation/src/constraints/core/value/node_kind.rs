@@ -1,36 +1,21 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::node_kind::NodeKind;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
-/// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
-/// each value node.
-///
-/// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-pub(crate) struct Nodekind {
-    node_kind: NodeKind,
-}
-
-impl Nodekind {
-    pub fn new(node_kind: NodeKind) -> Self {
-        Nodekind { node_kind }
-    }
-}
-
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
+    fn validate_native(
         &self,
-        _validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -42,17 +27,17 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
                     S::term_is_literal(value_node),
                 ) {
                     (true, false, false) => matches!(
-                        self.node_kind,
+                        self.node_kind(),
                         NodeKind::BlankNode
                             | NodeKind::BlankNodeOrIri
                             | NodeKind::BlankNodeOrLiteral
                     ),
                     (false, true, false) => matches!(
-                        self.node_kind,
+                        self.node_kind(),
                         NodeKind::Iri | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrIri
                     ),
                     (false, false, true) => matches!(
-                        self.node_kind,
+                        self.node_kind(),
                         NodeKind::Literal | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrLiteral
                     ),
                     _ => false,
@@ -72,11 +57,10 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Nodekind {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for Nodekind {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes.iter_value_nodes()
@@ -85,19 +69,19 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Nodekind {
                     formatdoc! {"
                             PREFIX sh: <http://www.w3.org/ns/shacl#>
                             ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
-                        ", self.node_kind
+                        ", self.node_kind()
                     }
                 } else if S::term_is_bnode(value_node) {
                     formatdoc! {"
                             PREFIX sh: <http://www.w3.org/ns/shacl#>
                             ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
-                        ", self.node_kind
+                        ", self.node_kind()
                     }
                 } else {
                     formatdoc! {"
                             PREFIX sh: <http://www.w3.org/ns/shacl#>
                             ASK {{ FILTER ({} IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) ) }}
-                        ", self.node_kind
+                        ", self.node_kind()
                     }
                 };
 

@@ -1,48 +1,30 @@
 use indoc::formatdoc;
-use srdf::literal::Literal;
+use shacl_ast::compiled::component::MaxInclusive;
 use srdf::QuerySRDF;
-use srdf::RDFNode;
-use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
-/// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-pub(crate) struct MaxInclusive<S: SRDFBasic> {
-    max_inclusive: S::Term,
-}
-
-impl<S: SRDFBasic> MaxInclusive<S> {
-    pub fn new(literal: Literal) -> Self {
-        MaxInclusive {
-            max_inclusive: S::object_as_term(&RDFNode::literal(literal)),
-        }
-    }
-}
-
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MaxInclusive<S> {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for MaxInclusive<S> {
+    fn validate_native(
         &self,
-        _validation_context: &ValidationContext<S>,
-        _evaluation_context: EvaluationContext,
+        _evaluation_context: Context<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxInclusive<S> {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxInclusive<S> {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -50,7 +32,7 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MaxInclusive<S> {
             .filter_map(move |(focus_node, value_node)| {
                 let query = formatdoc! {
                     " ASK {{ FILTER ({} > {}) }} ",
-                    value_node, self.max_inclusive
+                    value_node, self.max_inclusive()
                 };
 
                 let ask = match validation_context.store().query_ask(&query) {

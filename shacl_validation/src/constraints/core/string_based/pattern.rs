@@ -1,36 +1,20 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::Pattern;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
-/// sh:property can be used to specify that each value node has a given property
-/// shape.
-///
-/// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-pub(crate) struct Pattern {
-    pattern: String,
-    flags: Option<String>,
-}
-
-impl Pattern {
-    pub fn new(pattern: String, flags: Option<String>) -> Self {
-        Pattern { pattern, flags }
-    }
-}
-
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Pattern {
-    fn evaluate_default<'a>(
+impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
+    fn validate_native<'a>(
         &self,
-        _validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -50,11 +34,10 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Pattern {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Pattern {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -67,14 +50,14 @@ impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Pattern {
                         Some(value_node),
                     ))
                 } else {
-                    let query = match &self.flags {
+                    let query = match self.flags() {
                         Some(flags) => formatdoc! {
                             "ASK {{ FILTER (regex(str({}), {}, {})) }}",
-                            value_node, self.pattern, flags
+                            value_node, self.pattern(), flags
                         },
                         None => formatdoc! {
                             "ASK {{ FILTER (regex(str({}), {})) }}",
-                            value_node, self.pattern
+                            value_node, self.pattern()
                         },
                     };
 

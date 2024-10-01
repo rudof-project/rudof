@@ -1,13 +1,13 @@
-use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::compiled::property_shape::PropertyShape;
+use shacl_ast::compiled::shape::Shape;
 use srdf::SHACLPath;
 use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use srdf::SRDF;
 
-use crate::constraints::DefaultConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeDeref;
+use crate::context::Context;
 use crate::helper::srdf::get_objects_for;
 use crate::helper::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
@@ -19,21 +19,19 @@ use super::ValidatorRunner;
 
 pub struct NativeValidatorRunner;
 
-impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
+impl<S: SRDF> ValidatorRunner<S> for NativeValidatorRunner {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        evaluation_context: Context<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
-        let component: Box<dyn DefaultConstraintComponent<S>> =
-            evaluation_context.component().into();
-        Ok(component.evaluate_default(validation_context, evaluation_context, value_nodes)?)
+        let validator = evaluation_context.component().deref();
+        Ok(validator.validate_native(evaluation_context, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
+    fn target_node(&self, store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -87,9 +85,9 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &S::Term,
+        shape: &Shape<S>,
     ) -> Result<Targets<S>, ValidateError> {
-        let ctypes = get_objects_for(store, shape, &S::iri_s2iri(&RDF_TYPE))?;
+        let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
 
         let mut subclasses = get_subjects_for(
             store,
@@ -100,10 +98,10 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
         subclasses.insert(S::iri_s2term(&RDFS_CLASS));
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape)?;
+            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape.id())?;
 
             let subclass_targets =
-                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape)?
+                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape.id())?
                     .into_iter()
                     .flat_map(move |subclass| {
                         get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
@@ -121,7 +119,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn predicate(
         &self,
         store: &S,
-        _shape: &PropertyShape,
+        _shape: &PropertyShape<S>,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -132,8 +130,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn alternative(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -142,8 +140,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn sequence(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -152,8 +150,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn inverse(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -162,8 +160,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn zero_or_more(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -172,8 +170,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn one_or_more(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -182,8 +180,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn zero_or_one(
         &self,
-        _store: &S,
-        _shape: &PropertyShape,
+        store: &S,
+        _shape: &PropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
