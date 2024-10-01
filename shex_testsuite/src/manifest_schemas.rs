@@ -11,6 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;
+use tracing::debug;
 use url::Url;
 
 #[derive(Deserialize, Debug)]
@@ -144,12 +145,9 @@ impl ManifestSchemas {
 
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        tracing::debug!(
+        debug!(
             "Running entry: {} with json: {}, shex: {}, base: {:?}",
-            self.id,
-            self.json,
-            self.shex,
-            base
+            self.id, self.json, self.shex, base
         );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             ManifestError::SchemaJsonError {
@@ -157,6 +155,7 @@ impl SchemasEntry {
                 entry_name: self.name.to_string(),
             }
         })?;
+        debug!("Passed schema parsing from JSON");
 
         let schema_serialized = serde_json::to_string_pretty(&schema_parsed).map_err(|e| {
             ManifestError::SchemaSerializationError {
@@ -164,6 +163,7 @@ impl SchemasEntry {
                 error: e,
             }
         })?;
+        debug!("Passed schema serialization to a String");
 
         let schema_parsed_after_serialization =
             serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
@@ -174,6 +174,7 @@ impl SchemasEntry {
                     error: e,
                 }
             })?;
+        debug!("Passed schema parsing from string that was serialized = schema2");
 
         let schema_serialized_after =
             serde_json::to_string_pretty(&schema_parsed_after_serialization).map_err(|e| {
@@ -182,8 +183,11 @@ impl SchemasEntry {
                     error: e,
                 }
             })?;
+        debug!("Passed serialized schema2");
 
         if schema_parsed == schema_parsed_after_serialization {
+            debug!("schema parsed == schema parsed after serialization");
+
             // If the 2 schemas are equal, parse the corresponding schema using ShExC and check that it is also equal
             let shex_local = Path::new(&self.shex);
             let mut shex_buf = PathBuf::from(base);
@@ -199,20 +203,22 @@ impl SchemasEntry {
                     base: base_absolute.as_os_str().to_os_string(),
                 })?;
             let base_iri = IriS::new_unchecked(base_url.as_str());
-            let mut shex_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
+            let mut shexc_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
 
             // We remove base and prefixmap for comparisons
-            shex_schema_parsed = shex_schema_parsed.with_base(None).with_prefixmap(None);
-            if schema_parsed == shex_schema_parsed {
+            shexc_schema_parsed = shexc_schema_parsed.with_base(None).with_prefixmap(None);
+            if schema_parsed == shexc_schema_parsed {
+                debug!("Schema JSON parsed == Schema ShExC parsed");
                 Ok(())
             } else {
                 Err(ManifestError::ShExSchemaDifferent {
                     json_schema_parsed: schema_parsed,
                     schema_serialized,
-                    shex_schema_parsed,
+                    shexc_schema_parsed,
                 })
             }
         } else {
+            debug!("Schemas in JSON are different");
             Err(ManifestError::SchemasDifferent {
                 schema_parsed,
                 schema_serialized: schema_serialized.clone(),

@@ -1,7 +1,6 @@
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
-use shex_ast::Iri;
 use shex_ast::Schema;
 use std::fs;
 use std::io;
