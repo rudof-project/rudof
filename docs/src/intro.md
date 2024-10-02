@@ -1,5 +1,7 @@
 # Introduction
 
+<img class="right" width="80px" height="80px" src="images/rudof_logo3.svg" alt="rudof logo">
+
 `rudof` is a library that implements: [Shape Expressions](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) and other technologies in the [RDF](https://www.w3.org/RDF/) ecosystem.
 
 The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides Python bindings.
@@ -11,6 +13,7 @@ It can be used to validate RDF data represented with different syntaxes like Tur
 
 - We publish binaries in Linux, Windows and Apple which can be downloaded [here](https://github.com/weso/shex-rs/releases/).
 - Source code: [https://github.com/rudof-project/rudof](https://github.com/rudof-project/rudof)
+- [Paper about rudof](pdf/rudof_demo.pdf) presented at International Semantic Web Conference, Baltimore, USA, October 2024 in Demos and Posters session.
 - [List of issues](https://github.com/rudof-project/rudof/issues)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)
 - [How-to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)

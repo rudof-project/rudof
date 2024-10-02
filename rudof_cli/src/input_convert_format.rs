@@ -12,6 +12,7 @@ pub enum InputConvertFormat {
     ShExC,
     ShExJ,
     Turtle,
+    Xlsx,
 }
 
 impl FromStr for InputConvertFormat {
@@ -20,6 +21,7 @@ impl FromStr for InputConvertFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "csv" => Ok(InputConvertFormat::CSV),
+            "xslsx" => Ok(InputConvertFormat::Xlsx),
             "shexc" => Ok(InputConvertFormat::ShExC),
             "shexj" => Ok(InputConvertFormat::ShExJ),
             "turtle" => Ok(InputConvertFormat::Turtle),
@@ -32,6 +34,7 @@ impl Display for InputConvertFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             InputConvertFormat::CSV => write!(dest, "csv"),
+            InputConvertFormat::Xlsx => write!(dest, "xlsx"),
             InputConvertFormat::ShExC => write!(dest, "shexc"),
             InputConvertFormat::ShExJ => write!(dest, "shexj"),
             InputConvertFormat::Turtle => write!(dest, "turtle"),
