@@ -10,10 +10,10 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
 use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::focus_nodes::FocusNodes;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for Node<S> {

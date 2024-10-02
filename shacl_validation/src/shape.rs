@@ -44,6 +44,7 @@ impl<'a, S: SRDFBasic> ShapeValidation<'a, S> {
 
         let components = self.validate_components()?;
         let property_shapes = self.validate_property_shapes()?;
+
         let validation_results = components.into_iter().chain(property_shapes);
 
         Ok(ValidationResults::new(validation_results))
