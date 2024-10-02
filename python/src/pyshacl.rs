@@ -1,10 +1,10 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use shacl_ast::{ShaclParser, ShaclWriter};
+use shacl_validation::shacl_processor::GraphValidation;
+use shacl_validation::shacl_processor::ShaclProcessor;
+use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate::GraphValidation;
-use shacl_validation::validate::ShaclValidationMode;
-use shacl_validation::validate::Validation;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
 use std::fs::File;

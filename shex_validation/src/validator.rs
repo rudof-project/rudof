@@ -1,7 +1,7 @@
 use crate::atom;
 use crate::result_map::*;
 use crate::validator_error::*;
-use crate::validator_runner::ValidatorRunner;
+use crate::validator_runner::Engine;
 use crate::PosAtom;
 use crate::Reason;
 use crate::ResultValue;
@@ -25,14 +25,14 @@ type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 
 pub struct Validator {
     schema: CompiledSchema,
-    runner: ValidatorRunner,
+    runner: Engine,
 }
 
 impl Validator {
     pub fn new(schema: CompiledSchema, config: &ValidatorConfig) -> Validator {
         Validator {
             schema,
-            runner: ValidatorRunner::new(config),
+            runner: Engine::new(config),
         }
     }
 

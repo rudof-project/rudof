@@ -6,9 +6,9 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlValidator;
 use crate::constraints::{NativeValidator, Validator};
-use crate::runner::native::NativeValidatorRunner;
-use crate::runner::sparql::SparqlValidatorRunner;
-use crate::runner::ValidatorRunner;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
@@ -17,7 +17,7 @@ impl<S: SRDFBasic + 'static> Validator<S> for In<S> {
     fn validate(
         &self,
         _: &S,
-        _: impl ValidatorRunner<S>,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -41,7 +41,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for In<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(store, NativeValidatorRunner, value_nodes)
+        self.validate(store, NativeEngine, value_nodes)
     }
 }
 
@@ -51,6 +51,6 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for In<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(store, SparqlValidatorRunner, value_nodes)
+        self.validate(store, SparqlEngine, value_nodes)
     }
 }

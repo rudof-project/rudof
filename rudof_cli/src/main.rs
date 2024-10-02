@@ -26,8 +26,8 @@ use oxiri::Iri;
 use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::shacl_config::ShaclConfig;
+use shacl_validation::shacl_processor::{EndpointValidation, GraphValidation, ShaclValidationMode};
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate::{EndpointValidation, GraphValidation, ShaclValidationMode};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -612,10 +612,11 @@ fn run_validate_shacl(
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
-        let result = match shacl_validation::validate::Validation::validate(&validator, schema) {
-            Ok(result) => result,
-            Err(e) => bail!("Error validating the graph: {e}"),
-        };
+        let result =
+            match shacl_validation::shacl_processor::ShaclProcessor::validate(&validator, schema) {
+                Ok(result) => result,
+                Err(e) => bail!("Error validating the graph: {e}"),
+            };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
@@ -624,10 +625,11 @@ fn run_validate_shacl(
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
-        let result = match shacl_validation::validate::Validation::validate(&validator, schema) {
-            Ok(result) => result,
-            Err(e) => bail!("Error validating the graph: {e}"),
-        };
+        let result =
+            match shacl_validation::shacl_processor::ShaclProcessor::validate(&validator, schema) {
+                Ok(result) => result,
+                Err(e) => bail!("Error validating the graph: {e}"),
+            };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else {

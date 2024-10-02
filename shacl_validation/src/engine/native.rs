@@ -1,22 +1,25 @@
-use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
 use srdf::SHACLPath;
+use srdf::RDFS_CLASS;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
+use srdf::SRDF;
 
-use crate::constraints::SparqlDeref;
-use crate::helper::sparql::select;
+use crate::constraints::NativeDeref;
+use crate::helper::srdf::get_objects_for;
+use crate::helper::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
 use crate::Targets;
 use crate::ValueNodes;
 
-use super::ValidatorRunner;
+use super::Engine;
 
-pub struct SparqlValidatorRunner;
+pub struct NativeEngine;
 
-impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
+impl<S: SRDF + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,
@@ -24,26 +27,17 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(store, value_nodes)?)
+        Ok(validator.validate_native(store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
+    fn target_node(&self, _: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
         if S::term_is_bnode(node) {
-            return Err(ValidateError::TargetNodeBlankNode);
+            Err(ValidateError::TargetNodeBlankNode)
+        } else {
+            Ok(Targets::new(std::iter::once(node.clone())))
         }
-
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                BIND ({} AS ?this)
-            }}
-        ", node};
-
-        select(store, query, "this")?;
-
-        Err(ValidateError::NotImplemented)
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<Targets<S>, ValidateError> {
@@ -51,19 +45,14 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let query = formatdoc! {"
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        let subjects = match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
+            Ok(subjects) => subjects,
+            Err(_) => return Err(ValidateError::SRDF),
+        };
 
-            SELECT DISTINCT ?this
-            WHERE {{
-                ?this rdf:type/rdfs:subClassOf* {} .
-            }}
-        ", class};
+        let targets = subjects.iter().map(|subject| S::subject_as_term(subject));
 
-        select(store, query, "this")?;
-
-        Err(ValidateError::NotImplemented)
+        Ok(Targets::new(targets))
     }
 
     fn target_subject_of(
@@ -71,47 +60,73 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<Targets<S>, ValidateError> {
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                ?this {} ?any .
-            }}
-        ", predicate};
+        let triples = match store.triples_with_predicate(predicate) {
+            Ok(triples) => triples,
+            Err(_) => return Err(ValidateError::SRDF),
+        };
 
-        select(store, query, "this")?;
+        let targets = triples
+            .iter()
+            .map(|triple| S::subject_as_term(&triple.subj()));
 
-        Err(ValidateError::NotImplemented)
+        Ok(Targets::new(targets))
     }
 
     fn target_object_of(&self, store: &S, predicate: &S::IRI) -> Result<Targets<S>, ValidateError> {
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                ?any {} ?this .
-            }}
-        ", predicate};
+        let triples = match store.triples_with_predicate(predicate) {
+            Ok(triples) => triples,
+            Err(_) => return Err(ValidateError::SRDF),
+        };
 
-        select(store, query, "this")?;
+        let targets = triples.into_iter().map(|triple| triple.obj());
 
-        Err(ValidateError::NotImplemented)
+        Ok(Targets::new(targets))
     }
 
     fn implicit_target_class(
         &self,
-        _store: &S,
-        _shape: &CompiledShape<S>,
+        store: &S,
+        shape: &CompiledShape<S>,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
+
+        let mut subclasses = get_subjects_for(
+            store,
+            &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+            &S::iri_s2term(&RDFS_CLASS),
+        )?;
+
+        subclasses.insert(S::iri_s2term(&RDFS_CLASS));
+
+        if ctypes.iter().any(|t| subclasses.contains(t)) {
+            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape.id())?;
+
+            let subclass_targets =
+                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape.id())?
+                    .into_iter()
+                    .flat_map(move |subclass| {
+                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
+                            .into_iter()
+                            .flatten()
+                    });
+
+            let targets = actual_class_nodes.into_iter().chain(subclass_targets);
+            Ok(Targets::new(targets))
+        } else {
+            Ok(Targets::default())
+        }
     }
 
     fn predicate(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
-        _predicate: &S::IRI,
-        _focus_node: &S::Term,
+        store: &S,
+        _: &CompiledPropertyShape<S>,
+        predicate: &S::IRI,
+        focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Ok(Targets::new(
+            get_objects_for(store, focus_node, predicate)?.into_iter(),
+        ))
     }
 
     fn alternative(

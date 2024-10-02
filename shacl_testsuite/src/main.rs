@@ -3,8 +3,8 @@ use std::{fs::File, io::BufReader, path::Path};
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
+    shacl_processor::{GraphValidation, ShaclProcessor, ShaclValidationMode},
     store::ShaclDataManager,
-    validate::{GraphValidation, ShaclValidationMode, Validation},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};

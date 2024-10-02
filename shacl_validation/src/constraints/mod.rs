@@ -4,7 +4,7 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::runner::ValidatorRunner;
+use crate::engine::Engine;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
@@ -15,7 +15,7 @@ pub(crate) trait Validator<S: SRDFBasic> {
     fn validate(
         &self,
         store: &S,
-        runner: impl ValidatorRunner<S>,
+        runner: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError>;
 }

@@ -13,7 +13,7 @@ use crate::ValueNodes;
 pub mod native;
 pub mod sparql;
 
-pub trait ValidatorRunner<S: SRDFBasic> {
+pub trait Engine<S: SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
