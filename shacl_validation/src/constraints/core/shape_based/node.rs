@@ -13,8 +13,8 @@ use crate::engine::Engine;
 use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::Targets;
-use crate::ValueNodes;
+use crate::focus_nodes::FocusNodes;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for Node<S> {
     fn validate(
@@ -26,7 +26,7 @@ impl<S: SRDFBasic + 'static> Validator<S> for Node<S> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
-                let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
+                let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
                 let validation =
                     ShapeValidation::new(store, &engine, self.shape(), Some(&focus_nodes));
                 let inner_results = validation.validate();

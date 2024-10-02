@@ -12,7 +12,7 @@ use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for LanguageIn<S> {
     fn validate(

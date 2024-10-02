@@ -10,11 +10,11 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
 use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::Targets;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for And<S> {
     fn validate(
@@ -27,7 +27,7 @@ impl<S: SRDFBasic + 'static> Validator<S> for And<S> {
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
                 let all_valid = self.shapes().iter().all(|shape| {
-                    let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
+                    let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
                     let validation =
                         ShapeValidation::new(store, &engine, shape, Some(&focus_nodes));
 

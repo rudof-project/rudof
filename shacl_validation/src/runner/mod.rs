@@ -53,7 +53,7 @@ pub trait Engine<S: SRDFBasic> {
             })
             .flatten();
 
-        // we have to also look for implicit class FocusNodes, which are a "special"
+        // we have to also look for implicit class targets, which are a "special"
         // kind of target declarations...
         let implicit = self.implicit_target_class(store, shape)?;
 

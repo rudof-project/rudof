@@ -50,9 +50,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = subjects.iter().map(|subject| S::subject_as_term(subject));
+        let targets = subjects.iter().map(|subject| S::subject_as_term(subject));
 
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(targets))
     }
 
     fn target_subject_of(
@@ -65,11 +65,11 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples
+        let targets = triples
             .iter()
             .map(|triple| S::subject_as_term(&triple.subj()));
 
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(targets))
     }
 
     fn target_object_of(
@@ -82,9 +82,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples.into_iter().map(|triple| triple.obj());
+        let targets = triples.into_iter().map(|triple| triple.obj());
 
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(targets))
     }
 
     fn implicit_target_class(
@@ -114,9 +114,8 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
                             .flatten()
                     });
 
-            let focus_nodes = actual_class_nodes.into_iter().chain(subclass_targets);
-
-            Ok(FocusNodes::new(focus_nodes))
+            let targets = actual_class_nodes.into_iter().chain(subclass_targets);
+            Ok(FocusNodes::new(targets))
         } else {
             Ok(FocusNodes::default())
         }

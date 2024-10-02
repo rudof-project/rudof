@@ -10,7 +10,7 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::helper::srdf::get_objects_for;
 use crate::validation_report::result::{ValidationResult, ValidationResults};
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(

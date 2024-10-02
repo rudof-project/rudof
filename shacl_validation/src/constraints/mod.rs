@@ -6,7 +6,7 @@ use srdf::SRDF;
 
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
 pub mod constraint_error;
 pub mod core;

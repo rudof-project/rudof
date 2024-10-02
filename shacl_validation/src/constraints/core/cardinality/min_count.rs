@@ -7,7 +7,7 @@ use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
 use shacl_ast::compiled::component::MinCount;
 use srdf::QuerySRDF;
@@ -28,8 +28,8 @@ impl<S: SRDFBasic + 'static> Validator<S> for MinCount {
 
         let results = value_nodes
             .iter_focus_nodes()
-            .filter_map(|(focus_node, value_nodes)| {
-                if value_nodes.0.len() < self.min_count() {
+            .filter_map(|(focus_node, targets)| {
+                if targets.len() < self.min_count() {
                     Some(ValidationResult::new(focus_node, None))
                 } else {
                     None
