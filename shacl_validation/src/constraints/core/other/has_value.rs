@@ -10,6 +10,7 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
@@ -18,9 +19,19 @@ impl<S: SRDFBasic> Validator<S> for HasValue<S> {
         &self,
         _store: &S,
         _engine: impl Engine<S>,
-        _value_nodes: &ValueNodes<S>,
+        value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        let results = value_nodes
+            .iter_focus_nodes()
+            .filter_map(|(focus_node, targets)| {
+                if targets.iter().any(|value| value == self.value()) {
+                    Some(ValidationResult::new(focus_node, None))
+                } else {
+                    None
+                }
+            });
+
+        Ok(ValidationResults::new(results.into_iter()))
     }
 }
 
