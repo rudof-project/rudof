@@ -1,65 +1,44 @@
+use shacl_ast::compiled::component::And;
 use srdf::QuerySRDF;
-use srdf::RDFNode;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
-use crate::helper::shapes::get_shapes_ref;
-use crate::shape::ShapeValidator;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
+use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::Targets;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
-/// sh:and specifies the condition that each value node conforms to all provided
-/// shapes. This is comparable to conjunction and the logical "and" operator.
-///
-/// https://www.w3.org/TR/shacl/#AndConstraintComponent
-pub(crate) struct And {
-    shapes: Vec<RDFNode>,
-}
-
-impl And {
-    pub fn new(shapes: Vec<RDFNode>) -> Self {
-        And { shapes }
-    }
-}
-
-impl<S: SRDFBasic + 'static> ConstraintComponent<S> for And {
-    fn evaluate(
+impl<S: SRDFBasic + 'static> Validator<S> for And<S> {
+    fn validate(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
-                let all_valid = get_shapes_ref(&self.shapes, validation_context.schema())
-                    .into_iter()
-                    .flatten()
-                    .all(|shape| {
-                        let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
-                        let shape_validator =
-                            ShapeValidator::new(shape, validation_context, Some(&focus_nodes));
+                let all_valid = self.shapes().iter().all(|shape| {
+                    let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
+                    let validation =
+                        ShapeValidation::new(store, &engine, shape, Some(&focus_nodes));
 
-                        match shape_validator.validate() {
-                            Ok(results) => results.is_empty(),
-                            Err(_) => false,
-                        }
-                    });
+                    match validation.validate() {
+                        Ok(results) => results.is_empty(),
+                        Err(_) => false,
+                    }
+                });
 
                 if !all_valid {
-                    Some(ValidationResult::new(
-                        focus_node,
-                        &evaluation_context,
-                        Some(value_node),
-                    ))
+                    Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     None
                 }
@@ -70,24 +49,22 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for And {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for And {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for And<S> {
+    fn validate_native(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for And {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for And<S> {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, SparqlEngine, value_nodes)
     }
 }

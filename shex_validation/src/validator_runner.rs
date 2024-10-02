@@ -26,7 +26,7 @@ type PosAtom = atom::PosAtom<(Node, ShapeLabelIdx)>;
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 
 #[derive(Debug)]
-pub struct ValidatorRunner {
+pub struct Engine {
     checked: IndexSet<Atom>,
     processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
@@ -39,15 +39,15 @@ pub struct ValidatorRunner {
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
 }
 
-impl Default for ValidatorRunner {
+impl Default for Engine {
     fn default() -> Self {
         Self::new(&ValidatorConfig::default())
     }
 }
 
-impl ValidatorRunner {
-    pub fn new(config: &ValidatorConfig) -> ValidatorRunner {
-        ValidatorRunner {
+impl Engine {
+    pub fn new(config: &ValidatorConfig) -> Engine {
+        Engine {
             checked: IndexSet::new(),
             processing: IndexSet::new(),
             pending: IndexSet::new(),

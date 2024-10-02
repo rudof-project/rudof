@@ -17,22 +17,21 @@ impl Graph {
         rdf_format: RDFFormat,
         base: Option<&str>,
     ) -> Result<Self, ValidateError> {
-        let store = match SRDFGraph::from_path(
+        match SRDFGraph::from_path(
             path,
             &rdf_format,
             match base {
                 Some(base) => match Iri::from_str(base) {
                     Ok(iri) => Some(iri),
-                    Err(_) => None,
+                    Err(_) => todo!(),
                 },
                 None => None,
             },
-            &ReaderMode::default(),
+            &ReaderMode::default(), // TODO: this should be revisited
         ) {
-            Ok(rdf) => rdf,
-            Err(_) => return Err(ValidateError::GraphCreation),
-        };
-        Ok(Self { store })
+            Ok(store) => Ok(Self { store }),
+            Err(error) => Err(ValidateError::Graph(error)),
+        }
     }
 }
 

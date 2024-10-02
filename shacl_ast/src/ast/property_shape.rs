@@ -114,6 +114,10 @@ impl PropertyShape {
         &self.description
     }
 
+    pub fn is_closed(&self) -> &bool {
+        &self.closed
+    }
+
     pub fn is_deactivated(&self) -> &bool {
         &self.deactivated
     }

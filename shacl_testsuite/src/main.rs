@@ -3,8 +3,8 @@ use std::{fs::File, io::BufReader, path::Path};
 use clap::Parser;
 use manifest::{GraphManifest, Manifest};
 use shacl_validation::{
+    shacl_processor::{GraphValidation, ShaclProcessor, ShaclValidationMode},
     store::ShaclDataManager,
-    validate::{GraphValidator, ShaclValidationMode, Validator},
     validation_report::report::ValidationReport,
 };
 use srdf::{RDFFormat, SRDFBasic, SRDF};
@@ -31,7 +31,7 @@ struct Cli {
         short = 'm',
         long = "mode",
         value_name = "Execution mode",
-        default_value_t = ShaclValidationMode::Default,
+        default_value_t = ShaclValidationMode::Native,
         value_enum
     )]
     mode: ShaclValidationMode,
@@ -80,21 +80,23 @@ fn main() -> Result<(), TestSuiteError> {
     let total = tests.len();
     let mut count = 0;
     for test in tests {
-        let validator = GraphValidator::new(
+        let validator = GraphValidation::new(
             Path::new(&test.data),
-            RDFFormat::NTriples,
+            RDFFormat::Turtle,
             test.base.as_deref(),
             cli.mode,
         )?;
-        let file = File::open(test.shapes.as_str())
-            .unwrap_or_else(|_| panic!("Unable to open file: {}", test.shapes));
-        let reader = BufReader::new(file);
-        let schema = ShaclDataManager::load(reader, srdf::RDFFormat::Turtle, test.base.as_deref())?;
+
         let label = match test.label {
             Some(label) => label,
             None => String::from("Test"),
         };
-        match validator.validate(schema) {
+
+        let file = File::open(test.shapes.as_str())
+            .unwrap_or_else(|_| panic!("Unable to open file: {}", test.shapes));
+        let reader = BufReader::new(file);
+        let schema = ShaclDataManager::load(reader, srdf::RDFFormat::Turtle, test.base.as_deref())?;
+        match validator.validate(&schema) {
             Ok(actual) => {
                 if actual == test.result {
                     println!("{} succeeded", label);

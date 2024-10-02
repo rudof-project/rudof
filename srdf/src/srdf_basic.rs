@@ -20,7 +20,7 @@ pub trait SRDFBasic {
     type BNode: Debug + Display + PartialEq;
 
     /// RDF Literals
-    type Literal: Debug + Display + PartialEq;
+    type Literal: Debug + Display + PartialEq + Eq + Hash;
 
     /// RDF terms
     type Term: Debug + Clone + Display + PartialEq + Eq + Hash;

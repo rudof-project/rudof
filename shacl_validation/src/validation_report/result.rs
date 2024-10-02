@@ -5,7 +5,6 @@ use shacl_ast::*;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::context::EvaluationContext;
 use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
@@ -108,20 +107,18 @@ pub struct ValidationResult<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> ValidationResult<S> {
-    pub(crate) fn new(
-        focus_node: &S::Term,
-        context: &EvaluationContext,
-        value_node: Option<&S::Term>,
-    ) -> Self {
+    pub(crate) fn new(focus_node: &S::Term, value_node: Option<&S::Term>) -> Self {
         let mut builder = ValidationResultBuilder::default();
 
         builder.focus_node(focus_node.to_owned());
-        builder.source_shape(context.shape::<S>());
-        builder.source_constraint_component(context.source_constraint_component::<S>());
 
-        if let Some(result_severity) = context.result_severity::<S>() {
-            builder.result_severity(result_severity);
-        }
+        // builder.source_shape(context.shape());
+        // builder.source_constraint_component(context.source_constraint_component());
+
+        // if let Some(result_severity) = context.result_severity() {
+        //     builder.result_severity(result_severity);
+        // }
+
         if let Some(value) = value_node {
             builder.value(value.to_owned());
         }

@@ -1,10 +1,10 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use shacl_ast::{ShaclParser, ShaclWriter};
+use shacl_validation::shacl_processor::GraphValidation;
+use shacl_validation::shacl_processor::ShaclProcessor;
+use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate::GraphValidator;
-use shacl_validation::validate::ShaclValidationMode;
-use shacl_validation::validate::Validator;
 use srdf::{RDFFormat, SRDFGraph};
 use std::ffi::OsStr;
 use std::fs::File;
@@ -80,12 +80,12 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         };
 
         let validator =
-            match GraphValidator::new(data, data_format, None, ShaclValidationMode::Default) {
+            match GraphValidation::new(data, data_format, None, ShaclValidationMode::Native) {
                 Ok(validator) => validator,
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
-        let _ = match validator.validate(schema) {
+        let _ = match validator.validate(&schema) {
             Ok(report) => report,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };

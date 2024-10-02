@@ -1,44 +1,26 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::MinLength;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
-/// sh:minLength specifies the minimum string length of each value node that
-/// satisfies the condition. This can be applied to any literals and IRIs, but
-/// not to blank nodes.
-///
-/// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-pub(crate) struct MinLength {
-    min_length: isize,
-}
-
-impl MinLength {
-    pub fn new(min_length: isize) -> Self {
-        MinLength { min_length }
-    }
-}
-
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinLength {
-    fn evaluate_default<'a>(
+impl<S: SRDF + 'static> NativeValidator<S> for MinLength {
+    fn validate_native<'a>(
         &self,
-        _validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
-                    let result =
-                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 } else {
                     None
@@ -50,39 +32,30 @@ impl<S: SRDF + 'static> DefaultConstraintComponent<S> for MinLength {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for MinLength {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinLength {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .filter_map(move |(focus_node, value_node)| {
                 if S::term_is_bnode(value_node) {
-                    Some(ValidationResult::new(
-                        focus_node,
-                        &evaluation_context,
-                        Some(value_node),
-                    ))
+                    Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     let query = formatdoc! {
                         " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
-                        value_node, self.min_length
+                        value_node, self.min_length()
                     };
 
-                    let ask = match validation_context.store().query_ask(&query) {
+                    let ask = match store.query_ask(&query) {
                         Ok(ask) => ask,
                         Err(_) => return None,
                     };
 
                     if !ask {
-                        Some(ValidationResult::new(
-                            focus_node,
-                            &evaluation_context,
-                            Some(value_node),
-                        ))
+                        Some(ValidationResult::new(focus_node, Some(value_node)))
                     } else {
                         None
                     }

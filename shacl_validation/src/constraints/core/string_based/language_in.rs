@@ -1,60 +1,38 @@
-use srdf::lang::Lang;
+use shacl_ast::compiled::component::LanguageIn;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
-/// The condition specified by sh:languageIn is that the allowed language tags
-/// for each value node are limited by a given list of language tags.
-///
-/// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-pub(crate) struct LanguageIn {
-    langs: Vec<Lang>,
-}
-
-impl LanguageIn {
-    pub fn new(langs: Vec<Lang>) -> Self {
-        LanguageIn { langs }
-    }
-}
-
-impl<S: SRDFBasic + 'static> ConstraintComponent<S> for LanguageIn {
-    fn evaluate(
+impl<S: SRDFBasic + 'static> Validator<S> for LanguageIn<S> {
+    fn validate(
         &self,
-        _validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
-                if let Some(literal) = S::term_as_literal(value_node) {
-                    if let Some(lang) = S::lang(&literal) {
-                        if !self.langs.contains(&Lang::new(&lang)) {
-                            let result = ValidationResult::new(
-                                focus_node,
-                                &evaluation_context,
-                                Some(value_node),
-                            );
-                            Some(result)
-                        } else {
-                            None
-                        }
-                    } else {
+                if let Some(lang) = S::term_as_literal(value_node) {
+                    if self.langs().contains(&lang) {
                         None
+                    } else {
+                        let result = ValidationResult::new(focus_node, Some(value_node));
+                        Some(result)
                     }
                 } else {
-                    let result =
-                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 }
             })
@@ -64,24 +42,22 @@ impl<S: SRDFBasic + 'static> ConstraintComponent<S> for LanguageIn {
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for LanguageIn {
-    fn evaluate_default<'a>(
+impl<S: SRDF + 'static> NativeValidator<S> for LanguageIn<S> {
+    fn validate_native<'a>(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for LanguageIn {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for LanguageIn<S> {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, SparqlEngine, value_nodes)
     }
 }

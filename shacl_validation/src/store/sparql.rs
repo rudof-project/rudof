@@ -5,21 +5,20 @@ use crate::validate_error::ValidateError;
 
 use super::Store;
 
-pub struct Sparql {
+pub struct Endpoint {
     store: SRDFSparql,
 }
 
-impl Sparql {
+impl Endpoint {
     pub fn new(path: &str) -> Result<Self, ValidateError> {
-        let store = match SRDFSparql::new(&IriS::new_unchecked(path)) {
-            Ok(rdf) => rdf,
-            Err(_) => return Err(ValidateError::SPARQLCreation),
-        };
-        Ok(Self { store })
+        match SRDFSparql::new(&IriS::new_unchecked(path)) {
+            Ok(store) => Ok(Self { store }),
+            Err(_) => Err(ValidateError::SPARQLCreation),
+        }
     }
 }
 
-impl Store<SRDFSparql> for Sparql {
+impl Store<SRDFSparql> for Endpoint {
     fn store(&self) -> &SRDFSparql {
         &self.store
     }

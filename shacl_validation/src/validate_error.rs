@@ -1,5 +1,7 @@
 use oxiri::IriParseError;
-use prefixmap::Underef;
+use shacl_ast::{
+    compiled::compiled_shacl_error::CompiledShaclError, shacl_parser_error::ShaclParserError,
+};
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
@@ -16,10 +18,10 @@ pub enum ValidateError {
     TargetNodeBlankNode,
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
-    #[error("Error during the creation of the SRDFGraph")]
-    SRDFGraph(#[from] SRDFGraphError),
-    #[error("Error during the creation of the Shacl shapes")]
-    ShaclParser,
+    #[error("Error when working with the SRDFGraph, {}", ._0)]
+    Graph(#[from] SRDFGraphError),
+    #[error("Error when parsing the SHACL Graph, {}", ._0)]
+    ShaclParser(#[from] ShaclParserError),
     #[error("Error during the constraint evaluation")]
     Constraint(#[from] ConstraintError),
     #[error("Error parsing the IRI")]
@@ -30,16 +32,14 @@ pub enum ValidateError {
     Shapes(#[from] SRDFError),
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
-    #[error("Error creating the Graph in-memory")]
-    GraphCreation,
-    #[error("Error obtaining the underlying IRI")]
-    Underef(#[from] Underef),
-    #[error("The provided mode is not supported for the data structure")]
-    UnsupportedMode,
+    #[error("The provided mode is not supported for the {} structure", ._0)]
+    UnsupportedMode(String),
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SPARQLError),
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
     #[error("Not yet implemented")]
     NotImplemented,
+    #[error("Error during the compilation of the Schema, {}", ._0)]
+    CompiledShacl(#[from] CompiledShaclError),
 }

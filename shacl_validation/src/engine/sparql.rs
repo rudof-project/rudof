@@ -1,36 +1,35 @@
 use indoc::formatdoc;
-use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::SparqlDeref;
+use crate::focus_nodes::FocusNodes;
 use crate::helper::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
-use crate::Targets;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
-use super::ValidatorRunner;
+use super::Engine;
 
-pub struct QueryValidatorRunner;
+pub struct SparqlEngine;
 
-impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
+impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
+        component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
-        let component: Box<dyn SparqlConstraintComponent<S>> =
-            evaluation_context.component().into();
-        Ok(component.evaluate_sparql(validation_context, evaluation_context, value_nodes)?)
+        let validator = component.deref();
+        Ok(validator.validate_sparql(store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
+    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         if S::term_is_bnode(node) {
             return Err(ValidateError::TargetNodeBlankNode);
         }
@@ -47,7 +46,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         Err(ValidateError::NotImplemented)
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<Targets<S>, ValidateError> {
+    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         if !S::term_is_iri(class) {
             return Err(ValidateError::TargetClassNotIri);
         }
@@ -71,7 +70,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         &self,
         store: &S,
         predicate: &S::IRI,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -84,7 +83,11 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
         Err(ValidateError::NotImplemented)
     }
 
-    fn target_object_of(&self, store: &S, predicate: &S::IRI) -> Result<Targets<S>, ValidateError> {
+    fn target_object_of(
+        &self,
+        store: &S,
+        predicate: &S::IRI,
+    ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -100,78 +103,78 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for QueryValidatorRunner {
     fn implicit_target_class(
         &self,
         _store: &S,
-        _shape: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+        _shape: &CompiledShape<S>,
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn predicate(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn alternative(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn sequence(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn inverse(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_more(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn one_or_more(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn zero_or_one(
         &self,
         _store: &S,
-        _shape: &PropertyShape,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
-    ) -> Result<Targets<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 }

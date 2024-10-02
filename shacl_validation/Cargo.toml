@@ -14,15 +14,13 @@ edition.workspace = true
 [dependencies]
 srdf = { workspace = true }
 shacl_ast = { workspace = true }
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
+iri_s = { workspace = true } # needed for defining IriS and vocabs
 
-thiserror = "1.0.63"
-lazy_static = "1"
-const_format = "0.2"
-indoc = "2"
-oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
-oxiri = "0.2.0-alpha.2"
-clap = { workspace = true }
-serde = { version = "1.0", features = ["derive"] }
-serde_yml = "0.0.12"
+thiserror = "1.0.63" # needed for the definition of errors
+lazy_static = "1" # needed for the definition of the vocab
+const_format = "0.2" # needed for the definition of the vocab
+indoc = "2" # needed for the definition of SPARQL queries
+oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the stores )
+clap = { workspace = true } # needed for creating the ValueEnums (ensuring compatibility with clap)
+serde = { version = "1.0", features = ["derive"] } # needed for the config thing
+serde_yml = "0.0.12" # needed for the config thing

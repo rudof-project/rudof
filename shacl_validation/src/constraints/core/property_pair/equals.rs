@@ -1,62 +1,45 @@
-use prefixmap::IriRef;
+use shacl_ast::compiled::component::Equals;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::ConstraintComponent;
-use crate::constraints::DefaultConstraintComponent;
-use crate::constraints::SparqlConstraintComponent;
-use crate::context::EvaluationContext;
-use crate::context::ValidationContext;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::validation_report::result::ValidationResults;
-use crate::ValueNodes;
+use crate::value_nodes::ValueNodes;
 
-/// sh:equals specifies the condition that the set of all value nodes is equal
-/// to the set of objects of the triples that have the focus node as subject and
-/// the value of sh:equals as predicate.
-///
-/// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-#[allow(dead_code)] // TODO: Remove when it is used
-pub(crate) struct Equals {
-    iri_ref: IriRef,
-}
-
-impl Equals {
-    pub fn new(iri_ref: IriRef) -> Self {
-        Equals { iri_ref }
-    }
-}
-
-impl<S: SRDFBasic + 'static> ConstraintComponent<S> for Equals {
-    fn evaluate(
+impl<S: SRDFBasic + 'static> Validator<S> for Equals<S> {
+    fn validate(
         &self,
-        _validation_context: &ValidationContext<S>,
-        _evaluation_context: EvaluationContext,
+        _store: &S,
+        _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
 
-impl<S: SRDF + 'static> DefaultConstraintComponent<S> for Equals {
-    fn evaluate_default(
+impl<S: SRDF + 'static> NativeValidator<S> for Equals<S> {
+    fn validate_native(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlConstraintComponent<S> for Equals {
-    fn evaluate_sparql(
+impl<S: QuerySRDF + 'static> SparqlValidator<S> for Equals<S> {
+    fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: EvaluationContext,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.evaluate(validation_context, evaluation_context, value_nodes)
+        self.validate(store, SparqlEngine, value_nodes)
     }
 }

@@ -26,8 +26,8 @@ use oxiri::Iri;
 use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::shacl_config::ShaclConfig;
+use shacl_validation::shacl_processor::{EndpointValidation, GraphValidation, ShaclValidationMode};
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate::{GraphValidator, ShaclValidationMode, SparqlValidator};
 use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
@@ -605,49 +605,30 @@ fn run_validate_shacl(
     let data = cast_to_data_path(data)?;
     let reader = input.open_read()?;
 
-    let schema = ShaclDataManager::load(
-        reader,
-        match shapes_format {
-            ShaclFormat::Internal => todo!(),
-            ShaclFormat::Turtle => srdf::RDFFormat::Turtle,
-            ShaclFormat::NTriples => srdf::RDFFormat::NTriples,
-            ShaclFormat::RDFXML => srdf::RDFFormat::RDFXML,
-            ShaclFormat::TriG => srdf::RDFFormat::TriG,
-            ShaclFormat::N3 => srdf::RDFFormat::N3,
-            ShaclFormat::NQuads => srdf::RDFFormat::NQuads,
-        },
-        None,
-    )?;
-
     if let Some(data) = data {
-        let validator = match GraphValidator::new(
-            &data,
-            match data_format {
-                DataFormat::Turtle => srdf::RDFFormat::Turtle,
-                DataFormat::NTriples => srdf::RDFFormat::NTriples,
-                DataFormat::RDFXML => srdf::RDFFormat::RDFXML,
-                DataFormat::TriG => srdf::RDFFormat::TriG,
-                DataFormat::N3 => srdf::RDFFormat::N3,
-                DataFormat::NQuads => srdf::RDFFormat::NQuads,
-            },
-            None,
-            mode,
-        ) {
+        let validator = match GraphValidation::new(&data, map_data_format(data_format)?, None, mode)
+        {
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
+        let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
+        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
+            &validator, &schema,
+        ) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
-        let validator = match SparqlValidator::new(endpoint, mode) {
+        let validator = match EndpointValidation::new(endpoint, mode) {
             Ok(validator) => validator,
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
-        let result = match shacl_validation::validate::Validator::validate(&validator, schema) {
+        let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
+        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
+            &validator, &schema,
+        ) {
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
@@ -1501,7 +1482,6 @@ fn parse_data(
     let mut graph = SRDFGraph::new();
     let rdf_format = data_format2rdf_format(data_format);
     for d in data {
-        use std::convert::Into;
         let reader = d.open_read()?;
         let base = config
             .base
@@ -1595,5 +1575,28 @@ fn cast_to_data_path(data: &Vec<InputSpec>) -> Result<Option<PathBuf>> {
         },
         [] => Ok(None),
         _ => bail!("More than one value for data: {data:?}"),
+    }
+}
+
+fn map_shacl_format(shapes_format: &ShaclFormat) -> Result<srdf::RDFFormat> {
+    match shapes_format {
+        ShaclFormat::Internal => todo!(),
+        ShaclFormat::Turtle => Ok(srdf::RDFFormat::Turtle),
+        ShaclFormat::NTriples => Ok(srdf::RDFFormat::NTriples),
+        ShaclFormat::RDFXML => Ok(srdf::RDFFormat::RDFXML),
+        ShaclFormat::TriG => Ok(srdf::RDFFormat::TriG),
+        ShaclFormat::N3 => Ok(srdf::RDFFormat::N3),
+        ShaclFormat::NQuads => Ok(srdf::RDFFormat::NQuads),
+    }
+}
+
+fn map_data_format(data_format: &DataFormat) -> Result<srdf::RDFFormat> {
+    match data_format {
+        DataFormat::Turtle => Ok(srdf::RDFFormat::Turtle),
+        DataFormat::NTriples => Ok(srdf::RDFFormat::NTriples),
+        DataFormat::RDFXML => Ok(srdf::RDFFormat::RDFXML),
+        DataFormat::TriG => Ok(srdf::RDFFormat::TriG),
+        DataFormat::N3 => Ok(srdf::RDFFormat::N3),
+        DataFormat::NQuads => Ok(srdf::RDFFormat::NQuads),
     }
 }
