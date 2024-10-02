@@ -9,75 +9,61 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
-pub struct ShapeValidation<'a, S: SRDFBasic> {
-    store: &'a S,
-    runner: &'a dyn Engine<S>,
-    shape: &'a CompiledShape<S>,
-    focus_nodes: FocusNodes<S>,
+pub trait Validate<S: SRDFBasic> {
+    fn validate(
+        &self,
+        store: &S,
+        runner: &dyn Engine<S>,
+        targets: Option<&FocusNodes<S>>, // TODO: can this be put inside of the CompiledShape?
+    ) -> Result<ValidationResults<S>, ValidateError>;
 }
 
-impl<'a, S: SRDFBasic> ShapeValidation<'a, S> {
-    pub fn new(
-        store: &'a S,
-        runner: &'a dyn Engine<S>,
-        shape: &'a CompiledShape<S>,
-        targets: Option<&'a FocusNodes<S>>,
-    ) -> Self {
-        let focus_nodes = match targets {
-            Some(targets) => targets.to_owned(),
-            None => shape.focus_nodes(store, runner),
-        };
-
-        ShapeValidation {
-            store,
-            runner,
-            shape,
-            focus_nodes,
-        }
-    }
-
-    pub fn validate(&self) -> Result<ValidationResults<S>, ValidateError> {
-        if *self.shape.is_deactivated() {
+impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
+    fn validate(
+        &self,
+        store: &S,
+        runner: &dyn Engine<S>,
+        targets: Option<&FocusNodes<S>>,
+    ) -> Result<ValidationResults<S>, ValidateError> {
+        // 0.
+        if *self.is_deactivated() {
             // skipping because it is deactivated
             return Ok(ValidationResults::default());
         }
 
-        let components = self.validate_components()?;
-        let property_shapes = self.validate_property_shapes()?;
+        // 1.
+        let focus_nodes = match targets {
+            Some(targets) => targets.to_owned(),
+            None => self.focus_nodes(store, runner),
+        };
 
-        let validation_results = components.into_iter().chain(property_shapes);
-
-        Ok(ValidationResults::new(validation_results))
-    }
-
-    fn validate_components(&self) -> Result<ValidationResults<S>, ValidateError> {
-        // 1. First we compute the ValueNodes; that is, the set of nodes that
+        // 2. Second we compute the ValueNodes; that is, the set of nodes that
         //    are going to be used during the validation stages. This set of
         //    nodes is obtained from the set of focus nodes
-        let value_nodes = self
-            .shape
-            .value_nodes(self.store, &self.focus_nodes, self.runner);
+        let value_nodes = self.value_nodes(store, &focus_nodes, runner);
 
-        let results = self.shape.components().iter().flat_map(move |component| {
-            self.runner
-                .evaluate(self.store, component, &value_nodes)
+        // 3.
+        let component_validation_results = self.components().iter().flat_map(move |component| {
+            runner
+                .evaluate(store, component, &value_nodes)
                 .unwrap_or_else(|_| ValidationResults::default())
         });
 
-        Ok(ValidationResults::new(results))
-    }
-
-    fn validate_property_shapes(&self) -> Result<ValidationResults<S>, ValidateError> {
-        let results = self.shape.property_shapes().iter().flat_map(|shape| {
-            ShapeValidation::new(self.store, self.runner, shape, Some(&self.focus_nodes))
-                .validate()
+        // 4.
+        let property_shapes_validation_results = self.property_shapes().iter().flat_map(|shape| {
+            shape
+                .validate(store, runner, Some(&focus_nodes))
                 .ok()
                 .into_iter()
                 .flatten()
                 .collect::<Vec<_>>()
         });
 
-        Ok(ValidationResults::new(results))
+        // 5.
+        let validation_results =
+            component_validation_results.chain(property_shapes_validation_results);
+
+        Ok(ValidationResults::new(validation_results))
     }
 }
 

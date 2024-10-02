@@ -23,7 +23,16 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinLength {
                     let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 } else {
-                    None
+                    let string_representation = match S::term_as_string(value_node) {
+                        Some(string_representation) => string_representation,
+                        None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
+                    };
+                    if string_representation.len() < self.min_length() as usize {
+                        let result = ValidationResult::new(focus_node, Some(value_node));
+                        Some(result)
+                    } else {
+                        None
+                    }
                 }
             })
             .collect::<Vec<_>>();
