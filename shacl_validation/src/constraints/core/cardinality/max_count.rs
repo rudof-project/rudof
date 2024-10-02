@@ -18,7 +18,7 @@ impl<S: SRDFBasic + 'static> Validator<S> for MaxCount {
     fn validate(
         &self,
         _: &S,
-        runner: impl ValidatorRunner<S>,
+        _: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes

@@ -13,7 +13,7 @@ use crate::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for MinInclusive<S> {
     fn validate_native(
         &self,
-        store: &S,
+        _store: &S,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)

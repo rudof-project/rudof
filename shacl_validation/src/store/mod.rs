@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::str::FromStr;
 
 use oxiri::Iri;
-use shacl_ast::compiled::schema::Schema;
+use shacl_ast::compiled::schema::CompiledSchema;
 use shacl_ast::ShaclParser;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
@@ -25,7 +25,7 @@ impl ShaclDataManager {
         reader: R,
         rdf_format: RDFFormat,
         base: Option<&str>,
-    ) -> Result<Schema<S>, ValidateError> {
+    ) -> Result<CompiledSchema<S>, ValidateError> {
         let rdf = SRDFGraph::from_reader(
             reader,
             &rdf_format,
@@ -37,7 +37,7 @@ impl ShaclDataManager {
         )?;
 
         match ShaclParser::new(rdf).parse() {
-            Ok(schema) => Ok(schema.into()),
+            Ok(schema) => Ok(schema.try_into()?),
             Err(error) => Err(ValidateError::ShaclParser(error)),
         }
     }

@@ -1,7 +1,7 @@
 use indoc::formatdoc;
-use shacl_ast::compiled::component::Component;
-use shacl_ast::compiled::property_shape::PropertyShape;
-use shacl_ast::compiled::shape::Shape;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
@@ -20,7 +20,7 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
     fn evaluate(
         &self,
         store: &S,
-        component: &Component<S>,
+        component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
         let validator = component.deref();
@@ -98,16 +98,16 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn implicit_target_class(
         &self,
-        store: &S,
-        _shape: &Shape<S>,
+        _store: &S,
+        _shape: &CompiledShape<S>,
     ) -> Result<Targets<S>, ValidateError> {
         Err(ValidateError::NotImplemented)
     }
 
     fn predicate(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -116,8 +116,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn alternative(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -126,8 +126,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn sequence(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -136,8 +136,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn inverse(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -146,8 +146,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn zero_or_more(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -156,8 +156,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn one_or_more(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -166,8 +166,8 @@ impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
 
     fn zero_or_one(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {

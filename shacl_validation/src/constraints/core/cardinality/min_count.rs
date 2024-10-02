@@ -17,8 +17,8 @@ use srdf::SRDF;
 impl<S: SRDFBasic + 'static> Validator<S> for MinCount {
     fn validate(
         &self,
-        store: &S,
-        runner: impl ValidatorRunner<S>,
+        _: &S,
+        _: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         if self.min_count() == 0 {

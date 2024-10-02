@@ -16,8 +16,8 @@ use crate::ValueNodes;
 impl<S: SRDFBasic + 'static> Validator<S> for Equals<S> {
     fn validate(
         &self,
-        store: &S,
-        runner: impl ValidatorRunner<S>,
+        _store: &S,
+        _runner: impl ValidatorRunner<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)

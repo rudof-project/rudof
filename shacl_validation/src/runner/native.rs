@@ -1,6 +1,6 @@
-use shacl_ast::compiled::component::Component;
-use shacl_ast::compiled::property_shape::PropertyShape;
-use shacl_ast::compiled::shape::Shape;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::SHACLPath;
 use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
@@ -23,7 +23,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn evaluate(
         &self,
         store: &S,
-        component: &Component<S>,
+        component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
         let validator = component.deref();
@@ -32,7 +32,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
+    fn target_node(&self, _: &S, node: &S::Term) -> Result<Targets<S>, ValidateError> {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -86,7 +86,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &Shape<S>,
+        shape: &CompiledShape<S>,
     ) -> Result<Targets<S>, ValidateError> {
         let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
 
@@ -120,7 +120,7 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn predicate(
         &self,
         store: &S,
-        _shape: &PropertyShape<S>,
+        _: &CompiledPropertyShape<S>,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -131,8 +131,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn alternative(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -141,8 +141,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn sequence(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -151,8 +151,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn inverse(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -161,8 +161,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn zero_or_more(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -171,8 +171,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn one_or_more(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {
@@ -181,8 +181,8 @@ impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
 
     fn zero_or_one(
         &self,
-        store: &S,
-        _shape: &PropertyShape<S>,
+        _store: &S,
+        _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<Targets<S>, ValidateError> {

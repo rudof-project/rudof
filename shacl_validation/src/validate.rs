@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use clap::ValueEnum;
-use shacl_ast::compiled::schema::Schema;
+use shacl_ast::compiled::schema::CompiledSchema;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
 use srdf::SRDFGraph;
@@ -36,7 +36,7 @@ pub trait Validation<S: SRDFBasic> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn ValidatorRunner<S>;
 
-    fn validate(&self, schema: Schema<S>) -> Result<ValidationReport<S>, ValidateError> {
+    fn validate(&self, schema: CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_report = ValidationReport::default();
 

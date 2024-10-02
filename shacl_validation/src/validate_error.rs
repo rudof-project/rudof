@@ -1,6 +1,8 @@
 use oxiri::IriParseError;
 use prefixmap::Underef;
-use shacl_ast::shacl_parser_error::ShaclParserError;
+use shacl_ast::{
+    compiled::compiled_shacl_error::CompiledShaclError, shacl_parser_error::ShaclParserError,
+};
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
@@ -41,4 +43,6 @@ pub enum ValidateError {
     ImplicitClassNotFound,
     #[error("Not yet implemented")]
     NotImplemented,
+    #[error("Error during the compilation of the Schema, {}", ._0)]
+    CompiledShacl(#[from] CompiledShaclError),
 }

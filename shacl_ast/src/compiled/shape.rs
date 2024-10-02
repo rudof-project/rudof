@@ -1,49 +1,70 @@
 use srdf::SRDFBasic;
 
-use super::component::Component;
-use super::node_shape::NodeShape;
-use super::property_shape::PropertyShape;
-use super::target::Target;
+use crate::shape::Shape;
+use crate::Schema;
+
+use super::compiled_shacl_error::CompiledShaclError;
+use super::component::CompiledComponent;
+use super::node_shape::CompiledNodeShape;
+use super::property_shape::CompiledPropertyShape;
+use super::target::CompiledTarget;
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum Shape<S: SRDFBasic> {
-    NodeShape(NodeShape<S>),
-    PropertyShape(PropertyShape<S>),
+pub enum CompiledShape<S: SRDFBasic> {
+    NodeShape(CompiledNodeShape<S>),
+    PropertyShape(CompiledPropertyShape<S>),
 }
 
-impl<S: SRDFBasic> Shape<S> {
+impl<S: SRDFBasic> CompiledShape<S> {
     pub fn is_deactivated(&self) -> &bool {
         match self {
-            Shape::NodeShape(ns) => ns.is_deactivated(),
-            Shape::PropertyShape(ps) => ps.is_deactivated(),
+            CompiledShape::NodeShape(ns) => ns.is_deactivated(),
+            CompiledShape::PropertyShape(ps) => ps.is_deactivated(),
         }
     }
 
     pub fn id(&self) -> &S::Term {
         match self {
-            Shape::NodeShape(ns) => ns.id(),
-            Shape::PropertyShape(ps) => ps.id(),
+            CompiledShape::NodeShape(ns) => ns.id(),
+            CompiledShape::PropertyShape(ps) => ps.id(),
         }
     }
 
-    pub fn targets(&self) -> &Vec<Target<S>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
         match self {
-            Shape::NodeShape(ns) => ns.targets(),
-            Shape::PropertyShape(ps) => ps.targets(),
+            CompiledShape::NodeShape(ns) => ns.targets(),
+            CompiledShape::PropertyShape(ps) => ps.targets(),
         }
     }
 
-    pub fn components(&self) -> &Vec<Component<S>> {
+    pub fn components(&self) -> &Vec<CompiledComponent<S>> {
         match self {
-            Shape::NodeShape(ns) => ns.components(),
-            Shape::PropertyShape(ps) => ps.components(),
+            CompiledShape::NodeShape(ns) => ns.components(),
+            CompiledShape::PropertyShape(ps) => ps.components(),
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<Shape<S>> {
+    pub fn property_shapes(&self) -> &Vec<CompiledShape<S>> {
         match self {
-            Shape::NodeShape(ns) => ns.property_shapes(),
-            Shape::PropertyShape(ps) => ps.property_shapes(),
+            CompiledShape::NodeShape(ns) => ns.property_shapes(),
+            CompiledShape::PropertyShape(ps) => ps.property_shapes(),
         }
+    }
+}
+
+impl<S: SRDFBasic> CompiledShape<S> {
+    pub fn compile(shape: Shape, schema: &Schema) -> Result<Self, CompiledShaclError> {
+        let shape = match shape {
+            Shape::NodeShape(node_shape) => {
+                let node_shape = CompiledNodeShape::compile(node_shape, schema)?;
+                CompiledShape::NodeShape(node_shape)
+            }
+            Shape::PropertyShape(property_shape) => {
+                let property_shape = CompiledPropertyShape::compile(property_shape, schema)?;
+                CompiledShape::PropertyShape(property_shape)
+            }
+        };
+
+        Ok(shape)
     }
 }

@@ -11,7 +11,7 @@ use crate::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     fn validate_native(
         &self,
-        store: &S,
+        _store: &S,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -21,7 +21,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for LessThanOrEquals<S> {
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
     fn validate_sparql(
         &self,
-        store: &S,
+        _store: &S,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)

@@ -1,6 +1,6 @@
-use shacl_ast::compiled::node_shape::NodeShape;
-use shacl_ast::compiled::property_shape::PropertyShape;
-use shacl_ast::compiled::shape::Shape;
+use shacl_ast::compiled::node_shape::CompiledNodeShape;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::SRDFBasic;
 
 use crate::runner::ValidatorRunner;
@@ -12,7 +12,7 @@ use crate::ValueNodes;
 pub struct ShapeValidation<'a, S: SRDFBasic> {
     store: &'a S,
     runner: &'a dyn ValidatorRunner<S>,
-    shape: &'a Shape<S>,
+    shape: &'a CompiledShape<S>,
     focus_nodes: Targets<S>,
 }
 
@@ -20,7 +20,7 @@ impl<'a, S: SRDFBasic> ShapeValidation<'a, S> {
     pub fn new(
         store: &'a S,
         runner: &'a dyn ValidatorRunner<S>,
-        shape: &'a Shape<S>,
+        shape: &'a CompiledShape<S>,
         targets: Option<&'a Targets<S>>,
     ) -> Self {
         let focus_nodes = match targets {
@@ -57,55 +57,24 @@ impl<'a, S: SRDFBasic> ShapeValidation<'a, S> {
             .shape
             .value_nodes(self.store, &self.focus_nodes, self.runner);
 
-        // let mut unique_components = HashSet::new(); TODO: check whether this works
+        let results = self.shape.components().iter().flat_map(move |component| {
+            self.runner
+                .evaluate(self.store, component, &value_nodes)
+                .unwrap_or_else(|_| ValidationResults::default())
+        });
 
-        // let contexts: Vec<_> = self
-        //     .shape
-        //     .components()
-        //     .iter()
-        //     .filter_map(|component| {
-        //         if unique_components.insert(component) {
-        //             Some(EvaluationContext::new(component, self.shape))
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .collect();
-
-        let evaluated_components = self
-            .shape
-            .components()
-            .into_iter()
-            .flat_map(move |component| {
-                self.runner
-                    .evaluate(self.store, component, &value_nodes)
-                    .unwrap_or_else(|_| ValidationResults::default())
-            });
-
-        Ok(ValidationResults::new(evaluated_components))
+        Ok(ValidationResults::new(results))
     }
 
     fn validate_property_shapes(&self) -> Result<ValidationResults<S>, ValidateError> {
-        let evaluated_shapes = self
-            .shape
-            .property_shapes()
-            .iter()
-            .filter_map(|shape| {
-                Some(ShapeValidation::new(
-                    self.store,
-                    self.runner,
-                    shape,
-                    Some(&self.focus_nodes),
-                ))
-            })
-            .flat_map(|validation| {
-                validation
-                    .validate()
-                    .ok()
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<_>>()
-            });
+        let evaluated_shapes = self.shape.property_shapes().iter().flat_map(|shape| {
+            ShapeValidation::new(self.store, self.runner, shape, Some(&self.focus_nodes))
+                .validate()
+                .ok()
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+        });
 
         Ok(ValidationResults::new(evaluated_shapes))
     }
@@ -115,7 +84,7 @@ pub trait FocusNodesOps<S: SRDFBasic> {
     fn focus_nodes(&self, store: &S, runner: &dyn ValidatorRunner<S>) -> Targets<S>;
 }
 
-impl<S: SRDFBasic> FocusNodesOps<S> for Shape<S> {
+impl<S: SRDFBasic> FocusNodesOps<S> for CompiledShape<S> {
     fn focus_nodes(&self, store: &S, runner: &dyn ValidatorRunner<S>) -> Targets<S> {
         runner
             .focus_nodes(store, self, self.targets())
@@ -132,7 +101,7 @@ pub trait ValueNodesOps<S: SRDFBasic> {
     ) -> ValueNodes<S>;
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for Shape<S> {
+impl<S: SRDFBasic> ValueNodesOps<S> for CompiledShape<S> {
     fn value_nodes(
         &self,
         store: &S,
@@ -140,13 +109,13 @@ impl<S: SRDFBasic> ValueNodesOps<S> for Shape<S> {
         runner: &dyn ValidatorRunner<S>,
     ) -> ValueNodes<S> {
         match self {
-            Shape::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
-            Shape::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
+            CompiledShape::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
+            CompiledShape::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
         }
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for NodeShape<S> {
+impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
     fn value_nodes(
         &self,
         _: &S,
@@ -164,7 +133,7 @@ impl<S: SRDFBasic> ValueNodesOps<S> for NodeShape<S> {
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for PropertyShape<S> {
+impl<S: SRDFBasic> ValueNodesOps<S> for CompiledPropertyShape<S> {
     fn value_nodes(
         &self,
         store: &S,

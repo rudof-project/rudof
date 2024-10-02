@@ -1,15 +1,24 @@
+use crate::component::Component;
 use crate::node_kind::NodeKind;
+use crate::Schema;
 
-use super::shape::Shape;
+use super::compile_shape;
+use super::compile_shapes;
+use super::compiled_shacl_error::CompiledShaclError;
+use super::convert_iri_ref;
+use super::convert_lang;
+use super::convert_value;
+use super::shape::CompiledShape;
+use srdf::RDFNode;
 use srdf::SRDFBasic;
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum Component<S: SRDFBasic> {
+pub enum CompiledComponent<S: SRDFBasic> {
     Class(Class<S>),
     Datatype(Datatype<S>),
     NodeKind(Nodekind),
-    MinCount(MaxCount),
-    MaxCount(MinCount),
+    MinCount(MinCount),
+    MaxCount(MaxCount),
     MinExclusive(MinExclusive<S>),
     MaxExclusive(MaxExclusive<S>),
     MinInclusive(MinInclusive<S>),
@@ -32,6 +41,123 @@ pub enum Component<S: SRDFBasic> {
     HasValue(HasValue<S>),
     In(In<S>),
     QualifiedValueShape(QualifiedValueShape<S>),
+}
+
+impl<S: SRDFBasic> CompiledComponent<S> {
+    pub fn compile(component: Component, schema: &Schema) -> Result<Self, CompiledShaclError> {
+        let component = match component {
+            Component::Class(object) => {
+                let class_rule = S::object_as_term(&object);
+                CompiledComponent::Class(Class::new(class_rule))
+            }
+            Component::Datatype(iri_ref) => {
+                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                CompiledComponent::Datatype(Datatype::new(iri_ref))
+            }
+            Component::NodeKind(node_kind) => CompiledComponent::NodeKind(Nodekind::new(node_kind)),
+            Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
+            Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
+            Component::MinExclusive(literal) => {
+                let term = S::object_as_term(&RDFNode::literal(literal));
+                CompiledComponent::MinExclusive(MinExclusive::new(term))
+            }
+            Component::MaxExclusive(literal) => {
+                let term = S::object_as_term(&RDFNode::literal(literal));
+                CompiledComponent::MaxExclusive(MaxExclusive::new(term))
+            }
+            Component::MinInclusive(literal) => {
+                let term = S::object_as_term(&RDFNode::literal(literal));
+                CompiledComponent::MinInclusive(MinInclusive::new(term))
+            }
+            Component::MaxInclusive(literal) => {
+                let term = S::object_as_term(&RDFNode::literal(literal));
+                CompiledComponent::MaxInclusive(MaxInclusive::new(term))
+            }
+            Component::MinLength(length) => CompiledComponent::MinLength(MinLength::new(length)),
+            Component::MaxLength(length) => CompiledComponent::MaxLength(MaxLength::new(length)),
+            Component::Pattern { pattern, flags } => {
+                CompiledComponent::Pattern(Pattern::new(pattern, flags))
+            }
+            Component::UniqueLang(lang) => CompiledComponent::UniqueLang(UniqueLang::new(lang)),
+            Component::LanguageIn { langs } => {
+                let literals = langs
+                    .into_iter()
+                    .map(|lang| convert_lang::<S>(lang))
+                    .collect::<Result<Vec<_>, _>>()?;
+                CompiledComponent::LanguageIn(LanguageIn::new(literals))
+            }
+            Component::Equals(iri_ref) => {
+                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                CompiledComponent::Equals(Equals::new(iri_ref))
+            }
+            Component::Disjoint(iri_ref) => {
+                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                CompiledComponent::Disjoint(Disjoint::new(iri_ref))
+            }
+            Component::LessThan(iri_ref) => {
+                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                CompiledComponent::LessThan(LessThan::new(iri_ref))
+            }
+            Component::LessThanOrEquals(iri_ref) => {
+                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(iri_ref))
+            }
+            Component::Or { shapes } => {
+                CompiledComponent::Or(Or::new(compile_shapes::<S>(shapes, schema)?))
+            }
+            Component::And { shapes } => {
+                CompiledComponent::And(And::new(compile_shapes::<S>(shapes, schema)?))
+            }
+            Component::Not { shape } => {
+                let shape = compile_shape::<S>(shape, schema)?;
+                CompiledComponent::Not(Not::new(shape))
+            }
+            Component::Xone { shapes } => {
+                CompiledComponent::Xone(Xone::new(compile_shapes::<S>(shapes, schema)?))
+            }
+            Component::Closed {
+                is_closed,
+                ignored_properties,
+            } => {
+                let properties = ignored_properties
+                    .into_iter()
+                    .map(|prop| convert_iri_ref::<S>(prop))
+                    .collect::<Result<Vec<_>, _>>()?;
+                CompiledComponent::Closed(Closed::new(is_closed, properties))
+            }
+            Component::Node { shape } => {
+                let shape = compile_shape::<S>(shape, schema)?;
+                CompiledComponent::Node(Node::new(shape))
+            }
+            Component::HasValue { value } => {
+                let term = convert_value::<S>(value)?;
+                CompiledComponent::HasValue(HasValue::new(term))
+            }
+            Component::In { values } => {
+                let terms = values
+                    .into_iter()
+                    .map(|value| convert_value::<S>(value))
+                    .collect::<Result<Vec<_>, _>>()?;
+                CompiledComponent::In(In::new(terms))
+            }
+            Component::QualifiedValueShape {
+                shape,
+                qualified_min_count,
+                qualified_max_count,
+                qualified_value_shapes_disjoint,
+            } => {
+                let shape = compile_shape::<S>(shape, schema)?;
+                CompiledComponent::QualifiedValueShape(QualifiedValueShape::new(
+                    shape,
+                    qualified_min_count,
+                    qualified_max_count,
+                    qualified_value_shapes_disjoint,
+                ))
+            }
+        };
+
+        Ok(component)
+    }
 }
 
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
@@ -87,15 +213,15 @@ impl MinCount {
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct And<S: SRDFBasic> {
-    shapes: Vec<Shape<S>>,
+    shapes: Vec<CompiledShape<S>>,
 }
 
 impl<S: SRDFBasic> And<S> {
-    pub fn new(shapes: Vec<Shape<S>>) -> Self {
+    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
         &self.shapes
     }
 }
@@ -106,15 +232,15 @@ impl<S: SRDFBasic> And<S> {
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct Not<S: SRDFBasic> {
-    shape: Shape<S>,
+    shape: CompiledShape<S>,
 }
 
 impl<S: SRDFBasic> Not<S> {
-    pub fn new(shape: Shape<S>) -> Self {
+    pub fn new(shape: CompiledShape<S>) -> Self {
         Not { shape }
     }
 
-    pub fn shape(&self) -> &Shape<S> {
+    pub fn shape(&self) -> &CompiledShape<S> {
         &self.shape
     }
 }
@@ -126,15 +252,15 @@ impl<S: SRDFBasic> Not<S> {
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct Or<S: SRDFBasic> {
-    shapes: Vec<Shape<S>>,
+    shapes: Vec<CompiledShape<S>>,
 }
 
 impl<S: SRDFBasic> Or<S> {
-    pub fn new(shapes: Vec<Shape<S>>) -> Self {
+    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
         &self.shapes
     }
 }
@@ -146,15 +272,15 @@ impl<S: SRDFBasic> Or<S> {
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct Xone<S: SRDFBasic> {
-    shapes: Vec<Shape<S>>,
+    shapes: Vec<CompiledShape<S>>,
 }
 
 impl<S: SRDFBasic> Xone<S> {
-    pub fn new(shapes: Vec<Shape<S>>) -> Self {
+    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
         &self.shapes
     }
 }
@@ -315,15 +441,15 @@ impl<S: SRDFBasic> LessThan<S> {
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct Node<S: SRDFBasic> {
-    shape: Shape<S>,
+    shape: CompiledShape<S>,
 }
 
 impl<S: SRDFBasic> Node<S> {
-    pub fn new(shape: Shape<S>) -> Self {
+    pub fn new(shape: CompiledShape<S>) -> Self {
         Node { shape }
     }
 
-    pub fn shape(&self) -> &Shape<S> {
+    pub fn shape(&self) -> &CompiledShape<S> {
         &self.shape
     }
 }
@@ -336,7 +462,7 @@ impl<S: SRDFBasic> Node<S> {
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Hash, PartialEq, Eq)]
 pub struct QualifiedValueShape<S: SRDFBasic> {
-    shape: Shape<S>,
+    shape: CompiledShape<S>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
@@ -344,7 +470,7 @@ pub struct QualifiedValueShape<S: SRDFBasic> {
 
 impl<S: SRDFBasic> QualifiedValueShape<S> {
     pub fn new(
-        shape: Shape<S>,
+        shape: CompiledShape<S>,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
@@ -357,7 +483,7 @@ impl<S: SRDFBasic> QualifiedValueShape<S> {
         }
     }
 
-    pub fn shape(&self) -> &Shape<S> {
+    pub fn shape(&self) -> &CompiledShape<S> {
         &self.shape
     }
 

@@ -1,5 +1,5 @@
 use constraint_error::ConstraintError;
-use shacl_ast::compiled::component::Component;
+use shacl_ast::compiled::component::CompiledComponent;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
@@ -52,11 +52,11 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: SRDF + 'static> NativeDeref for Component<S> {
+impl<S: SRDF + 'static> NativeDeref for CompiledComponent<S> {
     type Target = dyn NativeValidator<S>;
 
     generate_deref_fn!(
-        Component,
+        CompiledComponent,
         Class,
         Datatype,
         NodeKind,
@@ -93,11 +93,11 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QuerySRDF + 'static> SparqlDeref for Component<S> {
+impl<S: QuerySRDF + 'static> SparqlDeref for CompiledComponent<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(
-        Component,
+        CompiledComponent,
         Class,
         Datatype,
         NodeKind,

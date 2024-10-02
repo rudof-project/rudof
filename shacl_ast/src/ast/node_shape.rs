@@ -72,6 +72,10 @@ impl NodeShape {
         &self.id
     }
 
+    pub fn is_closed(&self) -> &bool {
+        &self.closed
+    }
+
     pub fn is_deactivated(&self) -> &bool {
         &self.deactivated
     }
