@@ -612,11 +612,12 @@ fn run_validate_shacl(
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
-        let result =
-            match shacl_validation::shacl_processor::ShaclProcessor::validate(&validator, schema) {
-                Ok(result) => result,
-                Err(e) => bail!("Error validating the graph: {e}"),
-            };
+        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
+            &validator, &schema,
+        ) {
+            Ok(result) => result,
+            Err(e) => bail!("Error validating the graph: {e}"),
+        };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
@@ -625,11 +626,12 @@ fn run_validate_shacl(
             Err(e) => bail!("Error during the creation of the Graph: {e}"),
         };
         let schema = ShaclDataManager::load(reader, map_shacl_format(shapes_format)?, None)?;
-        let result =
-            match shacl_validation::shacl_processor::ShaclProcessor::validate(&validator, schema) {
-                Ok(result) => result,
-                Err(e) => bail!("Error validating the graph: {e}"),
-            };
+        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
+            &validator, &schema,
+        ) {
+            Ok(result) => result,
+            Err(e) => bail!("Error validating the graph: {e}"),
+        };
         writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else {

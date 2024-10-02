@@ -85,7 +85,7 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };
 
-        let _ = match validator.validate(schema) {
+        let _ = match validator.validate(&schema) {
             Ok(report) => report,
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };

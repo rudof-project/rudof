@@ -36,7 +36,7 @@ pub trait ShaclProcessor<S: SRDFBasic> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
-    fn validate(&self, schema: CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
+    fn validate(&self, schema: &CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_report = ValidationReport::default();
 
