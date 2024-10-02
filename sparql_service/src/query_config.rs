@@ -2,7 +2,7 @@ use std::{io, path::Path};
 
 use thiserror::Error;
 
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 use srdf::RdfDataConfig;
 
