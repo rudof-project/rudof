@@ -12,7 +12,6 @@ use super::shape::CompiledShape;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
 
-#[derive(Hash, PartialEq, Eq)]
 pub enum CompiledComponent<S: SRDFBasic> {
     Class(Class<S>),
     Datatype(Datatype<S>),
@@ -166,7 +165,7 @@ impl<S: SRDFBasic> CompiledComponent<S> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MaxCount {
     max_count: usize,
 }
@@ -190,7 +189,7 @@ impl MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MinCount {
     min_count: usize,
 }
@@ -211,7 +210,7 @@ impl MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct And<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -230,7 +229,7 @@ impl<S: SRDFBasic> And<S> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Not<S: SRDFBasic> {
     shape: CompiledShape<S>,
 }
@@ -250,7 +249,7 @@ impl<S: SRDFBasic> Not<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Or<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -270,7 +269,7 @@ impl<S: SRDFBasic> Or<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Xone<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -294,7 +293,7 @@ impl<S: SRDFBasic> Xone<S> {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Closed<S: SRDFBasic> {
     is_closed: bool,
     ignored_properties: Vec<S::IRI>,
@@ -321,7 +320,7 @@ impl<S: SRDFBasic> Closed<S> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct HasValue<S: SRDFBasic> {
     value: S::Term,
 }
@@ -340,7 +339,7 @@ impl<S: SRDFBasic> HasValue<S> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct In<S: SRDFBasic> {
     values: Vec<S::Term>,
 }
@@ -360,7 +359,7 @@ impl<S: SRDFBasic> In<S> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Disjoint<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -380,7 +379,7 @@ impl<S: SRDFBasic> Disjoint<S> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Equals<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -400,7 +399,7 @@ impl<S: SRDFBasic> Equals<S> {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct LessThanOrEquals<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -420,7 +419,7 @@ impl<S: SRDFBasic> LessThanOrEquals<S> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct LessThan<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -439,7 +438,7 @@ impl<S: SRDFBasic> LessThan<S> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Node<S: SRDFBasic> {
     shape: CompiledShape<S>,
 }
@@ -460,7 +459,7 @@ impl<S: SRDFBasic> Node<S> {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct QualifiedValueShape<S: SRDFBasic> {
     shape: CompiledShape<S>,
     qualified_min_count: Option<isize>,
@@ -504,7 +503,7 @@ impl<S: SRDFBasic> QualifiedValueShape<S> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct LanguageIn<S: SRDFBasic> {
     langs: Vec<S::Literal>,
 }
@@ -524,7 +523,7 @@ impl<S: SRDFBasic> LanguageIn<S> {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MaxLength {
     max_length: isize,
 }
@@ -544,7 +543,7 @@ impl MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MinLength {
     min_length: isize,
 }
@@ -563,7 +562,7 @@ impl MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -587,7 +586,7 @@ impl Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -606,7 +605,7 @@ impl UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Class<S: SRDFBasic> {
     class_rule: S::Term,
 }
@@ -625,7 +624,7 @@ impl<S: SRDFBasic> Class<S> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Datatype<S: SRDFBasic> {
     datatype: S::IRI,
 }
@@ -644,7 +643,7 @@ impl<S: SRDFBasic> Datatype<S> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -660,7 +659,7 @@ impl Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MaxExclusive<S: SRDFBasic> {
     max_exclusive: S::Term,
 }
@@ -678,7 +677,7 @@ impl<S: SRDFBasic> MaxExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MaxInclusive<S: SRDFBasic> {
     max_inclusive: S::Term,
 }
@@ -696,7 +695,7 @@ impl<S: SRDFBasic> MaxInclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MinExclusive<S: SRDFBasic> {
     min_exclusive: S::Term,
 }
@@ -714,7 +713,7 @@ impl<S: SRDFBasic> MinExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-#[derive(Hash, PartialEq, Eq)]
+
 pub struct MinInclusive<S: SRDFBasic> {
     min_inclusive: S::Term,
 }

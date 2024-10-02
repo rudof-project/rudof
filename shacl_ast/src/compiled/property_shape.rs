@@ -13,7 +13,6 @@ use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
-#[derive(Hash, PartialEq, Eq)]
 pub struct CompiledPropertyShape<S: SRDFBasic> {
     id: S::Term,
     path: SHACLPath,
@@ -59,6 +58,10 @@ impl<S: SRDFBasic> CompiledPropertyShape<S> {
 
     pub fn id(&self) -> &S::Term {
         &self.id
+    }
+
+    pub fn is_closed(&self) -> &bool {
+        &self.closed
     }
 
     pub fn path(&self) -> &SHACLPath {

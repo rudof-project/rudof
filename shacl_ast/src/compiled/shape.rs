@@ -9,7 +9,6 @@ use super::node_shape::CompiledNodeShape;
 use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
 
-#[derive(Hash, PartialEq, Eq)]
 pub enum CompiledShape<S: SRDFBasic> {
     NodeShape(CompiledNodeShape<S>),
     PropertyShape(CompiledPropertyShape<S>),
