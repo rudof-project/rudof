@@ -17,7 +17,7 @@ impl<S: SRDFBasic + 'static> Validator<S> for Xone<S> {
     fn validate(
         &self,
         _store: &S,
-        _runner: impl Engine<S>,
+        _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)

@@ -15,7 +15,7 @@ pub(crate) trait Validator<S: SRDFBasic> {
     fn validate(
         &self,
         store: &S,
-        runner: impl Engine<S>,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError>;
 }
