@@ -14,7 +14,7 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-impl<S: SRDFBasic + 'static> Validator<S> for MinCount {
+impl<S: SRDFBasic> Validator<S> for MinCount {
     fn validate(
         &self,
         _: &S,

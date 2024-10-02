@@ -14,7 +14,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + 'static> Validator<S> for Datatype<S> {
+impl<S: SRDFBasic> Validator<S> for Datatype<S> {
     fn validate(
         &self,
         _: &S,

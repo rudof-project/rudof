@@ -13,7 +13,7 @@ use crate::engine::Engine;
 use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + 'static> Validator<S> for Not<S> {
+impl<S: SRDFBasic> Validator<S> for Not<S> {
     fn validate(
         &self,
         _store: &S,
