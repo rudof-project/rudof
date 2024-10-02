@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.27"
+version = "0.1.29"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -33,7 +33,7 @@ either = "1"
 indexmap = { version = "2" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { workspace = true }
-serde_yml = "0.0.11"
+serde_yml = "0.0.12"
 serde_derive = "1.0"
 chrono = "0.4.38"
 

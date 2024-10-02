@@ -906,6 +906,7 @@ fn run_tap2html<P: AsRef<Path>>(
     debug!("Starting tap2html");
     let dctap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input, &dctap_format, &config.tap_config())?;
@@ -969,6 +970,7 @@ fn run_tap2shex(
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
@@ -997,6 +999,7 @@ fn run_tap2uml(
 ) -> Result<()> {
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
+        InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
@@ -1416,7 +1419,7 @@ fn parse_shacl(
     config: &RdfDataConfig,
 ) -> Result<ShaclSchema> {
     match shapes_format {
-        ShaclFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
+        ShaclFormat::Internal => bail!("Cannot read internal ShEx format yet"),
         _ => {
             let data_format = shacl_format_to_data_format(shapes_format)?;
             let rdf = parse_data(&vec![input.clone()], &data_format, reader_mode, config)?;
@@ -1433,6 +1436,15 @@ fn parse_dctap(input: &InputSpec, format: &DCTapFormat, config: &TapConfig) -> R
             let dctap = DCTap::from_reader(reader, config)?;
             Ok(dctap)
         }
+        DCTapFormat::XLS | DCTapFormat::XLSB | DCTapFormat::XLSM | DCTapFormat::XLSX => match input
+        {
+            InputSpec::Path(path_buf) => {
+                let dctap = DCTap::from_excel(path_buf, None, config)?;
+                Ok(dctap)
+            }
+            InputSpec::Stdin => bail!("Can not read Excel file from stdin"),
+            InputSpec::Url(_) => bail!("Not implemented reading Excel files from URIs yet"),
+        },
     }
 }
 

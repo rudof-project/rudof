@@ -3,7 +3,7 @@ use std::{io, path::Path};
 use thiserror::Error;
 
 use iri_s::IriS;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

@@ -1,6 +1,6 @@
 [package]
 name = "rbe"
-version = "0.1.26"
+version = "0.1.29"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -15,7 +15,7 @@ hashbag = { version = "0.1.11"}
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { workspace = true }
-serde_yml = "0.0.11"
+serde_yml = "0.0.12"
 itertools = "0.13"
 indexmap = { version = "2"}
 tracing = { workspace = true }

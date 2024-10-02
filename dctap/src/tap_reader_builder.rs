@@ -1,9 +1,10 @@
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-use crate::{TapConfig, TapReader, TapReaderState};
+use crate::{ReaderRange, TapConfig, TapError, TapReader, TapReaderState};
+use calamine::{open_workbook, Reader as XlsxReader, Xlsx};
 use csv::ReaderBuilder;
 use std::fs::File;
 // use indexmap::IndexSet;
-use std::io::{self};
+use std::io::{self, BufReader};
 use std::path::Path;
 
 #[derive(Default)]
@@ -69,7 +70,7 @@ impl TapReaderBuilder {
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader::new(reader, state, config))
+        Ok(TapReader::new_csv_reader(reader, state, config))
     }
 
     pub fn from_reader<R: io::Read>(rdr: R, config: &TapConfig) -> Result<TapReader<R>> {
@@ -81,6 +82,49 @@ impl TapReaderBuilder {
         let rcd_headers = reader.headers()?;
         let headers = TapHeaders::from_record(rcd_headers)?;
         let state = TapReaderState::new().with_headers(headers);
-        Ok(TapReader::new(reader, state, config))
+        Ok(TapReader::new_csv_reader(reader, state, config))
+    }
+
+    pub fn from_excel<R: io::Read, P: AsRef<Path>>(
+        path: P,
+        sheet_name: Option<&str>,
+        config: &TapConfig,
+    ) -> Result<TapReader<R>> {
+        let path_name = path.as_ref().to_string_lossy().to_string();
+        let mut excel: Xlsx<_> = match open_workbook(path) {
+            Ok(xls) => Ok::<calamine::Xlsx<BufReader<File>>, TapError>(xls),
+            Err(e) => Err(TapError::OpeningWorkbook {
+                path: path_name.clone(),
+                error: e,
+            }),
+        }?;
+        let range = match sheet_name {
+            None => match excel.worksheet_range_at(0) {
+                Some(range) => range.map_err(|e| TapError::Sheet0Error {
+                    path: path_name.clone(),
+                    error: e,
+                }),
+                None => Err(TapError::Sheet0NotFound {
+                    path: path_name.clone(),
+                }),
+            },
+            Some(name) => excel
+                .worksheet_range(name)
+                .map_err(|e| TapError::SheetNameError {
+                    path: path_name.clone(),
+                    sheet_name: name.to_string(),
+                    error: e,
+                }),
+        }?;
+        let mut reader_range: ReaderRange<R> = ReaderRange::new(range);
+        if let Some(rcd) = reader_range.next_record() {
+            let headers = TapHeaders::from_record(&rcd)?;
+            let state = TapReaderState::new().with_headers(headers);
+            Ok(TapReader::new_range_reader(reader_range, state, config))
+        } else {
+            Err(TapError::NoHeadersExcel {
+                path: path_name.clone(),
+            })
+        }
     }
 }
