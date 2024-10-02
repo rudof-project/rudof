@@ -9,10 +9,6 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
-// TODO: can this ShapeValidation thing be transformed into a trait that is
-//       implemented for the CompiledShape struct. The thing is that focus_nodes
-//       may now be a parameter?
-
 pub trait Validate<S: SRDFBasic> {
     fn validate(
         &self,
