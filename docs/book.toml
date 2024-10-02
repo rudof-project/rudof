@@ -1,6 +1,11 @@
 [book]
-authors = ["Jose Emilio Labra Gayo"]
+authors = ["Jose Emilio Labra Gayo", "Ángel Iglesias Préstamo"]
 language = "en"
 multilingual = false
 src = "src"
 title = "rudof"
+
+[output.html]
+additional-css = ["theme/pagetoc.css"]
+additional-js = ["theme/pagetoc.js"]
+mathjax-support = true # support LaTeX-like notation [https://rust-lang.github.io/mdBook/format/mathjax.html]
