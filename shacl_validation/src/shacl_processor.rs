@@ -10,7 +10,7 @@ use srdf::SRDFSparql;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
-use crate::shape::ShapeValidation;
+use crate::shape::Validate;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
 use crate::store::Store;
@@ -42,8 +42,7 @@ pub trait ShaclProcessor<S: SRDFBasic> {
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
-            let shape_validator = ShapeValidation::new(self.store(), self.runner(), shape, None);
-            validation_report.add_results(shape_validator.validate()?);
+            validation_report.add_results(shape.validate(self.store(), self.runner(), None)?);
         }
 
         Ok(validation_report) // return the possibly empty validation report
