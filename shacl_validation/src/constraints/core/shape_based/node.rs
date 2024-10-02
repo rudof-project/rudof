@@ -28,7 +28,8 @@ impl<S: SRDFBasic> Validator<S> for Node<S> {
             .flat_map(move |(focus_node, value_node)| {
                 let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
                 let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
-                if inner_results.is_err() || inner_results.unwrap().is_empty() {
+                if inner_results.is_err() || !inner_results.unwrap().is_empty() {
+                    // in case of error or that there exists any result...
                     Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     None
