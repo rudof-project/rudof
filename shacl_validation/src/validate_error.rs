@@ -1,5 +1,4 @@
 use oxiri::IriParseError;
-use prefixmap::Underef;
 use shacl_ast::{
     compiled::compiled_shacl_error::CompiledShaclError, shacl_parser_error::ShaclParserError,
 };
@@ -33,8 +32,6 @@ pub enum ValidateError {
     Shapes(#[from] SRDFError),
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
-    #[error("Error obtaining the underlying IRI")]
-    Underef(#[from] Underef),
     #[error("The provided mode is not supported for the {} structure", ._0)]
     UnsupportedMode(String),
     #[error("Error during the SPARQL operation")]
