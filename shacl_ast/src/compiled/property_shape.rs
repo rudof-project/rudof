@@ -3,6 +3,7 @@ use srdf::SRDFBasic;
 
 use super::component::Component;
 use super::severity::Severity;
+use super::shape::Shape;
 use super::target::Target;
 
 #[derive(Hash, PartialEq, Eq)]
@@ -11,7 +12,7 @@ pub struct PropertyShape<S: SRDFBasic> {
     path: SHACLPath,
     components: Vec<Component<S>>,
     targets: Vec<Target<S>>,
-    property_shapes: Vec<PropertyShape<S>>,
+    property_shapes: Vec<Shape<S>>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
     deactivated: bool,
@@ -31,7 +32,7 @@ impl<S: SRDFBasic> PropertyShape<S> {
         path: SHACLPath,
         components: Vec<Component<S>>,
         targets: Vec<Target<S>>,
-        property_shapes: Vec<PropertyShape<S>>,
+        property_shapes: Vec<Shape<S>>,
         closed: bool,
         deactivated: bool,
         severity: Severity<S>,
@@ -72,7 +73,7 @@ impl<S: SRDFBasic> PropertyShape<S> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<PropertyShape<S>> {
+    pub fn property_shapes(&self) -> &Vec<Shape<S>> {
         &self.property_shapes
     }
 }

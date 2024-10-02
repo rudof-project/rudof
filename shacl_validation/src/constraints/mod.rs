@@ -4,7 +4,7 @@ use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::context::Context;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
@@ -14,7 +14,8 @@ pub mod core;
 pub(crate) trait Validator<S: SRDFBasic> {
     fn validate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        runner: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError>;
 }
@@ -22,7 +23,7 @@ pub(crate) trait Validator<S: SRDFBasic> {
 pub trait NativeValidator<S: SRDF> {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError>;
 }
@@ -30,7 +31,7 @@ pub trait NativeValidator<S: SRDF> {
 pub trait SparqlValidator<S: QuerySRDF> {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError>;
 }
@@ -51,7 +52,7 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: SRDF> NativeDeref for Component<S> {
+impl<S: SRDF + 'static> NativeDeref for Component<S> {
     type Target = dyn NativeValidator<S>;
 
     generate_deref_fn!(
@@ -92,7 +93,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QuerySRDF> SparqlDeref for Component<S> {
+impl<S: QuerySRDF + 'static> SparqlDeref for Component<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(

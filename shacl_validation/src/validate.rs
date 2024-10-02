@@ -7,9 +7,13 @@ use srdf::SRDFBasic;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::shape::ShapeValidation;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
@@ -19,9 +23,9 @@ use crate::validation_report::report::ValidationReport;
 /// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
     /// We use a Rust native engine in an imperative manner
-    Default,
+    Native,
     /// We use a  SPARQL-based engine, which is declarative
-    SPARQL,
+    Sparql,
 }
 
 /// The Validation trait is the one in charge of applying the SHACL Validation
@@ -29,13 +33,16 @@ pub enum ShaclValidationMode {
 /// and, for each shape in the schema, the target nodes are selected, and then,
 /// each validator for each constraint is applied.
 pub trait Validation<S: SRDFBasic> {
+    fn store(&self) -> &S;
+    fn runner(&self) -> &dyn ValidatorRunner<S>;
+
     fn validate(&self, schema: Schema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_report = ValidationReport::default();
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
-            let shape_validator = ShapeValidation::new(shape, None);
+            let shape_validator = ShapeValidation::new(self.store(), self.runner(), shape, None);
             validation_report.add_results(shape_validator.validate()?);
         }
 
@@ -55,14 +62,27 @@ impl GraphValidation {
         base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
-        if mode == ShaclValidationMode::SPARQL {
-            return Err(ValidateError::UnsupportedMode);
+        if mode == ShaclValidationMode::Sparql {
+            return Err(ValidateError::UnsupportedMode("Graph".to_string()));
         }
 
         Ok(GraphValidation {
             store: Graph::new(data, data_format, base)?,
             mode,
         })
+    }
+}
+
+impl Validation<SRDFGraph> for GraphValidation {
+    fn store(&self) -> &SRDFGraph {
+        self.store.store()
+    }
+
+    fn runner(&self) -> &dyn ValidatorRunner<SRDFGraph> {
+        match self.mode {
+            ShaclValidationMode::Native => &NativeValidatorRunner,
+            ShaclValidationMode::Sparql => todo!(),
+        }
     }
 }
 
@@ -77,5 +97,18 @@ impl EndpointValidation {
             store: Endpoint::new(data)?,
             mode,
         })
+    }
+}
+
+impl Validation<SRDFSparql> for EndpointValidation {
+    fn store(&self) -> &SRDFSparql {
+        self.store.store()
+    }
+
+    fn runner(&self) -> &dyn ValidatorRunner<SRDFSparql> {
+        match self.mode {
+            ShaclValidationMode::Native => &NativeValidatorRunner,
+            ShaclValidationMode::Sparql => &SparqlValidatorRunner,
+        }
     }
 }

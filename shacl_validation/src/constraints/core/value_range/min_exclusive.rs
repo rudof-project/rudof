@@ -6,7 +6,6 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
@@ -14,7 +13,7 @@ use crate::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for MinExclusive<S> {
     fn validate_native(
         &self,
-        _evaluation_context: Context<S>,
+        store: &S,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -24,7 +23,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinExclusive<S> {
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinExclusive<S> {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -35,17 +34,13 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinExclusive<S> {
                     value_node, self.min_exclusive()
                 };
 
-                let ask = match validation_context.store().query_ask(&query) {
+                let ask = match store.query_ask(&query) {
                     Ok(ask) => ask,
                     Err(_) => return None,
                 };
 
                 if !ask {
-                    Some(ValidationResult::new(
-                        focus_node,
-                        &evaluation_context,
-                        Some(value_node),
-                    ))
+                    Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     None
                 }

@@ -4,17 +4,20 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::Validator;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::context::Context;
+use crate::constraints::Validator;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for Xone<S> {
     fn validate(
         &self,
-        _evaluation_context: Context<S>,
+        store: &S,
+        runner: impl ValidatorRunner<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -24,19 +27,19 @@ impl<S: SRDFBasic + 'static> Validator<S> for Xone<S> {
 impl<S: SRDF + 'static> NativeValidator<S> for Xone<S> {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, NativeValidatorRunner, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Xone<S> {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, SparqlValidatorRunner, value_nodes)
     }
 }

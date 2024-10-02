@@ -1,3 +1,4 @@
+use shacl_ast::compiled::component::Component;
 use shacl_ast::compiled::property_shape::PropertyShape;
 use shacl_ast::compiled::shape::Shape;
 use srdf::SHACLPath;
@@ -7,7 +8,6 @@ use srdf::RDF_TYPE;
 use srdf::SRDF;
 
 use crate::constraints::NativeDeref;
-use crate::context::Context;
 use crate::helper::srdf::get_objects_for;
 use crate::helper::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
@@ -19,14 +19,15 @@ use super::ValidatorRunner;
 
 pub struct NativeValidatorRunner;
 
-impl<S: SRDF> ValidatorRunner<S> for NativeValidatorRunner {
+impl<S: SRDF + 'static> ValidatorRunner<S> for NativeValidatorRunner {
     fn evaluate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        component: &Component<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
-        let validator = evaluation_context.component().deref();
-        Ok(validator.validate_native(evaluation_context, value_nodes)?)
+        let validator = component.deref();
+        Ok(validator.validate_native(store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

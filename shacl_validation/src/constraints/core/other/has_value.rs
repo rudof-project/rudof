@@ -7,16 +7,17 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::context::Context;
-use crate::context::ValidationContext;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
 
 impl<S: SRDFBasic + 'static> Validator<S> for HasValue<S> {
     fn validate(
         &self,
-        _validation_context: &ValidationContext<S>,
-        _evaluation_context: Context<S>,
+        store: &S,
+        runner: impl ValidatorRunner<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
@@ -26,21 +27,19 @@ impl<S: SRDFBasic + 'static> Validator<S> for HasValue<S> {
 impl<S: SRDF + 'static> NativeValidator<S> for HasValue<S> {
     fn validate_native(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, NativeValidatorRunner, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for HasValue<S> {
     fn validate_sparql(
         &self,
-        validation_context: &ValidationContext<S>,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, SparqlValidatorRunner, value_nodes)
     }
 }

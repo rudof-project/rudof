@@ -4,7 +4,6 @@ use std::collections::HashSet;
 use srdf::SRDFBasic;
 
 pub(crate) mod constraints;
-pub(crate) mod context;
 pub mod helper;
 pub(crate) mod runner;
 pub mod shacl_config;

@@ -1,10 +1,10 @@
+use shacl_ast::compiled::component::Component;
 use shacl_ast::compiled::property_shape::PropertyShape;
 use shacl_ast::compiled::shape::Shape;
 use shacl_ast::compiled::target::Target;
 use srdf::SHACLPath;
 use srdf::SRDFBasic;
 
-use crate::context::Context;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
 use crate::Targets;
@@ -16,7 +16,8 @@ pub mod sparql;
 pub trait ValidatorRunner<S: SRDFBasic> {
     fn evaluate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        component: &Component<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError>;
 

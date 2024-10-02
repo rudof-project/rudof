@@ -40,7 +40,7 @@ impl<S: SRDFBasic> Shape<S> {
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<PropertyShape<S>> {
+    pub fn property_shapes(&self) -> &Vec<Shape<S>> {
         match self {
             Shape::NodeShape(ns) => ns.property_shapes(),
             Shape::PropertyShape(ps) => ps.property_shapes(),

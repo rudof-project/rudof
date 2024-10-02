@@ -31,7 +31,7 @@ struct Cli {
         short = 'm',
         long = "mode",
         value_name = "Execution mode",
-        default_value_t = ShaclValidationMode::Default,
+        default_value_t = ShaclValidationMode::Native,
         value_enum
     )]
     mode: ShaclValidationMode,

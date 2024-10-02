@@ -1,11 +1,11 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::Component;
 use shacl_ast::compiled::property_shape::PropertyShape;
 use shacl_ast::compiled::shape::Shape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
 use crate::constraints::SparqlDeref;
-use crate::context::Context;
 use crate::helper::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResults;
@@ -16,14 +16,15 @@ use super::ValidatorRunner;
 
 pub struct SparqlValidatorRunner;
 
-impl<S: QuerySRDF> ValidatorRunner<S> for SparqlValidatorRunner {
+impl<S: QuerySRDF + 'static> ValidatorRunner<S> for SparqlValidatorRunner {
     fn evaluate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        component: &Component<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ValidateError> {
-        let validator = evaluation_context.component().deref();
-        Ok(validator.validate_sparql(evaluation_context, value_nodes)?)
+        let validator = component.deref();
+        Ok(validator.validate_sparql(store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

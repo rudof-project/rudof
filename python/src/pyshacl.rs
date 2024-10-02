@@ -80,7 +80,7 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
         };
 
         let validator =
-            match GraphValidation::new(data, data_format, None, ShaclValidationMode::Default) {
+            match GraphValidation::new(data, data_format, None, ShaclValidationMode::Native) {
                 Ok(validator) => validator,
                 Err(error) => return Err(PyValueError::new_err(error.to_string())),
             };

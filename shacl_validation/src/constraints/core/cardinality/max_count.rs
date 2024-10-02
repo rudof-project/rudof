@@ -7,7 +7,9 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::context::Context;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
@@ -15,14 +17,15 @@ use crate::ValueNodes;
 impl<S: SRDFBasic + 'static> Validator<S> for MaxCount {
     fn validate(
         &self,
-        evaluation_context: Context<S>,
+        _: &S,
+        runner: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_focus_nodes()
             .filter_map(|(focus_node, value_nodes)| {
                 if value_nodes.0.len() > self.max_count() {
-                    Some(ValidationResult::new(focus_node, &evaluation_context, None))
+                    Some(ValidationResult::new(focus_node, None))
                 } else {
                     None
                 }
@@ -35,19 +38,19 @@ impl<S: SRDFBasic + 'static> Validator<S> for MaxCount {
 impl<S: SRDF + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, NativeValidatorRunner, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, SparqlValidatorRunner, value_nodes)
     }
 }

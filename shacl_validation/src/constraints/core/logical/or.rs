@@ -4,10 +4,12 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::Validator;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::context::Context;
+use crate::constraints::Validator;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::shape::ShapeValidation;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
@@ -17,7 +19,8 @@ use crate::ValueNodes;
 impl<S: SRDFBasic + 'static> Validator<S> for Or<S> {
     fn validate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        runner: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -25,21 +28,17 @@ impl<S: SRDFBasic + 'static> Validator<S> for Or<S> {
             .flat_map(move |(focus_node, value_node)| {
                 let any_valid = self.shapes().iter().any(|shape| {
                     let focus_nodes = Targets::new(std::iter::once(value_node.clone()));
-                    let shape_validator =
-                        ShapeValidation::new(shape, validation_context, Some(&focus_nodes));
+                    let validation =
+                        ShapeValidation::new(store, &runner, shape, Some(&focus_nodes));
 
-                    match shape_validator.validate() {
+                    match validation.validate() {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }
                 });
 
                 if !any_valid {
-                    Some(ValidationResult::new(
-                        focus_node,
-                        &evaluation_context,
-                        Some(value_node),
-                    ))
+                    Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     None
                 }
@@ -53,19 +52,19 @@ impl<S: SRDFBasic + 'static> Validator<S> for Or<S> {
 impl<S: SRDF + 'static> NativeValidator<S> for Or<S> {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, NativeValidatorRunner, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Or<S> {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, SparqlValidatorRunner, value_nodes)
     }
 }

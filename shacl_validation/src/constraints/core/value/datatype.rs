@@ -7,7 +7,9 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::context::Context;
+use crate::runner::native::NativeValidatorRunner;
+use crate::runner::sparql::SparqlValidatorRunner;
+use crate::runner::ValidatorRunner;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
@@ -15,26 +17,22 @@ use crate::ValueNodes;
 impl<S: SRDFBasic + 'static> Validator<S> for Datatype<S> {
     fn validate(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
+        runner: impl ValidatorRunner<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
                 if let Some(literal) = S::term_as_literal(value_node) {
-                    if S::datatype(&literal) != self.datatype() {
-                        let result = ValidationResult::new(
-                            focus_node,
-                            &evaluation_context,
-                            Some(value_node),
-                        );
+                    if &S::datatype(&literal) != self.datatype() {
+                        let result = ValidationResult::new(focus_node, Some(value_node));
                         Some(result)
                     } else {
                         None
                     }
                 } else {
-                    let result =
-                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 }
             })
@@ -47,19 +45,19 @@ impl<S: SRDFBasic + 'static> Validator<S> for Datatype<S> {
 impl<S: SRDF + 'static> NativeValidator<S> for Datatype<S> {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, NativeValidatorRunner, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Datatype<S> {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(evaluation_context, value_nodes)
+        self.validate(store, SparqlValidatorRunner, value_nodes)
     }
 }

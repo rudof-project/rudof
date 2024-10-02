@@ -7,7 +7,6 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::context::Context;
 use crate::validation_report::result::ValidationResult;
 use crate::validation_report::result::ValidationResults;
 use crate::ValueNodes;
@@ -15,7 +14,7 @@ use crate::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
-        evaluation_context: Context<S>,
+        _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes
@@ -44,8 +43,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
                 };
 
                 if !is_valid {
-                    let result =
-                        ValidationResult::new(focus_node, &evaluation_context, Some(value_node));
+                    let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 } else {
                     None
@@ -60,7 +58,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
-        evaluation_context: Context<S>,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<ValidationResults<S>, ConstraintError> {
         let results = value_nodes.iter_value_nodes()
@@ -85,13 +83,13 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Nodekind {
                     }
                 };
 
-                let ask = match validation_context.store().query_ask(&query) {
+                let ask = match store.query_ask(&query) {
                     Ok(ask) => ask,
                     Err(_) => return None,
                 };
 
                 if !ask {
-                    Some(ValidationResult::new(focus_node, &evaluation_context, Some(value_node)))
+                    Some(ValidationResult::new(focus_node, Some(value_node)))
                 } else {
                     None
                 }

@@ -33,8 +33,8 @@ pub enum ValidateError {
     SPARQLCreation,
     #[error("Error obtaining the underlying IRI")]
     Underef(#[from] Underef),
-    #[error("The provided mode is not supported for the data structure")]
-    UnsupportedMode,
+    #[error("The provided mode is not supported for the {} structure", ._0)]
+    UnsupportedMode(String),
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SPARQLError),
     #[error("Implicit class not found")]
