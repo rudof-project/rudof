@@ -94,7 +94,7 @@ impl<S: SRDFBasic> CompiledPropertyShape<S> {
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;
 
-        let components = shape.components().into_iter().collect::<HashSet<_>>();
+        let components = shape.components().iter().collect::<HashSet<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
             let component = CompiledComponent::compile(component.to_owned(), schema)?;
