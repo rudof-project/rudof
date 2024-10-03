@@ -42,7 +42,8 @@ pub trait ShaclProcessor<S: SRDFBasic> {
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
-            validation_report.add_results(shape.validate(self.store(), self.runner(), None)?);
+            let results = shape.validate(self.store(), self.runner(), None)?;
+            validation_report.add_results(results);
         }
 
         Ok(validation_report) // return the possibly empty validation report
