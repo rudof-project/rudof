@@ -25,9 +25,9 @@ impl<S: SRDFBasic> Validator<S> for HasValue<S> {
             .iter_focus_nodes()
             .filter_map(|(focus_node, targets)| {
                 if targets.iter().any(|value| value == self.value()) {
-                    Some(ValidationResult::new(focus_node, None))
-                } else {
                     None
+                } else {
+                    Some(ValidationResult::new(focus_node, None))
                 }
             });
 
