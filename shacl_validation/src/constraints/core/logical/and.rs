@@ -39,10 +39,9 @@ impl<S: SRDFBasic> Validator<S> for And<S> {
                 } else {
                     None
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 

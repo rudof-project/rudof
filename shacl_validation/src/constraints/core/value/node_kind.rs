@@ -48,10 +48,9 @@ impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
                 } else {
                     None
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 
@@ -93,8 +92,8 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Nodekind {
                 } else {
                     None
                 }
-            }).collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }

@@ -44,9 +44,8 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxExclusive<S> {
                 } else {
                     None
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }

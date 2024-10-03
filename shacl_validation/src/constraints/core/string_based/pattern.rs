@@ -25,10 +25,9 @@ impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
                 } else {
                     None
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 
@@ -66,9 +65,8 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
                         None
                     }
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
