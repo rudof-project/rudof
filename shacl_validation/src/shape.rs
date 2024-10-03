@@ -14,7 +14,7 @@ pub trait Validate<S: SRDFBasic> {
         &self,
         store: &S,
         runner: &dyn Engine<S>,
-        targets: Option<&FocusNodes<S>>, // TODO: can this be put inside of the CompiledShape?
+        targets: Option<&FocusNodes<S>>,
     ) -> Result<ValidationResults<S>, ValidateError>;
 }
 
@@ -49,14 +49,17 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
                 .unwrap_or_else(|_| ValidationResults::default())
         });
 
-        // 4.
+        // 4. After validating the constraints that are defined in the current
+        //    Shape, it is important to also perform the validation over those
+        //    nested PropertyShapes. The thing is that the validation needs to
+        //    occur over the focus_nodes that have been computed for the current
+        //    shape
         let property_shapes_validation_results = self.property_shapes().iter().flat_map(|shape| {
             shape
                 .validate(store, runner, Some(&focus_nodes))
                 .ok()
                 .into_iter()
                 .flatten()
-                .collect::<Vec<_>>()
         });
 
         // 5.

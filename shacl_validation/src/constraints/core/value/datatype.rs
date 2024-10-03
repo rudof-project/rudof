@@ -35,10 +35,9 @@ impl<S: SRDFBasic> Validator<S> for Datatype<S> {
                     let result = ValidationResult::new(focus_node, Some(value_node));
                     Some(result)
                 }
-            })
-            .collect::<Vec<_>>();
+            });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 

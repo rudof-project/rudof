@@ -36,7 +36,7 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
                 }
             });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 

@@ -31,7 +31,7 @@ impl<S: SRDFBasic> Validator<S> for MaxCount {
                 }
             });
 
-        Ok(ValidationResults::new(results.into_iter()))
+        Ok(ValidationResults::new(results))
     }
 }
 
