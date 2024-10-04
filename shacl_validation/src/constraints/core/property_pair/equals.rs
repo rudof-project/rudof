@@ -10,7 +10,7 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for Equals<S> {
@@ -19,7 +19,7 @@ impl<S: SRDFBasic> Validator<S> for Equals<S> {
         _store: &S,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -29,7 +29,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Equals<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, NativeEngine, value_nodes)
     }
 }
@@ -39,7 +39,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Equals<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, SparqlEngine, value_nodes)
     }
 }

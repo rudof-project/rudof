@@ -7,7 +7,7 @@ use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub mod native;
@@ -19,7 +19,7 @@ pub trait Engine<S: SRDFBasic> {
         store: &S,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ValidateError>;
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
 
     fn focus_nodes(
         &self,

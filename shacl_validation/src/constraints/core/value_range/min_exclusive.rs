@@ -7,7 +7,6 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for MinExclusive<S> {
@@ -15,7 +14,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinExclusive<S> {
         &self,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         Err(ConstraintError::NotImplemented)
     }
 }
@@ -25,7 +24,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinExclusive<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .filter_map(move |(focus_node, value_node)| {
@@ -44,8 +43,9 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinExclusive<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(results))
+        Ok(results)
     }
 }

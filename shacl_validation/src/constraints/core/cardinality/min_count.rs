@@ -6,7 +6,6 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
 use shacl_ast::compiled::component::MinCount;
@@ -20,10 +19,10 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
-            return Ok(ValidationResults::default());
+            return Ok(Vec::default());
         }
 
         let results = value_nodes
@@ -34,9 +33,10 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(results))
+        Ok(results)
     }
 }
 
@@ -45,7 +45,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinCount {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, NativeEngine, value_nodes)
     }
 }
@@ -55,7 +55,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinCount {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, SparqlEngine, value_nodes)
     }
 }

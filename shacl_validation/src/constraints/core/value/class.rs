@@ -9,7 +9,7 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::helper::srdf::get_objects_for;
-use crate::validation_report::result::{ValidationResult, ValidationResults};
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
@@ -17,7 +17,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
@@ -40,9 +40,10 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
                         None
                     }
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(results))
+        Ok(results)
     }
 }
 
@@ -51,7 +52,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .filter_map(move |(focus_node, value_node)| {
@@ -72,8 +73,9 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(results))
+        Ok(results)
     }
 }

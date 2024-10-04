@@ -9,33 +9,7 @@ use crate::helper::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-#[derive(Debug)]
-pub struct ValidationResults<S: SRDFBasic>(Vec<ValidationResult<S>>);
-
-impl<S: SRDFBasic> ValidationResults<S> {
-    pub fn new(iter: impl Iterator<Item = ValidationResult<S>>) -> Self {
-        Self(Vec::from_iter(iter))
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl<S: SRDFBasic> Default for ValidationResults<S> {
-    fn default() -> Self {
-        Self(Vec::from_iter(std::iter::empty()))
-    }
-}
-
-impl<S: SRDFBasic> IntoIterator for ValidationResults<S> {
-    type Item = ValidationResult<S>;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
+pub trait CreateReport {}
 
 pub struct ValidationResultBuilder<S: SRDFBasic> {
     focus_node: Option<S::Term>,

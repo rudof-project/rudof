@@ -6,7 +6,7 @@ use srdf::SRDFBasic;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub trait Validate<S: SRDFBasic> {
@@ -15,7 +15,7 @@ pub trait Validate<S: SRDFBasic> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<ValidationResults<S>, ValidateError>;
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
 }
 
 impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
@@ -24,11 +24,11 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<ValidationResults<S>, ValidateError> {
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
         // 0.
         if *self.is_deactivated() {
             // skipping because it is deactivated
-            return Ok(ValidationResults::default());
+            return Ok(Vec::default());
         }
 
         // 1.
@@ -46,7 +46,7 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         let component_validation_results = self.components().iter().flat_map(move |component| {
             runner
                 .evaluate(store, component, &value_nodes)
-                .unwrap_or_else(|_| ValidationResults::default())
+                .unwrap_or_else(|_| Vec::default())
         });
 
         // 4. After validating the constraints that are defined in the current
@@ -63,10 +63,11 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         });
 
         // 5.
-        let validation_results =
-            component_validation_results.chain(property_shapes_validation_results);
+        let validation_results = component_validation_results
+            .chain(property_shapes_validation_results)
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(validation_results))
+        Ok(validation_results)
     }
 }
 

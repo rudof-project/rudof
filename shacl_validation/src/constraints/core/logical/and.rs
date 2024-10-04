@@ -13,7 +13,6 @@ use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::shape::Validate;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for And<S> {
@@ -22,7 +21,7 @@ impl<S: SRDFBasic> Validator<S> for And<S> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let results = value_nodes
             .iter_value_nodes()
             .flat_map(move |(focus_node, value_node)| {
@@ -39,9 +38,10 @@ impl<S: SRDFBasic> Validator<S> for And<S> {
                 } else {
                     None
                 }
-            });
+            })
+            .collect::<Vec<_>>();
 
-        Ok(ValidationResults::new(results))
+        Ok(results)
     }
 }
 
@@ -50,7 +50,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for And<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, NativeEngine, value_nodes)
     }
 }
@@ -60,7 +60,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for And<S> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(store, SparqlEngine, value_nodes)
     }
 }

@@ -5,19 +5,19 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::engine::Engine;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub mod constraint_error;
 pub mod core;
 
-pub(crate) trait Validator<S: SRDFBasic> {
+pub trait Validator<S: SRDFBasic> {
     fn validate(
         &self,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 pub trait NativeValidator<S: SRDF> {
@@ -25,7 +25,7 @@ pub trait NativeValidator<S: SRDF> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 pub trait SparqlValidator<S: QuerySRDF> {
@@ -33,7 +33,7 @@ pub trait SparqlValidator<S: QuerySRDF> {
         &self,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 macro_rules! generate_deref_fn {
