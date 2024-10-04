@@ -43,29 +43,26 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner);
 
         // 3.
-        let component_validation_results = self.components().iter().flat_map(move |component| {
-            runner
-                .evaluate(store, component, &value_nodes)
-                .unwrap_or_else(|_| Vec::default())
-        });
+        let component_validation_results = self
+            .components()
+            .iter()
+            .flat_map(move |component| runner.evaluate(store, component, &value_nodes));
 
         // 4. After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
         //    nested PropertyShapes. The thing is that the validation needs to
         //    occur over the focus_nodes that have been computed for the current
         //    shape
-        let property_shapes_validation_results = self.property_shapes().iter().flat_map(|shape| {
-            shape
-                .validate(store, runner, Some(&focus_nodes))
-                .ok()
-                .into_iter()
-                .flatten()
-        });
+        let property_shapes_validation_results = self
+            .property_shapes()
+            .iter()
+            .flat_map(|shape| shape.validate(store, runner, Some(&focus_nodes)));
 
         // 5.
         let validation_results = component_validation_results
             .chain(property_shapes_validation_results)
-            .collect::<Vec<_>>();
+            .flatten()
+            .collect();
 
         Ok(validation_results)
     }
@@ -114,7 +111,6 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
                 FocusNodes::new(std::iter::once(focus_node.clone())),
             )
         });
-
         ValueNodes::new(value_nodes)
     }
 }
@@ -126,13 +122,12 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledPropertyShape<S> {
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
     ) -> ValueNodes<S> {
-        let value_nodes = focus_nodes.iter().filter_map(move |focus_node| {
+        let value_nodes = focus_nodes.iter().filter_map(|focus_node| {
             runner
                 .path(store, self, focus_node)
                 .ok()
                 .map(|targets| (focus_node.clone(), targets))
         });
-
         ValueNodes::new(value_nodes)
     }
 }
