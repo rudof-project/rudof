@@ -29,7 +29,7 @@ pub trait Engine<S: SRDFBasic> {
     ) -> Result<FocusNodes<S>, ValidateError> {
         let explicit = targets
             .iter()
-            .filter_map(move |target| match target {
+            .flat_map(|target| match target {
                 CompiledTarget::TargetNode(node) => match self.target_node(store, node) {
                     Ok(target_node) => Some(target_node),
                     Err(_) => None,

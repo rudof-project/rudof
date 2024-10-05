@@ -18,7 +18,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
         _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let language_in = |value_node: &S::Term| {
+        let max_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
             } else {
@@ -30,7 +30,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
             }
         };
 
-        validate_with(value_nodes, &ValueNodeIteration, language_in)
+        validate_with(value_nodes, &ValueNodeIteration, max_length)
     }
 }
 

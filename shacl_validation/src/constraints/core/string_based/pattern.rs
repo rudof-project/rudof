@@ -18,14 +18,14 @@ impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
         _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let language_in = |value_node: &S::Term| {
+        let pattern = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
             } else {
                 todo!()
             }
         };
-        validate_with(value_nodes, &ValueNodeIteration, language_in)
+        validate_with(value_nodes, &ValueNodeIteration, pattern)
     }
 }
 
