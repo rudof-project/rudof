@@ -30,7 +30,7 @@ impl<S: SRDFBasic> Validator<S> for Node<S> {
             inner_results.is_err() || !inner_results.unwrap().is_empty()
         };
 
-        validate_with(store, &engine, value_nodes, &ValueNodeIteration, node)
+        validate_with(value_nodes, &ValueNodeIteration, node)
     }
 }
 

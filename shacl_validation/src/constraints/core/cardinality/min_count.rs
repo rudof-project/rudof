@@ -19,8 +19,8 @@ use srdf::SRDF;
 impl<S: SRDFBasic> Validator<S> for MinCount {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if self.min_count() == 0 {
@@ -28,7 +28,7 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
             return Ok(Default::default());
         }
         let min_count = |targets: &FocusNodes<S>| targets.len() < self.min_count();
-        validate_with(store, &engine, value_nodes, &FocusNodeIteration, min_count)
+        validate_with(value_nodes, &FocusNodeIteration, min_count)
     }
 }
 

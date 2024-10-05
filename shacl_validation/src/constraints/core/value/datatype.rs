@@ -18,18 +18,18 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for Datatype<S> {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
             if let Some(literal) = S::term_as_literal(value_node) {
-                return S::datatype(&literal) != self.datatype().to_owned();
+                return S::datatype(&literal) != *self.datatype();
             }
             true
         };
 
-        validate_with(store, &engine, value_nodes, &ValueNodeIteration, datatype)
+        validate_with(value_nodes, &ValueNodeIteration, datatype)
     }
 }
 

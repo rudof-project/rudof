@@ -11,7 +11,6 @@ use crate::constraints::helpers::validate_ask_with;
 use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::native::NativeEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -19,7 +18,7 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
-        store: &S,
+        _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
@@ -45,13 +44,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
             .not()
         };
 
-        validate_with(
-            store,
-            &NativeEngine,
-            value_nodes,
-            &ValueNodeIteration,
-            node_kind,
-        )
+        validate_with(value_nodes, &ValueNodeIteration, node_kind)
     }
 }
 

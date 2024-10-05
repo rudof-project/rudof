@@ -8,7 +8,6 @@ use crate::constraints::helpers::validate_ask_with;
 use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::native::NativeEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -16,7 +15,7 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
-        store: &S,
+        _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
@@ -31,13 +30,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
             }
         };
 
-        validate_with(
-            store,
-            &NativeEngine,
-            value_nodes,
-            &ValueNodeIteration,
-            language_in,
-        )
+        validate_with(value_nodes, &ValueNodeIteration, language_in)
     }
 }
 
@@ -47,7 +40,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxLength {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let max_length_value = self.max_length().clone();
+        let max_length_value = self.max_length();
 
         let query = |value_node: &S::Term| {
             formatdoc! {

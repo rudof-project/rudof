@@ -38,7 +38,7 @@ impl<S: SRDFBasic> Validator<S> for Xone<S> {
                 .ne(&1usize)
         };
 
-        validate_with(store, &engine, value_nodes, &ValueNodeIteration, xone)
+        validate_with(value_nodes, &ValueNodeIteration, xone)
     }
 }
 

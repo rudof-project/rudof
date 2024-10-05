@@ -10,7 +10,6 @@ use crate::constraints::helpers::validate_ask_with;
 use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::native::NativeEngine;
 use crate::helper::srdf::get_objects_for;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
@@ -40,13 +39,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_with(
-            store,
-            &NativeEngine,
-            value_nodes,
-            &ValueNodeIteration,
-            class,
-        )
+        validate_with(value_nodes, &ValueNodeIteration, class)
     }
 }
 

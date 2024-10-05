@@ -17,12 +17,12 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for In<S> {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
-        validate_with(store, &engine, value_nodes, &ValueNodeIteration, r#in)
+        validate_with(value_nodes, &ValueNodeIteration, r#in)
     }
 }
 

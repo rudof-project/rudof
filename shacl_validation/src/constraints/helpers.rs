@@ -1,8 +1,6 @@
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
@@ -11,8 +9,6 @@ use crate::value_nodes::ValueNodes;
 use super::constraint_error::ConstraintError;
 
 fn apply<S: SRDFBasic, T>(
-    store: &S,
-    engine: &dyn Engine<S>,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: &dyn IterationStrategy<S, Item = T>,
     evaluator: impl Fn(&T) -> Result<bool, ConstraintError>,
@@ -20,7 +16,7 @@ fn apply<S: SRDFBasic, T>(
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
-            if let Ok(condition) = evaluator(&item) {
+            if let Ok(condition) = evaluator(item) {
                 if condition {
                     return Some(ValidationResult::new(focus_node.to_owned()));
                 }
@@ -33,19 +29,13 @@ fn apply<S: SRDFBasic, T>(
 }
 
 pub fn validate_with<S: SRDFBasic, T>(
-    store: &S,
-    engine: &dyn Engine<S>,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: &dyn IterationStrategy<S, Item = T>,
     evaluator: impl Fn(&T) -> bool,
 ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-    apply(
-        store,
-        engine,
-        value_nodes,
-        iteration_strategy,
-        |item: &T| Ok(evaluator(item)),
-    )
+    apply(value_nodes, iteration_strategy, |item: &T| {
+        Ok(evaluator(item))
+    })
 }
 
 pub fn validate_ask_with<S: QuerySRDF + 'static>(
@@ -53,14 +43,10 @@ pub fn validate_ask_with<S: QuerySRDF + 'static>(
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
 ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-    apply(
-        store,
-        &SparqlEngine,
-        value_nodes,
-        &ValueNodeIteration,
-        |value_node| match store.query_ask(&eval_query(value_node)) {
+    apply(value_nodes, &ValueNodeIteration, |value_node| {
+        match store.query_ask(&eval_query(value_node)) {
             Ok(ask) => Ok(!ask),
             Err(_) => todo!(),
-        },
-    )
+        }
+    })
 }

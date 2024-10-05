@@ -42,7 +42,7 @@ impl<S: SRDFBasic> Validator<S> for Or<S> {
                 .not()
         };
 
-        validate_with(store, &engine, value_nodes, &ValueNodeIteration, or)
+        validate_with(value_nodes, &ValueNodeIteration, or)
     }
 }
 

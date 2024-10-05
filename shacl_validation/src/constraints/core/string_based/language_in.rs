@@ -18,8 +18,8 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
@@ -31,13 +31,7 @@ impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
             true
         };
 
-        validate_with(
-            store,
-            &engine,
-            value_nodes,
-            &ValueNodeIteration,
-            language_in,
-        )
+        validate_with(value_nodes, &ValueNodeIteration, language_in)
     }
 }
 

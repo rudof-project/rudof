@@ -21,8 +21,8 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for UniqueLang {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if !self.unique_lang() {
@@ -46,13 +46,7 @@ impl<S: SRDFBasic> Validator<S> for UniqueLang {
             false
         };
 
-        validate_with(
-            store,
-            &engine,
-            value_nodes,
-            &ValueNodeIteration,
-            unique_lang,
-        )
+        validate_with(value_nodes, &ValueNodeIteration, unique_lang)
     }
 }
 

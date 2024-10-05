@@ -19,12 +19,12 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for MaxCount {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
-        validate_with(store, &engine, value_nodes, &FocusNodeIteration, max_count)
+        validate_with(value_nodes, &FocusNodeIteration, max_count)
     }
 }
 

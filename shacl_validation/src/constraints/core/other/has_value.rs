@@ -19,13 +19,13 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDFBasic> Validator<S> for HasValue<S> {
     fn validate(
         &self,
-        store: &S,
-        engine: impl Engine<S>,
+        _: &S,
+        _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
-        validate_with(store, &engine, value_nodes, &FocusNodeIteration, has_value)
+        validate_with(value_nodes, &FocusNodeIteration, has_value)
     }
 }
 
