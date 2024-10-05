@@ -1,9 +1,12 @@
+use std::ops::Not;
+
 use shacl_ast::compiled::component::Or;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
@@ -13,6 +16,7 @@ use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::shape::Validate;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for Or<S> {
@@ -22,26 +26,23 @@ impl<S: SRDFBasic> Validator<S> for Or<S> {
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                let any_valid = self.shapes().iter().any(|shape| {
-                    let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes)) {
-                        Ok(results) => results.is_empty(),
+        let or = |value_node: &S::Term| {
+            self.shapes()
+                .iter()
+                .any(|shape| {
+                    match shape.validate(
+                        store,
+                        &engine,
+                        Some(&FocusNodes::new(std::iter::once(value_node.clone()))),
+                    ) {
+                        Ok(validation_results) => validation_results.is_empty(),
                         Err(_) => false,
                     }
-                });
+                })
+                .not()
+        };
 
-                if !any_valid {
-                    Some(ValidationResult::new(focus_node, Some(value_node)))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        validate_with(store, &engine, value_nodes, &ValueNodeIteration, or)
     }
 }
 

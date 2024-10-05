@@ -4,6 +4,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_ask_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::validation_report::result::ValidationResult;
@@ -25,27 +26,15 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxExclusive<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .filter_map(move |(focus_node, value_node)| {
-                let query = formatdoc! {
-                    " ASK {{ FILTER ({} < {}) }} ",
-                    value_node, self.max_exclusive()
-                };
+        let max_exclusive_value = self.max_exclusive().clone();
 
-                let ask = match store.query_ask(&query) {
-                    Ok(ask) => ask,
-                    Err(_) => return None,
-                };
+        let query = |value_node: &S::Term| {
+            formatdoc! {
+                " ASK {{ FILTER ({} > {}) }} ",
+                value_node, max_exclusive_value
+            }
+        };
 
-                if !ask {
-                    Some(ValidationResult::new(focus_node, Some(value_node)))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        validate_ask_with(store, value_nodes, query)
     }
 }

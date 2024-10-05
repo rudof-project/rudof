@@ -1,11 +1,14 @@
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 use shacl_ast::compiled::component::MinCount;
@@ -16,27 +19,16 @@ use srdf::SRDF;
 impl<S: SRDFBasic> Validator<S> for MinCount {
     fn validate(
         &self,
-        _: &S,
-        _: impl Engine<S>,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
-            return Ok(Vec::default());
+            return Ok(Default::default());
         }
-
-        let results = value_nodes
-            .iter_focus_nodes()
-            .filter_map(|(focus_node, targets)| {
-                if targets.len() < self.min_count() {
-                    Some(ValidationResult::new(focus_node, None))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        let min_count = |targets: &FocusNodes<S>| targets.len() < self.min_count();
+        validate_with(store, &engine, value_nodes, &FocusNodeIteration, min_count)
     }
 }
 

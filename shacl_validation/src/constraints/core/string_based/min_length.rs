@@ -4,39 +4,40 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_ask_with;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::engine::native::NativeEngine;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
-        _: &S,
+        store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    let result = ValidationResult::new(focus_node, Some(value_node));
-                    Some(result)
-                } else {
-                    let string_representation = match S::term_as_string(value_node) {
-                        Some(string_representation) => string_representation,
-                        None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
-                    };
-                    if string_representation.len() < self.min_length() as usize {
-                        let result = ValidationResult::new(focus_node, Some(value_node));
-                        Some(result)
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect::<Vec<_>>();
+        let min_length = |value_node: &S::Term| {
+            if S::term_is_bnode(value_node) {
+                true
+            } else {
+                let string_representation = match S::term_as_string(value_node) {
+                    Some(string_representation) => string_representation,
+                    None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
+                };
+                string_representation.len() < self.min_length() as usize
+            }
+        };
 
-        Ok(results)
+        validate_with(
+            store,
+            &NativeEngine,
+            value_nodes,
+            &ValueNodeIteration,
+            min_length,
+        )
     }
 }
 
@@ -46,31 +47,15 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinLength {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .filter_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    Some(ValidationResult::new(focus_node, Some(value_node)))
-                } else {
-                    let query = formatdoc! {
-                        " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
-                        value_node, self.min_length()
-                    };
+        let min_length_value = self.min_length().clone();
 
-                    let ask = match store.query_ask(&query) {
-                        Ok(ask) => ask,
-                        Err(_) => return None,
-                    };
+        let query = |value_node: &S::Term| {
+            formatdoc! {
+                " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
+                value_node, min_length_value
+            }
+        };
 
-                    if !ask {
-                        Some(ValidationResult::new(focus_node, Some(value_node)))
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        validate_ask_with(store, value_nodes, query)
     }
 }

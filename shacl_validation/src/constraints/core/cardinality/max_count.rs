@@ -4,34 +4,27 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for MaxCount {
     fn validate(
         &self,
-        _: &S,
-        _: impl Engine<S>,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_focus_nodes()
-            .filter_map(|(focus_node, targets)| {
-                if targets.len() > self.max_count() {
-                    Some(ValidationResult::new(focus_node, None))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
+        validate_with(store, &engine, value_nodes, &FocusNodeIteration, max_count)
     }
 }
 

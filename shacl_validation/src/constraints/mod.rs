@@ -10,6 +10,7 @@ use crate::value_nodes::ValueNodes;
 
 pub mod constraint_error;
 pub mod core;
+pub mod helpers;
 
 pub trait Validator<S: SRDFBasic> {
     fn validate(

@@ -4,6 +4,7 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
@@ -11,33 +12,24 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for Datatype<S> {
     fn validate(
         &self,
-        _: &S,
-        _: impl Engine<S>,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                if let Some(literal) = S::term_as_literal(value_node) {
-                    if &S::datatype(&literal) != self.datatype() {
-                        let result = ValidationResult::new(focus_node, Some(value_node));
-                        Some(result)
-                    } else {
-                        None
-                    }
-                } else {
-                    let result = ValidationResult::new(focus_node, Some(value_node));
-                    Some(result)
-                }
-            })
-            .collect::<Vec<_>>();
+        let datatype = |value_node: &S::Term| {
+            if let Some(literal) = S::term_as_literal(value_node) {
+                return S::datatype(&literal) != self.datatype().to_owned();
+            }
+            true
+        };
 
-        Ok(results)
+        validate_with(store, &engine, value_nodes, &ValueNodeIteration, datatype)
     }
 }
 

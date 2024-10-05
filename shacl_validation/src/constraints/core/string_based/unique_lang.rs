@@ -1,9 +1,13 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use shacl_ast::compiled::component::UniqueLang;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
@@ -11,38 +15,44 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for UniqueLang {
     fn validate(
         &self,
-        _: &S,
-        _: impl Engine<S>,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if !self.unique_lang() {
-            return Ok(Vec::default());
+            return Ok(Default::default());
         }
 
-        let mut langs = Vec::new();
+        let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
 
-        let results = value_nodes
-            .iter_value_nodes()
-            .filter_map(|(focus_node, value_node)| {
-                if let Some(literal) = S::term_as_literal(value_node) {
-                    if let Some(lang) = S::lang(&literal) {
-                        if langs.contains(&lang) {
-                            return Some(ValidationResult::new(focus_node, Some(value_node)));
-                        } else {
-                            langs.push(lang);
-                        }
+        let unique_lang = |value_node: &S::Term| {
+            if let Some(literal) = S::term_as_literal(value_node) {
+                if let Some(lang) = S::lang(&literal) {
+                    let mut langs_borrowed = langs.borrow_mut();
+
+                    if langs_borrowed.contains(&lang) {
+                        return true;
+                    } else {
+                        langs_borrowed.push(lang);
                     }
                 }
-                None
-            })
-            .collect::<Vec<_>>();
+            }
+            false
+        };
 
-        Ok(results)
+        validate_with(
+            store,
+            &engine,
+            value_nodes,
+            &ValueNodeIteration,
+            unique_lang,
+        )
     }
 }
 

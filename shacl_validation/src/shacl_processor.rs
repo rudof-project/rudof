@@ -42,15 +42,15 @@ pub trait ShaclProcessor<S: SRDFBasic> {
 
     fn validate(&self, schema: &CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
-        let mut validation_report = ValidationReport::default();
+        let mut validation_results = Vec::new();
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
             let results = shape.validate(self.store(), self.runner(), None)?;
-            validation_report.add_results(results);
+            validation_results.extend(results);
         }
 
-        Ok(validation_report) // return the possibly empty validation report
+        Ok(ValidationReport::new(validation_results)) // return the possibly empty validation report
     }
 }
 

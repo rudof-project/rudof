@@ -4,33 +4,25 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::helpers::validate_with;
 use crate::constraints::SparqlValidator;
 use crate::constraints::{NativeValidator, Validator};
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for In<S> {
     fn validate(
         &self,
-        _: &S,
-        _: impl Engine<S>,
+        store: &S,
+        engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                if !self.values().contains(value_node) {
-                    Some(ValidationResult::new(focus_node, None))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Ok(results)
+        let r#in = |value_node: &S::Term| !self.values().contains(value_node);
+        validate_with(store, &engine, value_nodes, &ValueNodeIteration, r#in)
     }
 }
 
