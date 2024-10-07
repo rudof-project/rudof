@@ -42,6 +42,12 @@ pub struct Schema {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     base: Option<IriS>,
+
+    #[serde(skip)]
+    resolved_imports: bool,
+
+    #[serde(skip)]
+    shapes_map: HashMap<ShapeExprLabel, ShapeExpr>,
 }
 
 impl Schema {
@@ -55,6 +61,8 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
+            resolved_imports: false,
+            shapes_map: HashMap::new(),
         }
     }
 
@@ -292,6 +300,10 @@ impl Default for Schema {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub fn resolve_iri_or_str(value: &IriOrStr) -> Result<IriS, SchemaJsonError> {
+    todo!()
 }
 
 #[cfg(test)]
