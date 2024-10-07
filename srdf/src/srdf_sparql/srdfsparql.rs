@@ -468,7 +468,7 @@ fn sparql_client() -> Result<Client> {
         ACCEPT,
         header::HeaderValue::from_static("application/sparql-results+json"),
     );
-    headers.insert(USER_AGENT, header::HeaderValue::from_static("Rust App"));
+    headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
     let client = reqwest::blocking::Client::builder()
         .default_headers(headers)
         .build()?;

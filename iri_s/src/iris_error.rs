@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::IriS;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum IriSError {
     #[error("Error parsing {str} as IRI: {err}")]
     IriParseError { str: String, err: String },
@@ -15,20 +15,16 @@ pub enum IriSError {
         base: IriS,
         other: IriS,
     },
-}
 
-impl Clone for IriSError {
-    fn clone(&self) -> Self {
-        match self {
-            IriSError::IriParseError { str, err } => Self::IriParseError {
-                str: str.clone(),
-                err: err.clone(),
-            },
-            IriSError::IriResolveError { err, base, other } => IriSError::IriResolveError {
-                err: err.clone(),
-                base: base.clone(),
-                other: other.clone(),
-            },
-        }
-    }
+    #[error("Creating reqwest http client: {error}")]
+    ReqwestClientCreation { error: String },
+
+    #[error("Error parsing Iri as Url: {error}")]
+    UrlParseError { error: String },
+
+    #[error("Http request error: {error}")]
+    ReqwestError { error: String },
+
+    #[error("Http request error as String: {error}")]
+    ReqwestTextError { error: String },
 }

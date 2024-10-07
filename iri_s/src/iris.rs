@@ -1,5 +1,7 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
+use reqwest::header;
+use reqwest::header::USER_AGENT;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -8,6 +10,7 @@ use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
 use std::str::FromStr;
+use url::Url;
 
 use crate::IriSError;
 
@@ -42,9 +45,13 @@ impl IriS {
 
     /// Extend an IRI with a new string
     ///
-    /// This function is safe as it checks for possible errors
+    /// This function checks for possible errors returning a Result
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
-        let extended_str = format!("{}{}", self.iri.as_str(), str);
+        let extended_str = if str.ends_with("/") {
+            format!("{}{}", self.iri.as_str(), str)
+        } else {
+            format!("{}/{}", self.iri.as_str(), str)
+        };
         let iri = NamedNode::new(extended_str.as_str()).map_err(|e| IriSError::IriParseError {
             str: extended_str,
             err: e.to_string(),
@@ -80,6 +87,38 @@ impl IriS {
             err: e.to_string(),
         })?;
         Ok(IriS { iri })
+    }
+
+    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
+    ///
+    pub fn dereference(&self) -> Result<String, IriSError> {
+        let mut headers = header::HeaderMap::new();
+        /* TODO: Add a parameter with the Accept header ?
+        headers.insert(
+            ACCEPT,
+            header::HeaderValue::from_static(""),
+        );*/
+        headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+        let client = reqwest::blocking::Client::builder()
+            .default_headers(headers)
+            .build()
+            .map_err(|e| IriSError::ReqwestClientCreation {
+                error: format!("{e}"),
+            })?;
+        let url = Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
+            error: format!("{e}"),
+        })?;
+        let body = client
+            .get(url)
+            .send()
+            .map_err(|e| IriSError::ReqwestError {
+                error: format!("{e}"),
+            })?
+            .text()
+            .map_err(|e| IriSError::ReqwestTextError {
+                error: format!("{e}"),
+            })?;
+        Ok(body)
     }
 
     /*    pub fn is_absolute(&self) -> bool {

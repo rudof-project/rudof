@@ -459,7 +459,8 @@ fn run_shex(
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(input, schema_format, reader_mode, config)?;
+    let mut schema_json = parse_schema(input, schema_format, reader_mode, config)?;
+    schema_json.resolve_imports()?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();

@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use iri_s::{IriS, IriSError};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
@@ -27,4 +30,20 @@ pub enum SchemaJsonError {
         #[from]
         err: prefixmap::PrefixMapError,
     },
+
+    #[error("Obtaining current dir: {error:?}")]
+    CurrentDir { error: String },
+
+    #[error("Obtaining Url from local dir: {path}")]
+    LocalFolderIriError { path: PathBuf },
+
+    #[error("Resolving string: {str} as IRI with base: {base}")]
+    ResolvingStrIri {
+        str: String,
+        base: IriS,
+        error: IriSError,
+    },
+
+    #[error("Trying to dereference IRI: {iri}: {error}")]
+    DereferencingIri { iri: IriS, error: IriSError },
 }
