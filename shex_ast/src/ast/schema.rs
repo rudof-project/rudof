@@ -9,7 +9,6 @@ use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use tracing::debug;
-use url::Url;
 
 use super::{IriOrStr, SemAct, ShapeDecl, ShapeExpr};
 
@@ -43,20 +42,6 @@ pub struct Schema {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     base: Option<IriS>,
-
-    #[serde(skip)]
-    resolved_imports: bool,
-
-    #[serde(skip)]
-    shapes_map: HashMap<ShapeExprLabel, ShapeExpr>,
-}
-
-#[derive(Debug, Default)]
-pub enum ResolveMethod {
-    #[default]
-    RotatingFormats,
-    ByGuessingExtension,
-    ByContentNegotiation,
 }
 
 impl Schema {
@@ -70,69 +55,16 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
-            resolved_imports: false,
-            shapes_map: HashMap::new(),
         }
     }
 
-    pub fn resolved_imports(&self) -> bool {
-        self.resolved_imports
-    }
-
-    pub fn resolve_imports(
-        &mut self,
-        resolve_method: Option<ResolveMethod>,
-    ) -> Result<(), SchemaJsonError> {
-        let resolve_method = match resolve_method {
-            None => ResolveMethod::default(),
-            Some(m) => m,
-        };
-        let mut visited = Vec::new();
-        let base = match &self.base {
-            Some(b) => b.clone(),
-            None => {
-                let local_folder = local_folder_as_iri()?;
-                local_folder.clone()
-            }
-        };
+    pub fn imports(&self) -> Vec<IriOrStr> {
         if let Some(imports) = &self.imports {
-            let mut pending = imports.to_vec();
-            self.resolve_imports_visited(&mut pending, &mut visited, &base, resolve_method)?;
-        }
-        Ok(())
-    }
-
-    pub fn imports(&self) -> impl Iterator<Item = &IriOrStr> {
-        if let Some(imports) = &self.imports {
-            imports.iter()
+            imports.to_vec()
         } else {
-            todo!()
+            let is: Vec<IriOrStr> = Vec::new();
+            is
         }
-    }
-
-    pub fn resolve_imports_visited(
-        &mut self,
-        pending: &mut Vec<IriOrStr>,
-        visited: &mut Vec<IriOrStr>,
-        base: &IriS,
-        resolve_method: ResolveMethod,
-    ) -> Result<(), SchemaJsonError> {
-        while let Some(candidate) = pending.pop() {
-            if !visited.contains(&candidate) {
-                let candidate_iri = resolve_iri_or_str(&candidate, base)?;
-                let new_schema = Schema::from_iri(&candidate_iri)?;
-                for i in new_schema.imports() {
-                    if !visited.contains(i) {
-                        pending.push(i.clone())
-                    }
-                }
-                /*for shape_decl in new_schema.shapes_map().keys() {
-                    match self.shapes_map.entry(shape_decl.)
-                }*/
-                visited.push(candidate);
-            }
-        }
-        Ok(())
     }
 
     pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
@@ -360,36 +292,6 @@ impl Default for Schema {
     fn default() -> Self {
         Self::new()
     }
-}
-
-pub fn resolve_iri_or_str(value: &IriOrStr, base: &IriS) -> Result<IriS, SchemaJsonError> {
-    match value {
-        IriOrStr::IriS(iri) => Ok(iri.clone()),
-        IriOrStr::String(str) => match Url::parse(str) {
-            Ok(url) => Ok(IriS::new_unchecked(url.as_str())),
-            Err(_e) => {
-                let iri = base
-                    .extend(str)
-                    .map_err(|e| SchemaJsonError::ResolvingStrIri {
-                        base: base.clone(),
-                        str: str.clone(),
-                        error: e,
-                    })?;
-                Ok(iri)
-            }
-        },
-    }
-}
-
-pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
-    let current_dir = std::env::current_dir().map_err(|e| SchemaJsonError::CurrentDir {
-        error: format!("{e}"),
-    })?;
-    debug!("Current dir: {current_dir:?}");
-    let url = Url::from_file_path(&current_dir)
-        .map_err(|_e| SchemaJsonError::LocalFolderIriError { path: current_dir })?;
-    debug!("url: {url}");
-    Ok(IriS::new_unchecked(url.as_str()))
 }
 
 #[cfg(test)]

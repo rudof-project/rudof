@@ -37,7 +37,7 @@ use shapes_converter::{
 use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
-use shex_validation::{Validator, ValidatorConfig};
+use shex_validation::{SchemaWithoutImports, Validator, ValidatorConfig};
 use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{QuerySolution2, RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, VarName2, SRDF};
@@ -459,19 +459,24 @@ fn run_shex(
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let mut schema_json = parse_schema(input, schema_format, reader_mode, config)?;
-    schema_json.resolve_imports()?;
+    let schema_json = parse_schema(input, schema_format, reader_mode, config)?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
     if show_statistics {
-        if let Some(shapes) = schema_json.shapes() {
-            let _ = writeln!(io::stderr(), "Shapes: {:?}", shapes.len());
-            let _ = writeln!(io::stderr(), "Shapes extends: {:?}", schema_json);
-        }
-        let _ = writeln!(io::stderr(), "No shape declaration");
+        let schema_resolved = SchemaWithoutImports::resolve_imports(&schema_json, None)?;
+        writeln!(
+            io::stderr(),
+            "Number of shapes (local): {:?}",
+            schema_resolved.local_shapes_count()
+        )?;
+        writeln!(
+            io::stderr(),
+            "Total shapes: {:?}",
+            schema_resolved.total_shapes_count()
+        )?;
     }
     Ok(())
 }

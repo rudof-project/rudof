@@ -43,14 +43,15 @@ impl IriS {
         &self.iri
     }
 
-    /// Extend an IRI with a new string
+    /// Extends the current IRI with a new string
     ///
     /// This function checks for possible errors returning a Result
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
-        let extended_str = if str.ends_with("/") {
-            format!("{}{}", self.iri.as_str(), str)
+        let current_str = self.iri.as_str();
+        let extended_str = if current_str.ends_with("/") || current_str.ends_with("#") {
+            format!("{}{}", current_str, str)
         } else {
-            format!("{}/{}", self.iri.as_str(), str)
+            format!("{}/{}", current_str, str)
         };
         let iri = NamedNode::new(extended_str.as_str()).map_err(|e| IriSError::IriParseError {
             str: extended_str,
