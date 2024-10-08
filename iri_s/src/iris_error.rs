@@ -1,6 +1,7 @@
 // use oxiri::Iri;
 // use oxrdf::IriParseError;
 use thiserror::Error;
+use url::Url;
 
 use crate::IriS;
 
@@ -9,6 +10,13 @@ pub enum IriSError {
     #[error("Error parsing {str} as IRI: {err}")]
     IriParseError { str: String, err: String },
 
+    #[error("Parsing {str} using base: {base} as IRI. Error: {error}")]
+    IriParseErrorWithBase {
+        str: String,
+        base: Url,
+        error: String,
+    },
+
     #[error("Error resolving IRI `{other}` with base IRI `{base}`: {err}")]
     IriResolveError {
         err: String,
@@ -16,15 +24,31 @@ pub enum IriSError {
         other: IriS,
     },
 
+    #[error("Error joining IRI `{current}` with `{str}`: {err}")]
+    JoinError {
+        err: String,
+        current: IriS,
+        str: String,
+    },
     #[error("Creating reqwest http client: {error}")]
     ReqwestClientCreation { error: String },
 
-    #[error("Error parsing Iri as Url: {error}")]
-    UrlParseError { error: String },
+    #[error("Parsing Iri {str} as Url. Error: {error}")]
+    UrlParseError { str: String, error: String },
 
     #[error("Http request error: {error}")]
     ReqwestError { error: String },
 
     #[error("Http request error as String: {error}")]
     ReqwestTextError { error: String },
+
+    #[error("trying to obtain a path from file scheme Url: {url}")]
+    ConvertingFileUrlToPath { url: Url },
+
+    #[error("Error reading from file {path} obtained from url {url}. Error: {error}")]
+    IOErrorFile {
+        path: String,
+        url: Url,
+        error: String,
+    },
 }

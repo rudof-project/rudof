@@ -1,6 +1,7 @@
 use iri_s::IriS;
+use prefixmap::IriRef;
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::{IriOrStr, Schema, SchemaJsonError, ShapeExpr, ShapeExprLabel};
+use shex_ast::{IriOrStr, Schema, SchemaJsonError, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use shex_compact::ShExParser;
 use std::collections::{hash_map::Entry, HashMap};
 use tracing::debug;
@@ -18,10 +19,14 @@ pub struct SchemaWithoutImports {
     imported_schemas: Vec<IriOrStr>,
 
     #[serde(skip)]
-    shapes_map: HashMap<ShapeExprLabel, (ShapeExpr, Option<IriS>)>,
+    shapes_map: HashMap<ShapeExprLabel, (ShapeExpr, IriS)>,
 }
 
 impl SchemaWithoutImports {
+    pub fn resolve_iriref(&self, iri_ref: &IriRef) -> IriS {
+        self.source_schema.resolve_iriref(iri_ref)
+    }
+
     /// Return the number of shapes declared in the current schema without counting the ones from imported schemas
     pub fn local_shapes_count(&self) -> usize {
         self.local_shapes_counter
@@ -31,7 +36,11 @@ impl SchemaWithoutImports {
     pub fn total_shapes_count(&self) -> usize {
         self.shapes_map.len()
     }
-    pub fn shapes(&self) -> impl Iterator<Item = (&ShapeExprLabel, &(ShapeExpr, Option<IriS>))> {
+
+    /// Returns an iterator of the shape expressions that the schema contains
+    /// For exach shape expression, it returns the label and a pair that contains the shape expression and an optional IRI that points to the source where this shape expression has been imported
+    /// If `None` it means this is a local shape expression defined in the current schema
+    pub fn shapes(&self) -> impl Iterator<Item = (&ShapeExprLabel, &(ShapeExpr, IriS))> {
         self.shapes_map.iter()
     }
     /// Get the list of imported schemas
@@ -42,41 +51,21 @@ impl SchemaWithoutImports {
     /// Resolve the imports declared in a schema
     pub fn resolve_imports(
         schema: &Schema,
+        base: &Option<IriS>,
         resolve_method: Option<&ResolveMethod>,
-    ) -> Result<SchemaWithoutImports, SchemaJsonError> {
+    ) -> Result<SchemaWithoutImports, SchemaWithoutImportsError> {
         let resolve_method = match resolve_method {
             None => ResolveMethod::default(),
             Some(m) => m.clone(),
         };
         let mut visited = Vec::new();
-        let base = match &schema.base() {
-            Some(b) => b.clone(),
-            None => {
-                let local_folder = local_folder_as_iri()?;
-                local_folder.clone()
-            }
-        };
         let mut pending: Vec<_> = schema.imports();
-        let mut map: HashMap<ShapeExprLabel, (ShapeExpr, Option<IriS>)> = HashMap::new();
+        let mut map = HashMap::new();
         let mut local_shapes_counter = 0;
         if let Some(shapes) = schema.shapes() {
             for decl in shapes {
-                let id = decl.id.clone();
                 local_shapes_counter += 1;
-                match map.entry(decl.id) {
-                    Entry::Occupied(entry) => {
-                        let (old_shape_expr, maybe_iri) = entry.get();
-                        return Err(SchemaJsonError::DuplicatedShapeDecl {
-                            label: id,
-                            old_shape_expr: Box::new(old_shape_expr.clone()),
-                            imported_from: maybe_iri.clone(),
-                            shape_expr2: Box::new(decl.shape_expr),
-                        });
-                    }
-                    Entry::Vacant(v) => {
-                        v.insert((decl.shape_expr.clone(), None));
-                    }
-                }
+                Self::add_shape_decl(&mut map, decl, &schema.source_iri())?;
             }
         }
         Self::resolve_imports_visited(
@@ -94,19 +83,42 @@ impl SchemaWithoutImports {
         })
     }
 
+    pub fn add_shape_decl(
+        map: &mut HashMap<ShapeExprLabel, (ShapeExpr, IriS)>,
+        decl: ShapeDecl,
+        source_iri: &IriS,
+    ) -> Result<(), SchemaWithoutImportsError> {
+        let id = decl.id.clone();
+        match map.entry(decl.id) {
+            Entry::Occupied(entry) => {
+                let (old_shape_expr, maybe_iri) = entry.get();
+                return Err(SchemaWithoutImportsError::DuplicatedShapeDecl {
+                    label: id,
+                    old_shape_expr: Box::new(old_shape_expr.clone()),
+                    imported_from: maybe_iri.clone(),
+                    shape_expr2: Box::new(decl.shape_expr),
+                });
+            }
+            Entry::Vacant(v) => {
+                v.insert((decl.shape_expr.clone(), source_iri.clone()));
+            }
+        }
+        Ok(())
+    }
+
     pub fn resolve_imports_visited(
         pending: &mut Vec<IriOrStr>,
         visited: &mut Vec<IriOrStr>,
-        base: &IriS,
+        base: &Option<IriS>,
         resolve_method: &ResolveMethod,
-        map: &mut HashMap<ShapeExprLabel, (ShapeExpr, Option<IriS>)>,
-    ) -> Result<(), SchemaJsonError> {
+        map: &mut HashMap<ShapeExprLabel, (ShapeExpr, IriS)>,
+    ) -> Result<(), SchemaWithoutImportsError> {
         while let Some(candidate) = pending.pop() {
             if !visited.contains(&candidate) {
                 let candidate_iri = resolve_iri_or_str(&candidate, base, resolve_method)?;
                 let new_schema = match resolve_method {
                     ResolveMethod::RotatingFormats(formats) => {
-                        find_schema_rotating_formats(&candidate_iri, formats.clone())
+                        find_schema_rotating_formats(&candidate_iri, formats.clone(), base)
                     }
                     ResolveMethod::ByGuessingExtension => todo!(),
                     ResolveMethod::ByContentNegotiation => todo!(),
@@ -116,9 +128,11 @@ impl SchemaWithoutImports {
                         pending.push(i.clone())
                     }
                 }
-                /*for shape_decl in new_schema.shapes_map().keys() {
-                    match self.shapes_map.entry(shape_decl.)
-                }*/
+                if let Some(shapes) = new_schema.shapes() {
+                    for decl in shapes {
+                        Self::add_shape_decl(map, decl, &candidate_iri)?;
+                    }
+                }
                 visited.push(candidate.clone());
             }
         }
@@ -129,16 +143,17 @@ impl SchemaWithoutImports {
 pub fn find_schema_rotating_formats(
     iri: &IriS,
     formats: Vec<ShExFormat>,
-) -> Result<Schema, SchemaJsonError> {
+    base: &Option<IriS>,
+) -> Result<Schema, SchemaWithoutImportsError> {
     for format in &formats {
-        match get_schema_from_iri(iri, format) {
+        match get_schema_from_iri(iri, format, base) {
             Err(_e) => {
                 // we ignore the errors by now...we could collect them in a structure and return more information about the errors
             }
             Ok(schema) => return Ok(schema),
         }
     }
-    Err(SchemaJsonError::SchemaFromIriRotatingFormats {
+    Err(SchemaWithoutImportsError::SchemaFromIriRotatingFormats {
         iri: iri.clone(),
         formats: format!("{formats:?}"),
     })
@@ -146,23 +161,26 @@ pub fn find_schema_rotating_formats(
 
 pub fn resolve_iri_or_str(
     value: &IriOrStr,
-    base: &IriS,
-    resolve_method: &ResolveMethod,
-) -> Result<IriS, SchemaJsonError> {
+    base: &Option<IriS>,
+    _resolve_method: &ResolveMethod,
+) -> Result<IriS, SchemaWithoutImportsError> {
     match value {
         IriOrStr::IriS(iri) => Ok(iri.clone()),
         IriOrStr::String(str) => match Url::parse(str) {
             Ok(url) => Ok(IriS::new_unchecked(url.as_str())),
-            Err(_e) => {
-                let iri = base
-                    .extend(str)
-                    .map_err(|e| SchemaJsonError::ResolvingStrIri {
-                        base: base.clone(),
-                        str: str.clone(),
-                        error: e,
-                    })?;
-                Ok(iri)
-            }
+            Err(_e) => match base {
+                None => todo!(),
+                Some(base) => {
+                    let iri =
+                        base.join(str)
+                            .map_err(|e| SchemaWithoutImportsError::ResolvingStrIri {
+                                base: base.clone(),
+                                str: str.clone(),
+                                error: e,
+                            })?;
+                    Ok(iri)
+                }
+            },
         },
     }
 }
@@ -181,11 +199,12 @@ pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
 pub fn get_schema_from_iri(
     iri: &IriS,
     format: &ShExFormat,
+    base: &Option<IriS>,
 ) -> Result<Schema, SchemaWithoutImportsError> {
     match format {
         ShExFormat::ShExC => {
             let content =
-                iri.dereference()
+                iri.dereference(base)
                     .map_err(|e| SchemaWithoutImportsError::DereferencingIri {
                         iri: iri.clone(),
                         error: format!("{e}"),

@@ -9,6 +9,7 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
+use std::fs;
 use std::str::FromStr;
 use url::Url;
 
@@ -41,6 +42,19 @@ impl IriS {
     /// Convert an `IriS` to a `NamedNode`
     pub fn as_named_node(&self) -> &NamedNode {
         &self.iri
+    }
+
+    pub fn join(&self, str: &str) -> Result<Self, IriSError> {
+        let url = Url::from_str(self.as_str()).map_err(|e| IriSError::IriParseError {
+            str: str.to_string(),
+            err: e.to_string(),
+        })?;
+        let joined = url.join(str).map_err(|e| IriSError::JoinError {
+            str: str.to_string(),
+            current: self.clone(),
+            err: e.to_string(),
+        })?;
+        Ok(IriS::new_unchecked(joined.as_str()))
     }
 
     /// Extends the current IRI with a new string
@@ -91,35 +105,70 @@ impl IriS {
     }
 
     /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
+    /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     ///
-    pub fn dereference(&self) -> Result<String, IriSError> {
-        let mut headers = header::HeaderMap::new();
-        /* TODO: Add a parameter with the Accept header ?
-        headers.insert(
-            ACCEPT,
-            header::HeaderValue::from_static(""),
-        );*/
-        headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-        let client = reqwest::blocking::Client::builder()
-            .default_headers(headers)
-            .build()
-            .map_err(|e| IriSError::ReqwestClientCreation {
+    pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {
+        let url = match base {
+            Some(base_iri) => {
+                let base =
+                    Url::from_str(base_iri.as_str()).map_err(|e| IriSError::UrlParseError {
+                        str: self.iri.as_str().to_string(),
+                        error: format!("{e}"),
+                    })?;
+                Url::options()
+                    .base_url(Some(&base))
+                    .parse(self.iri.as_str())
+                    .map_err(|e| IriSError::IriParseErrorWithBase {
+                        str: self.iri.as_str().to_string(),
+                        base: base,
+                        error: format!("{e}"),
+                    })?
+            }
+            None => Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
+                str: self.iri.as_str().to_string(),
                 error: format!("{e}"),
-            })?;
-        let url = Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
-            error: format!("{e}"),
-        })?;
-        let body = client
-            .get(url)
-            .send()
-            .map_err(|e| IriSError::ReqwestError {
-                error: format!("{e}"),
-            })?
-            .text()
-            .map_err(|e| IriSError::ReqwestTextError {
-                error: format!("{e}"),
-            })?;
-        Ok(body)
+            })?,
+        };
+        match url.scheme() {
+            "file" => {
+                let path = url
+                    .to_file_path()
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.clone() })?;
+                let path_name = path.to_string_lossy().to_string();
+                let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
+                    path: path_name,
+                    url: url.clone(),
+                    error: format!("{e}"),
+                })?;
+                Ok(body)
+            }
+            _ => {
+                let mut headers = header::HeaderMap::new();
+                /* TODO: Add a parameter with the Accept header ?
+                headers.insert(
+                    ACCEPT,
+                    header::HeaderValue::from_static(""),
+                );*/
+                headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+                let client = reqwest::blocking::Client::builder()
+                    .default_headers(headers)
+                    .build()
+                    .map_err(|e| IriSError::ReqwestClientCreation {
+                        error: format!("{e}"),
+                    })?;
+                let body = client
+                    .get(url)
+                    .send()
+                    .map_err(|e| IriSError::ReqwestError {
+                        error: format!("{e}"),
+                    })?
+                    .text()
+                    .map_err(|e| IriSError::ReqwestTextError {
+                        error: format!("{e}"),
+                    })?;
+                Ok(body)
+            }
+        }
     }
 
     /*    pub fn is_absolute(&self) -> bool {

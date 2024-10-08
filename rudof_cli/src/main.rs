@@ -34,10 +34,10 @@ use shapes_converter::{
     ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
     Shacl2ShExConfig, Tap2ShEx, UmlGenerationMode,
 };
-use shex_ast::SimpleReprSchema;
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
+use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
-use shex_validation::{SchemaWithoutImports, Validator, ValidatorConfig};
+use shex_validation::{ResolveMethod, SchemaWithoutImports, Validator, ValidatorConfig};
 use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{QuerySolution2, RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, VarName2, SRDF};
@@ -466,10 +466,14 @@ fn run_shex(
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
     if show_statistics {
-        let schema_resolved = SchemaWithoutImports::resolve_imports(&schema_json, None)?;
+        let schema_resolved = SchemaWithoutImports::resolve_imports(
+            &schema_json,
+            &Some(schema_json.source_iri()),
+            Some(&ResolveMethod::default()),
+        )?;
         writeln!(
             io::stderr(),
-            "Number of shapes (local): {:?}",
+            "Local shapes: {:?}",
             schema_resolved.local_shapes_count()
         )?;
         writeln!(
@@ -477,6 +481,16 @@ fn run_shex(
             "Total shapes: {:?}",
             schema_resolved.total_shapes_count()
         )?;
+        for (shape_label, (_shape_expr, iri)) in schema_resolved.shapes() {
+            let label = match shape_label {
+                ShapeExprLabel::IriRef { value } => {
+                    schema_resolved.resolve_iriref(value).as_str().to_string()
+                }
+                ShapeExprLabel::BNode { value } => format!("{value}"),
+                ShapeExprLabel::Start => "Start".to_string(),
+            };
+            writeln!(io::stderr(), "{label} from {iri}")?
+        }
     }
     Ok(())
 }
@@ -1413,13 +1427,15 @@ fn parse_schema(
         ShExFormat::ShExC => {
             let mut reader = input.open_read()?;
             // TODO: Check base from ShEx config...
-            let schema = ShExParser::from_reader(&mut reader, None)?;
+            let mut schema = ShExParser::from_reader(&mut reader, None)?;
+            schema.with_source_iri(&input.as_iri()?);
             Ok(schema)
         }
         ShExFormat::ShExJ => {
             let reader = input.open_read()?;
-            let schema_json = SchemaJson::from_reader(reader)?;
-            Ok(schema_json)
+            let mut schema = SchemaJson::from_reader(reader)?;
+            schema.with_source_iri(&input.as_iri()?);
+            Ok(schema)
         }
         ShExFormat::Turtle => {
             let data_config = match &config.data_config {

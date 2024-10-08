@@ -43,11 +43,9 @@ pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     base: Option<IriS>,
 
+    /// Source IRI from which this Schema has been obtained
     #[serde(skip)]
-    resolved_imports: bool,
-
-    #[serde(skip)]
-    shapes_map: HashMap<ShapeExprLabel, ShapeExpr>,
+    source_iri: IriS,
 }
 
 impl Schema {
@@ -61,11 +59,11 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
-            resolved_imports: false,
-            shapes_map: HashMap::new(),
+            source_iri: IriS::new_unchecked("http://default/"),
         }
     }
 
+    /// Returns the list of import declared in the Schema
     pub fn imports(&self) -> Vec<IriOrStr> {
         if let Some(imports) = &self.imports {
             imports.to_vec()
@@ -75,14 +73,24 @@ impl Schema {
         }
     }
 
+    pub fn source_iri(&self) -> IriS {
+        self.source_iri.clone()
+    }
+
+    pub fn with_source_iri(&mut self, source_iri: &IriS) {
+        self.source_iri = source_iri.clone();
+    }
+
+    /// Obtain a Schema from an IRI
     pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
-        let body = iri
-            .dereference()
-            .map_err(|e| SchemaJsonError::DereferencingIri {
-                iri: iri.clone(),
-                error: e,
-            })?;
-        let schema = Schema::from_reader(body.as_bytes())?;
+        let body =
+            iri.dereference(&Some(iri.clone()))
+                .map_err(|e| SchemaJsonError::DereferencingIri {
+                    iri: iri.clone(),
+                    error: e,
+                })?;
+        let mut schema = Schema::from_reader(body.as_bytes())?;
+        schema.with_source_iri(iri);
         Ok(schema)
     }
 
@@ -300,10 +308,6 @@ impl Default for Schema {
     fn default() -> Self {
         Self::new()
     }
-}
-
-pub fn resolve_iri_or_str(value: &IriOrStr) -> Result<IriS, SchemaJsonError> {
-    todo!()
 }
 
 #[cfg(test)]

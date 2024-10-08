@@ -3,8 +3,6 @@ use std::path::PathBuf;
 use iri_s::{IriS, IriSError};
 use thiserror::Error;
 
-use super::{ShapeExpr, ShapeExprLabel};
-
 #[derive(Error, Debug, Clone)]
 pub enum SchemaJsonError {
     #[error("Reading path {path_name:?} error: {error:?}")]
@@ -39,27 +37,9 @@ pub enum SchemaJsonError {
     #[error("Obtaining Url from local dir: {path}")]
     LocalFolderIriError { path: PathBuf },
 
-    #[error("Resolving string: {str} as IRI with base: {base}")]
-    ResolvingStrIri {
-        str: String,
-        base: IriS,
-        error: IriSError,
-    },
-
     #[error("Trying to dereference IRI: {iri}: {error}")]
     DereferencingIri { iri: IriS, error: IriSError },
 
-    #[error("Duplicated declaration for shape expr with label {label}\nPrevious shape expr from {imported_from:?}\n{old_shape_expr:?}\nShape Expr2 {shape_expr2:?}")]
-    DuplicatedShapeDecl {
-        label: ShapeExprLabel,
-        old_shape_expr: Box<ShapeExpr>,
-        imported_from: Option<IriS>,
-        shape_expr2: Box<ShapeExpr>,
-    },
-
     #[error("Obtaining schema from IRI {iri}. Error: {error}")]
     SchemaFromIri { iri: IriS, error: String },
-
-    #[error("Obtaining schema from IRI {iri}. Tried to parse this list of formats: {formats} but they failed")]
-    SchemaFromIriRotatingFormats { iri: IriS, formats: String },
 }
