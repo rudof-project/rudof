@@ -1,6 +1,7 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::{object_value::ObjectValue, Node};
+use srdf::literal::Literal;
 use srdf::shacl_path::SHACLPath;
 use srdf::SRDF;
 use thiserror::Error;
@@ -36,6 +37,10 @@ impl NodeSelector {
 
     pub fn iri_ref(iri: IriRef) -> NodeSelector {
         NodeSelector::Node(ObjectValue::iri_ref(iri))
+    }
+
+    pub fn literal(lit: Literal) -> NodeSelector {
+        NodeSelector::Node(ObjectValue::literal(lit))
     }
 
     pub fn prefixed(alias: &str, local: &str) -> NodeSelector {

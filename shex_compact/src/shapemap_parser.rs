@@ -1,6 +1,6 @@
 use crate::shapemap_grammar::shapemap_statement;
 use crate::shapemap_grammar::ShapeMapStatement;
-use crate::shapemap_grammar::{node_spec, shape_spec};
+use crate::shapemap_grammar::{node_selector, shape_spec};
 use crate::shex_grammar::iri;
 use crate::tws0;
 use crate::ParseError;
@@ -80,7 +80,7 @@ impl<'a> ShapeMapParser<'a> {
 
     pub fn parse_node_selector(str: &str) -> Result<NodeSelector> {
         let span = Span::new(str);
-        let (_, ns) = node_spec()(span).map_err(|e| match e {
+        let (_, ns) = node_selector()(span).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
                 msg: format!("Incomplete input: needed {s:?}"),
             },

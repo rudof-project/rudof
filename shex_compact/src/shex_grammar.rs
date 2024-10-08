@@ -1437,7 +1437,7 @@ fn percent_code(i: Span) -> IRes<Option<String>> {
 }
 
 /// `[13t] literal ::= rdfLiteral | numericLiteral | booleanLiteral`
-fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
+pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
     traced(
         "literal",
         map_error(

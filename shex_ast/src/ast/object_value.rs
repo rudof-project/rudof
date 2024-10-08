@@ -38,6 +38,10 @@ impl ObjectValue {
         ObjectValue::Literal(Literal::boolean(b))
     }
 
+    pub fn literal(lit: Literal) -> ObjectValue {
+        ObjectValue::Literal(lit)
+    }
+
     pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
         ObjectValue::Literal(Literal::datatype(lexical_form, datatype))
     }

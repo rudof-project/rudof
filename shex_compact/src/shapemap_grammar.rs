@@ -1,6 +1,6 @@
 use crate::{
     grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
-    iri,
+    iri, literal,
     shex_grammar::shape_expr_label,
     IRes, ParseError, Span,
 };
@@ -46,7 +46,7 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
 
 /// `association ::= node_spec @ shape_spec`
 fn association(i: Span) -> IRes<ShapeMapStatement> {
-    let (i, (ns, _, sl)) = tuple((node_spec(), token_tws("@"), shape_spec()))(i)?;
+    let (i, (ns, _, sl)) = tuple((node_selector(), token_tws("@"), shape_spec()))(i)?;
     let s = ShapeMapStatement::Association {
         node_selector: ns,
         shape_selector: sl,
@@ -75,16 +75,26 @@ pub(crate) fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector
     )
 }
 
-pub(crate) fn node_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelector> {
+/// nodeSelector     : objectTerm | triplePattern | extended ;
+pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelector> {
     traced(
-        "node_spec",
-        map_error(move |i| subject_term(i), || ParseError::ExpectedNodeSpec),
+        "node_selector",
+        map_error(move |i| object_term(i), || ParseError::ExpectedNodeSpec),
     )
+}
+
+fn object_term(i: Span) -> IRes<NodeSelector> {
+    alt((subject_term, literal_selector))(i)
 }
 
 fn subject_term(i: Span) -> IRes<NodeSelector> {
     let (i, iri) = iri(i)?;
     Ok((i, NodeSelector::iri_ref(iri)))
+}
+
+fn literal_selector(i: Span) -> IRes<NodeSelector> {
+    let (i, lit) = literal()(i)?;
+    Ok((i, NodeSelector::literal(lit)))
 }
 
 #[cfg(test)]
