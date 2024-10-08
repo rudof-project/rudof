@@ -1,5 +1,7 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
+use reqwest::header;
+use reqwest::header::USER_AGENT;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -7,7 +9,9 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
+use std::fs;
 use std::str::FromStr;
+use url::Url;
 
 use crate::IriSError;
 
@@ -40,11 +44,29 @@ impl IriS {
         &self.iri
     }
 
-    /// Extend an IRI with a new string
+    pub fn join(&self, str: &str) -> Result<Self, IriSError> {
+        let url = Url::from_str(self.as_str()).map_err(|e| IriSError::IriParseError {
+            str: str.to_string(),
+            err: e.to_string(),
+        })?;
+        let joined = url.join(str).map_err(|e| IriSError::JoinError {
+            str: Box::new(str.to_string()),
+            current: Box::new(self.clone()),
+            err: Box::new(e.to_string()),
+        })?;
+        Ok(IriS::new_unchecked(joined.as_str()))
+    }
+
+    /// Extends the current IRI with a new string
     ///
-    /// This function is safe as it checks for possible errors
+    /// This function checks for possible errors returning a Result
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
-        let extended_str = format!("{}{}", self.iri.as_str(), str);
+        let current_str = self.iri.as_str();
+        let extended_str = if current_str.ends_with('/') || current_str.ends_with('#') {
+            format!("{}{}", current_str, str)
+        } else {
+            format!("{}/{}", current_str, str)
+        };
         let iri = NamedNode::new(extended_str.as_str()).map_err(|e| IriSError::IriParseError {
             str: extended_str,
             err: e.to_string(),
@@ -71,15 +93,82 @@ impl IriS {
         let resolved = base
             .resolve(other_str)
             .map_err(|e| IriSError::IriResolveError {
-                err: e.to_string(),
-                base: self.clone(),
-                other: other.clone(),
+                err: Box::new(e.to_string()),
+                base: Box::new(self.clone()),
+                other: Box::new(other.clone()),
             })?;
         let iri = NamedNode::new(resolved.as_str()).map_err(|e| IriSError::IriParseError {
             str: resolved.as_str().to_string(),
             err: e.to_string(),
         })?;
         Ok(IriS { iri })
+    }
+
+    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
+    /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
+    ///
+    pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {
+        let url = match base {
+            Some(base_iri) => {
+                let base =
+                    Url::from_str(base_iri.as_str()).map_err(|e| IriSError::UrlParseError {
+                        str: self.iri.as_str().to_string(),
+                        error: format!("{e}"),
+                    })?;
+                Url::options()
+                    .base_url(Some(&base))
+                    .parse(self.iri.as_str())
+                    .map_err(|e| IriSError::IriParseErrorWithBase {
+                        str: self.iri.as_str().to_string(),
+                        base: Box::new(base),
+                        error: format!("{e}"),
+                    })?
+            }
+            None => Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
+                str: self.iri.as_str().to_string(),
+                error: format!("{e}"),
+            })?,
+        };
+        match url.scheme() {
+            "file" => {
+                let path = url
+                    .to_file_path()
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.clone() })?;
+                let path_name = path.to_string_lossy().to_string();
+                let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
+                    path: path_name,
+                    url: Box::new(url),
+                    error: format!("{e}"),
+                })?;
+                Ok(body)
+            }
+            _ => {
+                let mut headers = header::HeaderMap::new();
+                /* TODO: Add a parameter with the Accept header ?
+                headers.insert(
+                    ACCEPT,
+                    header::HeaderValue::from_static(""),
+                );*/
+                headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+                let client = reqwest::blocking::Client::builder()
+                    .default_headers(headers)
+                    .build()
+                    .map_err(|e| IriSError::ReqwestClientCreation {
+                        error: format!("{e}"),
+                    })?;
+                let body = client
+                    .get(url)
+                    .send()
+                    .map_err(|e| IriSError::ReqwestError {
+                        error: format!("{e}"),
+                    })?
+                    .text()
+                    .map_err(|e| IriSError::ReqwestTextError {
+                        error: format!("{e}"),
+                    })?;
+                Ok(body)
+            }
+        }
     }
 
     /*    pub fn is_absolute(&self) -> bool {
@@ -142,8 +231,15 @@ impl<'de> Visitor<'de> for IriVisitor {
     where
         E: de::Error,
     {
-        IriS::from_str(v)
-            .map_err(|e| E::custom(format!("Cannot parse as Iri: \"{v}\". Error: {e}")))
+        match IriS::from_str(v) {
+            Ok(iri) => Ok(iri),
+            Err(IriSError::IriParseError { str, err }) => Err(E::custom(format!(
+                "Error parsing value \"{v}\" as IRI. String \"{str}\", Error: {err}"
+            ))),
+            Err(other) => Err(E::custom(format!(
+                "Can not parse value \"{v}\" to IRI. Error: {other}"
+            ))),
+        }
     }
 }
 

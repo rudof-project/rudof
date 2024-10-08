@@ -14,9 +14,11 @@ default = []
 rdf-star = [ "oxrdf/rdf-star" ]
 
 [dependencies]
+lazy_static = "1"
 oxrdf = { version = "0.2.0-alpha.5" }
 oxiri = "0.2.3-alpha.1"
-thiserror = "1.0.0"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde = "1.0"
 serde_derive = "1.0"
-lazy_static = "1"
+thiserror = "1.0.0"
+url = "2.2.2"

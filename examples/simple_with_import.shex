@@ -1,0 +1,10 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+# import <https://raw.githubusercontent.com/labra/validatingRDFBookExamples/refs/heads/master/ch04-ShEx/401_firstExample.shex>
+import <user.shex>
+
+:Person { :name       xsd:string  ;
+          :birthdate  xsd:date  ? ;
+          :enrolledIn @:Course *
+}
+:Course { :name xsd:string }

@@ -1,4 +1,6 @@
 use either::Either;
+use iri_s::IriS;
+use reqwest::Url;
 use std::{
     fs,
     io::{self, BufReader, StdinLock},
@@ -18,6 +20,24 @@ pub enum InputSpec {
 impl InputSpec {
     pub fn path<P: AsRef<Path>>(path: P) -> InputSpec {
         InputSpec::Path(PathBuf::from(path.as_ref()))
+    }
+
+    pub fn as_iri(&self) -> Result<IriS, InputSpecError> {
+        match self {
+            InputSpec::Path(path) => {
+                let path_absolute =
+                    path.canonicalize()
+                        .map_err(|err| InputSpecError::AbsolutePathError {
+                            path: path.to_string_lossy().to_string(),
+                            error: err,
+                        })?;
+                let url = Url::from_file_path(path_absolute)
+                    .map_err(|_| InputSpecError::FromFilePath { path: path.clone() })?;
+                Ok(IriS::new_unchecked(url.as_str()))
+            }
+            InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
+            InputSpec::Url(url) => Ok(IriS::new_unchecked(url.as_str())),
+        }
     }
 
     // The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
@@ -70,4 +90,10 @@ pub enum InputSpecError {
         #[from]
         err: reqwest::Error,
     },
+
+    #[error("From file path: {path}")]
+    FromFilePath { path: PathBuf },
+
+    #[error("Absolute path error: {path}, error: {error}")]
+    AbsolutePathError { path: String, error: io::Error },
 }
