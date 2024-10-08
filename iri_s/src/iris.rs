@@ -62,7 +62,7 @@ impl IriS {
     /// This function checks for possible errors returning a Result
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let current_str = self.iri.as_str();
-        let extended_str = if current_str.ends_with("/") || current_str.ends_with("#") {
+        let extended_str = if current_str.ends_with('/') || current_str.ends_with('#') {
             format!("{}{}", current_str, str)
         } else {
             format!("{}/{}", current_str, str)
