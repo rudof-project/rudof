@@ -27,7 +27,7 @@ pub enum SchemaWithoutImportsError {
     #[error("Resolving string: {str} as IRI with base: {base}")]
     ResolvingStrIri {
         str: String,
-        base: IriS,
-        error: IriSError,
+        base: Box<IriS>,
+        error: Box<IriSError>,
     },
 }

@@ -68,13 +68,7 @@ impl SchemaWithoutImports {
                 Self::add_shape_decl(&mut map, decl, &schema.source_iri())?;
             }
         }
-        Self::resolve_imports_visited(
-            &mut pending,
-            &mut visited,
-            &base,
-            &resolve_method,
-            &mut map,
-        )?;
+        Self::resolve_imports_visited(&mut pending, &mut visited, base, &resolve_method, &mut map)?;
         Ok(SchemaWithoutImports {
             source_schema: Box::new(schema.clone()),
             local_shapes_counter,
@@ -174,9 +168,9 @@ pub fn resolve_iri_or_str(
                     let iri =
                         base.join(str)
                             .map_err(|e| SchemaWithoutImportsError::ResolvingStrIri {
-                                base: base.clone(),
+                                base: Box::new(base.clone()),
                                 str: str.clone(),
-                                error: e,
+                                error: Box::new(e),
                             })?;
                     Ok(iri)
                 }
@@ -219,7 +213,7 @@ pub fn get_schema_from_iri(
         }
         ShExFormat::ShExJ => {
             let schema =
-                Schema::from_iri(&iri).map_err(|e| SchemaWithoutImportsError::ShExJError {
+                Schema::from_iri(iri).map_err(|e| SchemaWithoutImportsError::ShExJError {
                     iri: iri.clone(),
                     error: format!("{e}"),
                 })?;

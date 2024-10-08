@@ -50,9 +50,9 @@ impl IriS {
             err: e.to_string(),
         })?;
         let joined = url.join(str).map_err(|e| IriSError::JoinError {
-            str: str.to_string(),
-            current: self.clone(),
-            err: e.to_string(),
+            str: Box::new(str.to_string()),
+            current: Box::new(self.clone()),
+            err: Box::new(e.to_string()),
         })?;
         Ok(IriS::new_unchecked(joined.as_str()))
     }
@@ -93,9 +93,9 @@ impl IriS {
         let resolved = base
             .resolve(other_str)
             .map_err(|e| IriSError::IriResolveError {
-                err: e.to_string(),
-                base: self.clone(),
-                other: other.clone(),
+                err: Box::new(e.to_string()),
+                base: Box::new(self.clone()),
+                other: Box::new(other.clone()),
             })?;
         let iri = NamedNode::new(resolved.as_str()).map_err(|e| IriSError::IriParseError {
             str: resolved.as_str().to_string(),
@@ -120,7 +120,7 @@ impl IriS {
                     .parse(self.iri.as_str())
                     .map_err(|e| IriSError::IriParseErrorWithBase {
                         str: self.iri.as_str().to_string(),
-                        base: base,
+                        base: Box::new(base),
                         error: format!("{e}"),
                     })?
             }
@@ -137,7 +137,7 @@ impl IriS {
                 let path_name = path.to_string_lossy().to_string();
                 let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
                     path: path_name,
-                    url: url.clone(),
+                    url: Box::new(url),
                     error: format!("{e}"),
                 })?;
                 Ok(body)

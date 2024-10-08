@@ -13,22 +13,22 @@ pub enum IriSError {
     #[error("Parsing {str} using base: {base} as IRI. Error: {error}")]
     IriParseErrorWithBase {
         str: String,
-        base: Url,
+        base: Box<Url>,
         error: String,
     },
 
     #[error("Error resolving IRI `{other}` with base IRI `{base}`: {err}")]
     IriResolveError {
-        err: String,
-        base: IriS,
-        other: IriS,
+        err: Box<String>,
+        base: Box<IriS>,
+        other: Box<IriS>,
     },
 
     #[error("Error joining IRI `{current}` with `{str}`: {err}")]
     JoinError {
-        err: String,
-        current: IriS,
-        str: String,
+        err: Box<String>,
+        current: Box<IriS>,
+        str: Box<String>,
     },
     #[error("Creating reqwest http client: {error}")]
     ReqwestClientCreation { error: String },
@@ -48,7 +48,7 @@ pub enum IriSError {
     #[error("Error reading from file {path} obtained from url {url}. Error: {error}")]
     IOErrorFile {
         path: String,
-        url: Url,
+        url: Box<Url>,
         error: String,
     },
 }
