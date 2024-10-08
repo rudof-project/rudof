@@ -21,7 +21,7 @@ impl FromStr for InputConvertFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "csv" => Ok(InputConvertFormat::CSV),
-            "xslsx" => Ok(InputConvertFormat::Xlsx),
+            "xlsx" => Ok(InputConvertFormat::Xlsx),
             "shexc" => Ok(InputConvertFormat::ShExC),
             "shexj" => Ok(InputConvertFormat::ShExJ),
             "turtle" => Ok(InputConvertFormat::Turtle),

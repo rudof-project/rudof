@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.30] - 2024-08-10
+
+- Added support for imports #159
+- Solved typo xslsx -> xlsx #176
+
 ## [0.1.29] - 2024-09-30
 
 - Added option to use xlsx directly in tap2shex conversion
