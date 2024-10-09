@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::helper::helper_error::SRDFError;
+use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ReportError {

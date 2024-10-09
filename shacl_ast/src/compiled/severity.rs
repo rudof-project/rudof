@@ -1,6 +1,9 @@
+use iri_s::iri;
+use iri_s::IriS;
 use srdf::SRDFBasic;
 
 use crate::severity::Severity;
+use crate::*;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
@@ -31,5 +34,16 @@ impl<S: SRDFBasic> CompiledSeverity<S> {
         };
 
         Ok(ans)
+    }
+}
+
+impl<S: SRDFBasic> From<&CompiledSeverity<S>> for IriS {
+    fn from(value: &CompiledSeverity<S>) -> Self {
+        match value {
+            CompiledSeverity::Violation => iri!(SH_VIOLATION_STR),
+            CompiledSeverity::Warning => iri!(SH_WARNING_STR),
+            CompiledSeverity::Info => iri!(SH_INFO_STR),
+            CompiledSeverity::Generic(iri) => S::iri2iri_s(&iri),
+        }
     }
 }

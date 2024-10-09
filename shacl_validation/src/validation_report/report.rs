@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::helper::srdf::get_objects_for;
+use crate::helpers::srdf::get_objects_for;
 
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;

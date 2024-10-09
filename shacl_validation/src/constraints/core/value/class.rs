@@ -1,16 +1,18 @@
 use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::helpers::validate_ask_with;
-use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helper::srdf::get_objects_for;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::helpers::srdf::get_objects_for;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -18,6 +20,8 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
@@ -39,13 +43,21 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_with(value_nodes, &ValueNodeIteration, class)
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            class,
+        )
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
@@ -60,6 +72,6 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
             }
         };
 
-        validate_ask_with(store, value_nodes, query)
+        validate_ask_with(component, shape, store, value_nodes, query)
     }
 }
