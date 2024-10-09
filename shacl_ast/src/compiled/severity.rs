@@ -43,7 +43,7 @@ impl<S: SRDFBasic> From<&CompiledSeverity<S>> for IriS {
             CompiledSeverity::Violation => iri!(SH_VIOLATION_STR),
             CompiledSeverity::Warning => iri!(SH_WARNING_STR),
             CompiledSeverity::Info => iri!(SH_INFO_STR),
-            CompiledSeverity::Generic(iri) => S::iri2iri_s(&iri),
+            CompiledSeverity::Generic(iri) => S::iri2iri_s(iri),
         }
     }
 }
