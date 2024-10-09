@@ -4,32 +4,42 @@ use shacl_ast::*;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
-use crate::helper::srdf::get_object_for;
+use crate::helpers::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
 pub struct ValidationResult<S: SRDFBasic> {
-    focus_node: S::Term,                   // required
-    path: Option<S::Term>,                 // optional
-    value: Option<S::Term>,                // optional
-    source: Option<S::Term>,               // optional
-    constraint_component: Option<S::Term>, // TODO: this is required
-    details: Option<Vec<S::Term>>,         // optional
-    message: Option<S::Term>,              // optional
-    severity: Option<S::Term>,             // TODO: this is required
+    focus_node: S::Term,           // required
+    path: Option<S::Term>,         // optional
+    value: Option<S::Term>,        // optional
+    source: Option<S::Term>,       // optional
+    constraint_component: S::Term, // required
+    details: Option<Vec<S::Term>>, // optional
+    message: Option<S::Term>,      // optional
+    severity: S::Term,             // required
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<S: SRDFBasic> ValidationResult<S> {
-    pub fn new(focus_node: S::Term) -> Self {
+    pub fn new(
+        focus_node: S::Term,
+        path: Option<S::Term>,
+        value: Option<S::Term>,
+        source: Option<S::Term>,
+        constraint_component: S::Term,
+        details: Option<Vec<S::Term>>,
+        message: Option<S::Term>,
+        severity: S::Term,
+    ) -> Self {
         Self {
             focus_node,
-            path: Default::default(),
-            value: Default::default(),
-            source: Default::default(),
-            constraint_component: Default::default(),
-            details: Default::default(),
-            message: Default::default(),
-            severity: Default::default(),
+            path,
+            value,
+            source,
+            constraint_component,
+            details,
+            message,
+            severity,
         }
     }
 }
@@ -87,10 +97,10 @@ impl<S: SRDF> ValidationResult<S> {
             path,
             value,
             source,
-            constraint_component: Some(constraint_component),
+            constraint_component,
             details: None,
             message: None,
-            severity: Some(severity),
+            severity,
         })
     }
 }

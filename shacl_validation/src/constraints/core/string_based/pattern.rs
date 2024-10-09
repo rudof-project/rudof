@@ -1,13 +1,15 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::helpers::validate_ask_with;
-use crate::constraints::helpers::validate_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -15,6 +17,8 @@ use crate::value_nodes::ValueNodes;
 impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
     fn validate_native<'a>(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
@@ -25,13 +29,15 @@ impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
                 todo!()
             }
         };
-        validate_with(value_nodes, &ValueNodeIteration, pattern)
+        validate_with(component, shape, value_nodes, ValueNodeIteration, pattern)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
@@ -49,6 +55,6 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
             },
         };
 
-        validate_ask_with(store, value_nodes, query)
+        validate_ask_with(component, shape, store, value_nodes, query)
     }
 }

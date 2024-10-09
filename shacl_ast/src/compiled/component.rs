@@ -1,6 +1,6 @@
 use crate::component::Component;
-use crate::node_kind::NodeKind;
 use crate::Schema;
+use crate::*;
 
 use super::compile_shape;
 use super::compile_shapes;
@@ -9,6 +9,9 @@ use super::convert_iri_ref;
 use super::convert_lang;
 use super::convert_value;
 use super::shape::CompiledShape;
+use iri_s::iri;
+use iri_s::IriS;
+use node_kind::NodeKind;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
 
@@ -706,5 +709,43 @@ impl<S: SRDFBasic> MinInclusive<S> {
 
     pub fn min_inclusive(&self) -> &S::Term {
         &self.min_inclusive
+    }
+}
+
+impl<S: SRDFBasic> From<&CompiledComponent<S>> for IriS {
+    fn from(value: &CompiledComponent<S>) -> Self {
+        match value {
+            CompiledComponent::Class(_) => iri!(SH_CLASS_STR),
+            CompiledComponent::Datatype(_) => iri!(SH_DATATYPE_STR),
+            CompiledComponent::NodeKind(_) => iri!(SH_IRI_STR),
+            CompiledComponent::MinCount(_) => iri!(SH_MIN_COUNT_STR),
+            CompiledComponent::MaxCount(_) => iri!(SH_MAX_COUNT_STR),
+            CompiledComponent::MinExclusive(_) => iri!(SH_MIN_EXCLUSIVE_STR),
+            CompiledComponent::MaxExclusive(_) => iri!(SH_MAX_EXCLUSIVE_STR),
+            CompiledComponent::MinInclusive(_) => iri!(SH_MIN_INCLUSIVE_STR),
+            CompiledComponent::MaxInclusive(_) => iri!(SH_MAX_INCLUSIVE_STR),
+            CompiledComponent::MinLength(_) => iri!(SH_MIN_LENGTH_STR),
+            CompiledComponent::MaxLength(_) => iri!(SH_MAX_LENGTH_STR),
+            CompiledComponent::Pattern { .. } => iri!(SH_PATTERN_STR),
+            CompiledComponent::UniqueLang(_) => iri!(SH_UNIQUE_LANG_STR),
+            CompiledComponent::LanguageIn { .. } => iri!(SH_LANGUAGE_IN_STR),
+            CompiledComponent::Equals(_) => iri!(SH_EQUALS_STR),
+            CompiledComponent::Disjoint(_) => iri!(SH_DISJOINT_STR),
+            CompiledComponent::LessThan(_) => iri!(SH_LESS_THAN_STR),
+            CompiledComponent::LessThanOrEquals(_) => {
+                iri!(SH_LESS_THAN_OR_EQUALS_STR)
+            }
+            CompiledComponent::Or { .. } => iri!(SH_OR_STR),
+            CompiledComponent::And { .. } => iri!(SH_AND_STR),
+            CompiledComponent::Not { .. } => iri!(SH_NOT_STR),
+            CompiledComponent::Xone { .. } => iri!(SH_XONE_STR),
+            CompiledComponent::Closed { .. } => iri!(SH_CLOSED_STR),
+            CompiledComponent::Node { .. } => iri!(SH_NODE_STR),
+            CompiledComponent::HasValue { .. } => iri!(SH_HAS_VALUE_STR),
+            CompiledComponent::In { .. } => iri!(SH_IN_STR),
+            CompiledComponent::QualifiedValueShape { .. } => {
+                iri!(SH_QUALIFIED_VALUE_SHAPE_STR)
+            }
+        }
     }
 }

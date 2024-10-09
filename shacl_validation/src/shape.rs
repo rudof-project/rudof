@@ -46,7 +46,7 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         let component_validation_results = self
             .components()
             .iter()
-            .flat_map(move |component| runner.evaluate(store, component, &value_nodes));
+            .flat_map(move |component| runner.evaluate(store, self, component, &value_nodes));
 
         // 4. After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those

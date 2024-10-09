@@ -72,8 +72,11 @@ impl<S: SRDFBasic> CompiledPropertyShape<S> {
         &self.deactivated
     }
 
-    pub fn severity(&self) -> &Option<CompiledSeverity<S>> {
-        &self.severity
+    pub fn severity(&self) -> &CompiledSeverity<S> {
+        match &self.severity {
+            Some(severity) => severity,
+            None => &CompiledSeverity::Violation,
+        }
     }
 
     pub fn components(&self) -> &Vec<CompiledComponent<S>> {

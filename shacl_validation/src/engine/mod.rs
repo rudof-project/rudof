@@ -17,6 +17,7 @@ pub trait Engine<S: SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
+        shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ValidateError>;

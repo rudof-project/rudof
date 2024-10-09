@@ -1,28 +1,34 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxInclusive;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::helpers::validate_ask_with;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_ask_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for MaxInclusive<S> {
     fn validate_native(
         &self,
+        _component: &CompiledComponent<S>,
+        _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        Err(ConstraintError::NotImplemented)
+        Err(ConstraintError::NotImplemented("MaxInclusive".to_string()))
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxInclusive<S> {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
@@ -35,6 +41,6 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxInclusive<S> {
             }
         };
 
-        validate_ask_with(store, value_nodes, query)
+        validate_ask_with(component, shape, store, value_nodes, query)
     }
 }
