@@ -6,7 +6,7 @@ use std::{
 
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-use shex_validation::ValidatorConfig;
+use shex_validation::ShExConfig;
 use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
@@ -20,7 +20,7 @@ pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
     pub annotation_label: Vec<IriS>,
     pub replace_iri_by_label: Option<bool>,
-    pub shex_config: Option<ValidatorConfig>,
+    pub shex: Option<ShExConfig>,
 }
 
 impl ShEx2UmlConfig {
@@ -33,7 +33,14 @@ impl ShEx2UmlConfig {
             plantuml_path,
             annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
             replace_iri_by_label: None,
-            shex_config: Some(ValidatorConfig::default()),
+            shex: Some(ShExConfig::default()),
+        }
+    }
+
+    pub fn shex_config(&self) -> ShExConfig {
+        match &self.shex {
+            None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
         }
     }
 

@@ -3,7 +3,7 @@ use std::path::Path;
 use serde_derive::{Deserialize, Serialize};
 use srdf::RdfDataConfig;
 
-use crate::{ValidatorError, MAX_STEPS};
+use crate::{ShExConfig, ValidatorError, MAX_STEPS};
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -14,6 +14,9 @@ pub struct ValidatorConfig {
 
     /// Configuration of RDF data readers
     pub data_config: Option<RdfDataConfig>,
+
+    /// Configuration of ShEx schemas
+    pub shex_config: Option<ShExConfig>,
 }
 
 impl Default for ValidatorConfig {
@@ -21,6 +24,7 @@ impl Default for ValidatorConfig {
         Self {
             max_steps: MAX_STEPS,
             data_config: Some(RdfDataConfig::default()),
+            shex_config: Some(ShExConfig::default()),
         }
     }
 }
@@ -49,5 +53,12 @@ impl ValidatorConfig {
 
     pub fn max_steps(&self) -> usize {
         self.max_steps
+    }
+
+    pub fn shex_config(&self) -> ShExConfig {
+        match &self.shex_config {
+            None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
+        }
     }
 }

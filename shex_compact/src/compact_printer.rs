@@ -3,7 +3,7 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
 use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
-use srdf::literal::Literal;
+use srdf::{literal::Literal, numeric_literal::NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(
@@ -16,7 +16,7 @@ pub(crate) fn pp_object_value<'a, A>(
         ObjectValue::Literal(Literal::BooleanLiteral(_value)) => {
             todo!()
         }
-        ObjectValue::Literal(Literal::NumericLiteral(_)) => todo!(),
+        ObjectValue::Literal(Literal::NumericLiteral(num)) => pp_numeric_literal(num, doc),
         ObjectValue::Literal(Literal::DatatypeLiteral { .. }) => todo!(),
         ObjectValue::Literal(Literal::StringLiteral { .. }) => todo!(),
     }
@@ -40,6 +40,17 @@ pub(crate) fn pp_bnode<'a, A>(
     doc: &'a Arena<'a, A>,
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     doc.text(format!("{value}"))
+}
+
+fn pp_numeric_literal<'a, A>(
+    value: &NumericLiteral,
+    doc: &'a Arena<'a, A>,
+) -> DocBuilder<'a, Arena<'a, A>, A> {
+    match value {
+        NumericLiteral::Integer(n) => doc.text(n.to_string()),
+        NumericLiteral::Decimal(decimal) => doc.text(decimal.to_string()),
+        NumericLiteral::Double(d) => doc.text(d.to_string()),
+    }
 }
 
 fn pp_iri_ref<'a, A>(

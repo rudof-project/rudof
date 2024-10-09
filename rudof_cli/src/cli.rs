@@ -83,11 +83,11 @@ pub enum Command {
         )]
         result_schema_format: ShExFormat,
 
-        #[arg(short = 't', long = "show elapsed time", default_value_t = false)]
-        show_time: bool,
+        #[arg(short = 't', long = "show elapsed time")]
+        show_time: Option<bool>,
 
-        #[arg(long = "statistics", default_value_t = false)]
-        show_statistics: bool,
+        #[arg(long = "statistics")]
+        show_statistics: Option<bool>,
 
         #[arg(
             short = 'o',
@@ -96,7 +96,6 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
-        /// RDF Reader mode
         #[arg(
             long = "reader-mode",
             value_name = "RDF Reader mode",

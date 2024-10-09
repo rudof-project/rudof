@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde_derive::{Deserialize, Serialize};
-use shex_ast::{IriOrStr, Schema, SchemaJsonError, ShapeDecl, ShapeExpr, ShapeExprLabel};
+use shex_ast::{IriOrStr, Schema, SchemaJsonError, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use shex_compact::ShExParser;
 use std::collections::{hash_map::Entry, HashMap};
 use tracing::debug;
@@ -131,6 +131,32 @@ impl SchemaWithoutImports {
             }
         }
         Ok(())
+    }
+
+    pub fn count_extends(&self) -> HashMap<usize, usize> {
+        let mut result = HashMap::new();
+        for (_, (shape, _)) in self.shapes() {
+            let extends_counter = match shape {
+                ShapeExpr::Shape(Shape { extends: None, .. }) => Some(0),
+                ShapeExpr::Shape(Shape {
+                    extends: Some(es), ..
+                }) => Some(es.len()),
+                _ => None,
+            };
+
+            if let Some(ec) = extends_counter {
+                match result.entry(ec) {
+                    Entry::Occupied(mut v) => {
+                        let r = v.get_mut();
+                        *r += 1;
+                    }
+                    Entry::Vacant(vac) => {
+                        vac.insert(1);
+                    }
+                }
+            }
+        }
+        result
     }
 }
 

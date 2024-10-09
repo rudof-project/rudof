@@ -1,20 +1,20 @@
 use std::{fs, io};
 
 use serde::{Deserialize, Serialize};
-use shex_validation::ValidatorConfig;
+use shex_validation::ShExConfig;
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2SparqlConfig {
     pub this_variable_name: String,
-    pub shex: Option<ValidatorConfig>,
+    pub shex: Option<ShExConfig>,
 }
 
 impl Default for ShEx2SparqlConfig {
     fn default() -> Self {
         Self {
             this_variable_name: "this".to_string(),
-            shex: Some(ValidatorConfig::default()),
+            shex: Some(ShExConfig::default()),
         }
     }
 }
@@ -33,6 +33,14 @@ impl ShEx2SparqlConfig {
                 error: e,
             }
         })
+    }
+
+    /// Get the ShExConfig if it has been declared or the default one
+    pub fn shex_config(&self) -> ShExConfig {
+        match &self.shex {
+            None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
+        }
     }
 }
 

@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.31] - 2024-08-??
+
+- Added ShExConfig to improve configuration of options that involve ShEx
+- Added literals to shape maps
+- Improved aesthetics of docs #170
+
 ## [0.1.30] - 2024-08-10
 
 - Added support for imports #159

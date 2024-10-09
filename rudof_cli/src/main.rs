@@ -37,10 +37,13 @@ use shapes_converter::{
 use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
-use shex_validation::{ResolveMethod, SchemaWithoutImports, Validator, ValidatorConfig};
+use shex_validation::{
+    ResolveMethod, SchemaWithoutImports, ShExConfig, ShExConfigMain, Validator, ValidatorConfig,
+};
 use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{QuerySolution2, RDFFormat, RdfDataConfig, SRDFBuilder, SRDFSparql, VarName2, SRDF};
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -114,14 +117,20 @@ fn main() -> Result<()> {
             reader_mode,
             config,
         }) => {
-            let config = get_shex_config(config)?;
+            let mut config = get_shex_config(config)?;
+            if let Some(flag) = show_statistics {
+                config.set_show_extends(*flag);
+            }
+            let show_time = match *show_time {
+                None => config.show_time.unwrap_or(false),
+                Some(b) => b,
+            };
             run_shex(
                 schema,
                 schema_format,
                 result_schema_format,
                 output,
-                *show_time,
-                *show_statistics,
+                show_time,
                 *force_overwrite,
                 reader_mode,
                 &config,
@@ -452,35 +461,36 @@ fn run_shex(
     result_schema_format: &ShExFormat,
     output: &Option<PathBuf>,
     show_time: bool,
-    show_statistics: bool,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
-    config: &ValidatorConfig,
+    config: &ShExConfigMain,
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(input, schema_format, reader_mode, config)?;
+    let schema_json = parse_schema(input, schema_format, reader_mode, &config.shex_config())?;
     show_schema(&schema_json, result_schema_format, writer, color)?;
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
-    if show_statistics {
-        let schema_resolved = SchemaWithoutImports::resolve_imports(
-            &schema_json,
-            &Some(schema_json.source_iri()),
-            Some(&ResolveMethod::default()),
-        )?;
+    let schema_resolved = SchemaWithoutImports::resolve_imports(
+        &schema_json,
+        &Some(schema_json.source_iri()),
+        Some(&ResolveMethod::default()),
+    )?;
+    if config.show_extends() {
+        show_extends_table(&mut io::stderr(), schema_resolved.count_extends())?;
+    }
+
+    if config.show_imports() {
         writeln!(
             io::stderr(),
-            "Local shapes: {:?}",
-            schema_resolved.local_shapes_count()
-        )?;
-        writeln!(
-            io::stderr(),
-            "Total shapes: {:?}",
+            "Local shapes: {}/Total shapes {}",
+            schema_resolved.local_shapes_count(),
             schema_resolved.total_shapes_count()
         )?;
+    }
+    if config.show_shapes() {
         for (shape_label, (_shape_expr, iri)) in schema_resolved.shapes() {
             let label = match shape_label {
                 ShapeExprLabel::IriRef { value } => {
@@ -551,7 +561,7 @@ fn run_validate_shex(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema, schema_format, reader_mode, config)?;
+    let schema_json = parse_schema(schema, schema_format, reader_mode, &config.shex_config())?;
     let mut schema: CompiledSchema = CompiledSchema::new();
     schema.from_schema_json(&schema_json)?;
     let rdf_data_config = match &config.data_config {
@@ -844,11 +854,7 @@ fn run_shex2uml(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let shex_config = match &config.shex_config {
-        None => ValidatorConfig::default(),
-        Some(cfg) => cfg.clone(),
-    };
-    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
+    let schema = parse_schema(input, &schema_format, reader_mode, &config.shex_config())?;
     let mut converter = ShEx2Uml::new(config);
     converter.convert(&schema)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -903,11 +909,7 @@ fn run_shex2html<P: AsRef<Path>>(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let shex_config = match &config.shex {
-        None => ValidatorConfig::default(),
-        Some(cfg) => cfg.clone(),
-    };
-    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
+    let schema = parse_schema(input, &schema_format, reader_mode, &config.shex_config())?;
     let config = config.clone().with_target_folder(output_folder.as_ref());
     let landing_page = config.landing_page().to_string_lossy().to_string();
     debug!("Landing page will be generated at {landing_page}\nStarted converter...");
@@ -970,11 +972,7 @@ fn run_shex2sparql(
         InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
         _ => Err(anyhow!("Can't obtain ShEx format from {format}")),
     }?;
-    let shex_config = match &config.shex {
-        None => ValidatorConfig::default(),
-        Some(cfg) => cfg.clone(),
-    };
-    let schema = parse_schema(input, &schema_format, reader_mode, &shex_config)?;
+    let schema = parse_schema(input, &schema_format, reader_mode, &config.shex_config())?;
     let converter = ShEx2Sparql::new(config);
     let sparql = converter.convert(&schema, shape)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -1401,7 +1399,7 @@ fn parse_schema(
     input: &InputSpec,
     schema_format: &ShExFormat,
     reader_mode: &RDFReaderMode,
-    config: &ValidatorConfig,
+    config: &ShExConfig,
 ) -> Result<SchemaJson> {
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
@@ -1419,15 +1417,11 @@ fn parse_schema(
             Ok(schema)
         }
         ShExFormat::Turtle => {
-            let data_config = match &config.data_config {
-                None => RdfDataConfig::default(),
-                Some(cfg) => cfg.clone(),
-            };
             let rdf = parse_data(
                 &vec![input.clone()],
                 &DataFormat::Turtle,
                 reader_mode,
-                &data_config,
+                &config.rdf_config(),
             )?;
             let schema = ShExRParser::new(rdf).parse()?;
             Ok(schema)
@@ -1549,16 +1543,16 @@ fn get_rdf_data_config(config: &Option<PathBuf>) -> Result<RdfDataConfig> {
     }
 }
 
-fn get_shex_config(config: &Option<PathBuf>) -> Result<ValidatorConfig> {
+fn get_shex_config(config: &Option<PathBuf>) -> Result<ShExConfigMain> {
     match config {
-        Some(config_path) => match ValidatorConfig::from_path(config_path) {
+        Some(config_path) => match ShExConfigMain::from_path(config_path) {
             Ok(c) => Ok(c),
             Err(e) => Err(anyhow!(
                 "Error obtaining Data config from {}: {e}",
                 config_path.display()
             )),
         },
-        None => Ok(ValidatorConfig::default()),
+        None => Ok(ShExConfigMain::default()),
     }
 }
 
@@ -1621,4 +1615,14 @@ fn map_data_format(data_format: &DataFormat) -> Result<srdf::RDFFormat> {
         DataFormat::N3 => Ok(srdf::RDFFormat::N3),
         DataFormat::NQuads => Ok(srdf::RDFFormat::NQuads),
     }
+}
+
+fn show_extends_table<R: Write>(
+    writer: &mut R,
+    extends_count: HashMap<usize, usize>,
+) -> Result<()> {
+    for (key, value) in extends_count.iter() {
+        writeln!(writer, "Shapes with {key} extends = {value}")?;
+    }
+    Ok(())
 }

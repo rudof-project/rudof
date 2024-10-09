@@ -5,9 +5,9 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    value_set_value::ValueSetValue, Annotation, BNode, NodeConstraint, NodeKind, NumericFacet,
-    ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet,
-    TripleExpr, XsFacet,
+    value_set_value::ValueSetValue, Annotation, BNode, IriOrStr, NodeConstraint, NodeKind,
+    NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
+    ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, marker::PhantomData};
@@ -190,9 +190,35 @@ where
     fn pp_schema(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.opt_pp(self.schema.prefixmap(), self.pp_prefix_map())
             .append(self.opt_pp(self.schema.base(), self.pp_base()))
+            .append(self.pp_imports(self.schema.imports()))
             .append(self.opt_pp(self.schema.start_actions(), self.pp_actions()))
             .append(self.opt_pp(self.schema.start(), self.pp_start()))
             .append(self.opt_pp(self.schema.shapes(), self.pp_shape_decls()))
+    }
+
+    fn pp_imports(&self, imports: Vec<IriOrStr>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        if imports.is_empty() {
+            self.doc.nil()
+        } else {
+            let mut docs = Vec::new();
+            for import in imports {
+                docs.push(
+                    self.keyword("import")
+                        .append(self.space())
+                        .append(self.pp_iri_or_str(import)),
+                )
+            }
+            self.doc
+                .intersperse(docs, self.doc.hardline())
+                .append(self.doc.hardline())
+        }
+    }
+
+    fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match iri_or_str {
+            IriOrStr::IriS(iri) => self.pp_iri(&iri),
+            IriOrStr::String(str) => self.pp_str(format!("<{}>", str.as_str()).as_str()),
+        }
     }
 
     fn pp_shape_decls(
@@ -769,6 +795,10 @@ where
 
     fn pp_iri(&self, iri: &IriS) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(self.prefixmap.qualify(iri))
+    }
+
+    fn pp_str(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(str.to_string())
     }
 
     fn opt_pp<V>(

@@ -5,7 +5,7 @@ use std::{
 
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-use shex_validation::ValidatorConfig;
+use shex_validation::ShExConfig;
 use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
@@ -28,7 +28,7 @@ pub struct ShEx2HtmlConfig {
     pub embed_svg_schema: bool,
     pub embed_svg_shape: bool,
     pub shex2uml: Option<ShEx2UmlConfig>,
-    pub shex: Option<ValidatorConfig>,
+    pub shex: Option<ShExConfig>,
 }
 
 impl Default for ShEx2HtmlConfig {
@@ -45,12 +45,20 @@ impl Default for ShEx2HtmlConfig {
             embed_svg_schema: true,
             embed_svg_shape: true,
             shex2uml: Some(ShEx2UmlConfig::new()),
-            shex: Some(ValidatorConfig::default()),
+            shex: Some(ShExConfig::default()),
         }
     }
 }
 
 impl ShEx2HtmlConfig {
+    /// Get the ShEx config if it has been declared or the default one
+    pub fn shex_config(&self) -> ShExConfig {
+        match &self.shex {
+            None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
+        }
+    }
+
     pub fn with_target_folder<P: AsRef<Path>>(mut self, target_folder: P) -> Self {
         self.target_folder = Some(target_folder.as_ref().to_path_buf());
         self

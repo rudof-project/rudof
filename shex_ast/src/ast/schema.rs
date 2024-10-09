@@ -1,10 +1,8 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::{Shape, ShapeExprLabel};
+use crate::ShapeExprLabel;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
@@ -241,36 +239,6 @@ impl Schema {
             ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(value),
             ShapeExprLabel::BNode { value: _ } => todo!(),
             ShapeExprLabel::Start => todo!(),
-        }
-    }
-
-    pub fn count_extends(&self) -> Option<HashMap<usize, usize>> {
-        if let Some(shapes) = self.shapes() {
-            let mut result = HashMap::new();
-            for shape in shapes {
-                let extends_counter = match shape.shape_expr {
-                    ShapeExpr::Shape(Shape { extends: None, .. }) => Some(0),
-                    ShapeExpr::Shape(Shape {
-                        extends: Some(es), ..
-                    }) => Some(es.len()),
-                    _ => None,
-                };
-
-                if let Some(ec) = extends_counter {
-                    match result.entry(ec) {
-                        Entry::Occupied(mut v) => {
-                            let r = v.get_mut();
-                            *r += 1;
-                        }
-                        Entry::Vacant(vac) => {
-                            vac.insert(1);
-                        }
-                    }
-                }
-            }
-            Some(result)
-        } else {
-            None
         }
     }
 
