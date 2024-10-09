@@ -1,7 +1,7 @@
 pub(crate) mod constraints;
 pub(crate) mod engine;
 pub(crate) mod focus_nodes;
-pub mod helper;
+pub(crate) mod helpers;
 pub mod shacl_config;
 pub mod shacl_processor;
 pub mod shacl_validation_vocab;

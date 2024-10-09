@@ -7,9 +7,9 @@ use srdf::SHACLPath;
 
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
-use crate::helper::sparql::select;
+use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 use super::Engine;
@@ -20,11 +20,12 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,
+        shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ValidateError> {
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(store, value_nodes)?)
+        Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

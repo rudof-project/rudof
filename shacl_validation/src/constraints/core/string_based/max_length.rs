@@ -1,75 +1,66 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    let result = ValidationResult::new(focus_node, Some(value_node));
-                    Some(result)
-                } else {
-                    let string_representation = match S::term_as_string(value_node) {
-                        Some(string_representation) => string_representation,
-                        None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
-                    };
-                    if string_representation.len() > self.max_length() as usize {
-                        let result = ValidationResult::new(focus_node, Some(value_node));
-                        Some(result)
-                    } else {
-                        None
-                    }
-                }
-            });
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        let max_length = |value_node: &S::Term| {
+            if S::term_is_bnode(value_node) {
+                true
+            } else {
+                let string_representation = match S::term_as_string(value_node) {
+                    Some(string_representation) => string_representation,
+                    None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
+                };
+                string_representation.len() > self.max_length() as usize
+            }
+        };
 
-        Ok(ValidationResults::new(results))
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            max_length,
+        )
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .filter_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    Some(ValidationResult::new(focus_node, Some(value_node)))
-                } else {
-                    let query = formatdoc! {
-                        " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
-                        value_node, self.max_length()
-                    };
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        let max_length_value = self.max_length();
 
-                    let ask = match store.query_ask(&query) {
-                        Ok(ask) => ask,
-                        Err(_) => return None,
-                    };
+        let query = |value_node: &S::Term| {
+            formatdoc! {
+                " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
+                value_node, max_length_value
+            }
+        };
 
-                    if !ask {
-                        Some(ValidationResult::new(focus_node, Some(value_node)))
-                    } else {
-                        None
-                    }
-                }
-            });
-
-        Ok(ValidationResults::new(results))
+        validate_ask_with(component, shape, store, value_nodes, query)
     }
 }

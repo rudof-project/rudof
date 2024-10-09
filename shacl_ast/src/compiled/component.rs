@@ -1,6 +1,6 @@
 use crate::component::Component;
-use crate::node_kind::NodeKind;
 use crate::Schema;
+use crate::*;
 
 use super::compile_shape;
 use super::compile_shapes;
@@ -9,6 +9,9 @@ use super::convert_iri_ref;
 use super::convert_lang;
 use super::convert_value;
 use super::shape::CompiledShape;
+use iri_s::iri;
+use iri_s::IriS;
+use node_kind::NodeKind;
 use srdf::RDFNode;
 use srdf::SRDFBasic;
 
@@ -165,7 +168,6 @@ impl<S: SRDFBasic> CompiledComponent<S> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
-
 pub struct MaxCount {
     max_count: usize,
 }
@@ -189,7 +191,6 @@ impl MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
-
 pub struct MinCount {
     min_count: usize,
 }
@@ -210,7 +211,6 @@ impl MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-
 pub struct And<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -229,7 +229,6 @@ impl<S: SRDFBasic> And<S> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-
 pub struct Not<S: SRDFBasic> {
     shape: CompiledShape<S>,
 }
@@ -249,7 +248,6 @@ impl<S: SRDFBasic> Not<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-
 pub struct Or<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -269,7 +267,6 @@ impl<S: SRDFBasic> Or<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-
 pub struct Xone<S: SRDFBasic> {
     shapes: Vec<CompiledShape<S>>,
 }
@@ -284,6 +281,8 @@ impl<S: SRDFBasic> Xone<S> {
     }
 }
 
+/// Closed Constraint Component.
+///
 /// The RDF data model offers a huge amount of flexibility. Any node can in
 /// principle have values for any property. However, in some cases it makes
 /// sense to specify conditions on which properties can be applied to nodes.
@@ -292,8 +291,7 @@ impl<S: SRDFBasic> Xone<S> {
 /// those properties that have been explicitly enumerated via the property
 /// shapes specified for the shape via sh:property.
 ///
-/// https://www.w3.org/TR/shacl/#InConstraintComponent
-
+/// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
 pub struct Closed<S: SRDFBasic> {
     is_closed: bool,
     ignored_properties: Vec<S::IRI>,
@@ -320,7 +318,6 @@ impl<S: SRDFBasic> Closed<S> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-
 pub struct HasValue<S: SRDFBasic> {
     value: S::Term,
 }
@@ -339,7 +336,6 @@ impl<S: SRDFBasic> HasValue<S> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-
 pub struct In<S: SRDFBasic> {
     values: Vec<S::Term>,
 }
@@ -359,7 +355,6 @@ impl<S: SRDFBasic> In<S> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-
 pub struct Disjoint<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -379,7 +374,6 @@ impl<S: SRDFBasic> Disjoint<S> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-
 pub struct Equals<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -394,12 +388,13 @@ impl<S: SRDFBasic> Equals<S> {
     }
 }
 
+/// LessThanOrEquals Constraint Component.
+///
 /// sh:lessThanOrEquals specifies the condition that each value node is smaller
 /// than or equal to all the objects of the triples that have the focus node
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-
 pub struct LessThanOrEquals<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -419,7 +414,6 @@ impl<S: SRDFBasic> LessThanOrEquals<S> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-
 pub struct LessThan<S: SRDFBasic> {
     iri_ref: S::IRI,
 }
@@ -438,7 +432,6 @@ impl<S: SRDFBasic> LessThan<S> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-
 pub struct Node<S: SRDFBasic> {
     shape: CompiledShape<S>,
 }
@@ -453,13 +446,14 @@ impl<S: SRDFBasic> Node<S> {
     }
 }
 
+/// QualifiedValueShape Constraint Component.
+///
 /// sh:qualifiedValueShape specifies the condition that a specified number of
 ///  value nodes conforms to the given shape. Each sh:qualifiedValueShape can
 ///  have: one value for sh:qualifiedMinCount, one value for
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-
 pub struct QualifiedValueShape<S: SRDFBasic> {
     shape: CompiledShape<S>,
     qualified_min_count: Option<isize>,
@@ -503,7 +497,6 @@ impl<S: SRDFBasic> QualifiedValueShape<S> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-
 pub struct LanguageIn<S: SRDFBasic> {
     langs: Vec<S::Literal>,
 }
@@ -523,7 +516,6 @@ impl<S: SRDFBasic> LanguageIn<S> {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
-
 pub struct MaxLength {
     max_length: isize,
 }
@@ -543,7 +535,6 @@ impl MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-
 pub struct MinLength {
     min_length: isize,
 }
@@ -562,7 +553,6 @@ impl MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -586,7 +576,6 @@ impl Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -605,7 +594,6 @@ impl UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-
 pub struct Class<S: SRDFBasic> {
     class_rule: S::Term,
 }
@@ -624,7 +612,6 @@ impl<S: SRDFBasic> Class<S> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-
 pub struct Datatype<S: SRDFBasic> {
     datatype: S::IRI,
 }
@@ -643,7 +630,6 @@ impl<S: SRDFBasic> Datatype<S> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -659,7 +645,6 @@ impl Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-
 pub struct MaxExclusive<S: SRDFBasic> {
     max_exclusive: S::Term,
 }
@@ -677,7 +662,6 @@ impl<S: SRDFBasic> MaxExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-
 pub struct MaxInclusive<S: SRDFBasic> {
     max_inclusive: S::Term,
 }
@@ -695,7 +679,6 @@ impl<S: SRDFBasic> MaxInclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-
 pub struct MinExclusive<S: SRDFBasic> {
     min_exclusive: S::Term,
 }
@@ -713,7 +696,6 @@ impl<S: SRDFBasic> MinExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-
 pub struct MinInclusive<S: SRDFBasic> {
     min_inclusive: S::Term,
 }
@@ -727,5 +709,43 @@ impl<S: SRDFBasic> MinInclusive<S> {
 
     pub fn min_inclusive(&self) -> &S::Term {
         &self.min_inclusive
+    }
+}
+
+impl<S: SRDFBasic> From<&CompiledComponent<S>> for IriS {
+    fn from(value: &CompiledComponent<S>) -> Self {
+        match value {
+            CompiledComponent::Class(_) => iri!(SH_CLASS_STR),
+            CompiledComponent::Datatype(_) => iri!(SH_DATATYPE_STR),
+            CompiledComponent::NodeKind(_) => iri!(SH_IRI_STR),
+            CompiledComponent::MinCount(_) => iri!(SH_MIN_COUNT_STR),
+            CompiledComponent::MaxCount(_) => iri!(SH_MAX_COUNT_STR),
+            CompiledComponent::MinExclusive(_) => iri!(SH_MIN_EXCLUSIVE_STR),
+            CompiledComponent::MaxExclusive(_) => iri!(SH_MAX_EXCLUSIVE_STR),
+            CompiledComponent::MinInclusive(_) => iri!(SH_MIN_INCLUSIVE_STR),
+            CompiledComponent::MaxInclusive(_) => iri!(SH_MAX_INCLUSIVE_STR),
+            CompiledComponent::MinLength(_) => iri!(SH_MIN_LENGTH_STR),
+            CompiledComponent::MaxLength(_) => iri!(SH_MAX_LENGTH_STR),
+            CompiledComponent::Pattern { .. } => iri!(SH_PATTERN_STR),
+            CompiledComponent::UniqueLang(_) => iri!(SH_UNIQUE_LANG_STR),
+            CompiledComponent::LanguageIn { .. } => iri!(SH_LANGUAGE_IN_STR),
+            CompiledComponent::Equals(_) => iri!(SH_EQUALS_STR),
+            CompiledComponent::Disjoint(_) => iri!(SH_DISJOINT_STR),
+            CompiledComponent::LessThan(_) => iri!(SH_LESS_THAN_STR),
+            CompiledComponent::LessThanOrEquals(_) => {
+                iri!(SH_LESS_THAN_OR_EQUALS_STR)
+            }
+            CompiledComponent::Or { .. } => iri!(SH_OR_STR),
+            CompiledComponent::And { .. } => iri!(SH_AND_STR),
+            CompiledComponent::Not { .. } => iri!(SH_NOT_STR),
+            CompiledComponent::Xone { .. } => iri!(SH_XONE_STR),
+            CompiledComponent::Closed { .. } => iri!(SH_CLOSED_STR),
+            CompiledComponent::Node { .. } => iri!(SH_NODE_STR),
+            CompiledComponent::HasValue { .. } => iri!(SH_HAS_VALUE_STR),
+            CompiledComponent::In { .. } => iri!(SH_IN_STR),
+            CompiledComponent::QualifiedValueShape { .. } => {
+                iri!(SH_QUALIFIED_VALUE_SHAPE_STR)
+            }
+        }
     }
 }

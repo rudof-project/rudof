@@ -103,8 +103,8 @@ fn main() -> Result<(), TestSuiteError> {
                     count += 1;
                 } else {
                     println!("{} failed", label);
-                    println!("Actual: {}", actual);
-                    println!("Expected: {}", test.result);
+                    println!("Actual: {:?}", actual);
+                    println!("Expected: {:?}", test.result);
                 }
             }
             Err(error) => {

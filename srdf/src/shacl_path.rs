@@ -35,3 +35,17 @@ impl Display for SHACLPath {
         }
     }
 }
+
+impl From<SHACLPath> for &str {
+    fn from(value: SHACLPath) -> Self {
+        match value {
+            SHACLPath::Predicate { .. } => todo!(),
+            SHACLPath::Alternative { .. } => todo!(),
+            SHACLPath::Sequence { .. } => todo!(),
+            SHACLPath::Inverse { .. } => todo!(),
+            SHACLPath::ZeroOrMore { .. } => todo!(),
+            SHACLPath::OneOrMore { .. } => todo!(),
+            SHACLPath::ZeroOrOne { .. } => todo!(),
+        }
+    }
+}

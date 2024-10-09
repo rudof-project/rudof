@@ -9,10 +9,10 @@ use srdf::SRDF;
 
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
-use crate::helper::srdf::get_objects_for;
-use crate::helper::srdf::get_subjects_for;
+use crate::helpers::srdf::get_objects_for;
+use crate::helpers::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 use super::Engine;
@@ -23,11 +23,12 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,
+        shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ValidateError> {
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_native(store, value_nodes)?)
+        Ok(validator.validate_native(component, shape, store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

@@ -1,27 +1,19 @@
 use thiserror::Error;
 
-use crate::helper::helper_error::{SPARQLError, SRDFError};
+use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ReportError {
-    #[error("Error during the SPARQL operation")]
-    SPARQL(#[from] SPARQLError),
-    #[error("Error during the creation of the Validation Result")]
-    ValidationResult(#[from] ResultError),
-    #[error("Error related to SRDF")]
-    SRDF(#[from] SRDFError),
-    #[error("Error querying")]
-    Query,
-    #[error("Cannot parse Literal to Subject")]
-    LiteralToSubject,
-    #[error("Invalid kind of term")]
-    InvalidTerm,
+    #[error("Error parsing the ValidationReport, {}", _0)]
+    Srdf(#[from] SRDFError),
+    #[error(transparent)]
+    Result(#[from] ResultError),
 }
 
 #[derive(Error, Debug)]
 pub enum ResultError {
-    #[error("Error related to SRDF")]
-    SRDF(#[from] SRDFError),
-    #[error("Cannot parse Literal to Subject")]
-    LiteralToSubject,
+    #[error("Error parsing the ValidationResult, the {} field is missing", _0)]
+    MissingRequiredField(String),
+    #[error("Error parsing the ValidationResult, {}", _0)]
+    Srdf(#[from] SRDFError),
 }
