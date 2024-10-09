@@ -33,13 +33,7 @@ impl<S: SRDFBasic> Validator<S> for Datatype<S> {
             true
         };
 
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            datatype,
-        )
+        validate_with(component, shape, value_nodes, ValueNodeIteration, datatype)
     }
 }
 

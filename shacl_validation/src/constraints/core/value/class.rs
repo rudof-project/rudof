@@ -43,13 +43,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            class,
-        )
+        validate_with(component, shape, value_nodes, ValueNodeIteration, class)
     }
 }
 
