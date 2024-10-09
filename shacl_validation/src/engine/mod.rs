@@ -7,7 +7,7 @@ use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub mod native;
@@ -17,9 +17,10 @@ pub trait Engine<S: SRDFBasic> {
     fn evaluate(
         &self,
         store: &S,
+        shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ValidateError>;
+    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
 
     fn focus_nodes(
         &self,
@@ -29,7 +30,7 @@ pub trait Engine<S: SRDFBasic> {
     ) -> Result<FocusNodes<S>, ValidateError> {
         let explicit = targets
             .iter()
-            .filter_map(move |target| match target {
+            .flat_map(|target| match target {
                 CompiledTarget::TargetNode(node) => match self.target_node(store, node) {
                     Ok(target_node) => Some(target_node),
                     Err(_) => None,

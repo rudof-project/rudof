@@ -49,6 +49,22 @@ impl<S: SRDFBasic> CompiledShape<S> {
             CompiledShape::PropertyShape(ps) => ps.property_shapes(),
         }
     }
+
+    pub fn path(&self) -> Option<S::Term> {
+        match self {
+            CompiledShape::NodeShape(_) => None,
+            CompiledShape::PropertyShape(_ps) => todo!(),
+        }
+    }
+
+    pub fn severity(&self) -> S::Term {
+        let iri_s = match self {
+            CompiledShape::NodeShape(ns) => ns.severity().into(),
+            CompiledShape::PropertyShape(ps) => ps.severity().into(),
+        };
+
+        S::iri_as_term(S::iri_s2iri(&iri_s))
+    }
 }
 
 impl<S: SRDFBasic> CompiledShape<S> {

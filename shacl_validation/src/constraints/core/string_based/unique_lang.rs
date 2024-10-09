@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::UniqueLang;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
@@ -13,65 +15,71 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDFBasic> Validator<S> for UniqueLang {
     fn validate(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         if !self.unique_lang() {
-            return Ok(ValidationResults::default());
+            return Ok(Default::default());
         }
 
-        let langs = Rc::new(RefCell::new(Vec::new()));
+        let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
 
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                let langs = Rc::clone(&langs);
-                let mut langs = langs.borrow_mut();
+        let unique_lang = |value_node: &S::Term| {
+            if let Some(literal) = S::term_as_literal(value_node) {
+                if let Some(lang) = S::lang(&literal) {
+                    let mut langs_borrowed = langs.borrow_mut();
 
-                if let Some(literal) = S::term_as_literal(value_node) {
-                    if let Some(lang) = S::lang(&literal) {
-                        if langs.contains(&lang) {
-                            Some(ValidationResult::new(focus_node, Some(value_node)))
-                        } else {
-                            langs.push(lang);
-                            None
-                        }
+                    if langs_borrowed.contains(&lang) {
+                        return true;
                     } else {
-                        None
+                        langs_borrowed.push(lang);
                     }
-                } else {
-                    None
                 }
-            });
+            }
+            false
+        };
 
-        Ok(ValidationResults::new(results))
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            unique_lang,
+        )
     }
 }
 
 impl<S: SRDF + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(store, NativeEngine, value_nodes)
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        self.validate(store, SparqlEngine, value_nodes)
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

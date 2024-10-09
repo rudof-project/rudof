@@ -1,39 +1,46 @@
 use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::engine::Engine;
-use crate::validation_report::result::ValidationResults;
+use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub mod constraint_error;
 pub mod core;
 
-pub(crate) trait Validator<S: SRDFBasic> {
+pub trait Validator<S: SRDFBasic> {
     fn validate(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 pub trait NativeValidator<S: SRDF> {
     fn validate_native(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 pub trait SparqlValidator<S: QuerySRDF> {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
 }
 
 macro_rules! generate_deref_fn {

@@ -18,6 +18,8 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq)]
+/// Backend used for the validation.
+///
 /// According to the SHACL Recommendation, there exists no concrete method for
 /// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
 /// the user can select which engine is used for the validation.
@@ -28,25 +30,27 @@ pub enum ShaclValidationMode {
     Sparql,
 }
 
-/// The ShaclProcessor trait is the one in charge of applying the SHACL Validation
-/// algorithm. For this, first, the validation report is initiliazed to empty,
-/// and, for each shape in the schema, the target nodes are selected, and then,
-/// each validator for each constraint is applied.
+/// The basic operations of the SHACL Processor.
+///
+/// The ShaclProcessor trait is the one in charge of applying the SHACL
+/// Validation algorithm. For this, first, the validation report is initiliazed
+/// to empty, and, for each shape in the schema, the target nodes are
+/// selected, and then, each validator for each constraint is applied.
 pub trait ShaclProcessor<S: SRDFBasic> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
     fn validate(&self, schema: &CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
-        let mut validation_report = ValidationReport::default();
+        let mut validation_results = Vec::new();
 
         // for each shape in the schema
         for (_, shape) in schema.iter() {
             let results = shape.validate(self.store(), self.runner(), None)?;
-            validation_report.add_results(results);
+            validation_results.extend(results);
         }
 
-        Ok(validation_report) // return the possibly empty validation report
+        Ok(ValidationReport::new(validation_results)) // return the possibly empty validation report
     }
 }
 

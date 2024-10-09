@@ -1,72 +1,60 @@
 use indoc::formatdoc;
+use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
-use crate::validation_report::result::ValidationResults;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
     fn validate_native<'a>(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .flat_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    let result = ValidationResult::new(focus_node, Some(value_node));
-                    Some(result)
-                } else {
-                    None
-                }
-            });
-
-        Ok(ValidationResults::new(results))
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        let pattern = |value_node: &S::Term| {
+            if S::term_is_bnode(value_node) {
+                true
+            } else {
+                todo!()
+            }
+        };
+        validate_with(component, shape, value_nodes, ValueNodeIteration, pattern)
     }
 }
 
 impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<ValidationResults<S>, ConstraintError> {
-        let results = value_nodes
-            .iter_value_nodes()
-            .filter_map(move |(focus_node, value_node)| {
-                if S::term_is_bnode(value_node) {
-                    Some(ValidationResult::new(focus_node, Some(value_node)))
-                } else {
-                    let query = match self.flags() {
-                        Some(flags) => formatdoc! {
-                            "ASK {{ FILTER (regex(str({}), {}, {})) }}",
-                            value_node, self.pattern(), flags
-                        },
-                        None => formatdoc! {
-                            "ASK {{ FILTER (regex(str({}), {})) }}",
-                            value_node, self.pattern()
-                        },
-                    };
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        let flags = self.flags().clone();
+        let pattern = self.pattern().clone();
 
-                    let ask = match store.query_ask(&query) {
-                        Ok(ask) => ask,
-                        Err(_) => return None,
-                    };
+        let query = |value_node: &S::Term| match &flags {
+            Some(flags) => formatdoc! {
+                "ASK {{ FILTER (regex(str({}), {}, {})) }}",
+                value_node, pattern, flags
+            },
+            None => formatdoc! {
+                "ASK {{ FILTER (regex(str({}), {})) }}",
+                value_node, pattern
+            },
+        };
 
-                    if !ask {
-                        Some(ValidationResult::new(focus_node, Some(value_node)))
-                    } else {
-                        None
-                    }
-                }
-            });
-
-        Ok(ValidationResults::new(results))
+        validate_ask_with(component, shape, store, value_nodes, query)
     }
 }

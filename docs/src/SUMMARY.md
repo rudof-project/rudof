@@ -9,4 +9,5 @@
 - [ShEx](./shex.md)
 - [SHACL](./shacl.md)
 - [Data model conversion](./conversion.md)
+- [Benchmarks](./benchmark.md)
 - [About](./about.md)
