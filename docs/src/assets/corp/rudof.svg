@@ -3,8 +3,8 @@
 
 <svg
    width="484.8035mm"
-   height="162.34799mm"
-   viewBox="0 0 1832.3282 613.59872"
+   height="162.34798mm"
+   viewBox="0 0 1832.3282 613.59866"
    version="1.1"
    id="svg1"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -95,6 +95,13 @@
        gradientTransform="matrix(-1,0,0,1,609.6,0)"
        xlink:href="#_%E5%90%8D%E7%A7%B0%E6%9C%AA%E8%A8%AD%E5%AE%9A%E3%82%B0%E3%83%A9%E3%83%87%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3_82" />
   </defs>
+  <ellipse
+     style="fill:#e6e6e4;fill-opacity:0.996078;stroke-width:1.05266"
+     id="path1"
+     cx="389.63544"
+     cy="376.42709"
+     rx="81.121262"
+     ry="77.421921" />
   <g
      id="layer1"
      transform="translate(-4.2419822,-178.09384)">
