@@ -11,12 +11,12 @@ It is possible to obtain information about a node in an RDF graph.
 Given the following file in `examples/user.shex`:
 
 ```turtle
-prefix : <http://example.org/>
-prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
-:a :name "Alice" ;
-   :birthdate "1990-05-02"^^xsd:date ;
-   :enrolledIn :cs101 .
+:a :name       "Alice"                  ;
+   :birthdate  "1990-05-02"^^xsd:date   ;
+   :enrolledIn :cs101                   .
 
 :b :name "Bob", "Robert" .
 
@@ -36,11 +36,11 @@ Information about node
 Outgoing arcs
 :a
  -:enrolledIn-> 
-      :cs101
+     :cs101
  -:birthdate-> 
-      "1990-05-02"^^<http://www.w3.org/2001/XMLSchema#date>
+     "1990-05-02"^^<http://www.w3.org/2001/XMLSchema#date>
  -:name-> 
-      "Alice"
+     "Alice"
 ```
 
 ## Merging RDF data
