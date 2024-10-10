@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="{{ language }}" class="{{ default_theme }}" dir="{{ text_direction }}">
+<html lang="{{ language }}" data-theme="{{ default_theme }}" data-color-scheme="{{ default_theme }}" dir="{{ text_direction }}">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -19,24 +19,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        {{#if favicon_svg}}
-        <link rel="icon" href="{{ path_to_root }}favicon.svg">
-        {{/if}}
-        {{#if favicon_png}}
-        <link rel="shortcut icon" href="{{ path_to_root }}favicon.png">
-        {{/if}}
+        <link rel="icon" type="image/x-icon" href="{{ path_to_root }}favicon.ico">
+
         <link rel="stylesheet" href="{{ path_to_root }}css/variables.css">
         <link rel="stylesheet" href="{{ path_to_root }}css/general.css">
         <link rel="stylesheet" href="{{ path_to_root }}css/chrome.css">
-        {{#if print_enable}}
-        <link rel="stylesheet" href="{{ path_to_root }}css/print.css" media="print">
-        {{/if}}
 
         <!-- Fonts -->
         <link rel="stylesheet" href="{{ path_to_root }}FontAwesome/css/font-awesome.css">
-        {{#if copy_fonts}}
-        <link rel="stylesheet" href="{{ path_to_root }}fonts/fonts.css">
-        {{/if}}
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="{{ path_to_root }}highlight.css">
@@ -47,11 +37,6 @@
         {{#each additional_css}}
         <link rel="stylesheet" href="{{ ../path_to_root }}{{ this }}">
         {{/each}}
-
-        {{#if mathjax_support}}
-        <!-- MathJax -->
-        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        {{/if}}
     </head>
     <body class="sidebar-visible no-js">
     <div id="body-container">
@@ -61,29 +46,15 @@
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "{{ preferred_dark_theme }}" : "{{ default_theme }}";
         </script>
 
-        <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script>
-            try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
-
-                if (theme.startsWith('"') && theme.endsWith('"')) {
-                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
-                }
-
-                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
-                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
-                }
-            } catch (e) { }
-        </script>
-
-        <!-- Set the theme before any content is loaded, prevents flash -->
+        <!-- Support dark mode -->
         <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
-            if (theme === null || theme === undefined) { theme = default_theme; }
+            if (theme === null || theme === undefined) {
+                theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
             var html = document.querySelector('html');
-            html.classList.remove('{{ default_theme }}')
+            html.classList.remove('light', 'dark')
             html.classList.add(theme);
             var body = document.querySelector('body');
             body.classList.remove('no-js')
@@ -112,7 +83,7 @@
             <div class="sidebar-scrollbox">
                 {{#toc}}{{/toc}}
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+            <div style="display: none;" id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
@@ -140,7 +111,6 @@
         </script>
 
         <div id="page-wrapper" class="page-wrapper">
-
             <div class="page">
                 {{> header}}
                 <div id="menu-bar-hover-placeholder"></div>
@@ -149,16 +119,15 @@
                         <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
                         </label>
+
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="dark">Dark</button></li>
                         </ul>
+
                         {{#if search_enabled}}
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
@@ -166,32 +135,28 @@
                         {{/if}}
                     </div>
 
-                    <h1 class="menu-title">{{ book_title }}</h1>
+                    <header class="menu-title">
+                        <a href="/">
+                            <img src="https://rudof-project.github.io/rudof/images/rudof_logo3.svg" alt="rudof" style="height: 28px;">
+                        </a>
+                    </header>
 
                     <div class="right-buttons">
-                        {{#if print_enable}}
-                        <a href="{{ path_to_root }}print.html" title="Print this book" aria-label="Print this book">
-                            <i id="print-button" class="fa fa-print"></i>
+                        <a class="download-button" href="https://github.com/rudof-project/rudof/releases/latest" title="Download rudof" aria-label="Download Zed">
+                            Download
                         </a>
-                        {{/if}}
                         {{#if git_repository_url}}
                         <a href="{{git_repository_url}}" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa {{git_repository_icon}}"></i>
                         </a>
                         {{/if}}
-                        {{#if git_repository_edit_url}}
-                        <a href="{{git_repository_edit_url}}" title="Suggest an edit" aria-label="Suggest an edit">
-                            <i id="git-edit-button" class="fa fa-edit"></i>
-                        </a>
-                        {{/if}}
-
                     </div>
                 </div>
 
                 {{#if search_enabled}}
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -211,87 +176,17 @@
                 </script>
 
                 <div id="content" class="content">
-                    <main>
-                        <div class="content-wrap">
-                            {{{ content }}}
-                        </div>
-                        <div class="sidetoc">
-                            <nav class="pagetoc"></nav>
-                        </div>
+                  <main>
+                      <div class="sidetoc">
+                          <nav class="pagetoc">
+                            <p class="toc-title">On this page</p>
+                          </nav>
+                      </div>
+                      {{{ content }}}
                     </main>
-
-                    <nav class="nav-wrapper" aria-label="Page navigation">
-                        <!-- Mobile navigation buttons -->
-                        {{#previous}}
-                            <a rel="prev" href="{{ path_to_root }}{{link}}" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                                <i class="fa fa-angle-left"></i>
-                            </a>
-                        {{/previous}}
-
-                        {{#next}}
-                            <a rel="next prefetch" href="{{ path_to_root }}{{link}}" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
-                            </a>
-                        {{/next}}
-
-                        <div style="clear: both"></div>
-                    </nav>
                 </div>
             </div>
-
-            <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                {{#previous}}
-                    <a rel="prev" href="{{ path_to_root }}{{link}}" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                        <i class="fa fa-angle-left"></i>
-                    </a>
-                {{/previous}}
-
-                {{#next}}
-                    <a rel="next prefetch" href="{{ path_to_root }}{{link}}" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
-                    </a>
-                {{/next}}
-            </nav>
-
         </div>
-
-        {{#if live_reload_endpoint}}
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "{{{live_reload_endpoint}}}";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
-        {{/if}}
-
-        {{#if google_analytics}}
-        <!-- Google Analytics Tag -->
-        <script>
-            var localAddrs = ["localhost", "127.0.0.1", ""];
-
-            // make sure we don't activate google analytics if the developer is
-            // inspecting the book locally...
-            if (localAddrs.indexOf(document.location.hostname) === -1) {
-                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-                ga('create', '{{google_analytics}}', 'auto');
-                ga('send', 'pageview');
-            }
-        </script>
-        {{/if}}
 
         {{#if playground_line_numbers}}
         <script>
@@ -328,24 +223,22 @@
         <script src="{{ ../path_to_root }}{{this}}"></script>
         {{/each}}
 
-        {{#if is_print}}
-        {{#if mathjax_support}}
         <script>
-        window.addEventListener('load', function() {
-            MathJax.Hub.Register.StartupHook('End', function() {
-                window.setTimeout(window.print, 100);
-            });
-        });
+          (function() {
+            var theme = localStorage.getItem('mdbook-theme');
+            var html = document.querySelector('html');
+            if (theme) {
+              html.setAttribute('data-theme', theme);
+              html.setAttribute('data-color-scheme', theme);
+              html.className = theme;
+            } else {
+              var systemPreference = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+              html.setAttribute('data-theme', systemPreference);
+              html.setAttribute('data-color-scheme', systemPreference);
+              html.className = systemPreference;
+            }
+          })();
         </script>
-        {{else}}
-        <script>
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
-        {{/if}}
-        {{/if}}
-
     </div>
     </body>
 </html>
