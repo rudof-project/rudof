@@ -11,7 +11,7 @@ It can be used to validate RDF data represented with different syntaxes like Tur
 
 - We publish binaries in Linux, Windows and Apple which can be downloaded [here](https://github.com/weso/shex-rs/releases/).
 - Source code: [https://github.com/rudof-project/rudof](https://github.com/rudof-project/rudof)
-- [Paper about rudof](../assets/pdf/rudof_demo.pdf) presented at International Semantic Web Conference, Baltimore, USA, October 2024 in Demos and Posters session.
+- [Paper about rudof](assets/pdf/rudof_demo.pdf) presented at International Semantic Web Conference, Baltimore, USA, October 2024 in Demos and Posters session.
 - [List of issues](https://github.com/rudof-project/rudof/issues)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)
 - [How-to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
