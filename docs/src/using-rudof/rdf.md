@@ -1,8 +1,5 @@
 # RDF
 
-- [Information about a node](rdf.md#node-information)
-- [Merging RDF data](rdf.md#merging-rdf-data)
-
 ## Node information
 
 `rudof` can be used to play with RDF data.
