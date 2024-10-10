@@ -1,13 +1,22 @@
-# Summary
+- [Overview](./overview.md)
 
-- [intro](./intro.md)
-- [Installation](./installation.md)
-- [Usage](./usage.md)
-- [RDF](./rdf.md)
-- [SPARQL](./sparql.md)
-- [DCTAP](./dctap.md)
-- [ShEx](./shex.md)
-- [SHACL](./shacl.md)
-- [Data model conversion](./conversion.md)
-- [Benchmarks](./benchmarks.md)
-- [About](./about.md)
+# General
+
+- [Installation](./general/installation.md)
+- [Getting started](./general/getting-started.md)
+
+# Using `rudof`
+
+- [RDF](./using-rudof/rdf.md)
+- [SPARQL](./using-rudof/sparql.md)
+- [DCTAP](./using-rudof/dctap.md)
+- [ShEx](./using-rudof/shex.md)
+- [SHACL](./using-rudof/shacl.md)
+- [Data model conversion](./using-rudof/data-model-conversion.md)
+
+# Developing `rudof`
+
+# References
+
+- [Benchmarks](./about/benchmarks.md)
+- [About](./about/about.md)

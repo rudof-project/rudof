@@ -1,10 +1,10 @@
 # Installation
 
-### Official releases
+## Official releases
 
 You can download a binary from the [latest release](https://github.com/rudof-project/rudof/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
 
-#### Ubuntu
+### Ubuntu
 
 Download the binary from [https://github.com/rudof-project/rudof/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
@@ -13,11 +13,11 @@ wget https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.
 sudo dpkg -i rudof_vX.X.X_amd64.deb
 ```
 
-#### Windows
+### Windows
 
 The binary can be downloaded from [releases](https://github.com/rudof-project/rudof/releases)
 
-#### Mac
+### Mac
 
 The binary is available at: [releases](https://github.com/rudof-project/rudof/releases) so you can download the corresponding binary to your machine.
 
@@ -29,7 +29,7 @@ chmod +x <binary_file>
 
 After that, I think the processor may complain the first time about security and you have to agree to use it...once you agree, it should work.
 
-### Compiling from source
+## Compiling from source
 
 `rudof` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
 
@@ -39,7 +39,7 @@ For example:
 cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
 ```
 
-### Compiling from source and installing the binary (Debian)
+## Compiling from source and installing the binary (Debian)
 
 Install `cargo deb` (only the first time)
 
