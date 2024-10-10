@@ -12,6 +12,7 @@
 - [DCTAP](./using-rudof/dctap.md)
 - [ShEx](./using-rudof/shex.md)
 - [SHACL](./using-rudof/shacl.md)
+  - [RDF data validation using SHACL](./using-rudof/shacl-validation.md)
 - [Data model conversion](./using-rudof/data-model-conversion.md)
 
 # Developing `rudof`

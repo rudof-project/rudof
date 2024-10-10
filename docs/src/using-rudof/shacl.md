@@ -1,85 +1,31 @@
 # SHACL
 
-Show information about a SHACL shapes graph
+[SHACL](https://www.w3.org/TR/shacl/) is the W3C Recommendation for validating RDF data.
+That's why we have decided to provide some features that would help SHACL developers do some typical workflows.
+For following the examples please download the following [file](https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/simple_shacl.ttl) from the Github repository.
 
-Example:
+> The provided file contains a simple shapes graph that can be used for executing the different examples that are included in this page.
 
 ```sh
-rudof shacl -s examples/simple_shacl.ttl 
+curl -o simple_shacl.ttl https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/simple_shacl.ttl
 ```
+
+## Describe a SHACL graph
+
+You can describe a shapes graph stored in a file by executing the `shacl` command.
+As a result, a message with all the information associated with each shape inside the graph are going to be prompted in the terminal.
+
+```sh
+rudof shacl -s simple_shacl.ttl
+```
+
+## Convert from one format to another
 
 It is also possible to read a SHACL shapes graph and convert it to some format
+In the example below, `rudof` will read a SHACL file in Turle and convert it to RDF/XML.
 
-Example: Read a SHACL file in Turle and convert to RDF/XML
-
-```sh
-rudof shacl -s examples/simple_shacl.ttl -r rdfxml
-```
-
-## Validating RDF data using SHACL
-
-We will make use of the [UserShape example in SHACL](https://book.validatingrdf.com/bookHtml011.html#ch050SHACLExample) from the [Validating RDF Data](https://book.validatingrdf.com/) book to demonstrate tha capabilities of the SHACL validator we propose.
-
-According to this, an RDF graph conforming to the example above is:
-
-```turtle
-:alice a :User;                             #Passes as a :UserShape     
-       schema:name           "Alice" ;
-       schema:gender         schema:Female ;
-       schema:knows          :bob .
-
-:bob   a :User;                             #Passes as a :UserShape     
-       schema:gender         schema:Male ;
-       schema:name           "Robert";
-       schema:birthDate      "1980-03-10"^^xsd:date .
-
-:carol a :User;                             #Passes as a :UserShape     
-       schema:name           "Carol" ;
-       schema:gender         schema:Female ;
-       foaf:name             "Carol" .
-```
-
-For SHACL validation, we can use the generic `validate` command and the specific `shacl-validate` command.
-
-### Using the generic `validate` command
+> In this example we are piping the result to a file, but you can always print it to the terminal by omitting the `>> output.rdf` declaration.
 
 ```sh
-rudof validate -M shacl -f turtle --schema examples/book.ttl examples/book_conformant.ttl
-```
-
-### Using the specific `shacl-validate` command
-
-There is one `shacl-validate` command which can also be used. The difference is that instead of `schema`, it uses `shapes` and it doesn't require to specify a `Mode`:
-
-```sh
-rudof shacl-validate --shapes examples/book.ttl examples/book_conformant.ttl
-```
-
-An example of a non-conforming data graph is the following:
-
-```Turtle
-:dave  a :User ;                        #Fails as a :UserShape     
-       schema:name       "Dave";
-       schema:gender     :Unknown ;
-       schema:birthDate  1980 ;
-       schema:knows      :grace .
-
-:emily a :User ;                        #Fails as a :UserShape          
-       schema:name       "Emily", "Emilee";
-       schema:gender     schema:Female .
-
-:frank a :User ;                        #Fails as a :UserShape     
-       foaf:name         "Frank" ;
-       schema:gender     schema:Male .
-
-_:x    a :User;                         #Fails as a :UserShape          
-       schema:name       "Unknown" ;
-       schema:gender     schema:Male ;
-       schema:knows      _:x .
-```
-
-And can be run as:
-
-```sh
-rudof shacl-validate --shapes examples/book.ttl examples/book_non-conformant.ttl
+rudof shacl -s simple_shacl.ttl -r rdfxml >> output.rdf
 ```

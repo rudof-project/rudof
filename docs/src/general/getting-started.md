@@ -1,40 +1,16 @@
 # Getting started
 
-`rudof` is a tool to process and validate RDF data using shapes, as well as converting between different RDF data models.
-
-As a command line tool, it contains several subcommands which can be decomposed in two types:
-
-- Commands about some technology, which take some input from that technology and provide information about it. Examples are: `shex`, `shacl`, `dctap`, `shapemap`, `service`, `node` and `data`.
-- Commands that do some actions like: `query`, `validate` or `convert`.
+For us to verify that the installation has been successful, you can run the following command to check that everything is working as expected.
+Note that it should run with no failures.
 
 ```sh
-$ rudof help
-A tool to process and validate RDF data using shapes, and convert between different RDF data models
-
-Usage: rudof [OPTIONS] [COMMAND]
-
-Commands:
-  shapemap        Show information about ShEx ShapeMaps
-  shex            Show information about ShEx schemas
-  validate        Validate RDF data using ShEx or SHACL
-  shex-validate   Validate RDF using ShEx schemas
-  shacl-validate  Validate RDF data using SHACL shapes
-  data            Show information about RDF data
-  node            Show information about a node in an RDF Graph
-  shacl           Show information about SHACL shapes
-  dctap           Show information and process DCTAP files
-  convert         Convert between different Data modeling technologies
-  service         Show information about SPARQL service
-  query           Run SPARQL queries
-  help            Print this message or the help of the given subcommand(s)
-
-Options:
-  -d, --debug...
-          
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-  -V, --version
-          Print version
+rudof --version
 ```
+
+Once we have `rudof` [installed](./installation.md) and verified, the next step is to start using the different subcommands that are bundled within the tool.
+`rudof` is a tool to process and validate RDF data using shapes, as well as converting between different RDF data models.
+
+As a command line tool, it contains several subcommands which can be decomposed in two main types:
+
+- _Commands about some technology_, which take some input from that technology and provide information about it. Examples are: `shex`, `shacl`, `dctap`, `shapemap`, `service`, `node` and `data`. Which are usually nouns or the name of the corresponding technology.
+- _Commands that do some actions_. Examples are: `query`, `validate` or `convert`, which are usually verbs.
