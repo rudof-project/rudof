@@ -4,8 +4,13 @@ language = "en"
 multilingual = false
 src = "src"
 title = "rudof"
+site-url = "/docs/"
+
+[output.html.print]
+enable = false
 
 [output.html]
-additional-css = ["theme/pagetoc.css"]
-additional-js = ["theme/pagetoc.js"]
-mathjax-support = true # support LaTeX-like notation [https://rust-lang.github.io/mdBook/format/mathjax.html]
+no-section-label = true
+preferred-dark-theme = "dark"
+additional-css = ["theme/pagetoc.css", "theme/highlight.css"]
+additional-js = ["theme/pagetoc.js", "theme/plugins.js"]

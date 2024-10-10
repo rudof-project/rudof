@@ -20,8 +20,5 @@ Cargo.lock
 # JetBrains
 .idea/
 
-# Added by cargo
-target/
-
 # Ignore virtual environments from the Python bindings
 .venv
