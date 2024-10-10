@@ -1,6 +1,4 @@
-# Introduction
-
-<img class="right" width="80px" height="80px" src="images/rudof_logo3.svg" alt="rudof logo">
+# Overview
 
 `rudof` is a library that implements: [Shape Expressions](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) and other technologies in the [RDF](https://www.w3.org/RDF/) ecosystem.
 

@@ -1,4 +1,4 @@
-# Usage
+# Getting started
 
 `rudof` is a tool to process and validate RDF data using shapes, as well as converting between different RDF data models.
 
