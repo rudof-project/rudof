@@ -13,7 +13,7 @@ By executing the following instructions you can get the pre-compiled binaries of
 
 ```sh
 curl -o rudof https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.X_x86_64_linux_gnu
-chmod +x rudof_vX.X.X_x86_64_linux_gnu
+chmod +x rudof
 ```
 
 ### Windows

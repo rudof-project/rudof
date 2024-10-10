@@ -1,33 +1,27 @@
 # ShEx
 
-## Infor about ShEx schema
+[ShEX](https://shex.io/shex-semantics/) is a language for validating and describing RDF data.
+In `rudof` there exist several supported operations regarding ShEx, namely, obtaining information about the ShEx schema, or validating an RDF graph using ShEx.
 
-Read a ShEx schema in compact syntax and show its JSON representation:
+For executing the examples in this page you can download the following files:
 
 ```sh
-rudof shex -s examples/user.shex
+curl -o user.shex https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/user.shex
+curl -o user.ttl https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/user.ttl
 ```
 
-### General help for schema command
+## Information about the ShEx schema
+
+You can read a ShEx schema in compact syntax and show its JSON representation using the instruction below.
 
 ```sh
-$ rudof shex --help
-Usage: rudof shex [OPTIONS] --schema <Schema file name>
-Options:
-  -s, --schema <Schema file name>
-  -f, --schema-format <Schema format>
-          [default: shexc] [possible values: internal, shexc, shexj, turtle]
-  -r, --result-schema-format <Result schema format>
-          [default: shexj] [possible values: internal, shexc, shexj, turtle]
-  -o, --output-file <Output file name, default = terminal>
-  -h, --help
-          Print help
+rudof shex -s user.shex
 ```
 
-## ShEx validation
+## ShEx-based validation
 
-It is also possible to use `rudof` to validate ShEx schemas using the following:
+It is also possible to use `rudof` to validate ShEx schemas using the following instruction:
 
 ```sh
-rudof validate --data examples/user.ttl --schema examples/user.shex --node :a --shape-label :User
+rudof validate --schema user.shex --node :a --shape-label :User user.ttl
 ```

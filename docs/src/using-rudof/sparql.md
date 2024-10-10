@@ -1,29 +1,41 @@
 # SPARQL
 
-Rudof has some basic support for SPARQL queries.
+`rudof` has some basic support for SPARQL queries, which can be interacted with by means of the `query` command.
+It is possible not only to perform SPARQL queries on SPARQL endpoints, but also on local files.
 
-The `query` command can be used to run SPARQL queries on RDF data.
+## Querying over local files
 
-```sh
-rudof query -q examples/user.sparql examples/user.ttl
-?person    ?name   ?status        
-     :b    "Bob"  :Waiting
-     :a  "Alice"   :Active
-```
+For querying over local files you need both a SPARQL file and a data graph.
+The idea is that we will apply the SPARQL query over the provided graph.
+For us to do so you just need to use the `query` command.
 
-It is also possible to run a SPARQL query that obtains its data from a SPARQL endpoint. For example, the following command:
+> For executing the examples you can execute the instructions below to obtain the required files. 
 
 ```sh
-$ rudof query -q examples/wikidata.sparql -e wikidata
-?person        ?birth_place               ?label   ?birth_place_name
-  wd:Q448941         wd:Q16      "Lucy Walker"@en        "Canada"@en  
-  wd:Q450015         wd:Q16     "Makyla Smith"@en        "Canada"@en  
-  wd:Q495818         wd:Q16  "Andreas Apergis"@en        "Canada"@en  
-  wd:Q517764         wd:Q16         "Rob Pike"@en        "Canada"@en  
- wd:Q2926838         wd:Q16     "Bruno Hébert"@en        "Canada"@en  
- wd:Q2938960         wd:Q16     "Carl Marotte"@en        "Canada"@en  
- wd:Q2978165         wd:Q16    "Claude Soucie"@en        "Canada"@en  
- wd:Q3014451         wd:Q16   "Daniel Meurois"@en        "Canada"@en  
- wd:Q3015785         wd:Q16     "Dany Gelinas"@en        "Canada"@en  
- wd:Q3018685         wd:Q16      "David Rigby"@en        "Canada"@en  
+curl -o user.sparql https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/user.sparql
+curl -o user.ttl https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/user.ttl
 ```
+Then you can run the instruction below.
+
+```sh
+rudof query -q user.sparql user.ttl
+```
+
+## Querying over SPARQL endpoints
+
+It is also possible to run a SPARQL query that obtains its data from a SPARQL endpoint.
+However, the idea is the exact same as in the case above, with the difference that the SPARQL endpoint should be provided by means of the `-e` argument.
+
+> For executing the examples you can execute the instructions below to obtain the required files. 
+
+```sh
+curl -o wikidata.sparql https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/wikidata.sparql
+```
+
+Then you can run the instruction below.
+
+```sh
+rudof query -q wikidata.sparql -e wikidata
+```
+
+> The Wikidata endpoint is registered within the `rudof` tool, for ease of use.
