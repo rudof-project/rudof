@@ -18,5 +18,5 @@
 
 # References
 
-- [Benchmarks](./about/benchmarks.md)
-- [About](./about/about.md)
+- [Benchmarks](./references/benchmarks.md)
+- [About](./references/about.md)
