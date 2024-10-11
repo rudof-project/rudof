@@ -1,6 +1,6 @@
-# Data model conversion
+# Conversion between RDF Data modelling technologies
 
-`rudof` supports conversion between different RDF Data modeling technologies.
+`rudof` supports conversion between different RDF Data modeling technologies using the `convert` command.
 At this moment, we have implemented some converters listed in the table below.
 
 | From  | To   |
@@ -11,6 +11,18 @@ At this moment, we have implemented some converters listed in the table below.
 | SHACL | ShEx |
 | ShEx  | UML  |
 | ShEx  | HTML |
+
+The `convert` command requires 7 main arguments; namely:
+
+- `--input-mode` (`-m` for short), where the user introduces the input technology.
+- `--export-mode` (`-x` for short), where the user introduces the output technology.
+- `--format` (`-f` for short), where the user defines the input file format (serialization-wise).
+- `--result-format` (`-r` for short), where the user defines the output file format (serialization-wise).
+- `--source-file` (`-s` for short), where the user passes the input file path.
+- `--output-file` (`-o` for short), where the user passes the output file path.
+- `--config` (`-c` for short), where the user passes the config file path.
+
+> Note that there's a difference between **mode** and **format**. While the first allows users to select the RDF technology; namely, DCTap, SHACL or ShEx, the second allows users to define the actual serialization format employed; e.g ShEx can be serialized using compact syntax (ShExC) or JSON.
 
 ## Prerequisites
 
@@ -24,25 +36,25 @@ PlantUML also requires [Java](https://www.oracle.com/java/technologies) 8 or hig
 java --version
 ```
 
-## DCTAP → ShEx
-
-It is possible to convert a DCTap file in CSV to ShEx.
-
-For example, the `user.csv` file in [`examples/user.csv`](https://github.com/rudof-project/rudof/blob/master/examples/user.csv) can be converted to a ShEx schema running:
+For sucessfully following the examples provided, download the files from the Github repository.
 
 ```sh
-rudof convert -m dctap -s examples/user.csv -f csv -x shex
+curl -o book.csv https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/dctap/book.csv
+curl -o simple_shacl.ttl https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/simple_shacl.ttl
+curl -o simple.shex https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/simple.shex
 ```
 
-The converter contains a parameter that can be used to add configuration information.
+## Configuration files
 
-For example, instead of the basic prefix map, we can use custom prefix map declarations as follows.
+Configuration files can be used to pass additional parameters to the conversion process.
+In the Github repository, an example configuration file is provided.
+Note that those are YAML files.
 
 ```sh
-rudof convert -s examples/dctap/book.csv -m dctap -x shex -f csv -c examples/dctap/book_converter_config.yml
+curl -o config.yml https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/dctap/book_converter_config.yml
 ```
 
-Where the contents of `book_converter_config.yml` are:
+Whose contents are described below.
 
 ```yaml
 tap2shex:
@@ -56,60 +68,86 @@ tap2shex:
     ex: "http://example.org/"
 ```
 
-## DCTAP → UML
+## From DCTAP
 
-Convert a CSV file in DCTap to an UML-like visualization in SVG
+[DCTAP](https://www.dublincore.org/specifications/dctap/) is an RDF data model technology developed at the [Dublin Core Application Profiles Working Group](https://github.com/dcmi/dctap) which aims for providing a way to represent application profiles in the form of tables.
+
+### From DCTAP to ShEx
+
+It is possible to convert from a DCTap (CSV) to ShEx.
+In the first example, the most simple DCTap to ShEx schema conversion is described.
 
 ```sh
-rudof convert -s examples/simple.csv -m dctap -x uml -f csv -r svg -o target/simple.svg
+rudof convert -m dctap -s book.csv -f csv -x shex
 ```
 
-To generate PNG, replace `svg` by `png`.
+However, the converter contains a parameter that can be used to add configuration information (`--config`).
+For example, instead of the basic *prefix map*, we can use custom *prefix map* declarations as follows.
+Refer to the [Configuration files](#configuration-files) section.
 
 ```sh
-rudof convert -s examples/simple.csv -m dctap -x uml -f csv -r png -o target/simple.png
+rudof convert -s book.csv -m dctap -x shex -f csv -c config.yml
 ```
 
-## DCTAP → HTML
+### From DCTAP to UML
+
+Conversion for DCTap (CSV) to UML-like visualizations is possible.
+In fact, it is possible to serialize the resulting diagram in two possible formats, namely, `svg` and `png`.
+For indicating `rudof` the desired format use the `--result-format` (`-r` for short) argument.
+
+To generate `svg` visualizations it can be done as follows:
+
+```sh
+rudof convert -s book.csv -m dctap -x uml -f csv -r svg -o simple.svg
+```
+
+To generate `png` visualizations it can be done as follows:
+
+```sh
+rudof convert -s book.csv -m dctap -x uml -f csv -r png -o simple.png
+```
+
+### From DCTAP to HTML
 
 TBD
 
-## SHACL → ShEx
+## From SHACL
 
-Convert a simple SHACL shapes graph to ShEx
+### From SHACL to ShEx
 
-It is possible to convert a SHACL shapes graphs to ShEx schemas.  
-
-```sh
-rudof convert -m shacl -x shex -s examples/simple_shacl.ttl -f turtle -o target/simple.shex
-```
-
-### Limitations
-
-The converter only works for a subset of SHACL. We should still document what are the features supported and the features that are not yet supported but this is still work in progress.
-
-## ShEx → UML
-
-It is possible to convert a simple ShEx schema to a UML like visualization in SVG, PNG
+A possible conversion among RDF data modelling technologies includes the conversion from a simple SHACL shapes graph to ShEx schemas.
+For users to do so, one can use the instructions below.
 
 ```sh
-rudof convert -s examples/simple.shex -m shex -x uml -r svg -o target/simple.svg
+rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex
 ```
 
-To generate PNG, replace `svg` by `png`.
+> The converter only works for a subset of SHACL. We should still document what are the features supported and the features that are not yet supported but this is still work in progress.
+
+## From ShEx
+
+### From ShEx to UML
+
+As in the case of DCTap, it is possible to convert from a simple ShEx schema to UML like visualization in `svg` and `png`.
+To generate `svg` visualizations it can be done as follows:
 
 ```sh
-rudof convert -s examples/simple.shex -m shex -x uml -r png -o target/simple.png
+rudof convert -s simple.shex -m shex -x uml -r svg -o simple.svg
 ```
 
-## ShEx → HTML
-
-It is possible to convert a ShEx schema to a set of HTML pages that represent the schema. The content of the HTML pages can be customized using Jinja templates.
+To generate `png` visualizations it can be done as follows:
 
 ```sh
-rudof convert -s examples/simple.shex -m shex -x html -t target/simple
+rudof convert -s simple.shex -m shex -x uml -r png -o simple.png
 ```
 
-The HTML pages that are generated can be highly configured because the approach that `rudof` follows is based on templates.
-It takes a set of [default templates](https://github.com/rudof-project/rudof/tree/master/shapes_converter/default_templates) which define the appearance of the HTML result but it is possible to pass a different set of templates.
-The templates are based on the [minininja](https://docs.rs/minijinja/latest/minijinja/index.html) template engine.
+### From ShEx to HTML
+
+It is possible to convert from ShEx schema to a set of HTML pages representing the schema.
+The content of the HTML pages can be customized using [Jinja](https://docs.rs/minijinja/latest/minijinja/index.html) templates.
+
+```sh
+rudof convert -s simple.shex -m shex -x html -o simple.html
+```
+
+> The HTML pages that are generated can be highly configured as `rudof`'s approach is based on templates. Thus, it takes a set of [default templates](https://github.com/rudof-project/rudof/tree/master/shapes_converter/default_templates) which define the appearance of the resulting HTML. However, it is possible to use customized templates based on the [minininja](https://docs.rs/minijinja/latest/minijinja/index.html) template engine.

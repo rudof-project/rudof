@@ -13,7 +13,9 @@
 - [ShEx](./using-rudof/shex.md)
 - [SHACL](./using-rudof/shacl.md)
   - [RDF data validation using SHACL](./using-rudof/shacl-validation.md)
-- [Data model conversion](./using-rudof/data-model-conversion.md)
+- [Conversion between RDF Data modelling technologies](./using-rudof/data-model-conversion.md)
+
+# For developers
 
 # Developing `rudof`
 

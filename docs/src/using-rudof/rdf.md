@@ -26,7 +26,7 @@ We can obtain information about the node `:a` (or any other node) by running the
 rudof node -n :a simple.ttl 
 ```
 
-> Note that the `-n` argument is used to provide the focus node, by indicating the node's URI.
+> Note that the `-n` argument is used to provide the focus node by indicating the node's URI.
 
 ## Merging RDF data
 
