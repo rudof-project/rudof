@@ -18,7 +18,7 @@ members = [
     "shacl_testsuite",
     "shapes_converter",
     "sparql_service",
-    "python",
+    "python", "generator",
 ]
 
 exclude = [
