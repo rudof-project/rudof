@@ -1,14 +1,18 @@
 # Scope of the project
 
-Given that the command line tool requires a name, it seems reasonable to define the scope of the project, specially the command line tool, so we can decide which features we add to the tool and which features we left out of the project.
+```mermaid
+mindmap
+  root((rudof))
+    ShEx
+    SHACL
+    DCTAP
+    LinkML
+    rdf-config
+    SPARQL
+    RDF
+```
 
-The project started as a library for ShEx (the repo was initially called `shex-rs`), but we soon realized that the scope should be bigger as we also wanted to implement SHACL, so we renamed the repository as `rudof`.
-
-Recently, there was a need to support DCTAP and we included support for DCTAP also.
-
-At this moment, the command line tool can also be used to do some tasks related with RDF like obtaining information about RDF data, SPARQL endpoints and the neighbourhood of nodes in RDF data and SPARQL endpoints, and we are considering to add another option to query data from SPARQL endpoints, which can be useful when defining SHACL shapes and for RDF data processing in general.
-
-So the scope of the project is to be a useful tool for people interested in:
+The scope of the project is to be a useful tool for people interested in:
 
 - RDF data (which can be obtained from files as well as from SPARQL endpoints)
 - RDF data models, shapes or schemas, which can be represented as ShEx, SHACL, DCTap, etc.
