@@ -22,6 +22,7 @@ subgraph rudof
     rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
     shapes_converter[<a href='https://crates.io/crates/shapes_converter'>shapes_converter</a>];
     dctap[<a href='https://crates.io/crates/dctap'>dctap</a>];
+    sparql_service[<a href='https://crates.io/crates/sparql_service'>sparql_service</a>];
     shex_ast --> srdf ;
     shex_compact-->shex_ast;
     shex_validation-->shex_ast;
