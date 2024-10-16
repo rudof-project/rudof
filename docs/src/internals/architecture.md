@@ -7,7 +7,8 @@ graph TD;
  iri_s --> oxigraph;
  iri_s --> reqwest ;
  dctap --> calamine ;
- dctap --> csv 
+ dctap --> csv ;
+ sparql_service --> oxigraph ;
 subgraph rudof
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
@@ -21,27 +22,27 @@ subgraph rudof
     shapemap[<a href='https://crates.io/crates/shapemap'>shapemap</a>];
     rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
     shapes_converter[<a href='https://crates.io/crates/shapes_converter'>shapes_converter</a>];
-    dctap[<a href='https://crates.io/crates/dctap'>dctap</a>];
-    sparql_service[<a href='https://crates.io/crates/sparql_service'>sparql_service</a>];
-    shex_ast --> srdf ;
-    shex_compact-->shex_ast;
-    shex_validation-->shex_ast;
-    srdf-->iri_s;
-    shacl_ast-->srdf;
-    shacl_validation-->shacl_ast;
-    shex_validation-->shapemap;
-    shapemap-->prefixmap;
-    shex_ast-->prefixmap;
-    srdf-->prefixmap;
-    shex_validation-->rbe;
-    dctap-->prefixmap;
-    dctap --> iri_s;
-    shapes_converter-->shacl_ast;
-    shapes_converter-->shex_ast;
-    shapes_converter-->dctap;
-    prefixmap --> iri_s ;
-    shex_validation --> shex_compact
-    sparql_service --> iri_s ;
+ dctap[<a href='https://crates.io/crates/dctap'>dctap</a>];
+ sparql_service[<a href='https://crates.io/crates/sparql_service'>sparql_service</a>];
+ shex_ast --> srdf ;
+ shex_compact-->shex_ast;
+ shex_validation-->shex_ast;
+ srdf-->iri_s;
+ shacl_ast-->srdf;
+ shacl_validation-->shacl_ast;
+ shex_validation-->shapemap;
+ shapemap-->prefixmap;
+ shex_ast-->prefixmap;
+ srdf-->prefixmap;
+ shex_validation-->rbe;
+ dctap-->prefixmap;
+ dctap --> iri_s;
+ shapes_converter-->shacl_ast;
+ shapes_converter-->shex_ast;
+ shapes_converter-->dctap;
+ prefixmap --> iri_s ;
+ shex_validation --> shex_compact
+ sparql_service --> iri_s ;
  rudof_cli --> shex_validation ;
  rudof_cli --> shacl_validation ;
  rudof_cli --> shapes_converter ;
