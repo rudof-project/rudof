@@ -40,8 +40,6 @@ jobs:
         run: mdbook-open-on-gh --version
       - name: Show admonish version
         run: mdbook-admonish --version
-      - name: Show katex version
-        run: mdbook-katex --version
       - name: Build Book
         run: |
           cd docs
