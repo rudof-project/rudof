@@ -5,21 +5,26 @@
 - [Installation](./general/installation.md)
 - [Getting started](./general/getting-started.md)
 
-# Using `rudof`
+# `rudof` usage as a command line tool
 
-- [RDF](./using-rudof/rdf.md)
-- [SPARQL](./using-rudof/sparql.md)
-- [DCTAP](./using-rudof/dctap.md)
-- [ShEx](./using-rudof/shex.md)
-- [SHACL](./using-rudof/shacl.md)
-  - [RDF data validation using SHACL](./using-rudof/shacl-validation.md)
-- [Conversion between RDF Data modelling technologies](./using-rudof/data-model-conversion.md)
+- [RDF](./cli_usage/rdf.md)
+- [SPARQL](./cli_usage/sparql.md)
+- [DCTAP](./cli_usage/dctap.md)
+- [ShEx](./cli_usage/shex.md)
+- [SHACL](./cli_usage/shacl.md)
+  - [RDF data validation using SHACL](./cli_usage/shacl-validation.md)
+- [Conversion between RDF Data modelling technologies](./cli_usage/data-model-conversion.md)
 
-# For developers
+# `rudof` usage as a Rust library
 
-# Developing `rudof`
+- [Docs](./library/docs.md)
 
-# References
+# `rudof` internals
+
+- [Scope of the project](./internals/scope.md)
+- [Architecture](./internals/architecture.md)
+
+# More information
 
 - [Benchmarks](./references/benchmarks.md)
-- [About](./references/about.md)
+- [FAQ](./references/faq.md)

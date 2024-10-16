@@ -47,11 +47,28 @@ An incomplete list of projects which are related to `rudof` is the following:
 
 ## Contributors
 
-[List of contributors in Github](https://github.com/rudof-project/rudof/graphs/contributors)
+- [Jose Emilio Labra Gayo](https://labra.weso.es/)
+- [Ángel Iglesias Préstamo](http://angelip2303.github.io/)
+- [Marc-Antoine Arnaud](https://luminvent.com/)
+- [Jonas Smedegaard](http://dr.jones.dk/blog/)
+- [Full list of contributors](https://github.com/rudof-project/rudof/graphs/contributors)
+
+## Funding and sponsors
+
+The project has been partially funded by some grants or institutions like:
+
+- [WESO - WEb Semantics Oviedo](https://www.weso.es/) is the research group at the [University of Oviedo, Spain](https://www.uniovi.es/) where some of the contributors are participating and has driven the main features implemented by `rudof`.
+- [USDA - United States Department of Agriculture](https://www.usda.gov/)
+- [Spanish Research Agency](https://www.aei.gob.es/) through the project ANGLIRU - Applying kNowledge Graphs for research Data Interoperability and Reusability (CODE MCI-21-PID2020-117912RB-C21).
+- [Database Center for Life Science, Japan](https://dbcls.rois.ac.jp/index-en.html) has provided funding for attending several Biohackathons and RDF Summit events where some of the ideas behind `rudof` materialized as well as the logo.
+
+In case you want to help the project, please contact [Jose E. Labra Gayo](https://labra.weso.es/).
 
 ## Supporters and adopters
 
 The following is a list of `rudof` adopters and supporters:
 
 - [WESO (WEb Semantics Oviedo)](http://www.weso.es/). Most of the contributors are part of this research group at the [University of Oviedo](http://www.uniovi.es)
-- [USDA - United States Department of Agriculture](https://www.usda.gov/) has been partially funding part of the project through a Non-Assistance Cooperative Agreement.
+- [USDA - United States Department of Agriculture](https://www.usda.gov/) has been partially funding this project through a Non-Assistance Cooperative Agreement with [WESO](http://www.weso.es/) where `rudof` is used to develop Data Shapes based on the [National Agricultural Library Thesaurus Concept Space](https://lod.nal.usda.gov/en/).
+
+If you are using `rudof` and want to be listed, please contact us or add a Pull Request.
