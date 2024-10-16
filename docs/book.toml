@@ -9,10 +9,15 @@ site-url = "/docs/"
 [output.html.print]
 enable = false
 
+[preprocessor]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
 [output.html]
 no-section-label = true
 preferred-dark-theme = "dark"
 git-repository-url = "https://github.com/rudof-project/rudof"
 git-repository-icon = "fa-github"
 additional-css = ["theme/pagetoc.css", "theme/highlight.css"]
-additional-js = ["theme/pagetoc.js"]
+additional-js = ["theme/pagetoc.js", "mermaid.min.js", "mermaid-init.js"]
