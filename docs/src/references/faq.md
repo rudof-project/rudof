@@ -31,6 +31,6 @@ More information about the logo can be tracked in [this issue](https://github.co
 
 ## What is the goal of the project?
 
-The goal of `rudof` is to become a useful tool for RDF practitioners who want to either check the quality of their RDF data, convert RDF data or RDF data shapes.
+The goal of `rudof` is to become a useful tool for RDF practitioners who want to check the quality of their RDF data, or want to process RDF data or RDF data shapes.
 
 In [this page](https://github.com/rudof-project/rudof/wiki/%5BADR-04%5D-Scope-of-the-project)

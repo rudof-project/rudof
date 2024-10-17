@@ -17,7 +17,8 @@
 
 # `rudof` as a library
 
-- [Rust docs](./library/docs.md)
+- [Docs](./library/docs.md)
+- [Processing RDF](./library/rdf_processing.md)
 - [Python bindings](./library/python.md)
 
 # `rudof` internals
