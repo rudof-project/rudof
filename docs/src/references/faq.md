@@ -28,3 +28,9 @@ The current logo was designed during the [DBCLS biohackathon 2024](https://2024.
 The idea of the logo is that it combines [the `rudolf` character](https://en.wikipedia.org/wiki/Rudolph_the_Red-Nosed_Reindeer) with horns based on the [`rdf` logo](https://es.m.wikipedia.org/wiki/Archivo:Rdf_logo.svg)
 
 More information about the logo can be tracked in [this issue](https://github.com/rudof-project/rudof/issues/107).
+
+## What is the goal of the project?
+
+The goal of `rudof` is to become a useful tool for RDF practitioners who want to either check the quality of their RDF data, convert RDF data or RDF data shapes.
+
+In [this page](https://github.com/rudof-project/rudof/wiki/%5BADR-04%5D-Scope-of-the-project)

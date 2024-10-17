@@ -26,13 +26,47 @@ impl DCTapConfig {
     }
 }
 
+/// Represents configuration file structure of DCTAP files
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct TapConfig {
+    /// Character that is used to separate columns in CSV
     delimiter: Option<char>,
+
+    /// The quote character to use when parsing CSV.
+    /// The default is `"`.
+    /// It can be used to indicate single quotes instead of double quotes.
     quote: Option<char>,
+
+    /// Whether the number of fields in records is allowed to change or not.
+    ///
+    /// When disabled, parsing CSV data will return an
+    /// error if a record is found with a number of fields different from the
+    /// number of fields in a previous record.
+    ///
+    /// When enabled, this error checking is turned off. It is enabled by default.
     flexible: Option<bool>,
+
+    /// Character that is used to separate values in a picklist cell. The default value is `|`
     picklist_delimiter: Option<char>,
+
+    /// Table that can be used to generate values for some keys.
+    /// When the processor finds a cell with some of those keys,
+    /// it generates a value according to the placeholder resolver indicated.
+    /// At this moment, `rudof` supports the placeholder resolver `!Stem`
+    /// which means that it will replace the key by the corresponding stem value.
+    ///
+    /// For example, if the property placeholder has the entry `x` with the
+    /// placeholder resolver of type `!Stem` and the value `stem: "Pending"`,
+    /// when a cell contains `x:User`, the generated value will be: `pending:User`.
+    ///
+    /// <div class="warning">This field is experimental and the syntax may change</div>
+    ///
     property_placeholders: HashMap<String, PlaceholderResolver>,
+
+    /// Indicates how to generate a value for empty cells
+    ///
+    /// <div class="warning">This field is experimental and the syntax may change</div>
+    ///
     empty_property_placeholder: Option<PlaceholderResolver>,
 }
 

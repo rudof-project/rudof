@@ -22,7 +22,7 @@ The `convert` command requires 7 main arguments; namely:
 - `--output-file` (`-o` for short), where the user passes the output file path.
 - `--config` (`-c` for short), where the user passes the config file path.
 
-> Note that there's a difference between **mode** and **format**. While the first allows users to select the RDF technology; namely, DCTap, SHACL or ShEx, the second allows users to define the actual serialization format employed; e.g ShEx can be serialized using compact syntax (ShExC) or JSON.
+> Note that there's a difference between **mode** and **format**. While the first allows users to select the RDF technology; namely, DCTAP, SHACL or ShEx, the second allows users to define the actual serialization format employed; e.g. ShEx can be serialized using compact syntax (ShExC) or JSON (ShExJ).
 
 ## Prerequisites
 
