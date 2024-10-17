@@ -48,7 +48,7 @@ The usual way to run/install a binary in Mac is to download it in a folder, add 
 chmod +x <binary_file>
 ```
 
-After that, I think the processor may complain the first time about security and you have to agree to use it...once you agree, it should work.
+After that, the processor may complain the first time about security and you have to agree to use it. Once you agree, it should work.
 
 <details markdown="block">
 <summary>Compiling from source</summary>
