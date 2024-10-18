@@ -1106,3 +1106,18 @@ fn test_iri() {
     let x = iri!("http://example.org/x");
     assert_eq!(iri().parse(&x, graph).unwrap(), x)
 }
+
+#[test]
+fn test_add_triple() {
+    use crate::SRDFGraph;
+    use iri_s::iri;
+
+    let mut graph = SRDFGraph::new();
+    let alice = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/alice"));
+    let knows = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/knows"));
+    let bob = <SRDFGraph as SRDFBasic>::iri_s2term(&iri!("http://example.org/bob"));
+
+    graph.add_triple(&alice, &knows, &bob).unwrap();
+
+    assert_eq!(graph.len(), 1);
+}
