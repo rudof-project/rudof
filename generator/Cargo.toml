@@ -18,7 +18,6 @@ srdf = { workspace = true }
 shacl_ast = { workspace = true }
 iri_s = { workspace = true } # needed for defining IriS and vocabs
 
-
 thiserror = "1.0.63" # needed for the definition of errors
 lazy_static = "1" # needed for the definition of the vocab
 const_format = "0.2" # needed for the definition of the vocab
@@ -29,3 +28,4 @@ serde = { version = "1.0", features = ["derive"] } # needed for the config thing
 serde_yml = "0.0.12" # needed for the config thing
 
 rand = "0.8"
+rust_decimal = "1.28"
