@@ -7,13 +7,18 @@
 
 # `rudof` usage (command line)
 
-- [RDF](./cli_usage/rdf.md)
-- [SPARQL](./cli_usage/sparql.md)
-- [DCTAP](./cli_usage/dctap.md)
-- [ShEx](./cli_usage/shex.md)
-- [SHACL](./cli_usage/shacl.md)
-  - [Validating RDF with SHACL](./cli_usage/shacl-validation.md)
-- [Conversion between RDF Data modelling technologies](./cli_usage/data-model-conversion.md)
+- [node](./cli_usage/node.md)
+- [data](./cli_usage/data.md)
+- [query](./cli_usage/sparql.md)
+- [dctap](./cli_usage/dctap.md)
+- [shex](./cli_usage/shex.md)
+- [shacl](./cli_usage/shacl.md)
+- [shapemap](./cli_usage/shapemap.md)
+- [service](./cli_usage/service.md)
+- [shex-validate](./cli_usage/shex_validate.md)
+- [shacl-validate](./cli_usage/shacl_validate.md)
+- [validate](./cli_usage/validate.md)
+- [convert](./cli_usage/convert.md)
 
 # `rudof` as a library
 

@@ -1,4 +1,4 @@
-# Validating RDF data using SHACL
+# shacl-validate: Validating RDF data using SHACL
 
 RDF data validation in SHACL is a key step for ensuring data quality (correctness and completeness) of a dataset.
 We will make use of the [UserShape example in SHACL](https://book.validatingrdf.com/bookHtml011.html#ch050SHACLExample) from the [Validating RDF Data](https://book.validatingrdf.com/) book to demonstrate tha capabilities of the SHACL validator we propose.

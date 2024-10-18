@@ -1,4 +1,4 @@
-# Conversion between RDF Data modelling technologies
+# convert: RDF Data model conversions
 
 `rudof` supports conversion between different RDF Data modeling technologies using the `convert` command.
 At this moment, we have implemented some converters listed in the table below.
