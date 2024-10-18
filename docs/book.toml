@@ -20,4 +20,12 @@ preferred-dark-theme = "dark"
 git-repository-url = "https://github.com/rudof-project/rudof"
 git-repository-icon = "fa-github"
 additional-css = ["theme/pagetoc.css", "theme/highlight.css"]
-additional-js = ["theme/pagetoc.js", "mermaid.min.js", "mermaid-init.js"]
+additional-js = [
+    "turtle.js",
+    "shexc.js",
+    "sparql.js",
+    "init_highlight_on_load.js", # This is required as the last one after the custom highlight files to restart highlight
+    "theme/pagetoc.js", 
+    "mermaid.min.js", 
+    "mermaid-init.js"
+    ]

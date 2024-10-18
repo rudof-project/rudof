@@ -18,3 +18,22 @@ The previous traits are implemented by the following concrete types:
 - [SRDFSparql](https://docs.rs/srdf/latest/srdf/srdf_sparql/srdfsparql/struct.SRDFSparql.html): implementation of the previous traits based on an SPARQL endpoint.
 
 > If you want to handle RDF in a generic way, our recommendation is to use only the methods provided by the traits. In that way, your code could work with either in-memory graphs or SPARQL endpoints without having to modify the code.
+
+## Example
+
+The following code can be used to create a triple in an RDF graph in memory:
+
+```rust
+use srdf::SRDFGraph;
+use srdf::SRDFBasic;
+use iri_s::iri;
+
+let mut graph = SRDFGraph::new();
+let alice = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/alice"));
+let knows = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/knows"));
+let bob = <SRDFGraph as SRDFBasic>::iri_s2term(&iri!("http://example.org/bob"));
+
+graph.add_triple(&alice, &knows, &bob).unwrap();
+
+assert_eq!(graph.len(), 1);
+```
