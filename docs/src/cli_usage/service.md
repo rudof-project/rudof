@@ -2,6 +2,24 @@
 
 This command can be used to get information from the description provided by a SPARQL endpoint.
 
+As an example, let's assume one wants to obtain information about Uniprot:
+
+The first step is to obtain the service description in Turtle. It can be done with the following command:
+
+```sh
+❯ curl -H "Accept: text/turtle" https://sparql.uniprot.org/sparql > uniprot.ttl
+```
+
+And then, `rudof` can be used to parse that file as:
+
+```sh
+❯ rudof service -s uniprot.ttl
+```
+
+## Service command options
+
+The full command options are:
+
 ```sh
 Show information about SPARQL service
 
@@ -25,3 +43,11 @@ Options:
   -h, --help
           Print help
 ```
+
+## Service config file
+
+The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in YAML format.
+
+The fields that it can contain are:
+
+- base (IRI): Base IRi to resolve relative IRIs in the service description.

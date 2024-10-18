@@ -63,8 +63,8 @@ pub struct TapConfig {
     ///
     property_placeholders: HashMap<String, PlaceholderResolver>,
 
-    /// Indicates how to generate aa value for a row whose property ID is empty.
-    /// 
+    /// Indicates how to generate a value for a row whose property ID is empty.
+    ///
     /// When the processor find
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
