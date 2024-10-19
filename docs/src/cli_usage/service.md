@@ -1,19 +1,11 @@
 # service: Get information about a SPARQL endpoint service
 
-This command can be used to get information from the description provided by a SPARQL endpoint.
+This command can be used to get information from the service description provided by a SPARQL endpoint. It is based on the [SPARQL 1.1 Service description vocabulary](https://www.w3.org/TR/sparql11-service-description/) which is W3C recommendation that describes the features that a SPARQL endpoint supports.
 
-As an example, let's assume one wants to obtain information about Uniprot:
-
-The first step is to obtain the service description in Turtle. It can be done with the following command:
+As an example, to obtain information about Uniprot you can use:
 
 ```sh
-❯ curl -H "Accept: text/turtle" https://sparql.uniprot.org/sparql > uniprot.ttl
-```
-
-And then, `rudof` can be used to parse that file as:
-
-```sh
-❯ rudof service -s uniprot.ttl
+❯ rudof service -s https://sparql.uniprot.org/sparql
 ```
 
 ## Service command options

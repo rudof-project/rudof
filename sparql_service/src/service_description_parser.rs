@@ -1,7 +1,10 @@
-use srdf::{ok, property_value, FocusRDF, RDFNodeParse, RDFParser};
+use iri_s::IriS;
+use srdf::{ok, property_iri, property_value, property_values, FocusRDF, RDFNodeParse, RDFParser};
 use std::fmt::Debug;
 
-use crate::{ServiceDescription, ServiceDescriptionError, SD_ENDPOINT, SD_SERVICE};
+use crate::{
+    ServiceDescription, ServiceDescriptionError, SD_ENDPOINT, SD_SERVICE, SD_SUPPORTED_LANGUAGE,
+};
 
 type Result<A> = std::result::Result<A, ServiceDescriptionError>;
 
@@ -34,14 +37,23 @@ where
     where
         RDF: FocusRDF + 'a,
     {
-        property_value(&SD_ENDPOINT).then(move |term: RDF::Term| {
-            if let Some(iri) = RDF::term_as_iri(&term) {
-                let iri_s = RDF::iri2iri_s(&iri);
-                ok(&ServiceDescription::new(iri_s))
+        Self::endpoint().flat_map(|iri| Ok(ServiceDescription::new(iri)))
+        /*        property_value(&SD_ENDPOINT).then(move |term: RDF::Term| {
+            if let Some(sd_iri) = RDF::term_as_iri(&term) {
+                let sd_iri_s = RDF::iri2iri_s(&sd_iri);
+                property_values(&SD_SUPPORTED_LANGUAGE)
+                    .then_mut(move |ts| ok(&ServiceDescription::new(sd_iri_s)))
             } else {
                 todo!()
             }
-        })
+        }) */
+    }
+
+    pub fn endpoint() -> impl RDFNodeParse<RDF, Output = IriS>
+    where
+        RDF: FocusRDF,
+    {
+        property_iri(&SD_ENDPOINT)
     }
 
     fn sd_service() -> RDF::Term {

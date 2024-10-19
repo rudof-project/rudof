@@ -183,7 +183,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// # use oxrdf::Term;
     /// # use std::collections::HashSet;
     /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, ok, property_integers};
-    ///       let s = r#"prefix : <http://example.org/>
+    ///     let s = r#"prefix : <http://example.org/>
     ///       :x :p 1, 2, 3 .
     ///     "#;
     ///     let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
@@ -1027,6 +1027,18 @@ where
     property_values(property).flat_map(|terms| {
         let is = terms_to_ints::<RDF>(terms)?;
         Ok(is)
+    })
+}
+
+/// Returns the integer value of `property` for the focus node
+///
+pub fn property_iri<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = IriS>
+where
+    RDF: FocusRDF,
+{
+    property_value(property).flat_map(|term| {
+        let i = term_to_iri::<RDF>(&term)?;
+        Ok(i)
     })
 }
 

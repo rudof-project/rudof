@@ -431,7 +431,7 @@ fn run_service(
     config: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
-    let reader = input.open_read()?;
+    let reader = input.open_read(Some("text/turtle"))?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let config = if let Some(path) = config {
         ServiceConfig::from_path(path)?
@@ -633,7 +633,7 @@ fn run_validate_shacl(
 
     // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
     let data = cast_to_data_path(data)?;
-    let reader = input.open_read()?;
+    let reader = input.open_read(Some("text/turtle"))?;
 
     if let Some(data) = data {
         let validator = match GraphValidation::new(&data, map_data_format(data_format)?, None, mode)
@@ -1097,7 +1097,7 @@ fn get_data(
 
 fn get_str(input: &InputSpec) -> Result<String> {
     let mut str = String::new();
-    let mut data = input.open_read()?;
+    let mut data = input.open_read(Some("text/turtle"))?;
     data.read_to_string(&mut str)?;
     Ok(str)
 }
@@ -1404,14 +1404,14 @@ fn parse_schema(
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
-            let mut reader = input.open_read()?;
+            let mut reader = input.open_read(Some("text/turtle"))?;
             // TODO: Check base from ShEx config...
             let mut schema = ShExParser::from_reader(&mut reader, None)?;
             schema.with_source_iri(&input.as_iri()?);
             Ok(schema)
         }
         ShExFormat::ShExJ => {
-            let reader = input.open_read()?;
+            let reader = input.open_read(Some("text/turtle"))?;
             let mut schema = SchemaJson::from_reader(reader)?;
             schema.with_source_iri(&input.as_iri()?);
             Ok(schema)
@@ -1450,7 +1450,7 @@ fn parse_shacl(
 fn parse_dctap(input: &InputSpec, format: &DCTapFormat, config: &TapConfig) -> Result<DCTap> {
     match format {
         DCTapFormat::CSV => {
-            let reader = input.open_read()?;
+            let reader = input.open_read(None)?;
             let dctap = DCTap::from_reader(reader, config)?;
             Ok(dctap)
         }
@@ -1498,7 +1498,7 @@ fn parse_data(
     let mut graph = SRDFGraph::new();
     let rdf_format = data_format2rdf_format(data_format);
     for d in data {
-        let reader = d.open_read()?;
+        let reader = d.open_read(Some("text/turtle"))?;
         let base = config
             .base
             .as_ref()
@@ -1587,7 +1587,9 @@ fn cast_to_data_path(data: &Vec<InputSpec>) -> Result<Option<PathBuf>> {
         [elem] => match elem {
             InputSpec::Path(path) => Ok(Some(path.clone())),
             InputSpec::Stdin => bail!("Not supported data from stdin yet"),
-            InputSpec::Url(url) => bail!("Not supported data from url yet. Url: {url}"),
+            InputSpec::Url(url) => {
+                bail!("Not supported data from url yet. Url: {}", url.to_string())
+            }
         },
         [] => Ok(None),
         _ => bail!("More than one value for data: {data:?}"),
