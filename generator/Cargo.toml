@@ -26,6 +26,7 @@ oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the store
 clap = { workspace = true } # needed for creating the ValueEnums (ensuring compatibility with clap)
 serde = { version = "1.0", features = ["derive"] } # needed for the config thing
 serde_yml = "0.0.12" # needed for the config thing
+prefixmap = { version = "0.1.0", path = "./prefixmap" }
 
 rand = "0.8"
 rust_decimal = "1.28"
