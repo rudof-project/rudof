@@ -2,8 +2,11 @@
 
 ## Current changes without release yet
 
-## [0.1.31] - 2024-08-??
+## [0.1.31] - 2024-10-20
 
+- Added more information to docs
+- Implemented more features of Service description
+- Added Accept headers to `InputSpec` so it provides basic content negotiation
 - Added ShExConfig to improve configuration of options that involve ShEx
 - Added literals to shape maps
 - Improved aesthetics of docs #170
