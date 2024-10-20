@@ -102,4 +102,11 @@ pub enum RDFParseError {
 
     #[error("{msg}")]
     Custom { msg: String },
+
+    #[error("Expected IRI for property {property} of node {focus}: {error}")]
+    PropertyValueExpectedIRI {
+        focus: String,
+        property: IriS,
+        error: String,
+    },
 }

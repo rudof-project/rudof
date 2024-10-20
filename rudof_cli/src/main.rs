@@ -431,7 +431,7 @@ fn run_service(
     config: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
-    let reader = input.open_read(Some("text/turtle"))?;
+    let reader = input.open_read(Some(data_format.mime_type().as_str()))?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let config = if let Some(path) = config {
         ServiceConfig::from_path(path)?
@@ -633,7 +633,7 @@ fn run_validate_shacl(
 
     // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
     let data = cast_to_data_path(data)?;
-    let reader = input.open_read(Some("text/turtle"))?;
+    let reader = input.open_read(Some(shapes_format.mime_type().as_str()))?;
 
     if let Some(data) = data {
         let validator = match GraphValidation::new(&data, map_data_format(data_format)?, None, mode)
@@ -1095,9 +1095,9 @@ fn get_data(
     }
 }
 
-fn get_str(input: &InputSpec) -> Result<String> {
+fn get_query_str(input: &InputSpec) -> Result<String> {
     let mut str = String::new();
-    let mut data = input.open_read(Some("text/turtle"))?;
+    let mut data = input.open_read(None)?;
     data.read_to_string(&mut str)?;
     Ok(str)
 }
@@ -1334,7 +1334,7 @@ fn run_query(
         debug,
         &data_config,
     )?;
-    let query = get_str(query)?;
+    let query = get_query_str(query)?;
     let results = data.query_select(query.as_str())?;
     let mut results_iter = results.iter().peekable();
     if let Some(first) = results_iter.peek() {
@@ -1404,14 +1404,14 @@ fn parse_schema(
     match schema_format {
         ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
         ShExFormat::ShExC => {
-            let mut reader = input.open_read(Some("text/turtle"))?;
+            let mut reader = input.open_read(Some(schema_format.mime_type().as_str()))?;
             // TODO: Check base from ShEx config...
             let mut schema = ShExParser::from_reader(&mut reader, None)?;
             schema.with_source_iri(&input.as_iri()?);
             Ok(schema)
         }
         ShExFormat::ShExJ => {
-            let reader = input.open_read(Some("text/turtle"))?;
+            let reader = input.open_read(Some(schema_format.mime_type().as_str()))?;
             let mut schema = SchemaJson::from_reader(reader)?;
             schema.with_source_iri(&input.as_iri()?);
             Ok(schema)
@@ -1498,7 +1498,7 @@ fn parse_data(
     let mut graph = SRDFGraph::new();
     let rdf_format = data_format2rdf_format(data_format);
     for d in data {
-        let reader = d.open_read(Some("text/turtle"))?;
+        let reader = d.open_read(Some(data_format.mime_type().as_str()))?;
         let base = config
             .base
             .as_ref()

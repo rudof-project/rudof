@@ -6,6 +6,12 @@ As an example, to obtain information about Uniprot you can use:
 
 ```sh
 ❯ rudof service -s https://sparql.uniprot.org/sparql
+Service
+  endpoint: https://sparql.uniprot.org/sparql
+  supportedLanguage: [SPARQL11Query]
+  feature: [UnionDefaultGraph, BasicFederatedQuery]
+  result_format: [JSON, CSV, TSV, N-TRIPLES, Turtle, RDF/XML, XML]
+  default_dataset: Dataset: base://#_1
 ```
 
 ## Service command options

@@ -770,6 +770,23 @@ pub enum ShExFormat {
     NQuads,
 }
 
+impl MimeType for ShExFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            ShExFormat::Internal => "text/turtle".to_string(),
+            ShExFormat::Simple => "text/turtle".to_string(),
+            ShExFormat::ShExC => "text/shex".to_string(),
+            ShExFormat::ShExJ => "application/json".to_string(),
+            ShExFormat::Turtle => "text/turtle".to_string(),
+            ShExFormat::NTriples => "application/n-triples".to_string(),
+            ShExFormat::RDFXML => "application/rdf+xml".to_string(),
+            ShExFormat::TriG => "application/trig".to_string(),
+            ShExFormat::N3 => "text/n3".to_string(),
+            ShExFormat::NQuads => "application/n-quads".to_string(),
+        }
+    }
+}
+
 impl Display for ShExFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -814,6 +831,23 @@ pub enum DataFormat {
     NQuads,
 }
 
+pub trait MimeType {
+    fn mime_type(&self) -> String;
+}
+
+impl MimeType for DataFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            DataFormat::Turtle => "text/turtle".to_string(),
+            DataFormat::NTriples => "application/n-triples".to_string(),
+            DataFormat::RDFXML => "application/rdf+xml".to_string(),
+            DataFormat::TriG => "application/trig".to_string(),
+            DataFormat::N3 => "text/n3".to_string(),
+            DataFormat::NQuads => "application/n-quads".to_string(),
+        }
+    }
+}
+
 impl From<DataFormat> for RDFFormat {
     fn from(val: DataFormat) -> Self {
         match val {
@@ -850,6 +884,20 @@ pub enum ShaclFormat {
     TriG,
     N3,
     NQuads,
+}
+
+impl MimeType for ShaclFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            ShaclFormat::Turtle => "text/turtle".to_string(),
+            ShaclFormat::NTriples => "application/n-triples".to_string(),
+            ShaclFormat::RDFXML => "application/rdf+xml".to_string(),
+            ShaclFormat::TriG => "application/trig".to_string(),
+            ShaclFormat::N3 => "text/n3".to_string(),
+            ShaclFormat::NQuads => "application/n-quads".to_string(),
+            ShaclFormat::Internal => "text/turtle".to_string(),
+        }
+    }
 }
 
 impl Display for ShaclFormat {

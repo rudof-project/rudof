@@ -1030,15 +1030,22 @@ where
     })
 }
 
-/// Returns the integer value of `property` for the focus node
+/// Returns the IRI value of `property` for the focus node
 ///
-pub fn property_iri<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = IriS>
+pub fn property_iri<'a, RDF>(property: &'a IriS) -> impl RDFNodeParse<RDF, Output = IriS> + 'a
 where
-    RDF: FocusRDF,
+    RDF: FocusRDF + 'a,
 {
-    property_value(property).flat_map(|term| {
-        let i = term_to_iri::<RDF>(&term)?;
-        Ok(i)
+    get_focus().then(move |focus| {
+        property_value(property).flat_map(move |term| {
+            let i =
+                term_to_iri::<RDF>(&term).map_err(|e| RDFParseError::PropertyValueExpectedIRI {
+                    focus: format!("{focus}"),
+                    property: property.clone(),
+                    error: format!("{e}"),
+                })?;
+            Ok(i)
+        })
     })
 }
 

@@ -76,7 +76,7 @@ impl InputSpec {
                 }
                 .send()
                 .map_err(|e| InputSpecError::UrlDerefError {
-                    url: url,
+                    url,
                     error: format!("{e}"),
                 })?;
                 let reader = BufReader::new(resp);
@@ -92,11 +92,11 @@ impl FromStr for InputSpec {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             _ if s.starts_with("http://") => {
-                let url_spec = UrlSpec::from_str(s)?;
+                let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             }
             _ if s.starts_with("https://") => {
-                let url_spec = UrlSpec::from_str(s)?;
+                let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             }
             _ if s == "-" => Ok(InputSpec::Stdin),
@@ -158,6 +158,7 @@ pub struct UrlSpec {
     client: Client,
 }
 
+#[allow(clippy::to_string_trait_impl)]
 impl ToString for UrlSpec {
     fn to_string(&self) -> String {
         self.url.to_string()
@@ -165,7 +166,7 @@ impl ToString for UrlSpec {
 }
 
 impl UrlSpec {
-    pub fn from_str(str: &str) -> Result<UrlSpec, InputSpecError> {
+    pub fn parse(str: &str) -> Result<UrlSpec, InputSpecError> {
         let url = Url::parse(str).map_err(|e| InputSpecError::UrlParseError {
             str: str.to_string(),
             error: format!("{e}"),
