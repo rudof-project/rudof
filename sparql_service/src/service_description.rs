@@ -178,15 +178,15 @@ impl ServiceDescription {
     }
 
     pub fn add_supported_language(&mut self, supported_language: &[SupportedLanguage]) {
-        self.supported_language = supported_language.to_owned();
+        supported_language.clone_into(&mut self.supported_language);
     }
 
     pub fn add_feature(&mut self, feature: &[Feature]) {
-        self.feature = feature.to_owned();
+        feature.clone_into(&mut self.feature);
     }
 
     pub fn add_result_format(&mut self, result_format: &[ResultFormat]) {
-        self.result_format = result_format.to_owned();
+        result_format.clone_into(&mut self.result_format);
     }
 
     pub fn add_default_dataset(&mut self, default_dataset: &Dataset) {
