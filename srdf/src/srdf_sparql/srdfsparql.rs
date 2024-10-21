@@ -264,12 +264,18 @@ impl SRDFBasic for SRDFSparql {
         OxTerm::BlankNode(bnode)
     }
 
-    fn object_as_term(_obj: &Object) -> Self::Term {
-        todo!()
+    fn object_as_term(obj: &Object) -> Self::Term {
+        match obj {
+            Object::Iri(iri) => OxTerm::NamedNode(oxrdf::NamedNode::new(iri.as_str()).unwrap()),
+            Object::Literal(literal) => OxTerm::Literal(literal.clone().into()),
+            Object::BlankNode(blank_node) => {
+                OxTerm::BlankNode(oxrdf::BlankNode::new(blank_node).unwrap())
+            }
+        }
     }
 
-    fn bnode_as_subject(_bnode: Self::BNode) -> Self::Subject {
-        todo!()
+    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
+        OxSubject::BlankNode(bnode)
     }
 }
 
