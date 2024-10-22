@@ -202,10 +202,7 @@ mod tests {
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
         let shape = ShapeLabel::iri(iri!("http://example/S"));
-        assert_eq!(
-            result.get_info(&node, &shape).unwrap().is_conformant(),
-            true
-        )
+        assert!(result.get_info(&node, &shape).unwrap().is_conformant())
     }
 
     #[test]
@@ -230,9 +227,6 @@ mod tests {
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
         let shape = ShapeLabel::iri(iri!("http://example/S"));
-        assert_eq!(
-            result.get_info(&node, &shape).unwrap().is_non_conformant(),
-            true
-        )
+        assert!(result.get_info(&node, &shape).unwrap().is_non_conformant(),)
     }
 }
