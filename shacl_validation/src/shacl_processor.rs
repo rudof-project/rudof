@@ -54,6 +54,35 @@ pub trait ShaclProcessor<S: SRDFBasic> {
     }
 }
 
+/// The In-Memory Graph Validation algorithm.
+///
+/// ```
+/// use std::path::Path;
+///
+/// use shacl_validation::shacl_processor::GraphValidation;
+/// use shacl_validation::shacl_processor::ShaclValidationMode;
+/// use shacl_validation::shacl_processor::ShaclProcessor;
+/// use shacl_validation::store::ShaclDataManager;
+/// use srdf::RDFFormat;
+///
+/// let graph_validation = GraphValidation::new(
+///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+///     RDFFormat::Turtle, // serialization format of the graph
+///     None, // no base is defined
+///     ShaclValidationMode::Native, // use the Native mode (performance)
+/// )
+/// .unwrap();
+///
+/// // the following schema should generate no errors when the conforming graph
+/// // loaded in the previous declaration is used for validation
+/// let schema = std::fs::read_to_string(Path::new("../examples/book.ttl")).unwrap();
+/// let cursor = std::io::Cursor::new(schema);
+/// let compiled_schema = ShaclDataManager::load(cursor, RDFFormat::Turtle, None).unwrap();
+///
+/// let report = graph_validation.validate(&compiled_schema).unwrap();
+///
+/// assert_eq!(report.results().len(), 0);
+/// ```
 pub struct GraphValidation {
     store: Graph,
     mode: ShaclValidationMode,
@@ -90,6 +119,7 @@ impl ShaclProcessor<SRDFGraph> for GraphValidation {
     }
 }
 
+/// The Endpoint Graph Validation algorithm.
 pub struct EndpointValidation {
     store: Endpoint,
     mode: ShaclValidationMode,
