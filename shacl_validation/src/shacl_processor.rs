@@ -24,7 +24,7 @@ use crate::validation_report::report::ValidationReport;
 /// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
 /// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
-    /// We use a Rust native engine in an imperative manner
+    /// We use a Rust native engine in an imperative manner (performance)
     Native,
     /// We use a  SPARQL-based engine, which is declarative
     Sparql,
@@ -40,12 +40,22 @@ pub trait ShaclProcessor<S: SRDFBasic> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
-    fn validate(&self, schema: &CompiledSchema<S>) -> Result<ValidationReport<S>, ValidateError> {
+    /// Executes the Validation of the provided Graph, in any of the supported
+    /// formats, against the shapes graph passed as an argument. As a result,
+    /// the Validation Report generated from the validation process is returned.
+    ///
+    /// # Arguments
+    ///
+    /// * `shapes_graph` - A compiled SHACL shapes graph
+    fn validate(
+        &self,
+        shapes_graph: &CompiledSchema<S>,
+    ) -> Result<ValidationReport<S>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
         // for each shape in the schema
-        for (_, shape) in schema.iter() {
+        for (_, shape) in shapes_graph.iter() {
             let results = shape.validate(self.store(), self.runner(), None)?;
             validation_results.extend(results);
         }
@@ -89,6 +99,32 @@ pub struct GraphValidation {
 }
 
 impl GraphValidation {
+    /// Returns an In-Memory Graph validation SHACL processor.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - A path to the graph's serialization file
+    /// * `data_format` - Any of the possible RDF serialization formats
+    /// * `base` - An optional String, the base URI
+    /// * `mode` - Any of the possible SHACL validation modes
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::path::Path;
+    ///
+    /// use shacl_validation::shacl_processor::GraphValidation;
+    /// use shacl_validation::shacl_processor::ShaclValidationMode;
+    /// use shacl_validation::shacl_processor::ShaclProcessor;
+    /// use srdf::RDFFormat;
+    ///
+    /// let graph_validation = GraphValidation::new(
+    ///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+    ///     RDFFormat::Turtle, // serialization format of the graph
+    ///     None, // no base is defined
+    ///     ShaclValidationMode::Native, // use the Native mode (performance)
+    /// );
+    /// ```
     pub fn new(
         data: &Path,
         data_format: RDFFormat,
