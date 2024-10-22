@@ -51,6 +51,4 @@ impl QueryShapeMap {
     {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
     }
-
-
 }

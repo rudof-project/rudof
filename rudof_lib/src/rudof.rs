@@ -86,8 +86,8 @@ impl Rudof {
             Some(ref mut validator) => match &self.shapemap {
                 None => todo!(),
                 Some(shapemap) => {
-                    let _ = validator
-                        .validate_shapemap(&shapemap, &self.rdf_data)
+                    validator
+                        .validate_shapemap(shapemap, &self.rdf_data)
                         .map_err(|e| RudofError::ShExValidatorError {
                             schema: schema_str.clone(),
                             rdf_data: format!("{:?}", self.rdf_data),
@@ -164,10 +164,9 @@ impl Rudof {
     ///
     /// If no ShEx schema has been set, returns None
     pub fn shex_shapes_prefixmap(&self) -> Option<PrefixMap> {
-        match &self.shex_validator {
-            None => None,
-            Some(validator) => Some(validator.shapes_prefixmap()),
-        }
+        self.shex_validator
+            .as_ref()
+            .map(|validator| validator.shapes_prefixmap())
     }
 }
 

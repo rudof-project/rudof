@@ -233,7 +233,7 @@ fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a
     se
 }
 
-fn show_errors(errors: &Vec<ValidatorError>) -> String {
+fn show_errors(errors: &[ValidatorError]) -> String {
     let mut result = String::new();
     for (err, idx) in errors.iter().enumerate() {
         result.push_str(format!("Error #{idx}: {err}\n").as_str());
@@ -241,17 +241,17 @@ fn show_errors(errors: &Vec<ValidatorError>) -> String {
     result
 }
 
-fn json_errors(_errors: &Vec<ValidatorError>) -> Value {
+fn json_errors(_errors: &[ValidatorError]) -> Value {
     let vs = vec!["todo", "errors"];
     vs.into()
 }
 
-fn json_reasons(_reasons: &Vec<Reason>) -> Value {
+fn json_reasons(_reasons: &[Reason]) -> Value {
     let vs = vec!["todo", "reasons"];
     vs.into()
 }
 
-fn show_reasons(reasons: &Vec<Reason>) -> String {
+fn show_reasons(reasons: &[Reason]) -> String {
     let mut result = String::new();
     for (reason, idx) in reasons.iter().enumerate() {
         result.push_str(format!("Reason #{idx}: {reason}\n").as_str());

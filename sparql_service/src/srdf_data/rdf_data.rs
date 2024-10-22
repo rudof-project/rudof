@@ -98,10 +98,7 @@ impl RdfData {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
-        let base = match base {
-            None => None,
-            Some(str) => Some(Iri::parse_unchecked(str.to_string())),
-        };
+        let base = base.map(|str| Iri::parse_unchecked(str.to_string()));
         match &mut self.graph {
             Some(ref mut graph) => graph
                 .merge_from_reader(read, format, base, reader_mode)

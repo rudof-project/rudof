@@ -52,19 +52,17 @@ impl Display for SelectQuery {
             writeln!(f, "SELECT * WHERE {{")?;
             for pattern in &self.patterns {
                 write!(f, " ")?;
-                pattern.show_qualified(f, prefixmap).map_err(|_e| 
+                pattern.show_qualified(f, prefixmap).map_err(|_e|
                         // TODO: The following is a hack to make the type checker happy...
-                        std::fmt::Error::default()
-                )?;
+                        std::fmt::Error)?;
                 writeln!(f)?;
             }
         } else {
             let prefixmap = PrefixMap::new();
             for pattern in &self.patterns {
-                pattern.show_qualified(f, &prefixmap).map_err(|_e| 
+                pattern.show_qualified(f, &prefixmap).map_err(|_e|
                         // TODO: The following is a hack to make the type checker happy...
-                        std::fmt::Error::default()
-                )?;
+                        std::fmt::Error)?;
             }
         }
         writeln!(f, "}}")?;

@@ -138,6 +138,8 @@ impl PropertyShape {
         &self.property_shapes
     }
 
+    // I added the following because there seems to be an unreachable pattern in object with rdf-star and Triple
+    #[allow(unreachable_patterns)]
     pub fn get_value_nodes(
         &self,
         data_graph: &SRDFGraph,
