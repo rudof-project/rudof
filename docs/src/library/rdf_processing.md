@@ -19,7 +19,7 @@ The previous traits are implemented by the following concrete types:
 
 > If you want to handle RDF in a generic way, our recommendation is to use only the methods provided by the traits. In that way, your code could work with either in-memory graphs or SPARQL endpoints without having to modify the code.
 
-## Example
+## Example: Creating an RDF graph
 
 The following code can be used to create a triple in an RDF graph in memory:
 

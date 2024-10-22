@@ -11,6 +11,7 @@ use std::{
 
 use crate::{Reason, ResultValue, ValidatorError};
 
+/// Result of ShEx validation
 #[derive(Debug, Default)]
 pub struct ResultMap {
     nodes_prefixmap: PrefixMap,
@@ -111,59 +112,3 @@ impl ResultMap {
     }
 }
 
-fn show_node(node: &Node, prefixmap: &PrefixMap) -> String {
-    match node.as_object() {
-        Object::Iri(iri) => prefixmap.qualify(iri),
-        _ => format!("{node}"),
-    }
-}
-
-fn show_shapelabel(shapelabel: &ShapeLabel, prefixmap: &PrefixMap) -> String {
-    match shapelabel {
-        ShapeLabel::Iri(iri) => prefixmap.qualify(iri),
-        ShapeLabel::BNode(str) => format!("_:{str}"),
-        ShapeLabel::Start => "Start".to_owned(),
-    }
-}
-
-impl Display for ResultMap {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        for (n, hs) in &self.ok_map {
-            for (s, reasons) in hs.iter() {
-                let s = format!(
-                    "{}->{}",
-                    show_node(n, &self.nodes_prefixmap),
-                    show_shapelabel(s, &self.schema_prefixmap)
-                );
-                write!(dest, "{}", s.green())?;
-                for r in reasons {
-                    writeln!(dest, "  {r}")?;
-                }
-            }
-        }
-        writeln!(dest)?;
-        for (n, hs) in &self.fail_map {
-            for (s, errs) in hs.iter() {
-                let s = format!(
-                    "{}-> NOT {}",
-                    show_node(n, &self.nodes_prefixmap),
-                    show_shapelabel(s, &self.schema_prefixmap)
-                );
-                write!(dest, "{}", s.red())?;
-                for e in errs {
-                    writeln!(dest, " {e}")?;
-                }
-            }
-            writeln!(dest)?;
-        }
-        writeln!(dest)?;
-        for (n, hs) in &self.pending {
-            write!(dest, "{}->Pending |", show_node(n, &self.nodes_prefixmap))?;
-            for s in hs {
-                write!(dest, "{}|", show_shapelabel(s, &self.schema_prefixmap))?;
-            }
-            writeln!(dest)?;
-        }
-        Ok(())
-    }
-}

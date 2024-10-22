@@ -2,9 +2,8 @@ use iri_s::IriS;
 use rbe::RbeTable;
 use std::fmt::Display;
 
-use crate::{Node, Pred, ShapeLabelIdx};
-
 use super::{annotation::Annotation, sem_act::SemAct};
+use crate::{Node, Pred, ShapeLabelIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {

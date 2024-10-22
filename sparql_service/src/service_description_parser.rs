@@ -51,7 +51,7 @@ where
                             let iri = iri.clone();
                             move |feature| {
                                 Self::default_dataset().then({
-                                    // TODO: There is something ugly here...refactor!!
+                                    // TODO: There is something ugly here with so many clone()'s...refactor!!
                                     let iri = iri.clone();
                                     let sl = sl.clone();
                                     let result_format = result_format.clone();

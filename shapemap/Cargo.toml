@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+colored = "2"
 iri_s = { workspace = true }
 srdf = { workspace = true }
 prefixmap = { workspace = true }
@@ -17,6 +18,10 @@ shex_ast = { workspace = true }
 indexmap = "2.1"
 thiserror = "1.0"
 tracing = { workspace = true }
+serde = "1"
+serde_derive = "1"
+serde_json = { workspace = true }
+
 
 [dev-dependencies]
 tracing-subscriber = {version = "0.3", default-features = false, features = ["env-filter", "fmt"]}

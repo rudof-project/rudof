@@ -123,5 +123,6 @@ The following is a list of `rudof` adopters and supporters:
 
 - [WESO (WEb Semantics Oviedo)](http://www.weso.es/). Most of the contributors are part of this research group at the [University of Oviedo](http://www.uniovi.es)
 - [USDA - United States Department of Agriculture](https://www.usda.gov/) has been partially funding this project through a Non-Assistance Cooperative Agreement with [WESO](http://www.weso.es/) where `rudof` is used to develop Data Shapes based on the [National Agricultural Library Thesaurus Concept Space](https://lod.nal.usda.gov/en/).
+- [Luminvent](https://luminvent.com/) is using `rudof` to validate RDF using Rust code.
 
 If you are using `rudof` and want to be listed, please contact us or add a Pull Request.

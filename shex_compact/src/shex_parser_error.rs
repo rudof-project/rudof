@@ -218,6 +218,9 @@ pub enum ParseError {
 
     #[error("Failed regular expression, str: {str} doesn't match: {re}")]
     RegexFailed { re: String, str: String },
+
+    #[error("Utf8 error: {error}")]
+    Utf8Error { error: String },
 }
 
 impl ParseError {

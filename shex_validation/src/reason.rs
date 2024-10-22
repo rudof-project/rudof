@@ -17,13 +17,13 @@ impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Reason::NodeConstraintPassed { node, nc } => {
-                write!(f, "Node constraint passed for node {node}: {nc}",)
+                write!(f, "Node constraint passed. Node: {node}, Constraint: {nc}",)
             }
             Reason::ShapeAndPassed { node, se } => {
-                write!(f, "AND passed for node {node}: {se}")
+                write!(f, "AND passed. Node {node}, and: {se}")
             }
             Reason::ShapePassed { node, shape } => {
-                write!(f, "Shape passed for node {node}: {shape}")
+                write!(f, "Shape passed. Node {node}, shape: {shape}")
             }
         }
     }

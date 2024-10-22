@@ -14,7 +14,7 @@ use rust_decimal::Decimal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -57,7 +57,7 @@ impl SRDFGraph {
         self.graph.is_empty()
     }
 
-    pub fn merge_from_reader<R: BufRead>(
+    pub fn merge_from_reader<R: io::Read>(
         &mut self,
         read: R,
         format: &RDFFormat,

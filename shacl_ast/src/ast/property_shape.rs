@@ -164,6 +164,7 @@ impl PropertyShape {
                             OxTerm::Literal(literal) => RDFNode::literal(literal.into()),
                             #[cfg(feature = "rdf-star")]
                             OxTerm::Triple(_) => unimplemented!(),
+                            _ => unimplemented!(),
                         })
                         .collect::<HashSet<RDFNode>>()
                 } else {

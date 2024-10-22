@@ -13,6 +13,6 @@ pub enum PrefixMapError {
         prefixmap: PrefixMap,
     },
 
-    #[error(transparent)]
-    FormatError(#[from] std::fmt::Error),
+    #[error("Format error: {error}")]
+    FormatError { error: String },
 }

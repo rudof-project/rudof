@@ -1,11 +1,10 @@
-- [Overview](./overview.md)
-
 # General
 
+- [Overview](./overview.md)
 - [Installation](./general/installation.md)
 - [Getting started](./general/getting-started.md)
 
-# `rudof` usage (command line)
+# `rudof` commands
 
 - [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
@@ -24,6 +23,7 @@
 
 - [Docs](./library/docs.md)
 - [Processing RDF](./library/rdf_processing.md)
+- [Parsing RDF](./library/parsing_processing.md)
 - [Python bindings](./library/python.md)
 
 # `rudof` internals

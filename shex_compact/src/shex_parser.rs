@@ -1,4 +1,5 @@
 use iri_s::IriS;
+// use nom::AsBytes;
 use nom::Err;
 use prefixmap::Deref;
 use shex_ast::Schema;
@@ -73,10 +74,13 @@ impl<'a> ShExParser<'a> {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(rdr: &mut R, base: Option<IriS>) -> Result<Schema> {
-        let mut str = String::new();
-        rdr.read_to_string(&mut str)?;
-        Self::parse(&str, base)
+    pub fn from_reader<R: io::Read>(mut reader: R, base: Option<IriS>) -> Result<Schema> {
+        let mut v = Vec::new();
+        reader.read_to_end(&mut v)?;
+        let s = String::from_utf8(v).map_err(|e| ParseError::Utf8Error {
+            error: format!("{e}"),
+        })?;
+        Self::parse(s.as_str(), base)
     }
 }
 

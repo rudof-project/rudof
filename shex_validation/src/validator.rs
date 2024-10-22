@@ -1,5 +1,4 @@
 use crate::atom;
-use crate::result_map::*;
 use crate::validator_error::*;
 use crate::validator_runner::Engine;
 use crate::PosAtom;
@@ -9,7 +8,10 @@ use crate::ValidatorConfig;
 use either::Either;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
+use serde_json::Value;
 use shapemap::query_shape_map::QueryShapeMap;
+use shapemap::ResultShapeMap;
+use shapemap::ValidationStatus;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_ast::compiled::shape_expr::ShapeExpr;
 use shex_ast::compiled::shape_label::ShapeLabel;
@@ -23,6 +25,7 @@ use tracing::debug;
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 
+#[derive(Debug)]
 pub struct Validator {
     schema: CompiledSchema,
     runner: Engine,
@@ -53,7 +56,7 @@ impl Validator {
             .find_ref(label)
             .map_err(|error| ValidatorError::ShapeLabelNotFoundError {
                 shape_label: label.clone(),
-                err: Box::new(error),
+                error: format!("{error}"),
             })
     }
 
@@ -165,10 +168,10 @@ impl Validator {
         Ok(label)
     }
 
-    pub fn result_map(&self, maybe_nodes_prefixmap: Option<PrefixMap>) -> Result<ResultMap> {
+    pub fn result_map(&self, maybe_nodes_prefixmap: Option<PrefixMap>) -> Result<ResultShapeMap> {
         let mut result = match maybe_nodes_prefixmap {
-            None => ResultMap::new(),
-            Some(pm) => ResultMap::new().with_nodes_prefixmap(pm),
+            None => ResultShapeMap::new(),
+            Some(pm) => ResultShapeMap::new().with_nodes_prefixmap(&pm),
         };
         for atom in &self.runner.checked() {
             let (node, idx) = atom.get_value();
@@ -176,27 +179,84 @@ impl Validator {
             match atom {
                 Atom::Pos(pa) => {
                     let reasons = self.runner.find_reasons(pa);
-                    result.add_ok((*node).clone(), label.clone(), reasons)
+                    let status = ValidationStatus::conformant(
+                        show_reasons(&reasons),
+                        json_reasons(&reasons),
+                    );
+                    // result.add_ok()
+                    result
+                        .add_result((*node).clone(), label.clone(), status)
+                        .map_err(|e| ValidatorError::AddingConformantError {
+                            node: node.to_string(),
+                            label: label.to_string(),
+                            error: format!("{e}"),
+                        })?;
                 }
                 Atom::Neg(na) => {
                     let errors = self.runner.find_errors(na);
-                    result.add_fail((*node).clone(), label.clone(), errors)
+                    let status = ValidationStatus::non_conformant(
+                        show_errors(&errors),
+                        json_errors(&errors),
+                    );
+                    result
+                        .add_result((*node).clone(), label.clone(), status)
+                        .map_err(|e| ValidatorError::AddingNonConformantError {
+                            node: node.to_string(),
+                            label: label.to_string(),
+                            error: format!("{e}"),
+                        })?;
                 }
             }
         }
         for atom in &self.runner.pending() {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
-            result.add_pending((*node).clone(), label.clone());
+            let status = ValidationStatus::pending();
+            result
+                .add_result((*node).clone(), label.clone(), status)
+                .map_err(|e| ValidatorError::AddingPendingError {
+                    node: node.to_string(),
+                    label: label.to_string(),
+                    error: format!("{e}"),
+                })?;
         }
-        // TODO: Should I also add processing nodes as pending?
         Ok(result)
+    }
+
+    pub fn shapes_prefixmap(&self) -> PrefixMap {
+        self.schema.prefixmap()
     }
 }
 
 fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a ShapeExpr {
     let (_label, se) = schema.find_shape_idx(idx).unwrap();
     se
+}
+
+fn show_errors(errors: &Vec<ValidatorError>) -> String {
+    let mut result = String::new();
+    for (err, idx) in errors.iter().enumerate() {
+        result.push_str(format!("Error #{idx}: {err}\n").as_str());
+    }
+    result
+}
+
+fn json_errors(_errors: &Vec<ValidatorError>) -> Value {
+    let vs = vec!["todo", "errors"];
+    vs.into()
+}
+
+fn json_reasons(_reasons: &Vec<Reason>) -> Value {
+    let vs = vec!["todo", "reasons"];
+    vs.into()
+}
+
+fn show_reasons(reasons: &Vec<Reason>) -> String {
+    let mut result = String::new();
+    for (reason, idx) in reasons.iter().enumerate() {
+        result.push_str(format!("Reason #{idx}: {reason}\n").as_str());
+    }
+    result
 }
 
 #[cfg(test)]

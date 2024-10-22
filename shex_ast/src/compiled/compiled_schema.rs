@@ -34,6 +34,10 @@ impl CompiledSchema {
         self.prefixmap = prefixmap.clone().unwrap_or_default();
     }
 
+    pub fn prefixmap(&self) -> PrefixMap {
+        self.prefixmap.clone()
+    }
+
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
         let idx = self.shape_label_counter;
         self.shape_labels_map.insert(shape_label.clone(), idx);

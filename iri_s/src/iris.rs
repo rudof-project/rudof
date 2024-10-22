@@ -120,7 +120,7 @@ impl IriS {
                     .parse(self.iri.as_str())
                     .map_err(|e| IriSError::IriParseErrorWithBase {
                         str: self.iri.as_str().to_string(),
-                        base: Box::new(base),
+                        base: format!("{base}"),
                         error: format!("{e}"),
                     })?
             }
@@ -133,11 +133,13 @@ impl IriS {
             "file" => {
                 let path = url
                     .to_file_path()
-                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.clone() })?;
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath {
+                        url: format!("{url}"),
+                    })?;
                 let path_name = path.to_string_lossy().to_string();
                 let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
                     path: path_name,
-                    url: Box::new(url),
+                    url: format!("{url}"),
                     error: format!("{e}"),
                 })?;
                 Ok(body)

@@ -4,10 +4,7 @@ use prefixmap::PrefixMapError;
 use rbe::RbeError;
 use shex_ast::compiled::preds::Preds;
 use shex_ast::compiled::shape_expr::ShapeExpr;
-use shex_ast::{
-    compiled::shape_label::ShapeLabel, CompiledSchemaError, Node, Pred, ShapeExprLabel,
-    ShapeLabelIdx,
-};
+use shex_ast::{compiled::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
 use srdf::Object;
 use thiserror::Error;
 
@@ -22,8 +19,11 @@ pub enum ValidatorError {
     #[error("Error converting object to iri: {object}")]
     ConversionObjectIri { object: Object },
 
-    #[error(transparent)]
-    CompiledSchemaError(#[from] Box<CompiledSchemaError>),
+    #[error("Compiling schema: {error}")]
+    CompiledSchemaError { error: String },
+
+    #[error("Shapemap error: {error}")]
+    ShapeMapError { error: String },
 
     #[error("Failed regular expression")]
     RbeFailed(),
@@ -37,10 +37,10 @@ pub enum ValidatorError {
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),
 
-    #[error("ShapeLabel not found {shape_label:?}: {err}")]
+    #[error("ShapeLabel not found {shape_label:?}: {error}")]
     ShapeLabelNotFoundError {
         shape_label: ShapeExprLabel,
-        err: Box<CompiledSchemaError>,
+        error: String,
     },
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
@@ -55,6 +55,27 @@ pub enum ValidatorError {
 
     #[error("Error reading config file from path {path}: {error}")]
     ValidatorConfigYamlError { path: String, error: String },
+
+    #[error("Adding non conformant {node}@{label} error: {error}")]
+    AddingNonConformantError {
+        node: String,
+        label: String,
+        error: String,
+    },
+
+    #[error("Adding conformant {node}@{label} error: {error}")]
+    AddingConformantError {
+        node: String,
+        label: String,
+        error: String,
+    },
+
+    #[error("Adding pending {node}@{label} error: {error}")]
+    AddingPendingError {
+        node: String,
+        label: String,
+        error: String,
+    },
 }
 
 #[derive(Debug, Clone)]

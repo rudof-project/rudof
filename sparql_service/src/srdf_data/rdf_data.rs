@@ -1,8 +1,10 @@
+use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
 use oxigraph::sparql::Query;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
+use oxiri::Iri;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm,
@@ -21,6 +23,7 @@ use srdf::QuerySRDF2;
 use srdf::QuerySolution2;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
+use srdf::ReaderMode;
 use srdf::SRDFBasic;
 use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
@@ -30,12 +33,11 @@ use srdf::RDF_TYPE_STR;
 use srdf::SRDF;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::hash::Hash;
+use std::io;
 use std::rc::Rc;
-// use sparesults::QuerySolution as SparQuerySolution;
 use std::str::FromStr;
-
-use super::RdfDataError;
 
 /// Generic abstraction that represents RDF Data which can be either behind SPARQL endpoints or an in-memory graph
 #[derive(Clone)]
@@ -44,6 +46,16 @@ pub struct RdfData {
     graph: Option<SRDFGraph>,
     prefixmap: PrefixMap,
     store: Option<Store>,
+}
+
+impl Debug for RdfData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RdfData")
+            .field("endpoints", &self.endpoints)
+            .field("graph", &self.graph)
+            .field("prefixmap", &self.prefixmap)
+            .finish()
+    }
 }
 
 impl RdfData {
@@ -66,6 +78,43 @@ impl RdfData {
             prefixmap,
             store: Some(store),
         })
+    }
+
+    // Cleans the values of endpoints and graph
+    pub fn clean_all(&mut self) {
+        self.endpoints = Vec::new();
+        self.graph = None
+    }
+
+    // Cleans the value graph
+    pub fn clean_graph(&mut self) {
+        self.graph = None
+    }
+
+    pub fn merge_from_reader<R: io::Read>(
+        &mut self,
+        read: R,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), RdfDataError> {
+        let base = match base {
+            None => None,
+            Some(str) => Some(Iri::parse_unchecked(str.to_string())),
+        };
+        match &mut self.graph {
+            Some(ref mut graph) => graph
+                .merge_from_reader(read, format, base, reader_mode)
+                .map_err(|e| RdfDataError::SRDFGraphError { err: e }),
+            None => {
+                let mut graph = SRDFGraph::new();
+                graph
+                    .merge_from_reader(read, format, base, reader_mode)
+                    .map_err(|e| RdfDataError::SRDFGraphError { err: e })?;
+                self.graph = Some(graph);
+                Ok(())
+            }
+        }
     }
 
     pub fn from_endpoint(endpoint: SRDFSparql) -> RdfData {
