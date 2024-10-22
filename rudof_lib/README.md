@@ -1,5 +1,7 @@
-# SHACL AST
+# rudof_cli
 
-Represents [SHACL](https://www.w3.org/TR/shacl/) Abstract Syntax Tree. 
+Represents the main entry point for the rudof library.
 
-This project started as a re-implementation in Rust of [SHACL-s](https://github.com/weso/shacl-s). 
+In the future, this crate could be replaced by `rudof`.
+
+The goal of this crate is to provide methods and structs that have the same functionality as we currently have in the `rudof` command line tool.

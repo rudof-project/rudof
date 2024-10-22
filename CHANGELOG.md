@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [0.1.32] - 2024-10-22
+
+- Created crate [`rudof_lib`](https://crates.io/crates/rudof_lib) which will act as the main library entry point for `rudof`. In the future, this crate could be called `rudof`.
+- Refactor of main to invoke `rudof_lib`
+- Added [`ResultShapeMap`](https://docs.rs/shapemap/latest/shapemap/result_shape_map/struct.ResultShapeMap.html) as the result of ShEx validation. One improvement is that now the results can appear with colors.
+
 ## [0.1.31] - 2024-10-20
 
 - Added more information to docs
