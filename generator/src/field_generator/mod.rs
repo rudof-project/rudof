@@ -1,1 +1,5 @@
-pub mod specific_generators;
+pub mod implementations;
+
+pub trait RandomField {
+    fn generate_random(&self) -> Self;
+}

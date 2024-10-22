@@ -15,18 +15,10 @@ authors.workspace = true
 
 [dependencies]
 srdf = { workspace = true }
-shacl_ast = { workspace = true }
+shex_ast = { workspace = true }
 iri_s = { workspace = true } # needed for defining IriS and vocabs
+prefixmap = { workspace = true }
 
-thiserror = "1.0.63" # needed for the definition of errors
-lazy_static = "1" # needed for the definition of the vocab
-const_format = "0.2" # needed for the definition of the vocab
-indoc = "2" # needed for the definition of SPARQL queries
-oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the stores )
-clap = { workspace = true } # needed for creating the ValueEnums (ensuring compatibility with clap)
-serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-serde_yml = "0.0.12" # needed for the config thing
-prefixmap = { version = "0.1.0", path = "./prefixmap" }
 
 rand = "0.8"
 rust_decimal = "1.28"
