@@ -24,13 +24,19 @@ The main contributions of `rudof` are:
 
 ```mermaid
 graph TD;
+ user((Person)) --> rudof_cli;
+ application(application);
+ application -->|Rust| rudof_lib ;
+ application --> |Python| pyrudof ;
  iri_s --> oxigraph;
  iri_s --> reqwest ;
  dctap --> calamine ;
  dctap --> csv ;
  sparql_service --> oxigraph ;
 subgraph rudof
+    rudof_lib[<a href='https://crates.io/crates/rudof_lib'>rudof_lib</a>];
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
+    pyrudof[<a href='https://pypi.org/project/pyrudof/'>pyrudof</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
     srdf[<a href='https://crates.io/crates/srdf'>srdf</a>];
     shex_compact[<a href='https://crates.io/crates/shex_compact'>shex_compact</a>];
@@ -44,6 +50,9 @@ subgraph rudof
     shapes_converter[<a href='https://crates.io/crates/shapes_converter'>shapes_converter</a>];
  dctap[<a href='https://crates.io/crates/dctap'>dctap</a>];
  sparql_service[<a href='https://crates.io/crates/sparql_service'>sparql_service</a>];
+
+ pyrudof --> rudof_lib ;
+ rudof_cli --> rudof_lib ;
  shex_ast --> srdf ;
  shex_compact-->shex_ast;
  shex_validation-->shex_ast;
@@ -63,9 +72,9 @@ subgraph rudof
  prefixmap --> iri_s ;
  shex_validation --> shex_compact
  sparql_service --> iri_s ;
- rudof_cli --> shex_validation ;
- rudof_cli --> shacl_validation ;
- rudof_cli --> shapes_converter ;
+ rudof_lib --> shex_validation ;
+ rudof_lib --> shacl_validation ;
+ rudof_lib --> shapes_converter ;
 end
 subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;

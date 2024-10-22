@@ -112,10 +112,7 @@ impl ResultShapeMap {
 
     pub fn get_info(&self, node: &Node, label: &ShapeLabel) -> Option<ValidationStatus> {
         match self.result.get(node) {
-            Some(shapes) => match shapes.get(label) {
-                Some(status) => Some(status.clone()),
-                None => None,
-            },
+            Some(shapes) => shapes.get(label).cloned(),
             None => None,
         }
     }

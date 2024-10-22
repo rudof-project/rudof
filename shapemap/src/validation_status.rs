@@ -13,17 +13,11 @@ pub enum ValidationStatus {
 
 impl ValidationStatus {
     pub fn is_conformant(&self) -> bool {
-        match self {
-            ValidationStatus::Conformant(_) => true,
-            _ => false,
-        }
+        matches!(self, ValidationStatus::Conformant(_))
     }
 
     pub fn is_non_conformant(&self) -> bool {
-        match self {
-            ValidationStatus::NonConformant(_) => true,
-            _ => false,
-        }
+        matches!(self, ValidationStatus::NonConformant(_))
     }
 
     pub fn conformant(reason: String, value: Value) -> ValidationStatus {
