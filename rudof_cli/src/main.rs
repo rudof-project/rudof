@@ -118,10 +118,7 @@ fn main() -> Result<()> {
             /*if let Some(flag) = show_statistics {
                 config.set_show_extends(*flag);
             }*/
-            let show_time = match *show_time {
-                None => false, // config.show_time.unwrap_or(false),
-                Some(b) => b,
-            };
+            let show_time = (*show_time).unwrap_or_default();
             run_shex(
                 schema,
                 schema_format,
@@ -948,7 +945,7 @@ fn run_shex2html<P: AsRef<Path>>(
     }?;
     let mut rudof = Rudof::new(config);
 
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, &config)?;
+    parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
     if let Some(schema) = rudof.shex_schema() {
         let shex2html_config = config.shex2html_config();
         let config = shex2html_config
@@ -1476,20 +1473,6 @@ fn show_result<W: Write>(
     Ok(())
 }
 
-/*
-fn parse_shapemap(
-    shapemap_path: &InputSpec,
-    shapemap_format: &ShapeMapFormat,
-) -> Result<QueryShapeMap> {
-    match shapemap_format {
-        ShapeMapFormat::Internal => Err(anyhow!("Cannot read internal ShapeMap format yet")),
-        ShapeMapFormat::Compact => {
-            let shapemap = ShapeMapParser::parse_buf(shapemap_path, &None, &None)?;
-            Ok(shapemap)
-        }
-    }
-} */
-
 fn parse_shex_schema_rudof(
     rudof: &mut Rudof,
     input: &InputSpec,
@@ -1498,50 +1481,13 @@ fn parse_shex_schema_rudof(
 ) -> Result<()> {
     let reader = input
         .open_read(Some(&schema_format.mime_type()))
-        .expect(format!("Get reader from input: {input}").as_str());
-    let schema_format_valid = shex_format_convert(&schema_format);
+        .context(format!("Get reader from input: {input}"))?;
+    let schema_format_valid = shex_format_convert(schema_format);
     let shex_config = config.shex_config();
     let base = base_convert(&shex_config.base);
     rudof.read_shex_validator(reader, base, &schema_format_valid)?;
     Ok(())
 }
-
-// TODO: Replace by rudof...
-/*
-fn parse_schema(
-    rudof: &mut Rudof,
-    input: &InputSpec,
-    schema_format: &ShExFormat,
-    config: &RudofConfig,
-) -> Result<SchemaJson> {
-    match schema_format {
-        ShExFormat::Internal => Err(anyhow!("Cannot read internal ShEx format yet")),
-        ShExFormat::ShExC => {
-            let mut reader = input.open_read(Some(schema_format.mime_type().as_str()))?;
-            // TODO: Check base from ShEx config...
-            let mut schema = ShExParser::from_reader(&mut reader, None)?;
-            schema.with_source_iri(&input.as_iri()?);
-            Ok(schema)
-        }
-        ShExFormat::ShExJ => {
-            let reader = input.open_read(Some(schema_format.mime_type().as_str()))?;
-            let mut schema = SchemaJson::from_reader(reader)?;
-            schema.with_source_iri(&input.as_iri()?);
-            Ok(schema)
-        }
-        ShExFormat::Turtle => {
-            let rdf = parse_data(
-                &vec![input.clone()],
-                &DataFormat::Turtle,
-                reader_mode,
-                &config.rdf_config(),
-            )?;
-            let schema = ShExRParser::new(rdf).parse()?;
-            Ok(schema)
-        }
-        _ => Err(anyhow!("Not suppported parsing from {schema_format} yet")),
-    }
-}*/
 
 fn parse_shacl(
     input: &InputSpec,
