@@ -2,6 +2,14 @@
 
 ## Current changes without release yet
 
+## [0.1.34] - 2024-10-23
+
+-Some refactoring on main to depend on rudof_lib and check if it works
+
+## [0.1.33] - 2024-10-22
+
+- Internal release to just change the README in rudof_lib
+
 ## [0.1.32] - 2024-10-22
 
 - Created crate [`rudof_lib`](https://crates.io/crates/rudof_lib) which will act as the main library entry point for `rudof`. In the future, this crate could be called `rudof`.
