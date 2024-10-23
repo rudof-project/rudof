@@ -10,6 +10,7 @@ pub mod query_shape_map;
 pub mod result_shape_map;
 pub mod shape_selector;
 pub mod shapemap;
+pub mod shapemap_config;
 pub mod shapemap_error;
 pub mod shapemap_state;
 pub mod validation_status;
@@ -20,6 +21,15 @@ pub use query_shape_map::*;
 pub use result_shape_map::*;
 pub use shape_selector::*;
 pub use shapemap::*;
+pub use shapemap_config::*;
 pub use shapemap_error::*;
 pub use shapemap_state::*;
 pub use validation_status::*;
+
+/// Format of Shapemap files
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum ShapeMapFormat {
+    #[default]
+    Compact,
+    JSON,
+}

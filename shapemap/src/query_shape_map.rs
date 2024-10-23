@@ -3,7 +3,7 @@ use prefixmap::PrefixMap;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::SRDF;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct QueryShapeMap {
     associations: Vec<Association>,
     nodes_prefixmap: PrefixMap,

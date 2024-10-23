@@ -24,11 +24,12 @@ use dctap::{DCTap, DCTapConfig, TapConfig};
 use iri_s::IriS;
 use oxiri::Iri;
 use prefixmap::{IriRef, PrefixMap};
+use rudof_lib::{Rudof, RudofConfig};
 use shacl_ast::{Schema as ShaclSchema, ShaclParser, ShaclWriter};
 use shacl_validation::shacl_config::ShaclConfig;
 use shacl_validation::shacl_processor::{EndpointValidation, GraphValidation, ShaclValidationMode};
 use shacl_validation::store::ShaclDataManager;
-use shapemap::{query_shape_map::QueryShapeMap, NodeSelector, ShapeSelector};
+use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::{shex_to_sparql::ShEx2SparqlConfig, ShEx2Sparql};
 use shapes_converter::{
     ConverterConfig, ImageFormat, ShEx2Html, ShEx2HtmlConfig, ShEx2Uml, ShEx2UmlConfig, Shacl2ShEx,
@@ -38,7 +39,8 @@ use shex_ast::{object_value::ObjectValue, shexr::shexr_parser::ShExRParser};
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use shex_compact::{ShExFormatter, ShExParser, ShapeMapParser, ShapemapFormatter};
 use shex_validation::{
-    ResolveMethod, SchemaWithoutImports, ShExConfig, ShExConfigMain, Validator, ValidatorConfig,
+    ResolveMethod, SchemaWithoutImports, ShExConfig, ShExConfigMain, ShExFormat as ShExFormatValid,
+    ValidatorConfig,
 };
 use sparql_service::{QueryConfig, RdfData, ServiceConfig, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
@@ -58,12 +60,12 @@ pub mod input_convert_format;
 pub mod input_spec;
 pub mod output_convert_format;
 
-pub use cli::*;
+pub use cli::{ShapeMapFormat as CliShapeMapFormat, *};
 pub use input_convert_format::InputConvertFormat;
 pub use input_spec::*;
 pub use output_convert_format::OutputConvertFormat;
 
-use shex_ast::{ast::Schema as SchemaJson, compiled::compiled_schema::CompiledSchema};
+use shex_ast::ast::Schema as SchemaJson;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
 
@@ -553,45 +555,55 @@ fn run_validate_shex(
     reader_mode: &RDFReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
-    shapemap_path: &Option<PathBuf>,
-    shapemap_format: &ShapeMapFormat,
-    debug: u8,
+    shapemap: &Option<InputSpec>,
+    shapemap_format: &CliShapeMapFormat,
+    _debug: u8,
     output: &Option<PathBuf>,
     config: &ValidatorConfig,
     force_overwrite: bool,
 ) -> Result<()> {
+    let rudof_config = RudofConfig::new()
+        .with_rdf_data_config(config.rdf_data_config())
+        .with_shex_validator_config(config.clone());
+    let mut rudof = Rudof::new(&rudof_config);
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_json = parse_schema(schema, schema_format, reader_mode, &config.shex_config())?;
-    let mut schema: CompiledSchema = CompiledSchema::new();
-    schema.from_schema_json(&schema_json)?;
-    let rdf_data_config = match &config.data_config {
-        None => RdfDataConfig::default(),
-        Some(cfg) => cfg.clone(),
+    let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
+    let schema_format = match schema_format {
+        ShExFormat::ShExC => ShExFormatValid::ShExC,
+        ShExFormat::ShExJ => ShExFormatValid::ShExJ,
+        _ => bail!("ShExJ validation not yet implemented"),
     };
-    let data = get_data(
+    let base_iri = config.shex_config().base;
+    let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
+    rudof.read_shex_validator(schema_reader, schema_base, &schema_format)?;
+    get_data_rudof(
+        &mut rudof,
         data,
         data_format,
         endpoint,
         reader_mode,
-        debug,
-        &rdf_data_config,
+        &config.rdf_data_config(),
     )?;
-    let mut shapemap = match shapemap_path {
-        None => QueryShapeMap::new(),
-        Some(shapemap_buf) => parse_shapemap(shapemap_buf, shapemap_format)?,
-    };
+
+    let shapemap_format = shapemap_format_convert(shapemap_format);
+    if let Some(shapemap_spec) = shapemap {
+        let shapemap_reader = shapemap_spec.open_read(None)?;
+        rudof.shapemap_from_reader(shapemap_reader, &shapemap_format)?;
+    }
+
+    // If individual node/shapes are declared add them to current shape map
     match (maybe_node, maybe_shape) {
         (None, None) => {
             // Nothing to do in this case
         }
         (Some(node_str), None) => {
             let node_selector = parse_node_selector(node_str)?;
-            shapemap.add_association(node_selector, start())
+            rudof.shapemap_add_node_shape_selectors(node_selector, start())
         }
         (Some(node_str), Some(shape_str)) => {
             let node_selector = parse_node_selector(node_str)?;
             let shape_selector = parse_shape_selector(shape_str)?;
-            shapemap.add_association(node_selector, shape_selector)
+            rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
         }
         (None, Some(shape_str)) => {
             tracing::debug!(
@@ -599,22 +611,9 @@ fn run_validate_shex(
             )
         }
     };
-    let mut validator = Validator::new(schema, config);
-    let result = validator.validate_shapemap(&shapemap, &data);
-    match result {
-        Result::Ok(_t) => match validator.result_map(Some(data.prefixmap())) {
-            Result::Ok(result_map) => {
-                writeln!(writer, "Result:\n{}", result_map)?;
-                Ok(())
-            }
-            Err(err) => {
-                bail!("Error generating result_map after validation: {err}");
-            }
-        },
-        Result::Err(err) => {
-            bail!("{err}");
-        }
-    }
+    let result = rudof.validate_shex()?;
+    writeln!(writer, "Result:\n{}", result)?;
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1095,6 +1094,45 @@ fn get_data(
     }
 }
 
+fn get_data_rudof(
+    rudof: &mut Rudof,
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
+    config: &RdfDataConfig,
+) -> Result<()> {
+    let base: Option<&str> = match &config.base {
+        None => None,
+        Some(iri) => Some(iri.as_str()),
+    };
+    match (data.is_empty(), endpoint) {
+        (true, None) => {
+            bail!("None of `data` or `endpoint` parameters have been specified for validation")
+        }
+        (false, None) => {
+            let rdf_format = data_format2rdf_format(data_format);
+            let reader_mode = match &reader_mode {
+                RDFReaderMode::Lax => srdf::ReaderMode::Lax,
+                RDFReaderMode::Strict => srdf::ReaderMode::Strict,
+            };
+            for d in data {
+                let data_reader = d.open_read(Some(&data_format.mime_type()))?;
+                rudof.merge_data_from_reader(data_reader, &rdf_format, base, &reader_mode)?;
+            }
+            Ok(())
+        }
+        (true, Some(endpoint)) => {
+            let endpoint_iri = IriS::from_str(endpoint.as_str())?;
+            rudof.add_endpoint(&endpoint_iri)?;
+            Ok(())
+        }
+        (false, Some(_)) => {
+            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
+        }
+    }
+}
+
 fn get_query_str(input: &InputSpec) -> Result<String> {
     let mut str = String::new();
     let mut data = input.open_read(None)?;
@@ -1245,21 +1283,24 @@ where
 }
 
 fn run_shapemap(
-    shapemap_path: &Path,
-    shapemap_format: &ShapeMapFormat,
-    result_format: &ShapeMapFormat,
+    shapemap: &InputSpec,
+    shapemap_format: &CliShapeMapFormat,
+    result_format: &CliShapeMapFormat,
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let shapemap = parse_shapemap(shapemap_path, shapemap_format)?;
+    let mut rudof = Rudof::new(&RudofConfig::new());
+    let shapemap_format = shapemap_format_convert(shapemap_format);
+    rudof.shapemap_from_reader(shapemap.open_read(None)?, &shapemap_format)?;
+    let shapemap = rudof.get_shapemap().unwrap();
     match result_format {
-        ShapeMapFormat::Compact => {
+        CliShapeMapFormat::Compact => {
             let str = ShapemapFormatter::default().format_shapemap(&shapemap);
             writeln!(writer, "{str}")?;
             Ok(())
         }
-        ShapeMapFormat::Internal => {
+        CliShapeMapFormat::Internal => {
             writeln!(writer, "{shapemap:?}")?;
             Ok(())
         }
@@ -1340,7 +1381,7 @@ fn run_query(
     if let Some(first) = results_iter.peek() {
         show_variables(&mut writer, first.variables())?;
         for result in results_iter {
-            show_result(&mut writer, result, &data.prefixmap())?
+            show_result(&mut writer, result, &data.prefixmap_in_memory())?
         }
     } else {
         write!(writer, "No results")?;
@@ -1385,7 +1426,11 @@ fn show_result<W: Write>(
     Ok(())
 }
 
-fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Result<QueryShapeMap> {
+/*
+fn parse_shapemap(
+    shapemap_path: &InputSpec,
+    shapemap_format: &ShapeMapFormat,
+) -> Result<QueryShapeMap> {
     match shapemap_format {
         ShapeMapFormat::Internal => Err(anyhow!("Cannot read internal ShapeMap format yet")),
         ShapeMapFormat::Compact => {
@@ -1393,7 +1438,7 @@ fn parse_shapemap(shapemap_path: &Path, shapemap_format: &ShapeMapFormat) -> Res
             Ok(shapemap)
         }
     }
-}
+} */
 
 fn parse_schema(
     input: &InputSpec,
@@ -1627,4 +1672,11 @@ fn show_extends_table<R: Write>(
         writeln!(writer, "Shapes with {key} extends = {value}")?;
     }
     Ok(())
+}
+
+fn shapemap_format_convert(shapemap_format: &CliShapeMapFormat) -> ShapemapFormat {
+    match shapemap_format {
+        CliShapeMapFormat::Compact => ShapemapFormat::Compact,
+        CliShapeMapFormat::Internal => ShapemapFormat::JSON,
+    }
 }

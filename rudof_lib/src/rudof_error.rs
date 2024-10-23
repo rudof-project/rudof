@@ -1,5 +1,6 @@
 use std::io;
 
+use iri_s::IriS;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -64,4 +65,10 @@ pub enum RudofError {
 
     #[error("Read error: {error} ")]
     ReadError { error: String },
+
+    #[error("AddingEndpoint: {iri} ")]
+    AddingEndpointError { iri: IriS, error: String },
+
+    #[error("Validating shex requires to initialize a shapemap or a node/shape pair")]
+    NoShapeMap { schema: String },
 }

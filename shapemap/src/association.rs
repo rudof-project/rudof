@@ -6,7 +6,7 @@ use srdf::SRDF;
 use crate::{NodeSelector, ShapeSelector};
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Association {
     pub node_selector: NodeSelector,
     pub shape_selector: ShapeSelector,

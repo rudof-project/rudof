@@ -28,8 +28,8 @@ pub struct Cli {
 pub enum Command {
     /// Show information about ShEx ShapeMaps
     Shapemap {
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: PathBuf,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: InputSpec,
 
         #[arg(
             short = 'f',
@@ -138,8 +138,8 @@ pub enum Command {
         )]
         schema_format: ShExFormat,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: Option<PathBuf>,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",
@@ -231,8 +231,8 @@ pub enum Command {
         )]
         schema_format: ShExFormat,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: Option<PathBuf>,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",

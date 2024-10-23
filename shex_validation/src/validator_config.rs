@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
+use shapemap::ShapemapConfig;
 use srdf::RdfDataConfig;
 
 use crate::{ShExConfig, ValidatorError, MAX_STEPS};
@@ -13,18 +14,22 @@ pub struct ValidatorConfig {
     pub max_steps: usize,
 
     /// Configuration of RDF data readers
-    pub data_config: Option<RdfDataConfig>,
+    pub rdf_data: Option<RdfDataConfig>,
 
     /// Configuration of ShEx schemas
-    pub shex_config: Option<ShExConfig>,
+    pub shex: Option<ShExConfig>,
+
+    /// Configuration of Shapemaps
+    pub shapemap: Option<ShapemapConfig>,
 }
 
 impl Default for ValidatorConfig {
     fn default() -> Self {
         Self {
             max_steps: MAX_STEPS,
-            data_config: Some(RdfDataConfig::default()),
-            shex_config: Some(ShExConfig::default()),
+            rdf_data: Some(RdfDataConfig::default()),
+            shex: Some(ShExConfig::default()),
+            shapemap: Some(ShapemapConfig::default()),
         }
     }
 }
@@ -55,9 +60,23 @@ impl ValidatorConfig {
         self.max_steps
     }
 
+    pub fn rdf_data_config(&self) -> RdfDataConfig {
+        match &self.rdf_data {
+            None => RdfDataConfig::default(),
+            Some(sc) => sc.clone(),
+        }
+    }
+
     pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex_config {
+        match &self.shex {
             None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
+        }
+    }
+
+    pub fn shapemap_config(&self) -> ShapemapConfig {
+        match &self.shapemap {
+            None => ShapemapConfig::default(),
             Some(sc) => sc.clone(),
         }
     }

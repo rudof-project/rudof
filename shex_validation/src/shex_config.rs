@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 use srdf::RdfDataConfig;
 use thiserror::Error;
@@ -86,6 +87,9 @@ pub struct ShExConfig {
 
     /// Information about RDF data config which is used for Schemas represented in RDF
     pub rdf_config_shex: Option<RdfDataConfig>,
+
+    /// Default IRI to resolve relative IRIs
+    pub base: Option<IriS>,
 }
 
 impl Default for ShExConfig {
@@ -96,6 +100,7 @@ impl Default for ShExConfig {
             show_shapes: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),
+            base: Some(IriS::new_unchecked("base://")),
         }
     }
 }

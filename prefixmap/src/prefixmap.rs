@@ -2,27 +2,32 @@ use colored::*;
 use indexmap::map::Iter;
 use indexmap::IndexMap;
 use iri_s::*;
-// use serde::{Deserializer, Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{IriRef, PrefixMapError};
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
+/// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
+    /// Proper prefix map associations of an alias `String` to an `IriS`
     pub map: IndexMap<String, IriS>,
 
+    /// Color of prefix aliases when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_prefix_color: Option<Color>,
 
+    /// Color of local names when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_localname_color: Option<Color>,
 
+    /// Color of semicolon when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_semicolon_color: Option<Color>,
 
+    /// Whether to generate hyperlink when qualifying an IRI
     #[serde(skip)]
     hyperlink: bool,
 }

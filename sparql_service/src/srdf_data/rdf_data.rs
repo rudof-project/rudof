@@ -44,7 +44,6 @@ use std::str::FromStr;
 pub struct RdfData {
     endpoints: Vec<SRDFSparql>,
     graph: Option<SRDFGraph>,
-    prefixmap: PrefixMap,
     store: Option<Store>,
 }
 
@@ -53,7 +52,6 @@ impl Debug for RdfData {
         f.debug_struct("RdfData")
             .field("endpoints", &self.endpoints)
             .field("graph", &self.graph)
-            .field("prefixmap", &self.prefixmap)
             .finish()
     }
 }
@@ -63,19 +61,16 @@ impl RdfData {
         RdfData {
             endpoints: Vec::new(),
             graph: None,
-            prefixmap: PrefixMap::new(),
             store: None,
         }
     }
 
     pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
-        let prefixmap = graph.prefixmap();
         let store = Store::new()?;
         store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
             endpoints: Vec::new(),
             graph: Some(graph),
-            prefixmap,
             store: Some(store),
         })
     }
@@ -115,17 +110,24 @@ impl RdfData {
     }
 
     pub fn from_endpoint(endpoint: SRDFSparql) -> RdfData {
-        let prefixmap = endpoint.prefixmap();
         RdfData {
             endpoints: vec![endpoint],
             graph: None,
-            prefixmap: prefixmap.unwrap_or_default(),
             store: None,
         }
     }
 
-    pub fn prefixmap(&self) -> PrefixMap {
-        self.prefixmap.clone()
+    /// Add a new endpoint to the list of endpoints
+    pub fn add_endpoint(&mut self, endpoint: SRDFSparql) {
+        // TODO: Ensure that there are no repeated endpoints
+        self.endpoints.push(endpoint);
+    }
+
+    pub fn prefixmap_in_memory(&self) -> PrefixMap {
+        self.graph
+            .as_ref()
+            .map(|g| g.prefixmap())
+            .unwrap_or_default()
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
@@ -152,6 +154,10 @@ impl SRDFBasic for RdfData {
     type Subject = OxSubject;
     type Term = OxTerm;
     type Err = RdfDataError;
+
+    fn prefixmap(&self) -> std::option::Option<PrefixMap> {
+        self.graph.as_ref().map(|g| g.prefixmap())
+    }
 
     fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI> {
         match subject {
@@ -335,7 +341,7 @@ impl SRDFBasic for RdfData {
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
-        self.prefixmap.qualify(&iri)
+        self.prefixmap_in_memory().qualify(&iri)
     }
 
     fn qualify_subject(&self, subj: &Self::Subject) -> String {
@@ -357,16 +363,14 @@ impl SRDFBasic for RdfData {
         }
     }
 
-    fn prefixmap(&self) -> Option<PrefixMap> {
-        Some(self.prefixmap.clone())
-    }
-
     fn resolve_prefix_local(
         &self,
         prefix: &str,
         local: &str,
     ) -> Result<iri_s::IriS, prefixmap::PrefixMapError> {
-        let iri = self.prefixmap.resolve_prefix_local(prefix, local)?;
+        let iri = self
+            .prefixmap_in_memory()
+            .resolve_prefix_local(prefix, local)?;
         Ok(iri.clone())
     }
 }

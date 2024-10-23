@@ -26,6 +26,7 @@ dctap = { workspace = true }
 shapes_converter = { workspace = true, features = ["rdf-star"] }
 shacl_validation = { workspace = true, features = ["rdf-star"] }
 sparql_service = { workspace = true }
+rudof_lib = { workspace = true }
  
 serde = "1.0"
 serde_derive = "1.0"

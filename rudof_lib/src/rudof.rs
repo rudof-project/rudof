@@ -1,12 +1,13 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
+use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::{ShExParser, ShapeMapParser};
 use shex_validation::{ShExFormat, Validator as ShExValidator};
 use sparql_service::RdfData;
-use srdf::{RDFFormat, ReaderMode};
+use srdf::{RDFFormat, ReaderMode, SRDFSparql};
 use std::str::FromStr;
 use std::{io, result};
 
@@ -84,7 +85,7 @@ impl Rudof {
         match self.shex_validator {
             None => Err(RudofError::ShExValidatorUndefined {}),
             Some(ref mut validator) => match &self.shapemap {
-                None => todo!(),
+                None => Err(RudofError::NoShapeMap { schema: schema_str }),
                 Some(shapemap) => {
                     validator
                         .validate_shapemap(shapemap, &self.rdf_data)
@@ -95,7 +96,7 @@ impl Rudof {
                             error: format!("{e}"),
                         })?;
                     let result = &validator
-                        .result_map(Some(self.rdf_data.prefixmap()))
+                        .result_map(Some(self.rdf_data.prefixmap_in_memory()))
                         .map_err(|e| RudofError::ShExValidatorObtainingResultMapError {
                             schema: schema_str,
                             rdf_data: format!("{:?}", self.rdf_data),
@@ -106,6 +107,17 @@ impl Rudof {
                 }
             },
         }
+    }
+
+    /// Add an endpoint to the current RDF data
+    pub fn add_endpoint(&mut self, iri: &IriS) -> Result<()> {
+        let sparql_endpoint =
+            SRDFSparql::new(iri).map_err(|e| RudofError::AddingEndpointError {
+                iri: iri.clone(),
+                error: format!("{e}"),
+            })?;
+        self.rdf_data.add_endpoint(sparql_endpoint);
+        Ok(())
     }
 
     /// Parses an RDF graph from a reader and merges it with the current graph
@@ -132,7 +144,24 @@ impl Rudof {
         self.rdf_data.clean_graph();
     }
 
-    pub fn shapemap_from_reader<R: io::Read>(&mut self, mut reader: R) -> Result<()> {
+    pub fn shapemap_add_node_shape_selectors(&mut self, node: NodeSelector, shape: ShapeSelector) {
+        match &mut self.shapemap {
+            None => {
+                let mut shapemap = QueryShapeMap::new();
+                shapemap.add_association(node, shape);
+                self.shapemap = Some(shapemap)
+            }
+            Some(ref mut sm) => {
+                sm.add_association(node, shape);
+            }
+        };
+    }
+
+    pub fn shapemap_from_reader<R: io::Read>(
+        &mut self,
+        mut reader: R,
+        shapemap_format: &ShapeMapFormat,
+    ) -> Result<()> {
         let mut v = Vec::new();
         reader
             .read_to_end(&mut v)
@@ -142,22 +171,32 @@ impl Rudof {
         let s = String::from_utf8(v).map_err(|e| RudofError::Utf8Error {
             error: format!("{e}"),
         })?;
-        let shapemap = ShapeMapParser::parse(
-            s.as_str(),
-            &Some(self.nodes_prefixmap()),
-            &self.shex_shapes_prefixmap(),
-        )
-        .map_err(|e| RudofError::ShapeMapParseError {
-            str: s.to_string(),
-            error: format!("{e}"),
-        })?;
+        let shapemap = match shapemap_format {
+            ShapeMapFormat::Compact => {
+                let shapemap = ShapeMapParser::parse(
+                    s.as_str(),
+                    &Some(self.nodes_prefixmap()),
+                    &self.shex_shapes_prefixmap(),
+                )
+                .map_err(|e| RudofError::ShapeMapParseError {
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
+                Ok(shapemap)
+            }
+            ShapeMapFormat::JSON => todo!(),
+        }?;
         self.shapemap = Some(shapemap);
         Ok(())
     }
 
+    pub fn get_shapemap(&self) -> Option<QueryShapeMap> {
+        self.shapemap.clone()
+    }
+
     /// Returns the RDF data prefixmap
     pub fn nodes_prefixmap(&self) -> PrefixMap {
-        self.rdf_data.prefixmap()
+        self.rdf_data.prefixmap_in_memory()
     }
 
     /// Returns the shapes prefixmap
@@ -173,6 +212,7 @@ impl Rudof {
 #[cfg(test)]
 mod tests {
     use iri_s::iri;
+    use shapemap::ShapeMapFormat;
     use shex_ast::{compiled::shape_label::ShapeLabel, Node};
     use shex_validation::ShExFormat;
 
@@ -198,7 +238,9 @@ mod tests {
         rudof
             .read_shex_validator(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
-        rudof.shapemap_from_reader(shapemap.as_bytes()).unwrap();
+        rudof
+            .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
         let shape = ShapeLabel::iri(iri!("http://example/S"));
@@ -223,7 +265,9 @@ mod tests {
         rudof
             .read_shex_validator(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
-        rudof.shapemap_from_reader(shapemap.as_bytes()).unwrap();
+        rudof
+            .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
         let shape = ShapeLabel::iri(iri!("http://example/S"));

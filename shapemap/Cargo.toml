@@ -10,17 +10,18 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-colored = "2"
+colored = { workspace = true }
+indexmap = { workspace = true }
 iri_s = { workspace = true }
-srdf = { workspace = true }
 prefixmap = { workspace = true }
-shex_ast = { workspace = true }
-indexmap = "2.1"
-thiserror = "1.0"
-tracing = { workspace = true }
-serde = "1"
-serde_derive = "1"
+serde = { workspace = true }
+serde_derive = { workspace = true }
 serde_json = { workspace = true }
+serde_yml = { workspace = true }
+shex_ast = { workspace = true }
+srdf = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
 
 
 [dev-dependencies]

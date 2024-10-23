@@ -8,7 +8,7 @@ use thiserror::Error;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum NodeSelector {
     Node(ObjectValue),
     TriplePattern {
@@ -87,7 +87,7 @@ impl NodeSelect for NodeSelector {
         }
     }
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 
 pub enum Pattern {
     Node(Node),
