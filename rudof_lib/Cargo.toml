@@ -23,6 +23,8 @@ shex_compact = { workspace = true }
 sparql_service = { workspace = true }
 shapemap = { workspace = true }
 prefixmap = { workspace = true }
+shapes_converter = { workspace = true }
+dctap = { workspace = true }
 serde = "1"
 serde_derive = "1"
 void = "1"

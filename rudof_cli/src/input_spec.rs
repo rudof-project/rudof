@@ -6,6 +6,7 @@ use reqwest::{
     Url,
 };
 use std::{
+    fmt::Display,
     fs,
     io::{self, BufReader, StdinLock},
     path::{Path, PathBuf},
@@ -19,6 +20,16 @@ pub enum InputSpec {
     Path(PathBuf),
     Stdin,
     Url(UrlSpec),
+}
+
+impl Display for InputSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            InputSpec::Path(path_buf) => write!(f, "Path: {}", path_buf.display()),
+            InputSpec::Stdin => write!(f, "Stdin"),
+            InputSpec::Url(url_spec) => write!(f, "Url: {url_spec}"),
+        }
+    }
 }
 
 impl InputSpec {
@@ -158,10 +169,9 @@ pub struct UrlSpec {
     client: Client,
 }
 
-#[allow(clippy::to_string_trait_impl)]
-impl ToString for UrlSpec {
-    fn to_string(&self) -> String {
-        self.url.to_string()
+impl Display for UrlSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.url)
     }
 }
 

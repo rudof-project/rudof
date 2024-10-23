@@ -1,17 +1,21 @@
+use crate::{RudofConfig, RudofError};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
 use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
-use shex_ast::ast::Schema as SchemaJson;
+use shex_ast::ast::Schema as ShExSchema;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
-use shex_compact::{ShExParser, ShapeMapParser};
-use shex_validation::{ShExFormat, Validator as ShExValidator};
+use shex_compact::ShExParser;
+use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
-use srdf::{RDFFormat, ReaderMode, SRDFSparql};
 use std::str::FromStr;
 use std::{io, result};
 
-use crate::{RudofConfig, RudofError};
+// This structs are re-exported as they may be needed in main
+pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter};
+pub use shex_validation::Validator as ShExValidator;
+pub use shex_validation::{ShExFormat, ValidatorConfig};
+pub use srdf::{RDFFormat, ReaderMode, SRDFSparql};
 
 pub type Result<T> = result::Result<T, RudofError>;
 
@@ -19,6 +23,8 @@ pub type Result<T> = result::Result<T, RudofError>;
 pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
+    shex_schema: Option<ShExSchema>,
+    resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
 }
@@ -27,6 +33,8 @@ impl Rudof {
     pub fn new(config: &RudofConfig) -> Rudof {
         Rudof {
             config: config.clone(),
+            shex_schema: None,
+            resolved_shex_schema: None,
             shex_validator: None,
             rdf_data: RdfData::new(),
             shapemap: None,
@@ -64,12 +72,24 @@ impl Rudof {
             }
             ShExFormat::ShExJ => {
                 let schema_json =
-                    SchemaJson::from_reader(reader).map_err(|e| RudofError::ShExJParserError {
+                    ShExSchema::from_reader(reader).map_err(|e| RudofError::ShExJParserError {
                         error: format!("{e}"),
                     })?;
                 Ok(schema_json)
             }
+            ShExFormat::Turtle => {
+                todo!()
+                /*let rdf = parse_data(
+                    &vec![input.clone()],
+                    &DataFormat::Turtle,
+                    reader_mode,
+                    &config.rdf_config(),
+                )?;
+                let schema = ShExRParser::new(rdf).parse()?;
+                Ok(schema) */
+            }
         }?;
+        self.shex_schema = Some(schema_json.clone());
         let mut schema = CompiledSchema::new();
         schema
             .from_schema_json(&schema_json)
@@ -206,6 +226,34 @@ impl Rudof {
         self.shex_validator
             .as_ref()
             .map(|validator| validator.shapes_prefixmap())
+    }
+
+    pub fn shex_schema(&self) -> Option<ShExSchema> {
+        self.shex_schema.clone()
+    }
+
+    /// Obtains the current shex_schema after resolving import declarations
+    ///
+    /// If the import declarations in the current schema have not been resolved, it resolves them
+    pub fn shex_schema_without_imports(&mut self) -> Result<SchemaWithoutImports> {
+        match &self.resolved_shex_schema {
+            None => match &self.shex_schema {
+                Some(schema) => {
+                    let schema_resolved = SchemaWithoutImports::resolve_imports(
+                        schema,
+                        &Some(schema.source_iri()),
+                        Some(&ResolveMethod::default()),
+                    )
+                    .map_err(|e| RudofError::ResolvingImportsShExSchema {
+                        error: format!("{e}"),
+                    })?;
+                    self.resolved_shex_schema = Some(schema_resolved.clone());
+                    Ok(schema_resolved)
+                }
+                None => Err(RudofError::NoShExSchemaForResolvingImports),
+            },
+            Some(resolved_schema) => Ok(resolved_schema.clone()),
+        }
     }
 }
 

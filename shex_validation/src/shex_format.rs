@@ -5,4 +5,5 @@ use serde_derive::{Deserialize, Serialize};
 pub enum ShExFormat {
     ShExC,
     ShExJ,
+    Turtle,
 }
