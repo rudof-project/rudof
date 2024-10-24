@@ -4,7 +4,6 @@ use iri_s::IriS;
 use oxigraph::sparql::Query;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
-use oxiri::Iri;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm,
@@ -81,6 +80,14 @@ impl RdfData {
         self.graph = None
     }
 
+    pub fn graph(&self) -> Option<&SRDFGraph> {
+        self.graph.as_ref()
+    }
+
+    pub fn first_endpoint(&self) -> Option<&SRDFSparql> {
+        self.endpoints.get(0)
+    }
+
     // Cleans the value graph
     pub fn clean_graph(&mut self) {
         self.graph = None
@@ -93,7 +100,6 @@ impl RdfData {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
-        let base = base.map(|str| Iri::parse_unchecked(str.to_string()));
         match &mut self.graph {
             Some(ref mut graph) => graph
                 .merge_from_reader(read, format, base, reader_mode)

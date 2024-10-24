@@ -1,6 +1,5 @@
-use std::{path::Path, str::FromStr};
+use std::path::Path;
 
-use oxiri::Iri;
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 
 use crate::validate_error::ValidateError;
@@ -20,13 +19,7 @@ impl Graph {
         match SRDFGraph::from_path(
             path,
             &rdf_format,
-            match base {
-                Some(base) => match Iri::from_str(base) {
-                    Ok(iri) => Some(iri),
-                    Err(_) => todo!(),
-                },
-                None => None,
-            },
+            base,
             &ReaderMode::default(), // TODO: this should be revisited
         ) {
             Ok(store) => Ok(Self { store }),

@@ -6,6 +6,7 @@ use shapes_converter::{
     ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig,
 };
 use shex_validation::{ShExConfig, ValidatorConfig};
+use sparql_service::ServiceConfig;
 use srdf::RdfDataConfig;
 
 use crate::RudofError;
@@ -23,6 +24,7 @@ pub struct RudofConfig {
     tap2shex: Option<Tap2ShExConfig>,
     tap: Option<TapConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
+    service: Option<ServiceConfig>,
 }
 
 impl RudofConfig {
@@ -86,6 +88,10 @@ impl RudofConfig {
         self.shex_config().show_shapes.unwrap_or(true)
     }
 
+    pub fn rdf_data_config(&self) -> RdfDataConfig {
+        self.rdf_data.clone().unwrap_or_default()
+    }
+
     pub fn tap_config(&self) -> TapConfig {
         self.tap.clone().unwrap_or_default()
     }
@@ -102,11 +108,22 @@ impl RudofConfig {
         self.shex2html.clone().unwrap_or_default()
     }
 
+    pub fn service_config(&self) -> ServiceConfig {
+        self.service.clone().unwrap_or_default()
+    }
+
     pub fn shex2sparql_config(&self) -> ShEx2SparqlConfig {
         self.shex2sparql.clone().unwrap_or_default()
     }
 
     pub fn shacl2shex_config(&self) -> Shacl2ShExConfig {
         self.shacl2shex.clone().unwrap_or_default()
+    }
+
+    pub fn rdf_data_base(&self) -> Option<&str> {
+        match &self.rdf_data {
+            None => None,
+            Some(rdf_data_config) => rdf_data_config.base.as_ref().map(|i| i.as_str()),
+        }
     }
 }

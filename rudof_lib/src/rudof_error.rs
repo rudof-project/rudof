@@ -77,4 +77,16 @@ pub enum RudofError {
 
     #[error("Attempt to resolve import declarations without defining ShEx schema")]
     NoShExSchemaForResolvingImports,
+
+    #[error("Internal SHACL Format is not readable. Only for output")]
+    InternalSHACLFormatNonReadable,
+
+    #[error("SHACL Parser error: {error}")]
+    SHACLParseError { error: String },
+
+    #[error("Parsing RDF data error: {error}")]
+    ParsingRDFDataReader { error: String },
+
+    #[error("No graph and no first endpoint to validate SHACL")]
+    NoGraphNoFirstEndpoint,
 }

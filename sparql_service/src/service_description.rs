@@ -1,7 +1,6 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 
-use oxiri::Iri;
 use std::{fmt::Display, io::BufRead, path::Path};
 
 use iri_s::IriS;
@@ -156,7 +155,7 @@ impl ServiceDescription {
     pub fn from_path<P: AsRef<Path>>(
         path: P,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
         let rdf = SRDFGraph::from_path(path, format, base, reader_mode)?;
@@ -168,7 +167,7 @@ impl ServiceDescription {
     pub fn from_reader<R: BufRead>(
         read: R,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
         let rdf = SRDFGraph::from_reader(read, format, base, reader_mode)?;

@@ -209,6 +209,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Validate RDF using ShEx schemas
