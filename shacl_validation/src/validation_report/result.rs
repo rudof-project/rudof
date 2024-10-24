@@ -1,32 +1,31 @@
 use super::validation_report_error::ResultError;
-use crate::helpers::srdf::get_object_iri_for;
-use iri_s::IriS;
+use crate::helpers::srdf::get_object_for;
 use shacl_ast::*;
-use srdf::SRDF;
+use srdf::{Object, SRDF};
 use std::fmt::Debug;
 
 pub struct ValidationResult {
-    focus_node: IriS,           // required
-    path: Option<IriS>,         // optional
-    value: Option<IriS>,        // optional
-    source: Option<IriS>,       // optional
-    constraint_component: IriS, // required
-    details: Option<Vec<IriS>>, // optional
-    message: Option<IriS>,      // optional
-    severity: IriS,             // required
+    focus_node: Object,           // required
+    path: Option<Object>,         // optional
+    value: Option<Object>,        // optional
+    source: Option<Object>,       // optional
+    constraint_component: Object, // required
+    details: Option<Vec<Object>>, // optional
+    message: Option<Object>,      // optional
+    severity: Object,             // required (TODO: Replace by Severity?)
 }
 
 #[allow(clippy::too_many_arguments)]
 impl ValidationResult {
     pub fn new(
-        focus_node: IriS,
-        path: Option<IriS>,
-        value: Option<IriS>,
-        source: Option<IriS>,
-        constraint_component: IriS,
-        details: Option<Vec<IriS>>,
-        message: Option<IriS>,
-        severity: IriS,
+        focus_node: Object,
+        path: Option<Object>,
+        value: Option<Object>,
+        source: Option<Object>,
+        constraint_component: Object,
+        details: Option<Vec<Object>>,
+        message: Option<Object>,
+        severity: Object,
     ) -> Self {
         Self {
             focus_node,
@@ -64,17 +63,16 @@ impl ValidationResult {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised
         let focus_node =
-            match get_object_iri_for(store, validation_result, &S::iri_s2iri(&SH_FOCUS_NODE))? {
+            match get_object_for(store, validation_result, &S::iri_s2iri(&SH_FOCUS_NODE))? {
                 Some(focus_node) => focus_node,
                 None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
             };
         let severity =
-            match get_object_iri_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_SEVERITY))?
-            {
+            match get_object_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_SEVERITY))? {
                 Some(severity) => severity,
                 None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
             };
-        let constraint_component = match get_object_iri_for(
+        let constraint_component = match get_object_for(
             store,
             validation_result,
             &S::iri_s2iri(&SH_SOURCE_CONSTRAINT_COMPONENT),
@@ -88,9 +86,9 @@ impl ValidationResult {
         };
 
         // 2. Second, we must process the optional fields
-        let path = get_object_iri_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_PATH))?;
-        let source = get_object_iri_for(store, validation_result, &S::iri_s2iri(&SH_SOURCE_SHAPE))?;
-        let value = get_object_iri_for(store, validation_result, &S::iri_s2iri(&SH_VALUE))?;
+        let path = get_object_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_PATH))?;
+        let source = get_object_for(store, validation_result, &S::iri_s2iri(&SH_SOURCE_SHAPE))?;
+        let value = get_object_for(store, validation_result, &S::iri_s2iri(&SH_VALUE))?;
 
         // 3. Lastly we build the ValidationResult
         Ok(ValidationResult {

@@ -16,7 +16,7 @@ use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
-use srdf::{SRDFBasic, SRDFGraph};
+use srdf::SRDFGraph;
 use std::str::FromStr;
 use std::{io, result};
 

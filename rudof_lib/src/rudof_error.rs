@@ -2,7 +2,6 @@ use std::io;
 
 use iri_s::IriS;
 use shacl_ast::Schema;
-use shacl_validation::store::sparql::Endpoint;
 use srdf::SRDFSparql;
 use thiserror::Error;
 

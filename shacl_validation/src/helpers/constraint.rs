@@ -1,6 +1,6 @@
-use iri_s::IriS;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Object;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 
@@ -22,14 +22,14 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    let focus = S::term_as_iri_s(focus_node)?;
-                    let component: IriS = component.into();
-                    let severity = S::term_as_iri_s(&shape.severity())?;
+                    let focus = S::term_as_object(focus_node);
+                    let component = Object::iri(component.into());
+                    let severity = S::term_as_object(&shape.severity());
                     return Some(ValidationResult::new(
                         focus,
                         None, // TODO: path
                         None, // TODO: item
-                        S::term_as_iri_s(&shape.id().to_owned()),
+                        Some(S::term_as_object(&shape.id().to_owned())),
                         component,
                         None, // TODO: details
                         None, // TODO: message

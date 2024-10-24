@@ -545,7 +545,7 @@ fn show_schema_rudof(
                     ColorSupport::NoColor => ShExFormatter::default().without_colors(),
                     ColorSupport::WithColor => ShExFormatter::default(),
                 };
-                let str = formatter.format_schema(&schema);
+                let str = formatter.format_schema(schema);
                 writeln!(writer, "{str}")?;
                 Ok(())
             }
@@ -556,7 +556,7 @@ fn show_schema_rudof(
             }
             CliShExFormat::Simple => {
                 let mut simplified = SimpleReprSchema::new();
-                simplified.from_schema(&schema);
+                simplified.from_schema(schema);
                 let str = serde_json::to_string_pretty(&simplified)?;
                 writeln!(writer, "{str}")?;
                 Ok(())
@@ -587,7 +587,7 @@ fn run_validate_shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let mut rudof = Rudof::new(&config);
+    let mut rudof = Rudof::new(config);
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
     let schema_format = match schema_format {
@@ -698,7 +698,7 @@ fn run_shacl(
     parse_shacl_rudof(
         &mut rudof,
         input,
-        &shapes_format,
+        shapes_format,
         reader_mode,
         &config.rdf_data_config(),
     )?;
@@ -711,8 +711,8 @@ fn run_shacl(
             _ => {
                 let data_format = shacl_format2rdf_format(result_shapes_format);
                 let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
-                shacl_writer.write(&shacl_schema)?;
-                shacl_writer.serialize(data_format.into(), &mut writer)?;
+                shacl_writer.write(shacl_schema)?;
+                shacl_writer.serialize(data_format, &mut writer)?;
                 Ok(())
             }
         }
@@ -846,7 +846,7 @@ fn run_shacl2shex(
     )?;
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
     if let Some(shacl_schema) = rudof.shacl_schema() {
-        converter.convert(&shacl_schema)?;
+        converter.convert(shacl_schema)?;
         let (writer, color) = get_writer(output, force_overwrite)?;
         let result_schema_format = match &result_format {
             OutputConvertFormat::Default => CliShExFormat::ShExC,
@@ -890,7 +890,7 @@ fn run_shex2uml(
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.shex_schema() {
-        converter.convert(&schema)?;
+        converter.convert(schema)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
         generate_uml_output(converter, maybe_shape, &mut writer, result_format)?;
     } else {
@@ -957,7 +957,7 @@ fn run_shex2html<P: AsRef<Path>>(
         let landing_page = config.landing_page().to_string_lossy().to_string();
         debug!("Landing page will be generated at {landing_page}\nStarted converter...");
         let mut converter = ShEx2Html::new(config);
-        converter.convert(&schema)?;
+        converter.convert(schema)?;
         converter.export_schema()?;
         debug!("HTML pages generated at {}", landing_page);
     } else {
@@ -1023,7 +1023,7 @@ fn run_shex2sparql(
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
     if let Some(schema) = rudof.shex_schema() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
-        let sparql = converter.convert(&schema, shape)?;
+        let sparql = converter.convert(schema, shape)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
         write!(writer, "{}", sparql)?;
     }

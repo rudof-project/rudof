@@ -85,7 +85,7 @@ impl RdfData {
     }
 
     pub fn first_endpoint(&self) -> Option<&SRDFSparql> {
-        self.endpoints.get(0)
+        self.endpoints.first()
     }
 
     // Cleans the value graph
