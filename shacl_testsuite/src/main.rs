@@ -7,7 +7,7 @@ use shacl_validation::{
     store::ShaclDataManager,
     validation_report::report::ValidationReport,
 };
-use srdf::{RDFFormat, SRDFBasic, SRDF};
+use srdf::RDFFormat;
 use testsuite_error::TestSuiteError;
 
 mod helper;
@@ -37,20 +37,20 @@ struct Cli {
     mode: ShaclValidationMode,
 }
 
-struct ShaclTest<S: SRDF + SRDFBasic> {
+struct ShaclTest {
     data: String,
     shapes: String,
     base: Option<String>,
-    result: ValidationReport<S>,
+    result: ValidationReport,
     label: Option<String>,
 }
 
-impl<S: SRDF + SRDFBasic> ShaclTest<S> {
+impl ShaclTest {
     fn new(
         data: String,
         shapes: String,
         base: Option<String>,
-        result: ValidationReport<S>,
+        result: ValidationReport,
         label: Option<String>,
     ) -> Self {
         ShaclTest {

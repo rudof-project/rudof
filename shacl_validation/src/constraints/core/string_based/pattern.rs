@@ -21,7 +21,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Pattern {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
@@ -40,7 +40,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Pattern {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();
 

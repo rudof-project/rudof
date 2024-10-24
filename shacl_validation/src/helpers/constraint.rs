@@ -1,3 +1,4 @@
+use iri_s::IriS;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
@@ -15,21 +16,24 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
+                    let focus = S::term_as_iri_s(focus_node)?;
+                    let component: IriS = component.into();
+                    let severity = S::term_as_iri_s(&shape.severity())?;
                     return Some(ValidationResult::new(
-                        focus_node.to_owned(),
+                        focus,
                         None, // TODO: path
                         None, // TODO: item
-                        Some(shape.id().to_owned()),
-                        S::iri_s2term(&component.into()),
+                        S::term_as_iri_s(&shape.id().to_owned()),
+                        component,
                         None, // TODO: details
                         None, // TODO: message
-                        shape.severity(),
+                        severity,
                     ));
                 }
             }
@@ -46,7 +50,7 @@ pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,
@@ -62,7 +66,7 @@ pub fn validate_ask_with<S: QuerySRDF>(
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,

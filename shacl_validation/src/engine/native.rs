@@ -26,7 +26,7 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
         Ok(validator.validate_native(component, shape, store, value_nodes)?)
     }

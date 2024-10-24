@@ -24,7 +24,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
                 S::term_is_bnode(value_node),
@@ -59,7 +59,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
         let query = move |value_node: &S::Term| {

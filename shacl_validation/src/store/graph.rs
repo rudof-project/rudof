@@ -11,6 +11,7 @@ pub struct Graph {
 }
 
 impl Graph {
+    // TODO: I would change this to from_path
     pub fn new(
         path: &Path,
         rdf_format: RDFFormat,
@@ -25,6 +26,10 @@ impl Graph {
             Ok(store) => Ok(Self { store }),
             Err(error) => Err(ValidateError::Graph(error)),
         }
+    }
+
+    pub fn from_graph(graph: SRDFGraph) -> Graph {
+        Graph { store: graph }
     }
 }
 

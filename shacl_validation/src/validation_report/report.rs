@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use srdf::SRDFBasic;
 use srdf::SRDF;
 
 use crate::helpers::srdf::get_objects_for;
@@ -8,22 +7,22 @@ use crate::helpers::srdf::get_objects_for;
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
 
-pub struct ValidationReport<S: SRDFBasic> {
-    results: Vec<ValidationResult<S>>,
+pub struct ValidationReport {
+    results: Vec<ValidationResult>,
 }
 
-impl<S: SRDFBasic> ValidationReport<S> {
-    pub fn new(results: Vec<ValidationResult<S>>) -> Self {
+impl ValidationReport {
+    pub fn new(results: Vec<ValidationResult>) -> Self {
         Self { results }
     }
 
-    pub fn results(&self) -> &Vec<ValidationResult<S>> {
+    pub fn results(&self) -> &Vec<ValidationResult> {
         &self.results
     }
 }
 
-impl<S: SRDF> ValidationReport<S> {
-    pub fn parse(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+impl ValidationReport {
+    pub fn parse<S: SRDF>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
             results.push(ValidationResult::parse(store, &result)?);
@@ -32,7 +31,7 @@ impl<S: SRDF> ValidationReport<S> {
     }
 }
 
-impl<S: SRDFBasic> Debug for ValidationReport<S> {
+impl Debug for ValidationReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ValidationReport")
             .field("results", &self.results)
@@ -40,7 +39,7 @@ impl<S: SRDFBasic> Debug for ValidationReport<S> {
     }
 }
 
-impl<S: SRDFBasic> Default for ValidationReport<S> {
+impl Default for ValidationReport {
     fn default() -> Self {
         ValidationReport {
             results: Vec::new(),
@@ -48,7 +47,9 @@ impl<S: SRDFBasic> Default for ValidationReport<S> {
     }
 }
 
-impl<S: SRDFBasic> PartialEq for ValidationReport<S> {
+impl PartialEq for ValidationReport {
+    // TODO: Are we sure that this way to compare validation report results is OK?
+    // Comparing only the len seems not to be enough...
     fn eq(&self, other: &Self) -> bool {
         if self.results.len() != other.results.len() {
             return false;

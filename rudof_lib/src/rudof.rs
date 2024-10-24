@@ -2,8 +2,12 @@ use crate::{RudofConfig, RudofError};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::ast::Schema as ShaclSchema;
+use shacl_ast::compiled::schema::CompiledSchema as ShaclCompiledSchema;
 use shacl_ast::ShaclParser;
-use shacl_validation::shacl_processor::GraphValidation;
+use shacl_validation::shacl_processor::{
+    EndpointValidation, GraphValidation, ShaclProcessor, ShaclValidationMode,
+};
+use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
 use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
@@ -12,7 +16,7 @@ use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
-use srdf::SRDFGraph;
+use srdf::{SRDFBasic, SRDFGraph};
 use std::str::FromStr;
 use std::{io, result};
 
@@ -144,13 +148,58 @@ impl Rudof {
         self.shacl_schema.as_ref()
     }
 
-    pub fn validate_shacl(&mut self) -> Result<ValidationReport<RdfData>> {
-        if let Some(data) = self.rdf_data.graph() {
-            todo!()
-        } else if let Some(endpoint) = self.rdf_data.first_endpoint() {
-            todo!()
+    pub fn validate_shacl(&mut self) -> Result<ValidationReport> {
+        if let Some(schema) = &self.shacl_schema {
+            let schema_ast = Box::new(schema.clone());
+            if let Some(data) = self.rdf_data.graph() {
+                let validator = GraphValidation::from_graph(
+                    Graph::from_graph(data.to_owned()),
+                    ShaclValidationMode::Native,
+                );
+                let compiled_schema: ShaclCompiledSchema<SRDFGraph> = schema
+                    .to_owned()
+                    .try_into()
+                    .map_err(|e| RudofError::SHACLCompilationError {
+                        error: format!("{e}"),
+                        schema: schema_ast.clone(),
+                    })?;
+                let result =
+                    ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
+                        RudofError::SHACLValidationError {
+                            error: format!("{e}"),
+                            schema: schema_ast,
+                        }
+                    })?;
+                Ok(result)
+            } else if let Some(endpoint) = self.rdf_data.first_endpoint() {
+                let validator = EndpointValidation::from_sparql(
+                    endpoint.to_owned(),
+                    ShaclValidationMode::Sparql,
+                )
+                .map_err(|e| RudofError::SHACLEndpointValidationCreation {
+                    endpoint: endpoint.clone(),
+                    error: format!("{e}"),
+                })?;
+                let compiled_schema: ShaclCompiledSchema<SRDFSparql> = schema
+                    .to_owned()
+                    .try_into()
+                    .map_err(|e| RudofError::SHACLCompilationError {
+                        error: format!("{e}"),
+                        schema: schema_ast.clone(),
+                    })?;
+                let result =
+                    ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
+                        RudofError::SHACLValidationError {
+                            error: format!("{e}"),
+                            schema: schema_ast,
+                        }
+                    })?;
+                Ok(result)
+            } else {
+                Err(RudofError::NoGraphNoFirstEndpoint)
+            }
         } else {
-            Err(RudofError::NoGraphNoFirstEndpoint)
+            todo!()
         }
     }
 

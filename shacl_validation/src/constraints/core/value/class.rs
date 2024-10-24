@@ -24,7 +24,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if S::term_is_literal(value_node) {
                 return true;
@@ -54,7 +54,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 
         let query = move |value_node: &S::Term| {

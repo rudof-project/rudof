@@ -35,7 +35,7 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
     fn entries(&self) -> HashSet<S::Term>;
 
     #[allow(clippy::result_large_err)]
-    fn collect_tests(&self) -> Result<Vec<ShaclTest<S>>, ManifestError> {
+    fn collect_tests(&self) -> Result<Vec<ShaclTest>, ManifestError> {
         let mut ans = Vec::new();
 
         for entry in &self.entries() {

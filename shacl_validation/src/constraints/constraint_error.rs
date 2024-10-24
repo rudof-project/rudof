@@ -6,4 +6,7 @@ pub enum ConstraintError {
     NotImplemented(String),
     #[error("{}", ._0)]
     Query(String),
+
+    #[error("Expected IRI but found {term}")]
+    ExpectedIri { term: String },
 }
