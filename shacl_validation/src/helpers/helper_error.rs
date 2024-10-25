@@ -1,4 +1,3 @@
-use oxiri::IriParseError;
 use srdf::SRDFGraphError;
 use thiserror::Error;
 
@@ -12,8 +11,9 @@ pub enum SPARQLError {
 pub enum SRDFError {
     #[error("Error during the SRDF operation")]
     Srdf { error: String },
-    #[error("Error parsing the IRI")]
-    IriParse(#[from] IriParseError),
+
+    // #[error("Error parsing the IRI")]
+    // IriParse(#[from] IriParseError),
     #[error("Error during the creation of the SRDFGraph")]
     SRDFGraph(#[from] SRDFGraphError),
 

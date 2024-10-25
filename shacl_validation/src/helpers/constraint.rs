@@ -25,16 +25,10 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
                     let focus = S::term_as_object(focus_node);
                     let component = Object::iri(component.into());
                     let severity = S::term_as_object(&shape.severity());
-                    return Some(ValidationResult::new(
-                        focus,
-                        None, // TODO: path
-                        None, // TODO: item
-                        Some(S::term_as_object(&shape.id().to_owned())),
-                        component,
-                        None, // TODO: details
-                        None, // TODO: message
-                        severity,
-                    ));
+                    let source = Some(S::term_as_object(&shape.id().to_owned()));
+                    return Some(
+                        ValidationResult::new(focus, component, severity).with_source(source),
+                    );
                 }
             }
             None

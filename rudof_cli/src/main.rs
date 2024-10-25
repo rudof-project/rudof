@@ -663,7 +663,7 @@ fn run_validate_shacl(
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
-        writeln!(writer, "Result:\n{:?}", result)?;
+        writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else if let Some(endpoint) = endpoint {
         let validator = match EndpointValidation::new(endpoint, mode) {
@@ -677,7 +677,7 @@ fn run_validate_shacl(
             Ok(result) => result,
             Err(e) => bail!("Error validating the graph: {e}"),
         };
-        writeln!(writer, "Result:\n{:?}", result)?;
+        writeln!(writer, "Result:\n{}", result)?;
         Ok(())
     } else {
         bail!("Please provide either a local data source or an endpoint")

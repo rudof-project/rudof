@@ -60,7 +60,9 @@ pub trait ShaclProcessor<S: SRDFBasic> {
             validation_results.extend(results);
         }
 
-        Ok(ValidationReport::new(validation_results)) // return the possibly empty validation report
+        Ok(ValidationReport::new()
+            .with_results(validation_results)
+            .with_prefixmap(shapes_graph.prefix_map())) // return the possibly empty validation report
     }
 }
 
