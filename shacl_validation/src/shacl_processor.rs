@@ -2,9 +2,9 @@ use std::path::Path;
 
 use clap::ValueEnum;
 use shacl_ast::compiled::schema::CompiledSchema;
+use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
-use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 
 use crate::engine::native::NativeEngine;
@@ -127,19 +127,14 @@ impl GraphValidation {
     ///     ShaclValidationMode::Native, // use the Native mode (performance)
     /// );
     /// ```
-    pub fn new(
+    pub fn from_path(
         data: &Path,
         data_format: RDFFormat,
         base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
-        // TODO: I would change the name of this method to from_path
-        if mode == ShaclValidationMode::Sparql {
-            return Err(ValidateError::UnsupportedMode("Graph".to_string()));
-        }
-
         Ok(GraphValidation {
-            store: Graph::new(data, data_format, base)?,
+            store: Graph::from_path(data, data_format, base)?,
             mode,
         })
     }
@@ -149,6 +144,7 @@ impl GraphValidation {
     }
 }
 
+/*
 impl ShaclProcessor<SRDFGraph> for GraphValidation {
     fn store(&self) -> &SRDFGraph {
         self.store.store()
@@ -158,6 +154,19 @@ impl ShaclProcessor<SRDFGraph> for GraphValidation {
         match self.mode {
             ShaclValidationMode::Native => &NativeEngine,
             ShaclValidationMode::Sparql => todo!(),
+        }
+    }
+} */
+
+impl ShaclProcessor<RdfData> for GraphValidation {
+    fn store(&self) -> &RdfData {
+        self.store.store()
+    }
+
+    fn runner(&self) -> &dyn Engine<RdfData> {
+        match self.mode {
+            ShaclValidationMode::Native => &NativeEngine,
+            ShaclValidationMode::Sparql => &SparqlEngine,
         }
     }
 }

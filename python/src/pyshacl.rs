@@ -79,11 +79,15 @@ pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
             Err(error) => return Err(PyValueError::new_err(error.to_string())),
         };
 
-        let validator =
-            match GraphValidation::new(data, data_format, None, ShaclValidationMode::Native) {
-                Ok(validator) => validator,
-                Err(error) => return Err(PyValueError::new_err(error.to_string())),
-            };
+        let validator = match GraphValidation::from_path(
+            data,
+            data_format,
+            None,
+            ShaclValidationMode::Native,
+        ) {
+            Ok(validator) => validator,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
 
         let _ = match validator.validate(&schema) {
             Ok(report) => report,

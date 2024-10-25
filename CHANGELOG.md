@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.35] - 2024-10-25
+
+- More refactoring on main to depend on rudof_lib for SHACL, issue #201
+- Implemented Display for SHACL Validation report which shows the results with colors
+
 ## [0.1.34] - 2024-10-23
 
 -Some refactoring on main to depend on rudof_lib and check if it works

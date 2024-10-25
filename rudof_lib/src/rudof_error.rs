@@ -100,4 +100,7 @@ pub enum RudofError {
 
     #[error("No graph and no first endpoint to validate SHACL")]
     NoGraphNoFirstEndpoint,
+
+    #[error("No SHACL schema defined")]
+    NoShaclSchema,
 }

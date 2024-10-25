@@ -44,7 +44,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "target_node".to_string(),
+        })
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
@@ -64,7 +66,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "target_class".to_string(),
+        })
     }
 
     fn target_subject_of(
@@ -81,7 +85,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "target_subject_of".to_string(),
+        })
     }
 
     fn target_object_of(
@@ -98,7 +104,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "target_object_of".to_string(),
+        })
     }
 
     fn implicit_target_class(
@@ -106,7 +114,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _store: &S,
         _shape: &CompiledShape<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "implicit_target_class".to_string(),
+        })
     }
 
     fn predicate(
@@ -116,7 +126,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "predicate".to_string(),
+        })
     }
 
     fn alternative(
@@ -126,7 +138,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "alternative".to_string(),
+        })
     }
 
     fn sequence(
@@ -136,7 +150,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "sequence".to_string(),
+        })
     }
 
     fn inverse(
@@ -146,7 +162,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "inverse".to_string(),
+        })
     }
 
     fn zero_or_more(
@@ -156,7 +174,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "zero_or_more".to_string(),
+        })
     }
 
     fn one_or_more(
@@ -166,7 +186,9 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "one_or_more".to_string(),
+        })
     }
 
     fn zero_or_one(
@@ -176,6 +198,8 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "zero_or_one".to_string(),
+        })
     }
 }

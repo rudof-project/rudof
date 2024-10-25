@@ -60,6 +60,11 @@ impl Engine {
         }
     }
 
+    pub fn reset(&mut self) {
+        let config = self.config.clone();
+        *self = Engine::new(&config);
+    }
+
     pub(crate) fn add_processing(&mut self, atom: &Atom) {
         self.processing.insert((*atom).clone());
     }

@@ -7,9 +7,9 @@ use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::graph::Graph;
 use shacl_validation::store::Store;
 use shacl_validation::validation_report::report::ValidationReport;
+use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
-use srdf::SRDFGraph;
 use srdf::SRDF;
 
 use crate::helper::srdf::get_object_for;
@@ -168,15 +168,15 @@ pub trait Manifest<S: SRDF + SRDFBasic> {
 #[derive(Clone)]
 pub struct GraphManifest {
     base: String,
-    store: SRDFGraph,
+    store: RdfData,
     includes: Vec<GraphManifest>,
     entries: HashSet<Term>,
 }
 
-impl Manifest<SRDFGraph> for GraphManifest {
+impl Manifest<RdfData> for GraphManifest {
     fn new(
         base: String,
-        store: SRDFGraph,
+        store: RdfData,
         includes: Vec<GraphManifest>,
         entries: HashSet<Term>,
     ) -> Self {
@@ -188,8 +188,8 @@ impl Manifest<SRDFGraph> for GraphManifest {
         }
     }
 
-    fn load_data_graph(path: &Path, base: &str) -> SRDFGraph {
-        Graph::new(Path::new(path), RDFFormat::Turtle, Some(base))
+    fn load_data_graph(path: &Path, base: &str) -> RdfData {
+        Graph::from_path(Path::new(path), RDFFormat::Turtle, Some(base))
             .unwrap()
             .store()
             .to_owned()
@@ -199,7 +199,7 @@ impl Manifest<SRDFGraph> for GraphManifest {
         self.base.to_owned()
     }
 
-    fn store(&self) -> &SRDFGraph {
+    fn store(&self) -> &RdfData {
         &self.store
     }
 

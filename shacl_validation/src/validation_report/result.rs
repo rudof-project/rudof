@@ -1,19 +1,19 @@
 use super::validation_report_error::ResultError;
 use crate::helpers::srdf::get_object_for;
 use shacl_ast::*;
-use srdf::{Object, SRDF};
+use srdf::{Object, RDFNode, SRDF};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidationResult {
-    focus_node: Object,           // required
-    path: Option<Object>,         // optional
-    value: Option<Object>,        // optional
-    source: Option<Object>,       // optional
-    constraint_component: Object, // required
-    details: Option<Vec<Object>>, // optional
-    message: Option<Object>,      // optional
-    severity: Object,             // required (TODO: Replace by Severity?)
+    focus_node: RDFNode,           // required
+    path: Option<RDFNode>,         // optional
+    value: Option<RDFNode>,        // optional
+    source: Option<RDFNode>,       // optional
+    constraint_component: RDFNode, // required
+    details: Option<Vec<RDFNode>>, // optional
+    message: Option<RDFNode>,      // optional
+    severity: RDFNode,             // required (TODO: Replace by Severity?)
 }
 
 impl ValidationResult {

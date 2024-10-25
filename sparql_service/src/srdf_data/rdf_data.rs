@@ -12,15 +12,15 @@ use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use rust_decimal::Decimal;
-use sparesults::QuerySolution;
+use sparesults::QuerySolution as SparQuerySolution;
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::numeric_literal::NumericLiteral;
 use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Object;
-use srdf::QuerySRDF2;
-use srdf::QuerySolution2;
+use srdf::QuerySRDF;
+use srdf::QuerySolution;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
@@ -28,7 +28,7 @@ use srdf::SRDFBasic;
 use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
-use srdf::VarName2;
+use srdf::VarName;
 use srdf::RDF_TYPE_STR;
 use srdf::SRDF;
 use std::collections::HashMap;
@@ -386,7 +386,7 @@ impl SRDFBasic for RdfData {
     }
 }
 
-impl QuerySRDF2 for RdfData {
+impl QuerySRDF for RdfData {
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
@@ -400,7 +400,7 @@ impl QuerySRDF2 for RdfData {
         }
         for endpoint in &self.endpoints {
             let new_sols = endpoint.query_select(query_str)?;
-            let new_sols_converted: Vec<QuerySolution2<RdfData>> =
+            let new_sols_converted: Vec<QuerySolution<RdfData>> =
                 new_sols.iter().map(cnv_sol).collect();
             sols.extend(new_sols_converted)
         }
@@ -412,13 +412,13 @@ impl QuerySRDF2 for RdfData {
     }
 }
 
-fn cnv_sol(sol: &QuerySolution2<SRDFSparql>) -> QuerySolution2<RdfData> {
+fn cnv_sol(sol: &QuerySolution<SRDFSparql>) -> QuerySolution<RdfData> {
     sol.convert(|t| t.clone())
 }
 
 fn cnv_query_results(
     query_results: QueryResults,
-) -> Result<Vec<QuerySolution2<RdfData>>, RdfDataError> {
+) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         for solution in solutions {
@@ -429,18 +429,18 @@ fn cnv_query_results(
     Ok(results)
 }
 
-fn cnv_query_solution(qs: QuerySolution) -> QuerySolution2<RdfData> {
+fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {
-        let varname = VarName2::new(v.as_str());
+        let varname = VarName::new(v.as_str());
         variables.push(varname);
     }
     for t in qs.values() {
         let term = t.clone();
         values.push(term)
     }
-    QuerySolution2::new(Rc::new(variables), values)
+    QuerySolution::new(Rc::new(variables), values)
 }
 
 fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
@@ -528,9 +528,18 @@ impl SRDF for RdfData {
 
     fn outgoing_arcs(
         &self,
-        _subject: &Self::Subject,
+        subject: &Self::Subject,
     ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        todo!()
+        let mut result = HashMap::new();
+        if let Some(graph) = &self.graph {
+            let arcs = graph.outgoing_arcs(subject)?;
+            result.extend(arcs)
+        }
+        for e in &self.endpoints {
+            let arcs = e.outgoing_arcs(subject)?;
+            result.extend(arcs)
+        }
+        Ok(result)
     }
 
     fn incoming_arcs(

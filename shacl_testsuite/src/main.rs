@@ -80,7 +80,7 @@ fn main() -> Result<(), TestSuiteError> {
     let total = tests.len();
     let mut count = 0;
     for test in tests {
-        let validator = GraphValidation::new(
+        let validator = GraphValidation::from_path(
             Path::new(&test.data),
             RDFFormat::Turtle,
             test.base.as_deref(),

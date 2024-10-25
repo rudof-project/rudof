@@ -15,6 +15,7 @@ categories.workspace = true
 srdf = { workspace = true }
 shacl_ast = { workspace = true }
 shacl_validation = { workspace = true }
+sparql_service = { workspace = true }
 iri_s = { workspace = true }
 prefixmap = { workspace = true }
 

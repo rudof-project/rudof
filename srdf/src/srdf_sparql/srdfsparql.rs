@@ -1,8 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{
-    AsyncSRDF, QuerySRDF, QuerySRDF2, QuerySolution2, QuerySolutionIter, QuerySolutions, SRDFBasic,
-    VarName2, SRDF,
-};
+use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, SRDF};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -397,8 +394,9 @@ impl SRDF for SRDFSparql {
     }
 }
 
+/*
 impl QuerySRDF for SRDFSparql {
-    fn query_select(&self, query: &str) -> Result<QuerySolutionIter<SRDFSparql>> {
+    fn query_select(&self, query: &str) -> Result<QuerySolutions<SRDFSparql>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
         let mut variables = Vec::new();
         let mut values = Vec::new();
@@ -408,10 +406,7 @@ impl QuerySRDF for SRDFSparql {
             }
             values.push(Ok(solution.values().to_vec()))
         }
-        Ok(QuerySolutionIter::new(
-            Rc::new(variables),
-            values.into_iter(),
-        ))
+        Ok(QuerySolutions::new(Rc::new(variables), values.into_iter()))
     }
 
     fn query_ask(&self, query: &str) -> Result<bool> {
@@ -425,13 +420,12 @@ impl QuerySRDF for SRDFSparql {
             .and_then(|value| value.parse().ok())
             .ok_or_else(|| todo!())
     }
-}
+} */
 
-impl QuerySRDF2 for SRDFSparql {
+impl QuerySRDF for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
-        let qs: Vec<QuerySolution2<SRDFSparql>> =
-            solutions.iter().map(cnv_query_solution).collect();
+        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
         Ok(QuerySolutions::new(qs))
     }
 
@@ -448,18 +442,18 @@ impl QuerySRDF2 for SRDFSparql {
     }
 }
 
-fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution2<SRDFSparql> {
+fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {
-        let varname = VarName2::new(v.as_str());
+        let varname = VarName::new(v.as_str());
         variables.push(varname);
     }
     for t in qs.values() {
         let term = t.clone();
         values.push(term)
     }
-    QuerySolution2::new(Rc::new(variables), values)
+    QuerySolution::new(Rc::new(variables), values)
 }
 
 fn sparql_client() -> Result<Client> {

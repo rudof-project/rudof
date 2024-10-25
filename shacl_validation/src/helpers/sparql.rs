@@ -19,8 +19,8 @@ pub fn select<S: QuerySRDF>(
             })
         }
     };
-    for solution in query.into_iter() {
-        let solution = match solution {
+    for solution in query.iter() {
+        /*let solution = match solution {
             Ok(ans) => ans,
             Err(e) => {
                 return Err(SPARQLError::Query {
@@ -28,7 +28,7 @@ pub fn select<S: QuerySRDF>(
                     query: query_str.to_string(),
                 })
             }
-        };
+        };*/
         if let Some(solution) = solution.find_solution(index) {
             ans.insert(solution.to_owned());
         }

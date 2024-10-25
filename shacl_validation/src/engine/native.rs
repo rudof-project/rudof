@@ -142,7 +142,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "alternative".to_string(),
+        })
     }
 
     fn sequence(
@@ -152,7 +154,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "sequence".to_string(),
+        })
     }
 
     fn inverse(
@@ -162,7 +166,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "inverse".to_string(),
+        })
     }
 
     fn zero_or_more(
@@ -172,7 +178,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "zero_or_more".to_string(),
+        })
     }
 
     fn one_or_more(
@@ -182,7 +190,9 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "one_or_more".to_string(),
+        })
     }
 
     fn zero_or_one(
@@ -192,6 +202,8 @@ impl<S: SRDF + 'static> Engine<S> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented)
+        Err(ValidateError::NotImplemented {
+            msg: "zero_or_one".to_string(),
+        })
     }
 }

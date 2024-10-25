@@ -6,9 +6,8 @@ cargo run -p shacl_testsuite -- -m default
 cargo run -p shacl_testsuite -- -m sparql
 ```
 
-
 ```sh
-cargo run -p shacl_testsuite -- -f shacl_testsuite/data-shapes/data-shapes-test-suite/tests/core/node/manifest.ttl -m default
+cargo run -p shacl_testsuite -- -f shacl_testsuite/data-shapes/data-shapes-test-suite/tests/core/node/manifest.ttl -m native
 ```
 
 ```sh

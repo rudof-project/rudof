@@ -28,7 +28,7 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
-    ShapeMapParser, ShapemapFormatter,
+    ShapeMapParser, ShapemapFormatter, ShapesGraphSource,
 };
 use shacl_ast::ShaclWriter;
 use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
@@ -39,7 +39,7 @@ use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{QueryConfig, RdfData, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{
-    QuerySolution2, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName2, SRDF,
+    QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName, SRDF,
 };
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
@@ -645,47 +645,17 @@ fn run_validate_shacl(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    if let Some(schema) = schema {
+    let result = if let Some(schema) = schema {
         let reader_mode = reader_mode_convert(*reader_mode);
         let shapes_format = shapes_format.unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
-    }
-    let result = rudof.validate_shacl(mode)?;
+        rudof.validate_shacl(mode, ShapesGraphSource::current_schema())
+    } else {
+        rudof.validate_shacl(mode, ShapesGraphSource::current_data())
+    }?;
+
     writeln!(writer, "Result:\n{}", result)?;
     Ok(())
-
-    /*if let Some(data) = data {
-        let validator = match GraphValidation::new(&data, map_data_format(data_format)?, None, mode)
-        {
-            Ok(validator) => validator,
-            Err(e) => bail!("Error during the creation of the Graph: {e}"),
-        };
-        let schema = ShaclDataManager::load(reader, map_shacl_format(&shapes_format)?, None)?;
-        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
-            &validator, &schema,
-        ) {
-            Ok(result) => result,
-            Err(e) => bail!("Error validating the graph: {e}"),
-        };
-        writeln!(writer, "Result:\n{}", result)?;
-        Ok(())
-    } else if let Some(endpoint) = endpoint {
-        let validator = match EndpointValidation::new(endpoint, mode) {
-            Ok(validator) => validator,
-            Err(e) => bail!("Error during the creation of the Graph: {e}"),
-        };
-        let schema = ShaclDataManager::load(reader, map_shacl_format(&shapes_format)?, None)?;
-        let result = match shacl_validation::shacl_processor::ShaclProcessor::validate(
-            &validator, &schema,
-        ) {
-            Ok(result) => result,
-            Err(e) => bail!("Error validating the graph: {e}"),
-        };
-        writeln!(writer, "Result:\n{}", result)?;
-        Ok(())
-    } else {
-        bail!("Please provide either a local data source or an endpoint")
-    } */
 }
 
 fn run_shacl(
@@ -1144,18 +1114,10 @@ fn add_shacl_schema_rudof(
     let reader = schema.open_read(Some(shapes_format.mime_type().as_str()))?;
     let shapes_format = shacl_format_convert(shapes_format)?;
     let base = config.rdf_data_base();
-    let rdf_format = match shapes_format {
-        ShaclFormat::Internal => todo!(),
-        ShaclFormat::Turtle => RDFFormat::Turtle,
-        ShaclFormat::NTriples => RDFFormat::NTriples,
-        ShaclFormat::RDFXML => RDFFormat::RDFXML,
-        ShaclFormat::TriG => RDFFormat::TriG,
-        ShaclFormat::N3 => RDFFormat::TriG,
-        ShaclFormat::NQuads => RDFFormat::NQuads,
-    };
-    rudof.merge_data_from_reader(reader, &rdf_format, base, reader_mode)?;
+    rudof.read_shacl(reader, &shapes_format, base, reader_mode)?;
     Ok(())
 }
+
 fn get_data_rudof(
     rudof: &mut Rudof,
     data: &Vec<InputSpec>,
@@ -1425,7 +1387,7 @@ fn run_query(
     debug: u8,
     force_overwrite: bool,
 ) -> Result<()> {
-    use crate::srdf::QuerySRDF2;
+    use crate::srdf::QuerySRDF;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let data_config = match &config.data_config {
         None => RdfDataConfig::default(),
@@ -1455,7 +1417,7 @@ fn run_query(
 
 fn show_variables<'a, W: Write>(
     writer: &mut W,
-    vars: impl Iterator<Item = &'a VarName2>,
+    vars: impl Iterator<Item = &'a VarName>,
 ) -> Result<()> {
     for var in vars {
         let str = format!("{}", var);
@@ -1467,7 +1429,7 @@ fn show_variables<'a, W: Write>(
 
 fn show_result<W: Write>(
     writer: &mut W,
-    result: &QuerySolution2<RdfData>,
+    result: &QuerySolution<RdfData>,
     prefixmap: &PrefixMap,
 ) -> Result<()> {
     for (idx, _variable) in result.variables().enumerate() {

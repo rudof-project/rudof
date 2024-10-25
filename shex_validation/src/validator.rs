@@ -39,6 +39,10 @@ impl Validator {
         }
     }
 
+    pub fn reset_result_map(&mut self) {
+        self.runner.reset()
+    }
+
     /// validate a node against a shape label
     pub fn validate_node_shape<S>(&mut self, node: &Node, shape: &ShapeLabel, rdf: &S) -> Result<()>
     where
