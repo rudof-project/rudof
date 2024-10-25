@@ -21,7 +21,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
@@ -51,7 +51,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxLength {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();
 
         let query = |value_node: &S::Term| {

@@ -26,7 +26,7 @@ impl<S: SRDFBasic> Validator<S> for HasValue<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
         validate_with(component, shape, value_nodes, FocusNodeIteration, has_value)
@@ -40,7 +40,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for HasValue<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -52,7 +52,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for HasValue<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

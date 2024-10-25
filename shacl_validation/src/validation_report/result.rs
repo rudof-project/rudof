@@ -1,66 +1,79 @@
+use super::validation_report_error::ResultError;
+use crate::helpers::srdf::get_object_for;
+use shacl_ast::*;
+use srdf::{Object, SRDF};
 use std::fmt::Debug;
 
-use shacl_ast::*;
-use srdf::SRDFBasic;
-use srdf::SRDF;
-
-use crate::helpers::srdf::get_object_for;
-
-use super::validation_report_error::ResultError;
-
-pub struct ValidationResult<S: SRDFBasic> {
-    focus_node: S::Term,           // required
-    path: Option<S::Term>,         // optional
-    value: Option<S::Term>,        // optional
-    source: Option<S::Term>,       // optional
-    constraint_component: S::Term, // required
-    details: Option<Vec<S::Term>>, // optional
-    message: Option<S::Term>,      // optional
-    severity: S::Term,             // required
+#[derive(Debug, Clone, PartialEq)]
+pub struct ValidationResult {
+    focus_node: Object,           // required
+    path: Option<Object>,         // optional
+    value: Option<Object>,        // optional
+    source: Option<Object>,       // optional
+    constraint_component: Object, // required
+    details: Option<Vec<Object>>, // optional
+    message: Option<Object>,      // optional
+    severity: Object,             // required (TODO: Replace by Severity?)
 }
 
-#[allow(clippy::too_many_arguments)]
-impl<S: SRDFBasic> ValidationResult<S> {
-    pub fn new(
-        focus_node: S::Term,
-        path: Option<S::Term>,
-        value: Option<S::Term>,
-        source: Option<S::Term>,
-        constraint_component: S::Term,
-        details: Option<Vec<S::Term>>,
-        message: Option<S::Term>,
-        severity: S::Term,
-    ) -> Self {
+impl ValidationResult {
+    // Creates a new validation result
+    pub fn new(focus_node: Object, constraint_component: Object, severity: Object) -> Self {
         Self {
             focus_node,
-            path,
-            value,
-            source,
+            path: None,
+            value: None,
+            source: None,
             constraint_component,
-            details,
-            message,
+            details: None,
+            message: None,
             severity,
         }
     }
-}
 
-impl<S: SRDFBasic> Debug for ValidationResult<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ValidationResult")
-            .field("focus_node", &self.focus_node)
-            .field("path", &self.path)
-            .field("value", &self.value)
-            .field("source", &self.source)
-            .field("constraint_component", &self.constraint_component)
-            .field("details", &self.details)
-            .field("message", &self.message)
-            .field("severity", &self.severity)
-            .finish()
+    pub fn with_path(mut self, path: Option<Object>) -> Self {
+        self.path = path;
+        self
+    }
+
+    pub fn with_value(mut self, value: Option<Object>) -> Self {
+        self.value = value;
+        self
+    }
+
+    pub fn with_source(mut self, source: Option<Object>) -> Self {
+        self.source = source;
+        self
+    }
+
+    pub fn with_details(mut self, details: Option<Vec<Object>>) -> Self {
+        self.details = details;
+        self
+    }
+
+    pub fn with_message(mut self, message: Option<Object>) -> Self {
+        self.message = message;
+        self
+    }
+
+    pub fn focus_node(&self) -> &Object {
+        &self.focus_node
+    }
+
+    pub fn component(&self) -> &Object {
+        &self.constraint_component
+    }
+
+    pub fn severity(&self) -> &Object {
+        &self.severity
     }
 }
 
-impl<S: SRDF> ValidationResult<S> {
-    pub(crate) fn parse(store: &S, validation_result: &S::Term) -> Result<Self, ResultError> {
+impl ValidationResult {
+    pub(crate) fn parse<S: SRDF>(
+        store: &S,
+        validation_result: &S::Term,
+    ) -> Result<Self, ResultError> {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised
         let focus_node =
@@ -92,15 +105,11 @@ impl<S: SRDF> ValidationResult<S> {
         let value = get_object_for(store, validation_result, &S::iri_s2iri(&SH_VALUE))?;
 
         // 3. Lastly we build the ValidationResult
-        Ok(ValidationResult {
-            focus_node,
-            path,
-            value,
-            source,
-            constraint_component,
-            details: None,
-            message: None,
-            severity,
-        })
+        Ok(
+            ValidationResult::new(focus_node, constraint_component, severity)
+                .with_path(path)
+                .with_source(source)
+                .with_value(value),
+        )
     }
 }

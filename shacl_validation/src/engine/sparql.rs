@@ -23,7 +23,7 @@ impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
         Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
     }

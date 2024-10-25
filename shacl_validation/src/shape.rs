@@ -15,7 +15,7 @@ pub trait Validate<S: SRDFBasic> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
+    ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
 impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
@@ -24,7 +24,7 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         // 0.
         if *self.is_deactivated() {
             // skipping because it is deactivated

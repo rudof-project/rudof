@@ -20,7 +20,7 @@ pub trait Validator<S: SRDFBasic> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 pub trait NativeValidator<S: SRDF> {
@@ -30,7 +30,7 @@ pub trait NativeValidator<S: SRDF> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 pub trait SparqlValidator<S: QuerySRDF> {
@@ -40,7 +40,7 @@ pub trait SparqlValidator<S: QuerySRDF> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 macro_rules! generate_deref_fn {

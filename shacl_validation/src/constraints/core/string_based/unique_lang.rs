@@ -28,7 +28,7 @@ impl<S: SRDFBasic> Validator<S> for UniqueLang {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if !self.unique_lang() {
             return Ok(Default::default());
         }
@@ -67,7 +67,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for UniqueLang {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -79,7 +79,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for UniqueLang {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

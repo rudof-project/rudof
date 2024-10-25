@@ -27,7 +27,7 @@ impl<S: SRDFBasic> Validator<S> for Not<S> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let not = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
             let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
@@ -45,7 +45,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Not<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -57,7 +57,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Not<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

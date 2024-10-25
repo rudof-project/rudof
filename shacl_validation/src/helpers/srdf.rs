@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::SRDF;
+use srdf::{Object, SRDF};
 
 use super::helper_error::SRDFError;
 
@@ -8,12 +8,12 @@ pub(crate) fn get_object_for<S: SRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
-) -> Result<Option<S::Term>, SRDFError> {
+) -> Result<Option<Object>, SRDFError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
         .next()
     {
-        Some(term) => Ok(Some(term)),
+        Some(term) => Ok(Some(S::term_as_object(&term))),
         None => Ok(None),
     }
 }
@@ -25,13 +25,20 @@ pub(crate) fn get_objects_for<S: SRDF>(
 ) -> Result<HashSet<S::Term>, SRDFError> {
     let subject = match S::term_as_subject(subject) {
         Some(subject) => subject,
-        None => return Err(SRDFError::Srdf),
+        None => {
+            return Err(SRDFError::SRDFTermAsSubject {
+                subject: format!("{subject}"),
+            })
+        }
     };
 
-    match store.objects_for_subject_predicate(&subject, predicate) {
-        Ok(ans) => Ok(ans),
-        Err(_) => Err(SRDFError::Srdf),
-    }
+    store
+        .objects_for_subject_predicate(&subject, predicate)
+        .map_err(|e| SRDFError::ObjectsWithSubjectPredicate {
+            predicate: format!("{predicate}"),
+            subject: format!("{subject}"),
+            error: format!("{e}"),
+        })
 }
 
 pub(crate) fn get_subjects_for<S: SRDF>(
@@ -44,6 +51,10 @@ pub(crate) fn get_subjects_for<S: SRDF>(
             .into_iter()
             .map(|subject| S::subject_as_term(&subject))
             .collect()),
-        Err(_) => Err(SRDFError::Srdf),
+        Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
+            predicate: format!("{predicate}"),
+            object: format!("{object}"),
+            error: format!("{e}"),
+        }),
     }
 }

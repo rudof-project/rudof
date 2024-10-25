@@ -50,7 +50,7 @@ pub trait ShaclProcessor<S: SRDFBasic> {
     fn validate(
         &self,
         shapes_graph: &CompiledSchema<S>,
-    ) -> Result<ValidationReport<S>, ValidateError> {
+    ) -> Result<ValidationReport, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
@@ -60,7 +60,9 @@ pub trait ShaclProcessor<S: SRDFBasic> {
             validation_results.extend(results);
         }
 
-        Ok(ValidationReport::new(validation_results)) // return the possibly empty validation report
+        Ok(ValidationReport::new()
+            .with_results(validation_results)
+            .with_prefixmap(shapes_graph.prefix_map())) // return the possibly empty validation report
     }
 }
 
@@ -131,6 +133,7 @@ impl GraphValidation {
         base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
+        // TODO: I would change the name of this method to from_path
         if mode == ShaclValidationMode::Sparql {
             return Err(ValidateError::UnsupportedMode("Graph".to_string()));
         }
@@ -139,6 +142,10 @@ impl GraphValidation {
             store: Graph::new(data, data_format, base)?,
             mode,
         })
+    }
+
+    pub fn from_graph(graph: Graph, mode: ShaclValidationMode) -> GraphValidation {
+        GraphValidation { store: graph, mode }
     }
 }
 
@@ -165,6 +172,16 @@ impl EndpointValidation {
     pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
         Ok(EndpointValidation {
             store: Endpoint::new(data)?,
+            mode,
+        })
+    }
+
+    pub fn from_sparql(
+        sparql: SRDFSparql,
+        mode: ShaclValidationMode,
+    ) -> Result<Self, ValidateError> {
+        Ok(EndpointValidation {
+            store: Endpoint::from_sparql(sparql),
             mode,
         })
     }

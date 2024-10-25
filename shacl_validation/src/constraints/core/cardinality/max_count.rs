@@ -26,7 +26,7 @@ impl<S: SRDFBasic> Validator<S> for MaxCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         validate_with(component, shape, value_nodes, FocusNodeIteration, max_count)
     }
@@ -39,7 +39,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -51,7 +51,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

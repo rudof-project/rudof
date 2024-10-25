@@ -25,7 +25,7 @@ impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
             if let Some(lang) = S::term_as_literal(value_node) {
                 if self.langs().contains(&lang) {
@@ -52,7 +52,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for LanguageIn<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -64,7 +64,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for LanguageIn<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

@@ -26,7 +26,7 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
             return Ok(Default::default());
@@ -43,7 +43,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -55,7 +55,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

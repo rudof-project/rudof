@@ -1,6 +1,8 @@
 use std::io;
 
 use iri_s::IriS;
+use shacl_ast::Schema;
+use srdf::SRDFSparql;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -77,4 +79,25 @@ pub enum RudofError {
 
     #[error("Attempt to resolve import declarations without defining ShEx schema")]
     NoShExSchemaForResolvingImports,
+
+    #[error("Internal SHACL Format is not readable. Only for output")]
+    InternalSHACLFormatNonReadable,
+
+    #[error("SHACL Parser error: {error}")]
+    SHACLParseError { error: String },
+
+    #[error("SHACL Compilation from schema {schema} error: {error}")]
+    SHACLCompilationError { error: String, schema: Box<Schema> },
+
+    #[error("SHACL Validation from schema {schema} error: {error}")]
+    SHACLValidationError { error: String, schema: Box<Schema> },
+
+    #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]
+    SHACLEndpointValidationCreation { error: String, endpoint: SRDFSparql },
+
+    #[error("Parsing RDF data error: {error}")]
+    ParsingRDFDataReader { error: String },
+
+    #[error("No graph and no first endpoint to validate SHACL")]
+    NoGraphNoFirstEndpoint,
 }

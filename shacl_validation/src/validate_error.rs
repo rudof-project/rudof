@@ -1,4 +1,4 @@
-use oxiri::IriParseError;
+// use oxiri::IriParseError;
 use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ast::shacl_parser_error::ShaclParserError;
 use srdf::RDFParseError;
@@ -23,8 +23,8 @@ pub enum ValidateError {
     ShaclParser(#[from] ShaclParserError),
     #[error("Error during the constraint evaluation")]
     Constraint(#[from] ConstraintError),
-    #[error("Error parsing the IRI")]
-    IriParse(#[from] IriParseError),
+    // #[error("Error parsing the IRI")]
+    //IriParse(#[from] IriParseError),
     #[error("Error during some I/O operation")]
     IO(#[from] std::io::Error),
     #[error("Error loading the Shapes")]

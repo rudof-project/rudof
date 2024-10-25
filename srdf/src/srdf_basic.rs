@@ -74,6 +74,10 @@ pub trait SRDFBasic {
         Some(Self::lexical_form(literal).to_string())
     }
 
+    fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
+        Self::term_as_iri(term).map(|iri| Self::iri2iri_s(&iri))
+    }
+
     fn term_as_integer(term: &Self::Term) -> Option<isize> {
         Self::term_as_literal(term).and_then(|l| Self::literal_as_integer(&l))
     }

@@ -30,6 +30,19 @@ where
     pub fn obj(&self) -> S::Term {
         self.obj.clone()
     }
+
+    pub fn cnv<T: SRDFBasic>(self) -> Triple<T>
+    where
+        T::Subject: From<S::Subject>,
+        T::Term: From<S::Term>,
+        T::IRI: From<S::IRI>,
+    {
+        Triple {
+            subj: T::Subject::from(self.subj),
+            pred: T::IRI::from(self.pred),
+            obj: T::Term::from(self.obj),
+        }
+    }
 }
 
 impl<S> Display for Triple<S>

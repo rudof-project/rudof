@@ -20,7 +20,7 @@ pub trait Engine<S: SRDFBasic> {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
+    ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(
         &self,

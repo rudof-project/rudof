@@ -1,6 +1,12 @@
 use crate::{RudofConfig, RudofError};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
+use shacl_ast::ast::Schema as ShaclSchema;
+use shacl_ast::compiled::schema::CompiledSchema as ShaclCompiledSchema;
+use shacl_ast::ShaclParser;
+use shacl_validation::shacl_processor::{EndpointValidation, GraphValidation, ShaclProcessor};
+use shacl_validation::store::graph::Graph;
+use shacl_validation::validation_report::report::ValidationReport;
 use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
 use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
 use shex_ast::ast::Schema as ShExSchema;
@@ -8,10 +14,14 @@ use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
+use srdf::{FocusRDF, SRDFGraph};
+use std::fmt::Debug;
 use std::str::FromStr;
 use std::{io, result};
 
 // This structs are re-exported as they may be needed in main
+pub use shacl_ast::ShaclFormat;
+pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
@@ -24,6 +34,7 @@ pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
     shex_schema: Option<ShExSchema>,
+    // shacl_schema: Option<ShaclSchema>, // TODO: Should we store a compiled schema to avoid compiling it for each validation request?
     resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
@@ -34,6 +45,7 @@ impl Rudof {
         Rudof {
             config: config.clone(),
             shex_schema: None,
+            // shacl_schema: None,
             resolved_shex_schema: None,
             shex_validator: None,
             rdf_data: RdfData::new(),
@@ -41,11 +53,43 @@ impl Rudof {
         }
     }
 
-    /// Initialize a ShEx validator
-    ///
+    /// Parse a SHACL schema from the current RDF data
+    pub fn get_shacl(&self) -> Result<ShaclSchema> {
+        let schema = shacl_schema_from_data(self.rdf_data.clone())?;
+        Ok(schema)
+    }
+
+    /*    /// Reads a `ShaclSchema`
+        /// It also updates the current Shacl processor with the new ShaclSchema
+        /// - `base` is used to resolve relative IRIs
+        /// - `format` indicates the Shacl format
+        pub fn shacl_schema_from_reader<R: io::Read>(
+            &self,
+            reader: R,
+            base: Option<&str>,
+            format: &ShaclFormat,
+            reader_mode: &ReaderMode,
+        ) -> Result<ShaclSchema> {
+            let format = match format {
+                ShaclFormat::Internal => Err(RudofError::InternalSHACLFormatNonReadable),
+                ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
+                ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
+                ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+                ShaclFormat::TriG => Ok(RDFFormat::TriG),
+                ShaclFormat::N3 => Ok(RDFFormat::N3),
+                ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
+            }?;
+            let rdf_graph = parse_data(reader, &format, base, reader_mode)?;
+            let schema = shacl_schema_from_data(rdf_graph)?;
+            Ok(schema)
+        }
+    */
+
+    /// Reads a `ShExSchema` and replaces the current one
+    /// It also updates the current ShEx validator with the new ShExSchema
     /// - `base` is used to resolve relative IRIs
     /// - `format` indicates the ShEx format according to [`ShExFormat`](https://docs.rs/shex_validation/latest/shex_validation/shex_format/enum.ShExFormat.html)
-    pub fn read_shex_validator<R: io::Read>(
+    pub fn read_shex<R: io::Read>(
         &mut self,
         reader: R,
         base: Option<&str>,
@@ -98,6 +142,57 @@ impl Rudof {
             })?;
         self.shex_validator = Some(ShExValidator::new(schema, &self.config.validator_config()));
         Ok(())
+    }
+
+    /* Get the current SHACL Schema
+    pub fn shacl_schema(&self) -> Option<&ShaclSchema> {
+        self.shacl_schema.as_ref()
+    } */
+
+    pub fn validate_shacl(&mut self, mode: ShaclValidationMode) -> Result<ValidationReport> {
+        let schema = shacl_schema_from_data(self.rdf_data.clone())?;
+        let schema_ast = Box::new(schema.clone());
+        if let Some(data) = self.rdf_data.graph() {
+            let validator = GraphValidation::from_graph(Graph::from_graph(data.to_owned()), mode);
+            let compiled_schema: ShaclCompiledSchema<SRDFGraph> = schema
+                .to_owned()
+                .try_into()
+                .map_err(|e| RudofError::SHACLCompilationError {
+                    error: format!("{e}"),
+                    schema: schema_ast.clone(),
+                })?;
+            let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
+                RudofError::SHACLValidationError {
+                    error: format!("{e}"),
+                    schema: schema_ast,
+                }
+            })?;
+            Ok(result)
+        } else if let Some(endpoint) = self.rdf_data.first_endpoint() {
+            let validator =
+                EndpointValidation::from_sparql(endpoint.to_owned(), mode).map_err(|e| {
+                    RudofError::SHACLEndpointValidationCreation {
+                        endpoint: endpoint.clone(),
+                        error: format!("{e}"),
+                    }
+                })?;
+            let compiled_schema: ShaclCompiledSchema<SRDFSparql> = schema
+                .to_owned()
+                .try_into()
+                .map_err(|e| RudofError::SHACLCompilationError {
+                    error: format!("{e}"),
+                    schema: schema_ast.clone(),
+                })?;
+            let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
+                RudofError::SHACLValidationError {
+                    error: format!("{e}"),
+                    schema: schema_ast,
+                }
+            })?;
+            Ok(result)
+        } else {
+            Err(RudofError::NoGraphNoFirstEndpoint)
+        }
     }
 
     pub fn validate_shex(&mut self) -> Result<ResultShapeMap> {
@@ -164,6 +259,7 @@ impl Rudof {
         self.rdf_data.clean_graph();
     }
 
+    /// Add a pair of node selector and shape selector to the current shapemap
     pub fn shapemap_add_node_shape_selectors(&mut self, node: NodeSelector, shape: ShapeSelector) {
         match &mut self.shapemap {
             None => {
@@ -177,6 +273,7 @@ impl Rudof {
         };
     }
 
+    /// Update current shapemap from reader
     pub fn shapemap_from_reader<R: io::Read>(
         &mut self,
         mut reader: R,
@@ -210,6 +307,7 @@ impl Rudof {
         Ok(())
     }
 
+    /// Get current shapemap
     pub fn get_shapemap(&self) -> Option<QueryShapeMap> {
         self.shapemap.clone()
     }
@@ -228,11 +326,17 @@ impl Rudof {
             .map(|validator| validator.shapes_prefixmap())
     }
 
-    pub fn shex_schema(&self) -> Option<ShExSchema> {
-        self.shex_schema.clone()
+    /// Get current ShEx schema
+    pub fn shex_schema(&self) -> Option<&ShExSchema> {
+        self.shex_schema.as_ref()
     }
 
-    /// Obtains the current shex_schema after resolving import declarations
+    /// Get current RDF Data
+    pub fn rdf_data(&self) -> &RdfData {
+        &self.rdf_data
+    }
+
+    /// Obtains the current `shex_schema` after resolving import declarations
     ///
     /// If the import declarations in the current schema have not been resolved, it resolves them
     pub fn shex_schema_without_imports(&mut self) -> Result<SchemaWithoutImports> {
@@ -255,6 +359,15 @@ impl Rudof {
             Some(resolved_schema) => Ok(resolved_schema.clone()),
         }
     }
+}
+
+fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema> {
+    let schema = ShaclParser::new(rdf_data)
+        .parse()
+        .map_err(|e| RudofError::SHACLParseError {
+            error: format!("{e}"),
+        })?;
+    Ok(schema)
 }
 
 #[cfg(test)]
@@ -284,7 +397,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex_validator(shex.as_bytes(), None, &ShExFormat::ShExC)
+            .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
         rudof
             .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())
@@ -311,7 +424,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex_validator(shex.as_bytes(), None, &ShExFormat::ShExC)
+            .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
         rudof
             .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())

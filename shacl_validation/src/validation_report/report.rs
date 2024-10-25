@@ -1,58 +1,174 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use colored::*;
+use prefixmap::PrefixMap;
+use srdf::{Object, SRDF};
 
 use crate::helpers::srdf::get_objects_for;
 
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
 
-pub struct ValidationReport<S: SRDFBasic> {
-    results: Vec<ValidationResult<S>>,
+#[derive(Debug, Clone)]
+pub struct ValidationReport {
+    results: Vec<ValidationResult>,
+    nodes_prefixmap: PrefixMap,
+    shapes_prefixmap: PrefixMap,
+    ok_color: Option<Color>,
+    fail_color: Option<Color>,
+    display_with_colors: bool,
 }
 
-impl<S: SRDFBasic> ValidationReport<S> {
-    pub fn new(results: Vec<ValidationResult<S>>) -> Self {
-        Self { results }
+impl ValidationReport {
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    pub fn results(&self) -> &Vec<ValidationResult<S>> {
+    pub fn with_results(mut self, results: Vec<ValidationResult>) -> Self {
+        self.results = results;
+        self
+    }
+
+    /// Sets the same prefixmap for nodes and shapes
+    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
+        self.nodes_prefixmap = prefixmap.clone();
+        self.shapes_prefixmap = prefixmap;
+        self
+    }
+
+    /// Sets the prefixmap for nodes
+    pub fn with_nodes_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
+        self.nodes_prefixmap = prefixmap;
+        self
+    }
+
+    /// Sets the prefixmap for shapes
+    pub fn with_shapes_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
+        self.shapes_prefixmap = prefixmap;
+        self
+    }
+
+    pub fn without_colors(mut self) -> Self {
+        self.ok_color = None;
+        self.fail_color = None;
+        self
+    }
+
+    pub fn with_ok_color(mut self, color: Color) -> Self {
+        self.ok_color = Some(color);
+        self
+    }
+
+    pub fn with_fail_color(mut self, color: Color) -> Self {
+        self.fail_color = Some(color);
+        self
+    }
+
+    pub fn results(&self) -> &Vec<ValidationResult> {
         &self.results
     }
 }
 
-impl<S: SRDF> ValidationReport<S> {
-    pub fn parse(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+impl ValidationReport {
+    pub fn parse<S: SRDF>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
             results.push(ValidationResult::parse(store, &result)?);
         }
-        Ok(ValidationReport::new(results))
+        Ok(ValidationReport::new().with_results(results))
     }
 }
 
-impl<S: SRDFBasic> Debug for ValidationReport<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ValidationReport")
-            .field("results", &self.results)
-            .finish()
-    }
-}
-
-impl<S: SRDFBasic> Default for ValidationReport<S> {
+impl Default for ValidationReport {
     fn default() -> Self {
         ValidationReport {
             results: Vec::new(),
+            nodes_prefixmap: PrefixMap::new(),
+            shapes_prefixmap: PrefixMap::new(),
+            ok_color: Some(Color::Green),
+            fail_color: Some(Color::Red),
+            display_with_colors: true,
         }
     }
 }
 
-impl<S: SRDFBasic> PartialEq for ValidationReport<S> {
+impl PartialEq for ValidationReport {
+    // TODO: Are we sure that this way to compare validation report results is OK?
+    // Comparing only the len() seems weak??
     fn eq(&self, other: &Self) -> bool {
         if self.results.len() != other.results.len() {
             return false;
         }
         true
+    }
+}
+
+impl Display for ValidationReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.results.is_empty() {
+            let str = "No Errors found";
+            if self.display_with_colors {
+                if let Some(ok_color) = self.ok_color {
+                    write!(f, "{}", str.color(ok_color))?;
+                } else {
+                    write!(f, "{str}")?;
+                }
+            } else {
+                write!(f, "{str}")?;
+            }
+            Ok(())
+        } else {
+            let str = format!("{} errors found", self.results.len());
+            if self.display_with_colors {
+                if let Some(fail_color) = self.fail_color {
+                    writeln!(f, "{}", str.color(fail_color))?;
+                } else {
+                    writeln!(f, "{str}")?;
+                }
+            } else {
+                writeln!(f, "{str}")?;
+            };
+            let shacl_prefixmap = if self.display_with_colors {
+                PrefixMap::basic()
+            } else {
+                PrefixMap::basic()
+                    .with_hyperlink(true)
+                    .without_default_colors()
+            };
+            for result in self.results.iter() {
+                writeln!(
+                    f,
+                    "Focus node {}, Component: {}, severity: {}",
+                    show_node(result.focus_node(), &self.nodes_prefixmap),
+                    show_component(result.component(), &shacl_prefixmap),
+                    show_severity(result.severity(), &shacl_prefixmap)
+                )?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn show_node(node: &Object, prefixmap: &PrefixMap) -> String {
+    match node {
+        Object::Iri(iri_s) => prefixmap.qualify(iri_s),
+        Object::BlankNode(node) => format!("_:{node}"),
+        Object::Literal(literal) => format!("{literal}"),
+    }
+}
+
+fn show_component(component: &Object, shacl_prefixmap: &PrefixMap) -> String {
+    match component {
+        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
+        Object::BlankNode(node) => format!("_:{node}"),
+        Object::Literal(literal) => format!("{literal}"),
+    }
+}
+
+fn show_severity(severity: &Object, shacl_prefixmap: &PrefixMap) -> String {
+    match severity {
+        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
+        Object::BlankNode(node) => format!("_:{node}"),
+        Object::Literal(literal) => format!("{literal}"),
     }
 }

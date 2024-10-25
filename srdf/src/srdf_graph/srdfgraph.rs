@@ -7,14 +7,13 @@ use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
 use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
-use oxiri::Iri;
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -61,14 +60,14 @@ impl SRDFGraph {
         &mut self,
         read: R,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         match format {
             RDFFormat::Turtle => {
                 let turtle_parser = match base {
                     None => TurtleParser::new(),
-                    Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
+                    Some(iri) => TurtleParser::new().with_base_iri(iri)?,
                 };
                 // let mut graph = Graph::default();
                 let mut reader = turtle_parser.for_reader(read);
@@ -79,7 +78,7 @@ impl SRDFGraph {
                 self.base = match (&self.base, base) {
                     (None, None) => None,
                     (Some(b), None) => Some(b.clone()),
-                    (_, Some(b)) => Some(IriS::new_unchecked(b.as_str())),
+                    (_, Some(b)) => Some(IriS::new_unchecked(b)),
                 };
                 let pm = PrefixMap::from_hashmap(&prefixes)?;
                 self.merge_prefixes(pm)?;
@@ -144,34 +143,16 @@ impl SRDFGraph {
         Ok(())
     }
 
-    pub fn from_reader<R: BufRead>(
+    pub fn from_reader<R: io::Read>(
         read: R,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut srdf_graph = SRDFGraph::new();
+
         srdf_graph.merge_from_reader(read, format, base, reader_mode)?;
         Ok(srdf_graph)
-        /*  TODO: check format and use oxrdfio...
-        let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
-        };
-        let mut graph = Graph::default();
-        let mut reader = turtle_parser.parse_read(read);
-        for triple_result in reader.by_ref() {
-            graph.insert(triple_result?.as_ref());
-        }
-        let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
-        let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
-        let pm = PrefixMap::from_hashmap(&prefixes)?;
-        Ok(SRDFGraph {
-            focus: None,
-            graph,
-            pm,
-            base,
-        })*/
     }
 
     pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
@@ -192,7 +173,7 @@ impl SRDFGraph {
     pub fn from_str(
         data: &str,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
@@ -206,7 +187,7 @@ impl SRDFGraph {
         &mut self,
         path: P,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         let path_name = path.as_ref().display();
@@ -222,7 +203,7 @@ impl SRDFGraph {
     pub fn from_path<P: AsRef<Path>>(
         path: P,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let path_name = path.as_ref().display();
@@ -242,7 +223,7 @@ impl SRDFGraph {
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
-        let base = Some(Iri::parse("base:://".to_owned()).unwrap());
+        let base = Some("base:://");
         let data_path = &attempt;
         let graph = Self::from_path(data_path, format, base, reader_mode)?;
         Ok(graph)

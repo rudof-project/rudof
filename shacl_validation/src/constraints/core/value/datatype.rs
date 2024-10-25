@@ -25,7 +25,7 @@ impl<S: SRDFBasic> Validator<S> for Datatype<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
             if let Some(literal) = S::term_as_literal(value_node) {
                 return S::datatype(&literal) != *self.datatype();
@@ -44,7 +44,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Datatype<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -56,7 +56,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for Datatype<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

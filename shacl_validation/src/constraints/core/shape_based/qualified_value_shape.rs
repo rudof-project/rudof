@@ -23,7 +23,7 @@ impl<S: SRDFBasic> Validator<S> for QualifiedValueShape<S> {
         _store: &S,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "QualifiedValueShape".to_string(),
         ))
@@ -37,7 +37,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for QualifiedValueShape<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
@@ -49,7 +49,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for QualifiedValueShape<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, SparqlEngine, value_nodes)
     }
 }

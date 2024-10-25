@@ -128,15 +128,10 @@ pub enum Command {
         validation_mode: ValidationMode,
 
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
-        schema: InputSpec,
+        schema: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "schema-format",
-            value_name = "Schema format",
-            default_value_t = ShExFormat::ShExC
-        )]
-        schema_format: ShExFormat,
+        #[arg(short = 'f', long = "schema-format", value_name = "Schema format")]
+        schema_format: Option<ShExFormat>,
 
         #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
         shapemap: Option<InputSpec>,
@@ -209,6 +204,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Validate RDF using ShEx schemas
@@ -221,15 +220,10 @@ pub enum Command {
             long = "schema",
             value_name = "Schema file name, URI or -"
         )]
-        schema: InputSpec,
+        schema: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "schema-format",
-            value_name = "Schema format",
-            default_value_t = ShExFormat::ShExC
-        )]
-        schema_format: ShExFormat,
+        #[arg(short = 'f', long = "schema-format", value_name = "Schema format")]
+        schema_format: Option<ShExFormat>,
 
         #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
         shapemap: Option<InputSpec>,
@@ -299,17 +293,12 @@ pub enum Command {
         #[arg(
             short = 's',
             long = "shapes",
-            value_name = "Shapes graph: file, URI or -"
+            value_name = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
         )]
-        shapes: InputSpec,
+        shapes: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "shapes-format",
-            value_name = "Shapes file format",
-            default_value_t = ShaclFormat::Turtle
-        )]
-        shapes_format: ShaclFormat,
+        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        shapes_format: Option<ShaclFormat>,
 
         #[arg(
             short = 't',
@@ -755,11 +744,12 @@ impl Display for ShowNodeMode {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ShExFormat {
     Internal,
     Simple,
+    #[default]
     ShExC,
     ShExJ,
     Turtle,
@@ -874,10 +864,11 @@ impl Display for DataFormat {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ShaclFormat {
     Internal,
+    #[default]
     Turtle,
     NTriples,
     RDFXML,

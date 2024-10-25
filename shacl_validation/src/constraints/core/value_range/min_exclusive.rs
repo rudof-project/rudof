@@ -19,7 +19,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MinExclusive<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("MinExclusive".to_string()))
     }
 }
@@ -31,7 +31,7 @@ impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinExclusive<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive_value = self.min_exclusive().clone();
 
         let query = |value_node: &S::Term| {

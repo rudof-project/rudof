@@ -4,7 +4,6 @@ use iri_s::IriS;
 use oxigraph::sparql::Query;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
-use oxiri::Iri;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm,
@@ -17,6 +16,7 @@ use sparesults::QuerySolution;
 use srdf::lang::Lang;
 use srdf::literal::Literal;
 use srdf::numeric_literal::NumericLiteral;
+use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Object;
 use srdf::QuerySRDF2;
@@ -42,6 +42,7 @@ use std::str::FromStr;
 /// Generic abstraction that represents RDF Data which can be either behind SPARQL endpoints or an in-memory graph
 #[derive(Clone)]
 pub struct RdfData {
+    focus: Option<OxTerm>,
     endpoints: Vec<SRDFSparql>,
     graph: Option<SRDFGraph>,
     store: Option<Store>,
@@ -62,6 +63,7 @@ impl RdfData {
             endpoints: Vec::new(),
             graph: None,
             store: None,
+            focus: None,
         }
     }
 
@@ -72,6 +74,7 @@ impl RdfData {
             endpoints: Vec::new(),
             graph: Some(graph),
             store: Some(store),
+            focus: None,
         })
     }
 
@@ -79,6 +82,14 @@ impl RdfData {
     pub fn clean_all(&mut self) {
         self.endpoints = Vec::new();
         self.graph = None
+    }
+
+    pub fn graph(&self) -> Option<&SRDFGraph> {
+        self.graph.as_ref()
+    }
+
+    pub fn first_endpoint(&self) -> Option<&SRDFSparql> {
+        self.endpoints.first()
     }
 
     // Cleans the value graph
@@ -93,7 +104,6 @@ impl RdfData {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
-        let base = base.map(|str| Iri::parse_unchecked(str.to_string()));
         match &mut self.graph {
             Some(ref mut graph) => graph
                 .merge_from_reader(read, format, base, reader_mode)
@@ -114,6 +124,7 @@ impl RdfData {
             endpoints: vec![endpoint],
             graph: None,
             store: None,
+            focus: None,
         }
     }
 
@@ -465,25 +476,54 @@ impl SRDF for RdfData {
 
     fn objects_for_subject_predicate(
         &self,
-        _subject: &Self::Subject,
-        _pred: &Self::IRI,
+        subject: &Self::Subject,
+        pred: &Self::IRI,
     ) -> Result<std::collections::HashSet<Self::Term>, Self::Err> {
-        todo!()
+        let mut result = HashSet::new();
+        if let Some(graph) = &self.graph {
+            let os = graph.objects_for_subject_predicate(subject, pred)?;
+            result.extend(os)
+        }
+        for e in &self.endpoints {
+            let os = e.objects_for_subject_predicate(subject, pred)?;
+            result.extend(os)
+        }
+        Ok(result)
     }
 
     fn subjects_with_predicate_object(
         &self,
-        _pred: &Self::IRI,
-        _object: &Self::Term,
+        pred: &Self::IRI,
+        object: &Self::Term,
     ) -> Result<std::collections::HashSet<Self::Subject>, Self::Err> {
-        todo!()
+        let mut result = HashSet::new();
+        if let Some(graph) = &self.graph {
+            let s = graph.subjects_with_predicate_object(pred, object)?;
+            result.extend(s);
+        }
+        for e in self.endpoints.iter() {
+            let s = e.subjects_with_predicate_object(pred, object)?;
+            result.extend(s)
+        }
+        Ok(result)
     }
 
     fn triples_with_predicate(
         &self,
-        _pred: &Self::IRI,
+        pred: &Self::IRI,
     ) -> Result<Vec<srdf::Triple<Self>>, Self::Err> {
-        todo!()
+        let mut result = Vec::new();
+        if let Some(graph) = &self.graph {
+            let s = graph.triples_with_predicate(pred)?;
+            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
+            result.extend(t)
+        }
+        for e in self.endpoints.iter() {
+            let s = e.triples_with_predicate(pred)?;
+            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
+            result.extend(t)
+        }
+        Ok(result)
     }
 
     fn outgoing_arcs(
@@ -532,6 +572,16 @@ impl SRDF for RdfData {
                 Ok(result)
             }
         }
+    }
+}
+
+impl FocusRDF for RdfData {
+    fn set_focus(&mut self, focus: &Self::Term) {
+        self.focus = Some(focus.clone())
+    }
+
+    fn get_focus(&self) -> &Option<Self::Term> {
+        &self.focus
     }
 }
 

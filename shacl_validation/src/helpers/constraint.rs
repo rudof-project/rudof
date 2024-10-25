@@ -1,5 +1,6 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Object;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 
@@ -15,22 +16,19 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    return Some(ValidationResult::new(
-                        focus_node.to_owned(),
-                        None, // TODO: path
-                        None, // TODO: item
-                        Some(shape.id().to_owned()),
-                        S::iri_s2term(&component.into()),
-                        None, // TODO: details
-                        None, // TODO: message
-                        shape.severity(),
-                    ));
+                    let focus = S::term_as_object(focus_node);
+                    let component = Object::iri(component.into());
+                    let severity = S::term_as_object(&shape.severity());
+                    let source = Some(S::term_as_object(&shape.id().to_owned()));
+                    return Some(
+                        ValidationResult::new(focus, component, severity).with_source(source),
+                    );
                 }
             }
             None
@@ -46,7 +44,7 @@ pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,
@@ -62,7 +60,7 @@ pub fn validate_ask_with<S: QuerySRDF>(
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,
