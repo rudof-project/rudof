@@ -680,7 +680,7 @@ fn run_shacl(
         _ => {
             let data_format = shacl_format2rdf_format(result_shapes_format);
             let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
-            shacl_writer.write(&shacl_schema)?;
+            shacl_writer.write(shacl_schema)?;
             shacl_writer.serialize(data_format, &mut writer)?;
             Ok(())
         }
@@ -808,7 +808,7 @@ fn run_shacl2shex(
     let shacl_schema = rudof.get_shacl()?;
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
 
-    converter.convert(&shacl_schema)?;
+    converter.convert(shacl_schema)?;
     let (writer, color) = get_writer(output, force_overwrite)?;
     let result_schema_format = match &result_format {
         OutputConvertFormat::Default => CliShExFormat::ShExC,

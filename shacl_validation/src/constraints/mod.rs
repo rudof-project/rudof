@@ -4,6 +4,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
+use std::fmt::Debug;
 
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
@@ -12,7 +13,7 @@ use crate::value_nodes::ValueNodes;
 pub mod constraint_error;
 pub mod core;
 
-pub trait Validator<S: SRDFBasic> {
+pub trait Validator<S: SRDFBasic + Debug> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -33,7 +34,7 @@ pub trait NativeValidator<S: SRDF> {
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
-pub trait SparqlValidator<S: QuerySRDF> {
+pub trait SparqlValidator<S: QuerySRDF + Debug> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -59,7 +60,7 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: SRDF + 'static> NativeDeref for CompiledComponent<S> {
+impl<S: SRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
     type Target = dyn NativeValidator<S>;
 
     generate_deref_fn!(
@@ -100,7 +101,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QuerySRDF + 'static> SparqlDeref for CompiledComponent<S> {
+impl<S: QuerySRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(

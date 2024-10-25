@@ -12,6 +12,7 @@ use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
+#[derive(Debug)]
 pub struct CompiledNodeShape<S: SRDFBasic> {
     id: S::Term,
     components: Vec<CompiledComponent<S>>,

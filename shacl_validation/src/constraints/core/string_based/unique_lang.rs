@@ -1,13 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::UniqueLang;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
-
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
@@ -19,8 +12,15 @@ use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::component::UniqueLang;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::QuerySRDF;
+use srdf::SRDFBasic;
+use srdf::SRDF;
+use std::fmt::Debug;
 
-impl<S: SRDFBasic> Validator<S> for UniqueLang {
+impl<S: SRDFBasic + Debug> Validator<S> for UniqueLang {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -60,7 +60,7 @@ impl<S: SRDFBasic> Validator<S> for UniqueLang {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for UniqueLang {
+impl<S: SRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -72,7 +72,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for UniqueLang {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for UniqueLang {
+impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

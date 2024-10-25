@@ -61,7 +61,7 @@ impl Rudof {
 
     pub fn get_shacl(&self) -> Result<&ShaclSchema> {
         if let Some(shacl_schema) = &self.shacl_schema {
-            Ok(&shacl_schema)
+            Ok(shacl_schema)
         } else {
             Err(RudofError::NoShaclSchema)
         }
@@ -69,7 +69,7 @@ impl Rudof {
 
     pub fn get_shex(&self) -> Result<&ShExSchema> {
         if let Some(shex_schema) = &self.shex_schema {
-            Ok(&shex_schema)
+            Ok(shex_schema)
         } else {
             Err(RudofError::NoShaclSchema)
         }
@@ -519,7 +519,7 @@ mod tests {
             prefix sh:     <http://www.w3.org/ns/shacl#> 
             prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
 
-            :S a sh:NodeShape; sh:closed true ;
+            :S a sh:NodeShape; 
              sh:targetNode :x ; 
             sh:property [                  
                 sh:path     :p ; 
@@ -552,6 +552,76 @@ mod tests {
                 crate::ShapesGraphSource::CurrentSchema,
             )
             .unwrap();
-        assert!(result.results().is_empty())
+        assert!(!result.conforms())
+    }
+
+    #[test]
+    fn test_shacl_validation_data_ko() {
+        let data = r#"prefix :       <http://example.org/> 
+            prefix sh:     <http://www.w3.org/ns/shacl#> 
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+
+            :x :other 23 .
+
+            :S a sh:NodeShape; 
+               sh:targetNode :x ; 
+               sh:property [                  
+                sh:path     :p ; 
+                sh:minCount 1; 
+                sh:maxCount 1;
+                sh:datatype xsd:integer ;
+            ] .
+             "#;
+        let mut rudof = Rudof::new(&RudofConfig::default());
+        rudof
+            .merge_data_from_reader(
+                data.as_bytes(),
+                &srdf::RDFFormat::Turtle,
+                None,
+                &srdf::ReaderMode::Strict,
+            )
+            .unwrap();
+        let result = rudof
+            .validate_shacl(
+                ShaclValidationMode::Native,
+                crate::ShapesGraphSource::CurrentData,
+            )
+            .unwrap();
+        assert!(!result.conforms())
+    }
+
+    #[test]
+    fn test_shacl_validation_data_ok() {
+        let data = r#"prefix :       <http://example.org/> 
+            prefix sh:     <http://www.w3.org/ns/shacl#> 
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+
+            :x :p 23 .
+
+            :S a sh:NodeShape; 
+               sh:targetNode :x ; 
+               sh:property [                  
+                sh:path     :p ; 
+                sh:minCount 1; 
+                sh:maxCount 1;
+                sh:datatype xsd:integer ;
+            ] .
+             "#;
+        let mut rudof = Rudof::new(&RudofConfig::default());
+        rudof
+            .merge_data_from_reader(
+                data.as_bytes(),
+                &srdf::RDFFormat::Turtle,
+                None,
+                &srdf::ReaderMode::Strict,
+            )
+            .unwrap();
+        let result = rudof
+            .validate_shacl(
+                ShaclValidationMode::Native,
+                crate::ShapesGraphSource::CurrentData,
+            )
+            .unwrap();
+        assert!(result.conforms())
     }
 }

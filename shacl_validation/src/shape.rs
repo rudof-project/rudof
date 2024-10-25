@@ -1,13 +1,13 @@
-use shacl_ast::compiled::node_shape::CompiledNodeShape;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::SRDFBasic;
-
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use shacl_ast::compiled::node_shape::CompiledNodeShape;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::SRDFBasic;
+use std::fmt::Debug;
 
 pub trait Validate<S: SRDFBasic> {
     fn validate(
@@ -18,7 +18,7 @@ pub trait Validate<S: SRDFBasic> {
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
-impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
+impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
     fn validate(
         &self,
         store: &S,

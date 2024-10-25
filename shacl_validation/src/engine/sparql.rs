@@ -5,18 +5,18 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SHACLPath;
 
+use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-
-use super::Engine;
+use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
-impl<S: QuerySRDF + 'static> Engine<S> for SparqlEngine {
+impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,

@@ -1,11 +1,11 @@
-use std::path::Path;
-
 use clap::ValueEnum;
 use shacl_ast::compiled::schema::CompiledSchema;
 use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
 use srdf::SRDFSparql;
+use std::fmt::Debug;
+use std::path::Path;
 
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
@@ -36,7 +36,7 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: SRDFBasic> {
+pub trait ShaclProcessor<S: SRDFBasic + Debug> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
@@ -143,20 +143,6 @@ impl GraphValidation {
         GraphValidation { store: graph, mode }
     }
 }
-
-/*
-impl ShaclProcessor<SRDFGraph> for GraphValidation {
-    fn store(&self) -> &SRDFGraph {
-        self.store.store()
-    }
-
-    fn runner(&self) -> &dyn Engine<SRDFGraph> {
-        match self.mode {
-            ShaclValidationMode::Native => &NativeEngine,
-            ShaclValidationMode::Sparql => todo!(),
-        }
-    }
-} */
 
 impl ShaclProcessor<RdfData> for GraphValidation {
     fn store(&self) -> &RdfData {

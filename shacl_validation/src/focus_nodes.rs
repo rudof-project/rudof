@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use srdf::SRDFBasic;
 
+#[derive(Debug)]
 pub struct FocusNodes<S: SRDFBasic>(HashSet<S::Term>);
 
 impl<S: SRDFBasic> FocusNodes<S> {

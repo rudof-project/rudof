@@ -1,12 +1,3 @@
-use indoc::formatdoc;
-use shacl_ast::compiled::component::Class;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::RDFS_SUBCLASS_OF;
-use srdf::RDF_TYPE;
-use srdf::SRDF;
-
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
@@ -16,6 +7,15 @@ use crate::helpers::srdf::get_objects_for;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use indoc::formatdoc;
+use shacl_ast::compiled::component::Class;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::QuerySRDF;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
+use srdf::SRDF;
+use std::fmt::Debug;
 
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
@@ -47,7 +47,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for Class<S> {
+impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

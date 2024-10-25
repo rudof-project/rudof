@@ -11,11 +11,17 @@ pub struct Graph {
     store: RdfData,
 }
 
-impl Graph {
-    pub fn new() -> Graph {
-        Graph {
+impl Default for Graph {
+    fn default() -> Self {
+        Self {
             store: RdfData::new(),
         }
+    }
+}
+
+impl Graph {
+    pub fn new() -> Graph {
+        Graph::default()
     }
 
     pub fn from_path(

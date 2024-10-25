@@ -8,7 +8,7 @@ use crate::*;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Debug)]
 pub enum CompiledSeverity<S: SRDFBasic> {
     Violation,
     Warning,

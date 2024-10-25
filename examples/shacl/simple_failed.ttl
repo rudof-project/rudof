@@ -1,0 +1,14 @@
+prefix :       <http://example.org/> 
+prefix sh:     <http://www.w3.org/ns/shacl#> 
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+
+:x :other 23 .
+
+:S a sh:NodeShape; 
+ sh:targetNode :x ; 
+ sh:property [                  
+ sh:path     :p ; 
+ sh:minCount 1; 
+ sh:maxCount 1;
+ sh:datatype xsd:integer ;
+] .

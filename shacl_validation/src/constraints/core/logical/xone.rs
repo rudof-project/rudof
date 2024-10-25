@@ -4,6 +4,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
+use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -19,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic> Validator<S> for Xone<S> {
+impl<S: SRDFBasic + Debug> Validator<S> for Xone<S> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -46,7 +47,7 @@ impl<S: SRDFBasic> Validator<S> for Xone<S> {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for Xone<S> {
+impl<S: SRDF + Debug + 'static> NativeValidator<S> for Xone<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -58,7 +59,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Xone<S> {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for Xone<S> {
+impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Xone<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

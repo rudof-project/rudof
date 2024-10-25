@@ -4,6 +4,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
+use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -18,7 +19,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic> Validator<S> for MaxCount {
+impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -32,7 +33,7 @@ impl<S: SRDFBasic> Validator<S> for MaxCount {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for MaxCount {
+impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -44,7 +45,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxCount {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxCount {
+impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

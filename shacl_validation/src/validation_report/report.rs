@@ -77,6 +77,10 @@ impl ValidationReport {
         }
         Ok(ValidationReport::new().with_results(results))
     }
+
+    pub fn conforms(&self) -> bool {
+        self.results.is_empty()
+    }
 }
 
 impl Default for ValidationReport {

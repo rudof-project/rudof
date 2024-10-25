@@ -1,10 +1,3 @@
-use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MaxLength;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
-
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
@@ -13,8 +6,15 @@ use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use indoc::formatdoc;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::component::MaxLength;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::QuerySRDF;
+use srdf::SRDF;
+use std::fmt::Debug;
 
-impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
+impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -44,7 +44,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for MaxLength {
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxLength {
+impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

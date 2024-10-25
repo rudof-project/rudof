@@ -8,6 +8,7 @@ use crate::Schema;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
+#[derive(Debug)]
 pub struct CompiledSchema<S: SRDFBasic> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
