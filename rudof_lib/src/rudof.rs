@@ -360,20 +360,15 @@ impl Rudof {
         }
     }
 }
-/*
-fn parse_data<R: io::Read>(
-    reader: R,
-    data_format: &RDFFormat,
-    base: Option<&str>,
-    reader_mode: &ReaderMode,
-) -> Result<SRDFGraph> {
-    let data = SRDFGraph::from_reader(reader, data_format, base, reader_mode).map_err(|e| {
-        RudofError::ParsingRDFDataReader {
+
+fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema> {
+    let schema = ShaclParser::new(rdf_data)
+        .parse()
+        .map_err(|e| RudofError::SHACLParseError {
             error: format!("{e}"),
-        }
-    })?;
-    Ok(data)
-} */
+        })?;
+    Ok(schema)
+}
 
 #[cfg(test)]
 mod tests {
@@ -439,13 +434,4 @@ mod tests {
         let shape = ShapeLabel::iri(iri!("http://example/S"));
         assert!(result.get_info(&node, &shape).unwrap().is_non_conformant(),)
     }
-}
-
-fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema> {
-    let schema = ShaclParser::new(rdf_data)
-        .parse()
-        .map_err(|e| RudofError::SHACLParseError {
-            error: format!("{e}"),
-        })?;
-    Ok(schema)
 }
