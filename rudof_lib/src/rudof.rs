@@ -1,4 +1,5 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
+use dctap::DCTap;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::ast::Schema as ShaclSchema;
@@ -8,6 +9,7 @@ use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
 use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
+use shapes_converter::{ShEx2Uml, UmlGenerationMode};
 use shex_ast::ast::Schema as ShExSchema;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
@@ -37,6 +39,7 @@ pub struct Rudof {
     resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
+    dctap: Option<DCTap>,
 }
 
 impl Rudof {
@@ -49,6 +52,7 @@ impl Rudof {
             shex_validator: None,
             rdf_data: RdfData::new(),
             shapemap: None,
+            dctap: None,
         }
     }
 
@@ -59,19 +63,48 @@ impl Rudof {
         Ok(())
     }
 
-    pub fn get_shacl(&self) -> Result<&ShaclSchema> {
-        if let Some(shacl_schema) = &self.shacl_schema {
-            Ok(shacl_schema)
-        } else {
-            Err(RudofError::NoShaclSchema)
-        }
+    /// Get the current SHACL
+    pub fn get_shacl(&self) -> Option<&ShaclSchema> {
+        self.shacl_schema.as_ref()
     }
 
-    pub fn get_shex(&self) -> Result<&ShExSchema> {
-        if let Some(shex_schema) = &self.shex_schema {
-            Ok(shex_schema)
+    /// Get the current ShEx Schema
+    pub fn get_shex(&self) -> Option<&ShExSchema> {
+        self.shex_schema.as_ref()
+    }
+
+    /// Get the current DCTAP
+    pub fn get_dctap(&self) -> Option<&DCTap> {
+        self.dctap.as_ref()
+    }
+
+    /// Get the current shapemap
+    pub fn get_shapemap(&self) -> Option<&QueryShapeMap> {
+        self.shapemap.as_ref()
+    }
+
+    /// Generate a UML Class-like representation of a ShEx schema according to PlantUML syntax
+    ///
+    pub fn shex2plant_uml<W: io::Write>(
+        &self,
+        mode: &UmlGenerationMode,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(shex) = &self.shex_schema {
+            let mut converter = ShEx2Uml::new(&self.config.shex2uml_config());
+            converter
+                .convert(&shex)
+                .map_err(|e| RudofError::ShEx2PlantUmlError {
+                    error: format!("{e}"),
+                })?;
+            converter.as_plantuml(writer, &mode).map_err(|e| {
+                RudofError::ShEx2PlantUmlErrorAsPlantUML {
+                    error: format!("{e}"),
+                }
+            })?;
+            Ok(())
         } else {
-            Err(RudofError::NoShaclSchema)
+            Err(RudofError::ShEx2UmlWithoutShEx)
         }
     }
 
@@ -333,11 +366,6 @@ impl Rudof {
         }?;
         self.shapemap = Some(shapemap);
         Ok(())
-    }
-
-    /// Get current shapemap
-    pub fn get_shapemap(&self) -> Option<QueryShapeMap> {
-        self.shapemap.clone()
     }
 
     /// Returns the RDF data prefixmap

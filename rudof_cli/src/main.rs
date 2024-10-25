@@ -7,10 +7,8 @@ extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
 extern crate shacl_ast;
-extern crate shacl_validation;
 extern crate shapemap;
 extern crate shapes_converter;
-extern crate shex_ast;
 extern crate srdf;
 extern crate supports_color;
 extern crate tracing;
@@ -671,7 +669,7 @@ fn run_shacl(
     let mut rudof = Rudof::new(config);
     let reader_mode = reader_mode_convert(*reader_mode);
     add_shacl_schema_rudof(&mut rudof, input, shapes_format, &reader_mode, config)?;
-    let shacl_schema = rudof.get_shacl()?;
+    let shacl_schema = rudof.get_shacl().unwrap();
     match result_shapes_format {
         CliShaclFormat::Internal => {
             writeln!(writer, "{shacl_schema}")?;
@@ -794,18 +792,10 @@ fn run_shacl2shex(
         InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
-    /*let shacl_config = match &config.shacl {
-        None => ShaclConfig::default(),
-        Some(cfg) => cfg.clone(),
-    };
-    let data_config = match &shacl_config.data {
-        None => RdfDataConfig::default(),
-        Some(cfg) => cfg.clone(),
-    };*/
     let mut rudof = Rudof::new(config);
     let reader_mode = reader_mode_convert(*reader_mode);
     add_shacl_schema_rudof(&mut rudof, input, &schema_format, &reader_mode, config)?;
-    let shacl_schema = rudof.get_shacl()?;
+    let shacl_schema = rudof.get_shacl().unwrap();
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
 
     converter.convert(shacl_schema)?;

@@ -103,4 +103,16 @@ pub enum RudofError {
 
     #[error("No SHACL schema defined")]
     NoShaclSchema,
+
+    #[error("No DCTAP defined")]
+    NoDCTAP,
+
+    #[error("ShEx2UML: No ShEx schema")]
+    ShEx2UmlWithoutShEx,
+
+    #[error("ShEx2PlantUML Error: {error}")]
+    ShEx2PlantUmlError { error: String },
+
+    #[error("ShEx2PlantUML Error when generating PlantUML: {error}")]
+    ShEx2PlantUmlErrorAsPlantUML { error: String },
 }
