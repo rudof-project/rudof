@@ -27,12 +27,10 @@ use dctap::{DCTap, DCTapConfig, TapConfig};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_lib::{
-    Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShapeMapParser, ShapemapFormatter,
+    Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
+    ShapeMapParser, ShapemapFormatter,
 };
-use shacl_ast::{Schema as ShaclSchema, ShaclWriter};
-use shacl_validation::shacl_config::ShaclConfig;
-use shacl_validation::shacl_processor::{EndpointValidation, GraphValidation, ShaclValidationMode};
-use shacl_validation::store::ShaclDataManager;
+use shacl_ast::ShaclWriter;
 use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
@@ -172,23 +170,12 @@ fn main() -> Result<()> {
                     *force_overwrite,
                 ),
                 ValidationMode::SHACL => {
-                    let shacl_format = match schema_format {
-                        CliShExFormat::Internal => Ok(CliShaclFormat::Internal),
-                        CliShExFormat::ShExC => Err(anyhow!(
-                            "Validation using SHACL mode doesn't support ShExC format"
-                        )),
-                        CliShExFormat::Simple => Err(anyhow!(
-                            "Validation using SHACL mode doesn't support {schema_format} format"
-                        )),
-                        CliShExFormat::ShExJ => Err(anyhow!(
-                            "Validation using SHACL mode doesn't support ShExC format"
-                        )),
-                        CliShExFormat::Turtle => Ok(CliShaclFormat::Turtle),
-                        CliShExFormat::NTriples => Ok(CliShaclFormat::NTriples),
-                        CliShExFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
-                        CliShExFormat::TriG => Ok(CliShaclFormat::TriG),
-                        CliShExFormat::N3 => Ok(CliShaclFormat::N3),
-                        CliShExFormat::NQuads => Ok(CliShaclFormat::NQuads),
+                    let shacl_format = match &schema_format {
+                        None => Ok::<Option<cli::ShaclFormat>, anyhow::Error>(None),
+                        Some(f) => {
+                            let f = schema_format_to_shacl_format(f)?;
+                            Ok(Some(f))
+                        }
                     }?;
                     run_validate_shacl(
                         schema,
@@ -196,9 +183,11 @@ fn main() -> Result<()> {
                         data,
                         data_format,
                         endpoint,
+                        reader_mode,
                         *shacl_validation_mode,
                         cli.debug,
                         output,
+                        &config,
                         *force_overwrite,
                     )
                 }
@@ -249,16 +238,18 @@ fn main() -> Result<()> {
             force_overwrite,
             config,
         }) => {
-            let shacl_config = get_shacl_config(config)?;
+            let config = get_config(config)?;
             run_validate_shacl(
                 shapes,
                 shapes_format,
                 data,
                 data_format,
                 endpoint,
+                reader_mode,
                 *mode,
                 cli.debug,
                 output,
+                &config,
                 *force_overwrite,
             )
         }
@@ -431,8 +422,9 @@ fn run_service(
     let rdf_format = data_format2rdf_format(data_format);
     let config = config.service_config();
     let base = config.base.as_ref().map(|i| i.as_str());
+    let reader_mode = reader_mode_convert(*reader_mode);
     let service_description =
-        ServiceDescription::from_reader(reader, &rdf_format, base, &(*reader_mode).into())?;
+        ServiceDescription::from_reader(reader, &rdf_format, base, &reader_mode)?;
     match result_format {
         ResultServiceFormat::Internal => {
             writeln!(writer, "{service_description}")?;
@@ -572,8 +564,8 @@ fn show_schema_rudof(
 
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shex(
-    schema: &InputSpec,
-    schema_format: &CliShExFormat,
+    schema: &Option<InputSpec>,
+    schema_format: &Option<CliShExFormat>,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
@@ -587,70 +579,82 @@ fn run_validate_shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let mut rudof = Rudof::new(config);
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
-    let schema_format = match schema_format {
-        CliShExFormat::ShExC => ShExFormat::ShExC,
-        CliShExFormat::ShExJ => ShExFormat::ShExJ,
-        _ => bail!("ShExJ validation not yet implemented"),
-    };
-    let base_iri = config.shex_config().base;
-    let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
-    rudof.read_shex(schema_reader, schema_base, &schema_format)?;
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    if let Some(schema) = schema {
+        let mut rudof = Rudof::new(config);
+        let (mut writer, _color) = get_writer(output, force_overwrite)?;
+        let schema_format = schema_format.unwrap_or_default();
+        let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
+        let schema_format = match schema_format {
+            CliShExFormat::ShExC => ShExFormat::ShExC,
+            CliShExFormat::ShExJ => ShExFormat::ShExJ,
+            _ => bail!("ShExJ validation not yet implemented"),
+        };
+        let base_iri = config.shex_config().base;
+        let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
+        rudof.read_shex(schema_reader, schema_base, &schema_format)?;
+        get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
 
-    let shapemap_format = shapemap_format_convert(shapemap_format);
-    if let Some(shapemap_spec) = shapemap {
-        let shapemap_reader = shapemap_spec.open_read(None)?;
-        rudof.shapemap_from_reader(shapemap_reader, &shapemap_format)?;
+        let shapemap_format = shapemap_format_convert(shapemap_format);
+        if let Some(shapemap_spec) = shapemap {
+            let shapemap_reader = shapemap_spec.open_read(None)?;
+            rudof.shapemap_from_reader(shapemap_reader, &shapemap_format)?;
+        }
+
+        // If individual node/shapes are declared add them to current shape map
+        match (maybe_node, maybe_shape) {
+            (None, None) => {
+                // Nothing to do in this case
+            }
+            (Some(node_str), None) => {
+                let node_selector = parse_node_selector(node_str)?;
+                rudof.shapemap_add_node_shape_selectors(node_selector, start())
+            }
+            (Some(node_str), Some(shape_str)) => {
+                let node_selector = parse_node_selector(node_str)?;
+                let shape_selector = parse_shape_selector(shape_str)?;
+                rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
+            }
+            (None, Some(shape_str)) => {
+                tracing::debug!(
+                    "Shape label {shape_str} ignored because noshapemap has also been provided"
+                )
+            }
+        };
+        let result = rudof.validate_shex()?;
+        writeln!(writer, "Result:\n{}", result)?;
+        Ok(())
+    } else {
+        bail!("No ShEx schema specified")
     }
-
-    // If individual node/shapes are declared add them to current shape map
-    match (maybe_node, maybe_shape) {
-        (None, None) => {
-            // Nothing to do in this case
-        }
-        (Some(node_str), None) => {
-            let node_selector = parse_node_selector(node_str)?;
-            rudof.shapemap_add_node_shape_selectors(node_selector, start())
-        }
-        (Some(node_str), Some(shape_str)) => {
-            let node_selector = parse_node_selector(node_str)?;
-            let shape_selector = parse_shape_selector(shape_str)?;
-            rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
-        }
-        (None, Some(shape_str)) => {
-            tracing::debug!(
-                "Shape label {shape_str} ignored because noshapemap has also been provided"
-            )
-        }
-    };
-    let result = rudof.validate_shex()?;
-    writeln!(writer, "Result:\n{}", result)?;
-    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shacl(
-    input: &InputSpec,
-    shapes_format: &CliShaclFormat,
+    schema: &Option<InputSpec>,
+    shapes_format: &Option<CliShaclFormat>,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
+    reader_mode: &RDFReaderMode,
     mode: ShaclValidationMode,
     _debug: u8,
     output: &Option<PathBuf>,
+    config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let mut rudof = Rudof::new(config);
+    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    if let Some(schema) = schema {
+        let reader_mode = reader_mode_convert(*reader_mode);
+        let shapes_format = shapes_format.unwrap_or_default();
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
+    }
+    let result = rudof.validate_shacl(mode)?;
+    writeln!(writer, "Result:\n{}", result)?;
+    Ok(())
 
-    // TODO: Remove the following cast by refactoring the validate_shex to support more types of data
-    let data = cast_to_data_path(data)?;
-    let reader = input.open_read(Some(shapes_format.mime_type().as_str()))?;
-    let shapes_format = shacl_format_convert(shapes_format)?;
-
-    if let Some(data) = data {
+    /*if let Some(data) = data {
         let validator = match GraphValidation::new(&data, map_data_format(data_format)?, None, mode)
         {
             Ok(validator) => validator,
@@ -681,7 +685,7 @@ fn run_validate_shacl(
         Ok(())
     } else {
         bail!("Please provide either a local data source or an endpoint")
-    }
+    } */
 }
 
 fn run_shacl(
@@ -695,29 +699,21 @@ fn run_shacl(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
-    parse_shacl_rudof(
-        &mut rudof,
-        input,
-        shapes_format,
-        reader_mode,
-        &config.rdf_data_config(),
-    )?;
-    if let Some(shacl_schema) = rudof.shacl_schema() {
-        match result_shapes_format {
-            CliShaclFormat::Internal => {
-                writeln!(writer, "{shacl_schema}")?;
-                Ok(())
-            }
-            _ => {
-                let data_format = shacl_format2rdf_format(result_shapes_format);
-                let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
-                shacl_writer.write(shacl_schema)?;
-                shacl_writer.serialize(data_format, &mut writer)?;
-                Ok(())
-            }
+    let reader_mode = reader_mode_convert(*reader_mode);
+    add_shacl_schema_rudof(&mut rudof, input, shapes_format, &reader_mode, config)?;
+    let shacl_schema = rudof.get_shacl()?;
+    match result_shapes_format {
+        CliShaclFormat::Internal => {
+            writeln!(writer, "{shacl_schema}")?;
+            Ok(())
         }
-    } else {
-        bail!("No SHACL schema")
+        _ => {
+            let data_format = shacl_format2rdf_format(result_shapes_format);
+            let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+            shacl_writer.write(&shacl_schema)?;
+            shacl_writer.serialize(data_format, &mut writer)?;
+            Ok(())
+        }
     }
 }
 
@@ -837,37 +833,30 @@ fn run_shacl2shex(
         Some(cfg) => cfg.clone(),
     };*/
     let mut rudof = Rudof::new(config);
-    parse_shacl_rudof(
-        &mut rudof,
-        input,
-        &schema_format,
-        reader_mode,
-        &config.rdf_data_config(),
-    )?;
+    let reader_mode = reader_mode_convert(*reader_mode);
+    add_shacl_schema_rudof(&mut rudof, input, &schema_format, &reader_mode, config)?;
+    let shacl_schema = rudof.get_shacl()?;
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
-    if let Some(shacl_schema) = rudof.shacl_schema() {
-        converter.convert(shacl_schema)?;
-        let (writer, color) = get_writer(output, force_overwrite)?;
-        let result_schema_format = match &result_format {
-            OutputConvertFormat::Default => CliShExFormat::ShExC,
-            OutputConvertFormat::JSON => CliShExFormat::ShExJ,
-            OutputConvertFormat::ShExC => CliShExFormat::ShExC,
-            OutputConvertFormat::ShExJ => CliShExFormat::ShExJ,
-            OutputConvertFormat::Turtle => CliShExFormat::Turtle,
-            _ => {
-                bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output")
-            }
-        };
-        show_schema(
-            converter.current_shex(),
-            &result_schema_format,
-            writer,
-            color,
-        )?;
-        Ok(())
-    } else {
-        bail!("Internal error: SHACL schema is not available after reading it in rudof")
-    }
+
+    converter.convert(&shacl_schema)?;
+    let (writer, color) = get_writer(output, force_overwrite)?;
+    let result_schema_format = match &result_format {
+        OutputConvertFormat::Default => CliShExFormat::ShExC,
+        OutputConvertFormat::JSON => CliShExFormat::ShExJ,
+        OutputConvertFormat::ShExC => CliShExFormat::ShExC,
+        OutputConvertFormat::ShExJ => CliShExFormat::ShExJ,
+        OutputConvertFormat::Turtle => CliShExFormat::Turtle,
+        _ => {
+            bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output")
+        }
+    };
+    show_schema(
+        converter.current_shex(),
+        &result_schema_format,
+        writer,
+        color,
+    )?;
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1145,6 +1134,28 @@ fn get_data(
     }
 }
 
+fn add_shacl_schema_rudof(
+    rudof: &mut Rudof,
+    schema: &InputSpec,
+    shapes_format: &CliShaclFormat,
+    reader_mode: &ReaderMode,
+    config: &RudofConfig,
+) -> Result<()> {
+    let reader = schema.open_read(Some(shapes_format.mime_type().as_str()))?;
+    let shapes_format = shacl_format_convert(shapes_format)?;
+    let base = config.rdf_data_base();
+    let rdf_format = match shapes_format {
+        ShaclFormat::Internal => todo!(),
+        ShaclFormat::Turtle => RDFFormat::Turtle,
+        ShaclFormat::NTriples => RDFFormat::NTriples,
+        ShaclFormat::RDFXML => RDFFormat::RDFXML,
+        ShaclFormat::TriG => RDFFormat::TriG,
+        ShaclFormat::N3 => RDFFormat::TriG,
+        ShaclFormat::NQuads => RDFFormat::NQuads,
+    };
+    rudof.merge_data_from_reader(reader, &rdf_format, base, reader_mode)?;
+    Ok(())
+}
 fn get_data_rudof(
     rudof: &mut Rudof,
     data: &Vec<InputSpec>,
@@ -1495,7 +1506,7 @@ fn parse_shex_schema_rudof(
     Ok(())
 }
 
-fn parse_shacl_rudof(
+/*fn parse_shacl_rudof(
     rudof: &mut Rudof,
     input: &InputSpec,
     shapes_format: &CliShaclFormat,
@@ -1506,13 +1517,14 @@ fn parse_shacl_rudof(
     let base = config.base.as_ref().map(|i| i.as_str());
     let shacl_format = shacl_format_convert(shapes_format)?;
     let reader_mode = reader_mode_convert(*reader_mode);
-    rudof.read_shacl(reader, base, &shacl_format, &reader_mode)?;
+    // rudof.read_shacl(reader, base, &shacl_format, &reader_mode)?;
+    rudof.merge_data_from_reader(reader, , base, reader_mode)?;
     if let Some(shacl_schema) = rudof.shacl_schema() {
         Ok(shacl_schema.clone())
     } else {
         bail!("Internal error: SHACL schema was read but it not returned by rudof");
     }
-}
+}*/
 
 /*
 fn parse_shacl(
@@ -1599,7 +1611,8 @@ fn parse_data(
     for d in data {
         let reader = d.open_read(Some(data_format.mime_type().as_str()))?;
         let base = config.base.as_ref().map(|iri_s| iri_s.as_str());
-        graph.merge_from_reader(reader, &rdf_format, base, &(*reader_mode).into())?;
+        let reader_mode = reader_mode_convert(*reader_mode);
+        graph.merge_from_reader(reader, &rdf_format, base, &reader_mode)?;
     }
     Ok(graph)
 }
@@ -1632,19 +1645,6 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
     }
 }
 
-fn get_shacl_config(config: &Option<PathBuf>) -> Result<ShaclConfig> {
-    match config {
-        Some(config_path) => match ShaclConfig::from_path(config_path) {
-            Ok(c) => Ok(c),
-            Err(e) => Err(anyhow!(
-                "Error obtaining SHACL config from {}: {e}",
-                config_path.display()
-            )),
-        },
-        None => Ok(ShaclConfig::default()),
-    }
-}
-
 fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
     match config {
         Some(config_path) => match QueryConfig::from_path(config_path) {
@@ -1655,43 +1655,6 @@ fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
             )),
         },
         None => Ok(QueryConfig::default()),
-    }
-}
-
-fn cast_to_data_path(data: &Vec<InputSpec>) -> Result<Option<PathBuf>> {
-    match &data[..] {
-        [elem] => match elem {
-            InputSpec::Path(path) => Ok(Some(path.clone())),
-            InputSpec::Stdin => bail!("Not supported data from stdin yet"),
-            InputSpec::Url(url) => {
-                bail!("Not supported data from url yet. Url: {}", url.to_string())
-            }
-        },
-        [] => Ok(None),
-        _ => bail!("More than one value for data: {data:?}"),
-    }
-}
-
-fn map_shacl_format(shapes_format: &ShaclFormat) -> Result<srdf::RDFFormat> {
-    match shapes_format {
-        ShaclFormat::Internal => todo!(),
-        ShaclFormat::Turtle => Ok(srdf::RDFFormat::Turtle),
-        ShaclFormat::NTriples => Ok(srdf::RDFFormat::NTriples),
-        ShaclFormat::RDFXML => Ok(srdf::RDFFormat::RDFXML),
-        ShaclFormat::TriG => Ok(srdf::RDFFormat::TriG),
-        ShaclFormat::N3 => Ok(srdf::RDFFormat::N3),
-        ShaclFormat::NQuads => Ok(srdf::RDFFormat::NQuads),
-    }
-}
-
-fn map_data_format(data_format: &DataFormat) -> Result<srdf::RDFFormat> {
-    match data_format {
-        DataFormat::Turtle => Ok(srdf::RDFFormat::Turtle),
-        DataFormat::NTriples => Ok(srdf::RDFFormat::NTriples),
-        DataFormat::RDFXML => Ok(srdf::RDFFormat::RDFXML),
-        DataFormat::TriG => Ok(srdf::RDFFormat::TriG),
-        DataFormat::N3 => Ok(srdf::RDFFormat::N3),
-        DataFormat::NQuads => Ok(srdf::RDFFormat::NQuads),
     }
 }
 
@@ -1726,8 +1689,24 @@ fn base_convert(base: &Option<IriS>) -> Option<&str> {
 }
 
 fn reader_mode_convert(rm: RDFReaderMode) -> ReaderMode {
-    match rm {
-        RDFReaderMode::Lax => ReaderMode::Lax,
-        RDFReaderMode::Strict => ReaderMode::Strict,
+    rm.into()
+}
+
+fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
+    match f {
+        CliShExFormat::Internal => Ok(CliShaclFormat::Internal),
+        CliShExFormat::ShExC => Err(anyhow!(
+            "Validation using SHACL mode doesn't support ShExC format"
+        )),
+        CliShExFormat::Simple => Err(anyhow!(
+            "Validation using SHACL mode doesn't support {f} format"
+        )),
+        CliShExFormat::ShExJ => bail!("Validation using SHACL mode doesn't support ShExC format"),
+        CliShExFormat::Turtle => Ok(CliShaclFormat::Turtle),
+        CliShExFormat::NTriples => Ok(CliShaclFormat::NTriples),
+        CliShExFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
+        CliShExFormat::TriG => Ok(CliShaclFormat::TriG),
+        CliShExFormat::N3 => Ok(CliShaclFormat::N3),
+        CliShExFormat::NQuads => Ok(CliShaclFormat::NQuads),
     }
 }

@@ -127,14 +127,21 @@ impl Display for ValidationReport {
                 }
             } else {
                 writeln!(f, "{str}")?;
-            }
+            };
+            let shacl_prefixmap = if self.display_with_colors {
+                PrefixMap::basic()
+            } else {
+                PrefixMap::basic()
+                    .with_hyperlink(true)
+                    .without_default_colors()
+            };
             for result in self.results.iter() {
                 writeln!(
                     f,
                     "Focus node {}, Component: {}, severity: {}",
                     show_node(result.focus_node(), &self.nodes_prefixmap),
-                    show_component(result.component()),
-                    show_severity(result.severity())
+                    show_component(result.component(), &shacl_prefixmap),
+                    show_severity(result.severity(), &shacl_prefixmap)
                 )?;
             }
             Ok(())
@@ -144,23 +151,23 @@ impl Display for ValidationReport {
 
 fn show_node(node: &Object, prefixmap: &PrefixMap) -> String {
     match node {
-        Object::Iri(iri_s) => prefixmap.qualify(&iri_s),
+        Object::Iri(iri_s) => prefixmap.qualify(iri_s),
         Object::BlankNode(node) => format!("_:{node}"),
         Object::Literal(literal) => format!("{literal}"),
     }
 }
 
-fn show_component(component: &Object) -> String {
+fn show_component(component: &Object, shacl_prefixmap: &PrefixMap) -> String {
     match component {
-        Object::Iri(iri_s) => iri_s.as_str().to_string(),
+        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
         Object::BlankNode(node) => format!("_:{node}"),
         Object::Literal(literal) => format!("{literal}"),
     }
 }
 
-fn show_severity(severity: &Object) -> String {
+fn show_severity(severity: &Object, shacl_prefixmap: &PrefixMap) -> String {
     match severity {
-        Object::Iri(iri_s) => iri_s.as_str().to_string(),
+        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
         Object::BlankNode(node) => format!("_:{node}"),
         Object::Literal(literal) => format!("{literal}"),
     }

@@ -14,7 +14,7 @@ pub fn select<S: QuerySRDF>(
         Ok(ans) => ans,
         Err(e) => {
             return Err(SPARQLError::Query {
-                query: format!("{query_str}"),
+                query: query_str.to_string(),
                 error: format!("{e}"),
             })
         }
@@ -25,7 +25,7 @@ pub fn select<S: QuerySRDF>(
             Err(e) => {
                 return Err(SPARQLError::Query {
                     error: format!("{e}"),
-                    query: format!("{query_str}"),
+                    query: query_str.to_string(),
                 })
             }
         };
