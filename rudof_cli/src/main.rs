@@ -1309,7 +1309,7 @@ fn run_shapemap(
     let shapemap = rudof.get_shapemap().unwrap();
     match result_format {
         CliShapeMapFormat::Compact => {
-            let str = ShapemapFormatter::default().format_shapemap(&shapemap);
+            let str = ShapemapFormatter::default().format_shapemap(shapemap);
             writeln!(writer, "{str}")?;
             Ok(())
         }
