@@ -94,11 +94,11 @@ impl Rudof {
         if let Some(shex) = &self.shex_schema {
             let mut converter = ShEx2Uml::new(&self.config.shex2uml_config());
             converter
-                .convert(&shex)
+                .convert(shex)
                 .map_err(|e| RudofError::ShEx2PlantUmlError {
                     error: format!("{e}"),
                 })?;
-            converter.as_plantuml(writer, &mode).map_err(|e| {
+            converter.as_plantuml(writer, mode).map_err(|e| {
                 RudofError::ShEx2PlantUmlErrorAsPlantUML {
                     error: format!("{e}"),
                 }
