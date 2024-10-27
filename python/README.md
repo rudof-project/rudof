@@ -6,7 +6,7 @@ After compiling and installing this module, a Python library  called `pyrudof` s
 
 This module is based on [pyo3](https://pyo3.rs/) and [maturin](https://www.maturin.rs/).
 
-To build and install the development version of pyoxigraph you need to clone this git repository, go to the `python` directory (the one this README is in) and run:
+To build and install the development version of `pyrudof` you need to clone this git repository, go to the `python` directory (the one this README is in) and run:
 
 ```
 pip install maturin

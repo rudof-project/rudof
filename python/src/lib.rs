@@ -1,21 +1,23 @@
 use pyo3::prelude::*;
-use pyo3::wrap_pymodule;
 
-use crate::pyconvert::convert;
-use crate::pyshacl::shacl;
-
-mod pyconvert;
-mod pyshacl;
+mod pyrudof_lib;
+use crate::pyrudof_lib::*;
 
 // Rudof Python bindings
 #[pymodule]
-fn pyrudof(module: &Bound<'_, PyModule>) -> PyResult<()> {
-    module.add("__package__", "pyrudof")?;
-    module.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))?;
+pub mod pyrudof {
+    use super::*;
 
-    module.add_wrapped(wrap_pymodule!(shacl))?;
-    module.add_wrapped(wrap_pymodule!(convert))?;
+    #[pymodule_export]
+    use super::{
+        PyRudof, PyRudofConfig, PyRudofError, PyShaclValidationMode, PyShapesGraphSource,
+        PyValidationReport, PyValidationStatus,
+    };
 
-    Ok(())
+    #[pymodule_init]
+    fn pymodule_init(module: &Bound<'_, PyModule>) -> PyResult<()> {
+        module.add("__package__", "rudof")?;
+        module.add("__version__", env!("CARGO_PKG_VERSION"))?;
+        module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))
+    }
 }
