@@ -9,6 +9,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::SRDFBasic;
 use std::fmt::Debug;
 
+/// Validate RDF data using SHACL
 pub trait Validate<S: SRDFBasic> {
     fn validate(
         &self,
