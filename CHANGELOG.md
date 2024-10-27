@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [0.1.36] - 2024-10-27
+
+- Python bindings based on rudof_lib
+
 ## [0.1.35] - 2024-10-25
 
 - More refactoring on main to depend on rudof_lib for SHACL, issue #201

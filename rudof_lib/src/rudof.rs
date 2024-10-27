@@ -6,9 +6,9 @@ use shacl_ast::ast::Schema as ShaclSchema;
 use shacl_ast::ShaclParser;
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
-use shacl_validation::validation_report::report::ValidationReport;
-use shapemap::{query_shape_map::QueryShapeMap, ResultShapeMap};
-use shapemap::{NodeSelector, ShapeMapFormat, ShapeSelector};
+
+use shapemap::query_shape_map::QueryShapeMap;
+use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, UmlGenerationMode};
 use shex_ast::ast::Schema as ShExSchema;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
@@ -23,11 +23,12 @@ use std::{io, result};
 // This structs are re-exported as they may be needed in main
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
+pub use shacl_validation::validation_report::report::ValidationReport;
+pub use shapemap::{ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
 pub use srdf::{RDFFormat, ReaderMode, SRDFSparql};
-
 pub type Result<T> = result::Result<T, RudofError>;
 
 /// This represents the public API to interact with `rudof`
@@ -221,8 +222,8 @@ impl Rudof {
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
     pub fn validate_shacl(
         &mut self,
-        mode: ShaclValidationMode,
-        shapes_graph_source: ShapesGraphSource,
+        mode: &ShaclValidationMode,
+        shapes_graph_source: &ShapesGraphSource,
     ) -> Result<ValidationReport> {
         let (compiled_schema, shacl_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
@@ -246,7 +247,7 @@ impl Rudof {
                 Ok((compiled_schema, ast_schema))
             }
         }?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), mode);
+        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
         let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
@@ -256,6 +257,8 @@ impl Rudof {
         Ok(result)
     }
 
+    /// Validate RDF data using ShEx
+    /// It uses a ShEx validator which is current ShEx schema and the current ShapeMap that should
     pub fn validate_shex(&mut self) -> Result<ResultShapeMap> {
         let schema_str = format!("{:?}", self.shex_validator);
         match self.shex_validator {
@@ -297,7 +300,7 @@ impl Rudof {
     }
 
     /// Parses an RDF graph from a reader and merges it with the current graph
-    pub fn merge_data_from_reader<R: io::Read>(
+    pub fn read_data<R: io::Read>(
         &mut self,
         reader: R,
         format: &RDFFormat,
@@ -334,8 +337,8 @@ impl Rudof {
         };
     }
 
-    /// Update current shapemap from reader
-    pub fn shapemap_from_reader<R: io::Read>(
+    /// Read a shapemap
+    pub fn read_shapemap<R: io::Read>(
         &mut self,
         mut reader: R,
         shapemap_format: &ShapeMapFormat,
@@ -446,7 +449,7 @@ mod tests {
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -458,7 +461,7 @@ mod tests {
             .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
         rudof
-            .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -473,7 +476,7 @@ mod tests {
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -485,7 +488,7 @@ mod tests {
             .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
             .unwrap();
         rudof
-            .shapemap_from_reader(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -513,7 +516,7 @@ mod tests {
              "#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -531,8 +534,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                ShaclValidationMode::Native,
-                crate::ShapesGraphSource::CurrentSchema,
+                &ShaclValidationMode::Native,
+                &crate::ShapesGraphSource::CurrentSchema,
             )
             .unwrap();
         assert!(result.results().is_empty())
@@ -558,7 +561,7 @@ mod tests {
              "#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -576,8 +579,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                ShaclValidationMode::Native,
-                crate::ShapesGraphSource::CurrentSchema,
+                &ShaclValidationMode::Native,
+                &crate::ShapesGraphSource::CurrentSchema,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -602,7 +605,7 @@ mod tests {
              "#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -611,8 +614,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                ShaclValidationMode::Native,
-                crate::ShapesGraphSource::CurrentData,
+                &ShaclValidationMode::Native,
+                &crate::ShapesGraphSource::CurrentData,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -637,7 +640,7 @@ mod tests {
              "#;
         let mut rudof = Rudof::new(&RudofConfig::default());
         rudof
-            .merge_data_from_reader(
+            .read_data(
                 data.as_bytes(),
                 &srdf::RDFFormat::Turtle,
                 None,
@@ -646,8 +649,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                ShaclValidationMode::Native,
-                crate::ShapesGraphSource::CurrentData,
+                &ShaclValidationMode::Native,
+                &crate::ShapesGraphSource::CurrentData,
             )
             .unwrap();
         assert!(result.conforms())

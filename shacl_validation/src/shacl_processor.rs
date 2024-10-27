@@ -17,7 +17,7 @@ use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
-#[derive(ValueEnum, Copy, Clone, Debug, PartialEq)]
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.
 ///
 /// According to the SHACL Recommendation, there exists no concrete method for
@@ -25,6 +25,7 @@ use crate::validation_report::report::ValidationReport;
 /// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
     /// We use a Rust native engine in an imperative manner (performance)
+    #[default]
     Native,
     /// We use a  SPARQL-based engine, which is declarative
     Sparql,

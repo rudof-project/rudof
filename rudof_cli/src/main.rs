@@ -595,7 +595,7 @@ fn run_validate_shex(
         let shapemap_format = shapemap_format_convert(shapemap_format);
         if let Some(shapemap_spec) = shapemap {
             let shapemap_reader = shapemap_spec.open_read(None)?;
-            rudof.shapemap_from_reader(shapemap_reader, &shapemap_format)?;
+            rudof.read_shapemap(shapemap_reader, &shapemap_format)?;
         }
 
         // If individual node/shapes are declared add them to current shape map
@@ -647,9 +647,9 @@ fn run_validate_shacl(
         let reader_mode = reader_mode_convert(*reader_mode);
         let shapes_format = shapes_format.unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
-        rudof.validate_shacl(mode, ShapesGraphSource::current_schema())
+        rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
     } else {
-        rudof.validate_shacl(mode, ShapesGraphSource::current_data())
+        rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
     }?;
 
     writeln!(writer, "Result:\n{}", result)?;
@@ -1129,7 +1129,7 @@ fn get_data_rudof(
             };
             for d in data {
                 let data_reader = d.open_read(Some(&data_format.mime_type()))?;
-                rudof.merge_data_from_reader(data_reader, &rdf_format, base, &reader_mode)?;
+                rudof.read_data(data_reader, &rdf_format, base, &reader_mode)?;
             }
             Ok(())
         }
@@ -1305,7 +1305,7 @@ fn run_shapemap(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(&RudofConfig::new());
     let shapemap_format = shapemap_format_convert(shapemap_format);
-    rudof.shapemap_from_reader(shapemap.open_read(None)?, &shapemap_format)?;
+    rudof.read_shapemap(shapemap.open_read(None)?, &shapemap_format)?;
     let shapemap = rudof.get_shapemap().unwrap();
     match result_format {
         CliShapeMapFormat::Compact => {
