@@ -146,10 +146,15 @@ impl PyRudof {
 
     fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
-        let uml = self.inner.shex2plant_uml(&uml_mode.inner, &mut v);
-        let str = String::from_utf8(v)
+        self.inner
+            .shex2plant_uml(&uml_mode.inner, &mut v)
             .map_err(|e| RudofError::ShEx2PlantUmlError {
                 error: format!("Error generating UML: {e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::ShEx2PlantUmlError {
+                error: format!("ShEx2PlantUML: Error converting generated vector to UML: {e}"),
             })
             .map_err(cnv_err)?;
         Ok(str)
