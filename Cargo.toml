@@ -51,17 +51,17 @@ dctap = { version = "0.1.31", path = "./dctap" }
 prefixmap = { version = "0.1.32", path = "./prefixmap" }
 rbe = { version = "0.1.7", path = "./rbe" }
 rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
-rudof_lib = { version = "0.1.0", path = "./rudof_lib" }
-rudof_cli = { version = "0.1.12", path = "./rudof_cli" }
+rudof_lib = { version = "0.1.35", path = "./rudof_lib" }
+rudof_cli = { version = "0.1.35", path = "./rudof_cli" }
 shex_ast = { version = "0.1.0", path = "./shex_ast" }
 shapemap = { version = "0.1.0", path = "./shapemap" }
-shacl_ast = { version = "0.1.0", path = "./shacl_ast" }
-shacl_validation = { version = "0.1.0", path = "./shacl_validation" }
-shapes_converter = { version = "0.1.6", path = "./shapes_converter" }
+shacl_ast = { version = "0.1.35", path = "./shacl_ast" }
+shacl_validation = { version = "0.1.35", path = "./shacl_validation" }
+shapes_converter = { version = "0.1.33", path = "./shapes_converter" }
 shex_testsuite = { version = "0.1.0", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.0", path = "./shex_validation" }
 shex_compact = { version = "0.1.0", path = "./shex_compact" }
-srdf = { version = "0.1.0", path = "./srdf" }
+srdf = { version = "0.1.35", path = "./srdf" }
 sparql_service = { version = "0.1.15", path = "./sparql_service" }
 
 # [dependencies]

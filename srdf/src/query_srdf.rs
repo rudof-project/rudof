@@ -60,6 +60,7 @@ impl<S: SRDFBasic> VariableSolutionIndex<S> for &VarName {
     }
 }
 
+/// Represents one query solution
 pub struct QuerySolution<S: SRDFBasic> {
     variables: Rc<Vec<VarName>>,
     values: Vec<Option<S::Term>>,
@@ -108,6 +109,7 @@ impl<S: SRDFBasic, V: Into<Rc<Vec<VarName>>>, T: Into<Vec<Option<S::Term>>>> Fro
     }
 }
 
+/// Represent a list of query solutions
 pub struct QuerySolutions<S: SRDFBasic> {
     solutions: Vec<QuerySolution<S>>,
 }
