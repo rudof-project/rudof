@@ -20,15 +20,6 @@ pub fn select<S: QuerySRDF>(
         }
     };
     for solution in query.iter() {
-        /*let solution = match solution {
-            Ok(ans) => ans,
-            Err(e) => {
-                return Err(SPARQLError::Query {
-                    error: format!("{e}"),
-                    query: query_str.to_string(),
-                })
-            }
-        };*/
         if let Some(solution) = solution.find_solution(index) {
             ans.insert(solution.to_owned());
         }
