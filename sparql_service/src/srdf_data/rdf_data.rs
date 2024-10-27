@@ -39,12 +39,20 @@ use std::io;
 use std::rc::Rc;
 use std::str::FromStr;
 
-/// Generic abstraction that represents RDF Data which can be either behind SPARQL endpoints or an in-memory graph
+/// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
+/// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
 #[derive(Clone)]
 pub struct RdfData {
+    /// Current focus node used when parsing
     focus: Option<OxTerm>,
+
+    /// List of SPARQL endpoints
     endpoints: Vec<SRDFSparql>,
+
+    /// In-memory graph
     graph: Option<SRDFGraph>,
+
+    /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
 }
 
@@ -67,6 +75,7 @@ impl RdfData {
         }
     }
 
+    /// Creates an RdfData from an in-memory RDF Graph
     pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
         let store = Store::new()?;
         store.bulk_loader().load_quads(graph.quads())?;
@@ -84,19 +93,17 @@ impl RdfData {
         self.graph = None
     }
 
+    /// Get the in-memory graph
     pub fn graph(&self) -> Option<&SRDFGraph> {
         self.graph.as_ref()
     }
 
-    pub fn first_endpoint(&self) -> Option<&SRDFSparql> {
-        self.endpoints.first()
-    }
-
-    // Cleans the value graph
+    /// Cleans the in-memory graph
     pub fn clean_graph(&mut self) {
         self.graph = None
     }
 
+    /// Merge the in-memory graph with the graph read from a reader
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
         read: R,
@@ -119,6 +126,7 @@ impl RdfData {
         }
     }
 
+    /// Creates an RdfData from an endpoint
     pub fn from_endpoint(endpoint: SRDFSparql) -> RdfData {
         RdfData {
             endpoints: vec![endpoint],
@@ -128,12 +136,13 @@ impl RdfData {
         }
     }
 
-    /// Add a new endpoint to the list of endpoints
+    /// Adds a new endpoint to the list of endpoints
     pub fn add_endpoint(&mut self, endpoint: SRDFSparql) {
         // TODO: Ensure that there are no repeated endpoints
         self.endpoints.push(endpoint);
     }
 
+    /// Gets the PrefixMap from the in-memory graph
     pub fn prefixmap_in_memory(&self) -> PrefixMap {
         self.graph
             .as_ref()
