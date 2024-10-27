@@ -524,7 +524,7 @@ fn show_schema_rudof(
     mut writer: Box<dyn Write>,
     color: ColorSupport,
 ) -> Result<()> {
-    if let Some(schema) = rudof.shex_schema() {
+    if let Some(schema) = rudof.get_shex() {
         match result_schema_format {
             CliShExFormat::Internal => {
                 writeln!(writer, "{:?}", schema)?;
@@ -838,7 +838,7 @@ fn run_shex2uml(
     let mut rudof = Rudof::new(config);
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
-    if let Some(schema) = rudof.shex_schema() {
+    if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
         generate_uml_output(converter, maybe_shape, &mut writer, result_format)?;
@@ -898,7 +898,7 @@ fn run_shex2html<P: AsRef<Path>>(
     let mut rudof = Rudof::new(config);
 
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
-    if let Some(schema) = rudof.shex_schema() {
+    if let Some(schema) = rudof.get_shex() {
         let shex2html_config = config.shex2html_config();
         let config = shex2html_config
             .clone()
@@ -970,7 +970,7 @@ fn run_shex2sparql(
     }?;
     let mut rudof = Rudof::new(config);
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
-    if let Some(schema) = rudof.shex_schema() {
+    if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -1187,7 +1187,7 @@ fn run_node(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let data = rudof.rdf_data();
+    let data = rudof.get_rdf_data();
     let node_selector = parse_node_selector(node_str)?;
     show_node_info(
         node_selector,
@@ -1359,7 +1359,7 @@ fn run_data(
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
     rudof
-        .rdf_data()
+        .get_rdf_data()
         .serialize(RDFFormat::from(*result_format), &mut writer)?;
     Ok(())
 }
