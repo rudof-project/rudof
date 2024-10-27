@@ -115,4 +115,7 @@ pub enum RudofError {
 
     #[error("ShEx2PlantUML Error when generating PlantUML: {error}")]
     ShEx2PlantUmlErrorAsPlantUML { error: String },
+
+    #[error("Reading ShEx Schema from path: {path}: {error}")]
+    ReadingShExPath { path: String, error: String },
 }

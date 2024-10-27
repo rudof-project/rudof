@@ -20,8 +20,8 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 rudof.read_data_str("""
 prefix : <http://example.org/>
 
-:ok :p "alice" .                 
-:ko :p 1 .
+:ok :name "alice" .                 
+:ko :name 1 .
 """)
 
 result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())

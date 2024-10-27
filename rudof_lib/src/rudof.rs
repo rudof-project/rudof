@@ -2,15 +2,12 @@ use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use dctap::DCTap;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::ast::Schema as ShaclSchema;
 use shacl_ast::ShaclParser;
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 
-use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::{NodeSelector, ShapeSelector};
-use shapes_converter::{ShEx2Uml, UmlGenerationMode};
-use shex_ast::ast::Schema as ShExSchema;
+use shapes_converter::ShEx2Uml;
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
@@ -24,12 +21,15 @@ use std::{io, result};
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
-pub use shapemap::{ResultShapeMap, ShapeMapFormat, ValidationStatus};
+pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
 pub use srdf::{RDFFormat, ReaderMode, SRDFSparql};
 pub type Result<T> = result::Result<T, RudofError>;
+pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shapes_converter::UmlGenerationMode;
+pub use shex_ast::Schema as ShExSchema;
 
 /// This represents the public API to interact with `rudof`
 pub struct Rudof {
@@ -55,6 +55,10 @@ impl Rudof {
             shapemap: None,
             dctap: None,
         }
+    }
+
+    pub fn reset_data(&mut self) {
+        self.rdf_data = RdfData::new()
     }
 
     /// Get the shapes graph schema from the current RDF data
@@ -109,7 +113,7 @@ impl Rudof {
         }
     }
 
-    /// Resets the current validator
+    /// Resets the current ShEx validation results
     /// The action is necessary to start a fresh validation
     pub fn reset_validation_results(&mut self) {
         // TODO: We could add another operation to reset only the current validation results keeping the compiled schema
@@ -371,6 +375,10 @@ impl Rudof {
         Ok(())
     }
 
+    pub fn reset_shapemap(&mut self) {
+        self.shapemap = None
+    }
+
     /// Returns the RDF data prefixmap
     pub fn nodes_prefixmap(&self) -> PrefixMap {
         self.rdf_data.prefixmap_in_memory()
@@ -385,13 +393,8 @@ impl Rudof {
             .map(|validator| validator.shapes_prefixmap())
     }
 
-    /// Get current ShEx schema
-    pub fn shex_schema(&self) -> Option<&ShExSchema> {
-        self.shex_schema.as_ref()
-    }
-
     /// Get current RDF Data
-    pub fn rdf_data(&self) -> &RdfData {
+    pub fn get_rdf_data(&self) -> &RdfData {
         &self.rdf_data
     }
 

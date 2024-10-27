@@ -1,9 +1,12 @@
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
+use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
+
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShaclValidationMode,
-    ShapesGraphSource, ValidationReport, ValidationStatus,
+    QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat,
+    ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapesGraphSource,
+    UmlGenerationMode, ValidationReport, ValidationStatus,
 };
 
 #[pyclass(unsendable, frozen, name = "RudofConfig")]
@@ -19,6 +22,15 @@ impl PyRudofConfig {
             Ok(Self {
                 inner: RudofConfig::default(),
             })
+        })
+    }
+
+    #[staticmethod]
+    fn from_path(path: &str) -> PyResult<Self> {
+        let path = Path::new(path);
+        let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
+        Ok(PyRudofConfig {
+            inner: rudof_config,
         })
     }
 }
@@ -37,13 +49,63 @@ impl PyRudof {
         })
     }
 
+    /// Reset data
+    fn reset_data(&mut self) {
+        self.inner.reset_data();
+    }
+
+    fn reset_shex(&mut self) {
+        self.inner.reset_shex();
+    }
+
+    fn reset_shapemap(&mut self) {
+        self.inner.reset_shapemap();
+    }
+
+    fn get_shex(&self) -> Option<PyShExSchema> {
+        let shex_schema = self.inner.get_shex();
+        shex_schema.map(|s| PyShExSchema { inner: s.clone() })
+    }
+
+    fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
+        let shapemap = self.inner.get_shapemap();
+        shapemap.map(|s| PyQueryShapeMap { inner: s.clone() })
+    }
+
+    fn get_shacl(&self) -> Option<PyShaclSchema> {
+        let shacl_schema = self.inner.get_shacl();
+        shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
+    }
+
+    /// Reads a ShEx schema from a string
     fn read_shex_str(&mut self, input: &str) -> PyResult<()> {
         self.inner.reset_shex();
         self.inner
             .read_shex(input.as_bytes(), None, &rudof_lib::ShExFormat::ShExC)
             .map_err(cnv_err)?;
-        println!("ShEx loaded successfully");
         Ok(())
+    }
+
+    /// Reads a ShEx schema from a path
+    fn read_shex_path(&mut self, path_name: &str) -> PyResult<()> {
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingShExPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let reader = BufReader::new(file);
+        self.inner.reset_shex();
+        self.inner
+            .read_shex(reader, None, &rudof_lib::ShExFormat::ShExC)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Resets the current ShEx validation results
+    fn reset_validation_results(&mut self) {
+        self.inner.reset_validation_results();
     }
 
     fn read_data_str(&mut self, input: &str) -> PyResult<()> {
@@ -80,6 +142,58 @@ impl PyRudof {
             .validate_shacl(&mode.inner, &shapes_graph_source.inner)
             .map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
+    }
+
+    fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
+        let mut v = Vec::new();
+        let uml = self.inner.shex2plant_uml(&uml_mode.inner, &mut v);
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::ShEx2PlantUmlError {
+                error: format!("Error generating UML: {e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+}
+
+#[pyclass(name = "PyUmlGenerationMode")]
+pub struct PyUmlGenerationMode {
+    inner: UmlGenerationMode,
+}
+
+#[pyclass(name = "ShExSchema")]
+pub struct PyShExSchema {
+    inner: ShExSchema,
+}
+
+impl PyShExSchema {
+    pub fn serialize(&self, _format: &ShExFormat) -> String {
+        let result = &self.inner;
+        format!("{result:?}")
+    }
+}
+
+#[pyclass(name = "PyQueryShapeMap")]
+pub struct PyQueryShapeMap {
+    inner: QueryShapeMap,
+}
+
+impl PyQueryShapeMap {
+    pub fn serialize(&self, _format: &ShExFormat) -> String {
+        let result = &self.inner;
+        format!("{result:?}")
+    }
+}
+
+#[pyclass(name = "ShaclSchema")]
+pub struct PyShaclSchema {
+    inner: ShaclSchema,
+}
+
+impl PyShaclSchema {
+    pub fn serialize(&self, _format: &ShaclFormat) -> String {
+        let result = &self.inner;
+        format!("{result:?}")
     }
 }
 
