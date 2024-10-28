@@ -4,12 +4,13 @@ use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat,
-    ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat,
-    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
+    DCTAPFormat, QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError,
+    ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode,
+    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
+    ValidationStatus, DCTAP,
 };
 
-#[pyclass(unsendable, frozen, name = "RudofConfig")]
+#[pyclass(frozen, name = "RudofConfig")]
 pub struct PyRudofConfig {
     inner: RudofConfig,
 }
@@ -17,7 +18,7 @@ pub struct PyRudofConfig {
 #[pymethods]
 impl PyRudofConfig {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
+    pub fn __init__(py: Python<'_>) -> PyResult<Self> {
         py.allow_threads(|| {
             Ok(Self {
                 inner: RudofConfig::default(),
@@ -26,7 +27,7 @@ impl PyRudofConfig {
     }
 
     #[staticmethod]
-    fn from_path(path: &str) -> PyResult<Self> {
+    pub fn from_path(path: &str) -> PyResult<Self> {
         let path = Path::new(path);
         let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
         Ok(PyRudofConfig {
@@ -43,51 +44,82 @@ pub struct PyRudof {
 #[pymethods]
 impl PyRudof {
     #[new]
-    fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
+    pub fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
         Ok(Self {
             inner: Rudof::new(&config.inner),
         })
     }
 
     /// Reset data
-    fn reset_data(&mut self) {
+    pub fn reset_data(&mut self) {
         self.inner.reset_data();
     }
 
-    fn reset_shex(&mut self) {
+    pub fn reset_shex(&mut self) {
         self.inner.reset_shex();
     }
 
-    fn reset_shapemap(&mut self) {
+    pub fn reset_shapemap(&mut self) {
         self.inner.reset_shapemap();
     }
 
-    fn get_shex(&self) -> Option<PyShExSchema> {
+    pub fn get_dctap(&self) -> Option<PyDCTAP> {
+        let dctap = self.inner.get_dctap();
+        dctap.map(|s| PyDCTAP { _inner: s.clone() })
+    }
+
+    pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
         shex_schema.map(|s| PyShExSchema { _inner: s.clone() })
     }
 
-    fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
+    pub fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
         let shapemap = self.inner.get_shapemap();
         shapemap.map(|s| PyQueryShapeMap { inner: s.clone() })
     }
 
-    fn get_shacl(&self) -> Option<PyShaclSchema> {
+    pub fn get_shacl(&self) -> Option<PyShaclSchema> {
         let shacl_schema = self.inner.get_shacl();
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
     }
 
+    /// Reads DCTAP from a string
+    pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
+        self.inner.reset_dctap();
+        self.inner
+            .read_dctap(input.as_bytes(), &format.inner)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Reads DCTAP from a path
+    pub fn read_dctap_path(&mut self, format: &PyDCTapFormat, path_name: &str) -> PyResult<()> {
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingDCTAPPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let reader = BufReader::new(file);
+        self.inner.reset_dctap();
+        self.inner
+            .read_dctap(reader, &format.inner)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
     /// Reads a ShEx schema from a string
-    fn read_shex_str(&mut self, input: &str) -> PyResult<()> {
+    pub fn read_shex_str(&mut self, format: &PyShExFormat, input: &str) -> PyResult<()> {
         self.inner.reset_shex();
         self.inner
-            .read_shex(input.as_bytes(), None, &rudof_lib::ShExFormat::ShExC)
+            .read_shex(input.as_bytes(), None, &format.inner)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads a ShEx schema from a path
-    fn read_shex_path(&mut self, path_name: &str) -> PyResult<()> {
+    pub fn read_shex_path(&mut self, format: &PyShExFormat, path_name: &str) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
             .map_err(|e| RudofError::ReadingShExPath {
@@ -98,17 +130,17 @@ impl PyRudof {
         let reader = BufReader::new(file);
         self.inner.reset_shex();
         self.inner
-            .read_shex(reader, None, &rudof_lib::ShExFormat::ShExC)
+            .read_shex(reader, None, &format.inner)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Resets the current ShEx validation results
-    fn reset_validation_results(&mut self) {
+    pub fn reset_validation_results(&mut self) {
         self.inner.reset_validation_results();
     }
 
-    fn read_data_str(&mut self, input: &str) -> PyResult<()> {
+    pub fn read_data_str(&mut self, input: &str) -> PyResult<()> {
         self.inner
             .read_data(
                 input.as_bytes(),
@@ -120,19 +152,19 @@ impl PyRudof {
         Ok(())
     }
 
-    fn read_shapemap_str(&mut self, input: &str) -> PyResult<()> {
+    pub fn read_shapemap_str(&mut self, input: &str) -> PyResult<()> {
         self.inner
             .read_shapemap(input.as_bytes(), &rudof_lib::ShapeMapFormat::Compact)
             .map_err(cnv_err)?;
         Ok(())
     }
 
-    fn validate_shex(&mut self) -> PyResult<PyResultShapeMap> {
+    pub fn validate_shex(&mut self) -> PyResult<PyResultShapeMap> {
         let result = self.inner.validate_shex().map_err(cnv_err)?;
         Ok(PyResultShapeMap { inner: result })
     }
 
-    fn validate_shacl(
+    pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
         shapes_graph_source: &PyShapesGraphSource,
@@ -144,7 +176,11 @@ impl PyRudof {
         Ok(PyValidationReport { inner: result })
     }
 
-    fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
+    pub fn dctap2shex(&mut self) -> PyResult<()> {
+        self.inner.dctap2shex().map_err(cnv_err)
+    }
+
+    pub fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
             .shex2plant_uml(&uml_mode.inner, &mut v)
@@ -161,7 +197,7 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx
-    fn serialize_shex(
+    pub fn serialize_shex(
         &self,
         format: &PyShExFormat,
         formatter: &PyShExFormatter,
@@ -182,7 +218,7 @@ impl PyRudof {
     }
 
     /// Serialize the current SHACL
-    fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
+    pub fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
             .serialize_shacl(&format.inner, &mut v)
@@ -199,7 +235,7 @@ impl PyRudof {
     }
 
     /// Serialize the current Query Shape Map
-    fn serialize_shapemap(
+    pub fn serialize_shapemap(
         &self,
         format: &PyShapeMapFormat,
         formatter: &PyShapeMapFormatter,
@@ -220,6 +256,45 @@ impl PyRudof {
     }
 }
 
+#[pyclass(frozen, name = "DCTAPFormat")]
+pub struct PyDCTapFormat {
+    inner: DCTAPFormat,
+}
+
+#[pymethods]
+impl PyDCTapFormat {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: DCTAPFormat::default(),
+        })
+    }
+
+    /// Returns `CSV` format
+    #[staticmethod]
+    pub fn csv() -> Self {
+        Self {
+            inner: DCTAPFormat::CSV,
+        }
+    }
+
+    /// Returns `XLSX` format
+    #[staticmethod]
+    pub fn xlsx() -> Self {
+        Self {
+            inner: DCTAPFormat::XLSX,
+        }
+    }
+
+    /// Returns `XLS` format
+    #[staticmethod]
+    pub fn xls() -> Self {
+        Self {
+            inner: DCTAPFormat::XLS,
+        }
+    }
+}
+
 #[pyclass(frozen, name = "ShapeMapFormat")]
 pub struct PyShapeMapFormat {
     inner: ShapeMapFormat,
@@ -228,7 +303,7 @@ pub struct PyShapeMapFormat {
 #[pymethods]
 impl PyShapeMapFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShapeMapFormat::default(),
         })
@@ -236,7 +311,7 @@ impl PyShapeMapFormat {
 
     /// Returns `Compact` format
     #[staticmethod]
-    fn compact() -> Self {
+    pub fn compact() -> Self {
         Self {
             inner: ShapeMapFormat::Compact,
         }
@@ -244,7 +319,7 @@ impl PyShapeMapFormat {
 
     /// Returns `JSON` format
     #[staticmethod]
-    fn json() -> Self {
+    pub fn json() -> Self {
         Self {
             inner: ShapeMapFormat::JSON,
         }
@@ -259,7 +334,7 @@ pub struct PyShExFormat {
 #[pymethods]
 impl PyShExFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShExFormat::default(),
         })
@@ -267,7 +342,7 @@ impl PyShExFormat {
 
     /// Returns `Turtle` format
     #[staticmethod]
-    fn turtle() -> Self {
+    pub fn turtle() -> Self {
         Self {
             inner: ShExFormat::Turtle,
         }
@@ -275,7 +350,7 @@ impl PyShExFormat {
 
     /// Returns `ShExC` format
     #[staticmethod]
-    fn shexc() -> Self {
+    pub fn shexc() -> Self {
         Self {
             inner: ShExFormat::ShExC,
         }
@@ -283,7 +358,7 @@ impl PyShExFormat {
 
     /// Returns `ShExJ` format
     #[staticmethod]
-    fn shexj() -> Self {
+    pub fn shexj() -> Self {
         Self {
             inner: ShExFormat::ShExJ,
         }
@@ -298,7 +373,7 @@ pub struct PyShaclFormat {
 #[pymethods]
 impl PyShaclFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShaclFormat::default(),
         })
@@ -306,7 +381,7 @@ impl PyShaclFormat {
 
     /// Returns `Turtle` format
     #[staticmethod]
-    fn turtle() -> Self {
+    pub fn turtle() -> Self {
         Self {
             inner: ShaclFormat::Turtle,
         }
@@ -314,7 +389,7 @@ impl PyShaclFormat {
 
     /// Returns `N-Triples` format
     #[staticmethod]
-    fn ntriples() -> Self {
+    pub fn ntriples() -> Self {
         Self {
             inner: ShaclFormat::NTriples,
         }
@@ -322,7 +397,7 @@ impl PyShaclFormat {
 
     /// Returns `RDFXML` format
     #[staticmethod]
-    fn rdfxml() -> Self {
+    pub fn rdfxml() -> Self {
         Self {
             inner: ShaclFormat::RDFXML,
         }
@@ -339,7 +414,7 @@ pub struct PyShExFormatter {
 #[pymethods]
 impl PyShExFormatter {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShExFormatter::default(),
         })
@@ -347,7 +422,7 @@ impl PyShExFormatter {
 
     /// Returns a ShExFormatter that doesn't print terminal colors
     #[staticmethod]
-    fn without_colors() -> Self {
+    pub fn without_colors() -> Self {
         Self {
             inner: ShExFormatter::default().without_colors(),
         }
@@ -362,7 +437,7 @@ pub struct PyShapeMapFormatter {
 #[pymethods]
 impl PyShapeMapFormatter {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShapeMapFormatter::default(),
         })
@@ -370,14 +445,14 @@ impl PyShapeMapFormatter {
 
     /// Returns a Shapemap formatter that doesn't print terminal colors
     #[staticmethod]
-    fn without_colors() -> Self {
+    pub fn without_colors() -> Self {
         Self {
             inner: ShapeMapFormatter::default().without_colors(),
         }
     }
 }
 
-#[pyclass(frozen, name = "PyUmlGenerationMode")]
+#[pyclass(frozen, name = "UmlGenerationMode")]
 pub struct PyUmlGenerationMode {
     inner: UmlGenerationMode,
 }
@@ -385,21 +460,21 @@ pub struct PyUmlGenerationMode {
 #[pymethods]
 impl PyUmlGenerationMode {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: UmlGenerationMode::all(),
         })
     }
 
     #[staticmethod]
-    fn all() -> Self {
+    pub fn all() -> Self {
         Self {
             inner: UmlGenerationMode::all(),
         }
     }
 
     #[staticmethod]
-    fn neighs(node: &str) -> Self {
+    pub fn neighs(node: &str) -> Self {
         Self {
             inner: UmlGenerationMode::neighs(node),
         }
@@ -413,7 +488,14 @@ pub struct PyShExSchema {
 
 impl PyShExSchema {}
 
-#[pyclass(name = "PyQueryShapeMap")]
+#[pyclass(name = "DCTAP")]
+pub struct PyDCTAP {
+    _inner: DCTAP,
+}
+
+impl PyDCTAP {}
+
+#[pyclass(name = "QueryShapeMap")]
 pub struct PyQueryShapeMap {
     inner: QueryShapeMap,
 }
@@ -445,7 +527,7 @@ pub struct PyShaclValidationMode {
 #[pymethods]
 impl PyShaclValidationMode {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShaclValidationMode::default(),
         })
@@ -460,7 +542,7 @@ pub struct PyShapesGraphSource {
 #[pymethods]
 impl PyShapesGraphSource {
     #[new]
-    fn __init__(py: Python<'_>) -> Self {
+    pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
             inner: ShapesGraphSource::default(),
         })

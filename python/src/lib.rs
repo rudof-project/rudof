@@ -10,9 +10,10 @@ pub mod pyrudof {
 
     #[pymodule_export]
     use super::{
-        PyRudof, PyRudofConfig, PyRudofError, PyShExFormat, PyShExFormatter, PyShaclFormat,
-        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource,
-        PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
+        PyDCTAP, PyDCTapFormat, PyRudof, PyRudofConfig, PyRudofError, PyShExFormat,
+        PyShExFormatter, PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat,
+        PyShapeMapFormatter, PyShapesGraphSource, PyUmlGenerationMode, PyValidationReport,
+        PyValidationStatus,
     };
 
     #[pymodule_init]
