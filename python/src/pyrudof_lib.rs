@@ -220,7 +220,7 @@ impl PyRudof {
     }
 }
 
-#[pyclass(name = "ShapeMapFormat")]
+#[pyclass(frozen, name = "ShapeMapFormat")]
 pub struct PyShapeMapFormat {
     inner: ShapeMapFormat,
 }
@@ -228,32 +228,30 @@ pub struct PyShapeMapFormat {
 #[pymethods]
 impl PyShapeMapFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShapeMapFormat::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShapeMapFormat::default(),
         })
     }
 
-    /// Returns `Turtle` format
+    /// Returns `Compact` format
     #[staticmethod]
-    fn compact() -> PyResult<Self> {
-        Ok(Self {
+    fn compact() -> Self {
+        Self {
             inner: ShapeMapFormat::Compact,
-        })
+        }
     }
 
-    /// Returns `ShExC` format
+    /// Returns `JSON` format
     #[staticmethod]
-    fn json() -> PyResult<Self> {
-        Ok(Self {
+    fn json() -> Self {
+        Self {
             inner: ShapeMapFormat::JSON,
-        })
+        }
     }
 }
 
-#[pyclass(name = "ShExFormat")]
+#[pyclass(frozen, name = "ShExFormat")]
 pub struct PyShExFormat {
     inner: ShExFormat,
 }
@@ -261,40 +259,38 @@ pub struct PyShExFormat {
 #[pymethods]
 impl PyShExFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShExFormat::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShExFormat::default(),
         })
     }
 
     /// Returns `Turtle` format
     #[staticmethod]
-    fn turtle() -> PyResult<Self> {
-        Ok(Self {
+    fn turtle() -> Self {
+        Self {
             inner: ShExFormat::Turtle,
-        })
+        }
     }
 
     /// Returns `ShExC` format
     #[staticmethod]
-    fn shexc() -> PyResult<Self> {
-        Ok(Self {
+    fn shexc() -> Self {
+        Self {
             inner: ShExFormat::ShExC,
-        })
+        }
     }
 
     /// Returns `ShExJ` format
     #[staticmethod]
-    fn shexj() -> PyResult<Self> {
-        Ok(Self {
+    fn shexj() -> Self {
+        Self {
             inner: ShExFormat::ShExJ,
-        })
+        }
     }
 }
 
-#[pyclass(name = "ShaclFormat")]
+#[pyclass(frozen, name = "ShaclFormat")]
 pub struct PyShaclFormat {
     inner: ShaclFormat,
 }
@@ -302,42 +298,40 @@ pub struct PyShaclFormat {
 #[pymethods]
 impl PyShaclFormat {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShaclFormat::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShaclFormat::default(),
         })
     }
 
     /// Returns `Turtle` format
     #[staticmethod]
-    fn turtle() -> PyResult<Self> {
-        Ok(Self {
+    fn turtle() -> Self {
+        Self {
             inner: ShaclFormat::Turtle,
-        })
+        }
     }
 
     /// Returns `N-Triples` format
     #[staticmethod]
-    fn ntriples() -> PyResult<Self> {
-        Ok(Self {
+    fn ntriples() -> Self {
+        Self {
             inner: ShaclFormat::NTriples,
-        })
+        }
     }
 
     /// Returns `RDFXML` format
     #[staticmethod]
-    fn rdfxml() -> PyResult<Self> {
-        Ok(Self {
+    fn rdfxml() -> Self {
+        Self {
             inner: ShaclFormat::RDFXML,
-        })
+        }
     }
 
     // TODO...add more constructors...
 }
 
-#[pyclass(name = "ShExFormatter")]
+#[pyclass(frozen, name = "ShExFormatter")]
 pub struct PyShExFormatter {
     inner: ShExFormatter,
 }
@@ -345,24 +339,22 @@ pub struct PyShExFormatter {
 #[pymethods]
 impl PyShExFormatter {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShExFormatter::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShExFormatter::default(),
         })
     }
 
     /// Returns a ShExFormatter that doesn't print terminal colors
     #[staticmethod]
-    fn without_colors() -> PyResult<Self> {
-        Ok(Self {
+    fn without_colors() -> Self {
+        Self {
             inner: ShExFormatter::default().without_colors(),
-        })
+        }
     }
 }
 
-#[pyclass(name = "ShapeMapFormatter")]
+#[pyclass(frozen, name = "ShapeMapFormatter")]
 pub struct PyShapeMapFormatter {
     inner: ShapeMapFormatter,
 }
@@ -370,26 +362,48 @@ pub struct PyShapeMapFormatter {
 #[pymethods]
 impl PyShapeMapFormatter {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShapeMapFormatter::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShapeMapFormatter::default(),
         })
     }
 
     /// Returns a Shapemap formatter that doesn't print terminal colors
     #[staticmethod]
-    fn without_colors() -> PyResult<Self> {
-        Ok(Self {
+    fn without_colors() -> Self {
+        Self {
             inner: ShapeMapFormatter::default().without_colors(),
-        })
+        }
     }
 }
 
-#[pyclass(name = "PyUmlGenerationMode")]
+#[pyclass(frozen, name = "PyUmlGenerationMode")]
 pub struct PyUmlGenerationMode {
     inner: UmlGenerationMode,
+}
+
+#[pymethods]
+impl PyUmlGenerationMode {
+    #[new]
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: UmlGenerationMode::default(),
+        })
+    }
+
+    #[staticmethod]
+    fn all() -> Self {
+        Self {
+            inner: UmlGenerationMode::all(),
+        }
+    }
+
+    #[staticmethod]
+    fn neighs(node: &str) -> Self {
+        Self {
+            inner: UmlGenerationMode::neighs(node),
+        }
+    }
 }
 
 #[pyclass(name = "ShExSchema")]
@@ -431,11 +445,9 @@ pub struct PyShaclValidationMode {
 #[pymethods]
 impl PyShaclValidationMode {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShaclValidationMode::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShaclValidationMode::default(),
         })
     }
 }
@@ -448,11 +460,9 @@ pub struct PyShapesGraphSource {
 #[pymethods]
 impl PyShapesGraphSource {
     #[new]
-    fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
-            Ok(Self {
-                inner: ShapesGraphSource::default(),
-            })
+    fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ShapesGraphSource::default(),
         })
     }
 }
