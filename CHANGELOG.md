@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [0.1.40] - 2024-10-28
+
+- Added more features to the rudof_lib like the serialization of ShEx, SHACL and Shapemaps which is also mirrored in the Python bindings.
+- Added shex2uml python bindings
+
 ## [0.1.37] - 2024-10-28
 
 - Added more features to the rudof_lib like the serialization of ShEx, SHACL and Shapemaps which is also mirrored in the Python bindings
