@@ -387,7 +387,7 @@ impl PyUmlGenerationMode {
     #[new]
     fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| Self {
-            inner: UmlGenerationMode::default(),
+            inner: UmlGenerationMode::all(),
         })
     }
 
