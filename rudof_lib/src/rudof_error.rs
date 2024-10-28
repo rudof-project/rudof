@@ -157,4 +157,26 @@ pub enum RudofError {
 
     #[error("Serializing ShEx: {error}")]
     SerializingShacl { error: String },
+
+    #[error("DCTAP reader from path {path} in CSV format: {error}")]
+    DCTAPReaderCSV { error: String, path: String },
+
+    #[error("DCTAP reader from path {path}: {error}")]
+    ReadingDCTAPPath { error: String, path: String },
+
+    #[error("DCTAP reader in CSV format: {error}")]
+    DCTAPReaderCSVReader { error: String },
+
+    #[error("DCTAP reader from path {path} in CSV format: {error}")]
+    DCTAPReaderPathXLS {
+        error: String,
+        path: String,
+        format: String,
+    },
+
+    #[error("Reading DCTAP from XLS format requires a Path, use read_dctap_path")]
+    DCTAPReadXLSNoPath,
+
+    #[error("Error converting DCTAP to ShEx")]
+    DCTap2ShEx { error: String },
 }

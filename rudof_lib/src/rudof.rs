@@ -1,5 +1,4 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
-use dctap::DCTap;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::{ShaclParser, ShaclWriter};
@@ -7,17 +6,19 @@ use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 
 use shapemap::{NodeSelector, ShapeSelector};
-use shapes_converter::ShEx2Uml;
+use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
+use std::path::Path;
 use std::str::FromStr;
 use std::{io, result};
 
 // This structs are re-exported as they may be needed in main
+pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
@@ -40,7 +41,7 @@ pub struct Rudof {
     resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
-    dctap: Option<DCTap>,
+    dctap: Option<DCTAP>,
 }
 
 impl Rudof {
@@ -61,6 +62,10 @@ impl Rudof {
         self.rdf_data = RdfData::new()
     }
 
+    pub fn reset_dctap(&mut self) {
+        self.dctap = None
+    }
+
     /// Get the shapes graph schema from the current RDF data
     pub fn get_shacl_from_data(&mut self) -> Result<()> {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;
@@ -79,13 +84,30 @@ impl Rudof {
     }
 
     /// Get the current DCTAP
-    pub fn get_dctap(&self) -> Option<&DCTap> {
+    pub fn get_dctap(&self) -> Option<&DCTAP> {
         self.dctap.as_ref()
     }
 
     /// Get the current shapemap
     pub fn get_shapemap(&self) -> Option<&QueryShapeMap> {
         self.shapemap.as_ref()
+    }
+
+    /// Converts the current DCTAP to a ShExSchema
+    /// Stores the value of the ShExSchema in the current shex
+    pub fn dctap2shex(&mut self) -> Result<()> {
+        if let Some(dctap) = self.get_dctap() {
+            let converter = Tap2ShEx::new(&self.config.tap2shex_config());
+            let shex = converter
+                .convert(dctap)
+                .map_err(|e| RudofError::DCTap2ShEx {
+                    error: format!("{e}"),
+                })?;
+            self.shex_schema = Some(shex);
+            Ok(())
+        } else {
+            Err(RudofError::NoDCTAP)
+        }
     }
 
     /// Generate a UML Class-like representation of a ShEx schema according to PlantUML syntax
@@ -260,6 +282,56 @@ impl Rudof {
             })?;
         let schema = shacl_schema_from_data(rdf_graph)?;
         self.shacl_schema = Some(schema);
+        Ok(())
+    }
+
+    /// Reads a `DCTAP` and replaces the current one
+    /// - `format` indicates the DCTAP format
+    pub fn read_dctap<R: std::io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {
+        let dctap = match format {
+            DCTAPFormat::CSV => {
+                let dctap = DCTAP::from_reader(reader, &self.config.tap_config()).map_err(|e| {
+                    RudofError::DCTAPReaderCSVReader {
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(dctap)
+            }
+            DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+                Err(RudofError::DCTAPReadXLSNoPath)
+            }
+        }?;
+        self.dctap = Some(dctap);
+        Ok(())
+    }
+
+    /// Reads a `DCTAP` and replaces the current one
+    /// - `format` indicates the DCTAP format
+    pub fn read_dctap_path<P: AsRef<Path>>(&mut self, path: P, format: &DCTAPFormat) -> Result<()> {
+        let path_name = path.as_ref().display().to_string();
+        let dctap =
+            match format {
+                DCTAPFormat::CSV => {
+                    let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| {
+                        RudofError::DCTAPReaderCSV {
+                            path: path_name,
+                            error: format!("{e}"),
+                        }
+                    })?;
+                    Ok(dctap)
+                }
+                DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+                    let path_buf = path.as_ref().to_path_buf();
+                    let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config())
+                        .map_err(|e| RudofError::DCTAPReaderPathXLS {
+                            path: path_name,
+                            error: format!("{e}"),
+                            format: format!("{format:?}"),
+                        })?;
+                    Ok(dctap)
+                }
+            }?;
+        self.dctap = Some(dctap);
         Ok(())
     }
 

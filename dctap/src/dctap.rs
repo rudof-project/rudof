@@ -6,7 +6,7 @@ use tracing::{debug, info};
 #[derive(Debug, Serialize, Deserialize)]
 struct TapShapeId(String);
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct DCTap {
     version: String,
 

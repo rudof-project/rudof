@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+# [v0.1.42] - 2024-10-28
+
+Minor release to add DCTAP for pyrudof
+
 ## [0.1.40] - 2024-10-28
 
 - Added more features to the rudof_lib like the serialization of ShEx, SHACL and Shapemaps which is also mirrored in the Python bindings.

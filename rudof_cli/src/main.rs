@@ -21,7 +21,7 @@ use cli::{
     OutputConvertMode, RDFReaderMode, ResultQueryFormat, ResultServiceFormat, ShowNodeMode,
     ValidationMode,
 };
-use dctap::{DCTap, DCTapConfig, TapConfig};
+use dctap::DCTAPFormat;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_lib::{
@@ -340,14 +340,18 @@ fn main() -> Result<()> {
             config,
             output,
             force_overwrite,
-        }) => run_dctap(
-            file,
-            format,
-            result_format,
-            output,
-            config,
-            *force_overwrite,
-        ),
+        }) => {
+            let config = get_config(config)?;
+            run_dctap(
+                file,
+                format,
+                result_format,
+                output,
+                &config,
+                *force_overwrite,
+            )?;
+            Ok(())
+        }
         Some(Command::Convert {
             file,
             format,
@@ -651,27 +655,27 @@ fn run_dctap(
     format: &DCTapFormat,
     result_format: &DCTapResultFormat,
     output: &Option<PathBuf>,
-    config: &Option<PathBuf>,
+    config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let dctap_config = match config {
-        Some(config_path) => DCTapConfig::from_path(config_path),
-        None => Ok(DCTapConfig::default()),
-    }?;
-    let tap_config = dctap_config.dctap.unwrap_or_default();
-    let dctap = parse_dctap(input, format, &tap_config)?;
-    match result_format {
-        DCTapResultFormat::Internal => {
-            writeln!(writer, "{dctap}")?;
-            Ok(())
+    let mut rudof = Rudof::new(config);
+    parse_dctap(&mut rudof, input, format)?;
+    if let Some(dctap) = rudof.get_dctap() {
+        match result_format {
+            DCTapResultFormat::Internal => {
+                writeln!(writer, "{dctap}")?;
+                Ok(())
+            }
+            DCTapResultFormat::JSON => {
+                let str = serde_json::to_string_pretty(&dctap)
+                    .context("Error converting DCTap to JSON: {dctap}")?;
+                writeln!(writer, "{str}")?;
+                Ok(())
+            }
         }
-        DCTapResultFormat::JSON => {
-            let str = serde_json::to_string_pretty(&dctap)
-                .context("Error converting DCTap to JSON: {dctap}")?;
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
+    } else {
+        bail!("Internal error: No DCTAP read")
     }
 }
 
@@ -884,33 +888,38 @@ fn run_tap2html<P: AsRef<Path>>(
     config: &RudofConfig,
 ) -> Result<()> {
     debug!("Starting tap2html");
+    let mut rudof = Rudof::new(config);
     let dctap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input, &dctap_format, &config.tap_config())?;
-    let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
-    let shex = converter_tap.convert(&dctap)?;
-    debug!(
-        "Converted ShEx: {}",
-        ShExFormatter::default().format_schema(&shex)
-    );
-    let shex2html_config = config
-        .shex2html_config()
-        .clone()
-        .with_target_folder(output_folder.as_ref());
-    let landing_page = shex2html_config
-        .landing_page()
-        .to_string_lossy()
-        .to_string();
-    debug!("Landing page {landing_page}\nConverter...");
-    let mut converter = ShEx2Html::new(shex2html_config);
-    converter.convert(&shex)?;
-    // debug!("Converted HTMLSchema: {:?}", converter.current_html());
-    converter.export_schema()?;
-    debug!("HTML pages generated at {}", landing_page);
-    Ok(())
+    parse_dctap(&mut rudof, input, &dctap_format)?;
+    if let Some(dctap) = rudof.get_dctap() {
+        let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
+        let shex = converter_tap.convert(dctap)?;
+        debug!(
+            "Converted ShEx: {}",
+            ShExFormatter::default().format_schema(&shex)
+        );
+        let shex2html_config = config
+            .shex2html_config()
+            .clone()
+            .with_target_folder(output_folder.as_ref());
+        let landing_page = shex2html_config
+            .landing_page()
+            .to_string_lossy()
+            .to_string();
+        debug!("Landing page {landing_page}\nConverter...");
+        let mut converter = ShEx2Html::new(shex2html_config);
+        converter.convert(&shex)?;
+        // debug!("Converted HTMLSchema: {:?}", converter.current_html());
+        converter.export_schema()?;
+        debug!("HTML pages generated at {}", landing_page);
+        Ok(())
+    } else {
+        bail!("Internal error: no DCTAP")
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -948,24 +957,29 @@ fn run_tap2shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
+    let mut rudof = Rudof::new(config);
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
-    let converter = Tap2ShEx::new(&config.tap2shex_config());
-    let shex = converter.convert(&dctap)?;
-    let result_schema_format = match result_format {
-        OutputConvertFormat::Default => Ok(CliShExFormat::ShExC),
-        OutputConvertFormat::Internal => Ok(CliShExFormat::Internal),
-        OutputConvertFormat::ShExJ => Ok(CliShExFormat::ShExJ),
-        OutputConvertFormat::Turtle => Ok(CliShExFormat::Turtle),
-        _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
-    }?;
-    let (writer, color) = get_writer(output, force_overwrite)?;
-    show_schema(&shex, &result_schema_format, writer, color)?;
-    Ok(())
+    parse_dctap(&mut rudof, input_path, &tap_format)?;
+    if let Some(dctap) = rudof.get_dctap() {
+        let converter = Tap2ShEx::new(&config.tap2shex_config());
+        let shex = converter.convert(dctap)?;
+        let result_schema_format = match result_format {
+            OutputConvertFormat::Default => Ok(CliShExFormat::ShExC),
+            OutputConvertFormat::Internal => Ok(CliShExFormat::Internal),
+            OutputConvertFormat::ShExJ => Ok(CliShExFormat::ShExJ),
+            OutputConvertFormat::Turtle => Ok(CliShExFormat::Turtle),
+            _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
+        }?;
+        let (writer, color) = get_writer(output, force_overwrite)?;
+        show_schema(&shex, &result_schema_format, writer, color)?;
+        Ok(())
+    } else {
+        bail!("Internal error: No DCTAP")
+    }
 }
 
 fn run_tap2uml(
@@ -977,19 +991,24 @@ fn run_tap2uml(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
+    let mut rudof = Rudof::new(config);
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(DCTapFormat::CSV),
         InputConvertFormat::Xlsx => Ok(DCTapFormat::XLSX),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
-    let dctap = parse_dctap(input_path, &tap_format, &config.tap_config())?;
-    let converter_shex = Tap2ShEx::new(&config.tap2shex_config());
-    let shex = converter_shex.convert(&dctap)?;
-    let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
-    converter_uml.convert(&shex)?;
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    generate_uml_output(converter_uml, maybe_shape, &mut writer, result_format)?;
-    Ok(())
+    parse_dctap(&mut rudof, input_path, &tap_format)?;
+    if let Some(dctap) = rudof.get_dctap() {
+        let converter_shex = Tap2ShEx::new(&config.tap2shex_config());
+        let shex = converter_shex.convert(dctap)?;
+        let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
+        converter_uml.convert(&shex)?;
+        let (mut writer, _color) = get_writer(output, force_overwrite)?;
+        generate_uml_output(converter_uml, maybe_shape, &mut writer, result_format)?;
+        Ok(())
+    } else {
+        bail!("Internal error: No DCTAP")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1452,18 +1471,24 @@ fn parse_shacl(
     }
 } */
 
-fn parse_dctap(input: &InputSpec, format: &DCTapFormat, config: &TapConfig) -> Result<DCTap> {
+fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &DCTapFormat) -> Result<()> {
+    let dctap_format = match format {
+        DCTapFormat::CSV => DCTAPFormat::CSV,
+        DCTapFormat::XLSX => DCTAPFormat::XLSX,
+        DCTapFormat::XLSB => DCTAPFormat::XLSB,
+        DCTapFormat::XLSM => DCTAPFormat::XLSM,
+        DCTapFormat::XLS => DCTAPFormat::XLS,
+    };
     match format {
         DCTapFormat::CSV => {
             let reader = input.open_read(None)?;
-            let dctap = DCTap::from_reader(reader, config)?;
-            Ok(dctap)
+            rudof.read_dctap(reader, &dctap_format)?;
+            Ok(())
         }
-        DCTapFormat::XLS | DCTapFormat::XLSB | DCTapFormat::XLSM | DCTapFormat::XLSX => match input
-        {
+        _ => match input {
             InputSpec::Path(path_buf) => {
-                let dctap = DCTap::from_excel(path_buf, None, config)?;
-                Ok(dctap)
+                rudof.read_dctap_path(path_buf, &dctap_format)?;
+                Ok(())
             }
             InputSpec::Stdin => bail!("Can not read Excel file from stdin"),
             InputSpec::Url(_) => bail!("Not implemented reading Excel files from URIs yet"),
