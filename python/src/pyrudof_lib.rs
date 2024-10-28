@@ -5,8 +5,8 @@ use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
     QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat,
-    ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapesGraphSource,
-    UmlGenerationMode, ValidationReport, ValidationStatus,
+    ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat,
+    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
 };
 
 #[pyclass(unsendable, frozen, name = "RudofConfig")]
@@ -64,7 +64,7 @@ impl PyRudof {
 
     fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
-        shex_schema.map(|s| PyShExSchema { inner: s.clone() })
+        shex_schema.map(|s| PyShExSchema { _inner: s.clone() })
     }
 
     fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
@@ -159,6 +159,232 @@ impl PyRudof {
             .map_err(cnv_err)?;
         Ok(str)
     }
+
+    /// Serialize the current ShEx
+    fn serialize_shex(
+        &self,
+        format: &PyShExFormat,
+        formatter: &PyShExFormatter,
+    ) -> PyResult<String> {
+        let mut v = Vec::new();
+        self.inner
+            .serialize_shex(&format.inner, &formatter.inner, &mut v)
+            .map_err(|e| RudofError::SerializingShEx {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingShEx {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
+    /// Serialize the current SHACL
+    fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
+        let mut v = Vec::new();
+        self.inner
+            .serialize_shacl(&format.inner, &mut v)
+            .map_err(|e| RudofError::SerializingShacl {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingShacl {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
+    /// Serialize the current Query Shape Map
+    fn serialize_shapemap(
+        &self,
+        format: &PyShapeMapFormat,
+        formatter: &PyShapeMapFormatter,
+    ) -> PyResult<String> {
+        let mut v = Vec::new();
+        self.inner
+            .serialize_shapemap(&format.inner, &formatter.inner, &mut v)
+            .map_err(|e| RudofError::SerializingShacl {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingShacl {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+}
+
+#[pyclass(name = "ShapeMapFormat")]
+pub struct PyShapeMapFormat {
+    inner: ShapeMapFormat,
+}
+
+#[pymethods]
+impl PyShapeMapFormat {
+    #[new]
+    fn __init__(py: Python<'_>) -> PyResult<Self> {
+        py.allow_threads(|| {
+            Ok(Self {
+                inner: ShapeMapFormat::default(),
+            })
+        })
+    }
+
+    /// Returns `Turtle` format
+    #[staticmethod]
+    fn compact() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShapeMapFormat::Compact,
+        })
+    }
+
+    /// Returns `ShExC` format
+    #[staticmethod]
+    fn json() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShapeMapFormat::JSON,
+        })
+    }
+}
+
+#[pyclass(name = "ShExFormat")]
+pub struct PyShExFormat {
+    inner: ShExFormat,
+}
+
+#[pymethods]
+impl PyShExFormat {
+    #[new]
+    fn __init__(py: Python<'_>) -> PyResult<Self> {
+        py.allow_threads(|| {
+            Ok(Self {
+                inner: ShExFormat::default(),
+            })
+        })
+    }
+
+    /// Returns `Turtle` format
+    #[staticmethod]
+    fn turtle() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShExFormat::Turtle,
+        })
+    }
+
+    /// Returns `ShExC` format
+    #[staticmethod]
+    fn shexc() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShExFormat::ShExC,
+        })
+    }
+
+    /// Returns `ShExJ` format
+    #[staticmethod]
+    fn shexj() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShExFormat::ShExJ,
+        })
+    }
+}
+
+#[pyclass(name = "ShaclFormat")]
+pub struct PyShaclFormat {
+    inner: ShaclFormat,
+}
+
+#[pymethods]
+impl PyShaclFormat {
+    #[new]
+    fn __init__(py: Python<'_>) -> PyResult<Self> {
+        py.allow_threads(|| {
+            Ok(Self {
+                inner: ShaclFormat::default(),
+            })
+        })
+    }
+
+    /// Returns `Turtle` format
+    #[staticmethod]
+    fn turtle() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShaclFormat::Turtle,
+        })
+    }
+
+    /// Returns `N-Triples` format
+    #[staticmethod]
+    fn ntriples() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShaclFormat::NTriples,
+        })
+    }
+
+    /// Returns `RDFXML` format
+    #[staticmethod]
+    fn rdfxml() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShaclFormat::RDFXML,
+        })
+    }
+
+    // TODO...add more constructors...
+}
+
+#[pyclass(name = "ShExFormatter")]
+pub struct PyShExFormatter {
+    inner: ShExFormatter,
+}
+
+#[pymethods]
+impl PyShExFormatter {
+    #[new]
+    fn __init__(py: Python<'_>) -> PyResult<Self> {
+        py.allow_threads(|| {
+            Ok(Self {
+                inner: ShExFormatter::default(),
+            })
+        })
+    }
+
+    /// Returns a ShExFormatter that doesn't print terminal colors
+    #[staticmethod]
+    fn without_colors() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShExFormatter::default().without_colors(),
+        })
+    }
+}
+
+#[pyclass(name = "ShapeMapFormatter")]
+pub struct PyShapeMapFormatter {
+    inner: ShapeMapFormatter,
+}
+
+#[pymethods]
+impl PyShapeMapFormatter {
+    #[new]
+    fn __init__(py: Python<'_>) -> PyResult<Self> {
+        py.allow_threads(|| {
+            Ok(Self {
+                inner: ShapeMapFormatter::default(),
+            })
+        })
+    }
+
+    /// Returns a Shapemap formatter that doesn't print terminal colors
+    #[staticmethod]
+    fn without_colors() -> PyResult<Self> {
+        Ok(Self {
+            inner: ShapeMapFormatter::default().without_colors(),
+        })
+    }
 }
 
 #[pyclass(name = "PyUmlGenerationMode")]
@@ -168,15 +394,10 @@ pub struct PyUmlGenerationMode {
 
 #[pyclass(name = "ShExSchema")]
 pub struct PyShExSchema {
-    inner: ShExSchema,
+    _inner: ShExSchema,
 }
 
-impl PyShExSchema {
-    pub fn serialize(&self, _format: &ShExFormat) -> String {
-        let result = &self.inner;
-        format!("{result:?}")
-    }
-}
+impl PyShExSchema {}
 
 #[pyclass(name = "PyQueryShapeMap")]
 pub struct PyQueryShapeMap {

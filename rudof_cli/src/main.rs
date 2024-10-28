@@ -26,9 +26,8 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
-    ShapeMapParser, ShapemapFormatter, ShapesGraphSource,
+    ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
-use shacl_ast::ShaclWriter;
 use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
@@ -524,40 +523,13 @@ fn show_schema_rudof(
     mut writer: Box<dyn Write>,
     color: ColorSupport,
 ) -> Result<()> {
-    if let Some(schema) = rudof.get_shex() {
-        match result_schema_format {
-            CliShExFormat::Internal => {
-                writeln!(writer, "{:?}", schema)?;
-                Ok(())
-            }
-            CliShExFormat::ShExC => {
-                let formatter = match color {
-                    ColorSupport::NoColor => ShExFormatter::default().without_colors(),
-                    ColorSupport::WithColor => ShExFormatter::default(),
-                };
-                let str = formatter.format_schema(schema);
-                writeln!(writer, "{str}")?;
-                Ok(())
-            }
-            CliShExFormat::ShExJ => {
-                let str = serde_json::to_string_pretty(&schema)?;
-                writeln!(writer, "{str}")?;
-                Ok(())
-            }
-            CliShExFormat::Simple => {
-                let mut simplified = SimpleReprSchema::new();
-                simplified.from_schema(schema);
-                let str = serde_json::to_string_pretty(&simplified)?;
-                writeln!(writer, "{str}")?;
-                Ok(())
-            }
-            _ => Err(anyhow!(
-                "Not implemented conversion to {result_schema_format} yet"
-            )),
-        }
-    } else {
-        bail!("No ShEx schema");
-    }
+    let shex_format = shex_format_convert(result_schema_format);
+    let formatter = match color {
+        ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+        ColorSupport::WithColor => ShExFormatter::default(),
+    };
+    rudof.serialize_shex(&shex_format, &formatter, &mut writer)?;
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -669,20 +641,9 @@ fn run_shacl(
     let mut rudof = Rudof::new(config);
     let reader_mode = reader_mode_convert(*reader_mode);
     add_shacl_schema_rudof(&mut rudof, input, shapes_format, &reader_mode, config)?;
-    let shacl_schema = rudof.get_shacl().unwrap();
-    match result_shapes_format {
-        CliShaclFormat::Internal => {
-            writeln!(writer, "{shacl_schema}")?;
-            Ok(())
-        }
-        _ => {
-            let data_format = shacl_format2rdf_format(result_shapes_format);
-            let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
-            shacl_writer.write(shacl_schema)?;
-            shacl_writer.serialize(data_format, &mut writer)?;
-            Ok(())
-        }
-    }
+    let shacl_format = shacl_format_convert(result_shapes_format)?;
+    rudof.serialize_shacl(&shacl_format, &mut writer)?;
+    Ok(())
 }
 
 fn run_dctap(
@@ -1302,22 +1263,17 @@ fn run_shapemap(
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let (mut writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(&RudofConfig::new());
     let shapemap_format = shapemap_format_convert(shapemap_format);
     rudof.read_shapemap(shapemap.open_read(None)?, &shapemap_format)?;
-    let shapemap = rudof.get_shapemap().unwrap();
-    match result_format {
-        CliShapeMapFormat::Compact => {
-            let str = ShapemapFormatter::default().format_shapemap(shapemap);
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        CliShapeMapFormat::Internal => {
-            writeln!(writer, "{shapemap:?}")?;
-            Ok(())
-        }
-    }
+    let result_format = shapemap_format_convert(result_format);
+    let formatter = match color {
+        ColorSupport::WithColor => ShapeMapFormatter::default(),
+        ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
+    };
+    rudof.serialize_shapemap(&result_format, &formatter, &mut writer)?;
+    Ok(())
 }
 
 fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
@@ -1537,18 +1493,6 @@ fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
         DataFormat::RDFXML => RDFFormat::RDFXML,
         DataFormat::TriG => RDFFormat::TriG,
         DataFormat::Turtle => RDFFormat::Turtle,
-    }
-}
-
-fn shacl_format2rdf_format(data_format: &CliShaclFormat) -> RDFFormat {
-    match data_format {
-        CliShaclFormat::N3 => RDFFormat::N3,
-        CliShaclFormat::NQuads => RDFFormat::NQuads,
-        CliShaclFormat::NTriples => RDFFormat::NTriples,
-        CliShaclFormat::RDFXML => RDFFormat::RDFXML,
-        CliShaclFormat::TriG => RDFFormat::TriG,
-        CliShaclFormat::Turtle => RDFFormat::Turtle,
-        CliShaclFormat::Internal => todo!(),
     }
 }
 

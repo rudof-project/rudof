@@ -1,13 +1,13 @@
-use std::fmt::Display;
-
 use iri_s::IriS;
 use rbe::Value;
+use serde_derive::Serialize;
 use srdf::numeric_literal::NumericLiteral;
 use srdf::Object;
+use std::fmt::Display;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Clone, Serialize)]
 pub struct Node {
     node: Object,
 }

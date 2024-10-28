@@ -1,12 +1,11 @@
-use std::iter::once;
-
+use crate::{NodeSelector, ShapeSelector};
+use serde_derive::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::SRDF;
-
-use crate::{NodeSelector, ShapeSelector};
+use std::iter::once;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct Association {
     pub node_selector: NodeSelector,
     pub shape_selector: ShapeSelector,

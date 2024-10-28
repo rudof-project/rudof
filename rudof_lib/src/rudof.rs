@@ -2,7 +2,7 @@ use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use dctap::DCTap;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::ShaclParser;
+use shacl_ast::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 
@@ -22,7 +22,7 @@ pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
-pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter};
+pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
 pub use srdf::{RDFFormat, ReaderMode, SRDFSparql};
@@ -110,6 +110,109 @@ impl Rudof {
             Ok(())
         } else {
             Err(RudofError::ShEx2UmlWithoutShEx)
+        }
+    }
+
+    /// Serialize the current ShapeMap
+    pub fn serialize_shapemap<W: io::Write>(
+        &self,
+        format: &ShapeMapFormat,
+        formatter: &ShapeMapFormatter,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(shapemap) = &self.shapemap {
+            match format {
+                ShapeMapFormat::Compact => {
+                    formatter.write_shapemap(shapemap, writer).map_err(|e| {
+                        RudofError::ErrorFormattingShapeMap {
+                            shapemap: format!("{:?}", shapemap.clone()),
+                            error: format!("{e}"),
+                        }
+                    })
+                }
+                ShapeMapFormat::JSON => {
+                    serde_json::to_writer_pretty(writer, &shapemap).map_err(|e| {
+                        RudofError::ErrorWritingShExJson {
+                            schema: format!("{:?}", shapemap.clone()),
+                            error: format!("{e}"),
+                        }
+                    })?;
+                    Ok(())
+                }
+            }
+        } else {
+            Err(RudofError::NoShapeMapToSerialize)
+        }
+    }
+
+    /// Serialize the current ShEx Schema
+    pub fn serialize_shex<W: io::Write>(
+        &self,
+        format: &ShExFormat,
+        formatter: &ShExFormatter,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(shex) = &self.shex_schema {
+            match format {
+                ShExFormat::ShExC => {
+                    formatter.write_schema(shex, writer).map_err(|e| {
+                        RudofError::ErrorFormattingSchema {
+                            schema: format!("{:?}", shex.clone()),
+                            error: format!("{e}"),
+                        }
+                    })?;
+                    Ok(())
+                }
+                ShExFormat::ShExJ => {
+                    serde_json::to_writer_pretty(writer, &shex).map_err(|e| {
+                        RudofError::ErrorWritingShExJson {
+                            schema: format!("{:?}", shex.clone()),
+                            error: format!("{e}"),
+                        }
+                    })?;
+                    Ok(())
+                }
+                ShExFormat::Turtle => Err(RudofError::NotImplemented {
+                    msg: format!("ShEx to ShExR for {shex:?}"),
+                }),
+            }
+        } else {
+            Err(RudofError::NoShExSchemaToSerialize)
+        }
+    }
+
+    pub fn serialize_shacl<W: io::Write>(
+        &self,
+        format: &ShaclFormat,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(shacl) = &self.shacl_schema {
+            match format {
+                ShaclFormat::Internal => {
+                    write!(writer, "{shacl:?}").map_err(|e| RudofError::SerializingSHACLInternal {
+                        error: format!("{e}"),
+                    })
+                }
+                _ => {
+                    let data_format = shacl_format2rdf_format(format)?;
+                    let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+                    shacl_writer
+                        .write(shacl)
+                        .map_err(|e| RudofError::WritingSHACL {
+                            shacl: format!("{:?}", shacl.clone()),
+                            error: format!("{e}"),
+                        })?;
+                    shacl_writer.serialize(data_format, writer).map_err(|e| {
+                        RudofError::SerializingSHACL {
+                            error: format!("{e}"),
+                            shacl: format!("{:?}", shacl.clone()),
+                        }
+                    })?;
+                    Ok(())
+                }
+            }
+        } else {
+            Err(RudofError::NoShaclToSerialize)
         }
     }
 
@@ -430,6 +533,18 @@ fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclS
             error: format!("{e}"),
         })?;
     Ok(schema)
+}
+
+fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
+    match shacl_format {
+        ShaclFormat::N3 => Ok(RDFFormat::N3),
+        ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
+        ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
+        ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        ShaclFormat::TriG => Ok(RDFFormat::TriG),
+        ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
+        ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),
+    }
 }
 
 #[cfg(test)]

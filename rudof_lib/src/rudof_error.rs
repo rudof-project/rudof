@@ -104,6 +104,9 @@ pub enum RudofError {
     #[error("No SHACL schema defined")]
     NoShaclSchema,
 
+    #[error("Cannot serialize current ShEx schema because it has not been defined")]
+    NoShExSchemaToSerialize,
+
     #[error("No DCTAP defined")]
     NoDCTAP,
 
@@ -118,4 +121,40 @@ pub enum RudofError {
 
     #[error("Reading ShEx Schema from path: {path}: {error}")]
     ReadingShExPath { path: String, error: String },
+
+    #[error("Error formatting schema {schema}: {error}")]
+    ErrorFormattingSchema { schema: String, error: String },
+
+    #[error("Error formatting shapemap {shapemap}: {error}")]
+    ErrorFormattingShapeMap { shapemap: String, error: String },
+
+    #[error("Error formatting schema: {error}")]
+    ErrorWritingShExJson { schema: String, error: String },
+
+    #[error("Not implemented yet: {msg}")]
+    NotImplemented { msg: String },
+
+    #[error("Cannot serialize current ShapeMap because it has not been defined")]
+    NoShapeMapToSerialize,
+
+    #[error("Cannot serialize current SHACL because it has not been defined")]
+    NoShaclToSerialize,
+
+    #[error("Converting SHACLFormat with value Internal to RDFFormat")]
+    NoInternalFormatForRDF,
+
+    #[error("Serializing SHACL to internal representation: {error}")]
+    SerializingSHACLInternal { error: String },
+
+    #[error("Writing SHACL {shacl}: {error}")]
+    WritingSHACL { shacl: String, error: String },
+
+    #[error("Serializing SHACL {shacl}: {error}")]
+    SerializingSHACL { shacl: String, error: String },
+
+    #[error("Serializing ShEx: {error}")]
+    SerializingShEx { error: String },
+
+    #[error("Serializing ShEx: {error}")]
+    SerializingShacl { error: String },
 }
