@@ -37,14 +37,6 @@ impl PyRudofConfig {
     }
 }
 
-impl Default for PyRudofConfig {
-    fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
-    }
-}
-
 #[pyclass(unsendable, name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
@@ -423,9 +415,9 @@ impl PyReaderMode {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "RDFFormat")]
 #[derive(PartialEq)]
-
 pub enum PyRDFFormat {
     Turtle,
     NTriples,
@@ -435,6 +427,7 @@ pub enum PyRDFFormat {
     NQuads,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "DCTapFormat")]
 #[derive(PartialEq)]
 pub enum PyDCTapFormat {
@@ -442,6 +435,7 @@ pub enum PyDCTapFormat {
     XLSX,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShapeMapFormat")]
 #[derive(PartialEq)]
 pub enum PyShapeMapFormat {
@@ -449,6 +443,7 @@ pub enum PyShapeMapFormat {
     JSON,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShExFormat")]
 #[derive(PartialEq)]
 pub enum PyShExFormat {
@@ -457,6 +452,7 @@ pub enum PyShExFormat {
     Turtle,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShaclFormat")]
 #[derive(PartialEq)]
 pub enum PyShaclFormat {
