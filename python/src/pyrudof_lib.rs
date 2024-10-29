@@ -2,10 +2,10 @@
 //!
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    iri, DCTAPFormat, QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError,
-    ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode,
-    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
-    ValidationStatus, DCTAP,
+    iri, DCTAPFormat, QueryShapeMap, RDFFormat, ReaderMode, ResultShapeMap, Rudof, RudofConfig,
+    RudofError, ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema,
+    ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode,
+    ValidationReport, ValidationStatus, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
@@ -25,7 +25,9 @@ impl PyRudofConfig {
         })
     }
 
+    /// Read an RudofConfig from a path
     #[staticmethod]
+    #[pyo3(signature = (path))]
     pub fn from_path(path: &str) -> PyResult<Self> {
         let path = Path::new(path);
         let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
@@ -50,56 +52,72 @@ impl PyRudof {
     }
 
     /// Obtain the version of the Rudof library
+    #[pyo3(signature = ())]
     pub fn version(&self) -> PyResult<String> {
         let str = env!("CARGO_PKG_VERSION").to_string();
         Ok(str)
     }
 
     /// Resets the current RDF data
+    #[pyo3(signature = ())]
     pub fn reset_data(&mut self) {
         self.inner.reset_data();
     }
 
     /// Resets the current ShEx schema
+    #[pyo3(signature = ())]
     pub fn reset_shex(&mut self) {
         self.inner.reset_shex();
     }
 
     /// Resets the current shapemap
+    #[pyo3(signature = ())]
     pub fn reset_shapemap(&mut self) {
         self.inner.reset_shapemap();
     }
 
     /// Resets the current SHACL shapes graph
+    #[pyo3(signature = ())]
     pub fn reset_shacl(&mut self) {
         self.inner.reset_shacl();
     }
 
+    /// Resets all current values
+    #[pyo3(signature = ())]
+    pub fn reset_all(&mut self) {
+        self.inner.reset_all()
+    }
+
     /// Obtains the current DCTAP
+    #[pyo3(signature = ())]
     pub fn get_dctap(&self) -> Option<PyDCTAP> {
         let dctap = self.inner.get_dctap();
         dctap.map(|s| PyDCTAP { _inner: s.clone() })
     }
 
     /// Obtains the current ShEx Schema
+    #[pyo3(signature = ())]
     pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
         shex_schema.map(|s| PyShExSchema { _inner: s.clone() })
     }
 
     /// Obtains the current Shapemap
+    #[pyo3(signature = ())]
     pub fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
         let shapemap = self.inner.get_shapemap();
         shapemap.map(|s| PyQueryShapeMap { inner: s.clone() })
     }
 
     /// Obtains the current SHACL schema
+    #[pyo3(signature = ())]
     pub fn get_shacl(&self) -> Option<PyShaclSchema> {
         let shacl_schema = self.inner.get_shacl();
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
     }
 
     /// Reads DCTAP from a String
+    #[pyo3(signature = (input, format))]
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
         self.inner
@@ -109,7 +127,8 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a path
-    pub fn read_dctap_path(&mut self, format: &PyDCTapFormat, path_name: &str) -> PyResult<()> {
+    #[pyo3(signature = (path_name, format))]
+    pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
             .map_err(|e| RudofError::ReadingDCTAPPath {
@@ -126,7 +145,8 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a string
-    pub fn read_shex_str(&mut self, format: &PyShExFormat, input: &str) -> PyResult<()> {
+    #[pyo3(signature = (input, format))]
+    pub fn read_shex_str(&mut self, input: &str, format: &PyShExFormat) -> PyResult<()> {
         self.inner.reset_shex();
         self.inner
             .read_shex(input.as_bytes(), None, &format.inner)
@@ -135,7 +155,8 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a path
-    pub fn read_shex_path(&mut self, format: &PyShExFormat, path_name: &str) -> PyResult<()> {
+    #[pyo3(signature = (path_name, format))]
+    pub fn read_shex_path(&mut self, path_name: &str, format: &PyShExFormat) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
             .map_err(|e| RudofError::ReadingShExPath {
@@ -152,27 +173,31 @@ impl PyRudof {
     }
 
     /// Resets the current ShEx validation results
+    #[pyo3(signature = ())]
     pub fn reset_validation_results(&mut self) {
         self.inner.reset_validation_results();
     }
 
     /// Adds RDF data read from a String to the current RDF Data
-    pub fn read_data_str(&mut self, input: &str) -> PyResult<()> {
+    #[pyo3(signature = (input, format, base, reader_mode))]
+    pub fn read_data_str(
+        &mut self,
+        input: &str,
+        format: &PyRDFFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
         self.inner
-            .read_data(
-                input.as_bytes(),
-                &rudof_lib::RDFFormat::Turtle,
-                None,
-                &ReaderMode::Lax,
-            )
+            .read_data(input.as_bytes(), &format.inner, base, &reader_mode.inner)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads the current Shapemap from a String
-    pub fn read_shapemap_str(&mut self, input: &str) -> PyResult<()> {
+    #[pyo3(signature = (input,format))]
+    pub fn read_shapemap_str(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         self.inner
-            .read_shapemap(input.as_bytes(), &rudof_lib::ShapeMapFormat::Compact)
+            .read_shapemap(input.as_bytes(), &format.inner)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -180,6 +205,7 @@ impl PyRudof {
     /// Validate the current RDF Data with the current ShEx schema and the current Shapemap
     ///
     /// In order to validate, a ShEx Schema and a ShapeMap has to be read
+    #[pyo3(signature = ())]
     pub fn validate_shex(&mut self) -> PyResult<PyResultShapeMap> {
         let result = self.inner.validate_shex().map_err(cnv_err)?;
         Ok(PyResultShapeMap { inner: result })
@@ -192,6 +218,7 @@ impl PyRudof {
     /// which can be extracted from the current RDF data,
     /// or from the current SHACL schema.
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
+    #[pyo3(signature = (mode,shapes_graph_source))]
     pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
@@ -210,6 +237,7 @@ impl PyRudof {
     }
 
     /// Converts the current ShEx to a Class-like diagram using PlantUML syntax
+    #[pyo3(signature = (uml_mode))]
     pub fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
@@ -227,6 +255,7 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx schema
+    #[pyo3(signature = (format, formatter))]
     pub fn serialize_shex(
         &self,
         format: &PyShExFormat,
@@ -248,6 +277,7 @@ impl PyRudof {
     }
 
     /// Serialize the current SHACL shapes graph
+    #[pyo3(signature = (format))]
     pub fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
@@ -265,6 +295,7 @@ impl PyRudof {
     }
 
     /// Serialize the current Query Shape Map
+    #[pyo3(signature = (format, formatter))]
     pub fn serialize_shapemap(
         &self,
         format: &PyShapeMapFormat,
@@ -286,9 +317,104 @@ impl PyRudof {
     }
 
     /// Adds an endpoint to the current RDF Data
+    #[pyo3(signature = (endpoint))]
     pub fn add_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
         let iri = iri!(endpoint);
         self.inner.add_endpoint(&iri).map_err(cnv_err)
+    }
+}
+
+#[pyclass(frozen, name = "ReaderMode")]
+pub struct PyReaderMode {
+    inner: ReaderMode,
+}
+
+#[pymethods]
+impl PyReaderMode {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: ReaderMode::default(),
+        })
+    }
+
+    /// Returns `lax` reader mode
+    #[staticmethod]
+    pub fn lax() -> Self {
+        Self {
+            inner: ReaderMode::Lax,
+        }
+    }
+
+    /// Returns `strict` reader mode
+    #[staticmethod]
+    pub fn strict() -> Self {
+        Self {
+            inner: ReaderMode::Strict,
+        }
+    }
+}
+
+#[pyclass(frozen, name = "RDFFormat")]
+pub struct PyRDFFormat {
+    inner: RDFFormat,
+}
+
+#[pymethods]
+impl PyRDFFormat {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.allow_threads(|| Self {
+            inner: RDFFormat::default(),
+        })
+    }
+
+    /// Returns `Turtle` format
+    #[staticmethod]
+    pub fn csv() -> Self {
+        Self {
+            inner: RDFFormat::Turtle,
+        }
+    }
+
+    /// Returns `RDFXML` format
+    #[staticmethod]
+    pub fn xlsx() -> Self {
+        Self {
+            inner: RDFFormat::RDFXML,
+        }
+    }
+
+    /// Returns `NTriples` format
+    #[staticmethod]
+    pub fn xls() -> Self {
+        Self {
+            inner: RDFFormat::NTriples,
+        }
+    }
+
+    /// Returns `N3` format
+    #[staticmethod]
+    pub fn n3() -> Self {
+        Self {
+            inner: RDFFormat::N3,
+        }
+    }
+
+    /// Returns `NQuads` format
+    #[staticmethod]
+    pub fn nquads() -> Self {
+        Self {
+            inner: RDFFormat::NQuads,
+        }
+    }
+
+    /// Returns `TriG` format
+    #[staticmethod]
+    pub fn trig() -> Self {
+        Self {
+            inner: RDFFormat::TriG,
+        }
     }
 }
 

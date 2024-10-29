@@ -74,6 +74,16 @@ impl Rudof {
         self.shacl_schema = None
     }
 
+    /// Resets all current values
+    pub fn reset_all(&mut self) {
+        self.reset_data();
+        self.reset_dctap();
+        self.reset_shacl();
+        self.reset_shapemap();
+        self.reset_validation_results();
+        self.reset_shex();
+    }
+
     /// Get the shapes graph schema from the current RDF data
     pub fn get_shacl_from_data(&mut self) -> Result<()> {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;

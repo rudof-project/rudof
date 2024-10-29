@@ -2,9 +2,10 @@ use std::str::FromStr;
 
 use crate::RDFParseError;
 
-// Posible RDF formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+/// Posible RDF formats
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum RDFFormat {
+    #[default]
     Turtle,
     NTriples,
     RDFXML,

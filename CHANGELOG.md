@@ -2,6 +2,13 @@
 
 ## Current changes without release yet
 
+## [v0.1.45] - 2024-10-29
+
+- Changed the order of parameters in `read_shex_str`, `read_data_str` in `pyrudof`
+- `RDFFormat` added in `pyrudof`
+- `ReaderMode` added in `pyrudof`
+- `reset_all` added in `pyrudof`
+
 ## [v0.1.44] - 2024-10-29
 
 - `add_endpoint` added in `rudof_lib` and `pyrudof_lib`

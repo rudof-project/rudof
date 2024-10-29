@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig
+from pyrudof import Rudof, RudofConfig, ShExFormat
 
 rudof = Rudof(RudofConfig())
 
@@ -8,7 +8,7 @@ prefix : <http://example.org/>
 :S {
  :p .
 }
-""")
+""", ShExFormat.shexc())
 
 rudof.read_data_str("""
 prefix : <http://example.org/>
