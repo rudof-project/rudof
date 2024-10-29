@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [v0.1.44] - 2024-10-29
+
+- `add_endpoint` added in `rudof_lib` and `pyrudof_lib`
+- `reset_shacl` added in `rudof_lib` and `pyrudof_lib`
+
 ## [v0.1.43] - 2024-10-28
 
 Minor release to add DCTAP for pyrudof
