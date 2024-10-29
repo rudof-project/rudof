@@ -1,14 +1,13 @@
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
-use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
-
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    DCTAPFormat, QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError,
+    iri, DCTAPFormat, QueryShapeMap, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError,
     ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode,
     ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
     ValidationStatus, DCTAP,
 };
+use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
 #[pyclass(frozen, name = "RudofConfig")]
 pub struct PyRudofConfig {
@@ -50,40 +49,57 @@ impl PyRudof {
         })
     }
 
-    /// Reset data
+    /// Obtain the version of the Rudof library
+    pub fn version(&self) -> PyResult<String> {
+        let str = env!("CARGO_PKG_VERSION").to_string();
+        Ok(str)
+    }
+
+    /// Resets the current RDF data
     pub fn reset_data(&mut self) {
         self.inner.reset_data();
     }
 
+    /// Resets the current ShEx schema
     pub fn reset_shex(&mut self) {
         self.inner.reset_shex();
     }
 
+    /// Resets the current shapemap
     pub fn reset_shapemap(&mut self) {
         self.inner.reset_shapemap();
     }
 
+    /// Resets the current SHACL shapes graph
+    pub fn reset_shacl(&mut self) {
+        self.inner.reset_shacl();
+    }
+
+    /// Obtains the current DCTAP
     pub fn get_dctap(&self) -> Option<PyDCTAP> {
         let dctap = self.inner.get_dctap();
         dctap.map(|s| PyDCTAP { _inner: s.clone() })
     }
 
+    /// Obtains the current ShEx Schema
     pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
         shex_schema.map(|s| PyShExSchema { _inner: s.clone() })
     }
 
+    /// Obtains the current Shapemap
     pub fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
         let shapemap = self.inner.get_shapemap();
         shapemap.map(|s| PyQueryShapeMap { inner: s.clone() })
     }
 
+    /// Obtains the current SHACL schema
     pub fn get_shacl(&self) -> Option<PyShaclSchema> {
         let shacl_schema = self.inner.get_shacl();
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
     }
 
-    /// Reads DCTAP from a string
+    /// Reads DCTAP from a String
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
         self.inner
@@ -140,6 +156,7 @@ impl PyRudof {
         self.inner.reset_validation_results();
     }
 
+    /// Adds RDF data read from a String to the current RDF Data
     pub fn read_data_str(&mut self, input: &str) -> PyResult<()> {
         self.inner
             .read_data(
@@ -152,6 +169,7 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Reads the current Shapemap from a String
     pub fn read_shapemap_str(&mut self, input: &str) -> PyResult<()> {
         self.inner
             .read_shapemap(input.as_bytes(), &rudof_lib::ShapeMapFormat::Compact)
@@ -159,11 +177,21 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Validate the current RDF Data with the current ShEx schema and the current Shapemap
+    ///
+    /// In order to validate, a ShEx Schema and a ShapeMap has to be read
     pub fn validate_shex(&mut self) -> PyResult<PyResultShapeMap> {
         let result = self.inner.validate_shex().map_err(cnv_err)?;
         Ok(PyResultShapeMap { inner: result })
     }
 
+    /// Validates the current RDF Data
+    ///
+    /// mode can be native to use Native implementation or SPARQL to use the SPARQL based implementation
+    /// shapes_graph_source: Indicates the source of the shapes graph,
+    /// which can be extracted from the current RDF data,
+    /// or from the current SHACL schema.
+    /// If there is no current SHACL schema, it tries to get it from the current RDF data
     pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
@@ -176,10 +204,12 @@ impl PyRudof {
         Ok(PyValidationReport { inner: result })
     }
 
+    /// Converts the current DCTAP to ShEx and replaces the current ShEx by the resulting ShEx
     pub fn dctap2shex(&mut self) -> PyResult<()> {
         self.inner.dctap2shex().map_err(cnv_err)
     }
 
+    /// Converts the current ShEx to a Class-like diagram using PlantUML syntax
     pub fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
@@ -196,7 +226,7 @@ impl PyRudof {
         Ok(str)
     }
 
-    /// Serialize the current ShEx
+    /// Serialize the current ShEx schema
     pub fn serialize_shex(
         &self,
         format: &PyShExFormat,
@@ -217,7 +247,7 @@ impl PyRudof {
         Ok(str)
     }
 
-    /// Serialize the current SHACL
+    /// Serialize the current SHACL shapes graph
     pub fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
@@ -253,6 +283,12 @@ impl PyRudof {
             })
             .map_err(cnv_err)?;
         Ok(str)
+    }
+
+    /// Adds an endpoint to the current RDF Data
+    pub fn add_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
+        let iri = iri!(endpoint);
+        self.inner.add_endpoint(&iri).map_err(cnv_err)
     }
 }
 

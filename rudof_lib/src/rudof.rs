@@ -19,6 +19,7 @@ use std::{io, result};
 
 // This structs are re-exported as they may be needed in main
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
+pub use iri_s::iri;
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
@@ -58,12 +59,19 @@ impl Rudof {
         }
     }
 
+    /// Resets the current RDF Data
     pub fn reset_data(&mut self) {
         self.rdf_data = RdfData::new()
     }
 
+    /// Resets the current DCTAP
     pub fn reset_dctap(&mut self) {
         self.dctap = None
+    }
+
+    /// Resets the current SHACL shapes graph
+    pub fn reset_shacl(&mut self) {
+        self.shacl_schema = None
     }
 
     /// Get the shapes graph schema from the current RDF data
@@ -397,7 +405,9 @@ impl Rudof {
     /// Validate RDF data using SHACL
     ///
     /// mode: Indicates whether to use SPARQL or native Rust implementation
-    /// shapes_graph_source: Indicates the source of the shapes graph: either from the current data, or from the current SHACL schema
+    /// shapes_graph_source: Indicates the source of the shapes graph,
+    /// which can be extracted from the current RDF data,
+    /// or from the current SHACL schema.
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
     pub fn validate_shacl(
         &mut self,
@@ -467,7 +477,7 @@ impl Rudof {
         }
     }
 
-    /// Add an endpoint to the current RDF data
+    /// Adds an endpoint to the current RDF data
     pub fn add_endpoint(&mut self, iri: &IriS) -> Result<()> {
         let sparql_endpoint =
             SRDFSparql::new(iri).map_err(|e| RudofError::AddingEndpointError {

@@ -2,7 +2,7 @@
 
 ## Current changes without release yet
 
-# [v0.1.42] - 2024-10-28
+## [v0.1.43] - 2024-10-28
 
 Minor release to add DCTAP for pyrudof
 
