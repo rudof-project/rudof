@@ -25,7 +25,7 @@ impl PyRudofConfig {
         })
     }
 
-    /// Read an RudofConfig from a path
+    /// Read an `RudofConfig` from a file path
     #[staticmethod]
     #[pyo3(signature = (path))]
     pub fn from_path(path: &str) -> PyResult<Self> {
@@ -34,6 +34,14 @@ impl PyRudofConfig {
         Ok(PyRudofConfig {
             inner: rudof_config,
         })
+    }
+}
+
+impl Default for PyRudofConfig {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+        }
     }
 }
 
@@ -117,17 +125,18 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a String
-    #[pyo3(signature = (input, format))]
+    #[pyo3(signature = (input, format = &PyDCTapFormat::CSV))]
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
+        let format = cnv_dctap_format(format);
         self.inner
-            .read_dctap(input.as_bytes(), &format.inner)
+            .read_dctap(input.as_bytes(), &format)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads DCTAP from a path
-    #[pyo3(signature = (path_name, format))]
+    #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
@@ -138,25 +147,53 @@ impl PyRudof {
             .map_err(cnv_err)?;
         let reader = BufReader::new(file);
         self.inner.reset_dctap();
-        self.inner
-            .read_dctap(reader, &format.inner)
-            .map_err(cnv_err)?;
+        let format = cnv_dctap_format(format);
+        self.inner.read_dctap(reader, &format).map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads a ShEx schema from a string
-    #[pyo3(signature = (input, format))]
-    pub fn read_shex_str(&mut self, input: &str, format: &PyShExFormat) -> PyResult<()> {
+    #[pyo3(signature = (input, format = &PyShExFormat::ShExC, base = None))]
+    pub fn read_shex_str(
+        &mut self,
+        input: &str,
+        format: &PyShExFormat,
+        base: Option<&str>,
+    ) -> PyResult<()> {
+        let format = cnv_shex_format(format);
         self.inner.reset_shex();
         self.inner
-            .read_shex(input.as_bytes(), None, &format.inner)
+            .read_shex(input.as_bytes(), &format, base)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Reads a SHACL shapes graph from a string
+    #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_shacl_str(
+        &mut self,
+        input: &str,
+        format: &PyShaclFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let format = cnv_shacl_format(format);
+        let reader_mode = cnv_reader_mode(reader_mode);
+        self.inner.reset_shacl();
+        self.inner
+            .read_shacl(input.as_bytes(), &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads a ShEx schema from a path
-    #[pyo3(signature = (path_name, format))]
-    pub fn read_shex_path(&mut self, path_name: &str, format: &PyShExFormat) -> PyResult<()> {
+    #[pyo3(signature = (path_name, format = &PyShExFormat::ShExC, base = None))]
+    pub fn read_shex_path(
+        &mut self,
+        path_name: &str,
+        format: &PyShExFormat,
+        base: Option<&str>,
+    ) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
             .map_err(|e| RudofError::ReadingShExPath {
@@ -166,8 +203,35 @@ impl PyRudof {
             .map_err(cnv_err)?;
         let reader = BufReader::new(file);
         self.inner.reset_shex();
+        let format = cnv_shex_format(format);
         self.inner
-            .read_shex(reader, None, &format.inner)
+            .read_shex(reader, &format, base)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Reads a ShEx schema from a path
+    #[pyo3(signature = (path_name, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_shacl_path(
+        &mut self,
+        path_name: &str,
+        format: &PyShaclFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingShExPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let reader = BufReader::new(file);
+        self.inner.reset_shex();
+        let format = cnv_shacl_format(format);
+        let reader_mode = cnv_reader_mode(reader_mode);
+        self.inner
+            .read_shacl(reader, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -179,7 +243,7 @@ impl PyRudof {
     }
 
     /// Adds RDF data read from a String to the current RDF Data
-    #[pyo3(signature = (input, format, base, reader_mode))]
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_str(
         &mut self,
         input: &str,
@@ -187,17 +251,20 @@ impl PyRudof {
         base: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+        let format = cnv_rdf_format(format);
         self.inner
-            .read_data(input.as_bytes(), &format.inner, base, &reader_mode.inner)
+            .read_data(input.as_bytes(), &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Reads the current Shapemap from a String
-    #[pyo3(signature = (input,format))]
+    #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact))]
     pub fn read_shapemap_str(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
+        let format = cnv_shapemap_format(format);
         self.inner
-            .read_shapemap(input.as_bytes(), &format.inner)
+            .read_shapemap(input.as_bytes(), &format)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -218,15 +285,17 @@ impl PyRudof {
     /// which can be extracted from the current RDF data,
     /// or from the current SHACL schema.
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
-    #[pyo3(signature = (mode,shapes_graph_source))]
+    #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema ))]
     pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
         shapes_graph_source: &PyShapesGraphSource,
     ) -> PyResult<PyValidationReport> {
+        let mode = cnv_shacl_validation_mode(mode);
+        let shapes_graph_source = cnv_shapes_graph_source(shapes_graph_source);
         let result = self
             .inner
-            .validate_shacl(&mode.inner, &shapes_graph_source.inner)
+            .validate_shacl(&mode, &shapes_graph_source)
             .map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
     }
@@ -255,15 +324,16 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx schema
-    #[pyo3(signature = (format, formatter))]
+    #[pyo3(signature = (formatter, format = &PyShExFormat::ShExC))]
     pub fn serialize_shex(
         &self,
-        format: &PyShExFormat,
         formatter: &PyShExFormatter,
+        format: &PyShExFormat,
     ) -> PyResult<String> {
         let mut v = Vec::new();
+        let format = cnv_shex_format(format);
         self.inner
-            .serialize_shex(&format.inner, &formatter.inner, &mut v)
+            .serialize_shex(&format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShEx {
                 error: format!("{e}"),
             })
@@ -277,11 +347,12 @@ impl PyRudof {
     }
 
     /// Serialize the current SHACL shapes graph
-    #[pyo3(signature = (format))]
+    #[pyo3(signature = (format = &PyShaclFormat::Turtle))]
     pub fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
         let mut v = Vec::new();
+        let format = cnv_shacl_format(format);
         self.inner
-            .serialize_shacl(&format.inner, &mut v)
+            .serialize_shacl(&format, &mut v)
             .map_err(|e| RudofError::SerializingShacl {
                 error: format!("{e}"),
             })
@@ -295,15 +366,16 @@ impl PyRudof {
     }
 
     /// Serialize the current Query Shape Map
-    #[pyo3(signature = (format, formatter))]
+    #[pyo3(signature = (formatter, format = &PyShapeMapFormat::Compact))]
     pub fn serialize_shapemap(
         &self,
-        format: &PyShapeMapFormat,
         formatter: &PyShapeMapFormatter,
+        format: &PyShapeMapFormat,
     ) -> PyResult<String> {
         let mut v = Vec::new();
+        let format = cnv_shapemap_format(format);
         self.inner
-            .serialize_shapemap(&format.inner, &formatter.inner, &mut v)
+            .serialize_shapemap(&format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShacl {
                 error: format!("{e}"),
             })
@@ -324,248 +396,76 @@ impl PyRudof {
     }
 }
 
-#[pyclass(frozen, name = "ReaderMode")]
-pub struct PyReaderMode {
-    inner: ReaderMode,
+#[pyclass(eq, eq_int, name = "ReaderMode")]
+#[derive(PartialEq)]
+pub enum PyReaderMode {
+    Lax,
+    Strict,
 }
 
 #[pymethods]
 impl PyReaderMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ReaderMode::default(),
-        })
+        py.allow_threads(|| PyReaderMode::Lax)
     }
 
     /// Returns `lax` reader mode
     #[staticmethod]
     pub fn lax() -> Self {
-        Self {
-            inner: ReaderMode::Lax,
-        }
+        PyReaderMode::Lax
     }
 
     /// Returns `strict` reader mode
     #[staticmethod]
     pub fn strict() -> Self {
-        Self {
-            inner: ReaderMode::Strict,
-        }
+        PyReaderMode::Strict
     }
 }
 
-#[pyclass(frozen, name = "RDFFormat")]
-pub struct PyRDFFormat {
-    inner: RDFFormat,
+#[pyclass(eq, eq_int, name = "RDFFormat")]
+#[derive(PartialEq)]
+
+pub enum PyRDFFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
 }
 
-#[pymethods]
-impl PyRDFFormat {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: RDFFormat::default(),
-        })
-    }
-
-    /// Returns `Turtle` format
-    #[staticmethod]
-    pub fn turtle() -> Self {
-        Self {
-            inner: RDFFormat::Turtle,
-        }
-    }
-
-    /// Returns `RDFXML` format
-    #[staticmethod]
-    pub fn rdfxml() -> Self {
-        Self {
-            inner: RDFFormat::RDFXML,
-        }
-    }
-
-    /// Returns `NTriples` format
-    #[staticmethod]
-    pub fn ntriples() -> Self {
-        Self {
-            inner: RDFFormat::NTriples,
-        }
-    }
-
-    /// Returns `N3` format
-    #[staticmethod]
-    pub fn n3() -> Self {
-        Self {
-            inner: RDFFormat::N3,
-        }
-    }
-
-    /// Returns `NQuads` format
-    #[staticmethod]
-    pub fn nquads() -> Self {
-        Self {
-            inner: RDFFormat::NQuads,
-        }
-    }
-
-    /// Returns `TriG` format
-    #[staticmethod]
-    pub fn trig() -> Self {
-        Self {
-            inner: RDFFormat::TriG,
-        }
-    }
+#[pyclass(eq, eq_int, name = "DCTapFormat")]
+#[derive(PartialEq)]
+pub enum PyDCTapFormat {
+    CSV,
+    XLSX,
 }
 
-#[pyclass(frozen, name = "DCTAPFormat")]
-pub struct PyDCTapFormat {
-    inner: DCTAPFormat,
+#[pyclass(eq, eq_int, name = "ShapeMapFormat")]
+#[derive(PartialEq)]
+pub enum PyShapeMapFormat {
+    Compact,
+    JSON,
 }
 
-#[pymethods]
-impl PyDCTapFormat {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: DCTAPFormat::default(),
-        })
-    }
-
-    /// Returns `CSV` format
-    #[staticmethod]
-    pub fn csv() -> Self {
-        Self {
-            inner: DCTAPFormat::CSV,
-        }
-    }
-
-    /// Returns `XLSX` format
-    #[staticmethod]
-    pub fn xlsx() -> Self {
-        Self {
-            inner: DCTAPFormat::XLSX,
-        }
-    }
-
-    /// Returns `XLS` format
-    #[staticmethod]
-    pub fn xls() -> Self {
-        Self {
-            inner: DCTAPFormat::XLS,
-        }
-    }
+#[pyclass(eq, eq_int, name = "ShExFormat")]
+#[derive(PartialEq)]
+pub enum PyShExFormat {
+    ShExC,
+    ShExJ,
+    Turtle,
 }
 
-#[pyclass(frozen, name = "ShapeMapFormat")]
-pub struct PyShapeMapFormat {
-    inner: ShapeMapFormat,
-}
-
-#[pymethods]
-impl PyShapeMapFormat {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ShapeMapFormat::default(),
-        })
-    }
-
-    /// Returns `Compact` format
-    #[staticmethod]
-    pub fn compact() -> Self {
-        Self {
-            inner: ShapeMapFormat::Compact,
-        }
-    }
-
-    /// Returns `JSON` format
-    #[staticmethod]
-    pub fn json() -> Self {
-        Self {
-            inner: ShapeMapFormat::JSON,
-        }
-    }
-}
-
-#[pyclass(frozen, name = "ShExFormat")]
-pub struct PyShExFormat {
-    inner: ShExFormat,
-}
-
-#[pymethods]
-impl PyShExFormat {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ShExFormat::default(),
-        })
-    }
-
-    /// Returns `Turtle` format
-    #[staticmethod]
-    pub fn turtle() -> Self {
-        Self {
-            inner: ShExFormat::Turtle,
-        }
-    }
-
-    /// Returns `ShExC` format
-    #[staticmethod]
-    pub fn shexc() -> Self {
-        Self {
-            inner: ShExFormat::ShExC,
-        }
-    }
-
-    /// Returns `ShExJ` format
-    #[staticmethod]
-    pub fn shexj() -> Self {
-        Self {
-            inner: ShExFormat::ShExJ,
-        }
-    }
-}
-
-#[pyclass(frozen, name = "ShaclFormat")]
-pub struct PyShaclFormat {
-    inner: ShaclFormat,
-}
-
-#[pymethods]
-impl PyShaclFormat {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ShaclFormat::default(),
-        })
-    }
-
-    /// Returns `Turtle` format
-    #[staticmethod]
-    pub fn turtle() -> Self {
-        Self {
-            inner: ShaclFormat::Turtle,
-        }
-    }
-
-    /// Returns `N-Triples` format
-    #[staticmethod]
-    pub fn ntriples() -> Self {
-        Self {
-            inner: ShaclFormat::NTriples,
-        }
-    }
-
-    /// Returns `RDFXML` format
-    #[staticmethod]
-    pub fn rdfxml() -> Self {
-        Self {
-            inner: ShaclFormat::RDFXML,
-        }
-    }
-
-    // TODO...add more constructors...
+#[pyclass(eq, eq_int, name = "ShaclFormat")]
+#[derive(PartialEq)]
+pub enum PyShaclFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
 }
 
 #[pyclass(frozen, name = "ShExFormatter")]
@@ -681,34 +581,18 @@ impl PyShaclSchema {
     }
 }
 
-#[pyclass(name = "ShaclValidationMode")]
-pub struct PyShaclValidationMode {
-    inner: ShaclValidationMode,
+#[pyclass(eq, eq_int, name = "ShaclValidationMode")]
+#[derive(PartialEq)]
+pub enum PyShaclValidationMode {
+    Native,
+    Sparql,
 }
 
-#[pymethods]
-impl PyShaclValidationMode {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ShaclValidationMode::default(),
-        })
-    }
-}
-
-#[pyclass(name = "ShapesGraphSource")]
-pub struct PyShapesGraphSource {
-    inner: ShapesGraphSource,
-}
-
-#[pymethods]
-impl PyShapesGraphSource {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: ShapesGraphSource::default(),
-        })
-    }
+#[pyclass(eq, eq_int, name = "ShapesGraphSource")]
+#[derive(PartialEq)]
+pub enum PyShapesGraphSource {
+    CurrentData,
+    CurrentSchema,
 }
 
 #[pyclass(frozen, name = "ResultShapeMap")]
@@ -787,4 +671,69 @@ fn cnv_err(e: RudofError) -> PyErr {
     let e: PyRudofError = e.into();
     let e: PyErr = e.into();
     e
+}
+
+fn cnv_dctap_format(format: &PyDCTapFormat) -> DCTAPFormat {
+    match format {
+        PyDCTapFormat::CSV => DCTAPFormat::CSV,
+        PyDCTapFormat::XLSX => DCTAPFormat::XLSX,
+    }
+}
+
+fn cnv_reader_mode(format: &PyReaderMode) -> ReaderMode {
+    match format {
+        PyReaderMode::Lax => ReaderMode::Lax,
+        PyReaderMode::Strict => ReaderMode::Strict,
+    }
+}
+
+fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
+    match format {
+        PyRDFFormat::Turtle => RDFFormat::Turtle,
+        PyRDFFormat::NTriples => RDFFormat::NTriples,
+        PyRDFFormat::RDFXML => RDFFormat::RDFXML,
+        PyRDFFormat::TriG => RDFFormat::TriG,
+        PyRDFFormat::N3 => RDFFormat::N3,
+        PyRDFFormat::NQuads => RDFFormat::NQuads,
+    }
+}
+
+fn cnv_shapemap_format(format: &PyShapeMapFormat) -> ShapeMapFormat {
+    match format {
+        PyShapeMapFormat::Compact => ShapeMapFormat::Compact,
+        PyShapeMapFormat::JSON => ShapeMapFormat::JSON,
+    }
+}
+
+fn cnv_shex_format(format: &PyShExFormat) -> ShExFormat {
+    match format {
+        PyShExFormat::ShExC => ShExFormat::ShExC,
+        PyShExFormat::ShExJ => ShExFormat::ShExJ,
+        PyShExFormat::Turtle => ShExFormat::Turtle,
+    }
+}
+
+fn cnv_shacl_format(format: &PyShaclFormat) -> ShaclFormat {
+    match format {
+        PyShaclFormat::Turtle => ShaclFormat::Turtle,
+        PyShaclFormat::NTriples => ShaclFormat::NTriples,
+        PyShaclFormat::RDFXML => ShaclFormat::RDFXML,
+        PyShaclFormat::TriG => ShaclFormat::TriG,
+        PyShaclFormat::N3 => ShaclFormat::N3,
+        PyShaclFormat::NQuads => ShaclFormat::NQuads,
+    }
+}
+
+fn cnv_shacl_validation_mode(mode: &PyShaclValidationMode) -> ShaclValidationMode {
+    match mode {
+        PyShaclValidationMode::Native => ShaclValidationMode::Native,
+        PyShaclValidationMode::Sparql => ShaclValidationMode::Sparql,
+    }
+}
+
+fn cnv_shapes_graph_source(sgs: &PyShapesGraphSource) -> ShapesGraphSource {
+    match sgs {
+        PyShapesGraphSource::CurrentData => ShapesGraphSource::CurrentData,
+        PyShapesGraphSource::CurrentSchema => ShapesGraphSource::CurrentSchema,
+    }
 }

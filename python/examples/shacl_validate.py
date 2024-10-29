@@ -2,7 +2,7 @@ from pyrudof import Rudof, RudofConfig, ShaclValidationMode, ShapesGraphSource, 
 
 rudof = Rudof(RudofConfig())
 
-rudof.read_data_str("""
+rudof.read_shacl_str("""
 prefix : <http://example.org/>
 prefix sh:     <http://www.w3.org/ns/shacl#> 
 prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
@@ -15,15 +15,15 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] .
-""", RDFFormat.turtle(), None, ReaderMode.lax())
+""")
 
 rudof.read_data_str("""
 prefix : <http://example.org/>
 
 :ok :name "alice" .                 
 :ko :name 1 .
-""", RDFFormat.turtle(), None, ReaderMode.lax())
+""")
 
-result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
+result = rudof.validate_shacl()
 
 print(result.show())
