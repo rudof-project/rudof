@@ -16,12 +16,18 @@ release = pyrudof.__version__
 
 # -- General configuration ---------------------------------------------------
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.doctest", "sphinx.ext.intersphinx"]
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx_rtd_theme'
+]
 
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
+html_theme = "sphinx_rtd_theme"
 html_static_path = []
 html_logo = "https://raw.githubusercontent.com/rudof-project/rudof-project.github.io/refs/heads/main/images/rudof_logo3.svg"
 html_favicon = "https://raw.githubusercontent.com/rudof-project/rudof-project.github.io/refs/heads/main/images/rudof_logo3.svg"
