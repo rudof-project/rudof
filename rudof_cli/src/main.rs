@@ -1433,44 +1433,6 @@ fn parse_shex_schema_rudof(
     Ok(())
 }
 
-/*fn parse_shacl_rudof(
-    rudof: &mut Rudof,
-    input: &InputSpec,
-    shapes_format: &CliShaclFormat,
-    reader_mode: &RDFReaderMode,
-    config: &RdfDataConfig,
-) -> Result<ShaclSchema> {
-    let reader = input.open_read(Some(&shapes_format.mime_type()))?;
-    let base = config.base.as_ref().map(|i| i.as_str());
-    let shacl_format = shacl_format_convert(shapes_format)?;
-    let reader_mode = reader_mode_convert(*reader_mode);
-    // rudof.read_shacl(reader, base, &shacl_format, &reader_mode)?;
-    rudof.merge_data_from_reader(reader, , base, reader_mode)?;
-    if let Some(shacl_schema) = rudof.shacl_schema() {
-        Ok(shacl_schema.clone())
-    } else {
-        bail!("Internal error: SHACL schema was read but it not returned by rudof");
-    }
-}*/
-
-/*
-fn parse_shacl(
-    input: &InputSpec,
-    shapes_format: &ShaclFormat,
-    reader_mode: &RDFReaderMode,
-    config: &RdfDataConfig,
-) -> Result<ShaclSchema> {
-    match shapes_format {
-        ShaclFormat::Internal => bail!("Cannot read internal ShEx format yet"),
-        _ => {
-            let data_format = shacl_format_to_data_format(shapes_format)?;
-            let rdf = parse_data(&vec![input.clone()], &data_format, reader_mode, config)?;
-            let schema = ShaclParser::new(rdf).parse()?;
-            Ok(schema)
-        }
-    }
-} */
-
 fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &DCTapFormat) -> Result<()> {
     let dctap_format = match format {
         DCTapFormat::CSV => DCTAPFormat::CSV,

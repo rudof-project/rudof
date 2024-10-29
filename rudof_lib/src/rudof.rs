@@ -6,6 +6,7 @@ use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 
 use shapemap::{NodeSelector, ShapeSelector};
+use shapes_converter::shex_to_sparql::SelectQuery;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
