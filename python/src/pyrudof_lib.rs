@@ -371,7 +371,7 @@ impl PyRDFFormat {
 
     /// Returns `Turtle` format
     #[staticmethod]
-    pub fn csv() -> Self {
+    pub fn turtle() -> Self {
         Self {
             inner: RDFFormat::Turtle,
         }
@@ -379,7 +379,7 @@ impl PyRDFFormat {
 
     /// Returns `RDFXML` format
     #[staticmethod]
-    pub fn xlsx() -> Self {
+    pub fn rdfxml() -> Self {
         Self {
             inner: RDFFormat::RDFXML,
         }
@@ -387,7 +387,7 @@ impl PyRDFFormat {
 
     /// Returns `NTriples` format
     #[staticmethod]
-    pub fn xls() -> Self {
+    pub fn ntriples() -> Self {
         Self {
             inner: RDFFormat::NTriples,
         }

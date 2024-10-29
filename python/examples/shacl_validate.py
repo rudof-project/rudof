@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, ShaclValidationMode, ShapesGraphSource
+from pyrudof import Rudof, RudofConfig, ShaclValidationMode, ShapesGraphSource, RDFFormat, ReaderMode
 
 rudof = Rudof(RudofConfig())
 
@@ -15,14 +15,14 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] .
-""")
+""", RDFFormat.turtle(), None, ReaderMode.lax())
 
 rudof.read_data_str("""
 prefix : <http://example.org/>
 
 :ok :name "alice" .                 
 :ko :name 1 .
-""")
+""", RDFFormat.turtle(), None, ReaderMode.lax())
 
 result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
 

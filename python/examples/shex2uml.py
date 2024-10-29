@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, UmlGenerationMode
+from pyrudof import Rudof, RudofConfig, UmlGenerationMode, ShExFormat
 
 rudof = Rudof(RudofConfig())
 
@@ -16,7 +16,7 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
   :name xsd:string     ;
   :employee @:Person * ;
 }
-""")
+""", ShExFormat.shexc())
 
 uml_str = rudof.shex2plantuml(UmlGenerationMode.all())
 
