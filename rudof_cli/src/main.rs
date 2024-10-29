@@ -565,7 +565,7 @@ fn run_validate_shex(
         };
         let base_iri = config.shex_config().base;
         let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
-        rudof.read_shex(schema_reader, schema_base, &schema_format)?;
+        rudof.read_shex(schema_reader, &schema_format, schema_base)?;
         get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
 
         let shapemap_format = shapemap_format_convert(shapemap_format);
@@ -1429,7 +1429,7 @@ fn parse_shex_schema_rudof(
     let schema_format = shex_format_convert(schema_format);
     let shex_config = config.shex_config();
     let base = base_convert(&shex_config.base);
-    rudof.read_shex(reader, base, &schema_format)?;
+    rudof.read_shex(reader, &schema_format, base)?;
     Ok(())
 }
 

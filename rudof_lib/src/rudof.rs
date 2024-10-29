@@ -360,8 +360,8 @@ impl Rudof {
     pub fn read_shex<R: io::Read>(
         &mut self,
         reader: R,
-        base: Option<&str>,
         format: &ShExFormat,
+        base: Option<&str>,
     ) -> Result<()> {
         let schema_json = match format {
             ShExFormat::ShExC => {
@@ -668,7 +668,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
+            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
@@ -695,7 +695,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(shex.as_bytes(), None, &ShExFormat::ShExC)
+            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
