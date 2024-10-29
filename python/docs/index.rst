@@ -11,6 +11,7 @@ Installation
 ``pyrudof`` is available on `PyPI <https://pypi.org/project/pyrudof/>`_ and can be installed by running the usual ``pip install pyrudof``, which will install the latest version currently available.
 
 ::
+    
     from pyrudof import *
 
     rudof = Rudof(RudofConfig())
