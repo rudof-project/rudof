@@ -1,14 +1,4 @@
-# Python bindings
+# Python-bindings
 
-Python bindings are published as [pyrudof](https://pypi.org/project/pyrudof/)
-
-## Requirements
-
-```sh
-pip install pyrudof
-```
-
-```python
-from pyrudof import shacl.parse
-parse("examples/simple_shacl.ttl", "simple_shacl.rdf")
-```
+`pyrudof` is available on [PyPI](https://pypi.org/project/pyrudof/) and can be installed by running the usual `pip install pyrudof`, which will install the latest version currently available.
+For a quick access to the Python documentation, check [Read the Docs](https://pyrudof.readthedocs.io/).

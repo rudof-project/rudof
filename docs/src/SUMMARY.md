@@ -24,7 +24,7 @@
 - [Docs](./library/docs.md)
 - [Processing RDF](./library/rdf_processing.md)
 - [Parsing RDF](./library/parsing_processing.md)
-- [Python-bindings](https://pyrudof.readthedocs.io/)
+- [Python-bindings](./library/python.md)
 
 # `rudof` internals
 
