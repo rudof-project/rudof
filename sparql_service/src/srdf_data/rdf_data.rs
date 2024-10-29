@@ -39,6 +39,11 @@ use std::io;
 use std::rc::Rc;
 use std::str::FromStr;
 
+pub enum LoadMode {
+    Materialization,
+    NoMaterialization,
+}
+
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
 #[derive(Clone)]
@@ -76,13 +81,23 @@ impl RdfData {
     }
 
     /// Creates an RdfData from an in-memory RDF Graph
-    pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
-        let store = Store::new()?;
-        store.bulk_loader().load_quads(graph.quads())?;
+    pub fn from_graph(graph: SRDFGraph, load_mode: LoadMode) -> Result<RdfData, RdfDataError> {
+        // in case the LoadMode is se to materialization, it is necessary to
+        // load the graph into the store which is saved, in other case, the
+        // store is set to None
+        let store = match load_mode {
+            LoadMode::Materialization => {
+                let store = Store::new()?;
+                store.bulk_loader().load_quads(graph.quads())?;
+                Some(store)
+            }
+            LoadMode::NoMaterialization => None,
+        };
+
         Ok(RdfData {
-            endpoints: Vec::new(),
+            endpoints: Default::default(),
             graph: Some(graph),
-            store: Some(store),
+            store,
             focus: None,
         })
     }
@@ -400,6 +415,10 @@ impl QuerySRDF for RdfData {
     where
         Self: Sized,
     {
+        if self.store.is_none() {
+            return Err(RdfDataError::MaterializationError);
+        }
+
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         let query = Query::parse(query_str, None)?;
         if let Some(store) = &self.store {

@@ -189,10 +189,15 @@ impl Manifest<RdfData> for GraphManifest {
     }
 
     fn load_data_graph(path: &Path, base: &str) -> RdfData {
-        Graph::from_path(Path::new(path), RDFFormat::Turtle, Some(base))
-            .unwrap()
-            .store()
-            .to_owned()
+        Graph::from_path(
+            Path::new(path),
+            RDFFormat::Turtle,
+            Some(base),
+            sparql_service::LoadMode::NoMaterialization,
+        )
+        .unwrap()
+        .store()
+        .to_owned()
     }
 
     fn base(&self) -> String {

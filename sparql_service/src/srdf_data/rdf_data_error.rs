@@ -45,4 +45,7 @@ pub enum RdfDataError {
         #[from]
         err: EvaluationError,
     },
+
+    #[error("the Store has not been materialized, no query operation can be performed. Try setting the proper LoadMode when creating the Graph")]
+    MaterializationError,
 }

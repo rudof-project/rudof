@@ -1,5 +1,6 @@
 use clap::ValueEnum;
 use shacl_ast::compiled::schema::CompiledSchema;
+use sparql_service::LoadMode;
 use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::SRDFBasic;
@@ -78,7 +79,7 @@ pub trait ShaclProcessor<S: SRDFBasic + Debug> {
 /// use shacl_validation::store::ShaclDataManager;
 /// use srdf::RDFFormat;
 ///
-/// let graph_validation = GraphValidation::new(
+/// let graph_validation = GraphValidation::from_path(
 ///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
 ///     RDFFormat::Turtle, // serialization format of the graph
 ///     None, // no base is defined
@@ -121,7 +122,7 @@ impl GraphValidation {
     /// use shacl_validation::shacl_processor::ShaclProcessor;
     /// use srdf::RDFFormat;
     ///
-    /// let graph_validation = GraphValidation::new(
+    /// let graph_validation = GraphValidation::from_path(
     ///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
     ///     RDFFormat::Turtle, // serialization format of the graph
     ///     None, // no base is defined
@@ -135,7 +136,15 @@ impl GraphValidation {
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
         Ok(GraphValidation {
-            store: Graph::from_path(data, data_format, base)?,
+            store: Graph::from_path(
+                data,
+                data_format,
+                base,
+                match mode {
+                    ShaclValidationMode::Native => LoadMode::NoMaterialization,
+                    ShaclValidationMode::Sparql => LoadMode::Materialization,
+                },
+            )?,
             mode,
         })
     }
