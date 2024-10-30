@@ -51,6 +51,10 @@ impl PyRudof {
         })
     }
 
+    pub fn update_config(&mut self, config: &PyRudofConfig) {
+        self.inner.update_config(&config.inner)
+    }
+
     /// Obtain the version of the Rudof library
     #[pyo3(signature = ())]
     pub fn version(&self) -> PyResult<String> {
@@ -92,14 +96,14 @@ impl PyRudof {
     #[pyo3(signature = ())]
     pub fn get_dctap(&self) -> Option<PyDCTAP> {
         let dctap = self.inner.get_dctap();
-        dctap.map(|s| PyDCTAP { _inner: s.clone() })
+        dctap.map(|s| PyDCTAP { inner: s.clone() })
     }
 
     /// Obtains the current ShEx Schema
     #[pyo3(signature = ())]
     pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
-        shex_schema.map(|s| PyShExSchema { _inner: s.clone() })
+        shex_schema.map(|s| PyShExSchema { inner: s.clone() })
     }
 
     /// Obtains the current Shapemap
@@ -487,6 +491,7 @@ impl PyShExFormatter {
     }
 }
 
+/// Defines how to format a ShapeMap
 #[pyclass(frozen, name = "ShapeMapFormatter")]
 pub struct PyShapeMapFormatter {
     inner: ShapeMapFormatter,
@@ -541,17 +546,25 @@ impl PyUmlGenerationMode {
 
 #[pyclass(name = "ShExSchema")]
 pub struct PyShExSchema {
-    _inner: ShExSchema,
+    inner: ShExSchema,
 }
 
-impl PyShExSchema {}
+impl PyShExSchema {
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+}
 
 #[pyclass(name = "DCTAP")]
 pub struct PyDCTAP {
-    _inner: DCTAP,
+    inner: DCTAP,
 }
 
-impl PyDCTAP {}
+impl PyDCTAP {
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+}
 
 #[pyclass(name = "QueryShapeMap")]
 pub struct PyQueryShapeMap {
@@ -563,6 +576,10 @@ impl PyQueryShapeMap {
         let result = &self.inner;
         format!("{result:?}")
     }
+
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
 }
 
 #[pyclass(name = "ShaclSchema")]
@@ -571,9 +588,8 @@ pub struct PyShaclSchema {
 }
 
 impl PyShaclSchema {
-    pub fn serialize(&self, _format: &ShaclFormat) -> String {
-        let result = &self.inner;
-        format!("{result:?}")
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
     }
 }
 

@@ -46,6 +46,16 @@ impl Schema {
     }
 }
 
+/*impl Display for Schema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
+        )
+    }
+}*/
+
 impl Display for Schema {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (id, shape) in self.shapes.iter() {

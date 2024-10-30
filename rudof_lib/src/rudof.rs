@@ -59,6 +59,10 @@ impl Rudof {
         }
     }
 
+    pub fn update_config(&mut self, config: &RudofConfig) {
+        self.config = config.clone();
+    }
+
     /// Resets the current RDF Data
     pub fn reset_data(&mut self) {
         self.rdf_data = RdfData::new()

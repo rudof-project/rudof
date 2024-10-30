@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [v0.1.49] - 2025-10-30
+
+- Implemented Display for ShapeMap, ShEx-schema and SHACL-schema
+- Added `__repr__` to ShapeMap, ShExSchema and SHACLSchema
+- Added `update_config` to rudof and pyrudof
+
 ## [v0.1.48] - 2025-10-29
 
 - Minor release to force re-publication

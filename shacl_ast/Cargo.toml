@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ast"
-version = "0.1.35"
+version = "0.1.49"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ast"

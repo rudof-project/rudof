@@ -3,6 +3,7 @@ use crate::ShapeExprLabel;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 use tracing::debug;
@@ -274,6 +275,17 @@ impl Schema {
 impl Default for Schema {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Display for Schema {
+    // TODO: Improve
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
+        )
     }
 }
 

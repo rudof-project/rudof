@@ -1,6 +1,6 @@
 [package]
 name = "shex_ast"
-version = "0.1.39"
+version = "0.1.49"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
