@@ -10,7 +10,7 @@ type OutgoingArcs<I, T> = (HasMapOfIriAndItem<I, T>, Vec<I>);
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 ///
-///
+/// TODO: Consider alternative names: RDFGraphOps
 pub trait SRDF: SRDFBasic {
     fn predicates_for_subject(
         &self,

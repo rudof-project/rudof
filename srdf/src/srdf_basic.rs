@@ -9,6 +9,7 @@ use crate::Object;
 
 /// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
 ///
+/// TODO: Consider splitting this trait in two traits: RDFNodeComparison, RDFNodeConversion
 pub trait SRDFBasic {
     /// RDF subjects
     type Subject: Debug + Display + PartialEq + Clone + Eq + Hash;
@@ -40,7 +41,9 @@ pub trait SRDFBasic {
     /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
-    fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>;
+    // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>;
+    fn term_as_iri(object: &Self::Term) -> Option<&Self::IRI>;
+
     fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
     fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>;
     fn term_as_boolean(object: &Self::Term) -> Option<bool> {
@@ -49,8 +52,8 @@ pub trait SRDFBasic {
     }
     fn term_as_object(term: &Self::Term) -> Object;
 
-    fn object_as_term(obj: &Object) -> Self::Term;
-    fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
+    fn object_as_term<'a>(obj: &'a Object) -> Self::Term;
+    fn object_as_subject<'a>(obj: &'a Object) -> Option<Self::Subject> {
         let term = Self::object_as_term(obj);
         Self::term_as_subject(&term)
     }

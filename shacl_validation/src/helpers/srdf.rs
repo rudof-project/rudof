@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{Object, SRDF};
+use srdf::{RDFNode, SRDF};
 
 use super::helper_error::SRDFError;
 
@@ -8,7 +8,7 @@ pub(crate) fn get_object_for<S: SRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
-) -> Result<Option<Object>, SRDFError> {
+) -> Result<Option<RDFNode>, SRDFError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
         .next()

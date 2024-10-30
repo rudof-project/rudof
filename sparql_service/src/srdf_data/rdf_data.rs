@@ -201,9 +201,16 @@ impl SRDFBasic for RdfData {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_iri(object: &Self::Term) -> Option<Self::IRI> {
+    /*fn term_as_iri(object: &Self::Term) -> Option<Self::IRI> {
         match object {
             OxTerm::NamedNode(n) => Some(n.clone()),
+            _ => None,
+        }
+    }*/
+
+    fn term_as_iri(object: &Self::Term) -> Option<&Self::IRI> {
+        match object {
+            OxTerm::NamedNode(n) => Some(n),
             _ => None,
         }
     }

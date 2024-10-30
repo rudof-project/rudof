@@ -261,9 +261,9 @@ impl SRDFBasic for SRDFGraph {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
+    fn term_as_iri(object: &OxTerm) -> Option<&OxNamedNode> {
         match object {
-            OxTerm::NamedNode(n) => Some(n.clone()),
+            OxTerm::NamedNode(n) => Some(n),
             _ => None,
         }
     }

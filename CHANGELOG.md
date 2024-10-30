@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.48] - 2025-10-29
+
+- Minor release to force re-publication
+
 ## [v0.1.47] - 2025-10-29
 
 - Changed the way that we represent enums in Python to use propre enums with default values
