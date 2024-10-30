@@ -622,7 +622,7 @@ where
         None => Err(RDFParseError::ExpectedIRI {
             term: format!("{t}"),
         }),
-        Some(v) => Ok(RDF::iri2iri_s(&v)),
+        Some(v) => Ok(RDF::iri2iri_s(v)),
     })
 }
 
@@ -709,7 +709,7 @@ where
     satisfy(
         |node: &RDF::Term| match RDF::term_as_iri(node) {
             Some(iri) => {
-                let iri_s = RDF::iri2iri_s(&iri);
+                let iri_s = RDF::iri2iri_s(iri);
                 iri_s.as_str() == RDF_NIL_STR
             }
             None => false,
@@ -1098,7 +1098,7 @@ where
     let iri = RDF::term_as_iri(term).ok_or_else(|| RDFParseError::ExpectedIRI {
         term: format!("{term}"),
     })?;
-    Ok(RDF::iri2iri_s(&iri))
+    Ok(RDF::iri2iri_s(iri))
 }
 
 fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError>
@@ -1359,7 +1359,7 @@ where
     RDF: SRDF,
 {
     if let Some(iri) = RDF::term_as_iri(node) {
-        RDF::iri2iri_s(&iri) == *RDF_NIL
+        RDF::iri2iri_s(iri) == *RDF_NIL
     } else {
         false
     }
@@ -1374,7 +1374,7 @@ where
     satisfy(
         move |node: &RDF::Term| match RDF::term_as_iri(node) {
             Some(iri) => {
-                let iri_s = RDF::iri2iri_s(&iri);
+                let iri_s = RDF::iri2iri_s(iri);
                 iri_s == expected_iri
             }
             None => false,
@@ -1751,7 +1751,7 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         let rdf_type = parse_rdf_type().parse_impl(rdf)?;
         let iri_type = match RDF::term_as_iri(&rdf_type) {
-            Some(iri) => RDF::iri2iri_s(&iri),
+            Some(iri) => RDF::iri2iri_s(iri),
             None => {
                 return Err(RDFParseError::ExpectedIRI {
                     term: format!("{rdf_type}"),

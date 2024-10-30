@@ -52,8 +52,8 @@ pub trait SRDFBasic {
     }
     fn term_as_object(term: &Self::Term) -> Object;
 
-    fn object_as_term<'a>(obj: &'a Object) -> Self::Term;
-    fn object_as_subject<'a>(obj: &'a Object) -> Option<Self::Subject> {
+    fn object_as_term(obj: &Object) -> Self::Term;
+    fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
         let term = Self::object_as_term(obj);
         Self::term_as_subject(&term)
     }
@@ -78,7 +78,7 @@ pub trait SRDFBasic {
     }
 
     fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
-        Self::term_as_iri(term).map(|iri| Self::iri2iri_s(&iri))
+        Self::term_as_iri(term).map(|iri| Self::iri2iri_s(iri))
     }
 
     fn term_as_integer(term: &Self::Term) -> Option<isize> {

@@ -28,7 +28,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxLength {
             } else {
                 let string_representation = match S::term_as_string(value_node) {
                     Some(string_representation) => string_representation,
-                    None => S::iri2iri_s(&S::term_as_iri(value_node).unwrap()).to_string(),
+                    None => S::iri2iri_s(S::term_as_iri(value_node).unwrap()).to_string(),
                 };
                 string_representation.len() > self.max_length() as usize
             }

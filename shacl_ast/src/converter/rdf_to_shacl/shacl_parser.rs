@@ -657,7 +657,7 @@ where
 {
     match RDF::term_as_iri(term) {
         Some(iri) => {
-            let iri_s = RDF::iri2iri_s(&iri);
+            let iri_s = RDF::iri2iri_s(iri);
             match iri_s.as_str() {
                 SH_IRI_STR => Ok(NodeKind::Iri),
                 SH_LITERAL_STR => Ok(NodeKind::Literal),
