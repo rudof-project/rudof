@@ -17,16 +17,15 @@ use rand::distributions::Alphanumeric;
 use rand::thread_rng;
 
 
-use super::RandomField;  
+use super::RandomLiteral;  
 
-impl RandomField for Literal {
+impl RandomLiteral for Literal {
     fn generate_random(&self) -> Self {
         match self  {
             BooleanLiteral(_) => generate_random_boolean_literal(),
             NumericLiteral(_) => generate_random_numeric_literal(),
             DatatypeLiteral {..} => generate_random_datatype_literal(),
-            StringLiteral {.. } => generate_random_string_literal () ,
-            
+            StringLiteral {..} => generate_random_string_literal(),
         }
     }
 }
@@ -39,16 +38,16 @@ fn generate_random_string_literal () -> Literal{
     let mut rng = rand::thread_rng();
 
     // Generate a random string for lexical_form
-    let lexical_form_length = rng.gen_range(5..20); // random length between 5 and 20
+    let lexical_form_length = rng.gen_range(5..20); 
     let lexical_form: String = (0..lexical_form_length)
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
 
     // Optionally generate a language
     let lang = if rng.gen_bool(0.5) {
-        Some(Lang::new("en")) // Generate a random Lang
+        Some(Lang::new("en")) 
     } else {
-        None // or no language
+        None 
     };
     
     StringLiteral {

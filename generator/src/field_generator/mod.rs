@@ -1,5 +1,5 @@
 pub mod implementations;
 
-pub trait RandomField {
+pub trait RandomLiteral {
     fn generate_random(&self) -> Self;
 }

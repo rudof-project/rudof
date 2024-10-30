@@ -1,5 +1,5 @@
 
-use generator::field_generator::RandomField;
+use generator::field_generator::RandomLiteral;
 use srdf::literal::Literal;
 
 fn main() {
