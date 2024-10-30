@@ -14,7 +14,7 @@
 
 ## [v0.1.47] - 2025-10-29
 
-- Changed the way that we represent enums in Python to use propre enums with default values
+- Changed the way that we represent enums in Python to use proper enums with default values
 - Added `read_shacl_str` and `read_shacl_path` to pyrudof
 
 ## [v0.1.46] - 2025-10-29
