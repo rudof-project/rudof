@@ -243,6 +243,31 @@ impl PyRudof {
         self.inner.reset_validation_results();
     }
 
+    /// Adds RDF data read from a Path
+    #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_data_path(
+        &mut self,
+        path_name: &str,
+        format: &PyRDFFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+        let format = cnv_rdf_format(format);
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingDCTAPPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let reader = BufReader::new(file);
+        self.inner
+            .read_data(reader, &format, base, &reader_mode)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
     /// Adds RDF data read from a String to the current RDF Data
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_str(

@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.50] - 2025-10-31
+
+- Fix: We repaired some export issues on UmlGenerationMode and the `__repr__` methods which were not properly generated.
+
 ## [v0.1.49] - 2025-10-30
 
 - Implemented Display for ShapeMap, ShEx-schema and SHACL-schema
