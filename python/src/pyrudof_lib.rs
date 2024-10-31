@@ -37,6 +37,11 @@ impl PyRudofConfig {
     }
 }
 
+/// Main class to handle `rudof` features.
+/// It is currently `unsendable` and doesn't support multiple threads.
+/// There should  be only one instance of `rudof` per program.
+///
+// TODO: review the unsendable constraint and check if we can remove it in the future
 #[pyclass(unsendable, name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
@@ -306,7 +311,7 @@ impl PyRudof {
     pub fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
         self.inner
-            .shex2plant_uml(&uml_mode.inner, &mut v)
+            .shex2plant_uml(&uml_mode.into(), &mut v)
             .map_err(|e| RudofError::ShEx2PlantUmlError {
                 error: format!("Error generating UML: {e}"),
             })
@@ -515,31 +520,51 @@ impl PyShapeMapFormatter {
     }
 }
 
-#[pyclass(frozen, name = "UmlGenerationMode")]
-pub struct PyUmlGenerationMode {
-    inner: UmlGenerationMode,
+#[pyclass(name = "UmlGenerationMode")]
+pub enum PyUmlGenerationMode {
+    /// Generate UML for all nodes
+    #[pyo3(name = "AllNodes")]
+    PyAllNodes {},
+
+    /// Generate UML only for the neighbours of a shape
+    #[pyo3(constructor = (node), name ="Neighs")]
+    PyNeighs { node: String },
 }
 
 #[pymethods]
 impl PyUmlGenerationMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
-            inner: UmlGenerationMode::all(),
-        })
+        py.allow_threads(|| PyUmlGenerationMode::PyAllNodes {})
     }
 
     #[staticmethod]
     pub fn all() -> Self {
-        Self {
-            inner: UmlGenerationMode::all(),
-        }
+        PyUmlGenerationMode::PyAllNodes {}
     }
 
     #[staticmethod]
     pub fn neighs(node: &str) -> Self {
-        Self {
-            inner: UmlGenerationMode::neighs(node),
+        PyUmlGenerationMode::PyNeighs {
+            node: node.to_string(),
+        }
+    }
+}
+
+impl From<&PyUmlGenerationMode> for UmlGenerationMode {
+    fn from(m: &PyUmlGenerationMode) -> UmlGenerationMode {
+        match m {
+            PyUmlGenerationMode::PyAllNodes {} => UmlGenerationMode::AllNodes,
+            PyUmlGenerationMode::PyNeighs { node } => UmlGenerationMode::Neighs(node.to_string()),
+        }
+    }
+}
+
+impl From<UmlGenerationMode> for PyUmlGenerationMode {
+    fn from(value: UmlGenerationMode) -> Self {
+        match value {
+            UmlGenerationMode::AllNodes => PyUmlGenerationMode::PyAllNodes {},
+            UmlGenerationMode::Neighs(node) => PyUmlGenerationMode::PyNeighs { node },
         }
     }
 }
@@ -549,6 +574,7 @@ pub struct PyShExSchema {
     inner: ShExSchema,
 }
 
+#[pymethods]
 impl PyShExSchema {
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
@@ -560,8 +586,13 @@ pub struct PyDCTAP {
     inner: DCTAP,
 }
 
+#[pymethods]
 impl PyDCTAP {
     pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    pub fn __str__(&self) -> String {
         format!("{}", self.inner)
     }
 }
@@ -571,12 +602,8 @@ pub struct PyQueryShapeMap {
     inner: QueryShapeMap,
 }
 
+#[pymethods]
 impl PyQueryShapeMap {
-    pub fn serialize(&self, _format: &ShExFormat) -> String {
-        let result = &self.inner;
-        format!("{result:?}")
-    }
-
     fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
@@ -587,6 +614,7 @@ pub struct PyShaclSchema {
     inner: ShaclSchema,
 }
 
+#[pymethods]
 impl PyShaclSchema {
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
@@ -661,7 +689,7 @@ impl PyValidationStatus {
     }
 }
 
-#[pyclass]
+#[pyclass(name = "RudofError")]
 /// Wrapper for `RudofError`
 pub struct PyRudofError {
     error: RudofError,

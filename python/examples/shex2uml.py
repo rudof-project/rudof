@@ -1,5 +1,4 @@
 from pyrudof import Rudof, RudofConfig, UmlGenerationMode, ShExFormat
-
 rudof = Rudof(RudofConfig())
 
 rudof.read_shex_str("""
@@ -16,8 +15,9 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
   :name xsd:string     ;
   :employee @:Person * ;
 }
-""", ShExFormat.shexc())
+""")
 
 uml_str = rudof.shex2plantuml(UmlGenerationMode.all())
 
 print(uml_str)
+
