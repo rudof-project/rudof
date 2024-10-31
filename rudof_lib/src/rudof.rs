@@ -17,7 +17,7 @@ use std::path::Path;
 use std::str::FromStr;
 use std::{io, result};
 
-// This structs are re-exported as they may be needed in main
+// These are the structs that are publicly re-exported
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use shacl_ast::ShaclFormat;
@@ -34,6 +34,7 @@ pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
 
 /// This represents the public API to interact with `rudof`
+#[derive(Debug)]
 pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
@@ -44,6 +45,10 @@ pub struct Rudof {
     shapemap: Option<QueryShapeMap>,
     dctap: Option<DCTAP>,
 }
+
+// TODO: We added this declaration so PyRudof can contain Rudof and be Send as required by PyO3
+// TODO: Review what are the consequences of this declaration
+unsafe impl Send for Rudof {}
 
 impl Rudof {
     pub fn new(config: &RudofConfig) -> Rudof {
