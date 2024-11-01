@@ -1,6 +1,6 @@
 [package]
 name = "shex_compact"
-version = "0.1.39"
+version = "0.1.52"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_compact"
