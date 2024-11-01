@@ -1114,8 +1114,17 @@ fn get_data_rudof(
             Ok(())
         }
         (true, Some(endpoint)) => {
-            let endpoint_iri = IriS::from_str(endpoint.as_str())?;
-            rudof.add_endpoint(&endpoint_iri)?;
+            let (endpoint_iri, prefixmap) =
+                if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
+                    (
+                        endpoint_descr.query_url().clone(),
+                        endpoint_descr.prefixmap().clone(),
+                    )
+                } else {
+                    let iri = IriS::from_str(endpoint.as_str())?;
+                    (iri, PrefixMap::basic())
+                };
+            rudof.add_endpoint(&endpoint_iri, &prefixmap)?;
             Ok(())
         }
         (false, Some(_)) => {
@@ -1315,7 +1324,7 @@ where
                 Some(subject) => Ok(subject),
             }
         }
-        ObjectValue::Literal(_lit) => Err(anyhow!("Node must be an IRI")),
+        ObjectValue::Literal(lit) => Err(anyhow!("Node must be an IRI, but found a literal {lit}")),
     }
 }
 

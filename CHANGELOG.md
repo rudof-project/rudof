@@ -2,6 +2,18 @@
 
 ## Current changes without release yet
 
+## [v0.1.52] - 2025-11-1
+
+- Added `endpoints` to `RdfDataConfig` to contain a list of built-in endpoints
+- Added prefixmap as a parameter to create `SRDFPARQL` endpoints
+- Solved problem when asking information about a node in wikidata endpoint
+- Added `config()` method to obtain `rudof` config
+- Improved `add_endpoint()` in pyrudof to search for the list of built-in endpoints in RDFDataConfig
+
+## [v0.1.51] - 2025-10-31
+
+- Added `read_data_path` to `pyrudof`
+
 ## [v0.1.50] - 2025-10-31
 
 - Fix: We repaired some export issues on UmlGenerationMode and the `__repr__` methods which were not properly generated.

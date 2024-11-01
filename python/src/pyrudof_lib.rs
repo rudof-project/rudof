@@ -2,8 +2,8 @@
 //!
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    iri, DCTAPFormat, QueryShapeMap, RDFFormat, ReaderMode, ResultShapeMap, Rudof, RudofConfig,
-    RudofError, ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema,
+    iri, DCTAPFormat, PrefixMap, QueryShapeMap, RDFFormat, ReaderMode, ResultShapeMap, Rudof,
+    RudofConfig, RudofError, ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema,
     ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode,
     ValidationReport, ValidationStatus, DCTAP,
 };
@@ -417,8 +417,21 @@ impl PyRudof {
     /// Adds an endpoint to the current RDF Data
     #[pyo3(signature = (endpoint))]
     pub fn add_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
-        let iri = iri!(endpoint);
-        self.inner.add_endpoint(&iri).map_err(cnv_err)
+        // TODO: Check if it is in the RDF Data Config endpoints...
+        let config = self.inner.config();
+        let (endpoint_iri, prefixmap) =
+            if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
+                (
+                    endpoint_descr.query_url().clone(),
+                    endpoint_descr.prefixmap().clone(),
+                )
+            } else {
+                let iri = iri!(endpoint);
+                (iri, PrefixMap::basic())
+            };
+        self.inner
+            .add_endpoint(&endpoint_iri, &prefixmap)
+            .map_err(cnv_err)
     }
 }
 

@@ -372,8 +372,6 @@ impl PrefixMap {
             ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ]))
         .unwrap()
-        // .without_default_colors()
-        // .with_hyperlink(true)
     }
 
     /// Default Wikidata prefixmap

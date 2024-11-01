@@ -13,6 +13,12 @@ pub enum ParseError {
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
+    #[error("Parsing node selector for string: {str}: {err}")]
+    NodeSelectorNomError {
+        err: Box<LocatedParseError>,
+        str: String,
+    },
+
     #[error(transparent)]
     IOError {
         #[from]

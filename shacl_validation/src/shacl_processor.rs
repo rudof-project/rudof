@@ -1,4 +1,5 @@
 use clap::ValueEnum;
+use prefixmap::PrefixMap;
 use shacl_ast::compiled::schema::CompiledSchema;
 use sparql_service::RdfData;
 use srdf::RDFFormat;
@@ -165,9 +166,13 @@ pub struct EndpointValidation {
 }
 
 impl EndpointValidation {
-    pub fn new(data: &str, mode: ShaclValidationMode) -> Result<Self, ValidateError> {
+    pub fn new(
+        data: &str,
+        prefixmap: &PrefixMap,
+        mode: ShaclValidationMode,
+    ) -> Result<Self, ValidateError> {
         Ok(EndpointValidation {
-            store: Endpoint::new(data)?,
+            store: Endpoint::new(data, prefixmap)?,
             mode,
         })
     }

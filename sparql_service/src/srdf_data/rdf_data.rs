@@ -395,10 +395,20 @@ impl SRDFBasic for RdfData {
         prefix: &str,
         local: &str,
     ) -> Result<iri_s::IriS, prefixmap::PrefixMapError> {
-        let iri = self
-            .prefixmap_in_memory()
-            .resolve_prefix_local(prefix, local)?;
-        Ok(iri.clone())
+        if let Some(graph) = self.graph() {
+            let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
+            Ok(iri.clone())
+        } else {
+            for e in self.endpoints.iter() {
+                if let Ok(iri) = e.prefixmap().resolve_prefix_local(prefix, local) {
+                    return Ok(iri.clone());
+                }
+            }
+            Err(prefixmap::PrefixMapError::PrefixNotFound {
+                prefix: prefix.to_string(),
+                prefixmap: PrefixMap::new(),
+            })
+        }
     }
 }
 

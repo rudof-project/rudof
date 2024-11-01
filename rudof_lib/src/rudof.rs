@@ -1,6 +1,5 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use iri_s::IriS;
-use prefixmap::PrefixMap;
 use shacl_ast::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
@@ -20,6 +19,7 @@ use std::{io, result};
 // These are the structs that are publicly re-exported
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
+pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
@@ -62,6 +62,10 @@ impl Rudof {
             shapemap: None,
             dctap: None,
         }
+    }
+
+    pub fn config(&self) -> &RudofConfig {
+        &self.config
     }
 
     pub fn update_config(&mut self, config: &RudofConfig) {
@@ -497,12 +501,13 @@ impl Rudof {
     }
 
     /// Adds an endpoint to the current RDF data
-    pub fn add_endpoint(&mut self, iri: &IriS) -> Result<()> {
+    pub fn add_endpoint(&mut self, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
         let sparql_endpoint =
-            SRDFSparql::new(iri).map_err(|e| RudofError::AddingEndpointError {
+            SRDFSparql::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
                 iri: iri.clone(),
                 error: format!("{e}"),
             })?;
+
         self.rdf_data.add_endpoint(sparql_endpoint);
         Ok(())
     }

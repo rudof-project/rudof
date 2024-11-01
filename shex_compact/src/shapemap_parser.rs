@@ -82,10 +82,16 @@ impl<'a> ShapeMapParser<'a> {
         let span = Span::new(str);
         let (_, ns) = node_selector()(span).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
-                msg: format!("Incomplete input: needed {s:?}"),
+                msg: format!("Incomplete input parsing node selector {str}: needed {s:?}"),
             },
-            Err::Error(e) => ParseError::NomError { err: Box::new(e) },
-            Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
+            Err::Error(e) => ParseError::NodeSelectorNomError {
+                str: str.to_string(),
+                err: Box::new(e),
+            },
+            Err::Failure(f) => ParseError::NodeSelectorNomError {
+                str: str.to_string(),
+                err: Box::new(f),
+            },
         })?;
         Ok(ns)
     }

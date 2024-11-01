@@ -36,11 +36,11 @@ pub struct SRDFSparql {
 }
 
 impl SRDFSparql {
-    pub fn new(iri: &IriS) -> Result<SRDFSparql> {
+    pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<SRDFSparql> {
         let client = sparql_client()?;
         Ok(SRDFSparql {
             endpoint_iri: iri.clone(),
-            prefixmap: PrefixMap::new(),
+            prefixmap: prefixmap.clone(),
             client,
         })
     }
@@ -49,9 +49,16 @@ impl SRDFSparql {
         &self.endpoint_iri
     }
 
+    pub fn prefixmap(&self) -> &PrefixMap {
+        &self.prefixmap
+    }
+
     pub fn wikidata() -> Result<SRDFSparql> {
-        let endpoint = SRDFSparql::new(&IriS::new_unchecked("https://query.wikidata.org/sparql"))?;
-        Ok(endpoint.with_prefixmap(PrefixMap::wikidata()))
+        let endpoint = SRDFSparql::new(
+            &IriS::new_unchecked("https://query.wikidata.org/sparql"),
+            &PrefixMap::wikidata(),
+        )?;
+        Ok(endpoint)
     }
 
     pub fn with_prefixmap(mut self, pm: PrefixMap) -> SRDFSparql {
