@@ -33,7 +33,7 @@ use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
-use sparql_service::{QueryConfig, RdfData, ServiceDescription};
+use sparql_service::{LoadMode, QueryConfig, RdfData, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::{
     QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName, SRDF,
@@ -1062,7 +1062,7 @@ fn get_data(
         (false, None) => {
             // let data_path = cast_to_data_path(data)?;
             let data = parse_data(data, data_format, reader_mode, config)?;
-            Ok(RdfData::from_graph(data)?)
+            Ok(RdfData::from_graph(data, LoadMode::NoMaterialization)?)
         }
         (true, Some(endpoint)) => {
             let endpoint = SRDFSparql::from_str(endpoint)?;

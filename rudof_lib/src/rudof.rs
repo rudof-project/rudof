@@ -427,7 +427,7 @@ impl Rudof {
         let (compiled_schema, shacl_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
                 let ast_schema = self.shacl_schema.as_ref().unwrap();
-                let compiled_schema = ast_schema.clone().to_owned().try_into().map_err(|e| {
+                let compiled_schema = ast_schema.to_owned().try_into().map_err(|e| {
                     RudofError::SHACLCompilationError {
                         error: format!("{e}"),
                         schema: Box::new(ast_schema.clone()),

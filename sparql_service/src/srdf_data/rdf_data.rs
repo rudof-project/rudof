@@ -1,13 +1,13 @@
-use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
 use oxigraph::sparql::Query;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
-use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
-};
+use oxrdf::BlankNode as OxBlankNode;
+use oxrdf::Literal as OxLiteral;
+use oxrdf::NamedNode as OxNamedNode;
+use oxrdf::Subject as OxSubject;
+use oxrdf::Term as OxTerm;
 use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
@@ -38,6 +38,8 @@ use std::hash::Hash;
 use std::io;
 use std::rc::Rc;
 use std::str::FromStr;
+
+use super::RdfDataError;
 
 pub enum LoadMode {
     Materialization,
