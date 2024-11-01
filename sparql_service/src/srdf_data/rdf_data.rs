@@ -368,7 +368,16 @@ impl SRDFBasic for RdfData {
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
-        self.prefixmap_in_memory().qualify(&iri)
+        if let Some(graph) = &self.graph {
+            graph.prefixmap().qualify(&iri)
+        } else {
+            for e in self.endpoints.iter() {
+                if let Some(qualified) = e.prefixmap().qualify_optional(&iri) {
+                    return qualified;
+                }
+            }
+            format!("<{node}>")
+        }
     }
 
     fn qualify_subject(&self, subj: &Self::Subject) -> String {
@@ -394,7 +403,7 @@ impl SRDFBasic for RdfData {
         &self,
         prefix: &str,
         local: &str,
-    ) -> Result<iri_s::IriS, prefixmap::PrefixMapError> {
+    ) -> Result<IriS, prefixmap::PrefixMapError> {
         if let Some(graph) = self.graph() {
             let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
             Ok(iri.clone())

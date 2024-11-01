@@ -214,6 +214,36 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
+        if let Some(qualified) = self.qualify_optional(iri) {
+            qualified
+        } else {
+            format!("<{iri}>")
+        }
+    }
+
+    /// Qualifies an IRI against a prefix map
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use prefixmap::PrefixMap;
+    /// # use prefixmap::PrefixMapError;
+    /// # use iri_s::*;
+    /// # use std::str::FromStr;
+    /// let pm = PrefixMap::from_hashmap(
+    ///   &HashMap::from([
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
+    /// )?;
+    /// let a = IriS::from_str("http://example.org/a")?;
+    /// assert_eq!(pm.qualify(&a), ":a");
+    ///
+    /// let knows = IriS::from_str("http://schema.org/knows")?;
+    /// assert_eq!(pm.qualify(&knows), "schema:knows");
+    ///
+    /// let other = IriS::from_str("http://other.org/foo")?;
+    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
+    /// # Ok::<(), PrefixMapError>(())
+    /// ```
+    pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
         let mut founds: Vec<_> = self
             .map
             .iter()
@@ -237,22 +267,21 @@ impl PrefixMap {
                 Some(color) => ":".color(color),
                 None => ColoredString::from(":"),
             };
-            format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored)
+            Some(format!(
+                "{}{}{}",
+                prefix_colored, semicolon_colored, rest_colored
+            ))
         } else {
-            format!("<{iri}>")
+            None
         };
         if self.hyperlink {
-            format!(
-                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
-                iri.as_str(),
-                str
-            )
+            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s.as_str(), s))
         } else {
             str
         }
     }
 
-    /// Qualifies an IRI against a prefix map
+    /// Qualifies an IRI against a prefix map returning the length of the qualified string
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;

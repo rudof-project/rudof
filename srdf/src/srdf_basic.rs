@@ -143,5 +143,7 @@ pub trait SRDFBasic {
     fn qualify_term(&self, term: &Self::Term) -> String;
 
     fn prefixmap(&self) -> Option<PrefixMap>;
+
+    /// Resolves a a prefix and a local name and obtains the corresponding full `IriS`
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 }

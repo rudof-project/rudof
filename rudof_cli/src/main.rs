@@ -1201,7 +1201,11 @@ where
 {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
-        writeln!(writer, "Information about node")?;
+        writeln!(
+            writer,
+            "Information about {}",
+            rdf.qualify_subject(&subject)
+        )?;
 
         // Show outgoing arcs
         match show_node_mode {
