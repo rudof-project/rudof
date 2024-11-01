@@ -38,11 +38,9 @@ impl PyRudofConfig {
 }
 
 /// Main class to handle `rudof` features.
-/// It is currently `unsendable` and doesn't support multiple threads.
 /// There should  be only one instance of `rudof` per program.
 ///
-// TODO: review the unsendable constraint and check if we can remove it in the future
-#[pyclass(unsendable, name = "Rudof")]
+#[pyclass(name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
 }
@@ -435,10 +433,14 @@ impl PyRudof {
     }
 }
 
+/// Declares a `ReaderMode` for parsing RDF data
 #[pyclass(eq, eq_int, name = "ReaderMode")]
 #[derive(PartialEq)]
 pub enum PyReaderMode {
+    /// It ignores the errors and tries to continue the processing
     Lax,
+
+    /// It fails with the first error
     Strict,
 }
 
@@ -448,20 +450,9 @@ impl PyReaderMode {
     pub fn __init__(py: Python<'_>) -> Self {
         py.allow_threads(|| PyReaderMode::Lax)
     }
-
-    /// Returns `lax` reader mode
-    #[staticmethod]
-    pub fn lax() -> Self {
-        PyReaderMode::Lax
-    }
-
-    /// Returns `strict` reader mode
-    #[staticmethod]
-    pub fn strict() -> Self {
-        PyReaderMode::Strict
-    }
 }
 
+/// RDF Data format
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "RDFFormat")]
 #[derive(PartialEq)]

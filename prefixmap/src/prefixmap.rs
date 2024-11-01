@@ -192,6 +192,8 @@ impl PrefixMap {
     }
 
     /// Qualifies an IRI against a prefix map
+    ///
+    /// If it can't qualify the IRI, it returns the iri between `<` and `>`
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -222,6 +224,9 @@ impl PrefixMap {
     }
 
     /// Qualifies an IRI against a prefix map
+    ///
+    /// If it can't qualify the IRI, returns None
+    ///
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -234,13 +239,13 @@ impl PrefixMap {
     ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), ":a");
+    /// assert_eq!(pm.qualify(&a), Some(":a"));
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), "schema:knows");
+    /// assert_eq!(pm.qualify(&knows), Some("schema:knows"));
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
+    /// assert_eq!(pm.qualify(&other), None);
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {

@@ -1,0 +1,9 @@
+PREFIX sc: <http://purl.org/science/owl/sciencecommons/>
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+prefix schema: <http://schema.org/>
+
+:Book IRI and {
+ :name    xsd:string   ;
+ :related @:Book     *
+}

@@ -9,6 +9,7 @@ pub enum ValidationStatus {
     Conformant(ConformantInfo),
     NonConformant(NonConformantInfo),
     Pending,
+    Inconsistent(ConformantInfo, NonConformantInfo),
 }
 
 impl ValidationStatus {
@@ -18,6 +19,10 @@ impl ValidationStatus {
 
     pub fn is_non_conformant(&self) -> bool {
         matches!(self, ValidationStatus::NonConformant(_))
+    }
+
+    pub fn is_pending(&self) -> bool {
+        matches!(self, ValidationStatus::Pending)
     }
 
     pub fn conformant(reason: String, value: Value) -> ValidationStatus {
@@ -51,6 +56,12 @@ impl Display for ValidationStatus {
             ValidationStatus::Pending => {
                 write!(f, "Pending")
             }
+            ValidationStatus::Inconsistent(conformant, inconformant) => {
+                write!(
+                    f,
+                    "Inconsistent, conformant: {conformant}, inconformant: {inconformant}"
+                )
+            }
         }
     }
 }
@@ -58,6 +69,16 @@ impl Display for ValidationStatus {
 pub struct ConformantInfo {
     reason: String,
     app_info: Value,
+}
+
+impl ConformantInfo {
+    pub fn merge(&self, other: ConformantInfo) -> ConformantInfo {
+        let merged_reason = format!("{}\n{}", self.reason, other.reason);
+        ConformantInfo {
+            reason: merged_reason,
+            app_info: self.app_info.clone(),
+        }
+    }
 }
 
 impl Display for ConformantInfo {

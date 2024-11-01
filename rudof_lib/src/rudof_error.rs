@@ -41,9 +41,7 @@ pub enum RudofError {
         error: String,
     },
 
-    #[error(
-        "ShEx validation error. Obtaining result map error: {shapemap}\nSchema:\n{schema}\nData:\n{rdf_data}\nError: {error} "
-    )]
+    #[error("ShEx validation error. Error: {error} ")]
     ShExValidatorObtainingResultMapError {
         schema: String,
         rdf_data: String,

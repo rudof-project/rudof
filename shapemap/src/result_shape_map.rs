@@ -77,18 +77,102 @@ impl ResultShapeMap {
             Entry::Occupied(mut c) => {
                 let map = c.get_mut();
                 match map.entry(shape_label) {
-                    Entry::Occupied(c) => {
-                        let old_status = c.get();
-                        if *old_status != status {
-                            Err(ShapemapError::InconsistentStatus {
-                                node: cn,
-                                label: sl,
-                                old_status: old_status.clone(),
-                                new_status: status,
-                            })
-                        } else {
-                            Ok(())
-                        }
+                    Entry::Occupied(mut c) => {
+                        let cell_status = c.get_mut();
+                        match (cell_status.clone(), status) {
+                            (
+                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::Conformant(conformant_info2),
+                            ) => {
+                                *cell_status = ValidationStatus::Conformant(
+                                    conformant_info.merge(conformant_info2),
+                                )
+                            }
+                            (
+                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::NonConformant(non_conformant_info),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::Pending,
+                            ) => {}
+                            (
+                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::Inconsistent(
+                                    conformant_info2,
+                                    non_conformant_info2,
+                                ),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::Conformant(conformant_info),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::NonConformant(non_conformant_info2),
+                            ) => {}
+                            (
+                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::Pending,
+                            ) => {}
+                            (
+                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::Inconsistent(
+                                    conformant_info2,
+                                    non_conformant_info2,
+                                ),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Pending,
+                                ValidationStatus::Conformant(conformant_info),
+                            ) => *cell_status = ValidationStatus::Conformant(conformant_info),
+                            (
+                                ValidationStatus::Pending,
+                                ValidationStatus::NonConformant(non_conformant_info),
+                            ) => {
+                                *cell_status = ValidationStatus::NonConformant(non_conformant_info)
+                            }
+                            (ValidationStatus::Pending, ValidationStatus::Pending) => {}
+                            (
+                                ValidationStatus::Pending,
+                                ValidationStatus::Inconsistent(
+                                    conformant_info,
+                                    non_conformant_info,
+                                ),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Inconsistent(
+                                    conformant_info,
+                                    non_conformant_info,
+                                ),
+                                ValidationStatus::Conformant(conformant_info2),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Inconsistent(
+                                    conformant_info,
+                                    non_conformant_info,
+                                ),
+                                ValidationStatus::NonConformant(non_conformant_info2),
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Inconsistent(
+                                    conformant_info,
+                                    non_conformant_info,
+                                ),
+                                ValidationStatus::Pending,
+                            ) => todo!(),
+                            (
+                                ValidationStatus::Inconsistent(
+                                    conformant_info,
+                                    non_conformant_info,
+                                ),
+                                ValidationStatus::Inconsistent(
+                                    conformant_info2,
+                                    non_conformant_info2,
+                                ),
+                            ) => todo!(),
+                        };
+                        Ok(())
                     }
                     Entry::Vacant(v) => {
                         v.insert(status);
@@ -166,6 +250,13 @@ impl Display for ResultShapeMap {
                         Some(color) => node_label.color(color),
                     };
                     write!(f, "{node_label} -> Pending")?
+                }
+                ValidationStatus::Inconsistent(conformant, inconformant) => {
+                    let node_label = match self.pending_color() {
+                        None => ColoredString::from(node_label),
+                        Some(color) => node_label.color(color),
+                    };
+                    write!(f, "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}")?
                 }
             }
         }
