@@ -309,17 +309,18 @@ impl PyRudof {
     /// which can be extracted from the current RDF data,
     /// or from the current SHACL schema.
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
-    #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema ))]
+    #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema, *slurp ))]
     pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
         shapes_graph_source: &PyShapesGraphSource,
+        slurp: bool,
     ) -> PyResult<PyValidationReport> {
         let mode = cnv_shacl_validation_mode(mode);
         let shapes_graph_source = cnv_shapes_graph_source(shapes_graph_source);
         let result = self
             .inner
-            .validate_shacl(&mode, &shapes_graph_source)
+            .validate_shacl(&mode, &shapes_graph_source, slurp)
             .map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
     }
