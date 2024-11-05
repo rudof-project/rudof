@@ -16,7 +16,6 @@ members = [
     "shapemap",
     "shacl_ast",
     "shacl_validation",
-    "shacl_testsuite",
     "shapes_converter",
     "sparql_service",
     "python",
@@ -58,13 +57,11 @@ shapemap = { version = "0.1.0", path = "./shapemap" }
 shacl_ast = { version = "0.1.35", path = "./shacl_ast" }
 shacl_validation = { version = "0.1.37", path = "./shacl_validation" }
 shapes_converter = { version = "0.1.33", path = "./shapes_converter" }
-shex_testsuite = { version = "0.1.0", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.0", path = "./shex_validation" }
 shex_compact = { version = "0.1.0", path = "./shex_compact" }
 srdf = { version = "0.1.35", path = "./srdf" }
 sparql_service = { version = "0.1.37", path = "./sparql_service" }
 
-# [dependencies]
 # External dependencies
 anyhow = "1.0"
 clap = { version = "4.2.1", features = ["derive"] }
