@@ -208,6 +208,9 @@ pub enum Command {
         /// Config file path, if unset it assumes default config
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
         config: Option<PathBuf>,
+
+        #[arg(long = "slurp")]
+        slurp: bool,
     },
 
     /// Validate RDF using ShEx schemas
@@ -347,6 +350,9 @@ pub enum Command {
         /// Config file path, if unset it assumes default config
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
         config: Option<PathBuf>,
+
+        #[arg(long = "slurp")]
+        slurp: bool,
     },
 
     /// Show information about RDF data

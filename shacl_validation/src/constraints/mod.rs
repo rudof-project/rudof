@@ -1,12 +1,14 @@
+use std::fmt::Debug;
+
 use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDFBasic;
 use srdf::SRDF;
-use std::fmt::Debug;
 
 use crate::engine::Engine;
+use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
@@ -18,7 +20,7 @@ pub trait Validator<S: SRDFBasic + Debug> {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
@@ -29,7 +31,7 @@ pub trait NativeValidator<S: SRDF> {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -39,7 +41,7 @@ pub trait SparqlValidator<S: QuerySRDF + Debug> {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }

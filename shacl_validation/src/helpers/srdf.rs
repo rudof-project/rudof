@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use srdf::{RDFNode, SRDF};
 
-use super::helper_error::SRDFError;
+use crate::helpers::helper_error::SRDFError;
 
 pub(crate) fn get_object_for<S: SRDF>(
     store: &S,

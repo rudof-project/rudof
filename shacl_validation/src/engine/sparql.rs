@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
@@ -9,17 +11,17 @@ use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
 impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
@@ -30,7 +32,11 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(
+        &self,
+        store: &Store<S>,
+        node: &S::Term,
+    ) -> Result<FocusNodes<S>, ValidateError> {
         if S::term_is_bnode(node) {
             return Err(ValidateError::TargetNodeBlankNode);
         }
@@ -42,14 +48,18 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", node};
 
-        select(store, query, "this")?;
+        select(store.inner_store(), query, "this")?;
 
         Err(ValidateError::NotImplemented {
             msg: "target_node".to_string(),
         })
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(
+        &self,
+        store: &Store<S>,
+        class: &S::Term,
+    ) -> Result<FocusNodes<S>, ValidateError> {
         if !S::term_is_iri(class) {
             return Err(ValidateError::TargetClassNotIri);
         }
@@ -64,7 +74,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", class};
 
-        select(store, query, "this")?;
+        select(store.inner_store(), query, "this")?;
 
         Err(ValidateError::NotImplemented {
             msg: "target_class".to_string(),
@@ -73,7 +83,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn target_subject_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
@@ -83,7 +93,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, query, "this")?;
+        select(store.inner_store(), query, "this")?;
 
         Err(ValidateError::NotImplemented {
             msg: "target_subject_of".to_string(),
@@ -92,7 +102,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn target_object_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
@@ -102,7 +112,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, query, "this")?;
+        select(store.inner_store(), query, "this")?;
 
         Err(ValidateError::NotImplemented {
             msg: "target_object_of".to_string(),
@@ -111,7 +121,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn implicit_target_class(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledShape<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -121,7 +131,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn predicate(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
@@ -133,7 +143,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn alternative(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
@@ -145,7 +155,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn sequence(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
@@ -157,7 +167,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn inverse(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -169,7 +179,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn zero_or_more(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -181,7 +191,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn one_or_more(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -193,7 +203,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn zero_or_one(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,

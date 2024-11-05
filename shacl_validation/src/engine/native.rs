@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -12,17 +14,17 @@ use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::srdf::get_objects_for;
 use crate::helpers::srdf::get_subjects_for;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
 
 pub struct NativeEngine;
 
 impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
@@ -33,7 +35,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(&self, _: &Store<S>, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         if S::term_is_bnode(node) {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -41,12 +43,19 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
         }
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(
+        &self,
+        store: &Store<S>,
+        class: &S::Term,
+    ) -> Result<FocusNodes<S>, ValidateError> {
         if !S::term_is_iri(class) {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
+        let subjects = match store
+            .inner_store()
+            .subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class)
+        {
             Ok(subjects) => subjects,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -58,10 +67,10 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn target_subject_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
+        let triples = match store.inner_store().triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -75,10 +84,10 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn target_object_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
+        let triples = match store.inner_store().triples_with_predicate(predicate) {
             Ok(triples) => triples,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -90,13 +99,13 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn implicit_target_class(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
+        let ctypes = get_objects_for(store.inner_store(), shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
 
         let mut subclasses = get_subjects_for(
-            store,
+            store.inner_store(),
             &S::iri_s2iri(&RDFS_SUBCLASS_OF),
             &S::iri_s2term(&RDFS_CLASS),
         )?;
@@ -104,16 +113,20 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
         subclasses.insert(S::iri_s2term(&RDFS_CLASS));
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape.id())?;
+            let actual_class_nodes =
+                get_subjects_for(store.inner_store(), &S::iri_s2iri(&RDF_TYPE), shape.id())?;
 
-            let subclass_targets =
-                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape.id())?
+            let subclass_targets = get_subjects_for(
+                store.inner_store(),
+                &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+                shape.id(),
+            )?
+            .into_iter()
+            .flat_map(move |subclass| {
+                get_subjects_for(store.inner_store(), &S::iri_s2iri(&RDF_TYPE), &subclass)
                     .into_iter()
-                    .flat_map(move |subclass| {
-                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
-                            .into_iter()
-                            .flatten()
-                    });
+                    .flatten()
+            });
 
             let focus_nodes = actual_class_nodes.into_iter().chain(subclass_targets);
 
@@ -125,19 +138,19 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn predicate(
         &self,
-        store: &S,
+        store: &Store<S>,
         _: &CompiledPropertyShape<S>,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Ok(FocusNodes::new(
-            get_objects_for(store, focus_node, predicate)?.into_iter(),
+            get_objects_for(store.inner_store(), focus_node, predicate)?.into_iter(),
         ))
     }
 
     fn alternative(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
@@ -149,7 +162,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn sequence(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
@@ -161,7 +174,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn inverse(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -173,7 +186,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn zero_or_more(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -185,7 +198,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn one_or_more(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
@@ -197,7 +210,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn zero_or_one(
         &self,
-        _store: &S,
+        _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,

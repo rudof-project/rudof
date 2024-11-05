@@ -1,13 +1,6 @@
+use std::fmt::Debug;
 use std::ops::Not;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
@@ -15,14 +8,23 @@ use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::QuerySRDF;
 use srdf::SRDF;
-use std::fmt::Debug;
+
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::store::Store;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        _: &S,
+        _: &Store<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
@@ -57,7 +59,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();

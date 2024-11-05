@@ -1,8 +1,7 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use iri_s::IriS;
 use shacl_ast::{ShaclParser, ShaclWriter};
-use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
-use shacl_validation::store::graph::Graph;
+use shacl_validation::shacl_processor::ShaclProcessor;
 
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
@@ -436,6 +435,7 @@ impl Rudof {
         &mut self,
         mode: &ShaclValidationMode,
         shapes_graph_source: &ShapesGraphSource,
+        slurp: bool,
     ) -> Result<ValidationReport> {
         let (compiled_schema, shacl_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
@@ -459,7 +459,7 @@ impl Rudof {
                 Ok((compiled_schema, ast_schema))
             }
         }?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
+        let validator = ShaclProcessor::new(self.rdf_data.clone(), *mode, slurp);
         let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
@@ -760,6 +760,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                false,
             )
             .unwrap();
         assert!(result.results().is_empty())
@@ -805,6 +806,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                false,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -840,6 +842,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                false,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -875,6 +878,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                false,
             )
             .unwrap();
         assert!(result.conforms())

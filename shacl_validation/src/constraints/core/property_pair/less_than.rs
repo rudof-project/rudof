@@ -1,21 +1,24 @@
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
+use std::fmt::Debug;
+
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LessThan;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
-use std::fmt::Debug;
+
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::store::Store;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodes;
 
 impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThan<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
         _shape: &CompiledShape<S>,
-        _store: &S,
+        _store: &Store<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("LessThan".to_string()))
@@ -27,7 +30,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for LessThan<S> {
         &self,
         _component: &CompiledComponent<S>,
         _shape: &CompiledShape<S>,
-        _store: &S,
+        _store: &Store<S>,
         _value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("LessThan".to_string()))
