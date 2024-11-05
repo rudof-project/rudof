@@ -1,20 +1,48 @@
-#[test]
-fn multipleTargets_001() {}
+use shacl_validation::shacl_processor::ShaclValidationMode;
+
+use crate::test;
+use crate::TestSuite;
+
+const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/targets/";
 
 #[test]
-fn targetClass_001() {}
+fn multiple_targets_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "multipleTargets-001");
+    test(path, ShaclValidationMode::Native, false)
+}
 
 #[test]
-fn targetClassImplicit_001() {}
+fn target_class_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetClass-001");
+    test(path, ShaclValidationMode::Native, false)
+}
 
 #[test]
-fn targetNode_001() {}
+fn target_class_implicit_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetClassImplicit-001");
+    test(path, ShaclValidationMode::Native, false)
+}
 
 #[test]
-fn targetObjectsOf_001() {}
+fn target_node_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetNode-001");
+    test(path, ShaclValidationMode::Native, false)
+}
 
 #[test]
-fn targetSubjectsOf_001() {}
+fn target_objects_of_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetObjectsOf-001");
+    test(path, ShaclValidationMode::Native, false)
+}
 
 #[test]
-fn targetSubjectsOf_002() {}
+fn target_subjects_of_001() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetSubjectsOf-001");
+    test(path, ShaclValidationMode::Native, false)
+}
+
+#[test]
+fn target_subjects_of_002() -> Result<(), TestSuite> {
+    let path = format!("{}/{}.ttl", PATH, "targetSubjectsOf-002");
+    test(path, ShaclValidationMode::Native, false)
+}
