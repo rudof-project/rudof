@@ -10,6 +10,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
@@ -17,6 +18,7 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
+    subsetting: &Subsetting,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
@@ -32,16 +34,15 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
                     let component = RDFNode::iri(component.into());
                     let severity = S::term_as_object(&shape.severity());
                     let source = Some(S::term_as_object(&shape.id().to_owned()));
-                    Some(ValidationResult::new(focus, component, severity).with_source(source))
+                    let result = ValidationResult::new(focus, component, severity);
+                    return Some(result.with_source(source));
                 }
                 // if the condition is not met, the target passes :D
-                else {
+                else if *subsetting != Subsetting::None {
                     // neighborhood(focus_node, target);
-                    None
                 }
-            } else {
-                None
             }
+            None
         })
         .collect();
 
@@ -54,6 +55,7 @@ pub fn validate_native_with_strategy<S: SRDFBasic, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
+    subsetting: &Subsetting,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -61,6 +63,7 @@ pub fn validate_native_with_strategy<S: SRDFBasic, I: IterationStrategy<S>>(
         value_nodes,
         iteration_strategy,
         |item: &I::Item| Ok(evaluator(item)),
+        subsetting,
     )
 }
 
@@ -70,6 +73,7 @@ pub fn validate_sparql_ask<S: QuerySRDF>(
     store: &Store<S>,
     value_nodes: &ValueNodes<S>,
     query: impl Fn(&S::Term) -> String,
+    subsetting: &Subsetting,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -80,5 +84,6 @@ pub fn validate_sparql_ask<S: QuerySRDF>(
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },
+        subsetting,
     )
 }

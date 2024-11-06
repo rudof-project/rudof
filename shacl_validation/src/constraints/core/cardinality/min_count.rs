@@ -30,14 +30,22 @@ impl<S: SRDFBasic + Debug> Validator<S> for MinCount {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        // If min_count is 0, then it always passes
         if self.min_count() == 0 {
-            // If min_count is 0, then it always passes
             return Ok(Default::default());
         }
+
         let min_count = |targets: &FocusNodes<S>| targets.len() < self.min_count();
-        validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, min_count)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            min_count,
+            subsetting,
+        )
     }
 }
 

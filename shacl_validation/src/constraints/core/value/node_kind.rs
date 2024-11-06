@@ -27,7 +27,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         _: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
@@ -52,7 +52,14 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
             .not()
         };
 
-        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, node_kind)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            node_kind,
+            subsetting,
+        )
     }
 }
 
@@ -63,7 +70,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
@@ -89,6 +96,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
             }
         };
 
-        validate_sparql_ask(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }

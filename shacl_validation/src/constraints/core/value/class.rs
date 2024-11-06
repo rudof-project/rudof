@@ -28,7 +28,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if S::term_is_literal(value_node) {
@@ -53,7 +53,14 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, class)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            class,
+            subsetting,
+        )
     }
 }
 
@@ -64,7 +71,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 
@@ -77,6 +84,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
             }
         };
 
-        validate_sparql_ask(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }

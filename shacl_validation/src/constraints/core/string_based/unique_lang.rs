@@ -31,7 +31,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for UniqueLang {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if !self.unique_lang() {
             return Ok(Default::default());
@@ -60,6 +60,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for UniqueLang {
             value_nodes,
             ValueNodeIteration,
             unique_lang,
+            subsetting,
         )
     }
 }

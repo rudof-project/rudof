@@ -30,10 +30,17 @@ impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
-        validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, max_count)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            max_count,
+            subsetting,
+        )
     }
 }
 

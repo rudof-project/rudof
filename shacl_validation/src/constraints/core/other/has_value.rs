@@ -30,11 +30,18 @@ impl<S: SRDFBasic + Debug> Validator<S> for HasValue<S> {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
-        validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, has_value)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            has_value,
+            subsetting,
+        )
     }
 }
 

@@ -51,7 +51,14 @@ impl<S: SRDFBasic + Debug> Validator<S> for Or<S> {
                 .not()
         };
 
-        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, or)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            or,
+            subsetting,
+        )
     }
 }
 

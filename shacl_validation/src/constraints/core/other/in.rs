@@ -28,10 +28,17 @@ impl<S: SRDFBasic + Debug> Validator<S> for In<S> {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
-        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, r#in)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            r#in,
+            subsetting,
+        )
     }
 }
 

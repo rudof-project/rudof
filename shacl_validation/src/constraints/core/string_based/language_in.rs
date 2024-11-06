@@ -29,7 +29,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for LanguageIn<S> {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
             if let Some(lang) = S::term_as_literal(value_node) {
@@ -46,6 +46,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for LanguageIn<S> {
             value_nodes,
             ValueNodeIteration,
             language_in,
+            subsetting,
         )
     }
 }

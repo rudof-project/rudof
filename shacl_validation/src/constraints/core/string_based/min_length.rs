@@ -25,7 +25,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         _: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
@@ -45,6 +45,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
             value_nodes,
             ValueNodeIteration,
             min_length,
+            subsetting,
         )
     }
 }
@@ -56,7 +57,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 
@@ -67,6 +68,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinLength {
             }
         };
 
-        validate_sparql_ask(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }

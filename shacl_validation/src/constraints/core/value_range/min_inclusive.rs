@@ -36,7 +36,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
-        _subsetting: &Subsetting,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_inclusive_value = self.min_inclusive().clone();
 
@@ -47,6 +47,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
             }
         };
 
-        validate_sparql_ask(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }

@@ -47,7 +47,14 @@ impl<S: SRDFBasic + Debug> Validator<S> for Xone<S> {
                 .ne(&1usize)
         };
 
-        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, xone)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            xone,
+            subsetting,
+        )
     }
 }
 
