@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Error;
-use std::panic;
 use std::path::Path;
 
 use iri_s::IriS;

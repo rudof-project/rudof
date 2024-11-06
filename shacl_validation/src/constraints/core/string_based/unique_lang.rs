@@ -16,7 +16,7 @@ use crate::constraints::Validator;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
-use crate::helpers::constraint::validate_with;
+use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
@@ -52,7 +52,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for UniqueLang {
             false
         };
 
-        validate_with(
+        validate_native_with_strategy(
             component,
             shape,
             value_nodes,

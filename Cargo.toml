@@ -25,8 +25,9 @@ exclude = [
     "shex_compact_winnow"
 ]
 
-default-members = [
-    "rudof_cli"
+default-members = [ # TODO: this can possibly be removed when changing shex_testsuite
+    "rudof_cli",
+    "shacl_validation",
 ]
 
 [workspace.package]

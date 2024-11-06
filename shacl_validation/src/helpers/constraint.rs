@@ -32,22 +32,23 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
                     let component = RDFNode::iri(component.into());
                     let severity = S::term_as_object(&shape.severity());
                     let source = Some(S::term_as_object(&shape.id().to_owned()));
-                    return Some(
-                        ValidationResult::new(focus, component, severity).with_source(source),
-                    );
+                    Some(ValidationResult::new(focus, component, severity).with_source(source))
                 }
                 // if the condition is not met, the target passes :D
-                else if !condition {
+                else {
+                    // neighborhood(focus_node, target);
+                    None
                 }
+            } else {
+                None
             }
-            None
         })
         .collect();
 
     Ok(results)
 }
 
-pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
+pub fn validate_native_with_strategy<S: SRDFBasic, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     value_nodes: &ValueNodes<S>,
@@ -63,19 +64,19 @@ pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
     )
 }
 
-pub fn validate_ask_with<S: QuerySRDF>(
+pub fn validate_sparql_ask<S: QuerySRDF>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     store: &Store<S>,
     value_nodes: &ValueNodes<S>,
-    eval_query: impl Fn(&S::Term) -> String,
+    query: impl Fn(&S::Term) -> String,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,
         value_nodes,
         ValueNodeIteration,
-        |value_node| match store.inner_store().query_ask(&eval_query(value_node)) {
+        |value_node| match store.inner_store().query_ask(&query(value_node)) {
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },

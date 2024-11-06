@@ -8,7 +8,7 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::constraint::validate_with;
+use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
@@ -35,7 +35,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for MinCount {
             return Ok(Default::default());
         }
         let min_count = |targets: &FocusNodes<S>| targets.len() < self.min_count();
-        validate_with(component, shape, value_nodes, FocusNodeIteration, min_count)
+        validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, min_count)
     }
 }
 

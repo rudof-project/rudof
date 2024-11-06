@@ -12,8 +12,8 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
+use crate::helpers::constraint::validate_sparql_ask;
+use crate::helpers::constraint::validate_native_with_strategy;
 use crate::helpers::srdf::get_objects_for;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
@@ -51,7 +51,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, class)
+        validate_native_with_strategy(component, shape, value_nodes, ValueNodeIteration, class)
     }
 }
 
@@ -74,6 +74,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query)
     }
 }

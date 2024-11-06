@@ -15,7 +15,7 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::constraint::validate_with;
+use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
@@ -32,7 +32,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for HasValue<S> {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
-        validate_with(component, shape, value_nodes, FocusNodeIteration, has_value)
+        validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, has_value)
     }
 }
 

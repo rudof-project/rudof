@@ -10,7 +10,7 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_sparql_ask;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -44,6 +44,6 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinExclusive<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query)
     }
 }
