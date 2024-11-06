@@ -4,8 +4,8 @@ use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python
 use rudof_lib::{
     iri, DCTAPFormat, PrefixMap, QueryShapeMap, RDFFormat, ReaderMode, ResultShapeMap, Rudof,
     RudofConfig, RudofError, ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema,
-    ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode,
-    ValidationReport, ValidationStatus, DCTAP,
+    ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, Subsetting,
+    UmlGenerationMode, ValidationReport, ValidationStatus, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
@@ -309,17 +309,18 @@ impl PyRudof {
     /// which can be extracted from the current RDF data,
     /// or from the current SHACL schema.
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
-    #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema ))]
+    #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema, subsetting = &PySubsetting::None ))]
     pub fn validate_shacl(
         &mut self,
         mode: &PyShaclValidationMode,
         shapes_graph_source: &PyShapesGraphSource,
+        subsetting: &PySubsetting,
     ) -> PyResult<PyValidationReport> {
         let mode = cnv_shacl_validation_mode(mode);
         let shapes_graph_source = cnv_shapes_graph_source(shapes_graph_source);
         let result = self
             .inner
-            .validate_shacl(&mode, &shapes_graph_source)
+            .validate_shacl(&mode, &shapes_graph_source, cnv_subsetting(subsetting))
             .map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
     }
@@ -657,6 +658,14 @@ pub enum PyShaclValidationMode {
     Sparql,
 }
 
+#[pyclass(eq, eq_int, name = "Subsetting")]
+#[derive(PartialEq)]
+pub enum PySubsetting {
+    None,
+    Full,
+    Provenance,
+}
+
 #[pyclass(eq, eq_int, name = "ShapesGraphSource")]
 #[derive(PartialEq)]
 pub enum PyShapesGraphSource {
@@ -797,6 +806,14 @@ fn cnv_shacl_validation_mode(mode: &PyShaclValidationMode) -> ShaclValidationMod
     match mode {
         PyShaclValidationMode::Native => ShaclValidationMode::Native,
         PyShaclValidationMode::Sparql => ShaclValidationMode::Sparql,
+    }
+}
+
+fn cnv_subsetting(subsetting: &PySubsetting) -> Subsetting {
+    match subsetting {
+        PySubsetting::None => Subsetting::None,
+        PySubsetting::Full => Subsetting::Full,
+        PySubsetting::Provenance => Subsetting::Provenance,
     }
 }
 

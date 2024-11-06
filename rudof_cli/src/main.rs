@@ -28,6 +28,7 @@ use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
+use shacl_validation::Subsetting;
 use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
@@ -147,6 +148,7 @@ fn main() -> Result<()> {
             output,
             config,
             force_overwrite,
+            subsetting,
         }) => {
             let config = get_config(config)?;
             match validation_mode {
@@ -186,6 +188,7 @@ fn main() -> Result<()> {
                         output,
                         &config,
                         *force_overwrite,
+                        *subsetting,
                     )
                 }
             }
@@ -234,6 +237,7 @@ fn main() -> Result<()> {
             output,
             force_overwrite,
             config,
+            subsetting,
         }) => {
             let config = get_config(config)?;
             run_validate_shacl(
@@ -248,6 +252,7 @@ fn main() -> Result<()> {
                 output,
                 &config,
                 *force_overwrite,
+                *subsetting,
             )
         }
         Some(Command::Data {
@@ -615,20 +620,23 @@ fn run_validate_shacl(
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
+    subsetting: Subsetting,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
+
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let result = if let Some(schema) = schema {
+
+    if let Some(schema) = schema {
         let reader_mode = reader_mode_convert(*reader_mode);
         let shapes_format = shapes_format.unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
-    } else {
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
-    }?;
+    };
+
+    let result = rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema(), subsetting)?;
 
     writeln!(writer, "Result:\n{}", result)?;
+
     Ok(())
 }
 
