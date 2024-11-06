@@ -12,13 +12,14 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_sparql_ask;
 use crate::helpers::constraint::validate_native_with_strategy;
+use crate::helpers::constraint::validate_sparql_ask;
 use crate::helpers::srdf::get_objects_for;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
@@ -27,6 +28,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if S::term_is_literal(value_node) {
@@ -62,6 +64,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 

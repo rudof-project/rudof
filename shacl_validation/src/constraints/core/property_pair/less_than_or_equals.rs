@@ -12,6 +12,7 @@ use crate::constraints::SparqlValidator;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     fn validate_native(
@@ -20,6 +21,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
         _shape: &CompiledShape<S>,
         _store: &Store<S>,
         _value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "LessThanOrEquals".to_string(),
@@ -34,6 +36,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> 
         _shape: &CompiledShape<S>,
         _store: &Store<S>,
         _value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "LessThanOrEquals".to_string(),

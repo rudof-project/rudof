@@ -11,6 +11,7 @@ use crate::shape::Validate;
 use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
+use crate::Subsetting;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.
@@ -29,13 +30,15 @@ pub enum ShaclValidationMode {
 pub struct ShaclProcessor<S: SRDF + QuerySRDF> {
     store: Store<S>,
     mode: ShaclValidationMode,
+    subsetting: Subsetting,
 }
 
 impl<S: SRDF + QuerySRDF + Debug + 'static> ShaclProcessor<S> {
-    pub fn new(srdf: S, mode: ShaclValidationMode, slurp: bool) -> Self {
+    pub fn new(srdf: S, mode: ShaclValidationMode, subsetting: Subsetting) -> Self {
         Self {
-            store: Store::new(srdf, slurp),
+            store: Store::new(srdf, subsetting != Subsetting::None),
             mode,
+            subsetting,
         }
     }
 
@@ -62,6 +65,7 @@ impl<S: SRDF + QuerySRDF + Debug + 'static> ShaclProcessor<S> {
                     ShaclValidationMode::Sparql => &SparqlEngine,
                 },
                 None,
+                &self.subsetting,
             )?;
             validation_results.extend(results);
         }

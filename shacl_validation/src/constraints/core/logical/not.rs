@@ -21,6 +21,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDFBasic + Debug> Validator<S> for Not<S> {
     fn validate(
@@ -30,10 +31,13 @@ impl<S: SRDFBasic + Debug> Validator<S> for Not<S> {
         store: &Store<S>,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let not = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-            let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
+            let inner_results =
+                self.shape()
+                    .validate(store, &engine, Some(&focus_nodes), subsetting);
             inner_results.is_err() || inner_results.unwrap().is_empty()
         };
 
@@ -48,8 +52,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Not<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -60,7 +72,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Not<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

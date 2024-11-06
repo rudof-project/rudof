@@ -18,3 +18,10 @@ pub mod validate_error;
 /// The result of the validation process.
 pub mod validation_report;
 mod value_nodes;
+
+#[derive(clap::ValueEnum, Copy, Clone, Debug, PartialEq)]
+pub enum Subsetting {
+    None,
+    Full,
+    Provenance,
+}

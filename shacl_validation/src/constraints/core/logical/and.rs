@@ -22,6 +22,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDFBasic + Debug> Validator<S> for And<S> {
     fn validate(
@@ -31,13 +32,14 @@ impl<S: SRDFBasic + Debug> Validator<S> for And<S> {
         store: &Store<S>,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let and = |value_node: &S::Term| {
             self.shapes()
                 .iter()
                 .all(|shape| {
                     let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes)) {
+                    match shape.validate(store, &engine, Some(&focus_nodes), subsetting) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }
@@ -56,8 +58,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for And<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -68,7 +78,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for And<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

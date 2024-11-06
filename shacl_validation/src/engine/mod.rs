@@ -10,6 +10,7 @@ use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 pub mod native;
 pub mod sparql;
@@ -21,6 +22,7 @@ pub trait Engine<S: SRDFBasic> {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(

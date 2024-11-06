@@ -11,6 +11,7 @@ use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 /// Validate RDF data using SHACL
 pub trait Validate<S: SRDFBasic> {
@@ -19,6 +20,7 @@ pub trait Validate<S: SRDFBasic> {
         store: &Store<S>,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
@@ -28,6 +30,7 @@ impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
         store: &Store<S>,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         // 0.
         if *self.is_deactivated() {
@@ -47,10 +50,9 @@ impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner);
 
         // 3.
-        let component_validation_results = self
-            .components()
-            .iter()
-            .flat_map(move |component| runner.evaluate(store, self, component, &value_nodes));
+        let component_validation_results = self.components().iter().flat_map(|component| {
+            runner.evaluate(store, self, component, &value_nodes, subsetting)
+        });
 
         // 4. After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
@@ -60,7 +62,7 @@ impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
         let property_shapes_validation_results = self
             .property_shapes()
             .iter()
-            .flat_map(|shape| shape.validate(store, runner, Some(&focus_nodes)));
+            .flat_map(|shape| shape.validate(store, runner, Some(&focus_nodes), subsetting));
 
         // 5.
         let validation_results = component_validation_results

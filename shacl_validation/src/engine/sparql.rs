@@ -15,6 +15,7 @@ use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 pub struct SparqlEngine;
 
@@ -25,9 +26,10 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
+        Ok(validator.validate_sparql(component, shape, store, value_nodes, subsetting)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

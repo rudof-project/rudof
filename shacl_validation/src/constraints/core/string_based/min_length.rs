@@ -16,6 +16,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native(
@@ -24,6 +25,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         _: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
@@ -54,6 +56,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 

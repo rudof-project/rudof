@@ -7,10 +7,10 @@ pub struct Store<S: SRDFBasic> {
 }
 
 impl<S: SRDFBasic> Store<S> {
-    pub fn new(srdf: S, slurp: bool) -> Self {
+    pub fn new(srdf: S, is_subsetting: bool) -> Self {
         Self {
             store: srdf,
-            subset: match slurp {
+            subset: match is_subsetting {
                 true => Some(Default::default()),
                 false => None,
             },

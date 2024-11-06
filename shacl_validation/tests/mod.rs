@@ -17,6 +17,7 @@ use shacl_validation::shacl_validation_vocab;
 use shacl_validation::validate_error::ValidateError;
 use shacl_validation::validation_report::report::ValidationReport;
 use shacl_validation::validation_report::validation_report_error::ReportError;
+use shacl_validation::Subsetting;
 use sparql_service::RdfData;
 use sparql_service::RdfDataError;
 use srdf::RDFFormat;
@@ -200,12 +201,12 @@ impl Manifest {
     }
 }
 
-fn test(path: String, mode: ShaclValidationMode, slurp: bool) -> Result<(), TestSuite> {
+fn test(path: String, mode: ShaclValidationMode, subsetting: Subsetting) -> Result<(), TestSuite> {
     let manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 
     for test in tests {
-        let validator = ShaclProcessor::new(test.data, mode, slurp);
+        let validator = ShaclProcessor::new(test.data, mode, subsetting.clone());
         let report = validator.validate(&test.shapes.try_into()?)?;
         if report != test.report {
             return Err(TestSuite::NotEquals);

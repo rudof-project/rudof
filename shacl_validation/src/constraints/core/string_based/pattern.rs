@@ -10,12 +10,13 @@ use srdf::SRDF;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_sparql_ask;
 use crate::helpers::constraint::validate_native_with_strategy;
+use crate::helpers::constraint::validate_sparql_ask;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
     fn validate_native(
@@ -24,6 +25,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
         shape: &CompiledShape<S>,
         _: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
@@ -43,6 +45,7 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Pattern {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();

@@ -20,6 +20,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
     fn validate(
@@ -29,6 +30,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         validate_native_with_strategy(component, shape, value_nodes, FocusNodeIteration, max_count)
@@ -43,8 +45,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -55,7 +65,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

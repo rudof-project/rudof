@@ -13,6 +13,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinCount;
@@ -29,6 +30,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for MinCount {
         _: &Store<S>,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
@@ -46,8 +48,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -58,7 +68,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

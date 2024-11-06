@@ -11,6 +11,7 @@ use crate::engine::Engine;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 pub mod constraint_error;
 pub mod core;
@@ -23,6 +24,7 @@ pub trait Validator<S: SRDFBasic + Debug> {
         store: &Store<S>,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -33,6 +35,7 @@ pub trait NativeValidator<S: SRDF> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -43,6 +46,7 @@ pub trait SparqlValidator<S: QuerySRDF + Debug> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 

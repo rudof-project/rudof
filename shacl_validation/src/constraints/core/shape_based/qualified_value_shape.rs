@@ -17,6 +17,7 @@ use crate::engine::Engine;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDFBasic + Debug> Validator<S> for QualifiedValueShape<S> {
     fn validate(
@@ -26,6 +27,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for QualifiedValueShape<S> {
         _store: &Store<S>,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
+        _subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "QualifiedValueShape".to_string(),
@@ -40,8 +42,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -52,7 +62,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for QualifiedValueShape<
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

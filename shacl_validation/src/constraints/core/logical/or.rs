@@ -22,6 +22,7 @@ use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<S: SRDFBasic + Debug> Validator<S> for Or<S> {
     fn validate(
@@ -31,6 +32,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for Or<S> {
         store: &Store<S>,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let or = |value_node: &S::Term| {
             self.shapes()
@@ -40,6 +42,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for Or<S> {
                         store,
                         &engine,
                         Some(&FocusNodes::new(std::iter::once(value_node.clone()))),
+                        subsetting,
                     ) {
                         Ok(validation_results) => validation_results.is_empty(),
                         Err(_) => false,
@@ -59,8 +62,16 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Or<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }
 
@@ -71,7 +82,15 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Or<S> {
         shape: &CompiledShape<S>,
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            subsetting,
+        )
     }
 }

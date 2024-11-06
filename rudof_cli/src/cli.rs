@@ -2,6 +2,7 @@ use crate::input_spec::InputSpec;
 use crate::{InputConvertFormat, OutputConvertFormat};
 use clap::{Parser, Subcommand, ValueEnum};
 use shacl_validation::shacl_processor::ShaclValidationMode;
+use shacl_validation::Subsetting;
 use srdf::{RDFFormat, ReaderMode};
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};
@@ -209,8 +210,15 @@ pub enum Command {
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
         config: Option<PathBuf>,
 
-        #[arg(long = "slurp")]
-        slurp: bool,
+        /// Subsetting mode
+        #[arg(
+            short = 'u',
+            long = "subsetting",
+            value_name = "Subsetting mode",
+            default_value_t = Subsetting::None,
+            value_enum
+        )]
+        subsetting: Subsetting,
     },
 
     /// Validate RDF using ShEx schemas
@@ -351,8 +359,15 @@ pub enum Command {
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
         config: Option<PathBuf>,
 
-        #[arg(long = "slurp")]
-        slurp: bool,
+        /// Subsetting mode
+        #[arg(
+            short = 'u',
+            long = "subsetting",
+            value_name = "Subsetting mode",
+            default_value_t = Subsetting::None,
+            value_enum
+        )]
+        subsetting: Subsetting,
     },
 
     /// Show information about RDF data
