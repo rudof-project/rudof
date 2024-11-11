@@ -20,6 +20,7 @@ members = [
     "shapes_converter",
     "sparql_service",
     "python",
+    "api",
 ]
 
 exclude = [

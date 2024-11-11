@@ -12,3 +12,6 @@ categories.workspace = true
 authors.workspace = true
 
 [dependencies]
+oxrdf = { workspace = true }
+oxrdfio = "0.1.3"
+thiserror = { workspace = true}
