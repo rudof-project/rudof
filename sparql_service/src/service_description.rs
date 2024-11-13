@@ -5,7 +5,7 @@ use std::{fmt::Display, io::BufRead, path::Path};
 
 use iri_s::IriS;
 use itertools::Itertools;
-use srdf::{RDFFormat, ReaderMode, SRDFGraph};
+use srdf::{RDFFormat, ReaderMode, GenericGraph};
 
 use crate::{ServiceDescriptionError, ServiceDescriptionParser};
 
@@ -158,7 +158,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = SRDFGraph::from_path(path, format, base, reader_mode)?;
+        let rdf = GenericGraph::from_path(path, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)
@@ -170,7 +170,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = SRDFGraph::from_reader(read, format, base, reader_mode)?;
+        let rdf = GenericGraph::from_reader(read, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)

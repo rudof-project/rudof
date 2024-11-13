@@ -13,9 +13,9 @@ use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use rust_decimal::Decimal;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::lang::Lang;
-use srdf::literal::Literal;
-use srdf::numeric_literal::NumericLiteral;
+use srdf::graph::lang::Lang;
+use srdf::graph::literal::Literal;
+use srdf::graph::numeric_literal::NumericLiteral;
 use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Object;
@@ -26,7 +26,7 @@ use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFBasic;
 use srdf::SRDFBuilder;
-use srdf::SRDFGraph;
+use srdf::GenericGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
@@ -50,7 +50,7 @@ pub struct RdfData {
     endpoints: Vec<SRDFSparql>,
 
     /// In-memory graph
-    graph: Option<SRDFGraph>,
+    graph: Option<GenericGraph>,
 
     /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
@@ -76,7 +76,7 @@ impl RdfData {
     }
 
     /// Creates an RdfData from an in-memory RDF Graph
-    pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
+    pub fn from_graph(graph: GenericGraph) -> Result<RdfData, RdfDataError> {
         let store = Store::new()?;
         store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
@@ -94,7 +94,7 @@ impl RdfData {
     }
 
     /// Get the in-memory graph
-    pub fn graph(&self) -> Option<&SRDFGraph> {
+    pub fn graph(&self) -> Option<&GenericGraph> {
         self.graph.as_ref()
     }
 
@@ -116,7 +116,7 @@ impl RdfData {
                 .merge_from_reader(read, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: e }),
             None => {
-                let mut graph = SRDFGraph::new();
+                let mut graph = GenericGraph::new();
                 graph
                     .merge_from_reader(read, format, base, reader_mode)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: e })?;

@@ -18,13 +18,13 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
+impl<R: Rdf> NativeValidator<R> for Pattern {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &Store<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        _: &Store<R>,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern = |value_node: &S::Term| {

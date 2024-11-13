@@ -5,7 +5,7 @@ use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{de, Deserialize as DeserializeTrait, Serialize, Serializer};
 use serde_derive::Deserialize;
-use srdf::lang::Lang;
+use srdf::graph::lang::Lang;
 
 use prefixmap::IriRef;
 

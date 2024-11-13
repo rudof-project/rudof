@@ -1,4 +1,3 @@
-use srdf::RDFNode;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

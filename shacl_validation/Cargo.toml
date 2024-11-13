@@ -12,12 +12,13 @@ categories.workspace = true
 edition.workspace = true
 
 [features]
-rdf-star = ["srdf/rdf-star"]
+rdf-star = [] # TODO: API with the rdf-star feature
 
 [dependencies]
 api = { workspace = true }
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
+shacl_ast = { workspace = true }
+iri_s = { workspace = true }     # TODO: is this necessary?
+prefixmap = { workspace = true } # TODO: is this necessary?
 
 serde = { version = "1.0", features = ["derive"] } # needed for the config thing
 thiserror = { workspace = true }                   # needed for the definition of errors
@@ -28,6 +29,6 @@ clap = { workspace = true }                        # needed for creating the Val
 serde_yml = { workspace = true }                   # needed for the config thing
 colored = { workspace = true }
 
-[dev-dependencies]
+[dev-dependencies] # necessary for the tests
 sparql_service = { workspace = true }
 oxrdf = { workspace = true }

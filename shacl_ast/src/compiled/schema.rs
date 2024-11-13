@@ -5,7 +5,6 @@ use api::model::rdf::Predicate;
 use api::model::rdf::Rdf;
 use api::model::Subject;
 use prefixmap::PrefixMap;
-use srdf::SRDFBasic;
 
 use crate::Schema;
 

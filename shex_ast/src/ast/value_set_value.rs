@@ -10,8 +10,8 @@ use serde::{
 };
 use serde_derive::Serialize;
 
-use srdf::lang::Lang;
-use srdf::literal::Literal;
+use srdf::graph::lang::Lang;
+use srdf::graph::literal::Literal;
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 

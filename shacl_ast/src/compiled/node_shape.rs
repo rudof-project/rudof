@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use srdf::SRDFBasic;
-
 use crate::node_shape::NodeShape;
 use crate::Schema;
 

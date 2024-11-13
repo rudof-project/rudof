@@ -12,8 +12,8 @@ use shex_ast::{
 };
 use shex_validation::Validator;
 use shex_validation::{ResultValue, ValidatorConfig};
-use srdf::literal::Literal;
-use srdf::srdf_graph::SRDFGraph;
+use srdf::graph::literal::Literal;
+use srdf::srdf_graph::GenericGraph;
 use srdf::Object;
 use srdf::RDFFormat;
 use std::collections::HashMap;
@@ -175,7 +175,7 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
-        let graph = SRDFGraph::parse_data(
+        let graph = GenericGraph::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
             base,

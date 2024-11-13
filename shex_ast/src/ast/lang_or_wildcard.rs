@@ -1,6 +1,6 @@
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use srdf::lang::Lang;
+use srdf::graph::lang::Lang;
 use std::{result, str::FromStr};
 use void::Void;
 

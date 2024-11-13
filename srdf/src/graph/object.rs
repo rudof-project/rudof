@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
-use crate::literal::Literal;
-use crate::numeric_literal::NumericLiteral;
+use crate::graph::literal::Literal;
+use crate::graph::numeric_literal::NumericLiteral;
 use iri_s::IriS;
 use serde_derive::{Deserialize, Serialize};
 

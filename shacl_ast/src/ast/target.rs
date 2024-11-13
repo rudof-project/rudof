@@ -3,7 +3,6 @@ use std::fmt::Display;
 
 use crate::{SH_TARGET_CLASS_STR, SH_TARGET_NODE_STR};
 use prefixmap::IriRef;
-use srdf::{RDFNode, SRDFBuilder};
 
 #[derive(Debug, Clone)]
 pub enum Target {

@@ -1,5 +1,3 @@
-use srdf::SRDFBasic;
-
 use crate::target::Target;
 
 use super::compiled_shacl_error::CompiledShaclError;

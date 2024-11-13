@@ -9,9 +9,11 @@ use shex_ast::{
     NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
     ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
+use srdf::{};
 use std::{borrow::Cow, io, marker::PhantomData};
-
+use srdf::graph::lang::Lang;
+use srdf::graph::literal::Literal;
+use srdf::graph::numeric_literal::NumericLiteral;
 use crate::pp_object_value;
 
 /// Struct that can be used to pretty print ShEx schemas

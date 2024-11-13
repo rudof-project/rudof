@@ -1,5 +1,5 @@
 use shacl_ast::node_shape::NodeShape;
-use srdf::literal::Literal;
+use srdf::graph::literal::Literal;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

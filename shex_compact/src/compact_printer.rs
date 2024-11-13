@@ -3,8 +3,10 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
 use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
-use srdf::{literal::Literal, numeric_literal::NumericLiteral};
+use srdf::{};
 use std::borrow::Cow;
+use srdf::graph::literal::Literal;
+use srdf::graph::numeric_literal::NumericLiteral;
 
 pub(crate) fn pp_object_value<'a, A>(
     v: &ObjectValue,

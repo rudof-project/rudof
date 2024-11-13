@@ -1,5 +1,3 @@
-use srdf::SRDFBasic;
-
 use crate::shape::Shape;
 use crate::Schema;
 

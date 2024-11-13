@@ -5,7 +5,6 @@ use crate::{
 };
 use iri_s::iri;
 use oxrdf::{Literal as OxLiteral, Term as OxTerm};
-use srdf::{RDFNode, SRDFBuilder};
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]

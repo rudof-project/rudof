@@ -23,10 +23,10 @@ use crate::Subsetting;
 impl<R: Rdf> NativeValidator<R> for Nodekind {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &Store<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        _: &Store<R>,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {

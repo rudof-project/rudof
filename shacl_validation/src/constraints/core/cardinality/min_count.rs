@@ -52,10 +52,10 @@ impl<T: Triple> Validator<T> for MinCount {
 impl<R: Rdf> NativeValidator<R> for MinCount {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &Store<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

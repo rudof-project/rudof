@@ -1,4 +1,3 @@
-use srdf::SRDFBuilder;
 use std::fmt::Display;
 
 use crate::{node_shape::NodeShape, property_shape::PropertyShape};

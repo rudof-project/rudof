@@ -12,8 +12,6 @@ use super::shape::CompiledShape;
 use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
-use srdf::RDFNode;
-use srdf::SRDFBasic;
 
 #[derive(Debug)]
 pub enum CompiledComponent<S: SRDFBasic> {

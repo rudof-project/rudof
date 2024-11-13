@@ -5,8 +5,10 @@ use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::Serializer;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{lang::Lang, numeric_literal::NumericLiteral};
+use crate::{};
 use prefixmap::{Deref, DerefError, IriRef};
+use crate::graph::lang::Lang;
+use crate::graph::numeric_literal::NumericLiteral;
 
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub enum Literal {

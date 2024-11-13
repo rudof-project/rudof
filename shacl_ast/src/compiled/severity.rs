@@ -1,6 +1,5 @@
 use iri_s::iri;
 use iri_s::IriS;
-use srdf::SRDFBasic;
 
 use crate::severity::Severity;
 use crate::*;

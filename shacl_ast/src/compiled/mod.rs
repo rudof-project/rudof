@@ -1,11 +1,6 @@
 use compiled_shacl_error::CompiledShaclError;
 use prefixmap::IriRef;
 use shape::CompiledShape;
-use srdf::lang::Lang;
-use srdf::literal::Literal;
-use srdf::Object;
-use srdf::RDFNode;
-use srdf::SRDFBasic;
 
 use crate::value::Value;
 use crate::Schema;

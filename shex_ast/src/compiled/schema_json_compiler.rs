@@ -15,7 +15,7 @@ use lazy_static::lazy_static;
 use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::literal::Literal;
+use srdf::graph::literal::Literal;
 use srdf::Object;
 use tracing::debug;
 

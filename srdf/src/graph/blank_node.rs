@@ -1,7 +1,3 @@
-pub trait BNode<'a> {
-    fn label(&self) -> &'a str;
-}
-
 #[derive(Debug, PartialEq)]
 pub struct SBNode<'a> {
     s: &'a str,
@@ -13,7 +9,7 @@ impl<'a> SBNode<'a> {
     }
 }
 
-impl<'a> BNode<'a> for SBNode<'a> {
+impl<'a> BlankNode<'a> for SBNode<'a> {
     fn label(&self) -> &'a str {
         self.s
     }

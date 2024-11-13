@@ -1,5 +1,4 @@
 use oxrdf::{Literal as OxLiteral, Term as OxTerm};
-use srdf::lang::Lang;
 use std::collections::HashMap;
 use std::str::FromStr;
 

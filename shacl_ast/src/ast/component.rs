@@ -11,7 +11,6 @@ use iri_s::{iri, IriS};
 use itertools::Itertools;
 use oxrdf::{Literal as OxLiteral, NamedNode, Term as OxTerm};
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder, XSD_INTEGER_STR};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

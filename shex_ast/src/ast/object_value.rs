@@ -7,9 +7,9 @@ use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
-use srdf::lang::Lang;
-use srdf::literal::Literal;
-use srdf::numeric_literal::NumericLiteral;
+use srdf::graph::lang::Lang;
+use srdf::graph::literal::Literal;
+use srdf::graph::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
 

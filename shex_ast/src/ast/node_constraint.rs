@@ -6,7 +6,7 @@ use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
 };
-use srdf::numeric_literal::NumericLiteral;
+use srdf::graph::numeric_literal::NumericLiteral;
 
 use super::ValueSetValue;
 use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};

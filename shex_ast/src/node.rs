@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use rbe::Value;
 use serde_derive::Serialize;
-use srdf::numeric_literal::NumericLiteral;
+use srdf::graph::numeric_literal::NumericLiteral;
 use srdf::Object;
 use std::fmt::Display;
 

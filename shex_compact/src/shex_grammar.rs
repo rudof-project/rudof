@@ -33,7 +33,7 @@ use thiserror::Error;
 use lazy_regex::{regex, Lazy};
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE_STR};
+use srdf::{RDF_TYPE_STR};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
@@ -1621,6 +1621,10 @@ pub fn hex_refactor(input: Span) -> IRes<Span> {
 }
 
 use nom::Slice;
+use srdf::graph::lang::Lang;
+use srdf::graph::literal::Literal;
+use srdf::graph::numeric_literal::NumericLiteral;
+
 pub fn re_find<'a>(re: &'a Lazy<Regex>) -> impl Fn(Span<'a>) -> IRes<Span<'a>> {
     move |i| {
         let str = i.fragment();

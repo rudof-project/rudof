@@ -3,7 +3,6 @@ use std::{collections::HashMap, fmt::Display};
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::RDFNode;
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {

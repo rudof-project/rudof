@@ -1,9 +1,5 @@
 use iri_s::{iri, IriS};
 use oxrdf::{BlankNode, Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
-use srdf::{
-    numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph, SRDF,
-    XSD_DECIMAL_STR,
-};
 use std::{collections::HashSet, fmt::Display};
 
 use crate::{

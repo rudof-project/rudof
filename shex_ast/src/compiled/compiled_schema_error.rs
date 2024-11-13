@@ -1,12 +1,12 @@
 use iri_s::IriSError;
 use prefixmap::{IriRef, PrefixMapError};
-use srdf::lang::Lang;
+use srdf::graph::lang::Lang;
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
 use crate::{ast, Node};
-use srdf::numeric_literal::NumericLiteral;
+use srdf::graph::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum CompiledSchemaError {

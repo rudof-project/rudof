@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use iri_s::IriS;
 use prefixmap::IriRef;
-use srdf::literal::Literal;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value {

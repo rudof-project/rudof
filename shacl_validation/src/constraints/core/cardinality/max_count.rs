@@ -31,26 +31,25 @@ impl<T: Triple> Validator<T> for MaxCount {
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         validate_native_with_strategy(
             component,
             shape,
             value_nodes,
             FocusNodeIteration,
-            max_count,
+            |targets: &FocusNodes<S>| targets.len() > self.max_count(),
             subsetting,
         )
     }
 }
 
 // TODO: is it necessary having a 'static?
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxCount {
+impl<R: Rdf> NativeValidator<R> for MaxCount {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &Store<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

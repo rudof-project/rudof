@@ -35,7 +35,7 @@ use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, U
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{QueryConfig, RdfData, ServiceDescription};
-use srdf::srdf_graph::SRDFGraph;
+use srdf::srdf_graph::GenericGraph;
 use srdf::{
     QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName, SRDF,
 };
@@ -1509,8 +1509,8 @@ fn parse_data(
     data_format: &DataFormat,
     reader_mode: &RDFReaderMode,
     config: &RdfDataConfig,
-) -> Result<SRDFGraph> {
-    let mut graph = SRDFGraph::new();
+) -> Result<GenericGraph> {
+    let mut graph = GenericGraph::new();
     let rdf_format = data_format2rdf_format(data_format);
     for d in data {
         let reader = d.open_read(Some(data_format.mime_type().as_str()))?;

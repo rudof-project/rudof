@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use thiserror::Error;
 
-use crate::literal::Literal;
+use crate::graph::literal::Literal;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum RDFParseError {

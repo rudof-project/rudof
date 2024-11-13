@@ -1,8 +1,5 @@
 use std::collections::HashSet;
 
-use srdf::SHACLPath;
-use srdf::SRDFBasic;
-
 use crate::property_shape::PropertyShape;
 use crate::Schema;
 

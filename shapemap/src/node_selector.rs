@@ -2,8 +2,8 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde_derive::Serialize;
 use shex_ast::{object_value::ObjectValue, Node};
-use srdf::literal::Literal;
-use srdf::shacl_path::SHACLPath;
+use srdf::graph::literal::Literal;
+use srdf::graph::shacl_path::SHACLPath;
 use srdf::SRDF;
 use thiserror::Error;
 

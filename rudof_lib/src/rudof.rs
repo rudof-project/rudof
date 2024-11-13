@@ -9,7 +9,7 @@ use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use sparql_service::RdfData;
-use srdf::{FocusRDF, SRDFGraph};
+use srdf::{FocusRDF, GenericGraph};
 use std::fmt::Debug;
 use std::path::Path;
 use std::str::FromStr;
@@ -247,7 +247,7 @@ impl Rudof {
                 }
                 _ => {
                     let data_format = shacl_format2rdf_format(format)?;
-                    let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+                    let mut shacl_writer: ShaclWriter<GenericGraph> = ShaclWriter::new();
                     shacl_writer
                         .write(shacl)
                         .map_err(|e| RudofError::WritingSHACL {
@@ -305,7 +305,7 @@ impl Rudof {
         }?;
 
         let rdf_graph =
-            SRDFGraph::from_reader(reader, &format, base, reader_mode).map_err(|e| {
+            GenericGraph::from_reader(reader, &format, base, reader_mode).map_err(|e| {
                 RudofError::ReadError {
                     error: format!("{e}"),
                 }
