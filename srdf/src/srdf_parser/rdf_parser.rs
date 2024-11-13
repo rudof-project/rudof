@@ -1,6 +1,6 @@
 use super::rdf_node_parser::*;
 use super::rdf_parser_error::RDFParseError;
-use crate::{FocusRDF, Object, RDF_TYPE, SRDF};
+use crate::{FocusRDF, Object, RDF_TYPE, Rdf};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -10,7 +10,7 @@ use std::collections::HashSet;
 ///
 
 /// Represents a generic parser of RDF data
-pub trait RDFParse<RDF: SRDF> {
+pub trait RDFParse<RDF: Rdf> {
     /// The type which is returned if the parser is successful.
     type Output;
 

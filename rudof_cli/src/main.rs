@@ -37,7 +37,7 @@ use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{QueryConfig, RdfData, ServiceDescription};
 use srdf::srdf_graph::GenericGraph;
 use srdf::{
-    QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName, SRDF,
+    QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, MutableRdf, SRDFSparql, VarName, Rdf,
 };
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
@@ -1205,7 +1205,7 @@ fn show_node_info<S, W: Write>(
     writer: &mut W,
 ) -> Result<()>
 where
-    S: SRDF,
+    S: Rdf,
 {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
@@ -1279,7 +1279,7 @@ where
 
 fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
 where
-    S: SRDF,
+    S: Rdf,
 {
     let mut vs = Vec::new();
     for s in predicates {
@@ -1318,7 +1318,7 @@ fn run_shapemap(
 
 fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
 where
-    S: SRDF,
+    S: Rdf,
 {
     match node {
         ObjectValue::IriRef(iri_ref) => {

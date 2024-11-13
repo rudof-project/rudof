@@ -1,5 +1,5 @@
 use crate::{Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, SRDF};
+use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, Rdf};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -316,7 +316,7 @@ impl AsyncSRDF for SRDFSparql {
     }
 }
 
-impl SRDF for SRDFSparql {
+impl Rdf for SRDFSparql {
     fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         tracing::debug!(

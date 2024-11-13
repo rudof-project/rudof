@@ -8,7 +8,7 @@ use std::fmt::Debug;
 
 use crate::{
     rdf_parser, FocusRDF, Object, PResult, RDFParseError, SRDFBasic, RDF_FIRST,
-    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF,
+    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, Rdf,
 };
 use crate::graph::literal::Literal;
 
@@ -243,7 +243,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
+    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, Rdf, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
     /// # use srdf::srdf_graph::GenericGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
@@ -724,7 +724,7 @@ where
 /// The `predicate_name` argument is useful in case of failure to know which condition has failed
 pub fn satisfy<RDF, P>(predicate: P, predicate_name: &str) -> Satisfy<RDF, P>
 where
-    RDF: SRDF,
+    RDF: Rdf,
     P: FnMut(&RDF::Term) -> bool,
 {
     Satisfy {
@@ -864,7 +864,7 @@ where
 /// It doesn't move the current focus node
 pub fn property_value<RDF>(property: &IriS) -> PropertyValue<RDF>
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     PropertyValue {
         property: property.clone(),
@@ -872,7 +872,7 @@ where
     }
 }
 
-pub struct PropertyValue<RDF: SRDF> {
+pub struct PropertyValue<RDF: Rdf> {
     property: IriS,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -921,7 +921,7 @@ where
 /// it shows the neighbourhood of the current node
 pub fn property_value_debug<RDF>(property: &IriS) -> PropertyValueDebug<RDF>
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     let property = RDF::iri_s2iri(property);
     PropertyValueDebug {
@@ -930,7 +930,7 @@ where
     }
 }
 
-pub struct PropertyValueDebug<RDF: SRDF> {
+pub struct PropertyValueDebug<RDF: Rdf> {
     property: RDF::IRI,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -984,14 +984,14 @@ where
 /// it shows the neighbourhood of the current node
 pub fn neighs<RDF>() -> Neighs<RDF>
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     Neighs {
         _marker_rdf: PhantomData,
     }
 }
 
-pub struct Neighs<RDF: SRDF> {
+pub struct Neighs<RDF: Rdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1187,7 +1187,7 @@ where
 /// ````
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     RDFList {
         _marker_rdf: PhantomData,
@@ -1258,7 +1258,7 @@ where
     }
 }
 
-pub struct RDFList<RDF: SRDF> {
+pub struct RDFList<RDF: Rdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1292,7 +1292,7 @@ where
 /// Parses a node as an RDF List applying each element of the list a parser
 pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     ParseRDFList { parser }
 }
@@ -1357,7 +1357,7 @@ where
 
 fn node_is_rdf_nil<RDF>(node: &RDF::Term) -> bool
 where
-    RDF: SRDF,
+    RDF: Rdf,
 {
     if let Some(iri) = RDF::term_as_iri(node) {
         RDF::iri2iri_s(iri) == *RDF_NIL
@@ -1681,7 +1681,7 @@ where
     }
 }
 
-pub struct SubjectsPropertyValue<RDF: SRDF> {
+pub struct SubjectsPropertyValue<RDF: Rdf> {
     property: RDF::IRI,
     value: RDF::Term,
     _marker_rdf: PhantomData<RDF>,

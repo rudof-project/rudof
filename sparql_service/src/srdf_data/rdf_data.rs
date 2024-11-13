@@ -25,12 +25,12 @@ use srdf::QuerySolutions;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFBasic;
-use srdf::SRDFBuilder;
+use srdf::MutableRdf;
 use srdf::GenericGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-use srdf::SRDF;
+use srdf::Rdf;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -501,7 +501,7 @@ fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
     todo!()
 }
 
-impl SRDF for RdfData {
+impl Rdf for RdfData {
     fn predicates_for_subject(
         &self,
         _subject: &Self::Subject,
@@ -629,7 +629,7 @@ impl FocusRDF for RdfData {
     }
 }
 
-impl SRDFBuilder for RdfData {
+impl MutableRdf for RdfData {
     fn empty() -> Self {
         todo!()
     }

@@ -1,18 +1,16 @@
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use tracing::debug;
 // use log::debug;
 use crate::graph::literal::Literal;
 use crate::graph::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RdfFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
+use crate::{FocusRDF, RdfFormat, SRDFBasic, MutableRdf, Triple as STriple, RDF_TYPE_STR, Rdf};
 use oxrdfio::{RdfParser, RdfSerializer};
-use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -24,7 +22,6 @@ use oxrdf::{
     Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
 use oxsdatatypes::Decimal as OxDecimal;
-use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
 use crate::model::{BlankNode, Triple};
 
@@ -405,7 +402,7 @@ fn cnv_decimal(_d: &Decimal) -> OxDecimal {
     todo!()
 }
 
-impl SRDF for GenericGraph {
+impl Rdf for GenericGraph {
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
@@ -591,7 +588,7 @@ impl FocusRDF for GenericGraph {
     }
 }
 
-impl SRDFBuilder for GenericGraph {
+impl MutableRdf for GenericGraph {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -685,8 +682,9 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{int, srdf, GenericGraph, SRDF};
+    use crate::{int, GenericGraph, Rdf};
     use iri_s::iri;
+    use crate::model::rdf;
 
     #[tokio::test]
     async fn parse_get_predicates() {
@@ -724,7 +722,7 @@ mod tests {
         let graph = GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <GenericGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <GenericGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let terms = rdf::Rdf::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let subject = <GenericGraph as SRDFBasic>::term_as_subject(&term).unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
@@ -743,7 +741,7 @@ mod tests {
         let graph = GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <GenericGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <GenericGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let terms = rdf::Rdf::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let bnode = <GenericGraph as SRDFBasic>::term_as_bnode(&term).unwrap();
         let subject = <GenericGraph as SRDFBasic>::bnode_id2subject(bnode.as_str());

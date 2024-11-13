@@ -2,19 +2,20 @@ use super::Triple;
 
 type BoxIterator<'a, I> = Box<dyn Iterator<Item = &'a I> + 'a>;
 
-pub type Triples<'a, R> = BoxIterator<'a, <R as Rdf>::Triple>;
-pub type Subject<'a, R> = <<R as Rdf>::Triple as Triple>::Subject;
-pub type Subjects<'a, R> = BoxIterator<'a, Subject<'a, R>>;
-pub type Predicate<'a, R> = <<R as Rdf>::Triple as Triple>::Iri;
-pub type Predicates<'a, R> = BoxIterator<'a, Predicate<'a, R>>;
-pub type Object<'a, R> = <<R as Rdf>::Triple as Triple>::Term;
-pub type Objects<'a, R> = BoxIterator<'a, Object<'a, R>>;
+pub type Triples<'a, R> = BoxIterator<'a, <R as crate::model::rdf::Rdf>::Triple>;
+pub type Subject<'a, R> = <<R as crate::model::rdf::Rdf>::Triple as Triple>::Subject;
+pub type Subjects<'a, R> = BoxIterator<'a, crate::model::rdf::Subject<'a, R>>;
+pub type Predicate<'a, R> = <<R as crate::model::rdf::Rdf>::Triple as Triple>::Iri;
+pub type Predicates<'a, R> = BoxIterator<'a, crate::model::rdf::Predicate<'a, R>>;
+pub type Object<'a, R> = <<R as crate::model::rdf::Rdf>::Triple as Triple>::Term;
+pub type Objects<'a, R> = BoxIterator<'a, crate::model::rdf::Object<'a, R>>;
 
-pub type NamedNode<'a, R> = Predicate<'a, R>;
-pub type RdfNode<'a, R> = Object<'a, R>;
-
+/// This trait provides methods to handle Simple RDF graphs.
+///
+/// * Finding the triples provided a given pattern
+/// * Obtaining the neighborhood of a node
 pub trait Rdf {
-    type Triple: Triple;
+    type Triple: crate::model::Triple;
     type Error;
 
     fn triples_matching<'a>(
@@ -29,17 +30,17 @@ pub trait Rdf {
     }
 
     fn subjects(&self) -> Result<Subjects<Self>, Self::Error> {
-        let subjects = self.triples()?.map(Triple::subj);
+        let subjects = self.triples()?.map(crate::model::Triple::subj);
         Ok(Box::new(subjects))
     }
 
     fn predicates(&self) -> Result<Predicates<Self>, Self::Error> {
-        let predicates = self.triples()?.map(Triple::pred);
+        let predicates = self.triples()?.map(crate::model::Triple::pred);
         Ok(Box::new(predicates))
     }
 
     fn objects(&self) -> Result<Objects<Self>, Self::Error> {
-        let objects = self.triples()?.map(Triple::obj);
+        let objects = self.triples()?.map(crate::model::Triple::obj);
         Ok(Box::new(objects))
     }
 
@@ -65,24 +66,7 @@ pub trait Rdf {
     }
 
     fn neighs<'a>(&'a self, node: &'a Subject<Self>) -> Result<Objects<'a, Self>, Self::Error> {
-        let objects = self.triples_with_subject(node)?.map(Triple::obj);
+        let objects = self.triples_with_subject(node)?.map(crate::model::Triple::obj);
         Ok(Box::new(objects))
     }
-}
-
-pub trait MutableRdf: Rdf {
-    type MutableError;
-
-    fn add_triple(
-        &mut self,
-        subject: Subject<Self>,
-        predicate: Predicate<Self>,
-        object: Object<Self>,
-    ) -> Result<(), Self::MutableError>;
-
-    fn remove_triple(&mut self, triple: &Self::Triple) -> Result<(), Self::MutableError>;
-
-    fn add_base(&mut self, base: &Predicate<Self>) -> Result<(), Self::Error>;
-
-    fn add_prefix(&mut self, alias: &str, iri: &Predicate<Self>) -> Result<(), Self::Error>;
 }

@@ -2,7 +2,7 @@
 //!
 //! It contains several traits that handle RDF data:
 //! - [`SRDFBasic`]: Basic comparisons on RDF nodes
-//! - [`SRDF`]: Definitions on RDF graphs
+//! - [`Rdf`]: Definitions on RDF graphs
 //! - [`FocusRDF`]: RDF graphs with a focus node
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 
@@ -10,9 +10,7 @@ pub mod neighs;
 pub mod query_srdf;
 pub mod rdf;
 pub mod rdf_data_config;
-pub mod srdf;
 pub mod srdf_basic;
-pub mod srdf_builder;
 pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
@@ -24,14 +22,14 @@ pub use crate::async_srdf::*;
 pub use crate::neighs::*;
 pub use crate::query_srdf::*;
 pub use crate::rdf_data_config::*;
-pub use crate::srdf::*;
+pub use model::rdf::*;
 pub use crate::srdf_basic::*;
 pub use model::blank_node::*;
 pub use graph::object::*;
 pub use rdf::*;
 pub use model::rdf_format::*;
 pub use graph::shacl_path::*;
-pub use srdf_builder::*;
+pub use model::mutable_rdf::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
 pub use srdf_sparql::*;
@@ -61,7 +59,7 @@ macro_rules! int {
 ///
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Rdf, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
 /// use srdf::srdf_graph::GenericGraph;
 ///
 /// rdf_parser!{

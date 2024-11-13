@@ -2,6 +2,8 @@ pub mod rdf;
 pub mod sparql;
 pub mod async_rdf;
 pub mod rdf_format;
+pub mod rdf;
+pub mod mutable_rdf;
 
 pub trait Subject {
     type BlankNode: BlankNode;

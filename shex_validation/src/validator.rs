@@ -19,7 +19,7 @@ use shex_ast::object_value::ObjectValue;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
-use srdf::SRDF;
+use srdf::Rdf;
 use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -46,7 +46,7 @@ impl Validator {
     /// validate a node against a shape label
     pub fn validate_node_shape<S>(&mut self, node: &Node, shape: &ShapeLabel, rdf: &S) -> Result<()>
     where
-        S: SRDF,
+        S: Rdf,
     {
         let idx = self.get_idx(shape)?;
         self.runner.add_pending(node.clone(), idx);
@@ -66,7 +66,7 @@ impl Validator {
 
     pub fn validate_shapemap<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()>
     where
-        S: SRDF,
+        S: Rdf,
     {
         self.fill_pending(shapemap, rdf)?;
         self.loop_validating(rdf)?;
@@ -75,7 +75,7 @@ impl Validator {
 
     fn fill_pending<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()>
     where
-        S: SRDF,
+        S: Rdf,
     {
         for (node_value, label) in shapemap.iter_node_shape(rdf) {
             let idx = self.get_shape_expr_label(label)?;
@@ -87,7 +87,7 @@ impl Validator {
 
     fn node_from_object_value<S>(&mut self, value: &ObjectValue, rdf: &S) -> Result<Node>
     where
-        S: SRDF,
+        S: Rdf,
     {
         match value {
             ObjectValue::IriRef(IriRef::Iri(iri)) => Ok(Node::iri(iri.clone())),
@@ -101,7 +101,7 @@ impl Validator {
 
     fn loop_validating<S>(&mut self, rdf: &S) -> Result<()>
     where
-        S: SRDF,
+        S: Rdf,
     {
         while self.runner.no_end_steps() && self.runner.more_pending() {
             self.runner.new_step();
@@ -128,7 +128,7 @@ impl Validator {
         rdf: &S,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: SRDF,
+        S: Rdf,
     {
         let (node, idx) = atom.get_value();
         let se = find_shape_idx(idx, &self.schema);
