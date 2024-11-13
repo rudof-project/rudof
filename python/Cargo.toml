@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.52"
+version = "0.1.53"
 documentation = "https://rudof-project.github.io/rudof/"
 readme = "README.md"
 license.workspace = true
