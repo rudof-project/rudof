@@ -1,3 +1,4 @@
+use api::model::rdf::Rdf;
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
 use shacl_ast::compiled::schema::CompiledSchema;
@@ -38,9 +39,9 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: SRDFBasic + Debug> {
-    fn store(&self) -> &S;
-    fn runner(&self) -> &dyn Engine<S>;
+pub trait ShaclProcessor<R: Rdf> {
+    fn store(&self) -> &R;
+    fn runner(&self) -> &dyn Engine<R>;
 
     /// Executes the Validation of the provided Graph, in any of the supported
     /// formats, against the shapes graph passed as an argument. As a result,
@@ -51,7 +52,7 @@ pub trait ShaclProcessor<S: SRDFBasic + Debug> {
     /// * `shapes_graph` - A compiled SHACL shapes graph
     fn validate(
         &self,
-        shapes_graph: &CompiledSchema<S>,
+        shapes_graph: &CompiledSchema<R>,
     ) -> Result<ValidationReport, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();

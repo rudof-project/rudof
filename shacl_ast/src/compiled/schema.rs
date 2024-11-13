@@ -1,5 +1,9 @@
 use std::collections::HashMap;
 
+use api::model::rdf::NamedNode;
+use api::model::rdf::Predicate;
+use api::model::rdf::Rdf;
+use api::model::Subject;
 use prefixmap::PrefixMap;
 use srdf::SRDFBasic;
 
@@ -9,12 +13,12 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
 #[derive(Debug)]
-pub struct CompiledSchema<S: SRDFBasic> {
+pub struct CompiledSchema<R: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<S::Term, CompiledShape<S>>,
+    shapes: HashMap<Subject<R>, CompiledShape<R>>,
     prefixmap: PrefixMap,
-    base: Option<S::IRI>,
+    base: Option<NamedNode<R>>,
 }
 
 impl<S: SRDFBasic> CompiledSchema<S> {

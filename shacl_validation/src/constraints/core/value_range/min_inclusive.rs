@@ -12,7 +12,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
+impl<R: Rdf> NativeValidator<R> for MinInclusive<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -24,7 +24,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
+impl<S: Sparql> SparqlValidator<S> for MinInclusive<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

@@ -22,3 +22,4 @@ Cargo.lock
 
 # Ignore virtual environments from the Python bindings
 .venv
+.DS_Store

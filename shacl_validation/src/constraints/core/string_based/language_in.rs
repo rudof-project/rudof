@@ -18,7 +18,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + Debug> Validator<S> for LanguageIn<S> {
+impl<T: Triple> Validator<T> for LanguageIn<S> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -46,7 +46,7 @@ impl<S: SRDFBasic + Debug> Validator<S> for LanguageIn<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for LanguageIn<S> {
+impl<R: Rdf> NativeValidator<R> for LanguageIn<S> {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -58,7 +58,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for LanguageIn<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for LanguageIn<S> {
+impl<S: Sparql> SparqlValidator<S> for LanguageIn<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
