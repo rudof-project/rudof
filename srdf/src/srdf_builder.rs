@@ -39,5 +39,5 @@ pub trait SRDFBuilder: SRDF {
     fn add_type(&mut self, node: &RDFNode, type_: Self::Term) -> Result<(), Self::Err>;
 
     /// Serialize the current graph to a Write implementation
-    fn serialize<W: Write>(&self, format: RDFFormat, writer: &mut W) -> Result<(), Self::Err>;
+    fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err>;
 }

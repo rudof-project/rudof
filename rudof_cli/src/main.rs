@@ -35,9 +35,7 @@ use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{QueryConfig, RdfData, ServiceDescription};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{
-    QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFBuilder, SRDFSparql, VarName, SRDF,
-};
+use srdf::{QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFSparql, VarName, SRDF};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Read, Write};
@@ -1346,9 +1344,8 @@ fn run_data(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
-    rudof
-        .get_rdf_data()
-        .serialize(RDFFormat::from(*result_format), &mut writer)?;
+    let format: RDFFormat = RDFFormat::from(*result_format);
+    rudof.get_rdf_data().serialize(&format, &mut writer)?;
     Ok(())
 }
 

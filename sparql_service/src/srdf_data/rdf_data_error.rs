@@ -6,7 +6,7 @@ use oxigraph::{
 };
 use thiserror::Error;
 
-use srdf::{SRDFGraphError, SRDFSparqlError};
+use srdf::{RDFFormat, SRDFGraphError, SRDFSparqlError};
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
@@ -27,6 +27,9 @@ pub enum RdfDataError {
         #[from]
         err: io::Error,
     },
+
+    #[error("Serializing RDF Data as {format}: {error}")]
+    Serializing { error: String, format: RDFFormat },
 
     #[error(transparent)]
     StorageError {

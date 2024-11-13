@@ -71,8 +71,8 @@ impl ResultShapeMap {
         shape_label: ShapeLabel,
         status: ValidationStatus,
     ) -> Result<(), ShapemapError> {
-        let cn = node.clone();
-        let sl = shape_label.clone();
+        let _cn = node.clone();
+        let _sl = shape_label.clone();
         match self.result.entry(node) {
             Entry::Occupied(mut c) => {
                 let map = c.get_mut();
@@ -89,37 +89,37 @@ impl ResultShapeMap {
                                 )
                             }
                             (
-                                ValidationStatus::Conformant(conformant_info),
-                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::Conformant(_conformant_info),
+                                ValidationStatus::NonConformant(_non_conformant_info),
                             ) => todo!(),
                             (
-                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::Conformant(_conformant_info),
                                 ValidationStatus::Pending,
                             ) => {}
                             (
-                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::Conformant(_conformant_info),
                                 ValidationStatus::Inconsistent(
-                                    conformant_info2,
-                                    non_conformant_info2,
+                                    _conformant_info2,
+                                    _non_conformant_info2,
                                 ),
                             ) => todo!(),
                             (
-                                ValidationStatus::NonConformant(non_conformant_info),
-                                ValidationStatus::Conformant(conformant_info),
+                                ValidationStatus::NonConformant(_non_conformant_info),
+                                ValidationStatus::Conformant(_conformant_info),
                             ) => todo!(),
                             (
-                                ValidationStatus::NonConformant(non_conformant_info),
-                                ValidationStatus::NonConformant(non_conformant_info2),
+                                ValidationStatus::NonConformant(_non_conformant_info),
+                                ValidationStatus::NonConformant(_non_conformant_info2),
                             ) => {}
                             (
-                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::Pending,
                             ) => {}
                             (
-                                ValidationStatus::NonConformant(non_conformant_info),
+                                ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::Inconsistent(
-                                    conformant_info2,
-                                    non_conformant_info2,
+                                    _conformant_info2,
+                                    _non_conformant_info2,
                                 ),
                             ) => todo!(),
                             (
@@ -136,39 +136,39 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::Pending,
                                 ValidationStatus::Inconsistent(
-                                    conformant_info,
-                                    non_conformant_info,
+                                    _conformant_info,
+                                    _non_conformant_info,
                                 ),
                             ) => todo!(),
                             (
                                 ValidationStatus::Inconsistent(
-                                    conformant_info,
-                                    non_conformant_info,
+                                    _conformant_info,
+                                    _non_conformant_info,
                                 ),
-                                ValidationStatus::Conformant(conformant_info2),
+                                ValidationStatus::Conformant(_conformant_info2),
                             ) => todo!(),
                             (
                                 ValidationStatus::Inconsistent(
-                                    conformant_info,
-                                    non_conformant_info,
+                                    _conformant_info,
+                                    _non_conformant_info,
                                 ),
-                                ValidationStatus::NonConformant(non_conformant_info2),
+                                ValidationStatus::NonConformant(_non_conformant_info2),
                             ) => todo!(),
                             (
                                 ValidationStatus::Inconsistent(
-                                    conformant_info,
-                                    non_conformant_info,
+                                    _conformant_info,
+                                    _non_conformant_info,
                                 ),
                                 ValidationStatus::Pending,
                             ) => todo!(),
                             (
                                 ValidationStatus::Inconsistent(
-                                    conformant_info,
-                                    non_conformant_info,
+                                    _conformant_info,
+                                    _non_conformant_info,
                                 ),
                                 ValidationStatus::Inconsistent(
-                                    conformant_info2,
-                                    non_conformant_info2,
+                                    _conformant_info2,
+                                    _non_conformant_info2,
                                 ),
                             ) => todo!(),
                         };

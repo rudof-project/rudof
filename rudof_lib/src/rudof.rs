@@ -166,6 +166,14 @@ impl Rudof {
         }
     }
 
+    pub fn serialize_data<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<()> {
+        self.rdf_data
+            .serialize(format, writer)
+            .map_err(|e| RudofError::SerializingData {
+                error: format!("{e}"),
+            })
+    }
+
     /// Serialize the current ShapeMap
     pub fn serialize_shapemap<W: io::Write>(
         &self,
@@ -255,7 +263,7 @@ impl Rudof {
                             shacl: format!("{:?}", shacl.clone()),
                             error: format!("{e}"),
                         })?;
-                    shacl_writer.serialize(data_format, writer).map_err(|e| {
+                    shacl_writer.serialize(&data_format, writer).map_err(|e| {
                         RudofError::SerializingSHACL {
                             error: format!("{e}"),
                             shacl: format!("{:?}", shacl.clone()),

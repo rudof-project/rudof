@@ -153,6 +153,9 @@ pub enum RudofError {
     #[error("Serializing ShEx: {error}")]
     SerializingShEx { error: String },
 
+    #[error("Serializing RDF data: {error}")]
+    SerializingData { error: String },
+
     #[error("Serializing ShEx: {error}")]
     SerializingShacl { error: String },
 

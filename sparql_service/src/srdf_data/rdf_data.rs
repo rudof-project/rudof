@@ -159,6 +159,25 @@ impl RdfData {
         let str: String = format!("{}", lit);
         format!("{}", str.red())
     }
+
+    pub fn serialize<W: io::Write>(
+        &self,
+        format: &RDFFormat,
+        writer: &mut W,
+    ) -> Result<(), RdfDataError> {
+        if let Some(graph) = &self.graph {
+            graph
+                .serialize(format, writer)
+                .map_err(|e| RdfDataError::Serializing {
+                    format: *format,
+                    error: format!("{e}"),
+                })?
+        }
+        for e in self.endpoints.iter() {
+            writeln!(writer, "Endpoint {}", e.iri())?
+        }
+        Ok(())
+    }
 }
 
 impl Default for RdfData {
@@ -670,7 +689,7 @@ impl SRDFBuilder for RdfData {
 
     fn serialize<W: std::io::Write>(
         &self,
-        format: RDFFormat,
+        format: &RDFFormat,
         writer: &mut W,
     ) -> Result<(), Self::Err> {
         if let Some(graph) = &self.graph {

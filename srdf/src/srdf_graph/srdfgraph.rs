@@ -705,7 +705,7 @@ impl SRDFBuilder for SRDFGraph {
         }
     }
 
-    fn serialize<W: Write>(&self, format: RDFFormat, write: &mut W) -> Result<(), Self::Err> {
+    fn serialize<W: Write>(&self, format: &RDFFormat, write: &mut W) -> Result<(), Self::Err> {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
@@ -721,7 +721,7 @@ impl SRDFBuilder for SRDFGraph {
     }
 }
 
-fn cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
+fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,

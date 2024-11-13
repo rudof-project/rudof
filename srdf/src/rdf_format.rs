@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::RDFParseError;
@@ -28,6 +29,19 @@ impl FromStr for RDFFormat {
             _ => Err(RDFParseError::SRDFError {
                 err: format!("Format {} not supported", s).to_string(),
             }),
+        }
+    }
+}
+
+impl Display for RDFFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RDFFormat::Turtle => write!(f, "Turtle"),
+            RDFFormat::NTriples => write!(f, "N-Triples"),
+            RDFFormat::RDFXML => write!(f, "RDF/XML"),
+            RDFFormat::TriG => write!(f, "TriG"),
+            RDFFormat::N3 => write!(f, "N3"),
+            RDFFormat::NQuads => write!(f, "NQuads"),
         }
     }
 }

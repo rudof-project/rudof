@@ -13,7 +13,7 @@ pub mod pyrudof {
         PyDCTAP, PyDCTapFormat, PyRDFFormat, PyReaderMode, PyRudof, PyRudofConfig, PyRudofError,
         PyShExFormat, PyShExFormatter, PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat,
         PyShapeMapFormatter, PyShapesGraphSource, PyUmlGenerationMode, PyValidationReport,
-        PyValidationStatus,
+        PyValidationStatus, 
     };
 
     #[pymodule_init]

@@ -283,6 +283,25 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Serialize the current ShEx schema
+    #[pyo3(signature = (format = &PyRDFFormat::Turtle))]
+    pub fn serialize_data(&self, format: &PyRDFFormat) -> PyResult<String> {
+        let mut v = Vec::new();
+        let format = cnv_rdf_format(format);
+        self.inner
+            .serialize_data(&format, &mut v)
+            .map_err(|e| RudofError::SerializingData {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingData {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
     /// Reads the current Shapemap from a String
     #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact))]
     pub fn read_shapemap_str(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
