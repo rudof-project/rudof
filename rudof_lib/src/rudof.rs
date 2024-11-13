@@ -27,7 +27,7 @@ pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStat
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
-pub use srdf::{QuerySolutions, RDFFormat, ReaderMode, SRDFSparql};
+pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql};
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shapes_converter::UmlGenerationMode;
@@ -243,13 +243,7 @@ impl Rudof {
         }
     }
 
-    pub fn run_query<R: io::Read>(&mut self, reader: &mut R) -> Result<QuerySolutions<RdfData>> {
-        let mut str = String::new();
-        reader
-            .read_to_string(&mut str)
-            .map_err(|e| RudofError::ReadError {
-                error: format!("{e}"),
-            })?;
+    pub fn run_query_str(&mut self, str: &str) -> Result<QuerySolutions<RdfData>> {
         self.rdf_data
             .check_store()
             .map_err(|e| RudofError::StorageError {
@@ -257,12 +251,22 @@ impl Rudof {
             })?;
         let results = self
             .rdf_data
-            .query_select(&str)
+            .query_select(str)
             .map_err(|e| RudofError::QueryError {
                 str: str.to_string(),
                 error: format!("{e}"),
             })?;
         Ok(results)
+    }
+
+    pub fn run_query<R: io::Read>(&mut self, reader: &mut R) -> Result<QuerySolutions<RdfData>> {
+        let mut str = String::new();
+        reader
+            .read_to_string(&mut str)
+            .map_err(|e| RudofError::ReadError {
+                error: format!("{e}"),
+            })?;
+        self.run_query_str(str.as_str())
     }
 
     pub fn serialize_shacl<W: io::Write>(

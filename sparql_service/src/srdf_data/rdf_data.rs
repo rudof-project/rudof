@@ -465,7 +465,6 @@ impl QuerySRDF for RdfData {
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol)
         }
-        println!("Results...before endpoint: {}", sols.count());
         for endpoint in &self.endpoints {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> =

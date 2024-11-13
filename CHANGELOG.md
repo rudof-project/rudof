@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.55] - 2024-11-14
+
+- Added methods to show query solutions in rudof and pyrudof
+
 ## [v0.1.54] - 2024-11-13
 
 - Added query to rudof and pyrudof
