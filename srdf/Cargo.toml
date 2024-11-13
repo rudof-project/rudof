@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.56"
+version = "0.1.57"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -32,10 +32,10 @@ rust_decimal_macros = "1.32"
 const_format = "0.2"
 lazy_static = "1"
 
-oxttl = { version = "0.1.0-alpha.6"  }
-oxrdfio = { version = "0.1.0-alpha.5"}
-oxrdf = { workspace = true, features = [ "oxsdatatypes"] }
-oxrdfxml = "0.1.0-rc.1" 
+oxttl = { version = "0.1.0-alpha.6" }
+oxrdfio = { version = "0.1.0-alpha.5" }
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+oxrdfxml = "0.1.0-rc.1"
 oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
 sparesults = { version = "0.2.0-rc.2" }
