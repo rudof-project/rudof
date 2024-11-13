@@ -1,26 +1,31 @@
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
+use std::fmt::Debug;
+
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::SRDF;
-use std::fmt::Debug;
 
-impl<R: Rdf> NativeValidator<R> for MaxLength {
-    fn validate_native<'a>(
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_native_with_strategy;
+use crate::helpers::constraint::validate_sparql_ask;
+use crate::store::Store;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
+
+impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxLength {
+    fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        _: &S,
+        _: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
@@ -34,12 +39,13 @@ impl<R: Rdf> NativeValidator<R> for MaxLength {
             }
         };
 
-        validate_with(
+        validate_native_with_strategy(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             max_length,
+            subsetting,
         )
     }
 }
@@ -49,8 +55,9 @@ impl<S: Sparql> SparqlValidator<S> for MaxLength {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();
 
@@ -61,6 +68,6 @@ impl<S: Sparql> SparqlValidator<S> for MaxLength {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }

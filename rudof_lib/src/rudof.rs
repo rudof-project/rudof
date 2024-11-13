@@ -1,8 +1,7 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use iri_s::IriS;
 use shacl_ast::{ShaclParser, ShaclWriter};
-use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
-use shacl_validation::store::graph::Graph;
+use shacl_validation::shacl_processor::ShaclProcessor;
 
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
@@ -21,8 +20,8 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
-pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
+pub use shacl_validation::{shacl_processor::ShaclValidationMode, Subsetting};
 pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
@@ -436,6 +435,7 @@ impl Rudof {
         &mut self,
         mode: &ShaclValidationMode,
         shapes_graph_source: &ShapesGraphSource,
+        subsetting: Subsetting,
     ) -> Result<ValidationReport> {
         let (compiled_schema, shacl_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
@@ -459,7 +459,7 @@ impl Rudof {
                 Ok((compiled_schema, ast_schema))
             }
         }?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
+        let validator = ShaclProcessor::new(self.rdf_data.clone(), *mode, subsetting);
         let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
@@ -657,7 +657,7 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
 mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
-    use shacl_validation::shacl_processor::ShaclValidationMode;
+    use shacl_validation::{shacl_processor::ShaclValidationMode, Subsetting};
     use shapemap::ShapeMapFormat;
     use shex_ast::{compiled::shape_label::ShapeLabel, Node};
     use shex_validation::ShExFormat;
@@ -760,6 +760,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                Subsetting::None,
             )
             .unwrap();
         assert!(result.results().is_empty())
@@ -805,6 +806,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                Subsetting::None,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -840,6 +842,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                Subsetting::None,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -875,6 +878,7 @@ mod tests {
             .validate_shacl(
                 &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                Subsetting::None,
             )
             .unwrap();
         assert!(result.conforms())

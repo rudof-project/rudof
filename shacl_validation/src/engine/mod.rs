@@ -6,9 +6,11 @@ use srdf::SHACLPath;
 use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 pub mod native;
 pub mod sparql;
@@ -16,15 +18,16 @@ pub mod sparql;
 pub trait Engine<S: SRDFBasic> {
     fn evaluate(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
         targets: &[CompiledTarget<S>],
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -63,31 +66,36 @@ pub trait Engine<S: SRDFBasic> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_node(&self, store: &Store<S>, node: &S::Term)
+        -> Result<FocusNodes<S>, ValidateError>;
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_class(
+        &self,
+        store: &Store<S>,
+        class: &S::Term,
+    ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn target_subject_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn target_object_of(
         &self,
-        store: &S,
+        store: &Store<S>,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn implicit_target_class(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledShape<S>,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn path(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -107,7 +115,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn predicate(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         predicate: &S::IRI,
         focus_node: &S::Term,
@@ -115,7 +123,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn alternative(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         paths: &[SHACLPath],
         focus_node: &S::Term,
@@ -123,7 +131,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn sequence(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         paths: &[SHACLPath],
         focus_node: &S::Term,
@@ -131,7 +139,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn inverse(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         path: &SHACLPath,
         focus_node: &S::Term,
@@ -139,7 +147,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn zero_or_more(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         path: &SHACLPath,
         focus_node: &S::Term,
@@ -147,7 +155,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn one_or_more(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         path: &SHACLPath,
         focus_node: &S::Term,
@@ -155,7 +163,7 @@ pub trait Engine<S: SRDFBasic> {
 
     fn zero_or_one(
         &self,
-        store: &S,
+        store: &Store<S>,
         shape: &CompiledPropertyShape<S>,
         path: &SHACLPath,
         focus_node: &S::Term,

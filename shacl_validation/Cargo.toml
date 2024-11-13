@@ -16,17 +16,18 @@ rdf-star = ["srdf/rdf-star"]
 
 [dependencies]
 api = { workspace = true }
-srdf = { workspace = true }
-shacl_ast = { workspace = true }
-iri_s = { workspace = true }          # TODO: can this be removed?
+iri_s = { workspace = true }
 prefixmap = { workspace = true }
-sparql_service = { workspace = true } # TODO: is this a too strict of a dependency? (implementation level)
 
+serde = { version = "1.0", features = ["derive"] } # needed for the config thing
 thiserror = { workspace = true }                   # needed for the definition of errors
 lazy_static = "1"                                  # needed for the definition of the vocab
 const_format = "0.2"                               # needed for the definition of the vocab
 indoc = "2"                                        # needed for the definition of SPARQL queries
 clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
-serde = { version = "1.0", features = ["derive"] } # needed for the config thing
 serde_yml = { workspace = true }                   # needed for the config thing
 colored = { workspace = true }
+
+[dev-dependencies]
+sparql_service = { workspace = true }
+oxrdf = { workspace = true }

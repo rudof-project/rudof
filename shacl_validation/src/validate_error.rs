@@ -1,7 +1,6 @@
 // use oxiri::IriParseError;
 use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ast::shacl_parser_error::ShaclParserError;
-use sparql_service::RdfDataError;
 use srdf::RDFParseError;
 use srdf::SRDFGraphError;
 use thiserror::Error;
@@ -44,6 +43,4 @@ pub enum ValidateError {
     CompiledShacl(#[from] CompiledShaclError),
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
-    #[error(transparent)]
-    RdfDataError(#[from] RdfDataError),
 }

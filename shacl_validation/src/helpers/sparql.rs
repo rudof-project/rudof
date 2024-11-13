@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use srdf::QuerySRDF;
 
-use super::helper_error::SPARQLError;
+use crate::helpers::helper_error::SPARQLError;
 
 pub fn select<S: QuerySRDF>(
     store: &S,

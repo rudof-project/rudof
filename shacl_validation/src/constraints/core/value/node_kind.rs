@@ -1,13 +1,6 @@
+use std::fmt::Debug;
 use std::ops::Not;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
@@ -15,15 +8,26 @@ use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::QuerySRDF;
 use srdf::SRDF;
-use std::fmt::Debug;
+
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::NativeValidator;
+use crate::constraints::SparqlValidator;
+use crate::helpers::constraint::validate_native_with_strategy;
+use crate::helpers::constraint::validate_sparql_ask;
+use crate::store::Store;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 
 impl<R: Rdf> NativeValidator<R> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        _: &S,
+        _: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
@@ -48,7 +52,14 @@ impl<R: Rdf> NativeValidator<R> for Nodekind {
             .not()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, node_kind)
+        validate_native_with_strategy(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            node_kind,
+            subsetting,
+        )
     }
 }
 
@@ -57,8 +68,9 @@ impl<S: Sparql> SparqlValidator<S> for Nodekind {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        store: &Store<S>,
         value_nodes: &ValueNodes<S>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
@@ -84,6 +96,6 @@ impl<S: Sparql> SparqlValidator<S> for Nodekind {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        validate_sparql_ask(component, shape, store, value_nodes, query, subsetting)
     }
 }
