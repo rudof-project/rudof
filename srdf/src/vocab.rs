@@ -1,5 +1,4 @@
 use const_format::concatcp;
-use iri_s::IriS;
 
 use lazy_static::lazy_static;
 

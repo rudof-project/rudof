@@ -10,14 +10,14 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-thiserror = "1"
-hashbag = { version = "0.1.11"}
-serde = "1.0"
-serde_derive = "1.0"
+thiserror = { workspace = true }
+hashbag = { version = "0.1.11" }
+serde = { workspace = true }
+serde_derive = { workspace = true }
 serde_json = { workspace = true }
-serde_yml = "0.0.12"
+serde_yml = { workspace = true }
 itertools = "0.13"
-indexmap = { version = "2"}
+indexmap = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

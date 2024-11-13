@@ -1,9 +1,9 @@
+use crate::Node;
 use iri_s::IriS;
-use srdf::{RDFParseError};
+use srdf::graph::literal::Literal;
+use srdf::RDFParseError;
 use std::fmt::Display;
 use thiserror::Error;
-use srdf::graph::literal::Literal;
-use crate::Node;
 
 #[derive(Debug, Error)]
 pub enum ShExRError {

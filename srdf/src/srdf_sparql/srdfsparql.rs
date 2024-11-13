@@ -1,5 +1,7 @@
+use crate::graph::lang::Lang;
+use crate::graph::literal::Literal;
+use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, Rdf, SRDFBasic, VarName};
 use crate::{Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, Rdf};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -24,8 +26,6 @@ use std::{
     fmt::Display,
     str::FromStr,
 };
-use crate::graph::lang::Lang;
-use crate::graph::literal::Literal;
 
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 

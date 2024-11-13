@@ -1,18 +1,9 @@
-use crate::PrefixMap;
-use iri_s::IriSError;
 use thiserror::Error;
 
 #[derive(Debug, Error, Clone)]
 pub enum PrefixMapError {
-    #[error(transparent)]
-    IriSError(#[from] IriSError),
-
     #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
-    PrefixNotFound {
-        prefix: String,
-        prefixmap: PrefixMap,
-    },
-
+    PrefixNotFound { prefix: String, prefixmap: String },
     #[error("Format error: {error}")]
     FormatError { error: String },
 }

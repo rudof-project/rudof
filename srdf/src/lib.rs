@@ -6,36 +6,26 @@
 //! - [`FocusRDF`]: RDF graphs with a focus node
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 
-pub mod neighs;
-pub mod query_srdf;
-pub mod rdf;
-pub mod rdf_data_config;
-pub mod srdf_basic;
-pub mod srdf_graph;
-pub mod srdf_parser;
-pub mod srdf_sparql;
-pub mod vocab;
-pub mod model;
-mod graph;
-
-pub use crate::async_srdf::*;
 pub use crate::neighs::*;
 pub use crate::query_srdf::*;
 pub use crate::rdf_data_config::*;
-pub use model::rdf::*;
-pub use crate::srdf_basic::*;
-pub use model::blank_node::*;
-pub use graph::object::*;
-pub use rdf::*;
-pub use model::rdf_format::*;
 pub use graph::shacl_path::*;
 pub use model::mutable_rdf::*;
-pub use srdf_graph::*;
-pub use srdf_parser::*;
-pub use srdf_sparql::*;
-pub use graph::subject::*;
-pub use graph::triple::*;
+pub use model::rdf::*;
+pub use model::rdf_format::*;
+// pub use srdf_parser::*;
+// pub use srdf_sparql::*;
 pub use vocab::*;
+
+pub mod graph;
+pub mod model;
+// TODO: move to ShEx
+pub mod neighs;
+pub mod query_srdf;
+pub mod rdf_data_config;
+// pub mod srdf_parser;
+// pub mod srdf_sparql;
+pub mod vocab;
 
 /// Creates an integer literal
 ///

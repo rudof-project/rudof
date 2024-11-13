@@ -6,11 +6,11 @@ use std::{
 use iri_s::IriS;
 use std::fmt::Debug;
 
-use crate::{
-    rdf_parser, FocusRDF, Object, PResult, RDFParseError, SRDFBasic, RDF_FIRST,
-    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, Rdf,
-};
 use crate::graph::literal::Literal;
+use crate::{
+    rdf_parser, FocusRDF, Object, PResult, RDFParseError, Rdf, SRDFBasic, RDF_FIRST, RDF_NIL,
+    RDF_NIL_STR, RDF_REST, RDF_TYPE,
+};
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node.
 /// RDF data with a focus node have to implement the [`FocusRDF`] trait.

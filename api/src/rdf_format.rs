@@ -1,6 +1,10 @@
 use std::str::FromStr;
 
-use crate::RDFParseError;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+#[error("Format {} not supported by RDF", ._0)]
+pub struct FormatError(String);
 
 /// Posible RDF formats
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
@@ -15,9 +19,9 @@ pub enum RdfFormat {
 }
 
 impl FromStr for RdfFormat {
-    type Err = RDFParseError;
+    type Err = FormatError;
 
-    fn from_str(s: &str) -> Result<RdfFormat, RDFParseError> {
+    fn from_str(s: &str) -> Result<RdfFormat, FormatError> {
         match s {
             "ttl" => Ok(RdfFormat::Turtle),
             "nt" => Ok(RdfFormat::NTriples),
@@ -25,9 +29,7 @@ impl FromStr for RdfFormat {
             "trig" => Ok(RdfFormat::TriG),
             "n3" => Ok(RdfFormat::N3),
             "nq" => Ok(RdfFormat::NQuads),
-            _ => Err(RDFParseError::SRDFError {
-                err: format!("Format {} not supported", s).to_string(),
-            }),
+            _ => Err(FormatError(s.to_string())),
         }
     }
 }

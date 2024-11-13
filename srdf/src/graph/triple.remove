@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use crate::SRDFBasic;
-
 pub struct Triple<S>
 where
     S: SRDFBasic + ?Sized,

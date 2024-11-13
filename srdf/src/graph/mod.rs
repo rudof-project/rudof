@@ -5,6 +5,7 @@ use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
+use crate::model::BlankNode;
 use crate::model::Iri;
 use crate::model::Subject;
 use crate::model::Term;
@@ -12,18 +13,15 @@ use crate::model::Triple;
 
 pub mod error;
 pub mod graph;
-pub mod parser;
+// pub mod lang;
+// pub mod literal;
+// pub mod numeric_literal;
+// pub mod object;
 pub mod serializer;
-pub mod blank_node;
-pub mod lang;
-pub mod literal;
-pub mod numeric_literal;
-pub mod object;
-pub mod shacl_path;
-pub mod subject;
-pub mod triple;
-pub mod srdfgraph;
 // TODO: move to shacl_ast
+pub mod shacl_path;
+// pub mod subject;
+// pub mod triple;
 
 impl Triple for OxTriple {
     type Subject = OxSubject;
@@ -44,6 +42,12 @@ impl Triple for OxTriple {
 
     fn obj(&self) -> &Self::Term {
         &self.object
+    }
+}
+
+impl Display for OxTriple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{},{},{}>", self.subj(), self.pred(), self.obj())
     }
 }
 
@@ -151,5 +155,11 @@ impl Term for OxTerm {
             OxTerm::Triple(triple) => Some(&triple),
             OxTerm::Literal(_) => None,
         }
+    }
+}
+
+impl BlankNode for OxBlankNode {
+    fn label(&self) -> &str {
+        self.as_str()
     }
 }

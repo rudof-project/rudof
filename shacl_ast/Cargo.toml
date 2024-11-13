@@ -10,13 +10,10 @@ homepage.workspace = true
 repository.workspace = true
 
 [features]
-# rdf-star = ["oxrdf/rdf-star", "srdf/rdf-star"]
 rdf-star = []
 
 [dependencies]
-api = { workspace = true }
-# srdf = { workspace = true }
-iri_s = { workspace = true }
+srdf = { workspace = true }
 rbe = { workspace = true }
 prefixmap = { workspace = true }
 

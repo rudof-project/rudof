@@ -1,3 +1,4 @@
+use crate::pp_object_value;
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -9,12 +10,10 @@ use shex_ast::{
     NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
     ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
-use srdf::{};
-use std::{borrow::Cow, io, marker::PhantomData};
 use srdf::graph::lang::Lang;
 use srdf::graph::literal::Literal;
 use srdf::graph::numeric_literal::NumericLiteral;
-use crate::pp_object_value;
+use std::{borrow::Cow, io, marker::PhantomData};
 
 /// Struct that can be used to pretty print ShEx schemas
 ///

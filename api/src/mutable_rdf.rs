@@ -1,7 +1,7 @@
-
-
-use crate::{Rdf};
-use crate::model::rdf::{Object, Predicate, Subject};
+use crate::rdf::Object;
+use crate::rdf::Predicate;
+use crate::rdf::Rdf;
+use crate::rdf::Subject;
 
 /// Provides the functionality to implementors of being mutable.
 pub trait MutableRdf: Rdf {
