@@ -2,7 +2,11 @@
 
 ## Current changes without release yet
 
-## [v0.1.52] - 2025-11-1
+## [v0.1.53] - 2024-11-13
+
+- Added serialization of RDF data from rudof and pyrudof
+
+## [v0.1.52] - 2024-11-1
 
 - Added `endpoints` to `RdfDataConfig` to contain a list of built-in endpoints
 - Added prefixmap as a parameter to create `SRDFPARQL` endpoints
@@ -10,30 +14,30 @@
 - Added `config()` method to obtain `rudof` config
 - Improved `add_endpoint()` in pyrudof to search for the list of built-in endpoints in RDFDataConfig
 
-## [v0.1.51] - 2025-10-31
+## [v0.1.51] - 2024-10-31
 
 - Added `read_data_path` to `pyrudof`
 
-## [v0.1.50] - 2025-10-31
+## [v0.1.50] - 2024-10-31
 
 - Fix: We repaired some export issues on UmlGenerationMode and the `__repr__` methods which were not properly generated.
 
-## [v0.1.49] - 2025-10-30
+## [v0.1.49] - 2024-10-30
 
 - Implemented Display for ShapeMap, ShEx-schema and SHACL-schema
 - Added `__repr__` to ShapeMap, ShExSchema and SHACLSchema
 - Added `update_config` to rudof and pyrudof
 
-## [v0.1.48] - 2025-10-29
+## [v0.1.48] - 2024-10-29
 
 - Minor release to force re-publication
 
-## [v0.1.47] - 2025-10-29
+## [v0.1.47] - 2024-10-29
 
 - Changed the way that we represent enums in Python to use proper enums with default values
 - Added `read_shacl_str` and `read_shacl_path` to pyrudof
 
-## [v0.1.46] - 2025-10-29
+## [v0.1.46] - 2024-10-29
 
 - Added default values to `pyrudof` to allow a more flexible API
 - minor release to include RDFFormat and ReaderMode in export list of `pyrudof`
