@@ -4,7 +4,7 @@
 
 ## [v0.1.56] - 2024-11-14
 
-- Empty release to force the creation of a new version trying to solve problem with pyrudof in google colab
+- Added `variables()` and `find` to QuerySolution class in pyrudof
 
 ## [v0.1.55] - 2024-11-14
 
