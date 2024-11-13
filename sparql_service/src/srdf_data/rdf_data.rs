@@ -36,7 +36,6 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::io;
-use std::rc::Rc;
 use std::str::FromStr;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
@@ -73,6 +72,20 @@ impl RdfData {
             store: None,
             focus: None,
         }
+    }
+
+    /// Checks if the Store has been initialized
+    ///
+    /// By default, the RDF Data Store is not initialized as it is expensive and is only required for SPARQL queries
+    pub fn check_store(&mut self) -> Result<(), RdfDataError> {
+        if let Some(graph) = &self.graph {
+            if self.store.is_none() {
+                let store = Store::new()?;
+                store.bulk_loader().load_quads(graph.quads())?;
+                self.store = Some(store)
+            }
+        }
+        Ok(())
     }
 
     /// Creates an RdfData from an in-memory RDF Graph
@@ -452,6 +465,7 @@ impl QuerySRDF for RdfData {
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol)
         }
+        println!("Results...before endpoint: {}", sols.count());
         for endpoint in &self.endpoints {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> =
@@ -494,7 +508,7 @@ fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
         let term = t.clone();
         values.push(term)
     }
-    QuerySolution::new(Rc::new(variables), values)
+    QuerySolution::new(variables, values)
 }
 
 fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {

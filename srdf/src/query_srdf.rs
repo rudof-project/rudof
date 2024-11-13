@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc};
+use std::fmt::Display;
 
 use crate::SRDFBasic;
 
@@ -61,13 +61,14 @@ impl<S: SRDFBasic> VariableSolutionIndex<S> for &VarName {
 }
 
 /// Represents one query solution
+#[derive(Debug)]
 pub struct QuerySolution<S: SRDFBasic> {
-    variables: Rc<Vec<VarName>>,
+    variables: Vec<VarName>,
     values: Vec<Option<S::Term>>,
 }
 
 impl<S: SRDFBasic> QuerySolution<S> {
-    pub fn new(variables: Rc<Vec<VarName>>, values: Vec<Option<S::Term>>) -> QuerySolution<S> {
+    pub fn new(variables: Vec<VarName>, values: Vec<Option<S::Term>>) -> QuerySolution<S> {
         QuerySolution { variables, values }
     }
     pub fn find_solution(&self, index: impl VariableSolutionIndex<S>) -> Option<&S::Term> {
@@ -97,7 +98,7 @@ impl<S: SRDFBasic> QuerySolution<S> {
     }
 }
 
-impl<S: SRDFBasic, V: Into<Rc<Vec<VarName>>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
+impl<S: SRDFBasic, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
     for QuerySolution<S>
 {
     #[inline]
@@ -110,6 +111,7 @@ impl<S: SRDFBasic, V: Into<Rc<Vec<VarName>>>, T: Into<Vec<Option<S::Term>>>> Fro
 }
 
 /// Represent a list of query solutions
+#[derive(Debug)]
 pub struct QuerySolutions<S: SRDFBasic> {
     solutions: Vec<QuerySolution<S>>,
 }
@@ -131,5 +133,9 @@ impl<S: SRDFBasic> QuerySolutions<S> {
 
     pub fn iter(&self) -> impl Iterator<Item = &QuerySolution<S>> {
         self.solutions.iter()
+    }
+
+    pub fn count(&self) -> usize {
+        self.solutions.len()
     }
 }

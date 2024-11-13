@@ -16,6 +16,12 @@ pub enum RudofError {
         error: serde_yml::Error,
     },
 
+    #[error("Error running query {str}: {error}")]
+    QueryError { str: String, error: String },
+
+    #[error("Storage error: {error}")]
+    StorageError { error: String },
+
     #[error("Error parsing IRI from {str}: {error}")]
     BaseIriError { str: String, error: String },
 

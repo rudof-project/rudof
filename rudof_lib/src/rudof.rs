@@ -9,7 +9,7 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
-use sparql_service::RdfData;
+use srdf::QuerySRDF;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;
@@ -27,11 +27,12 @@ pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStat
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
-pub use srdf::{RDFFormat, ReaderMode, SRDFSparql};
+pub use srdf::{QuerySolutions, RDFFormat, ReaderMode, SRDFSparql};
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
+pub use sparql_service::RdfData;
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
@@ -240,6 +241,28 @@ impl Rudof {
         } else {
             Err(RudofError::NoShExSchemaToSerialize)
         }
+    }
+
+    pub fn run_query<R: io::Read>(&mut self, reader: &mut R) -> Result<QuerySolutions<RdfData>> {
+        let mut str = String::new();
+        reader
+            .read_to_string(&mut str)
+            .map_err(|e| RudofError::ReadError {
+                error: format!("{e}"),
+            })?;
+        self.rdf_data
+            .check_store()
+            .map_err(|e| RudofError::StorageError {
+                error: format!("{e}"),
+            })?;
+        let results = self
+            .rdf_data
+            .query_select(&str)
+            .map_err(|e| RudofError::QueryError {
+                str: str.to_string(),
+                error: format!("{e}"),
+            })?;
+        Ok(results)
     }
 
     pub fn serialize_shacl<W: io::Write>(

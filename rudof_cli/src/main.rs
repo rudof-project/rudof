@@ -33,12 +33,11 @@ use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
-use sparql_service::{QueryConfig, RdfData, ServiceDescription};
-use srdf::srdf_graph::SRDFGraph;
-use srdf::{QuerySolution, RDFFormat, RdfDataConfig, ReaderMode, SRDFSparql, VarName, SRDF};
+use sparql_service::{RdfData, ServiceDescription};
+use srdf::{QuerySolution, RDFFormat, ReaderMode, VarName, SRDF};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufWriter, Read, Write};
+use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use std::str::FromStr;
@@ -386,7 +385,7 @@ fn main() -> Result<()> {
             config,
             force_overwrite,
         }) => {
-            let query_config = get_query_config(config)?;
+            let config = get_config(config)?;
             run_query(
                 data,
                 data_format,
@@ -395,7 +394,7 @@ fn main() -> Result<()> {
                 query,
                 result_query_format,
                 output,
-                &query_config,
+                &config,
                 cli.debug,
                 *force_overwrite,
             )
@@ -1045,6 +1044,7 @@ fn get_writer(
     }
 }
 
+/*
 fn get_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -1071,6 +1071,7 @@ fn get_data(
         }
     }
 }
+    */
 
 fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
@@ -1131,12 +1132,12 @@ fn get_data_rudof(
     }
 }
 
-fn get_query_str(input: &InputSpec) -> Result<String> {
+/*fn get_query_str(input: &InputSpec) -> Result<String> {
     let mut str = String::new();
     let mut data = input.open_read(None)?;
     data.read_to_string(&mut str)?;
     Ok(str)
-}
+}*/
 
 /*fn make_node_selector(node: Node) -> Result<NodeSelector> {
     let object = node.as_object();
@@ -1358,31 +1359,20 @@ fn run_query(
     query: &InputSpec,
     _result_query_format: &ResultQueryFormat,
     output: &Option<PathBuf>,
-    config: &QueryConfig,
-    debug: u8,
+    config: &RudofConfig,
+    _debug: u8,
     force_overwrite: bool,
 ) -> Result<()> {
-    use crate::srdf::QuerySRDF;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let data_config = match &config.data_config {
-        None => RdfDataConfig::default(),
-        Some(dc) => dc.clone(),
-    };
-    let data = get_data(
-        data,
-        data_format,
-        endpoint,
-        reader_mode,
-        debug,
-        &data_config,
-    )?;
-    let query = get_query_str(query)?;
-    let results = data.query_select(query.as_str())?;
+    let mut rudof = Rudof::new(config);
+    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    let mut reader = query.open_read(None)?;
+    let results = rudof.run_query(&mut reader)?;
     let mut results_iter = results.iter().peekable();
     if let Some(first) = results_iter.peek() {
         show_variables(&mut writer, first.variables())?;
         for result in results_iter {
-            show_result(&mut writer, result, &data.prefixmap_in_memory())?
+            show_result(&mut writer, result, &rudof.nodes_prefixmap())?
         }
     } else {
         write!(writer, "No results")?;
@@ -1411,9 +1401,9 @@ fn show_result<W: Write>(
         let str = match result.find_solution(idx) {
             Some(term) => match term {
                 oxrdf::Term::NamedNode(named_node) => {
-                    let (str, length) =
+                    let (str, _length) =
                         prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
-                    format!("{}{}", " ".repeat(15 - length), str)
+                    format!("{}     ", str)
                 }
                 oxrdf::Term::BlankNode(blank_node) => format!("  {}", blank_node),
                 oxrdf::Term::Literal(literal) => format!("  {}", literal),
@@ -1493,6 +1483,7 @@ fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
     }
 }
 
+/*
 fn parse_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
@@ -1508,7 +1499,7 @@ fn parse_data(
         graph.merge_from_reader(reader, &rdf_format, base, &reader_mode)?;
     }
     Ok(graph)
-}
+}*/
 
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     let ns = ShapeMapParser::parse_node_selector(node_str)?;
@@ -1538,7 +1529,7 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
     }
 }
 
-fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
+/*fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
     match config {
         Some(config_path) => match QueryConfig::from_path(config_path) {
             Ok(c) => Ok(c),
@@ -1549,7 +1540,7 @@ fn get_query_config(config: &Option<PathBuf>) -> Result<QueryConfig> {
         },
         None => Ok(QueryConfig::default()),
     }
-}
+}*/
 
 fn show_extends_table<R: Write>(
     writer: &mut R,

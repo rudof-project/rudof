@@ -18,7 +18,6 @@ use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution,
     ReaderQueryResultsParserOutput,
 };
-use std::rc::Rc;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt::Display,
@@ -460,7 +459,7 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
         let term = t.clone();
         values.push(term)
     }
-    QuerySolution::new(Rc::new(variables), values)
+    QuerySolution::new(variables, values)
 }
 
 fn sparql_client() -> Result<Client> {

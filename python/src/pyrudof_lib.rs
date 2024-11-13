@@ -2,10 +2,10 @@
 //!
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
 use rudof_lib::{
-    iri, DCTAPFormat, PrefixMap, QueryShapeMap, RDFFormat, ReaderMode, ResultShapeMap, Rudof,
-    RudofConfig, RudofError, ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchema,
-    ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode,
-    ValidationReport, ValidationStatus, DCTAP,
+    iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolutions, RDFFormat, RdfData, ReaderMode,
+    ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter, ShExSchema,
+    ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
+    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
@@ -683,6 +683,17 @@ pub enum PyShapesGraphSource {
     CurrentSchema,
 }
 
+#[pyclass(name = "QuerySulutions")]
+pub struct PyQuerySolutions {
+    inner: QuerySolutions<RdfData>,
+}
+
+impl PyQuerySolutions {
+    pub fn show(&self) -> String {
+        format!("Solutions: {:?}", self.inner)
+    }
+}
+
 #[pyclass(frozen, name = "ResultShapeMap")]
 pub struct PyResultShapeMap {
     inner: ResultShapeMap,
@@ -690,13 +701,6 @@ pub struct PyResultShapeMap {
 
 #[pymethods]
 impl PyResultShapeMap {
-    /*fn get_info(&self, node: &str, label: &str) -> Option<PyValidationStatus> {
-        let node = Node::from_str(node);
-        let label = ShapeLabel::from_str(label);
-        let info = self.get_info(node, label);
-        info.map(|status| PyValidationStatus { inner: status })
-    }*/
-
     /// Convert a ResultShapeMap to a String
     pub fn show(&self) -> String {
         let result = &self.inner;
