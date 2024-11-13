@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.56] - 2024-11-14
+
+- Empty release to force the creation of a new version trying to solve problem with pyrudof in google colab
+
 ## [v0.1.55] - 2024-11-14
 
 - Added methods to show query solutions in rudof and pyrudof

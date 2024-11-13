@@ -7,7 +7,7 @@ use rudof_lib::{
     iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
     ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
     ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
-    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, DCTAP,
+    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 
@@ -714,8 +714,23 @@ pub struct PyQuerySolution {
 
 #[pymethods]
 impl PyQuerySolution {
+    /// Converts the solution to a String
     pub fn show(&self) -> String {
         self.inner.show().to_string()
+    }
+
+    /// Returns the list of variables in this solutions
+    pub fn variables(&self) -> Vec<String> {
+        let vars: Vec<String> = self.inner.variables().map(|v| v.to_string()).collect();
+        vars
+    }
+
+    /// Returns the value of a variable name if exists, None if it doesn't
+    pub fn find(&self, var_name: &str) -> Option<String> {
+        match self.inner.find_solution(&VarName::new(var_name)) {
+            None => None,
+            Some(t) => Some(format!("{t}")),
+        }
     }
 }
 

@@ -27,7 +27,7 @@ pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStat
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
-pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql};
+pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shapes_converter::UmlGenerationMode;
