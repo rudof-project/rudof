@@ -12,7 +12,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxExclusive<S> {
+impl<R: Rdf> NativeValidator<R> for MaxExclusive<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -24,7 +24,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxExclusive<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxExclusive<S> {
+impl<S: Sparql> SparqlValidator<S> for MaxExclusive<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

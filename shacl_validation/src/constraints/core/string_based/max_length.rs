@@ -14,7 +14,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxLength {
+impl<R: Rdf> NativeValidator<R> for MaxLength {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -44,7 +44,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
+impl<S: Sparql> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

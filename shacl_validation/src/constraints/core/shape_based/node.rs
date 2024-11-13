@@ -19,14 +19,14 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDFBasic + Debug> Validator<S> for Node<S> {
+impl<T: Triple> Validator<T> for Node<S> {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        engine: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        engine: impl Engine<R>,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
@@ -38,19 +38,19 @@ impl<S: SRDFBasic + Debug> Validator<S> for Node<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Node<S> {
+impl<R: Rdf> NativeValidator<R> for Node<S> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<RS>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Node<S> {
+impl<S: Sparql> SparqlValidator<S> for Node<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

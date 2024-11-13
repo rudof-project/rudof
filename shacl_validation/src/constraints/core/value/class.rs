@@ -20,10 +20,10 @@ use std::fmt::Debug;
 impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<RS>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if S::term_is_literal(value_node) {
@@ -47,7 +47,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: Sparql> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

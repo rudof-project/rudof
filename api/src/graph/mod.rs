@@ -5,9 +5,9 @@ use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
-use crate::model::Object;
-use crate::model::Predicate;
+use crate::model::Iri;
 use crate::model::Subject;
+use crate::model::Term;
 use crate::model::Triple;
 
 pub mod error;
@@ -79,13 +79,13 @@ impl Subject for OxSubject {
     }
 }
 
-impl Predicate for OxIri {
+impl Iri for OxIri {
     fn new(str: &str) -> Self {
         OxIri::new_unchecked(str)
     }
 }
 
-impl Object for OxTerm {
+impl Term for OxTerm {
     type BlankNode = OxBlankNode;
     type Iri = OxIri;
     type Literal = OxLiteral;

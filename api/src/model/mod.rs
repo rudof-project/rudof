@@ -12,7 +12,7 @@ pub enum RdfFormat {
 
 pub trait Subject {
     type BlankNode;
-    type Iri: Predicate;
+    type Iri: Iri;
     type Triple: Triple;
 
     fn is_blank_node(&self) -> bool;
@@ -24,13 +24,13 @@ pub trait Subject {
     fn as_triple(&self) -> Option<&Self::Triple>;
 }
 
-pub trait Predicate {
+pub trait Iri {
     fn new(str: &str) -> Self;
 }
 
-pub trait Object {
+pub trait Term {
     type BlankNode;
-    type Iri: Predicate;
+    type Iri: Iri;
     type Literal;
     type Triple: Triple;
 
@@ -47,8 +47,8 @@ pub trait Object {
 
 pub trait Triple {
     type Subject: Subject + PartialEq;
-    type Iri: Predicate + PartialEq;
-    type Term: Object + PartialEq;
+    type Iri: Iri + PartialEq;
+    type Term: Term + PartialEq;
 
     fn new(subj: Self::Subject, pred: Self::Iri, obj: Self::Term) -> Self;
     fn subj(&self) -> &Self::Subject;

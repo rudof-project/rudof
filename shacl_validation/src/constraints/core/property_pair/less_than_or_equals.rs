@@ -10,7 +10,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
+impl<R: Rdf> NativeValidator<R> for LessThanOrEquals<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -24,7 +24,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
+impl<S: Sparql> SparqlValidator<S> for LessThanOrEquals<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

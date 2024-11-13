@@ -1,3 +1,4 @@
+use api::model::rdf::Rdf;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -19,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
+impl<T: Triple> Validator<T> for MaxCount {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -33,19 +34,19 @@ impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxCount {
+impl<R: Rdf> NativeValidator<R> for MaxCount {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &R,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
+impl<S: Sparql> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

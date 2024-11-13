@@ -12,5 +12,5 @@ pub enum RdfParserError {
     #[error(transparent)]
     Parsing(#[from] RdfParseError),
     #[error(transparent)]
-    Inserting(#[from] MutableGraphError),
+    Mutation(#[from] MutableGraphError),
 }

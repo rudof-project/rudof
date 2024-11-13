@@ -23,13 +23,9 @@ members = [
     "api",
 ]
 
-exclude = [
-    "shex_compact_winnow"
-]
+exclude = ["shex_compact_winnow"]
 
-default-members = [
-    "rudof_cli"
-]
+default-members = ["rudof_cli"]
 
 [workspace.package]
 edition = "2021"
@@ -47,6 +43,7 @@ authors = [
 ]
 
 [workspace.dependencies]
+api = { version = "*", path = "./api" }
 iri_s = { version = "0.1.32", path = "./iri_s" }
 dctap = { version = "0.1.31", path = "./dctap" }
 prefixmap = { version = "0.1.32", path = "./prefixmap" }
@@ -65,7 +62,6 @@ shex_compact = { version = "0.1.0", path = "./shex_compact" }
 srdf = { version = "0.1.35", path = "./srdf" }
 sparql_service = { version = "0.1.37", path = "./sparql_service" }
 
-# [dependencies]
 # External dependencies
 anyhow = "1.0"
 clap = { version = "4.2.1", features = ["derive"] }
@@ -80,4 +76,4 @@ serde_derive = "1"
 serde_yml = "0.0.12"
 thiserror = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

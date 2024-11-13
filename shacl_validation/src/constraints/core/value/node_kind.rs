@@ -17,7 +17,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
+impl<R: Rdf> NativeValidator<R> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -52,7 +52,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: Sparql> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

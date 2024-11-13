@@ -15,7 +15,7 @@ use srdf::SRDFBasic;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDFBasic + Debug> Validator<S> for Closed<S> {
+impl<T: Triple> Validator<T> for Closed<S> {
     fn validate(
         &self,
         _component: &CompiledComponent<S>,
@@ -28,19 +28,19 @@ impl<S: SRDFBasic + Debug> Validator<S> for Closed<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Closed<S> {
+impl<R: Rdf> NativeValidator<R> for Closed<S> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<RS>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Closed<S> {
+impl<S: Sparql> SparqlValidator<S> for Closed<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

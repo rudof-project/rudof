@@ -10,7 +10,7 @@ use srdf::QuerySRDF;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Disjoint<S> {
+impl<R: Rdf> NativeValidator<R> for Disjoint<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -22,7 +22,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Disjoint<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Disjoint<S> {
+impl<S: Sparql> SparqlValidator<S> for Disjoint<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

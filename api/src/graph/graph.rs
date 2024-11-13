@@ -4,10 +4,10 @@ use std::hash::Hash;
 use oxrdf::Triple as OxTriple;
 
 use crate::model::rdf::MutableRdf;
+use crate::model::rdf::Object;
+use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::RdfIri;
-use crate::model::rdf::RdfSubject;
-use crate::model::rdf::RdfTerm;
+use crate::model::rdf::Subject;
 use crate::model::rdf::Triples;
 use crate::model::Triple;
 
@@ -16,7 +16,7 @@ use super::error::MutableGraphError;
 
 pub type SimpleGraph = GenericSimpleGraph<OxTriple>;
 
-pub struct GenericSimpleGraph<T: Triple>(HashSet<T>);
+pub struct GenericSimpleGraph<T: Triple>(HashSet<T>); // TODO: is a BTree better for larger datasets?
 
 impl<T: Triple> Default for GenericSimpleGraph<T> {
     fn default() -> Self {
@@ -30,9 +30,9 @@ impl<T: Triple> Rdf for GenericSimpleGraph<T> {
 
     fn triples_matching<'a>(
         &'a self,
-        subject: Option<&'a RdfSubject<Self>>,
-        predicate: Option<&'a RdfIri<Self>>,
-        object: Option<&'a RdfTerm<Self>>,
+        subject: Option<&'a Subject<Self>>,
+        predicate: Option<&'a Predicate<Self>>,
+        object: Option<&'a Object<Self>>,
     ) -> Result<Triples<'a, Self>, Self::Error> {
         let triples = self
             .0
@@ -59,9 +59,9 @@ impl<T: Triple + Hash + Eq> MutableRdf for GenericSimpleGraph<T> {
 
     fn add_triple(
         &mut self,
-        subject: RdfSubject<Self>,
-        predicate: RdfIri<Self>,
-        object: RdfTerm<Self>,
+        subject: Subject<Self>,
+        predicate: Predicate<Self>,
+        object: Object<Self>,
     ) -> Result<(), Self::MutableError> {
         self.0.insert(T::new(subject, predicate, object));
         Ok(())
@@ -72,11 +72,11 @@ impl<T: Triple + Hash + Eq> MutableRdf for GenericSimpleGraph<T> {
         Ok(())
     }
 
-    fn add_base(&mut self, base: &RdfIri<Self>) -> Result<(), Self::Error> {
+    fn add_base(&mut self, base: &Predicate<Self>) -> Result<(), Self::Error> {
         todo!()
     }
 
-    fn add_prefix(&mut self, alias: &str, iri: &RdfIri<Self>) -> Result<(), Self::Error> {
+    fn add_prefix(&mut self, alias: &str, iri: &Predicate<Self>) -> Result<(), Self::Error> {
         todo!()
     }
 }

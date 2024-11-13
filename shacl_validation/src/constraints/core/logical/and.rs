@@ -13,22 +13,21 @@ use crate::shape::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use api::model::rdf::Rdf;
 use shacl_ast::compiled::component::And;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDFBasic + Debug> Validator<S> for And<S> {
+impl<T: Triple> Validator<T> for And<R> {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        engine: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        engine: impl Engine<R>,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let and = |value_node: &S::Term| {
             self.shapes()
@@ -47,19 +46,19 @@ impl<S: SRDFBasic + Debug> Validator<S> for And<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for And<S> {
+impl<R: Rdf> NativeValidator<R> for And<S> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<RS>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(component, shape, store, NativeEngine, value_nodes)
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for And<S> {
+impl<S: Sparql> SparqlValidator<S> for And<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
