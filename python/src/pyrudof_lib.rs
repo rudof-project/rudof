@@ -1,10 +1,12 @@
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
-use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyErr, PyResult, Python};
+use pyo3::{
+    exceptions::PyValueError, pyclass, pymethods, Py, PyErr, PyRef, PyRefMut, PyResult, Python,
+};
 use rudof_lib::{
-    iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolutions, RDFFormat, RdfData, ReaderMode,
-    ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter, ShExSchema,
-    ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
+    iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
+    ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
+    ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
     ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
@@ -121,6 +123,28 @@ impl PyRudof {
     pub fn get_shacl(&self) -> Option<PyShaclSchema> {
         let shacl_schema = self.inner.get_shacl();
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
+    }
+
+    /// Run a SPARQL query obtained from a string on the RDF data
+    #[pyo3(signature = (input))]
+    pub fn run_query_str(&mut self, input: &str) -> PyResult<PyQuerySolutions> {
+        let results = self.inner.run_query_str(input).map_err(cnv_err)?;
+        Ok(PyQuerySolutions { inner: results })
+    }
+
+    /// Run a SPARQL query obtained from a file path on the RDF data
+    #[pyo3(signature = (path_name))]
+    pub fn run_query_path(&mut self, path_name: &str) -> PyResult<PyQuerySolutions> {
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingDCTAPPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let mut reader = BufReader::new(file);
+        let results = self.inner.run_query(&mut reader).map_err(cnv_err)?;
+        Ok(PyQuerySolutions { inner: results })
     }
 
     /// Reads DCTAP from a String
@@ -683,14 +707,59 @@ pub enum PyShapesGraphSource {
     CurrentSchema,
 }
 
-#[pyclass(name = "QuerySulutions")]
+#[pyclass(name = "QuerySolution")]
+pub struct PyQuerySolution {
+    inner: QuerySolution<RdfData>,
+}
+
+#[pymethods]
+impl PyQuerySolution {
+    pub fn show(&self) -> String {
+        self.inner.show().to_string()
+    }
+}
+
+#[pyclass(name = "QuerySolutions")]
 pub struct PyQuerySolutions {
     inner: QuerySolutions<RdfData>,
 }
 
+#[pymethods]
 impl PyQuerySolutions {
     pub fn show(&self) -> String {
         format!("Solutions: {:?}", self.inner)
+    }
+
+    pub fn count(&self) -> usize {
+        self.inner.count()
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyResult<Py<QuerySolutionIter>> {
+        let rs: Vec<PyQuerySolution> = slf
+            .inner
+            .iter()
+            .map(|qs| PyQuerySolution { inner: qs.clone() })
+            .collect();
+        let iter = QuerySolutionIter {
+            inner: rs.into_iter(),
+        };
+        Py::new(slf.py(), iter)
+    }
+}
+
+#[pyclass]
+struct QuerySolutionIter {
+    inner: std::vec::IntoIter<PyQuerySolution>,
+}
+
+#[pymethods]
+impl QuerySolutionIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<PyQuerySolution> {
+        slf.inner.next()
     }
 }
 
