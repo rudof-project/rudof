@@ -1,4 +1,5 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
+use std::str::FromStr;
 
 use api::Iri;
 use serde_derive::Deserialize;
@@ -11,19 +12,12 @@ use crate::PrefixMap;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 #[serde(try_from = "I", into = "String")]
-pub enum IriRef<I: Iri> {
+pub enum IriRef<I: Iri + Clone> {
     Iri(I),
     Prefixed { prefix: String, local: String },
 }
 
-#[derive(Debug, Error)] // TODO: move this together with the rest of the errors
-#[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
-pub struct Underef {
-    prefix: String,
-    local: String,
-}
-
-impl<I: Iri> IriRef<I> {
+impl<I: Iri + Clone> IriRef<I> {
     pub fn prefixed(prefix: &str, local: &str) -> IriRef<I> {
         IriRef::Prefixed {
             prefix: prefix.to_string(),
@@ -40,13 +34,13 @@ impl<I: Iri> IriRef<I> {
             IriRef::Iri(iri) => Ok(iri),
             IriRef::Prefixed { prefix, local } => Err(Underef {
                 prefix: prefix.to_string(),
-                local,
+                local: local.to_string(),
             }),
         }
     }
 }
 
-impl<I: Iri> Deref<I> for IriRef<I> {
+impl<I: Iri + Clone> Deref<I> for IriRef<I> {
     fn deref(
         &self,
         base: &Option<I>,
@@ -74,26 +68,28 @@ impl<I: Iri> Deref<I> for IriRef<I> {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 #[error("Error parsing the {} IRI from a String", ._0)]
 pub struct IriFromStrError(String);
 
-impl<I: Iri> FromStr for IriRef<I> {
+impl<I: Iri + Clone + FromStr> FromStr for IriRef<I> {
     type Err = IriFromStrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri_s = I::from_str(s)?;
-        Ok(IriRef::Iri(iri_s))
+        match I::from_str(s) {
+            Ok(iri) => Ok(IriRef::Iri(iri)),
+            Err(_) => Err(IriFromStrError(s.to_string())),
+        }
     }
 }
 
-impl<I: Iri> From<I> for IriRef<I> {
-    fn from(i: I) -> IriRef<I> {
-        IriRef::Iri(i)
+impl<I: Iri + Clone + FromStr> From<String> for IriRef<I> {
+    fn from(value: String) -> Self {
+        IriRef::from_str(&value).unwrap()
     }
 }
 
-impl<I: Iri> Display for IriRef<I> {
+impl<I: Iri + Clone + Display> Display for IriRef<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             IriRef::Iri(i) => write!(f, "{i}")?,

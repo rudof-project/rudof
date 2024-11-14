@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::str::FromStr;
 
 use api::Iri;
 use colored::*;
@@ -7,14 +8,23 @@ use indexmap::map::Iter;
 use indexmap::IndexMap;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
+use thiserror::Error;
 
+use crate::IriFromStrError;
 use crate::IriRef;
-use crate::PrefixMapError;
+
+#[derive(Debug, Error, Clone)]
+pub enum PrefixMapError {
+    #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
+    PrefixNotFound { prefix: String, prefixmap: String },
+    #[error(transparent)]
+    Format(#[from] IriFromStrError),
+}
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
-pub struct PrefixMap<I: Iri> {
+pub struct PrefixMap<I: Iri + Clone> {
     /// Proper prefix map associations of an alias `String` to an `IRI`
     pub map: IndexMap<String, I>,
     /// Color of prefix aliases when qualifying an IRI that has an alias
@@ -35,12 +45,7 @@ fn split(str: &str) -> Option<(&str, &str)> {
     str.rsplit_once(':')
 }
 
-impl<I: Iri> PrefixMap<I> {
-    /// Creates an empty prefixmap
-    pub fn new() -> PrefixMap<I> {
-        PrefixMap::default()
-    }
-
+impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     /// Change color when qualifying a IRI
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
@@ -71,10 +76,10 @@ impl<I: Iri> PrefixMap<I> {
         match self.map.entry(alias.to_string()) {
             indexmap::map::Entry::Occupied(mut e) => {
                 // TODO: Possible error with repeated aliases??
-                e.insert(iri.to_owned());
+                e.insert(iri.clone());
             }
             indexmap::map::Entry::Vacant(v) => {
-                v.insert(iri.to_owned());
+                v.insert(iri.clone());
             }
         };
         Ok(())
@@ -84,11 +89,11 @@ impl<I: Iri> PrefixMap<I> {
         self.map.get(str)
     }
 
-    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
-        let mut pm = PrefixMap::new();
+    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap<I>, PrefixMapError> {
+        let mut pm = PrefixMap::default();
         for (a, s) in hm.iter() {
-            let iri = I::from_str(s)?;
-            pm.insert(a, &iri)?;
+            let iri = IriRef::from_str(s)?.get_iri()?;
+            pm.insert(a, iri)?;
         }
         Ok(pm)
     }
@@ -131,14 +136,14 @@ impl<I: Iri> PrefixMap<I> {
                 Ok(iri)
             }
             None => {
-                let iri = I::from_str(str)?;
+                let iri = IriRef::from_str(str)?.get_iri()?;
                 Ok(iri)
             }
         }
     }
 
     /// Resolves an IriRef against a prefix map
-    pub fn resolve_iriref(&self, iri_ref: &IriRef) -> Result<I, PrefixMapError> {
+    pub fn resolve_iriref(&self, iri_ref: &IriRef<I>) -> Result<I, PrefixMapError> {
         match iri_ref {
             IriRef::Prefixed { prefix, local } => {
                 let iri = self.resolve_prefix_local(prefix, local)?;

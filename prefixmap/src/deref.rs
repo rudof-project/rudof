@@ -3,19 +3,18 @@ use thiserror::Error;
 
 use crate::PrefixMap;
 use crate::PrefixMapError;
-use crate::Underef;
 
 #[derive(Debug, Error)]
 pub enum DerefError {
     #[error(transparent)]
-    PrefixMapError(#[from] PrefixMapError),
+    PrefixMap(#[from] PrefixMapError),
     #[error("No prefix map to dereference prefixed name {prefix}:{local}")]
     NoPrefixMapPrefixedName { prefix: String, local: String },
-    #[error(transparent)]
-    UnderefError(#[from] Underef),
+    #[error("Cannot obtain IRI from prefixed name IriRef {}:{}", _0, _1)]
+    Underef(String, String),
 }
 
-pub trait Deref<I: Iri>
+pub trait Deref<I: Iri + Clone>
 where
     Self: Sized,
 {
