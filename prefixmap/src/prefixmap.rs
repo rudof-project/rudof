@@ -1,32 +1,25 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::str::FromStr;
 
-use api::Iri;
 use colored::*;
 use indexmap::map::Iter;
 use indexmap::IndexMap;
+use iri_s::IriS;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-use thiserror::Error;
 
-use crate::IriFromStrError;
 use crate::IriRef;
-
-#[derive(Debug, Error, Clone)]
-pub enum PrefixMapError {
-    #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
-    PrefixNotFound { prefix: String, prefixmap: String },
-    #[error(transparent)]
-    Format(#[from] IriFromStrError),
-}
+use crate::PrefixMapError;
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
-pub struct PrefixMap<I: Iri + Clone> {
+pub struct PrefixMap {
     /// Proper prefix map associations of an alias `String` to an `IRI`
-    pub map: IndexMap<String, I>,
+    pub map: IndexMap<String, IriS>,
     /// Color of prefix aliases when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_prefix_color: Option<Color>,
@@ -45,7 +38,7 @@ fn split(str: &str) -> Option<(&str, &str)> {
     str.rsplit_once(':')
 }
 
-impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
+impl PrefixMap {
     /// Change color when qualifying a IRI
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
@@ -72,7 +65,7 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     }
 
     /// Inserts an alias association to an IRI
-    pub fn insert(&mut self, alias: &str, iri: &I) -> Result<(), PrefixMapError> {
+    pub fn insert(&mut self, alias: &str, iri: &IriS) -> Result<(), PrefixMapError> {
         match self.map.entry(alias.to_string()) {
             indexmap::map::Entry::Occupied(mut e) => {
                 // TODO: Possible error with repeated aliases??
@@ -85,27 +78,29 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
         Ok(())
     }
 
-    pub fn find(&self, str: &str) -> Option<&I> {
+    pub fn find(&self, str: &str) -> Option<&IriS> {
         self.map.get(str)
     }
 
-    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap<I>, PrefixMapError> {
+    pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
         let mut pm = PrefixMap::default();
         for (a, s) in hm.iter() {
-            let iri = IriRef::from_str(s)?.get_iri()?;
-            pm.insert(a, iri)?;
+            let iri = IriS::from_str(s)?;
+            pm.insert(a, &iri)?;
         }
         Ok(pm)
     }
 
     /// Return an iterator over the key-value pairs of the ("map, in their order
-    pub fn iter(&self) -> Iter<String, I> {
+    pub fn iter(&self) -> Iter<String, IriS> {
         self.map.iter()
     }
 
     /// Resolves a string against a prefix map
-    /// Example:
-    /// Given a string like "ex:a" and a prefixmap that has alias "ex" with value "http://example.org/", the result will be "http://example.org/a"
+    ///
+    /// ## Example
+    /// Given a string like "ex:a" and a prefixmap that has alias "ex" with
+    /// value "http://example.org/", the result will be "http://example.org/a"
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
@@ -113,37 +108,35 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     /// use iri_s::*;
     /// use std::str::FromStr;
     ///
-    ///
     /// let pm: PrefixMap = PrefixMap::from_hashmap(
     ///   &HashMap::from([
     ///     ("", "http://example.org/"),
     ///     ("schema", "http://schema.org/")])
-    /// )?;
-    /// let a = pm.resolve(":a")?;
-    /// let a_resolved = I::from_str("http://example.org/a")?;
-    /// assert_eq!(a, a_resolved);
-    /// Ok::<(), PrefixMapError>(());
+    /// ).unwrap();
     ///
-    /// let knows = pm.resolve("schema:knows")?;
-    /// let knows_resolved = I::from_str("http://schema.org/knows")?;
-    /// assert_eq!(knows, knows_resolved);
-    /// Ok::<(), PrefixMapError>(())
+    /// let a = pm.resolve(":a").unwrap();
+    /// let a_resolved = IriS::from_str("http://example.org/a").unwrap();
+    /// assert_eq!(a, a_resolved);
+    ///
+    /// let knows = pm.resolve("schema:knows").unwrap();
+    /// let knows_resolved = IriS::from_str("http://schema.org/knows").unwrap();
+    /// assert_eq!(knows, knows_resolved)
     /// ```
-    pub fn resolve(&self, str: &str) -> Result<I, PrefixMapError> {
+    pub fn resolve(&self, str: &str) -> Result<IriS, PrefixMapError> {
         match split(str) {
             Some((prefix, local)) => {
                 let iri = self.resolve_prefix_local(prefix, local)?;
                 Ok(iri)
             }
             None => {
-                let iri = IriRef::from_str(str)?.get_iri()?;
+                let iri = IriS::from_str(str)?;
                 Ok(iri)
             }
         }
     }
 
     /// Resolves an IriRef against a prefix map
-    pub fn resolve_iriref(&self, iri_ref: &IriRef<I>) -> Result<I, PrefixMapError> {
+    pub fn resolve_iriref(&self, iri_ref: &IriRef) -> Result<IriS, PrefixMapError> {
         match iri_ref {
             IriRef::Prefixed { prefix, local } => {
                 let iri = self.resolve_prefix_local(prefix, local)?;
@@ -153,36 +146,35 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
         }
     }
 
-    /// Resolves a prefixed alias and a local name in a prefix map to obtain the full IRI
+    /// Resolves a prefixed alias and a local name in a prefix map to obtain the
+    /// full IRI
     /// ```
     /// use std::collections::HashMap;
     /// use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
-    /// # use iri_s::*;
-    /// # use std::str::FromStr;
-    ///
+    /// use prefixmap::PrefixMapError;
+    /// use iri_s::*;
+    /// use std::str::FromStr;
     ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
     ///     ("", "http://example.org/"),
     ///     ("schema", "http://schema.org/"),
     ///     ("xsd", "http://www.w3.org/2001/XMLSchema#")
-    /// ]))?;
+    /// ])).unwrap();
     ///
-    /// let a = pm.resolve_prefix_local("", "a")?;
-    /// let a_resolved = I::from_str("http://example.org/a")?;
+    /// let a = pm.resolve_prefix_local("", "a").unwrap();
+    /// let a_resolved = IriS::from_str("http://example.org/a").unwrap();
     /// assert_eq!(a, a_resolved);
     ///
-    /// let knows = pm.resolve_prefix_local("schema","knows")?;
-    /// let knows_resolved = I::from_str("http://schema.org/knows")?;
+    /// let knows = pm.resolve_prefix_local("schema","knows").unwrap();
+    /// let knows_resolved = IriS::from_str("http://schema.org/knows").unwrap();
     /// assert_eq!(knows, knows_resolved);
     ///
-    /// let xsd_string = pm.resolve_prefix_local("xsd","string")?;
-    /// let xsd_string_resolved = I::from_str("http://www.w3.org/2001/XMLSchema#string")?;
-    /// assert_eq!(xsd_string, xsd_string_resolved);
-    /// # Ok::<(), PrefixMapError>(())
+    /// let xsd_string = pm.resolve_prefix_local("xsd","string").unwrap();
+    /// let xsd_string_resolved = IriS::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap();
+    /// assert_eq!(xsd_string, xsd_string_resolved)
     /// ```
-    pub fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<I, PrefixMapError> {
+    pub fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         match self.find(prefix) {
             Some(iri) => {
                 let new_iri = iri.extend(local)?;
@@ -190,7 +182,7 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
             }
             None => Err(PrefixMapError::PrefixNotFound {
                 prefix: prefix.to_string(),
-                prefixmap: self.clone(),
+                prefixmap: self.to_string(),
             }),
         }
     }
@@ -199,31 +191,31 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     ///
     /// If it can't qualify the IRI, it returns the iri between `<` and `>`
     /// ```
-    /// # use std::collections::HashMap;
-    /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
-    /// # use iri_s::*;
-    /// # use std::str::FromStr;
+    /// use std::collections::HashMap;
+    /// use prefixmap::PrefixMap;
+    /// use prefixmap::PrefixMapError;
+    /// use iri_s::*;
+    /// use std::str::FromStr;
+    ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
     ///     ("", "http://example.org/"),
     ///     ("schema", "http://schema.org/")])
-    /// )?;
-    /// let a = I::from_str("http://example.org/a")?;
+    /// ).unwrap();
+    ///
+    /// let a = IriS::from_str("http://example.org/a").unwrap();
     /// assert_eq!(pm.qualify(&a), ":a");
     ///
-    /// let knows = I::from_str("http://schema.org/knows")?;
+    /// let knows = IriS::from_str("http://schema.org/knows").unwrap();
     /// assert_eq!(pm.qualify(&knows), "schema:knows");
     ///
-    /// let other = I::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
-    /// # Ok::<(), PrefixMapError>(())
+    /// let other = IriS::from_str("http://other.org/foo").unwrap();
+    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>")
     /// ```
-    pub fn qualify(&self, iri: &I) -> String {
-        if let Some(qualified) = self.qualify_optional(iri) {
-            qualified
-        } else {
-            format!("<{iri}>")
+    pub fn qualify(&self, iri: &IriS) -> String {
+        match self.qualify_optional(iri) {
+            Some(qualified) => qualified,
+            None => format!("<{iri}>"),
         }
     }
 
@@ -232,27 +224,28 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     /// If it can't qualify the IRI, returns None
     ///
     /// ```
-    /// # use std::collections::HashMap;
-    /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
-    /// # use iri_s::*;
-    /// # use std::str::FromStr;
+    /// use std::collections::HashMap;
+    /// use prefixmap::PrefixMap;
+    /// use prefixmap::PrefixMapError;
+    /// use iri_s::*;
+    /// use std::str::FromStr;
+    ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
-    ///     ("", "http://example.org/"),
+    ///     ("",       "http://example.org/"),
     ///     ("schema", "http://schema.org/")])
-    /// )?;
-    /// let a = I::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), Some(":a"));
+    /// ).unwrap();
     ///
-    /// let knows = I::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), Some("schema:knows"));
+    /// let a = IriS::from_str("http://example.org/a").unwrap();
+    /// assert_eq!(pm.qualify_optional(&a), Some(":a".to_string()));
     ///
-    /// let other = I::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), None);
-    /// # Ok::<(), PrefixMapError>(())
+    /// let knows = IriS::from_str("http://schema.org/knows").unwrap();
+    /// assert_eq!(pm.qualify_optional(&knows), Some("schema:knows".to_string()));
+    ///
+    /// let other = IriS::from_str("http://other.org/foo").unwrap();
+    /// assert_eq!(pm.qualify_optional(&other), None)
     /// ```
-    pub fn qualify_optional(&self, iri: &I) -> Option<String> {
+    pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
         let mut founds: Vec<_> = self
             .map
             .iter()
@@ -284,35 +277,37 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
             None
         };
         if self.hyperlink {
-            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s.as_str(), s))
+            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s, s))
         } else {
             str
         }
     }
 
-    /// Qualifies an IRI against a prefix map returning the length of the qualified string
+    /// Qualifies an IRI against a prefix map returning the length of the
+    /// qualified string
     /// ```
-    /// # use std::collections::HashMap;
-    /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
-    /// # use iri_s::*;
-    /// # use std::str::FromStr;
+    /// use std::collections::HashMap;
+    /// use prefixmap::PrefixMap;
+    /// use prefixmap::PrefixMapError;
+    /// use iri_s::*;
+    /// use std::str::FromStr;
+    ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
     ///     ("", "http://example.org/"),
     ///     ("schema", "http://schema.org/")])
-    /// )?;
-    /// let a = I::from_str("http://example.org/a")?;
+    /// ).unwrap();
+    ///
+    /// let a = IriS::from_str("http://example.org/a").unwrap();
     /// assert_eq!(pm.qualify(&a), ":a");
     ///
-    /// let knows = I::from_str("http://schema.org/knows")?;
+    /// let knows = IriS::from_str("http://schema.org/knows").unwrap();
     /// assert_eq!(pm.qualify(&knows), "schema:knows");
     ///
-    /// let other = I::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
-    /// # Ok::<(), PrefixMapError>(())
+    /// let other = IriS::from_str("http://other.org/foo").unwrap();
+    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>")
     /// ```
-    pub fn qualify_and_length(&self, iri: &I) -> (String, usize) {
+    pub fn qualify_and_length(&self, iri: &IriS) -> (String, usize) {
         let mut founds: Vec<_> = self
             .map
             .iter()
@@ -361,27 +356,28 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
 
     /// Qualify an IRI against a prefix map and obtains the local name
     /// ```
-    /// # use std::collections::HashMap;
-    /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
-    /// # use iri_s::*;
-    /// # use std::str::FromStr;
+    /// use std::collections::HashMap;
+    /// use prefixmap::PrefixMap;
+    /// use prefixmap::PrefixMapError;
+    /// use iri_s::*;
+    /// use std::str::FromStr;
+    ///
     /// let pm = PrefixMap::from_hashmap(
     ///   &HashMap::from([
     ///     ("", "http://example.org/"),
     ///     ("schema", "http://schema.org/")])
-    /// )?;
-    /// let a = I::from_str("http://example.org/a")?;
+    /// ).unwrap();
+    ///
+    /// let a = IriS::from_str("http://example.org/a").unwrap();
     /// assert_eq!(pm.qualify_local(&a), Some("a".to_string()));
     ///
-    /// let knows = I::from_str("http://schema.org/knows")?;
+    /// let knows = IriS::from_str("http://schema.org/knows").unwrap();
     /// assert_eq!(pm.qualify_local(&knows), Some("knows".to_string()));
     ///
-    /// let other = I::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify_local(&other), None);
-    /// # Ok::<(), PrefixMapError>(())
+    /// let other = IriS::from_str("http://other.org/foo").unwrap();
+    /// assert_eq!(pm.qualify_local(&other), None)
     /// ```
-    pub fn qualify_local(&self, iri: &I) -> Option<String> {
+    pub fn qualify_local(&self, iri: &IriS) -> Option<String> {
         let mut founds: Vec<_> = self
             .map
             .iter()
@@ -413,7 +409,7 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     }
 
     /// Default Wikidata prefixmap
-    /// This source of this list is <https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
+    /// This source of this list is<https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
     pub fn wikidata() -> PrefixMap {
         PrefixMap::from_hashmap(&HashMap::from([
             ("bd", "http://www.bigdata.com/rdf#"),
@@ -490,8 +486,8 @@ impl<I: Iri + Default + Clone + FromStr> PrefixMap<I> {
     }
 }
 
-impl<I: Iri> fmt::Display for PrefixMap<I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for PrefixMap {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (alias, iri) in self.map.iter() {
             writeln!(f, "prefix {}: <{}>", &alias, &iri)?
         }
@@ -510,19 +506,19 @@ mod tests {
 
     #[test]
     fn prefix_map1() {
-        let mut pm = PrefixMap::new();
-        let binding = I::from_str("http://example.org/").unwrap();
+        let mut pm = PrefixMap::default();
+        let binding = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", &binding).unwrap();
-        let expected = I::from_str("http://example.org/name").unwrap();
+        let expected = IriS::from_str("http://example.org/name").unwrap();
         assert_eq!(pm.resolve("ex:name").unwrap(), expected);
     }
 
     #[test]
     fn prefixmap_display() {
-        let mut pm = PrefixMap::new();
-        let ex_iri = I::from_str("http://example.org/").unwrap();
+        let mut pm = PrefixMap::default();
+        let ex_iri = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", &ex_iri).unwrap();
-        let ex_rdf = I::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap();
+        let ex_rdf = IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap();
         pm.insert("rdf", &ex_rdf).unwrap();
         assert_eq!(
             pm.to_string(),
@@ -532,42 +528,42 @@ mod tests {
 
     #[test]
     fn prefixmap_resolve() {
-        let mut pm = PrefixMap::new();
-        let ex_iri = I::from_str("http://example.org/").unwrap();
+        let mut pm = PrefixMap::default();
+        let ex_iri = IriS::from_str("http://example.org/").unwrap();
         pm.insert("ex", &ex_iri).unwrap();
         assert_eq!(
             pm.resolve("ex:pepe").unwrap(),
-            I::from_str("http://example.org/pepe").unwrap()
+            IriS::from_str("http://example.org/pepe").unwrap()
         );
     }
 
     #[test]
     fn prefixmap_resolve_xsd() {
-        let mut pm = PrefixMap::new();
-        let ex_iri = I::from_str("http://www.w3.org/2001/XMLSchema#").unwrap();
+        let mut pm = PrefixMap::default();
+        let ex_iri = IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap();
         pm.insert("xsd", &ex_iri).unwrap();
         assert_eq!(
             pm.resolve_prefix_local("xsd", "string").unwrap(),
-            I::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap()
+            IriS::from_str("http://www.w3.org/2001/XMLSchema#string").unwrap()
         );
     }
 
     #[test]
     fn qualify() {
-        let mut pm = PrefixMap::new();
-        pm.insert("", &I::from_str("http://example.org/").unwrap())
+        let mut pm = PrefixMap::default();
+        pm.insert("", &IriS::from_str("http://example.org/").unwrap())
             .unwrap();
         pm.insert(
             "shapes",
-            &I::from_str("http://example.org/shapes/").unwrap(),
+            &IriS::from_str("http://example.org/shapes/").unwrap(),
         )
         .unwrap();
         assert_eq!(
-            pm.qualify(&I::from_str("http://example.org/alice").unwrap()),
+            pm.qualify(&IriS::from_str("http://example.org/alice").unwrap()),
             ":alice"
         );
         assert_eq!(
-            pm.qualify(&I::from_str("http://example.org/shapes/User").unwrap()),
+            pm.qualify(&IriS::from_str("http://example.org/shapes/User").unwrap()),
             "shapes:User"
         );
     }

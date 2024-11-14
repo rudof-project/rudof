@@ -41,7 +41,7 @@ authors = [
 
 [workspace.dependencies]
 api = { version = "*", path = "./api" }
-iri_s = { version = "0.1.32", path = "./iri_s" }
+iri_s = { version = "*", path = "./iri_s" }
 # dctap = { version = "0.1.31", path = "./dctap" }
 prefixmap = { version = "0.1.32", path = "./prefixmap" }
 rbe = { version = "0.1.7", path = "./rbe" }
@@ -62,7 +62,7 @@ srdf = { version = "0.1.35", path = "./srdf" }
 anyhow = "1.0"
 clap = { version = "4.2.1", features = ["derive"] }
 colored = "2"
-indexmap = "2.1"
+indexmap = { version = "2", features = ["serde"] }
 oxrdf = "0.2.0-alpha.5"
 regex = "1.10.4"
 supports-color = "3.0.0"
