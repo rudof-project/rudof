@@ -1,7 +1,5 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::Rdf;
-
 pub enum Neigh<S>
 where
     S: Rdf,

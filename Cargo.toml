@@ -16,7 +16,6 @@ members = [
     # "shapemap",
     "shacl_ast",
     "shacl_validation",
-    "api",
     # "shapes_converter",
     # "sparql_service",
     # "python",
@@ -40,10 +39,9 @@ authors = [
 ]
 
 [workspace.dependencies]
-api = { version = "*", path = "./api" }
 iri_s = { version = "*", path = "./iri_s" }
 # dctap = { version = "0.1.31", path = "./dctap" }
-prefixmap = { version = "0.1.32", path = "./prefixmap" }
+prefixmap = { version = "*", path = "./prefixmap" }
 rbe = { version = "0.1.7", path = "./rbe" }
 # rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
 # rudof_lib = { version = "0.1.35", path = "./rudof_lib" }
@@ -60,17 +58,17 @@ srdf = { version = "0.1.35", path = "./srdf" }
 
 # External dependencies
 anyhow = "1.0"
-clap = { version = "4.2.1", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 colored = "2"
 indexmap = { version = "2", features = ["serde"] }
-oxrdf = "0.2.0-alpha.5"
 regex = "1.10.4"
 supports-color = "3.0.0"
-serde = "1"
+serde = "1.0.215"
 serde_json = "1.0"
-serde_derive = "1"
+serde_derive = "1.0.215"
 serde_yml = "0.0.12"
-thiserror = "1.0"
+thiserror = "2.0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 lazy_static = "1"
+oxrdf = "0.2.0"                                                     # necessary for the tests

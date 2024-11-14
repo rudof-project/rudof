@@ -28,6 +28,5 @@ regex = "1.10"
 serde_json = { workspace = true }
 const_format = "0.2"
 itertools = "0.13"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 
 [dev-dependencies]

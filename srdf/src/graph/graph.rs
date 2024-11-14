@@ -1,34 +1,34 @@
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::hash::Hash;
+use std::io::Read;
 
 use iri_s::IriS;
-use oxrdfio::RdfParser;
+use oxrdf::Triple as OxTriple;
+use oxrdfio::RdfParser as OxRdfParser;
 use prefixmap::PrefixMap;
+use tracing::debug;
 
-use crate::model::{Iri, Quad, Subject, Triple};
-use crate::{MutableRdf, Object, Predicate, Rdf, RdfFormat, Triples};
+use crate::model::focus_rdf::FocusRdf;
+use crate::model::mutable_rdf::MutableRdf;
+use crate::model::parse::RdfParse;
+use crate::model::parse::ReaderMode;
+use crate::model::rdf::Object;
+use crate::model::rdf::Predicate;
+use crate::model::rdf::Rdf;
+use crate::model::rdf::Subject;
+use crate::model::rdf::Triples;
+use crate::model::rdf_format::RdfFormat;
+use crate::model::GraphName;
+use crate::model::Iri;
+use crate::model::Quad;
+use crate::model::Triple;
 
-use super::error::{GraphError, MutableGraphError};
+use super::error::*;
 
-/// Reader mode when parsing RDF data files
-#[derive(Debug, PartialEq, Clone, Default)]
-pub enum ReaderMode {
-    /// Stops when there is an error
-    #[default]
-    Strict,
-    /// Emits a warning and continues processing
-    Lax,
-}
+pub type OxGraph = GenericGraph<OxTriple>;
 
-impl ReaderMode {
-    pub fn is_strict(&self) -> bool {
-        matches!(self, ReaderMode::Strict)
-    }
-}
-
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct GenericGraph<T: Triple> {
     focus: Option<T::Term>,
     graph: HashSet<T>, // TODO: is a BTree better for larger datasets?
@@ -45,42 +45,13 @@ impl<T: Triple> GenericGraph<T> {
         self.graph.is_empty()
     }
 
-    pub fn quads<G>(&self) -> impl Iterator<Item = dyn Quad<Triple = T, GraphName = G>> + '_ {
-        // let graph_name = GraphName::DefaultGraph;
-        self.graph.iter().map(move |t| todo!())
-    }
-
-    pub fn merge_from_reader<R: Read>(
-        &mut self,
-        read: R,
-        format: &RdfFormat,
-        base: Option<&str>,
-        reader_mode: &ReaderMode,
-    ) -> Result<(), GraphError> {
-        let mut reader = RdfParser::from_format(format.into()).for_reader(read);
-
-        // first we parse all the triples
-        for triple in &reader {
-            let triple = triple?;
-            let subject = triple.subject;
-            let predicate = triple.predicate;
-            let object = triple.object;
-            self.add_triple(subject, predicate, object)?;
-        }
-
-        // then, we parse the rest of the stuff
-        if let RdfFormat::Turtle = format {
-            let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
-            self.base = match (&self.base, base) {
-                (None, None) => None,
-                (Some(b), None) => Some(b.clone()),
-                (_, Some(b)) => Some(IriS::new_unchecked(b)),
-            };
-            let pm = PrefixMap::from_hashmap(&prefixes)?;
-            self.merge_prefixes(pm)?;
-        }
-
-        Ok(())
+    pub fn quads<Q: Quad<Triple = T>>(&self) -> impl Iterator<Item = Q> + '_
+    where
+        T: Clone,
+    {
+        self.graph
+            .iter()
+            .map(move |t| Q::new(t.clone(), GraphName::Default))
     }
 
     pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), GraphError> {
@@ -88,79 +59,57 @@ impl<T: Triple> GenericGraph<T> {
         Ok(())
     }
 
-    pub fn from_reader<R: Read>(
-        read: R,
-        format: &RdfFormat,
-        base: Option<&str>,
-        reader_mode: &ReaderMode,
-    ) -> Result<GenericGraph<T>, GraphError> {
-        let mut graph = GenericGraph::default();
-        graph.merge_from_reader(read, format, base, reader_mode)?;
-        Ok(graph)
-    }
-
-    pub fn merge_from_path<P: AsRef<Path>>(
-        &mut self,
-        path: P,
-        format: &RdfFormat,
-        base: Option<&str>,
-        reader_mode: &ReaderMode,
-    ) -> Result<(), GraphError> {
-        let path_name = path.as_ref().display();
-        let file = File::open(path.as_ref()).map_err(|e| GraphError::ReadingPathError {
-            path_name: path_name.to_string(),
-            error: e,
-        })?;
-        let reader = BufReader::new(file);
-        Self::merge_from_reader(self, reader, format, base, reader_mode)?;
-        Ok(())
-    }
-
-    pub fn from_path<P: AsRef<Path>>(
-        path: P,
-        format: &RdfFormat,
-        base: Option<&str>,
-        reader_mode: &ReaderMode,
-    ) -> Result<GenericGraph, GraphError> {
-        let path_name = path.as_ref().display();
-        let file = File::open(path.as_ref()).map_err(|e| GraphError::ReadingPathError {
-            path_name: path_name.to_string(),
-            error: e,
-        })?;
-        let reader = BufReader::new(file);
-        Self::from_reader(reader, format, base, reader_mode)
-    }
-
-    pub fn resolve(&self, str: &str) -> Result<Iri, GraphError> {
+    pub fn resolve(&self, str: &str) -> Result<IriS, GraphError> {
         let r = self.pm.resolve(str)?;
-        Ok(Self::cnv_iri(r))
-    }
-
-    pub fn from_str(
-        data: &str,
-        format: &RdfFormat,
-        base: Option<&str>,
-        reader_mode: &ReaderMode,
-    ) -> Result<GenericGraph<T>, GraphError> {
-        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
-    }
-
-    pub fn parse_data(
-        data: &String,
-        format: &RdfFormat,
-        base: &Path,
-        reader_mode: &ReaderMode,
-    ) -> Result<GenericGraph<T>, GraphError> {
-        let mut attempt = PathBuf::from(base);
-        attempt.push(data);
-        let base = Some("base:://");
-        let data_path = &attempt;
-        let graph = Self::from_path(data_path, format, base, reader_mode)?;
-        Ok(graph)
+        Ok(r)
     }
 
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.pm
+    }
+}
+
+impl RdfParse for GenericGraph<OxTriple> {
+    type ParseError = GraphParseError;
+
+    fn merge_from_reader<R: Read>(
+        &mut self,
+        read: R,
+        format: RdfFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), Self::ParseError> {
+        let reader = OxRdfParser::from_format(format.into()).for_reader(read);
+
+        if let RdfFormat::Turtle = format {
+            self.base = match (&self.base, base) {
+                (None, None) => None,
+                (Some(b), None) => Some(b.clone()),
+                (_, Some(b)) => Some(Iri::new(b)),
+            };
+            let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+            let pm = PrefixMap::from_hashmap(&prefixes)?;
+            self.merge_prefixes(pm)?;
+        }
+
+        for triple in reader {
+            let triple = match triple {
+                Ok(triple) => triple,
+                Err(error) => match reader_mode {
+                    ReaderMode::Strict => return Err(error.into()),
+                    ReaderMode::Lax => {
+                        debug!("{}", format!("{error}, however we continue parsing."));
+                        continue;
+                    }
+                },
+            };
+            let subject = triple.subject;
+            let predicate = triple.predicate;
+            let object = triple.object;
+            self.add_triple(subject, predicate, object)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -175,7 +124,7 @@ impl<T: Triple> Rdf for GenericGraph<T> {
         object: Option<&'a Object<Self>>,
     ) -> Result<Triples<'a, Self>, Self::Error> {
         let triples = self
-            .0
+            .graph
             .iter()
             .filter(move |triple| match (subject, predicate, object) {
                 (None, None, None) => true,
@@ -194,120 +143,165 @@ impl<T: Triple> Rdf for GenericGraph<T> {
     }
 }
 
-impl<T: Triple> MutableRdf for GenericGraph<T> {
-    type MutableError = MutableGraphError;
+impl<T: Triple + Eq + Hash> MutableRdf for GenericGraph<T> {
+    type MutableRdfError = MutableGraphError;
 
     fn add_triple(
         &mut self,
         subject: Subject<Self>,
         predicate: Predicate<Self>,
         object: Object<Self>,
-    ) -> Result<(), Self::MutableError> {
-        self.0.insert(T::new(subject, predicate, object));
+    ) -> Result<(), Self::MutableRdfError> {
+        self.graph.insert(T::new(subject, predicate, object));
         Ok(())
     }
 
-    fn remove_triple(&mut self, triple: &T) -> Result<(), Self::MutableError> {
-        self.0.remove(triple);
+    fn remove_triple(&mut self, triple: &T) -> Result<(), Self::MutableRdfError> {
+        self.graph.remove(triple);
         Ok(())
     }
 
-    fn add_base(&mut self, base: &Predicate<Self>) -> Result<(), Self::Error> {
-        todo!()
+    fn add_base(&mut self, base: Predicate<Self>) -> Result<(), Self::MutableRdfError> {
+        self.base = Some(base);
+        Ok(())
     }
 
-    fn add_prefix(&mut self, alias: &str, iri: &Predicate<Self>) -> Result<(), Self::Error> {
-        todo!()
+    fn add_prefix(
+        &mut self,
+        alias: &str,
+        iri: Predicate<Self>,
+    ) -> Result<(), Self::MutableRdfError> {
+        self.pm.insert(alias, &iri.as_iri_s())?;
+        Ok(())
+    }
+}
+
+impl<T: Triple> FocusRdf for GenericGraph<T> {
+    fn set_focus(&mut self, focus: Object<Self>) {
+        self.focus = Some(focus);
+    }
+
+    fn get_focus(&self) -> Option<&Object<Self>> {
+        match &self.focus {
+            Some(focus) => Some(focus),
+            None => None,
+        }
+    }
+}
+
+impl<T: Triple> Default for GenericGraph<T> {
+    fn default() -> Self {
+        Self {
+            focus: Default::default(),
+            graph: Default::default(),
+            pm: Default::default(),
+            base: Default::default(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    // #[tokio::test]
-    // async fn parse_get_predicates() {
-    //     use crate::graph::graph::AsyncSRDF;
+    use std::collections::HashSet;
 
-    //     let s = r#"PREFIX : <http://example.org/>
-    //         PREFIX schema: <https://schema.org/>
+    use oxrdf::NamedNode as OxNamedNode;
+    use oxrdf::Subject as OxSubject;
+    use oxrdf::Term as OxTerm;
 
-    //         :alice schema:name "Alice" ;
-    //                schema:knows :bob, :carol ;
-    //                :age  23 .
-    //      "#;
-    //     let parsed_graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
-    //     let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
-    //     let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
-    //     assert!(bag_preds.contains(&knows));
-    //     let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
-    //     let alice_knows =
-    //         AsyncSRDF::get_objects_for_subject_predicate(&parsed_graph, &alice, &knows)
-    //             .await
-    //             .unwrap();
-    //     assert!(alice_knows.contains(&bob));
-    // }
+    use crate::graph::graph::ReaderMode;
+    use crate::model::mutable_rdf::MutableRdf;
+    use crate::model::parse::RdfParse;
+    use crate::model::rdf::Rdf;
+    use crate::model::rdf_format::RdfFormat;
+    use crate::model::Triple;
+
+    use super::OxGraph;
+
+    const DUMMY_GRAPH_1: &str = r#"
+        prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        :x :p [ :p 1 ].
+    "#;
+
+    // const DUMMY_GRAPH_2: &str = r#"
+    //     prefix : <http://example.org/>
+    //     :x :p (1 2).
+    // "#;
+
+    fn graph_from_str(s: &str) -> OxGraph {
+        OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    }
+
+    #[test]
+    fn test_outgoing_arcs() {
+        let graph = graph_from_str(DUMMY_GRAPH_1);
+
+        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+
+        let subject = graph
+            .triples_matching(Some(&x), Some(&p), None)
+            .unwrap()
+            .map(Triple::obj)
+            .next()
+            .unwrap()
+            .to_owned()
+            .try_into()
+            .unwrap();
+
+        let actual = graph.outgoing_arcs(&subject).unwrap();
+        let expected = HashSet::from([OxTerm::Literal(1.into())]);
+        assert_eq!(actual.get(&p), Some(&expected))
+    }
+
+    #[test]
+    fn test_add_triple() {
+        let mut graph = OxGraph::default();
+
+        let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
+        let knows = OxNamedNode::new_unchecked("http://example.org/knows");
+        let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
+
+        graph.add_triple(alice, knows, bob).unwrap();
+
+        assert_eq!(graph.len(), 1);
+    }
 
     // #[test]
-    // fn test_outgoing_arcs() {
-    //     let s = r#"prefix : <http://example.org/>
-    //     prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    // fn test_rdf_list() {
+    //     let graph = graph_from_str(DUMMY_GRAPH_2);
 
-    //     :x :p [ :p 1 ].
-    //     "#;
+    //     let x = iri!("http://example.org/x");
+    //     let p = iri!("http://example.org/p");
 
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = <GenericGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-    //     let p = <GenericGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-    //     let terms = rdf::Rdf::objects_for_subject_predicate(&graph, &x, &p).unwrap();
-    //     let term = terms.iter().next().unwrap().clone();
-    //     let subject = <GenericGraph as SRDFBasic>::term_as_subject(&term).unwrap();
-    //     let outgoing = graph.outgoing_arcs(&subject).unwrap();
-    //     let one = <GenericGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
-    //     assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
-    // }
-
-    // #[test]
-    // fn test_outgoing_arcs_bnode() {
-    //     let s = r#"prefix : <http://example.org/>
-    //     prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-    //     :x :p [ :p 1 ].
-    //     "#;
-
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = <GenericGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-    //     let p = <GenericGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-    //     let terms = rdf::Rdf::objects_for_subject_predicate(&graph, &x, &p).unwrap();
-    //     let term = terms.iter().next().unwrap().clone();
-    //     let bnode = <GenericGraph as SRDFBasic>::term_as_bnode(&term).unwrap();
-    //     let subject = <GenericGraph as SRDFBasic>::bnode_id2subject(bnode.as_str());
-    //     let outgoing = graph.outgoing_arcs(&subject).unwrap();
-    //     let one = <GenericGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
-    //     assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
+    //     let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
+    //     let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
+    //     assert_eq!(
+    //         result,
+    //         vec![
+    //             OxTerm::from(OxLiteral::from(1)),
+    //             OxTerm::from(OxLiteral::from(2))
+    //         ]
+    //     )
     // }
 
     // #[test]
     // fn test_parser() {
-    //     use crate::{ok, rdf_parser, RDFNodeParse};
     //     rdf_parser! {
     //         fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
     //         where [
     //             A: Clone
-    //         ] { ok(&value.clone()) }
+    //         ] { Ok(&value.clone()) }
     //     }
-    //     let s = r#"prefix : <http://example.org/>"#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+
+    //     let graph = graph_from_str("prefix : <http://example.org/>");
     //     let x = iri!("http://example.org/x");
+
     //     assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
     // }
 
     // #[test]
     // fn test_parser_property_integers() {
-    //     use crate::{property_integers, RDFNodeParse};
     //     let s = r#"prefix : <http://example.org/>
     //       :x :p 1, 2, 3, 2 .
     //     "#;
@@ -527,44 +521,5 @@ mod tests {
     //     let graph = GenericGraph::new();
     //     let x = iri!("http://example.org/x");
     //     assert_eq!(iri().parse(&x, graph).unwrap(), x)
-    // }
-
-    // #[test]
-    // fn test_add_triple() {
-    //     use crate::GenericGraph;
-    //     use iri_s::iri;
-
-    //     let mut graph = GenericGraph::new();
-    //     let alice = <GenericGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/alice"));
-    //     let knows = <GenericGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/knows"));
-    //     let bob = <GenericGraph as SRDFBasic>::iri_s2term(&iri!("http://example.org/bob"));
-
-    //     graph.add_triple(&alice, &knows, &bob).unwrap();
-
-    //     assert_eq!(graph.len(), 1);
-    // }
-
-    // #[test]
-    // fn test_rdf_list() {
-    //     use crate::GenericGraph;
-    //     use crate::{property_value, rdf_list, set_focus, RDFNodeParse};
-    //     use iri_s::iri;
-
-    //     let s = r#"prefix : <http://example.org/>
-    //            :x :p (1 2).
-    // "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
-    //     let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
-    //     assert_eq!(
-    //         result,
-    //         vec![
-    //             OxTerm::from(OxLiteral::from(1)),
-    //             OxTerm::from(OxLiteral::from(2))
-    //         ]
-    //     )
     // }
 }

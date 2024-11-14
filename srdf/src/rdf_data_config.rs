@@ -3,7 +3,7 @@ use std::{collections::HashMap, io, path::Path, str::FromStr};
 use prefixmap::PrefixMap;
 use thiserror::Error;
 
-use iri_s::{IriS, IriSError};
+use iri_s::{error::GenericIriError, IriS};
 use serde_derive::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
@@ -81,9 +81,9 @@ pub struct EndpointDescription {
 impl EndpointDescription {
     pub fn new_unchecked(str: &str) -> Self {
         EndpointDescription {
-            query_url: IriS::new_unchecked(str),
+            query_url: IriS::new_unchecked(str.to_owned()),
             update_url: None,
-            prefixmap: PrefixMap::new(),
+            prefixmap: PrefixMap::default(),
         }
     }
 
@@ -106,14 +106,14 @@ impl EndpointDescription {
 }
 
 impl FromStr for EndpointDescription {
-    type Err = IriSError;
+    type Err = GenericIriError;
 
     fn from_str(query_url: &str) -> Result<Self, Self::Err> {
         let iri = IriS::from_str(query_url)?;
         Ok(EndpointDescription {
             query_url: iri,
             update_url: None,
-            prefixmap: PrefixMap::new(),
+            prefixmap: PrefixMap::default(),
         })
     }
 }

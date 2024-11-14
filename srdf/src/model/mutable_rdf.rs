@@ -1,7 +1,7 @@
-use crate::rdf::Object;
-use crate::rdf::Predicate;
-use crate::rdf::Rdf;
-use crate::rdf::Subject;
+use crate::model::rdf::Object;
+use crate::model::rdf::Predicate;
+use crate::model::rdf::Rdf;
+use crate::model::rdf::Subject;
 
 /// Provides the functionality to implementors of being mutable.
 pub trait MutableRdf: Rdf {
@@ -16,7 +16,11 @@ pub trait MutableRdf: Rdf {
 
     fn remove_triple(&mut self, triple: &Self::Triple) -> Result<(), Self::MutableRdfError>;
 
-    fn add_base(&mut self, base: &Predicate<Self>) -> Result<(), Self::Error>;
+    fn add_base(&mut self, base: Predicate<Self>) -> Result<(), Self::MutableRdfError>;
 
-    fn add_prefix(&mut self, alias: &str, iri: &Predicate<Self>) -> Result<(), Self::Error>;
+    fn add_prefix(
+        &mut self,
+        alias: &str,
+        iri: Predicate<Self>,
+    ) -> Result<(), Self::MutableRdfError>;
 }

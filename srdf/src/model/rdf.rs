@@ -1,3 +1,7 @@
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::collections::HashSet;
+
 use super::Triple;
 
 type BoxIterator<'a, I> = Box<dyn Iterator<Item = &'a I> + 'a>;
@@ -68,5 +72,45 @@ pub trait Rdf {
     fn neighs<'a>(&'a self, node: &'a Subject<Self>) -> Result<Objects<'a, Self>, Self::Error> {
         let objects = self.triples_with_subject(node)?.map(Triple::obj);
         Ok(Box::new(objects))
+    }
+
+    fn outgoing_arcs(
+        &self,
+        subject: &Subject<Self>,
+    ) -> Result<HashMap<Predicate<Self>, HashSet<Object<Self>>>, Self::Error> {
+        let mut results: HashMap<Predicate<Self>, HashSet<Object<Self>>> = HashMap::new();
+        for triple in self.triples_with_subject(subject)? {
+            let pred = triple.pred().clone();
+            let term = triple.obj().clone();
+            match results.entry(pred) {
+                Entry::Occupied(mut vs) => {
+                    vs.get_mut().insert(term.clone());
+                }
+                Entry::Vacant(vacant) => {
+                    vacant.insert(HashSet::from([term.clone()]));
+                }
+            }
+        }
+        Ok(results)
+    }
+
+    fn incoming_arcs(
+        &self,
+        object: &Object<Self>,
+    ) -> Result<HashMap<Predicate<Self>, HashSet<Subject<Self>>>, Self::Error> {
+        let mut results: HashMap<Predicate<Self>, HashSet<Subject<Self>>> = HashMap::new();
+        for triple in self.triples_with_object(object)? {
+            let pred = triple.pred().clone();
+            let term = triple.subj().clone();
+            match results.entry(pred) {
+                Entry::Occupied(mut vs) => {
+                    vs.get_mut().insert(term.clone());
+                }
+                Entry::Vacant(vacant) => {
+                    vacant.insert(HashSet::from([term.clone()]));
+                }
+            }
+        }
+        Ok(results)
     }
 }

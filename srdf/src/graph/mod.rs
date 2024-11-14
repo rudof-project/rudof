@@ -1,3 +1,4 @@
+use iri_s::IriS;
 use oxrdf::BlankNode as OxBlankNode;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxIri;
@@ -5,6 +6,7 @@ use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
+use crate::model::rdf_format::RdfFormat;
 use crate::model::BlankNode;
 use crate::model::Iri;
 use crate::model::Subject;
@@ -19,7 +21,7 @@ pub mod graph;
 // pub mod object;
 pub mod serializer;
 // TODO: move to shacl_ast
-pub mod shacl_path;
+// pub mod shacl_path;
 // pub mod subject;
 // pub mod triple;
 
@@ -45,15 +47,10 @@ impl Triple for OxTriple {
     }
 }
 
-impl Display for OxTriple {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<{},{},{}>", self.subj(), self.pred(), self.obj())
-    }
-}
-
 impl Subject for OxSubject {
     type BlankNode = OxBlankNode;
     type Iri = OxIri;
+    #[cfg(feature = "rdf-star")]
     type Triple = OxTriple;
 
     fn is_blank_node(&self) -> bool {
@@ -64,6 +61,7 @@ impl Subject for OxSubject {
         self.is_named_node()
     }
 
+    #[cfg(feature = "rdf-star")]
     fn is_triple(&self) -> bool {
         self.is_triple()
     }
@@ -72,6 +70,7 @@ impl Subject for OxSubject {
         match self {
             OxSubject::NamedNode(_) => None,
             OxSubject::BlankNode(blank_node) => Some(blank_node),
+            #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => None,
         }
     }
@@ -80,10 +79,12 @@ impl Subject for OxSubject {
         match self {
             OxSubject::NamedNode(named_node) => Some(named_node),
             OxSubject::BlankNode(_) => None,
+            #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => None,
         }
     }
 
+    #[cfg(feature = "rdf-star")]
     fn as_triple(&self) -> Option<&OxTriple> {
         match self {
             OxSubject::NamedNode(_) => None,
@@ -97,12 +98,17 @@ impl Iri for OxIri {
     fn new(str: &str) -> Self {
         OxIri::new_unchecked(str)
     }
+
+    fn as_iri_s(&self) -> IriS {
+        IriS::new_unchecked(self.to_string())
+    }
 }
 
 impl Term for OxTerm {
     type BlankNode = OxBlankNode;
     type Iri = OxIri;
     type Literal = OxLiteral;
+    #[cfg(feature = "rdf-star")]
     type Triple = OxTriple;
 
     fn is_blank_node(&self) -> bool {
@@ -117,6 +123,7 @@ impl Term for OxTerm {
         self.is_literal()
     }
 
+    #[cfg(feature = "rdf-star")]
     fn is_triple(&self) -> bool {
         self.is_triple()
     }
@@ -125,8 +132,9 @@ impl Term for OxTerm {
         match self {
             OxTerm::NamedNode(_) => None,
             OxTerm::BlankNode(blank_node) => Some(blank_node),
-            OxTerm::Triple(_) => None,
             OxTerm::Literal(_) => None,
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => None,
         }
     }
 
@@ -134,8 +142,9 @@ impl Term for OxTerm {
         match self {
             OxTerm::NamedNode(named_node) => Some(named_node),
             OxTerm::BlankNode(_) => None,
-            OxTerm::Triple(_) => None,
             OxTerm::Literal(_) => None,
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => None,
         }
     }
 
@@ -143,17 +152,19 @@ impl Term for OxTerm {
         match self {
             OxTerm::NamedNode(_) => None,
             OxTerm::BlankNode(_) => None,
-            OxTerm::Triple(_) => None,
             OxTerm::Literal(literal) => Some(literal),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(_) => None,
         }
     }
 
+    #[cfg(feature = "rdf-star")]
     fn as_triple(&self) -> Option<&OxTriple> {
         match self {
             OxTerm::NamedNode(_) => None,
             OxTerm::BlankNode(_) => None,
-            OxTerm::Triple(triple) => Some(&triple),
             OxTerm::Literal(_) => None,
+            OxTerm::Triple(triple) => Some(&triple),
         }
     }
 }
@@ -161,5 +172,18 @@ impl Term for OxTerm {
 impl BlankNode for OxBlankNode {
     fn label(&self) -> &str {
         self.as_str()
+    }
+}
+
+impl From<RdfFormat> for oxrdfio::RdfFormat {
+    fn from(value: RdfFormat) -> Self {
+        match value {
+            RdfFormat::Turtle => oxrdfio::RdfFormat::Turtle,
+            RdfFormat::N3 => oxrdfio::RdfFormat::N3,
+            RdfFormat::RdfXml => oxrdfio::RdfFormat::RdfXml,
+            RdfFormat::NQuads => oxrdfio::RdfFormat::NQuads,
+            RdfFormat::NTriples => oxrdfio::RdfFormat::NTriples,
+            RdfFormat::TriG => oxrdfio::RdfFormat::TriG,
+        }
     }
 }
