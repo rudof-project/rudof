@@ -59,7 +59,7 @@ pub trait Iri {
 pub trait Term {
     type BlankNode: BlankNode;
     type Iri: Iri;
-    type Literal: Literal + Clone + Eq + Debug + Hash;
+    type Literal: Literal + Clone + Eq + Display + Debug + Hash;
     #[cfg(feature = "rdf-star")]
     type Triple: Triple;
 

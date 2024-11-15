@@ -2,10 +2,12 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use iri_s::IriS;
+use itertools::Itertools;
 use srdf::model::rdf::Literal;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::Literal as _;
 
 use crate::node_kind::NodeKind;
 use crate::vocab::*;
@@ -80,34 +82,35 @@ impl<R: Rdf> Display for Component<R> {
 impl<R: Rdf> From<Component<R>> for IriS {
     fn from(value: Component<R>) -> Self {
         match value {
-            Component::Class(_) => IriS::from_str(SH_CLASS_STR).unwrap(),
-            Component::Datatype(_) => IriS::from_str(SH_DATATYPE_STR).unwrap(),
-            Component::NodeKind(_) => IriS::from_str(SH_IRI_STR).unwrap(),
-            Component::MinCount(_) => IriS::from_str(SH_MIN_COUNT_STR).unwrap(),
-            Component::MaxCount(_) => IriS::from_str(SH_MAX_COUNT_STR).unwrap(),
-            Component::MinExclusive(_) => IriS::from_str(SH_MIN_EXCLUSIVE_STR).unwrap(),
-            Component::MaxExclusive(_) => IriS::from_str(SH_MAX_EXCLUSIVE_STR).unwrap(),
-            Component::MinInclusive(_) => IriS::from_str(SH_MIN_INCLUSIVE_STR).unwrap(),
-            Component::MaxInclusive(_) => IriS::from_str(SH_MAX_INCLUSIVE_STR).unwrap(),
-            Component::MinLength(_) => IriS::from_str(SH_MIN_LENGTH_STR).unwrap(),
-            Component::MaxLength(_) => IriS::from_str(SH_MAX_LENGTH_STR).unwrap(),
-            Component::Pattern { .. } => IriS::from_str(SH_PATTERN_STR).unwrap(),
-            Component::UniqueLang(_) => IriS::from_str(SH_UNIQUE_LANG_STR).unwrap(),
-            Component::LanguageIn { .. } => IriS::from_str(SH_LANGUAGE_IN_STR).unwrap(),
-            Component::Equals(_) => IriS::from_str(SH_EQUALS_STR).unwrap(),
-            Component::Disjoint(_) => IriS::from_str(SH_DISJOINT_STR).unwrap(),
-            Component::LessThan(_) => IriS::from_str(SH_LESS_THAN_STR).unwrap(),
-            Component::LessThanOrEquals(_) => IriS::from_str(SH_LESS_THAN_OR_EQUALS_STR).unwrap(),
-            Component::Or { .. } => IriS::from_str(SH_OR_STR).unwrap(),
-            Component::And { .. } => IriS::from_str(SH_AND_STR).unwrap(),
-            Component::Not { .. } => IriS::from_str(SH_NOT_STR).unwrap(),
-            Component::Xone { .. } => IriS::from_str(SH_XONE_STR).unwrap(),
-            Component::Closed { .. } => IriS::from_str(SH_CLOSED_STR).unwrap(),
-            Component::Node { .. } => IriS::from_str(SH_NODE_STR).unwrap(),
-            Component::HasValue { .. } => IriS::from_str(SH_HAS_VALUE_STR).unwrap(),
-            Component::In { .. } => IriS::from_str(SH_IN_STR).unwrap(),
+            Component::Class(_) => IriS::from_str(SH_CLASS_STR),
+            Component::Datatype(_) => IriS::from_str(SH_DATATYPE_STR),
+            Component::NodeKind(_) => IriS::from_str(SH_IRI_STR),
+            Component::MinCount(_) => IriS::from_str(SH_MIN_COUNT_STR),
+            Component::MaxCount(_) => IriS::from_str(SH_MAX_COUNT_STR),
+            Component::MinExclusive(_) => IriS::from_str(SH_MIN_EXCLUSIVE_STR),
+            Component::MaxExclusive(_) => IriS::from_str(SH_MAX_EXCLUSIVE_STR),
+            Component::MinInclusive(_) => IriS::from_str(SH_MIN_INCLUSIVE_STR),
+            Component::MaxInclusive(_) => IriS::from_str(SH_MAX_INCLUSIVE_STR),
+            Component::MinLength(_) => IriS::from_str(SH_MIN_LENGTH_STR),
+            Component::MaxLength(_) => IriS::from_str(SH_MAX_LENGTH_STR),
+            Component::Pattern { .. } => IriS::from_str(SH_PATTERN_STR),
+            Component::UniqueLang(_) => IriS::from_str(SH_UNIQUE_LANG_STR),
+            Component::LanguageIn { .. } => IriS::from_str(SH_LANGUAGE_IN_STR),
+            Component::Equals(_) => IriS::from_str(SH_EQUALS_STR),
+            Component::Disjoint(_) => IriS::from_str(SH_DISJOINT_STR),
+            Component::LessThan(_) => IriS::from_str(SH_LESS_THAN_STR),
+            Component::LessThanOrEquals(_) => IriS::from_str(SH_LESS_THAN_OR_EQUALS_STR),
+            Component::Or { .. } => IriS::from_str(SH_OR_STR),
+            Component::And { .. } => IriS::from_str(SH_AND_STR),
+            Component::Not { .. } => IriS::from_str(SH_NOT_STR),
+            Component::Xone { .. } => IriS::from_str(SH_XONE_STR),
+            Component::Closed { .. } => IriS::from_str(SH_CLOSED_STR),
+            Component::Node { .. } => IriS::from_str(SH_NODE_STR),
+            Component::HasValue { .. } => IriS::from_str(SH_HAS_VALUE_STR),
+            Component::In { .. } => IriS::from_str(SH_IN_STR),
             Component::QualifiedValueShape { .. } => IriS::from_str(SH_QUALIFIED_VALUE_SHAPE_STR),
         }
+        .unwrap()
     }
 }
 
@@ -131,6 +134,12 @@ impl MaxCount {
 
     pub fn max_count(&self) -> usize {
         self.max_count
+    }
+}
+
+impl Display for MaxCount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.max_count)
     }
 }
 
@@ -158,6 +167,12 @@ impl MinCount {
     }
 }
 
+impl Display for MinCount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.min_count)
+    }
+}
+
 /// sh:and specifies the condition that each value node conforms to all provided
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
@@ -177,6 +192,16 @@ impl<R: Rdf> And<R> {
     }
 }
 
+impl<R: Rdf> Display for And<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{0}",
+            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
+        )
+    }
+}
+
 /// sh:not specifies the condition that each value node cannot conform to a
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
@@ -193,6 +218,12 @@ impl<R: Rdf> Not<R> {
 
     pub fn shape(&self) -> &Shape<R> {
         &self.shape
+    }
+}
+
+impl<R: Rdf> Display for Not<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.shape.id().to_string())
     }
 }
 
@@ -217,6 +248,16 @@ impl<R: Rdf> Or<R> {
     }
 }
 
+impl<R: Rdf> Display for Or<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{0}",
+            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
+        )
+    }
+}
+
 /// sh:or specifies the condition that each value node conforms to at least one
 /// of the provided shapes. This is comparable to disjunction and the logical
 /// "or" operator.
@@ -234,6 +275,16 @@ impl<R: Rdf> Xone<R> {
 
     pub fn shapes(&self) -> &Vec<Shape<R>> {
         &self.shapes
+    }
+}
+
+impl<R: Rdf> Display for Xone<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{0}",
+            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
+        )
     }
 }
 
@@ -271,6 +322,20 @@ impl<R: Rdf> Closed<R> {
     }
 }
 
+impl<R: Rdf> Display for Closed<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "is closed? {}, [{}]",
+            self.is_closed,
+            self.ignored_properties()
+                .iter()
+                .map(|s| s.to_string())
+                .join(" - ")
+        )
+    }
+}
+
 /// sh:hasValue specifies the condition that at least one value node is equal to
 ///  the given RDF term.
 ///
@@ -290,6 +355,12 @@ impl<R: Rdf> HasValue<R> {
     }
 }
 
+impl<R: Rdf> Display for HasValue<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.value)
+    }
+}
+
 /// sh:in specifies the condition that each value node is a member of a provided
 /// SHACL list.
 ///
@@ -306,6 +377,16 @@ impl<R: Rdf> In<R> {
 
     pub fn values(&self) -> &Vec<Object<R>> {
         &self.values
+    }
+}
+
+impl<R: Rdf> Display for In<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.values().iter().map(|s| s.to_string()).join(" - ")
+        )
     }
 }
 
@@ -329,6 +410,12 @@ impl<R: Rdf> Disjoint<R> {
     }
 }
 
+impl<R: Rdf> Display for Disjoint<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.iri_ref)
+    }
+}
+
 /// sh:equals specifies the condition that the set of all value nodes is equal
 /// to the set of objects of the triples that have the focus node as subject and
 /// the value of sh:equals as predicate.
@@ -346,6 +433,12 @@ impl<R: Rdf> Equals<R> {
 
     pub fn iri_ref(&self) -> &Predicate<R> {
         &self.iri_ref
+    }
+}
+
+impl<R: Rdf> Display for Equals<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.iri_ref)
     }
 }
 
@@ -371,6 +464,12 @@ impl<R: Rdf> LessThanOrEquals<R> {
     }
 }
 
+impl<R: Rdf> Display for LessThanOrEquals<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.iri_ref)
+    }
+}
+
 /// sh:lessThan specifies the condition that each value node is smaller than all
 /// the objects of the triples that have the focus node as subject and the
 /// value of sh:lessThan as predicate.
@@ -391,6 +490,12 @@ impl<R: Rdf> LessThan<R> {
     }
 }
 
+impl<R: Rdf> Display for LessThan<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.iri_ref)
+    }
+}
+
 /// sh:node specifies the condition that each value node conforms to the given
 /// node shape.
 ///
@@ -407,6 +512,12 @@ impl<R: Rdf> Node<R> {
 
     pub fn shape(&self) -> &Shape<R> {
         &self.shape
+    }
+}
+
+impl<R: Rdf> Display for Node<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.shape.id())
     }
 }
 
@@ -458,6 +569,12 @@ impl<R: Rdf> QualifiedValueShape<R> {
     }
 }
 
+impl<R: Rdf> Display for QualifiedValueShape<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "shape: {0}, qualified_min_count: {1:?}, qualified_max_count: {2:?}, qualified_value_shapes_disjoint: {3:?}", self.shape.id(), self.qualified_max_count, self.qualified_min_count, self.qualified_value_shapes_disjoint)
+    }
+}
+
 /// The condition specified by sh:languageIn is that the allowed language tags
 /// for each value node are limited by a given list of language tags.
 ///
@@ -474,6 +591,19 @@ impl<R: Rdf> LanguageIn<R> {
 
     pub fn langs(&self) -> &Vec<Literal<R::Triple>> {
         &self.langs
+    }
+}
+
+impl<R: Rdf> Display for LanguageIn<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{0}",
+            self.langs()
+                .iter()
+                .map(|s| s.as_string().unwrap())
+                .join(" - ")
+        )
     }
 }
 
@@ -497,6 +627,12 @@ impl MaxLength {
     }
 }
 
+impl Display for MaxLength {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.max_length)
+    }
+}
+
 /// sh:minLength specifies the minimum string length of each value node that
 /// satisfies the condition. This can be applied to any literals and IRIs, but
 /// not to blank nodes.
@@ -514,6 +650,12 @@ impl MinLength {
 
     pub fn min_length(&self) -> isize {
         self.min_length
+    }
+}
+
+impl Display for MinLength {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{0}", self.min_length)
     }
 }
 
@@ -541,6 +683,12 @@ impl Pattern {
     }
 }
 
+impl Display for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "pattern: {0}, flags: {1:?}", self.pattern, self.flags)
+    }
+}
+
 /// The property sh:uniqueLang can be set to true to specify that no pair of
 ///  value nodes may use the same language tag.
 ///
@@ -557,6 +705,12 @@ impl UniqueLang {
 
     pub fn unique_lang(&self) -> bool {
         self.unique_lang
+    }
+}
+
+impl Display for UniqueLang {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.unique_lang)
     }
 }
 
@@ -579,6 +733,12 @@ impl<R: Rdf> Class<R> {
     }
 }
 
+impl<R: Rdf> Display for Class<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.class_rule.to_string())
+    }
+}
+
 /// sh:datatype specifies a condition to be satisfied with regards to the
 /// datatype of each value node.
 ///
@@ -595,6 +755,12 @@ impl<R: Rdf> Datatype<R> {
 
     pub fn datatype(&self) -> &Predicate<R> {
         &self.datatype
+    }
+}
+
+impl<R: Rdf> Display for Datatype<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.datatype())
     }
 }
 
@@ -617,6 +783,12 @@ impl Nodekind {
     }
 }
 
+impl Display for Nodekind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.node_kind)
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MaxExclusive<R: Rdf> {
@@ -632,6 +804,12 @@ impl<R: Rdf> MaxExclusive<R> {
 
     pub fn max_exclusive(&self) -> &Object<R> {
         &self.max_exclusive
+    }
+}
+
+impl<R: Rdf> Display for MaxExclusive<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.max_exclusive)
     }
 }
 
@@ -653,6 +831,12 @@ impl<R: Rdf> MaxInclusive<R> {
     }
 }
 
+impl<R: Rdf> Display for MaxInclusive<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.max_inclusive)
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MinExclusive<R: Rdf> {
@@ -671,6 +855,12 @@ impl<R: Rdf> MinExclusive<R> {
     }
 }
 
+impl<R: Rdf> Display for MinExclusive<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.min_exclusive)
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MinInclusive<R: Rdf> {
@@ -686,5 +876,11 @@ impl<R: Rdf> MinInclusive<R> {
 
     pub fn min_inclusive(&self) -> &Object<R> {
         &self.min_inclusive
+    }
+}
+
+impl<R: Rdf> Display for MinInclusive<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.min_inclusive)
     }
 }

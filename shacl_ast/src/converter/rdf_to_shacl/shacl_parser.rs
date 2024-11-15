@@ -1,15 +1,35 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use component::Class;
+use component::Component;
+use component::Datatype;
+use component::HasValue;
+use component::In;
+use component::MaxCount;
+use component::MaxLength;
+use component::MinCount;
+use component::MinLength;
+use component::Node;
+use component::Nodekind;
+use component::Not;
+use component::Or;
 use model::focus_rdf::FocusRdf;
 use model::rdf::Object;
 use model::rdf::Predicate;
 use model::rdf::Rdf;
 use model::rdf::Subject;
-use prefixmap::IriRef;
+use model::Term;
+use model::Triple;
+use node_kind::NodeKind;
+use node_shape::NodeShape;
 use prefixmap::PrefixMap;
+use property_shape::PropertyShape;
 use shape::Shape;
+use srdf::model::Iri;
 use srdf::*;
+use target::Target;
+use value::Value;
 
 use crate::vocab::*;
 use crate::*;
@@ -59,22 +79,25 @@ impl<R: FocusRdf> ShaclParser<R> {
             }
         }
 
-        Ok(
-            Schema::default()
-                .with_prefixmap(prefixmap)
-                .with_shapes(self.shapes.clone())
-        )
+        Ok(Schema::default()
+            .with_prefixmap(prefixmap)
+            .with_shapes(self.shapes.clone()))
     }
 
     fn shapes_candidates(&mut self) -> Result<Vec<Object<R>>> {
         // subjects with type `sh:NodeShape`
-        let node_shape_instances = self
+        let rdf_type = Self::rdf_type();
+        let node_shape = Self::sh_node_shape().into();
+
+        let node_shape_instances = match self
             .rdf_parser
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), &Self::sh_node_shape())
-            .map_err(|e| ShaclParserError::Custom {
-                msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
-            })?;
+            .triples_matching(None, Some(&rdf_type), Some(&node_shape)) {
+                Ok(triples) => triples.map(Triple::subj).map(Clone::clone).collect::<HashSet<_>>(),
+                Err(e) => return Err(ShaclParserError::Custom {
+                    msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
+                })
+            };
 
         // subjects with property `sh:property`
         let subjects_property = self.objects_with_predicate(Self::sh_property())?;
@@ -94,7 +117,7 @@ impl<R: FocusRdf> ShaclParser<R> {
         // elements of `sh:not` list
         let sh_node_values = self.get_sh_node_values()?;
 
-        // TODO: subjects with type `sh:PropertyShape`
+        // TODO: subjects with type `sh:PropertyShape<R>`
         let property_shapes_instances = HashSet::new();
 
         // TODO: subjects with type `sh:Shape<R>`
@@ -123,16 +146,18 @@ impl<R: FocusRdf> ShaclParser<R> {
     fn get_sh_or_values(&mut self) -> Result<HashSet<Subject<R>>> {
         let mut rs = HashSet::new();
         for s in self.objects_with_predicate(Self::sh_or())? {
-            let term = R::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+            self.rdf_parser.set_focus(&s.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = R::term_as_subject(&v) {
-                    rs.insert(subj);
-                } else {
-                    return Err(ShaclParserError::OrValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                match v.clone().try_into() {
+                    Ok(subj) => {
+                        rs.insert(subj);
+                    }
+                    Err(_) => {
+                        return Err(ShaclParserError::OrValueNoSubject {
+                            term: format!("{v}"),
+                        })
+                    }
                 }
             }
         }
@@ -142,16 +167,18 @@ impl<R: FocusRdf> ShaclParser<R> {
     fn get_sh_xone_values(&mut self) -> Result<HashSet<Subject<R>>> {
         let mut rs = HashSet::new();
         for s in self.objects_with_predicate(Self::sh_xone())? {
-            let term = R::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+            self.rdf_parser.set_focus(&s.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = R::term_as_subject(&v) {
-                    rs.insert(subj);
-                } else {
-                    return Err(ShaclParserError::XOneValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                match v.clone().try_into() {
+                    Ok(subj) => {
+                        rs.insert(subj);
+                    }
+                    Err(_) => {
+                        return Err(ShaclParserError::XOneValueNoSubject {
+                            term: format!("{v}"),
+                        })
+                    }
                 }
             }
         }
@@ -161,16 +188,18 @@ impl<R: FocusRdf> ShaclParser<R> {
     fn get_sh_and_values(&mut self) -> Result<HashSet<Subject<R>>> {
         let mut rs = HashSet::new();
         for s in self.objects_with_predicate(Self::sh_and())? {
-            let term = R::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+            self.rdf_parser.set_focus(&s.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = R::term_as_subject(&v) {
-                    rs.insert(subj);
-                } else {
-                    return Err(ShaclParserError::AndValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                match v.clone().try_into() {
+                    Ok(subj) => {
+                        rs.insert(subj);
+                    }
+                    Err(_) => {
+                        return Err(ShaclParserError::AndValueNoSubject {
+                            term: format!("{v}"),
+                        })
+                    }
                 }
             }
         }
@@ -193,7 +222,7 @@ impl<R: FocusRdf> ShaclParser<R> {
         Ok(rs)
     }
 
-    fn objects_with_predicate(&self, pred:Predicate<R>) -> Result<HashSet<Subject<R>>> {
+    fn objects_with_predicate(&self, pred: Predicate<R>) -> Result<HashSet<Subject<R>>> {
         let triples = self
             .rdf_parser
             .rdf
@@ -201,66 +230,63 @@ impl<R: FocusRdf> ShaclParser<R> {
             .map_err(|e| ShaclParserError::Custom {
                 msg: format!("Error obtaining values with predicate sh:property: {e}"),
             })?;
-        let values_as_subjects = triples
-            .iter()
-            .flat_map(Self::triple_object_as_subject)
-            .collect();
+        let values_as_subjects = triples.flat_map(Self::triple_object_as_subject).collect();
         Ok(values_as_subjects)
     }
 
     fn rdf_type() -> Predicate<R> {
-        Predicate::<R>::new(RDF_TYPE)
+        Predicate::<R>::new(RDF_TYPE_STR)
     }
 
     fn sh_node_shape() -> Predicate<R> {
-        Predicate::<R>::new(SH_NODE_SHAPE)
+        Predicate::<R>::new(SH_NODE_SHAPE_STR)
     }
 
-    fn sh_property() ->Predicate<R> {
-        Predicate::<R>::new(SH_PROPERTY)
+    fn sh_property() -> Predicate<R> {
+        Predicate::<R>::new(SH_PROPERTY_STR)
     }
 
-    fn sh_or() ->Predicate<R> {
-        Predicate::<R>::new(SH_OR)
+    fn sh_or() -> Predicate<R> {
+        Predicate::<R>::new(SH_OR_STR)
     }
 
-    fn sh_xone() ->Predicate<R> {
-        Predicate::<R>::new(SH_XONE)
+    fn sh_xone() -> Predicate<R> {
+        Predicate::<R>::new(SH_XONE_STR)
     }
 
-    fn sh_and() ->Predicate<R> {
-        Predicate::<R>::new(SH_AND)
+    fn sh_and() -> Predicate<R> {
+        Predicate::<R>::new(SH_AND_STR)
     }
 
-    fn sh_not() ->Predicate<R> {
-        Predicate::<R>::new(SH_NOT)
+    fn sh_not() -> Predicate<R> {
+        Predicate::<R>::new(SH_NOT_STR)
     }
 
-    fn sh_node() ->Predicate<R> {
-        Predicate::<R>::new(SH_NODE)
+    fn sh_node() -> Predicate<R> {
+        Predicate::<R>::new(SH_NODE_STR)
     }
 
     fn triple_object_as_subject(triple: &R::Triple) -> Result<Subject<R>> {
-        let subj = R::term_as_subject(&triple.obj()).ok_or_else(|| ShaclParserError::Custom {
-            msg: format!("Expected triple object value to act as a subject: {triple}"),
-        })?;
-        Ok(subj)
+        match triple.obj().clone().try_into() {
+            Ok(obj) => Ok(obj),
+            Err(_) => Err(ShaclParserError::Custom {
+                msg: format!("Expected triple object value to act as a subject: {triple}"),
+            }),
+        }
     }
 
     fn subject_to_node(subject: &Subject<R>) -> Object<R> {
-        R::subject_as_object(subject)
+        subject.clone().into()
     }
 
-    fn shape<'a>(state: &'a mut State<R>) -> impl RDFNodeParse<R, Output = Shape<R>> + 'a
-    {
+    fn shape<'a>(state: &'a mut State<R>) -> impl RDFNodeParse<R, Output = Shape<R>> + 'a {
         node_shape()
-            .then(move |ns| ok(&Shape<R>::NodeShape(Box::new(ns))))
-            .or(property_shape(state).then(|ps| ok(&Shape<R>::PropertyShape(ps))))
+            .then(move |ns| ok(&Shape::NodeShape(*Box::new(ns))))
+            .or(property_shape(state).then(|ps| ok(&Shape::PropertyShape<R>(ps))))
     }
 }
 
-fn components<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn components<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     combine_parsers!(
         min_count(),
         max_count(),
@@ -279,8 +305,9 @@ fn components<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
     )
 }
 
-fn property_shape<'a, R: FocusRdf>(_state: &'a mut State<R>) -> impl RDFNodeParse<R, Output = PropertyShape> + 'a
-{
+fn property_shape<'a, R: FocusRdf>(
+    _state: &'a mut State<R>,
+) -> impl RDFNodeParse<R, Output = PropertyShape<R>> + 'a {
     optional(has_type(SH_PROPERTY_SHAPE.clone()))
         .with(
             id().and(path())
@@ -303,17 +330,16 @@ fn property_shape<'a, R: FocusRdf>(_state: &'a mut State<R>) -> impl RDFNodePars
         .then(move |ps| property_shape_components(ps))
 }
 
-fn property_shape_components<R: FocusRdf>(ps: PropertyShape) -> impl RDFNodeParse<R, Output = PropertyShape>
-{
-    components().flat_map(move |cs| Ok(ps.clone().with_components(cs)))
+fn property_shape_components<R: FocusRdf>(
+    ps: PropertyShape<R>,
+) -> impl RDFNodeParse<R, Output = PropertyShape<R>> {
+    components().flat_map(move |cs| Ok(ps.with_components(cs)))
 }
 
-fn node_shape<R: FocusRdf>() -> impl RDFNodeParse<R, Output = NodeShape>
-{
+fn node_shape<R: FocusRdf>() -> impl RDFNodeParse<R, Output = NodeShape<R>> {
     not(property_values_non_empty(&SH_PATH)).with(
         term()
             .then(move |t: Object<R>| {
-                let id = R::term_as_object(&t.clone());
                 ok(&NodeShape::new(id))
             })
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
@@ -335,247 +361,212 @@ fn node_shape<R: FocusRdf>() -> impl RDFNodeParse<R, Output = NodeShape>
 
 fn property_shapes<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Object<R>>> {
     property_values(&SH_PROPERTY).flat_map(|ts| {
-        let nodes = ts.iter().map(|t| R::term_as_object(t)).collect();
+        let nodes: Vec<_> = ts.into_iter().collect();
         Ok(nodes)
     })
 }
 
-fn parse_xone_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component> {
+fn parse_xone_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     rdf_list().flat_map(|ls| cnv_xone_list::<R>(ls))
 }
 
-fn cnv_xone_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component>
-{
-    let shapes: Vec<_> = ls.iter().map(R::term_as_object).collect();
+fn cnv_xone_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
+    let shapes: Vec<_> = ls.iter().collect();
     Ok(Component::Xone { shapes })
 }
 
-fn parse_and_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component> {
+fn parse_and_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     rdf_list().flat_map(|ls| cnv_and_list::<R>(ls))
 }
 
-fn cnv_and_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component>
-{
-    let shapes: Vec<_> = ls.iter().map(R::term_as_object).collect();
+fn cnv_and_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
+    let shapes: Vec<_> = ls.iter().collect();
     Ok(Component::And { shapes })
 }
 
-fn parse_not_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component> {
+fn parse_not_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     term().flat_map(|t| cnv_not::<R>(t))
 }
 
-fn parse_node_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component> {
+fn parse_node_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     term().flat_map(|t| cnv_node::<R>(t))
 }
 
-fn cnv_node<R: Rdf>(t: Object<R>) -> ParserResult<Component>
-{
-    let shape = R::term_as_object(&t);
-    Ok(Component::Node { shape })
+fn cnv_node<R: Rdf>(t: Object<R>) -> ParserResult<Component<R>> {
+    Ok(Component::Node(Node::new(t)))
 }
 
-fn cnv_not<R: Rdf>(t: Object<R>) -> ParserResult<Component>
-{
-    let shape = R::term_as_object(&t);
-    Ok(Component::Not { shape })
+fn cnv_not<R: Rdf>(t: Object<R>) -> ParserResult<Component<R>> {
+    Ok(Component::Not(Not::new(t)))
 }
 
-fn parse_or_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component> {
+fn parse_or_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     rdf_list().flat_map(|ls| cnv_or_list::<R>(ls))
 }
 
-fn cnv_or_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component>
-{
-    let shapes: Vec<_> = ls.iter().map(R::term_as_object).collect();
-    Ok(Component::Or { shapes })
+fn cnv_or_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
+    let shapes: Vec<_> = ls.iter().collect();
+    Ok(Component::Or(Or::new(shapes)))
 }
 
-fn id<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Object<R>>
-{
-    term().then(move |t: Object<R>| {
-        let id = R::term_as_object(&t.clone());
+fn id<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Object<R>> {
+    term().then(|t: Object<R>| {
         ok(&id)
     })
 }
 
 /// Parses the property value of the focus node as a SHACL path
-fn path<R: Rdf>() -> impl RDFNodeParse<R, Output = SHACLPath>
-{
+fn path<R: Rdf>() -> impl RDFNodeParse<R, Output = SHACLPath> {
     property_value(&SH_PATH).then(shacl_path)
 }
 
 /// Parses the current focus node as a SHACL path
-fn shacl_path<R: Rdf>(term: Object<R>) -> impl RDFNodeParse<R, Output = SHACLPath>
-{
-    let obj = R::term_as_object(&term);
-    match obj {
-        Object::Iri(iri) => ok(&SHACLPath::iri(iri)),
-        Object::BlankNode(_) => todo!(),
-        Object::Literal(_) => todo!(),
+fn shacl_path<R: Rdf>(term: Object<R>) -> impl RDFNodeParse<R, Output = SHACLPath> {
+    match term.as_iri() {
+        Some(iri) => ok(&SHACLPath::iri(iri)),
+        None => todo!(),
     }
 }
 
-fn targets<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target>>
-{
+fn targets<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     combine_vec(targets_class(), targets_node())
 }
 
-fn closed<R: FocusRdf>() -> impl RDFNodeParse<R, Output = bool>
-{
+fn closed<R: FocusRdf>() -> impl RDFNodeParse<R, Output = bool> {
     property_bool(&SH_CLOSED)
 }
 
-fn min_count<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn min_count<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values_int(&SH_MIN_COUNT)
-        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
+        .map(|ns| ns.iter().map(|n| Component::MinCount(MinCount::new(*n))).collect())
 }
 
-fn max_count<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn max_count<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values_int(&SH_MAX_COUNT)
-        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
+        .map(|ns| ns.iter().map(|n| Component::MaxCount(MaxCount::new(*n))).collect())
 }
 
-fn min_length<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn min_length<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values_int(&SH_MIN_LENGTH)
-        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
+        .map(|ns| ns.iter().map(|n| Component::MinLength(MinLength::new(*n))).collect())
 }
 
-fn max_length<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn max_length<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values_int(&SH_MAX_LENGTH)
-        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
+        .map(|ns| ns.iter().map(|n| Component::MaxLength(MaxLength::new(*n))).collect())
 }
 
-fn datatype<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn datatype<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values_iri(&SH_DATATYPE).map(|ns| {
         ns.iter()
-            .map(|iri| Component::Datatype(IriRef::iri(iri.clone())))
+            .map(|iri| Component::Datatype(Datatype::new(Predicate::<R>::new(iri.as_str()))))
             .collect()
     })
 }
 
-fn class<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn class<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_CLASS).map(|ns| {
         ns.iter()
-            .map(|term| Component::Class(R::term_as_object(term)))
+            .map(|term: &Object<R>| Component::Class(Class::new(term.clone())))
             .collect()
     })
 }
 
-fn node_kind<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn node_kind<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_NODE_KIND).flat_map(|ns| {
         let nks: Vec<_> = ns
             .iter()
             .flat_map(|term| {
                 let nk = term_to_node_kind::<R>(term)?;
-                Ok::<Component, ShaclParserError>(Component::NodeKind(nk))
+                Ok::<Component<R>, ShaclParserError>(Component::NodeKind(Nodekind::new(nk)))
             })
             .collect();
         Ok(nks)
     })
 }
 
-fn has_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn has_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_HAS_VALUE).then(move |node_set| {
         let nodes: Vec<_> = node_set.into_iter().collect();
         parse_nodes(nodes, parse_has_value_values())
     })
 }
 
-fn in_component<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn in_component<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_IN).then(move |node_set| {
         let nodes: Vec<_> = node_set.into_iter().collect();
         parse_nodes(nodes, parse_in_values())
     })
 }
 
-fn parse_in_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component>
-{
+fn parse_in_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     rdf_list().flat_map(cnv_in_list::<R>)
 }
 
-fn parse_has_value_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component>
-{
+fn parse_has_value_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
     term().flat_map(cnv_has_value::<R>)
 }
 
-fn cnv_has_value<R: Rdf>(term: Object<R>) -> std::result::Result<Component, RdfParseError>
-{
+fn cnv_has_value<R: Rdf>(term: Object<R>) -> std::result::Result<Component<R>, RdfParseError> {
     let value = term_to_value::<R>(&term)?;
-    Ok(Component::HasValue { value })
+    Ok(Component::HasValue(HasValue::new(value)))
 }
 
-fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Value, RdfParseError>
-{
-    match R::term_as_object(term) {
-        Object::Iri(iri) => Ok(Value::Iri(IriRef::Iri(iri))),
-        Object::BlankNode(bn) => Err(RdfParseError::BlankNodeNoValue {
-            bnode: bn.to_string(),
+fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Value<R::Triple>, RdfParseError> {
+    match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
+        (true, false, false) => Ok(Value::Iri(term.as_iri().unwrap().clone())),
+        (false, true, false) => Err(RdfParseError::BlankNodeNoValue {
+            bnode: term.as_blank_node().unwrap().to_string(),
         }),
-        Object::Literal(lit) => Ok(Value::Literal(lit)),
+        (false, false, true) => Ok(Value::Literal(term.as_literal().unwrap().clone())),
+        _ => unreachable!()
     }
 }
 
-fn cnv_in_list<R: Rdf>(ls: Vec<Object<R>>) -> std::result::Result<Component, RdfParseError>
-{
+fn cnv_in_list<R: Rdf>(ls: Vec<Object<R>>) -> std::result::Result<Component<R>, RdfParseError> {
     let values = ls.iter().flat_map(term_to_value::<R>).collect();
-    Ok(Component::In { values })
+    Ok(Component::In(In::new(values)))
 }
 
-fn or<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn or<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_OR).then(move |terms_set| {
         let terms: Vec<_> = terms_set.into_iter().collect();
         parse_nodes(terms, parse_or_values())
     })
 }
 
-fn xone<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn xone<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_XONE).then(move |terms_set| {
         let terms: Vec<_> = terms_set.into_iter().collect();
         parse_nodes(terms, parse_xone_values())
     })
 }
 
-fn and<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn and<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_AND).then(move |terms_set| {
         let terms: Vec<_> = terms_set.into_iter().collect();
         parse_nodes(terms, parse_and_values())
     })
 }
 
-fn not_parser<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn not_parser<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_NOT).then(move |terms_set| {
         let terms: Vec<_> = terms_set.into_iter().collect();
         parse_nodes(terms, parse_not_value())
     })
 }
 
-fn node<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component>>
-{
+fn node<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Component<R>>> {
     property_values(&SH_NODE).then(move |terms_set| {
         let terms: Vec<_> = terms_set.into_iter().collect();
         parse_nodes(terms, parse_node_value())
     })
 }
 
-fn term_to_node_kind<R: Rdf>(term: &Object<R>) -> Result<NodeKind>
-{
-    match R::term_as_iri(term) {
+fn term_to_node_kind<R: Rdf>(term: &Object<R>) -> Result<NodeKind> {
+    match term.as_iri() {
         Some(iri) => {
-            let iri_s = R::iri2iri_s(iri);
-            match iri_s.as_str() {
+            match iri.as_iri_s().as_str() {
                 SH_IRI_STR => Ok(NodeKind::Iri),
                 SH_LITERAL_STR => Ok(NodeKind::Literal),
                 SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
@@ -593,28 +584,24 @@ fn term_to_node_kind<R: Rdf>(term: &Object<R>) -> Result<NodeKind>
     }
 }
 
-fn targets_class<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target>>
-{
+fn targets_class<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values(&SH_TARGET_CLASS).flat_map(move |ts| {
         let result = ts
             .iter()
-            .map(|t| {
-                let node = R::term_as_object(t);
-                Target::TargetClass(node)
+            .map(|t: &Object<R>| {
+                Target::TargetClass(t.clone())
             })
             .collect();
         Ok(result)
     })
 }
 
-fn targets_node<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target>>
-{
+fn targets_node<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values(&SH_TARGET_NODE).flat_map(move |ts| {
         let result = ts
             .iter()
-            .map(|t| {
-                let node = R::term_as_object(t);
-                Target::TargetNode(node)
+            .map(|t: &Object<R>| {
+                Target::TargetNode(t.clone())
             })
             .collect();
         Ok(result)

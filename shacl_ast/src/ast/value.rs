@@ -1,25 +1,25 @@
 use std::fmt::Display;
 
-use iri_s::IriS;
-use prefixmap::IriRef;
+use srdf::model::rdf::Literal;
+use srdf::model::Triple;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Value {
-    Iri(IriRef),
-    Literal(Literal),
+pub enum Value<T: Triple> {
+    Iri(T::Iri),
+    Literal(Literal<T>),
 }
 
-impl Value {
-    pub fn iri(iri: IriS) -> Value {
-        Value::Iri(IriRef::iri(iri))
+impl<T: Triple> Value<T> {
+    pub fn iri(iri: T::Iri) -> Value<T> {
+        Value::Iri(iri)
     }
 
-    pub fn literal(literal: Literal) -> Value {
+    pub fn literal(literal: Literal<T>) -> Value<T> {
         Value::Literal(literal)
     }
 }
 
-impl Display for Value {
+impl<T: Triple> Display for Value<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Iri(iri) => write!(f, "value({iri})"),

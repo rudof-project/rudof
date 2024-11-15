@@ -8,7 +8,7 @@ pub mod severity;
 pub mod shacl_error;
 pub mod shape;
 pub mod target;
-// pub mod value;
+pub mod value;
 
 pub use schema::*;
 pub use shacl_error::*;
