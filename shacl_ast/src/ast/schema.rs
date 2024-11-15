@@ -1,65 +1,47 @@
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
-use crate::shape::Shape;
-use iri_s::IriS;
 use prefixmap::PrefixMap;
+use srdf::model::rdf::Predicate;
+use srdf::model::rdf::Rdf;
+use srdf::model::rdf::Subject;
 
-#[derive(Debug, Clone, Default)]
-pub struct Schema {
+use super::shape::Shape;
+
+#[derive(Default, Debug)]
+pub struct Schema<R: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, Shape>,
+    shapes: HashMap<Subject<R>, Shape<R>>,
     prefixmap: PrefixMap,
-    base: Option<IriS>,
+    base: Option<Predicate<R>>,
 }
 
-impl Schema {
-    pub fn new() -> Schema {
-        Schema::default()
-    }
-
-    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
-        self.prefixmap = prefixmap;
-        self
-    }
-
-    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape>) -> Self {
-        self.shapes = shapes;
-        self
+impl<R: Rdf> Schema<R> {
+    pub fn new(
+        shapes: HashMap<Subject<R>, Shape<R>>,
+        prefixmap: PrefixMap,
+        base: Option<Predicate<R>>,
+    ) -> Schema<R> {
+        Schema {
+            shapes,
+            prefixmap,
+            base,
+        }
     }
 
     pub fn prefix_map(&self) -> PrefixMap {
         self.prefixmap.clone()
     }
 
-    pub fn base(&self) -> Option<IriS> {
-        self.base.clone()
+    pub fn base(&self) -> &Option<Predicate<R>> {
+        &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Subject<R>, &Shape<R>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape> {
+    pub fn get_shape(&self, sref: &Subject<R>) -> Option<&Shape<R>> {
         self.shapes.get(sref)
-    }
-}
-
-/*impl Display for Schema {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
-        )
-    }
-}*/
-
-impl Display for Schema {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (id, shape) in self.shapes.iter() {
-            writeln!(f, "{id} -> {shape}")?;
-        }
-        Ok(())
     }
 }

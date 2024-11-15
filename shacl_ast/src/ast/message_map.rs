@@ -1,4 +1,3 @@
-use oxrdf::{Literal as OxLiteral, Term as OxTerm};
 use std::collections::HashMap;
 use std::str::FromStr;
 

@@ -2,313 +2,48 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use iri_s::IriS;
-use itertools::Itertools;
-use prefixmap::IriRef;
+use srdf::model::rdf::Literal;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
+use srdf::model::rdf::Rdf;
 
 use crate::node_kind::NodeKind;
-use crate::value::Value;
 use crate::vocab::*;
 
+use super::shape::Shape;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Component {
-    Class(RDFNode),
-    Datatype(IriRef),
-    NodeKind(NodeKind),
-    MinCount(isize),
-    MaxCount(isize),
-    MinExclusive(Literal),
-    MaxExclusive(Literal),
-    MinInclusive(Literal),
-    MaxInclusive(Literal),
-    MinLength(isize),
-    MaxLength(isize),
-    Pattern {
-        pattern: String,
-        flags: Option<String>,
-    },
-    UniqueLang(bool),
-    LanguageIn {
-        langs: Vec<Lang>,
-    },
-    Equals(IriRef),
-    Disjoint(IriRef),
-    LessThan(IriRef),
-    LessThanOrEquals(IriRef),
-    Or {
-        shapes: Vec<RDFNode>,
-    },
-    And {
-        shapes: Vec<RDFNode>,
-    },
-    Not {
-        shape: RDFNode,
-    },
-    Xone {
-        shapes: Vec<RDFNode>,
-    },
-    Closed {
-        is_closed: bool,
-        ignored_properties: Vec<IriRef>,
-    },
-    Node {
-        shape: RDFNode,
-    },
-    HasValue {
-        value: Value,
-    },
-    In {
-        values: Vec<Value>,
-    },
-    QualifiedValueShape {
-        shape: RDFNode,
-        qualified_min_count: Option<isize>,
-        qualified_max_count: Option<isize>,
-        qualified_value_shapes_disjoint: Option<bool>,
-    },
+pub enum Component<R: Rdf> {
+    Class(Class<R>),
+    Datatype(Datatype<R>),
+    NodeKind(Nodekind),
+    MinCount(MinCount),
+    MaxCount(MaxCount),
+    MinExclusive(MinExclusive<R>),
+    MaxExclusive(MaxExclusive<R>),
+    MinInclusive(MinInclusive<R>),
+    MaxInclusive(MaxInclusive<R>),
+    MinLength(MinLength),
+    MaxLength(MaxLength),
+    Pattern(Pattern),
+    UniqueLang(UniqueLang),
+    LanguageIn(LanguageIn<R>),
+    Equals(Equals<R>),
+    Disjoint(Disjoint<R>),
+    LessThan(LessThan<R>),
+    LessThanOrEquals(LessThanOrEquals<R>),
+    Or(Or<R>),
+    And(And<R>),
+    Not(Not<R>),
+    Xone(Xone<R>),
+    Closed(Closed<R>),
+    Node(Node<R>),
+    HasValue(HasValue<R>),
+    In(In<R>),
+    QualifiedValueShape(QualifiedValueShape<R>),
 }
 
-impl Component {
-    pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        match self {
-            Self::Class(rdf_node) => {
-                Self::write_term(&RDF::object_as_term(rdf_node), SH_CLASS_STR, rdf_node, rdf)?;
-            }
-            Self::Datatype(iri) => {
-                Self::write_iri(iri, SH_DATATYPE_STR, rdf_node, rdf)?;
-            }
-            Self::NodeKind(node_kind) => {
-                let iri = match &node_kind {
-                    NodeKind::Iri => SH_IRI_STR,
-
-                    _ => unimplemented!(),
-                };
-
-                Self::write_iri(&IriRef::Iri(iri!(iri)), SH_DATATYPE_STR, rdf_node, rdf)?;
-            }
-            Self::MinCount(value) => {
-                Self::write_integer(*value, SH_MIN_COUNT_STR, rdf_node, rdf)?;
-            }
-            Self::MaxCount(value) => {
-                Self::write_integer(*value, SH_MAX_COUNT_STR, rdf_node, rdf)?;
-            }
-            Self::MinExclusive(value) => {
-                Self::write_literal(value, SH_MIN_EXCLUSIVE_STR, rdf_node, rdf)?;
-            }
-            Self::MaxExclusive(value) => {
-                Self::write_literal(value, SH_MAX_EXCLUSIVE_STR, rdf_node, rdf)?;
-            }
-            Self::MinInclusive(value) => {
-                Self::write_literal(value, SH_MIN_INCLUSIVE_STR, rdf_node, rdf)?;
-            }
-            Self::MaxInclusive(value) => {
-                Self::write_literal(value, SH_MAX_INCLUSIVE_STR, rdf_node, rdf)?;
-            }
-            Self::MinLength(value) => {
-                Self::write_integer(*value, SH_MIN_LENGTH_STR, rdf_node, rdf)?;
-            }
-            Self::MaxLength(value) => {
-                Self::write_integer(*value, SH_MAX_LENGTH_STR, rdf_node, rdf)?;
-            }
-            Self::Pattern { pattern, flags } => {
-                Self::write_literal(&Literal::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
-                if let Some(flags) = flags {
-                    Self::write_literal(&Literal::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
-                }
-            }
-            Self::UniqueLang(value) => {
-                Self::write_boolean(*value, SH_UNIQUE_LANG_STR, rdf_node, rdf)?;
-            }
-            Self::LanguageIn { langs } => {
-                langs.iter().try_for_each(|lang| {
-                    Self::write_literal(
-                        &Literal::str(&lang.value()),
-                        SH_LANGUAGE_IN_STR,
-                        rdf_node,
-                        rdf,
-                    )
-                })?;
-            }
-            Self::Equals(iri) => {
-                Self::write_iri(iri, SH_EQUALS_STR, rdf_node, rdf)?;
-            }
-            Self::Disjoint(iri) => {
-                Self::write_iri(iri, SH_DISJOINT_STR, rdf_node, rdf)?;
-            }
-            Self::LessThan(iri) => {
-                Self::write_iri(iri, SH_LESS_THAN_STR, rdf_node, rdf)?;
-            }
-            Self::LessThanOrEquals(iri) => {
-                Self::write_iri(iri, SH_LESS_THAN_OR_EQUALS_STR, rdf_node, rdf)?;
-            }
-            Self::Or { shapes } => {
-                shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_OR_STR, rdf_node, rdf)
-                })?;
-            }
-            Self::And { shapes } => {
-                shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_AND_STR, rdf_node, rdf)
-                })?;
-            }
-            Self::Not { shape } => {
-                Self::write_term(&RDF::object_as_term(shape), SH_PATTERN_STR, rdf_node, rdf)?;
-            }
-            Self::Xone { shapes } => {
-                shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_XONE_STR, rdf_node, rdf)
-                })?;
-            }
-            Self::Closed {
-                is_closed,
-                ignored_properties,
-            } => {
-                Self::write_boolean(*is_closed, SH_CLOSED_STR, rdf_node, rdf)?;
-
-                ignored_properties.iter().try_for_each(|iri| {
-                    Self::write_iri(iri, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
-                })?;
-            }
-            Self::Node { shape } => {
-                Self::write_term(&RDF::object_as_term(shape), SH_NODE_STR, rdf_node, rdf)?;
-            }
-            Self::HasValue { value } => match value {
-                Value::Iri(iri) => {
-                    Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf)?;
-                }
-                Value::Literal(literal) => {
-                    Self::write_literal(
-                        &Literal::str(&literal.to_string()),
-                        SH_HAS_VALUE_STR,
-                        rdf_node,
-                        rdf,
-                    )?;
-                }
-            },
-            Self::In { values } => {
-                values.iter().try_for_each(|value| match value {
-                    Value::Iri(iri) => Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf),
-                    Value::Literal(literal) => Self::write_literal(
-                        &Literal::str(&literal.to_string()),
-                        SH_HAS_VALUE_STR,
-                        rdf_node,
-                        rdf,
-                    ),
-                })?;
-            }
-            Self::QualifiedValueShape {
-                shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
-            } => {
-                Self::write_term(
-                    &RDF::object_as_term(shape),
-                    SH_QUALIFIED_VALUE_SHAPE_STR,
-                    rdf_node,
-                    rdf,
-                )?;
-
-                if let Some(value) = qualified_min_count {
-                    Self::write_integer(*value, SH_QUALIFIED_MIN_COUNT_STR, rdf_node, rdf)?;
-                }
-
-                if let Some(value) = qualified_max_count {
-                    Self::write_integer(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
-                }
-
-                if let Some(value) = qualified_value_shapes_disjoint {
-                    Self::write_boolean(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn write_integer<RDF>(
-        value: isize,
-        predicate: &str,
-        rdf_node: &RDFNode,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        let decimal_type = NamedNode::new(XSD_INTEGER_STR).unwrap();
-
-        let term = OxTerm::Literal(OxLiteral::new_typed_literal(
-            value.to_string(),
-            decimal_type,
-        ));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
-    }
-
-    fn write_boolean<RDF>(
-        value: bool,
-        predicate: &str,
-        rdf_node: &RDFNode,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        let term = OxTerm::Literal(OxLiteral::from(value));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
-    }
-
-    fn write_literal<RDF>(
-        value: &Literal,
-        predicate: &str,
-        rdf_node: &RDFNode,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        let term = OxTerm::Literal(OxLiteral::new_simple_literal(value.lexical_form()));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
-    }
-
-    fn write_iri<RDF>(
-        value: &IriRef,
-        predicate: &str,
-        rdf_node: &RDFNode,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        Self::write_term(
-            &RDF::iri_s2term(&value.get_iri().unwrap()),
-            predicate,
-            rdf_node,
-            rdf,
-        )
-    }
-
-    fn write_term<RDF>(
-        value: &RDF::Term,
-        predicate: &str,
-        rdf_node: &RDFNode,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: SRDFBuilder,
-    {
-        rdf.add_triple(
-            &RDF::object_as_subject(rdf_node).unwrap(),
-            &RDF::iri_s2iri(&iri!(predicate)),
-            value,
-        )
-    }
-}
-
-impl Display for Component {
+impl<R: Rdf> Display for Component<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Component::Class(cls) => write!(f, "class({cls})"),
@@ -322,45 +57,28 @@ impl Display for Component {
             Component::MaxInclusive(mi) => write!(f, "maxInclusive({mi})"),
             Component::MinLength(ml) => write!(f, "minLength({ml})"),
             Component::MaxLength(ml) => write!(f, "maxLength({ml})"),
-            Component::Pattern { pattern, flags } => match flags {
-                Some(flags) => write!(f, "pattern({pattern}, {flags})"),
-                None => write!(f, "pattern({pattern})"),
-            },
+            Component::Pattern(p) => write!(f, "pattern({p})"),
             Component::UniqueLang(ul) => write!(f, "uniqueLang({ul})"),
-            Component::LanguageIn { .. } => todo!(), // write!(f, "languageIn({langs})"),
+            Component::LanguageIn(li) => write!(f, "languageIn({li})"),
             Component::Equals(e) => write!(f, "equals({e})"),
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
             Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
             Component::LessThanOrEquals(lte) => write!(f, "uniqueLang({lte})"),
-            Component::Or { shapes } => {
-                let str = shapes.iter().map(|s| s.to_string()).join(" ");
-                write!(f, "or [{str}]")
-            }
-            Component::And { shapes } => {
-                let str = shapes.iter().map(|s| s.to_string()).join(" ");
-                write!(f, "and [{str}]")
-            }
-            Component::Not { shape } => {
-                write!(f, "not [{shape}]")
-            }
-            Component::Xone { shapes } => {
-                let str = shapes.iter().map(|s| s.to_string()).join(" ");
-                write!(f, "xone [{str}]")
-            }
-            Component::Closed { .. } => todo!(),
-            Component::Node { shape } => write!(f, "node({shape})"),
-            Component::HasValue { value } => write!(f, "hasValue({value})"),
-            Component::In { values } => {
-                let str = values.iter().map(|v| v.to_string()).join(" ");
-                write!(f, "In [{str}]")
-            }
-            Component::QualifiedValueShape { .. } => todo!(),
+            Component::Or(or) => write!(f, "or [{or}]"),
+            Component::And(and) => write!(f, "and [{and}]"),
+            Component::Not(not) => write!(f, "not [{not}]"),
+            Component::Xone(xone) => write!(f, "xone [{xone}]"),
+            Component::Closed(closed) => write!(f, "closed({closed})"),
+            Component::Node(node) => write!(f, "node({node})"),
+            Component::HasValue(hv) => write!(f, "hasValue({hv})"),
+            Component::In(li) => write!(f, "languageIn({li})"),
+            Component::QualifiedValueShape(qvs) => write!(f, "qualifiedValueShape({qvs})"),
         }
     }
 }
 
-impl From<Component> for IriS {
-    fn from(value: Component) -> Self {
+impl<R: Rdf> From<Component<R>> for IriS {
+    fn from(value: Component<R>) -> Self {
         match value {
             Component::Class(_) => IriS::from_str(SH_CLASS_STR).unwrap(),
             Component::Datatype(_) => IriS::from_str(SH_DATATYPE_STR).unwrap(),
@@ -390,5 +108,583 @@ impl From<Component> for IriS {
             Component::In { .. } => IriS::from_str(SH_IN_STR).unwrap(),
             Component::QualifiedValueShape { .. } => IriS::from_str(SH_QUALIFIED_VALUE_SHAPE_STR),
         }
+    }
+}
+
+/// sh:maxCount specifies the maximum number of value nodes that satisfy the
+/// condition.
+///
+/// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
+/// - DEF: If the number of value nodes is greater than $maxCount, there is a
+///   validation result.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MaxCount {
+    max_count: usize,
+}
+
+impl MaxCount {
+    pub fn new(max_count: isize) -> Self {
+        MaxCount {
+            max_count: max_count as usize,
+        }
+    }
+
+    pub fn max_count(&self) -> usize {
+        self.max_count
+    }
+}
+
+/// sh:minCount specifies the minimum number of value nodes that satisfy the
+/// condition. If the minimum cardinality value is 0 then this constraint is
+/// always satisfied and so may be omitted.
+///
+/// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
+/// - DEF: If the number of value nodes is less than $minCount, there is a
+///   validation result.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MinCount {
+    min_count: usize,
+}
+
+impl MinCount {
+    pub fn new(min_count: isize) -> Self {
+        MinCount {
+            min_count: min_count as usize,
+        }
+    }
+
+    pub fn min_count(&self) -> usize {
+        self.min_count
+    }
+}
+
+/// sh:and specifies the condition that each value node conforms to all provided
+/// shapes. This is comparable to conjunction and the logical "and" operator.
+///
+/// https://www.w3.org/TR/shacl/#AndConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct And<R: Rdf> {
+    shapes: Vec<Shape<R>>,
+}
+
+impl<R: Rdf> And<R> {
+    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+        And { shapes }
+    }
+
+    pub fn shapes(&self) -> &Vec<Shape<R>> {
+        &self.shapes
+    }
+}
+
+/// sh:not specifies the condition that each value node cannot conform to a
+/// given shape. This is comparable to negation and the logical "not" operator.
+///
+/// https://www.w3.org/TR/shacl/#NotConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Not<R: Rdf> {
+    shape: Shape<R>,
+}
+
+impl<R: Rdf> Not<R> {
+    pub fn new(shape: Shape<R>) -> Self {
+        Not { shape }
+    }
+
+    pub fn shape(&self) -> &Shape<R> {
+        &self.shape
+    }
+}
+
+/// sh:or specifies the condition that each value node conforms to at least one
+/// of the provided shapes. This is comparable to disjunction and the logical
+/// "or" operator.
+///
+/// https://www.w3.org/TR/shacl/#AndConstraintComponent
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Or<R: Rdf> {
+    shapes: Vec<Shape<R>>,
+}
+
+impl<R: Rdf> Or<R> {
+    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+        Or { shapes }
+    }
+
+    pub fn shapes(&self) -> &Vec<Shape<R>> {
+        &self.shapes
+    }
+}
+
+/// sh:or specifies the condition that each value node conforms to at least one
+/// of the provided shapes. This is comparable to disjunction and the logical
+/// "or" operator.
+///
+/// https://www.w3.org/TR/shacl/#XoneConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Xone<R: Rdf> {
+    shapes: Vec<Shape<R>>,
+}
+
+impl<R: Rdf> Xone<R> {
+    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+        Xone { shapes }
+    }
+
+    pub fn shapes(&self) -> &Vec<Shape<R>> {
+        &self.shapes
+    }
+}
+
+/// Closed Constraint Component.
+///
+/// The RDF data model offers a huge amount of flexibility. Any node can in
+/// principle have values for any property. However, in some cases it makes
+/// sense to specify conditions on which properties can be applied to nodes.
+/// The SHACL Core language includes a property called sh:closed that can be
+/// used to specify the condition that each value node has values only for
+/// those properties that have been explicitly enumerated via the property
+/// shapes specified for the shape via sh:property.
+///
+/// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Closed<R: Rdf> {
+    is_closed: bool,
+    ignored_properties: Vec<Predicate<R>>,
+}
+
+impl<R: Rdf> Closed<R> {
+    pub fn new(is_closed: bool, ignored_properties: Vec<Predicate<R>>) -> Self {
+        Closed {
+            is_closed,
+            ignored_properties,
+        }
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.is_closed
+    }
+
+    pub fn ignored_properties(&self) -> &Vec<Predicate<R>> {
+        &self.ignored_properties
+    }
+}
+
+/// sh:hasValue specifies the condition that at least one value node is equal to
+///  the given RDF term.
+///
+/// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct HasValue<R: Rdf> {
+    value: Object<R>,
+}
+
+impl<R: Rdf> HasValue<R> {
+    pub fn new(value: Object<R>) -> Self {
+        HasValue { value }
+    }
+
+    pub fn value(&self) -> &Object<R> {
+        &self.value
+    }
+}
+
+/// sh:in specifies the condition that each value node is a member of a provided
+/// SHACL list.
+///
+/// https://www.w3.org/TR/shacl/#InConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct In<R: Rdf> {
+    values: Vec<Object<R>>,
+}
+
+impl<R: Rdf> In<R> {
+    pub fn new(values: Vec<Object<R>>) -> Self {
+        In { values }
+    }
+
+    pub fn values(&self) -> &Vec<Object<R>> {
+        &self.values
+    }
+}
+
+/// sh:disjoint specifies the condition that the set of value nodes is disjoint
+/// with the set of objects of the triples that have the focus node as subject
+/// and the value of sh:disjoint as predicate.
+///
+/// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Disjoint<R: Rdf> {
+    iri_ref: Predicate<R>,
+}
+
+impl<R: Rdf> Disjoint<R> {
+    pub fn new(iri_ref: Predicate<R>) -> Self {
+        Disjoint { iri_ref }
+    }
+
+    pub fn iri_ref(&self) -> &Predicate<R> {
+        &self.iri_ref
+    }
+}
+
+/// sh:equals specifies the condition that the set of all value nodes is equal
+/// to the set of objects of the triples that have the focus node as subject and
+/// the value of sh:equals as predicate.
+///
+/// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Equals<R: Rdf> {
+    iri_ref: Predicate<R>,
+}
+
+impl<R: Rdf> Equals<R> {
+    pub fn new(iri_ref: Predicate<R>) -> Self {
+        Equals { iri_ref }
+    }
+
+    pub fn iri_ref(&self) -> &Predicate<R> {
+        &self.iri_ref
+    }
+}
+
+/// LessThanOrEquals Constraint Component.
+///
+/// sh:lessThanOrEquals specifies the condition that each value node is smaller
+/// than or equal to all the objects of the triples that have the focus node
+/// as subject and the value of sh:lessThanOrEquals as predicate.
+///
+/// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct LessThanOrEquals<R: Rdf> {
+    iri_ref: Predicate<R>,
+}
+
+impl<R: Rdf> LessThanOrEquals<R> {
+    pub fn new(iri_ref: Predicate<R>) -> Self {
+        LessThanOrEquals { iri_ref }
+    }
+
+    pub fn iri_ref(&self) -> &Predicate<R> {
+        &self.iri_ref
+    }
+}
+
+/// sh:lessThan specifies the condition that each value node is smaller than all
+/// the objects of the triples that have the focus node as subject and the
+/// value of sh:lessThan as predicate.
+///
+/// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct LessThan<R: Rdf> {
+    iri_ref: Predicate<R>,
+}
+
+impl<R: Rdf> LessThan<R> {
+    pub fn new(iri_ref: Predicate<R>) -> Self {
+        LessThan { iri_ref }
+    }
+
+    pub fn iri_ref(&self) -> &Predicate<R> {
+        &self.iri_ref
+    }
+}
+
+/// sh:node specifies the condition that each value node conforms to the given
+/// node shape.
+///
+/// https://www.w3.org/TR/shacl/#NodeShapeComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Node<R: Rdf> {
+    shape: Shape<R>,
+}
+
+impl<R: Rdf> Node<R> {
+    pub fn new(shape: Shape<R>) -> Self {
+        Node { shape }
+    }
+
+    pub fn shape(&self) -> &Shape<R> {
+        &self.shape
+    }
+}
+
+/// QualifiedValueShape Constraint Component.
+///
+/// sh:qualifiedValueShape specifies the condition that a specified number of
+///  value nodes conforms to the given shape. Each sh:qualifiedValueShape can
+///  have: one value for sh:qualifiedMinCount, one value for
+///  sh:qualifiedMaxCount or, one value for each, at the same subject.
+///
+/// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct QualifiedValueShape<R: Rdf> {
+    shape: Shape<R>,
+    qualified_min_count: Option<isize>,
+    qualified_max_count: Option<isize>,
+    qualified_value_shapes_disjoint: Option<bool>,
+}
+
+impl<R: Rdf> QualifiedValueShape<R> {
+    pub fn new(
+        shape: Shape<R>,
+        qualified_min_count: Option<isize>,
+        qualified_max_count: Option<isize>,
+        qualified_value_shapes_disjoint: Option<bool>,
+    ) -> Self {
+        QualifiedValueShape {
+            shape,
+            qualified_min_count,
+            qualified_max_count,
+            qualified_value_shapes_disjoint,
+        }
+    }
+
+    pub fn shape(&self) -> &Shape<R> {
+        &self.shape
+    }
+
+    pub fn qualified_min_count(&self) -> Option<isize> {
+        self.qualified_min_count
+    }
+
+    pub fn qualified_max_count(&self) -> Option<isize> {
+        self.qualified_max_count
+    }
+
+    pub fn qualified_value_shapes_disjoint(&self) -> Option<bool> {
+        self.qualified_value_shapes_disjoint
+    }
+}
+
+/// The condition specified by sh:languageIn is that the allowed language tags
+/// for each value node are limited by a given list of language tags.
+///
+/// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct LanguageIn<R: Rdf> {
+    langs: Vec<Literal<R::Triple>>,
+}
+
+impl<R: Rdf> LanguageIn<R> {
+    pub fn new(langs: Vec<Literal<R::Triple>>) -> Self {
+        LanguageIn { langs }
+    }
+
+    pub fn langs(&self) -> &Vec<Literal<R::Triple>> {
+        &self.langs
+    }
+}
+
+/// sh:maxLength specifies the maximum string length of each value node that
+/// satisfies the condition. This can be applied to any literals and IRIs, but
+/// not to blank nodes.
+///
+/// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MaxLength {
+    max_length: isize,
+}
+
+impl MaxLength {
+    pub fn new(max_length: isize) -> Self {
+        MaxLength { max_length }
+    }
+
+    pub fn max_length(&self) -> isize {
+        self.max_length
+    }
+}
+
+/// sh:minLength specifies the minimum string length of each value node that
+/// satisfies the condition. This can be applied to any literals and IRIs, but
+/// not to blank nodes.
+///
+/// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MinLength {
+    min_length: isize,
+}
+
+impl MinLength {
+    pub fn new(min_length: isize) -> Self {
+        MinLength { min_length }
+    }
+
+    pub fn min_length(&self) -> isize {
+        self.min_length
+    }
+}
+
+/// sh:property can be used to specify that each value node has a given property
+/// shape.
+///
+/// https://www.w3.org/TR/shacl/#PropertyShapeComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Pattern {
+    pattern: String,
+    flags: Option<String>,
+}
+
+impl Pattern {
+    pub fn new(pattern: String, flags: Option<String>) -> Self {
+        Pattern { pattern, flags }
+    }
+
+    pub fn pattern(&self) -> &String {
+        &self.pattern
+    }
+
+    pub fn flags(&self) -> &Option<String> {
+        &self.flags
+    }
+}
+
+/// The property sh:uniqueLang can be set to true to specify that no pair of
+///  value nodes may use the same language tag.
+///
+/// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct UniqueLang {
+    unique_lang: bool,
+}
+
+impl UniqueLang {
+    pub fn new(unique_lang: bool) -> Self {
+        UniqueLang { unique_lang }
+    }
+
+    pub fn unique_lang(&self) -> bool {
+        self.unique_lang
+    }
+}
+
+/// The condition specified by sh:class is that each value node is a SHACL
+/// instance of a given type.
+///
+/// https://www.w3.org/TR/shacl/#ClassConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Class<R: Rdf> {
+    class_rule: Object<R>,
+}
+
+impl<R: Rdf> Class<R> {
+    pub fn new(class_rule: Object<R>) -> Self {
+        Class { class_rule }
+    }
+
+    pub fn class_rule(&self) -> &Object<R> {
+        &self.class_rule
+    }
+}
+
+/// sh:datatype specifies a condition to be satisfied with regards to the
+/// datatype of each value node.
+///
+/// https://www.w3.org/TR/shacl/#ClassConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Datatype<R: Rdf> {
+    datatype: Predicate<R>,
+}
+
+impl<R: Rdf> Datatype<R> {
+    pub fn new(datatype: Predicate<R>) -> Self {
+        Datatype { datatype }
+    }
+
+    pub fn datatype(&self) -> &Predicate<R> {
+        &self.datatype
+    }
+}
+
+/// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
+/// each value node.
+///
+/// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Nodekind {
+    node_kind: NodeKind,
+}
+
+impl Nodekind {
+    pub fn new(node_kind: NodeKind) -> Self {
+        Nodekind { node_kind }
+    }
+
+    pub fn node_kind(&self) -> &NodeKind {
+        &self.node_kind
+    }
+}
+
+/// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MaxExclusive<R: Rdf> {
+    max_exclusive: Object<R>,
+}
+
+impl<R: Rdf> MaxExclusive<R> {
+    pub fn new(literal: Object<R>) -> Self {
+        MaxExclusive {
+            max_exclusive: literal,
+        }
+    }
+
+    pub fn max_exclusive(&self) -> &Object<R> {
+        &self.max_exclusive
+    }
+}
+
+/// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MaxInclusive<R: Rdf> {
+    max_inclusive: Object<R>,
+}
+
+impl<R: Rdf> MaxInclusive<R> {
+    pub fn new(literal: Object<R>) -> Self {
+        MaxInclusive {
+            max_inclusive: literal,
+        }
+    }
+
+    pub fn max_inclusive(&self) -> &Object<R> {
+        &self.max_inclusive
+    }
+}
+
+/// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MinExclusive<R: Rdf> {
+    min_exclusive: Object<R>,
+}
+
+impl<R: Rdf> MinExclusive<R> {
+    pub fn new(literal: Object<R>) -> Self {
+        MinExclusive {
+            min_exclusive: literal,
+        }
+    }
+
+    pub fn min_exclusive(&self) -> &Object<R> {
+        &self.min_exclusive
+    }
+}
+
+/// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct MinInclusive<R: Rdf> {
+    min_inclusive: Object<R>,
+}
+
+impl<R: Rdf> MinInclusive<R> {
+    pub fn new(literal: Object<R>) -> Self {
+        MinInclusive {
+            min_inclusive: literal,
+        }
+    }
+
+    pub fn min_inclusive(&self) -> &Object<R> {
+        &self.min_inclusive
     }
 }

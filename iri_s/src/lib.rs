@@ -26,7 +26,7 @@ macro_rules! iri {
     (
    $lit: tt
  ) => {
-        $crate::GenericIri::new_unchecked($lit)
+        $crate::GenericIri::new_unchecked($lit.to_string())
     };
 }
 

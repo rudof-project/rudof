@@ -24,7 +24,7 @@ pub trait Quad {
 }
 
 pub trait Triple: Display {
-    type Subject: Subject + Eq + Hash + Clone + Display + TryFrom<Self::Term>;
+    type Subject: Subject + Eq + Hash + Clone + Display + Debug + TryFrom<Self::Term>;
     type Iri: Iri + Eq + Hash + Clone + Display + Debug;
     type Term: Term + Eq + Hash + Clone + Display + Debug + From<Self::Subject> + From<Self::Iri>;
 
@@ -59,7 +59,7 @@ pub trait Iri {
 pub trait Term {
     type BlankNode: BlankNode;
     type Iri: Iri;
-    type Literal: Literal + Clone;
+    type Literal: Literal + Clone + Eq + Debug + Hash;
     #[cfg(feature = "rdf-star")]
     type Triple: Triple;
 
