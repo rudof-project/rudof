@@ -207,16 +207,35 @@ impl<T: Triple> Default for GenericGraph<T> {
 mod tests {
     use std::collections::HashSet;
 
+    use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;
     use oxrdf::Subject as OxSubject;
     use oxrdf::Term as OxTerm;
 
     use crate::graph::graph::ReaderMode;
+    use crate::iri;
     use crate::model::mutable_rdf::MutableRdf;
     use crate::model::parse::RdfParse;
+    use crate::model::rdf::Object;
+    use crate::model::rdf::Predicate;
     use crate::model::rdf::Rdf;
     use crate::model::rdf_format::RdfFormat;
+    use crate::model::Iri;
     use crate::model::Triple;
+    use crate::not;
+    use crate::ok;
+    use crate::property_bool;
+    use crate::property_integer;
+    use crate::property_integers;
+    use crate::property_string;
+    use crate::property_value;
+    use crate::rdf_list;
+    use crate::rdf_parser;
+    use crate::satisfy;
+    use crate::set_focus;
+    use crate::ParserResult;
+    use crate::RDFNodeParse;
+    use crate::RDFParseError;
 
     use super::OxGraph;
 
@@ -226,10 +245,70 @@ mod tests {
         :x :p [ :p 1 ].
     "#;
 
-    // const DUMMY_GRAPH_2: &str = r#"
-    //     prefix : <http://example.org/>
-    //     :x :p (1 2).
-    // "#;
+    const DUMMY_GRAPH_2: &str = r#"
+        prefix : <http://example.org/>
+        :x :p (1 2).
+    "#;
+
+    const DUMMY_GRAPH_3: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2, 3, 2 .
+    "#;
+
+    const DUMMY_GRAPH_4: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2, 3 .
+    "#;
+
+    const DUMMY_GRAPH_5: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2 ;
+        :q true .
+    "#;
+
+    const DUMMY_GRAPH_6: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+    "#;
+
+    const DUMMY_GRAPH_7: &str = r#"
+        prefix : <http://example.org/>
+        x :p true .
+    "#;
+
+    const DUMMY_GRAPH_8: &str = r#"
+        prefix : <http://example.org/>
+        :x :p true ;
+        :q 1    .
+    "#;
+
+    const DUMMY_GRAPH_9: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+    "#;
+
+    const DUMMY_GRAPH_10: &str = r#"
+        <http://example.org/>
+        :x :p "1" .
+    "#;
+
+    const DUMMY_GRAPH_11: &str = r#"
+    "#;
+
+    const DUMMY_GRAPH_12: &str = r#"
+    "#;
+
+    const DUMMY_GRAPH_13: &str = r#"
+    "#;
+
+    const DUMMY_GRAPH_14: &str = r#"
+    "#;
+
+    #[derive(Debug, PartialEq)]
+    enum A {
+        Int(isize),
+        Bool(bool),
+    }
 
     fn graph_from_str(s: &str) -> OxGraph {
         OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap()
@@ -270,259 +349,187 @@ mod tests {
         assert_eq!(graph.len(), 1);
     }
 
-    // #[test]
-    // fn test_rdf_list() {
-    //     let graph = graph_from_str(DUMMY_GRAPH_2);
+    #[test]
+    fn test_rdf_list() {
+        let graph = graph_from_str(DUMMY_GRAPH_2);
 
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
 
-    //     let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
-    //     let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
-    //     assert_eq!(
-    //         result,
-    //         vec![
-    //             OxTerm::from(OxLiteral::from(1)),
-    //             OxTerm::from(OxLiteral::from(2))
-    //         ]
-    //     )
-    // }
+        let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
+        let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
 
-    // #[test]
-    // fn test_parser() {
-    //     rdf_parser! {
-    //         fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
-    //         where [
-    //             A: Clone
-    //         ] { Ok(&value.clone()) }
-    //     }
+        assert_eq!(
+            result,
+            vec![
+                OxTerm::from(OxLiteral::from(1)),
+                OxTerm::from(OxLiteral::from(2))
+            ]
+        )
+    }
 
-    //     let graph = graph_from_str("prefix : <http://example.org/>");
-    //     let x = iri!("http://example.org/x");
+    #[test]
+    fn test_parser() {
+        rdf_parser! {
+            fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
+            where [
+                A: Clone
+            ] { Ok(&value.clone()) }
+        }
+        let graph = graph_from_str("prefix : <http://example.org/>");
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
+    }
 
-    //     assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
-    // }
+    #[test]
+    fn test_parser_property_integers() {
+        let graph = graph_from_str(DUMMY_GRAPH_3);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let mut parser = property_integers(&p);
+        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
+    }
 
-    // #[test]
-    // fn test_parser_property_integers() {
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p 1, 2, 3, 2 .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let mut parser = property_integers(&p);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
-    // }
+    #[test]
+    fn test_parser_then_mut() {
+        let graph = graph_from_str(DUMMY_GRAPH_4);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
 
-    // #[test]
-    // fn test_parser_then_mut() {
-    //     use crate::{ok, property_integers, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p 1, 2, 3 .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let mut parser = property_integers(&p).then_mut(move |ns| {
-    //         ns.extend(vec![4, 5]);
-    //         ok(ns)
-    //     });
-    //     assert_eq!(
-    //         parser.parse(&x, graph).unwrap(),
-    //         HashSet::from([1, 2, 3, 4, 5])
-    //     )
-    // }
+        let mut parser = property_integers(&p).then_mut(move |ns| {
+            ns.extend(vec![4, 5]);
+            ok(ns)
+        });
 
-    // #[test]
-    // fn test_parser_or() {
-    //     use crate::{property_bool, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p 1, 2 ;
-    //          :q true .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let q = iri!("http://example.org/q");
-    //     let mut parser = property_bool(&p).or(property_bool(&q));
-    //     assert!(parser.parse(&x, graph).unwrap())
-    // }
+        assert_eq!(
+            parser.parse(&x, graph).unwrap(),
+            HashSet::from([1, 2, 3, 4, 5])
+        )
+    }
 
-    // #[test]
-    // fn test_parser_or_enum_1() {
-    //     #[derive(Debug, PartialEq)]
-    //     enum A {
-    //         Int(isize),
-    //         Bool(bool),
-    //     }
-    //     use crate::{property_bool, property_integer, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p 1 .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let parser_a_bool = property_bool(&p).map(A::Bool);
-    //     let parser_a_int = property_integer(&p).map(A::Int);
-    //     let mut parser = parser_a_int.or(parser_a_bool);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
-    // }
+    #[test]
+    fn test_parser_or() {
+        let graph = graph_from_str(DUMMY_GRAPH_5);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let q = OxNamedNode::new_unchecked("http://example.org/q").as_iri_s();
+        let mut parser = property_bool(&p).or(property_bool(&q));
+        assert!(parser.parse(&x, graph).unwrap())
+    }
 
-    // #[test]
-    // fn test_parser_or_enum_2() {
-    //     #[derive(Debug, PartialEq)]
-    //     enum A {
-    //         Int(isize),
-    //         Bool(bool),
-    //     }
-    //     use crate::{property_bool, property_integer, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p true .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let parser_a_bool = property_bool(&p).map(A::Bool);
-    //     let parser_a_int = property_integer(&p).map(A::Int);
-    //     let mut parser = parser_a_int.or(parser_a_bool);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
-    // }
+    #[test]
+    fn test_parser_or_enum_1() {
+        let graph = graph_from_str(DUMMY_GRAPH_6);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let parser_a_bool = property_bool(&p).map(A::Bool);
+        let parser_a_int = property_integer(&p).map(A::Int);
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
+    }
 
-    // #[test]
-    // fn test_parser_and() {
-    //     use crate::{property_bool, property_integer, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p true ;
-    //          :q 1    .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let q = iri!("http://example.org/q");
-    //     let mut parser = property_bool(&p).and(property_integer(&q));
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
-    // }
+    #[test]
+    fn test_parser_or_enum_2() {
+        let graph = graph_from_str(DUMMY_GRAPH_7);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let parser_a_bool = property_bool(&p).map(A::Bool);
+        let parser_a_int = property_integer(&p).map(A::Int);
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
+    }
 
-    // #[test]
-    // fn test_parser_map() {
-    //     use crate::{property_integer, RDFNodeParse};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p 1 .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     let mut parser = property_integer(&p).map(|n| n + 1);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), 2)
-    // }
+    #[test]
+    fn test_parser_and() {
+        let graph = graph_from_str(DUMMY_GRAPH_8);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let q = OxNamedNode::new_unchecked("http://example.org/q").as_iri_s();
+        let mut parser = property_bool(&p).and(property_integer(&q));
+        assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
+    }
 
-    // #[test]
-    // fn test_parser_and_then() {
-    //     use crate::{property_string, RDFNodeParse, RDFParseError};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p "1" .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
-    //     struct IntConversionError(String);
-    //     fn cnv_int(s: String) -> Result<isize, IntConversionError> {
-    //         s.parse().map_err(|_| IntConversionError(s))
-    //     }
+    #[test]
+    fn test_parser_map() {
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+        let mut parser = property_integer(&p).map(|n| n + 1);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 2)
+    }
 
-    //     impl From<IntConversionError> for RDFParseError {
-    //         fn from(error: IntConversionError) -> RDFParseError {
-    //             RDFParseError::Custom {
-    //                 msg: format!("Int conversion error: {}", error.0),
-    //             }
-    //         }
-    //     }
+    #[test]
+    fn test_parser_and_then() {
+        let graph = graph_from_str(DUMMY_GRAPH_10);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
 
-    //     let mut parser = property_string(&p).and_then(cnv_int);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    // }
+        struct IntConversionError(String);
 
-    // #[test]
-    // fn test_parser_flat_map() {
-    //     use crate::{property_string, PResult, RDFNodeParse, RDFParseError};
-    //     let s = r#"prefix : <http://example.org/>
-    //       :x :p "1" .
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let p = iri!("http://example.org/p");
+        fn cnv_int(s: String) -> Result<isize, IntConversionError> {
+            s.parse().map_err(|_| IntConversionError(s))
+        }
 
-    //     fn cnv_int(s: String) -> PResult<isize> {
-    //         s.parse().map_err(|_| RDFParseError::Custom {
-    //             msg: format!("Error converting {s}"),
-    //         })
-    //     }
+        impl From<IntConversionError> for RDFParseError {
+            fn from(error: IntConversionError) -> RDFParseError {
+                RDFParseError::Custom {
+                    msg: format!("Int conversion error: {}", error.0),
+                }
+            }
+        }
 
-    //     let mut parser = property_string(&p).flat_map(cnv_int);
-    //     assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    // }
+        let mut parser = property_string(&p).and_then(cnv_int);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
+    }
 
-    // #[test]
-    // fn test_rdf_parser_macro() {
-    //     use crate::GenericGraph;
-    //     use crate::{rdf_parser, satisfy, RDFNodeParse, SRDFBasic};
-    //     use iri_s::iri;
+    #[test]
+    fn test_parser_flat_map() {
+        let graph = graph_from_str(DUMMY_GRAPH_10);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
 
-    //     rdf_parser! {
-    //           fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
-    //           where [
-    //           ] {
-    //            let name = format!("is_{term}");
-    //            satisfy(|t| { t == *term }, name.as_str())
-    //           }
-    //     }
+        fn cnv_int(s: String) -> ParserResult<isize> {
+            s.parse().map_err(|_| RDFParseError::Custom {
+                msg: format!("Error converting {s}"),
+            })
+        }
 
-    //     let s = r#"prefix : <http://example.org/>
-    //                :x :p 1.
-    //     "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let term = <GenericGraph as SRDFBasic>::iri_s2term(&x);
-    //     let mut parser = is_term(&term);
-    //     let result = parser.parse(&x, graph);
-    //     assert!(result.is_ok())
-    // }
+        let mut parser = property_string(&p).flat_map(cnv_int);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
+    }
 
-    // #[test]
-    // fn test_not() {
-    //     use crate::GenericGraph;
-    //     use crate::{not, property_value, RDFNodeParse};
-    //     use iri_s::iri;
+    #[test]
+    fn test_rdf_parser_macro() {
+        rdf_parser! {
+              fn is_term['a, RDF](term: &'a Object<RDF>)(RDF) -> ()
+              where [
+              ] {
+                let name = format!("is_{term}");
+                satisfy(|t| { t == *term }, name.as_str())
+              }
+        }
 
-    //     let s = r#"prefix : <http://example.org/>
-    //            :x :p 1 .
-    // "#;
-    //     let graph =
-    //         GenericGraph::from_str(s, &RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    //     let x = iri!("http://example.org/x");
-    //     let q = iri!("http://example.org/q");
-    //     assert!(not(property_value(&q)).parse(&x, graph).is_ok())
-    // }
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let predicate = Predicate::<OxGraph>::new(x.as_str()).unwrap();
+        let term = Object::<OxGraph>::from(predicate);
+        let mut parser = is_term(&term);
+        let result = parser.parse(&x, graph);
+        assert!(result.is_ok())
+    }
 
-    // #[test]
-    // fn test_iri() {
-    //     use crate::GenericGraph;
-    //     use crate::{iri, RDFNodeParse};
-    //     use iri_s::iri;
+    #[test]
+    fn test_not() {
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        let q = OxNamedNode::new_unchecked("http://example.org/q").as_iri_s();
+        assert!(not(property_value(&q)).parse(&x, graph).is_ok())
+    }
 
-    //     let graph = GenericGraph::new();
-    //     let x = iri!("http://example.org/x");
-    //     assert_eq!(iri().parse(&x, graph).unwrap(), x)
-    // }
+    #[test]
+    fn test_iri() {
+        let graph = OxGraph::default();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+        assert_eq!(iri().parse(&x, graph).unwrap(), x)
+    }
 }
