@@ -15,7 +15,7 @@ use crate::model::Term;
 use crate::model::Triple;
 
 pub mod error;
-pub mod graph;
+pub mod oxgraph;
 // pub mod lang;
 // pub mod literal;
 // pub mod numeric_literal;

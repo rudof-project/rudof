@@ -67,29 +67,31 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn instances_of<'a>(
         &'a self,
         object: &'a Object<RDF>,
-    ) -> Result<Vec<Subject<RDF>>, RDFParseError> {
-        let binding = Self::rdf_type();
+    ) -> Result<impl Iterator<Item = Subject<RDF>>, RDFParseError> {
+        let rdf_type = Self::rdf_type();
+
         let triples = match self
             .rdf
-            .triples_matching(None, Some(&binding), Some(object))
+            .triples_matching(None, Some(&rdf_type), Some(object))
         {
             Ok(triples) => triples,
             Err(_) => {
                 return Err(RDFParseError::SRDFError {
-                    err: format!("Error obtaining the triples"),
+                    err: "Error obtaining the triples".to_string(),
                 })
             }
         };
+
         let subjects = triples
             .map(Triple::subj)
             .map(Clone::clone)
             .collect::<Vec<_>>();
-        Ok(subjects)
+
+        Ok(subjects.into_iter())
     }
 
     pub fn instance_of(&self, object: &Object<RDF>) -> Result<Subject<RDF>, RDFParseError> {
-        let binding = self.instances_of(object)?;
-        let mut values = binding.iter();
+        let mut values = self.instances_of(object)?;
         if let Some(value1) = values.next() {
             if let Some(value2) = values.next() {
                 Err(RDFParseError::MoreThanOneInstanceOf {

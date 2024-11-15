@@ -212,7 +212,7 @@ mod tests {
     use oxrdf::Subject as OxSubject;
     use oxrdf::Term as OxTerm;
 
-    use crate::graph::graph::ReaderMode;
+    use crate::graph::oxgraph::ReaderMode;
     use crate::iri;
     use crate::model::mutable_rdf::MutableRdf;
     use crate::model::parse::RdfParse;

@@ -693,7 +693,7 @@ pub fn term<RDF: FocusRdf>() -> Term<RDF> {
     }
 }
 
-impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for Term<RDF> {
+impl<RDF: FocusRdf> RDFNodeParse<RDF> for Term<RDF> {
     type Output = Object<RDF>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Object<RDF>> {
@@ -863,7 +863,7 @@ pub struct PropertyValues<RDF: FocusRdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
-impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValues<RDF> {
+impl<RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValues<RDF> {
     type Output = HashSet<Object<RDF>>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<HashSet<Object<RDF>>> {
@@ -878,12 +878,12 @@ impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValues<RDF> {
             },
             None => return Err(RDFParseError::NoFocusNode),
         };
-        let pred = Predicate::<RDF>::new(self.property.as_str()).into();
+        let pred = Predicate::<RDF>::new(self.property.as_str());
         let triples = match rdf.triples_matching(Some(&subject), Some(&pred), None) {
             Result::Ok(triples) => triples,
             Err(_) => {
                 return Err(RDFParseError::SRDFError {
-                    err: format!("Error obtaining the triples"),
+                    err: "Error obtaining the triples".to_string(),
                 })
             }
         };
@@ -909,7 +909,7 @@ pub struct PropertyValue<RDF: Rdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
-impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValue<RDF> {
+impl<RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValue<RDF> {
     type Output = Object<RDF>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Object<RDF>> {
@@ -1239,7 +1239,7 @@ pub struct GetFocus<RDF: FocusRdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
-impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for GetFocus<RDF> {
+impl<RDF: FocusRdf> RDFNodeParse<RDF> for GetFocus<RDF> {
     type Output = Object<RDF>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Object<RDF>> {
@@ -1277,7 +1277,7 @@ pub struct RDFList<RDF: Rdf> {
     _marker_rdf: PhantomData<RDF>,
 }
 
-impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for RDFList<RDF> {
+impl<RDF: FocusRdf> RDFNodeParse<RDF> for RDFList<RDF> {
     type Output = Vec<Object<RDF>>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Vec<Object<RDF>>> {
@@ -1343,7 +1343,7 @@ where
 
 /// Auxiliary function to parse a node as an RDF list checking that the RDF list
 /// if non-cyclic by collecting a vector of visited terms.
-fn parse_list<'a, RDF: FocusRdf>(
+fn parse_list<RDF: FocusRdf>(
     mut visited: Vec<Object<RDF>>,
     rdf: &mut RDF,
 ) -> Result<Vec<Object<RDF>>, RDFParseError> {
@@ -1625,7 +1625,7 @@ pub fn instances_of<RDF: FocusRdf>(
     subjects_with_property_value::<RDF>(&RDF_TYPE, &iri.into())
 }
 
-pub fn parse_rdf_type<'a, RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = Object<RDF>> {
+pub fn parse_rdf_type<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = Object<RDF>> {
     property_value(&RDF_TYPE)
 }
 
@@ -1672,7 +1672,7 @@ impl<RDF: FocusRdf> RDFNodeParse<RDF> for SubjectsPropertyValue<RDF> {
             Result::Ok(triples) => triples,
             Err(_) => {
                 return Err(RDFParseError::SRDFError {
-                    err: format!("Error obtaining the triples"),
+                    err: "Error obtaining the triples".to_string(),
                 })
             }
         };

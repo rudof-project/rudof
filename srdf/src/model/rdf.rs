@@ -12,6 +12,9 @@ pub type Subject<R> = <<R as Rdf>::Triple as Triple>::Subject;
 pub type Predicate<R> = <<R as Rdf>::Triple as Triple>::Iri;
 pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
 
+pub type OutgoinArcs<R> = HashMap<Predicate<R>, HashSet<Object<R>>>;
+pub type IncomingArcs<R> = HashMap<Predicate<R>, HashSet<Subject<R>>>;
+
 /// This trait provides methods to handle Simple RDF graphs.
 ///
 /// * Finding the triples provided a given pattern
@@ -28,21 +31,21 @@ pub trait Rdf {
         object: Option<&'a Object<Self>>,
     ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error>;
 
-    fn triples<'a>(&'a self) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+    fn triples(&self) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         self.triples_matching(None, None, None)
     }
 
-    fn subjects<'a>(&'a self) -> Result<impl Iterator<Item = &Subject<Self>>, Self::Error> {
+    fn subjects(&self) -> Result<impl Iterator<Item = &Subject<Self>>, Self::Error> {
         let subjects = self.triples()?.map(Triple::subj);
         Ok(subjects)
     }
 
-    fn predicates<'a>(&'a self) -> Result<impl Iterator<Item = &Predicate<Self>>, Self::Error> {
+    fn predicates(&self) -> Result<impl Iterator<Item = &Predicate<Self>>, Self::Error> {
         let predicates = self.triples()?.map(Triple::pred);
         Ok(predicates)
     }
 
-    fn objects<'a>(&'a self) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
+    fn objects(&self) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
         let objects = self.triples()?.map(Triple::obj);
         Ok(objects)
     }
@@ -76,10 +79,7 @@ pub trait Rdf {
         Ok(objects)
     }
 
-    fn outgoing_arcs<'a>(
-        &'a self,
-        subject: &Subject<Self>,
-    ) -> Result<HashMap<Predicate<Self>, HashSet<Object<Self>>>, Self::Error> {
+    fn outgoing_arcs(&self, subject: &Subject<Self>) -> Result<OutgoinArcs<Self>, Self::Error> {
         let mut results: HashMap<Predicate<Self>, HashSet<Object<Self>>> = HashMap::new();
         for triple in self.triples_with_subject(subject)? {
             let pred = triple.pred().clone();
@@ -96,10 +96,7 @@ pub trait Rdf {
         Ok(results)
     }
 
-    fn incoming_arcs<'a>(
-        &'a self,
-        object: &Object<Self>,
-    ) -> Result<HashMap<Predicate<Self>, HashSet<Subject<Self>>>, Self::Error> {
+    fn incoming_arcs(&self, object: &Object<Self>) -> Result<IncomingArcs<Self>, Self::Error> {
         let mut results: HashMap<Predicate<Self>, HashSet<Subject<Self>>> = HashMap::new();
         for triple in self.triples_with_object(object)? {
             let pred = triple.pred().clone();
