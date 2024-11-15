@@ -1,41 +1,44 @@
 use std::collections::HashSet;
+use std::hash::Hash;
+
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
 
 use crate::node_shape::NodeShape;
+use crate::severity::Severity;
+use crate::target::Target;
 use crate::Schema;
 
-use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
-use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
-use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub struct CompiledNodeShape<S: SRDFBasic> {
-    id: S::Term,
-    components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget<S>>,
-    property_shapes: Vec<CompiledShape<S>>,
+pub struct CompiledNodeShape<R: Rdf> {
+    id: Object<R>,
+    components: Vec<CompiledComponent<R>>,
+    targets: Vec<Target<R>>,
+    property_shapes: Vec<CompiledShape<R>>,
     closed: bool,
-    // ignored_properties: Vec<S::IRI>,
+    // ignored_properties: Vec<R::IRI>,
     deactivated: bool,
     // message: MessageMap,
-    severity: Option<CompiledSeverity<S>>,
+    severity: Option<Severity<R>>,
     // name: MessageMap,
     // description: MessageMap,
-    // group: S::Term,
-    // source_iri: S::IRI,
+    // group: Object<R>,
+    // source_iri: R::IRI,
 }
 
-impl<S: SRDFBasic> CompiledNodeShape<S> {
+impl<R: Rdf> CompiledNodeShape<R> {
     pub fn new(
-        id: S::Term,
-        components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget<S>>,
-        property_shapes: Vec<CompiledShape<S>>,
+        id: Object<R>,
+        components: Vec<CompiledComponent<R>>,
+        targets: Vec<Target<R>>,
+        property_shapes: Vec<CompiledShape<R>>,
         closed: bool,
         deactivated: bool,
-        severity: Option<CompiledSeverity<S>>,
+        severity: Option<Severity<R>>,
     ) -> Self {
         CompiledNodeShape {
             id,
@@ -48,7 +51,7 @@ impl<S: SRDFBasic> CompiledNodeShape<S> {
         }
     }
 
-    pub fn id(&self) -> &S::Term {
+    pub fn id(&self) -> &Object<R> {
         &self.id
     }
 
@@ -56,22 +59,22 @@ impl<S: SRDFBasic> CompiledNodeShape<S> {
         &self.deactivated
     }
 
-    pub fn severity(&self) -> &CompiledSeverity<S> {
+    pub fn severity(&self) -> &Severity<R> {
         match &self.severity {
             Some(severity) => severity,
-            None => &CompiledSeverity::Violation,
+            None => &Severity::Violation,
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent<S>> {
+    pub fn components(&self) -> &Vec<CompiledComponent<R>> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
+    pub fn targets(&self) -> &Vec<Target<R>> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn property_shapes(&self) -> &Vec<CompiledShape<R>> {
         &self.property_shapes
     }
 
@@ -80,24 +83,16 @@ impl<S: SRDFBasic> CompiledNodeShape<S> {
     }
 }
 
-impl<S: SRDFBasic> CompiledNodeShape<S> {
-    pub fn compile(shape: Box<NodeShape>, schema: &Schema) -> Result<Self, CompiledShaclError> {
-        let id = S::object_as_term(shape.id());
-        let closed = shape.is_closed().to_owned();
-        let deactivated = shape.is_deactivated().to_owned();
-        let severity = CompiledSeverity::compile(shape.severity())?;
-
+impl<R: Rdf + Eq + Hash + Clone> CompiledNodeShape<R> {
+    pub fn compile(
+        shape: Box<NodeShape<R>>,
+        schema: &Schema<R>,
+    ) -> Result<Self, CompiledShaclError> {
         let components = shape.components().iter().collect::<HashSet<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
             let component = CompiledComponent::compile(component.to_owned(), schema)?;
             compiled_components.push(component);
-        }
-
-        let mut targets = Vec::new();
-        for target in shape.targets() {
-            let ans = CompiledTarget::compile(target.to_owned())?;
-            targets.push(ans);
         }
 
         let mut property_shapes = Vec::new();
@@ -107,13 +102,13 @@ impl<S: SRDFBasic> CompiledNodeShape<S> {
         }
 
         let compiled_node_shape = CompiledNodeShape::new(
-            id,
+            shape.id().clone(),
             compiled_components,
-            targets,
+            shape.targets().clone(),
             property_shapes,
-            closed,
-            deactivated,
-            severity,
+            shape.closed().clone(),
+            shape.is_deactivated().clone(),
+            Some(shape.severity().clone()),
         );
 
         Ok(compiled_node_shape)

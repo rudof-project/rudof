@@ -1,8 +1,4 @@
-// use oxiri::IriParseError;
-use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ast::shacl_parser_error::ShaclParserError;
 use srdf::RDFParseError;
-use srdf::SRDFGraphError;
 use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -17,14 +13,8 @@ pub enum ValidateError {
     TargetNodeBlankNode,
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
-    #[error("Error when working with the SRDFGraph, {}", ._0)] // TODO: move to store
-    Graph(#[from] SRDFGraphError),
-    #[error("Error when parsing the SHACL Graph, {}", ._0)] // TODO: move to store
-    ShaclParser(#[from] ShaclParserError),
     #[error("Error during the constraint evaluation")]
     Constraint(#[from] ConstraintError),
-    // #[error("Error parsing the IRI")]
-    //IriParse(#[from] IriParseError),
     #[error("Error during some I/O operation")]
     IO(#[from] std::io::Error),
     #[error("Error loading the Shapes")]
@@ -39,8 +29,6 @@ pub enum ValidateError {
     UnsupportedMode(String),
     #[error(transparent)]
     SrdfHelper(#[from] SRDFError),
-    #[error("Error during the compilation of the Schema, {}", ._0)] // TODO: move to store
-    CompiledShacl(#[from] CompiledShaclError),
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
 }

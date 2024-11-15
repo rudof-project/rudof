@@ -4,7 +4,6 @@ use srdf::model::rdf::Rdf;
 use super::component::Component;
 use super::severity::Severity;
 use super::shacl_path::SHACLPath;
-use super::shape::Shape;
 use super::target::Target;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -102,9 +101,9 @@ impl<R: Rdf> PropertyShape<R> {
         &self.closed
     }
 
-    // pub fn path(&self) -> &SHACLPath {
-    //     &self.path
-    // }
+    pub fn path(&self) -> &SHACLPath<R::Triple> {
+        &self.path
+    }
 
     pub fn is_deactivated(&self) -> &bool {
         &self.deactivated

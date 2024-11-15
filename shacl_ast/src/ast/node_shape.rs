@@ -3,7 +3,6 @@ use srdf::model::rdf::Rdf;
 
 use super::component::Component;
 use super::severity::Severity;
-use super::shape::Shape;
 use super::target::Target;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

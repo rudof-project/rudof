@@ -1,10 +1,10 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 
-use api::model::rdf::NamedNode;
-use api::model::rdf::Predicate;
-use api::model::rdf::Rdf;
-use api::model::Subject;
 use prefixmap::PrefixMap;
+use srdf::model::rdf::Predicate;
+use srdf::model::rdf::Rdf;
+use srdf::model::rdf::Subject;
 
 use crate::Schema;
 
@@ -17,15 +17,15 @@ pub struct CompiledSchema<R: Rdf> {
     // entailments: Vec<IriS>,
     shapes: HashMap<Subject<R>, CompiledShape<R>>,
     prefixmap: PrefixMap,
-    base: Option<NamedNode<R>>,
+    base: Option<Predicate<R>>,
 }
 
-impl<S: SRDFBasic> CompiledSchema<S> {
+impl<R: Rdf> CompiledSchema<R> {
     pub fn new(
-        shapes: HashMap<S::Term, CompiledShape<S>>,
+        shapes: HashMap<Subject<R>, CompiledShape<R>>,
         prefixmap: PrefixMap,
-        base: Option<S::IRI>,
-    ) -> CompiledSchema<S> {
+        base: Option<Predicate<R>>,
+    ) -> CompiledSchema<R> {
         CompiledSchema {
             shapes,
             prefixmap,
@@ -37,35 +37,38 @@ impl<S: SRDFBasic> CompiledSchema<S> {
         self.prefixmap.clone()
     }
 
-    pub fn base(&self) -> &Option<S::IRI> {
+    pub fn base(&self) -> &Option<Predicate<R>> {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&S::Term, &CompiledShape<S>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Subject<R>, &CompiledShape<R>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &S::Term) -> Option<&CompiledShape<S>> {
+    pub fn get_shape(&self, sref: &Subject<R>) -> Option<&CompiledShape<R>> {
         self.shapes.get(sref)
     }
 }
 
-impl<S: SRDFBasic> TryFrom<Schema> for CompiledSchema<S> {
+impl<R: Rdf + Eq + Clone + Hash> TryFrom<Schema<R>> for CompiledSchema<R> {
     type Error = CompiledShaclError;
 
-    fn try_from(schema: Schema) -> Result<Self, Self::Error> {
-        let mut shapes = HashMap::default();
+    fn try_from(schema: Schema<R>) -> Result<Self, Self::Error> {
+        let mut shapes: HashMap<Subject<R>, CompiledShape<R>> = HashMap::default();
 
-        for (rdf_node, shape) in schema.iter() {
-            let term = S::object_as_term(rdf_node);
-            let shape = CompiledShape::compile(shape.to_owned(), &schema)?;
+        for (term, shape) in schema.iter() {
+            let term = match term.clone().try_into() {
+                Ok(term) => term,
+                Err(_) => return Err(CompiledShaclError::ShapeIdIsNotValid),
+            };
+            let shape = CompiledShape::compile(shape, &schema)?;
             shapes.insert(term, shape);
         }
 
-        let prefixmap = schema.prefix_map();
-
-        let base = schema.base().map(|base| S::iri_s2iri(&base));
-
-        Ok(CompiledSchema::new(shapes, prefixmap, base))
+        Ok(CompiledSchema::new(
+            shapes,
+            schema.prefix_map(),
+            schema.base().clone(),
+        ))
     }
 }

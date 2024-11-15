@@ -15,6 +15,7 @@ edition.workspace = true
 rdf-star = [] # TODO: API with the rdf-star feature
 
 [dependencies]
+srdf = { workspace = true }
 shacl_ast = { workspace = true }
 prefixmap = { workspace = true } # TODO: is this necessary?
 

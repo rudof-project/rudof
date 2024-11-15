@@ -8,4 +8,6 @@ pub enum CompiledShaclError {
     ShapeNotFound,
     #[error("Could not convert to Literal")]
     LiteralConversion,
+    #[error("Erro: the ID of the shape is not valid")]
+    ShapeIdIsNotValid,
 }

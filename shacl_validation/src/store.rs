@@ -1,13 +1,13 @@
-use srdf::SRDFBasic;
-use srdf::SRDFGraph;
+use srdf::model::rdf::Rdf;
+use srdf::oxgraph::OxGraph;
 
-pub struct Store<S: SRDFBasic> {
-    store: S,
-    subset: Option<SRDFGraph>,
+pub struct Store<R: Rdf> {
+    store: R,
+    subset: Option<OxGraph>,
 }
 
-impl<S: SRDFBasic> Store<S> {
-    pub fn new(srdf: S, is_subsetting: bool) -> Self {
+impl<R: Rdf> Store<R> {
+    pub fn new(srdf: R, is_subsetting: bool) -> Self {
         Self {
             store: srdf,
             subset: match is_subsetting {
@@ -17,7 +17,7 @@ impl<S: SRDFBasic> Store<S> {
         }
     }
 
-    pub fn inner_store(&self) -> &S {
+    pub fn inner_store(&self) -> &R {
         &self.store
     }
 }
