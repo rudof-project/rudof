@@ -6,6 +6,7 @@ use srdf::model::rdf::Literal;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
+use value::Value;
 use vocab::*;
 
 use crate::component::Component;
@@ -51,35 +52,34 @@ impl<R: Rdf> CompiledComponent<R> {
         schema: &Schema<R>,
     ) -> Result<Self, CompiledShaclError> {
         let component = match component {
-            Component::Class(class) => class.into(),
-            Component::Datatype(data_type) => data_type.into(),
-            Component::NodeKind(node_kind) => node_kind.into(),
-            Component::MinCount(min_count) => min_count.into(),
-            Component::MaxCount(count) => count.into(),
-            Component::MinExclusive(lit) => lit.into(),
-            Component::MaxExclusive(lit) => lit.into(),
-            Component::MinInclusive(lit) => lit.into(),
-            Component::MaxInclusive(lit) => lit.into(),
-            Component::MinLength(length) => length.into(),
-            Component::MaxLength(length) => length.into(),
-            Component::Pattern(pattern) => pattern.into(),
-            Component::UniqueLang(lang) => lang.into(),
-            Component::LanguageIn(langs) => langs.into(),
-            Component::Equals(iri_ref) => iri_ref.into(),
-            Component::Disjoint(iri_ref) => iri_ref.into(),
-            Component::LessThan(iri_ref) => iri_ref.into(),
-            Component::LessThanOrEquals(iri_ref) => iri_ref.into(),
+            Component::Class(class) => CompiledComponent::Class(class.into()),
+            Component::Datatype(data_type) => CompiledComponent::Datatype(data_type.into()),
+            Component::NodeKind(node_kind) => CompiledComponent::NodeKind(node_kind.into()),
+            Component::MinCount(min_count) => CompiledComponent::MinCount(min_count.into()),
+            Component::MaxCount(max_count) => CompiledComponent::MaxCount(max_count.into()),
+            Component::MinExclusive(lit) => CompiledComponent::MinExclusive(lit.into()),
+            Component::MaxExclusive(lit) => CompiledComponent::MaxExclusive(lit.into()),
+            Component::MinInclusive(lit) => CompiledComponent::MinInclusive(lit.into()),
+            Component::MaxInclusive(lit) => CompiledComponent::MaxInclusive(lit.into()),
+            Component::MinLength(length) => CompiledComponent::MinLength(length.into()),
+            Component::MaxLength(length) => CompiledComponent::MaxLength(length.into()),
+            Component::Pattern(pattern) => CompiledComponent::Pattern(pattern.into()),
+            Component::UniqueLang(lang) => CompiledComponent::UniqueLang(lang.into()),
+            Component::LanguageIn(langs) => CompiledComponent::LanguageIn(langs.into()),
+            Component::Equals(iri_ref) => CompiledComponent::Equals(iri_ref.into()),
+            Component::Disjoint(iri_ref) => CompiledComponent::Disjoint(iri_ref.into()),
+            Component::LessThan(iri_ref) => CompiledComponent::LessThan(iri_ref.into()),
+            Component::LessThanOrEquals(lte) => CompiledComponent::LessThanOrEquals(lte.into()),
             Component::Or(or) => or.into(),
             Component::And(and) => and.into(),
             Component::Not(not) => not.into(),
             Component::Xone(xone) => xone.into(),
-            Component::Closed(closed) => closed.into(),
+            Component::Closed(closed) => CompiledComponent::Closed(closed.into()),
             Component::Node(node) => node.into(),
-            Component::HasValue(has_value) => has_value.into(),
-            Component::In(i) => i.into(),
+            Component::HasValue(has_value) => CompiledComponent::HasValue(has_value.into()),
+            Component::In(i) => CompiledComponent::In(i.into()),
             Component::QualifiedValueShape(qvs) => qvs.into(),
         };
-
         Ok(component)
     }
 }
@@ -107,6 +107,12 @@ impl MaxCount {
     }
 }
 
+impl From<ast::component::MaxCount> for MaxCount {
+    fn from(value: ast::component::MaxCount) -> Self {
+        MaxCount::new(value.max_count())
+    }
+}
+
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
 /// condition. If the minimum cardinality value is 0 then this constraint is
 /// always satisfied and so may be omitted.
@@ -116,18 +122,22 @@ impl MaxCount {
 ///   validation result.
 #[derive(Debug)]
 pub struct MinCount {
-    min_count: usize,
+    min_count: isize,
 }
 
 impl MinCount {
     pub fn new(min_count: isize) -> Self {
-        MinCount {
-            min_count: min_count as usize,
-        }
+        MinCount { min_count }
     }
 
-    pub fn min_count(&self) -> usize {
+    pub fn min_count(&self) -> isize {
         self.min_count
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -244,22 +254,34 @@ impl<R: Rdf> Closed<R> {
     }
 }
 
+impl<R: Rdf> From<ast::component::Closed<R>> for Closed<R> {
+    fn from(value: ast::component::Closed<R>) -> Self {
+        Closed::new(value.is_closed(), value.ignored_properties().to_vec())
+    }
+}
+
 /// sh:hasValue specifies the condition that at least one value node is equal to
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug)]
 pub struct HasValue<R: Rdf> {
-    value: Object<R>,
+    value: Value<R::Triple>,
 }
 
 impl<R: Rdf> HasValue<R> {
-    pub fn new(value: Object<R>) -> Self {
+    pub fn new(value: Value<R::Triple>) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &Object<R> {
+    pub fn value(&self) -> &Value<R::Triple> {
         &self.value
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -269,16 +291,22 @@ impl<R: Rdf> HasValue<R> {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug)]
 pub struct In<R: Rdf> {
-    values: Vec<Object<R>>,
+    values: Vec<Value<R::Triple>>,
 }
 
 impl<R: Rdf> In<R> {
-    pub fn new(values: Vec<Object<R>>) -> Self {
+    pub fn new(values: Vec<Value<R::Triple>>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<Object<R>> {
+    pub fn values(&self) -> &Vec<Value<R::Triple>> {
         &self.values
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -302,6 +330,12 @@ impl<R: Rdf> Disjoint<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:equals specifies the condition that the set of all value nodes is equal
 /// to the set of objects of the triples that have the focus node as subject and
 /// the value of sh:equals as predicate.
@@ -319,6 +353,12 @@ impl<R: Rdf> Equals<R> {
 
     pub fn iri_ref(&self) -> &Predicate<R> {
         &self.iri_ref
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -344,6 +384,12 @@ impl<R: Rdf> LessThanOrEquals<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:lessThan specifies the condition that each value node is smaller than all
 /// the objects of the triples that have the focus node as subject and the
 /// value of sh:lessThan as predicate.
@@ -361,6 +407,12 @@ impl<R: Rdf> LessThan<R> {
 
     pub fn iri_ref(&self) -> &Predicate<R> {
         &self.iri_ref
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -450,6 +502,12 @@ impl<R: Rdf> LanguageIn<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:maxLength specifies the maximum string length of each value node that
 /// satisfies the condition. This can be applied to any literals and IRIs, but
 /// not to blank nodes.
@@ -470,6 +528,12 @@ impl MaxLength {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:minLength specifies the minimum string length of each value node that
 /// satisfies the condition. This can be applied to any literals and IRIs, but
 /// not to blank nodes.
@@ -487,6 +551,12 @@ impl MinLength {
 
     pub fn min_length(&self) -> isize {
         self.min_length
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -514,6 +584,12 @@ impl Pattern {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// The property sh:uniqueLang can be set to true to specify that no pair of
 ///  value nodes may use the same language tag.
 ///
@@ -530,6 +606,12 @@ impl UniqueLang {
 
     pub fn unique_lang(&self) -> bool {
         self.unique_lang
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -552,6 +634,12 @@ impl<R: Rdf> Class<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:datatype specifies a condition to be satisfied with regards to the
 /// datatype of each value node.
 ///
@@ -571,6 +659,12 @@ impl<R: Rdf> Datatype<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
 ///
@@ -587,6 +681,12 @@ impl Nodekind {
 
     pub fn node_kind(&self) -> &NodeKind {
         &self.node_kind
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 
@@ -626,6 +726,12 @@ impl<R: Rdf> MaxInclusive<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug)]
 pub struct MinExclusive<R: Rdf> {
@@ -644,6 +750,12 @@ impl<R: Rdf> MinExclusive<R> {
     }
 }
 
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug)]
 pub struct MinInclusive<R: Rdf> {
@@ -659,6 +771,12 @@ impl<R: Rdf> MinInclusive<R> {
 
     pub fn min_inclusive(&self) -> &Object<R> {
         &self.min_inclusive
+    }
+}
+
+impl From<ast::component::MinCount> for MinCount {
+    fn from(value: ast::component::MinCount) -> Self {
+        MinCount::new(value.min_count())
     }
 }
 

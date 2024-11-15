@@ -122,17 +122,15 @@ impl<R: Rdf> From<Component<R>> for IriS {
 ///   validation result.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MaxCount {
-    max_count: usize,
+    max_count: isize,
 }
 
 impl MaxCount {
     pub fn new(max_count: isize) -> Self {
-        MaxCount {
-            max_count: max_count as usize,
-        }
+        MaxCount { max_count }
     }
 
-    pub fn max_count(&self) -> usize {
+    pub fn max_count(&self) -> isize {
         self.max_count
     }
 }
@@ -152,17 +150,15 @@ impl Display for MaxCount {
 ///   validation result.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MinCount {
-    min_count: usize,
+    min_count: isize,
 }
 
 impl MinCount {
     pub fn new(min_count: isize) -> Self {
-        MinCount {
-            min_count: min_count as usize,
-        }
+        MinCount { min_count }
     }
 
-    pub fn min_count(&self) -> usize {
+    pub fn min_count(&self) -> isize {
         self.min_count
     }
 }
