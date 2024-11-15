@@ -1880,7 +1880,7 @@ impl<'p, P> ByRef<'p, P> {
     }
 }
 
-impl<'p, RDF, P, O> RDFNodeParse<RDF> for ByRef<'p, P>
+impl<RDF, P, O> RDFNodeParse<RDF> for ByRef<'_, P>
 where
     RDF: FocusRdf,
     P: RDFNodeParse<RDF, Output = O>,
