@@ -323,7 +323,7 @@ fn property_shape<'a, R: FocusRdf + Clone>(
     optional(has_type(SH_PROPERTY_SHAPE.clone()))
         .with(
             id().and(path())
-                .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
+                .then(|(id, path)| ok(&PropertyShape::new(id, path))),
         )
         .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
         .then(|ps| {
@@ -348,10 +348,10 @@ fn property_shape_components<R: FocusRdf + Clone>(
     components().flat_map(move |cs| Ok(ps.clone().with_components(cs)))
 }
 
-fn node_shape<R: FocusRdf>() -> impl RDFNodeParse<R, Output = NodeShape<R>> {
+fn node_shape<R: FocusRdf + Clone>() -> impl RDFNodeParse<R, Output = NodeShape<R>> {
     not(property_values_non_empty(&SH_PATH)).with(
         term()
-            .then(move |t: Object<R>| ok(&NodeShape::new(id)))
+            .then(move |t: Object<R>| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ps| {
                 optional(closed()).flat_map(move |c| {
@@ -381,8 +381,7 @@ fn parse_xone_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R
 }
 
 fn cnv_xone_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
-    let shapes: Vec<_> = ls.iter().collect();
-    Ok(Component::Xone(Xone::new(shapes)))
+    Ok(Component::Xone(Xone::new(ls)))
 }
 
 fn parse_and_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
@@ -390,8 +389,7 @@ fn parse_and_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>
 }
 
 fn cnv_and_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
-    let shapes: Vec<_> = ls.iter().collect();
-    Ok(Component::And(And::new(shapes)))
+    Ok(Component::And(And::new(ls)))
 }
 
 fn parse_not_value<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>> {
@@ -415,12 +413,11 @@ fn parse_or_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Component<R>>
 }
 
 fn cnv_or_list<R: Rdf>(ls: Vec<Object<R>>) -> ParserResult<Component<R>> {
-    let shapes: Vec<_> = ls.iter().collect();
-    Ok(Component::Or(Or::new(shapes)))
+    Ok(Component::Or(Or::new(ls)))
 }
 
 fn id<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Object<R>> {
-    term().then(|t: Object<R>| ok(&id))
+    term().then(|t: Object<R>| ok(&t))
 }
 
 /// Parses the property value of the focus node as a SHACL path

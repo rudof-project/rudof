@@ -12,7 +12,6 @@ use srdf::model::Literal as _;
 use crate::node_kind::NodeKind;
 use crate::vocab::*;
 
-use super::shape::Shape;
 use super::value::Value;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -180,26 +179,22 @@ impl Display for MinCount {
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct And<R: Rdf> {
-    shapes: Vec<Shape<R>>,
+    shapes: Vec<Object<R>>,
 }
 
 impl<R: Rdf> And<R> {
-    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+    pub fn new(shapes: Vec<Object<R>>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<R>> {
+    pub fn shapes(&self) -> &Vec<Object<R>> {
         &self.shapes
     }
 }
 
 impl<R: Rdf> Display for And<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{0}",
-            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
-        )
+        write!(f, "{0}", self.shapes.iter().map(|s| s).join(" "))
     }
 }
 
@@ -209,22 +204,22 @@ impl<R: Rdf> Display for And<R> {
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Not<R: Rdf> {
-    shape: Shape<R>,
+    shape: Object<R>,
 }
 
 impl<R: Rdf> Not<R> {
-    pub fn new(shape: Shape<R>) -> Self {
+    pub fn new(shape: Object<R>) -> Self {
         Not { shape }
     }
 
-    pub fn shape(&self) -> &Shape<R> {
+    pub fn shape(&self) -> &Object<R> {
         &self.shape
     }
 }
 
 impl<R: Rdf> Display for Not<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{0}", self.shape.id().to_string())
+        write!(f, "{0}", self.shape)
     }
 }
 
@@ -236,26 +231,22 @@ impl<R: Rdf> Display for Not<R> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Or<R: Rdf> {
-    shapes: Vec<Shape<R>>,
+    shapes: Vec<Object<R>>,
 }
 
 impl<R: Rdf> Or<R> {
-    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+    pub fn new(shapes: Vec<Object<R>>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<R>> {
+    pub fn shapes(&self) -> &Vec<Object<R>> {
         &self.shapes
     }
 }
 
 impl<R: Rdf> Display for Or<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{0}",
-            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
-        )
+        write!(f, "{0}", self.shapes.iter().map(|s| s).join(" "))
     }
 }
 
@@ -266,26 +257,22 @@ impl<R: Rdf> Display for Or<R> {
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Xone<R: Rdf> {
-    shapes: Vec<Shape<R>>,
+    shapes: Vec<Object<R>>,
 }
 
 impl<R: Rdf> Xone<R> {
-    pub fn new(shapes: Vec<Shape<R>>) -> Self {
+    pub fn new(shapes: Vec<Object<R>>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<Shape<R>> {
+    pub fn shapes(&self) -> &Vec<Object<R>> {
         &self.shapes
     }
 }
 
 impl<R: Rdf> Display for Xone<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{0}",
-            self.shapes.iter().map(|s| s.id().to_string()).join(" ")
-        )
+        write!(f, "{0}", self.shapes.iter().map(|s| s).join(" "))
     }
 }
 
@@ -329,10 +316,7 @@ impl<R: Rdf> Display for Closed<R> {
             f,
             "is closed? {}, [{}]",
             self.is_closed,
-            self.ignored_properties()
-                .iter()
-                .map(|s| s.to_string())
-                .join(" - ")
+            self.ignored_properties().iter().map(|s| s).join(" - ")
         )
     }
 }
@@ -383,11 +367,7 @@ impl<R: Rdf> In<R> {
 
 impl<R: Rdf> Display for In<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.values().iter().map(|s| s.to_string()).join(" - ")
-        )
+        write!(f, "{}", self.values().iter().map(|s| s).join(" - "))
     }
 }
 
@@ -503,22 +483,22 @@ impl<R: Rdf> Display for LessThan<R> {
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Node<R: Rdf> {
-    shape: Shape<R>,
+    shape: Object<R>,
 }
 
 impl<R: Rdf> Node<R> {
-    pub fn new(shape: Shape<R>) -> Self {
+    pub fn new(shape: Object<R>) -> Self {
         Node { shape }
     }
 
-    pub fn shape(&self) -> &Shape<R> {
+    pub fn shape(&self) -> &Object<R> {
         &self.shape
     }
 }
 
 impl<R: Rdf> Display for Node<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{0}", self.shape.id())
+        write!(f, "{0}", self.shape)
     }
 }
 
@@ -532,7 +512,7 @@ impl<R: Rdf> Display for Node<R> {
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QualifiedValueShape<R: Rdf> {
-    shape: Shape<R>,
+    shape: Object<R>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
@@ -540,7 +520,7 @@ pub struct QualifiedValueShape<R: Rdf> {
 
 impl<R: Rdf> QualifiedValueShape<R> {
     pub fn new(
-        shape: Shape<R>,
+        shape: Object<R>,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
@@ -553,7 +533,7 @@ impl<R: Rdf> QualifiedValueShape<R> {
         }
     }
 
-    pub fn shape(&self) -> &Shape<R> {
+    pub fn shape(&self) -> &Object<R> {
         &self.shape
     }
 
@@ -572,7 +552,7 @@ impl<R: Rdf> QualifiedValueShape<R> {
 
 impl<R: Rdf> Display for QualifiedValueShape<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "shape: {0}, qualified_min_count: {1:?}, qualified_max_count: {2:?}, qualified_value_shapes_disjoint: {3:?}", self.shape.id(), self.qualified_max_count, self.qualified_min_count, self.qualified_value_shapes_disjoint)
+        write!(f, "shape: {0}, qualified_min_count: {1:?}, qualified_max_count: {2:?}, qualified_value_shapes_disjoint: {3:?}", self.shape, self.qualified_max_count, self.qualified_min_count, self.qualified_value_shapes_disjoint)
     }
 }
 
@@ -736,7 +716,7 @@ impl<R: Rdf> Class<R> {
 
 impl<R: Rdf> Display for Class<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.class_rule.to_string())
+        write!(f, "{}", self.class_rule)
     }
 }
 

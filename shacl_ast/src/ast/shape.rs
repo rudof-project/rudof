@@ -44,7 +44,7 @@ impl<R: Rdf> Shape<R> {
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<Shape<R>> {
+    pub fn property_shapes(&self) -> &Vec<Object<R>> {
         match self {
             Shape::NodeShape(ns) => ns.property_shapes(),
             Shape::PropertyShape(ps) => ps.property_shapes(),

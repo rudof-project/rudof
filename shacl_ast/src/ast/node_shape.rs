@@ -11,7 +11,7 @@ pub struct NodeShape<R: Rdf> {
     id: Object<R>,
     components: Vec<Component<R>>,
     targets: Vec<Target<R>>,
-    property_shapes: Vec<Shape<R>>,
+    property_shapes: Vec<Object<R>>,
     closed: bool,
     // ignored_properties: Vec<R::IRI>,
     deactivated: bool,
@@ -51,7 +51,7 @@ impl<R: Rdf> NodeShape<R> {
         self.targets = targets;
     }
 
-    pub fn with_property_shapes(mut self, property_shapes: Vec<Shape<R>>) -> Self {
+    pub fn with_property_shapes(mut self, property_shapes: Vec<Object<R>>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
@@ -89,7 +89,7 @@ impl<R: Rdf> NodeShape<R> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<Shape<R>> {
+    pub fn property_shapes(&self) -> &Vec<Object<R>> {
         &self.property_shapes
     }
 

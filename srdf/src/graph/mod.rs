@@ -21,8 +21,6 @@ pub mod oxgraph;
 // pub mod numeric_literal;
 // pub mod object;
 pub mod serializer;
-// TODO: move to shacl_ast
-// pub mod shacl_path;
 // pub mod subject;
 // pub mod triple;
 
