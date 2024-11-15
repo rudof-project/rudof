@@ -17,7 +17,6 @@ use crate::model::rdf::Object;
 use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
 use crate::model::rdf::Subject;
-use crate::model::rdf::Triples;
 use crate::model::rdf_format::RdfFormat;
 use crate::model::GraphName;
 use crate::model::Iri;
@@ -118,11 +117,11 @@ impl<T: Triple> Rdf for GenericGraph<T> {
     type Error = GraphError;
 
     fn triples_matching<'a>(
-        &'a self,
+        &self,
         subject: Option<&'a Subject<Self>>,
         predicate: Option<&'a Predicate<Self>>,
         object: Option<&'a Object<Self>>,
-    ) -> Result<Triples<'a, Self>, Self::Error> {
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         let triples = self
             .graph
             .iter()

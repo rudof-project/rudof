@@ -9,6 +9,7 @@ use oxrdf::Triple as OxTriple;
 use crate::model::rdf_format::RdfFormat;
 use crate::model::BlankNode;
 use crate::model::Iri;
+use crate::model::Literal;
 use crate::model::Subject;
 use crate::model::Term;
 use crate::model::Triple;
@@ -172,6 +173,27 @@ impl Term for OxTerm {
 impl BlankNode for OxBlankNode {
     fn label(&self) -> &str {
         self.as_str()
+    }
+}
+
+impl Literal for OxLiteral {
+    fn as_bool(&self) -> Option<bool> {
+        match self.value() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+
+    fn as_string(&self) -> Option<String> {
+        Some(self.value().to_string())
+    }
+
+    fn as_int(&self) -> Option<isize> {
+        match self.value().parse() {
+            Ok(int) => Some(int),
+            Err(_) => None,
+        }
     }
 }
 

@@ -4,15 +4,9 @@ use std::collections::HashSet;
 
 use super::Triple;
 
-type BoxIterator<'a, I> = Box<dyn Iterator<Item = &'a I> + 'a>;
-
-pub type Triples<'a, R> = BoxIterator<'a, <R as Rdf>::Triple>;
-pub type Subject<'a, R> = <<R as Rdf>::Triple as Triple>::Subject;
-pub type Subjects<'a, R> = BoxIterator<'a, Subject<'a, R>>;
-pub type Predicate<'a, R> = <<R as Rdf>::Triple as Triple>::Iri;
-pub type Predicates<'a, R> = BoxIterator<'a, Predicate<'a, R>>;
-pub type Object<'a, R> = <<R as Rdf>::Triple as Triple>::Term;
-pub type Objects<'a, R> = BoxIterator<'a, Object<'a, R>>;
+pub type Subject<R> = <<R as Rdf>::Triple as Triple>::Subject;
+pub type Predicate<R> = <<R as Rdf>::Triple as Triple>::Iri;
+pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
 
 /// This trait provides methods to handle Simple RDF graphs.
 ///
@@ -22,60 +16,64 @@ pub trait Rdf {
     type Triple: Triple;
     type Error;
 
+    // Add explicit lifetime bounds on Iri and Term
     fn triples_matching<'a>(
-        &'a self,
+        &self,
         subject: Option<&'a Subject<Self>>,
         predicate: Option<&'a Predicate<Self>>,
         object: Option<&'a Object<Self>>,
-    ) -> Result<Triples<'a, Self>, Self::Error>;
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error>;
 
-    fn triples(&self) -> Result<Triples<Self>, Self::Error> {
+    fn triples<'a>(&'a self) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         self.triples_matching(None, None, None)
     }
 
-    fn subjects(&self) -> Result<Subjects<Self>, Self::Error> {
+    fn subjects<'a>(&'a self) -> Result<impl Iterator<Item = &Subject<Self>>, Self::Error> {
         let subjects = self.triples()?.map(Triple::subj);
-        Ok(Box::new(subjects))
+        Ok(subjects)
     }
 
-    fn predicates(&self) -> Result<Predicates<Self>, Self::Error> {
+    fn predicates<'a>(&'a self) -> Result<impl Iterator<Item = &Predicate<Self>>, Self::Error> {
         let predicates = self.triples()?.map(Triple::pred);
-        Ok(Box::new(predicates))
+        Ok(predicates)
     }
 
-    fn objects(&self) -> Result<Objects<Self>, Self::Error> {
+    fn objects<'a>(&'a self) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
         let objects = self.triples()?.map(Triple::obj);
-        Ok(Box::new(objects))
+        Ok(objects)
     }
 
     fn triples_with_subject<'a>(
         &'a self,
         subject: &'a Subject<Self>,
-    ) -> Result<Triples<'a, Self>, Self::Error> {
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         self.triples_matching(Some(subject), None, None)
     }
 
     fn triples_with_predicate<'a>(
         &'a self,
         predicate: &'a Predicate<Self>,
-    ) -> Result<Triples<'a, Self>, Self::Error> {
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         self.triples_matching(None, Some(predicate), None)
     }
 
     fn triples_with_object<'a>(
         &'a self,
         object: &'a Object<Self>,
-    ) -> Result<Triples<'a, Self>, Self::Error> {
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
         self.triples_matching(None, None, Some(object))
     }
 
-    fn neighs<'a>(&'a self, node: &'a Subject<Self>) -> Result<Objects<'a, Self>, Self::Error> {
+    fn neighs<'a>(
+        &'a self,
+        node: &'a Subject<Self>,
+    ) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
         let objects = self.triples_with_subject(node)?.map(Triple::obj);
-        Ok(Box::new(objects))
+        Ok(objects)
     }
 
-    fn outgoing_arcs(
-        &self,
+    fn outgoing_arcs<'a>(
+        &'a self,
         subject: &Subject<Self>,
     ) -> Result<HashMap<Predicate<Self>, HashSet<Object<Self>>>, Self::Error> {
         let mut results: HashMap<Predicate<Self>, HashSet<Object<Self>>> = HashMap::new();
@@ -94,8 +92,8 @@ pub trait Rdf {
         Ok(results)
     }
 
-    fn incoming_arcs(
-        &self,
+    fn incoming_arcs<'a>(
+        &'a self,
         object: &Object<Self>,
     ) -> Result<HashMap<Predicate<Self>, HashSet<Subject<Self>>>, Self::Error> {
         let mut results: HashMap<Predicate<Self>, HashSet<Subject<Self>>> = HashMap::new();

@@ -1,8 +1,6 @@
 use iri_s::IriS;
 use thiserror::Error;
 
-use crate::graph::literal::Literal;
-
 #[derive(Debug, Error, PartialEq)]
 pub enum RDFParseError {
     #[error("No focus node")]
@@ -73,7 +71,7 @@ pub enum RDFParseError {
     UnexpectedBNode { term: String },
 
     #[error("Expected IRI but found Literal {lit}")]
-    ExpectedIRIFoundLiteral { lit: Literal },
+    ExpectedIRIFoundLiteral { lit: String },
 
     #[error("Condition {condition_name} failed for node {node}")]
     NodeDoesntSatisfyCondition {

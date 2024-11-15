@@ -13,6 +13,7 @@ repository.workspace = true
 rdf-star = []
 
 [dependencies]
+iri_s = { workspace = true }
 srdf = { workspace = true }
 rbe = { workspace = true }
 prefixmap = { workspace = true }

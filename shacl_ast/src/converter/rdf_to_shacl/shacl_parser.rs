@@ -2,8 +2,8 @@ use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Object, PResult, RDFNode, RDFNodeParse,
-    RDFParseError, RDFParser, SHACLPath, SRDFBasic, Triple, RDF_TYPE,
+    property_values_non_empty, rdf_list, term, FocusRDF, Object, ParserResult, RDFNode,
+    RDFNodeParse, RDFParseError, RDFParser, SHACLPath, SRDFBasic, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -367,7 +367,7 @@ fn parse_xone_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Compone
     rdf_list().flat_map(|ls| cnv_xone_list::<RDF>(ls))
 }
 
-fn cnv_xone_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
+fn cnv_xone_list<RDF>(ls: Vec<RDF::Term>) -> ParserResult<Component>
 where
     RDF: SRDFBasic,
 {
@@ -379,7 +379,7 @@ fn parse_and_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Componen
     rdf_list().flat_map(|ls| cnv_and_list::<RDF>(ls))
 }
 
-fn cnv_and_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
+fn cnv_and_list<RDF>(ls: Vec<RDF::Term>) -> ParserResult<Component>
 where
     RDF: SRDFBasic,
 {
@@ -395,7 +395,7 @@ fn parse_node_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Componen
     term().flat_map(|t| cnv_node::<RDF>(t))
 }
 
-fn cnv_node<RDF>(t: RDF::Term) -> PResult<Component>
+fn cnv_node<RDF>(t: RDF::Term) -> ParserResult<Component>
 where
     RDF: SRDFBasic,
 {
@@ -403,7 +403,7 @@ where
     Ok(Component::Node { shape })
 }
 
-fn cnv_not<RDF>(t: RDF::Term) -> PResult<Component>
+fn cnv_not<RDF>(t: RDF::Term) -> ParserResult<Component>
 where
     RDF: SRDFBasic,
 {
@@ -415,7 +415,7 @@ fn parse_or_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component
     rdf_list().flat_map(|ls| cnv_or_list::<RDF>(ls))
 }
 
-fn cnv_or_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
+fn cnv_or_list<RDF>(ls: Vec<RDF::Term>) -> ParserResult<Component>
 where
     RDF: SRDFBasic,
 {
