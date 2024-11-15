@@ -87,6 +87,7 @@ impl RdfParse for GenericGraph<OxTriple> {
                 (_, Some(b)) => Some(Iri::new(b)),
             };
             let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+            println!("{:?}", prefixes);
             let pm = PrefixMap::from_hashmap(&prefixes)?;
             self.merge_prefixes(pm)?;
         }
@@ -273,7 +274,7 @@ mod tests {
 
     const DUMMY_GRAPH_7: &str = r#"
         prefix : <http://example.org/>
-        x :p true .
+        :x :p true .
     "#;
 
     const DUMMY_GRAPH_8: &str = r#"
@@ -288,20 +289,8 @@ mod tests {
     "#;
 
     const DUMMY_GRAPH_10: &str = r#"
-        <http://example.org/>
+        prefix : <http://example.org/>
         :x :p "1" .
-    "#;
-
-    const DUMMY_GRAPH_11: &str = r#"
-    "#;
-
-    const DUMMY_GRAPH_12: &str = r#"
-    "#;
-
-    const DUMMY_GRAPH_13: &str = r#"
-    "#;
-
-    const DUMMY_GRAPH_14: &str = r#"
     "#;
 
     #[derive(Debug, PartialEq)]
@@ -374,7 +363,7 @@ mod tests {
             fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
             where [
                 A: Clone
-            ] { Ok(&value.clone()) }
+            ] { ok(&value.clone()) }
         }
         let graph = graph_from_str("prefix : <http://example.org/>");
         let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();

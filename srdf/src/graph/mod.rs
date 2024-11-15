@@ -101,7 +101,7 @@ impl Iri for OxIri {
     }
 
     fn as_iri_s(&self) -> IriS {
-        IriS::new_unchecked(self.to_string())
+        IriS::new_unchecked(self.as_ref().as_str().to_string())
     }
 }
 
