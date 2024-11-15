@@ -6,11 +6,13 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMap;
 
+use super::Term;
 use super::Triple;
 
 pub type Subject<R> = <<R as Rdf>::Triple as Triple>::Subject;
 pub type Predicate<R> = <<R as Rdf>::Triple as Triple>::Iri;
 pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
+pub type Literal<T> = <<T as Triple>::Term as Term>::Literal;
 
 pub type OutgoinArcs<R> = HashMap<Predicate<R>, HashSet<Object<R>>>;
 pub type IncomingArcs<R> = HashMap<Predicate<R>, HashSet<Subject<R>>>;

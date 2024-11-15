@@ -10,6 +10,7 @@ pub use crate::rdf_data_config::*;
 // pub use graph::shacl_path::*;
 pub use srdf_parser::*;
 // pub use srdf_sparql::*;
+pub use graph::*;
 pub use vocab::*;
 
 pub mod graph;
@@ -30,25 +31,42 @@ pub mod vocab;
 /// ```
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Rdf, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list};
-/// use srdf::srdf_graph::GenericGraph;
+/// use srdf::rdf_parser;
+/// use srdf::RDFParser;
+/// use srdf::RDF;
+/// use srdf::satisfy;
+/// use srdf::model::parse::ReaderMode;
+/// use srdf::RDFNodeParse;
+/// use srdf::property_value;
+/// use srdf::rdf_list;
+/// use srdf::parse_property_value_as_list;
+/// use srdf::set_focus;
+/// use srdf::oxgraph::OxGraph;
+/// use srdf::model::rdf::Rdf;
+/// use srdf::model::rdf::Object;
+/// use srdf::model::rdf_format::RdfFormat;
+/// use srdf::model::parse::RdfParse;
+/// use oxrdf::NamedNode as OxNamedNode;
+/// use srdf::model::Iri;
 ///
 /// rdf_parser!{
-///       fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
-///       where [
-///       ] {
-///        let name = format!("is_{term}");
-///        satisfy(|t| { t == *term }, name.as_str())
-///       }
+///     fn is_term['a, RDF](term: &'a Object<RDF>)(RDF) -> ()
+///     where [ ]
+///     {
+///         let name = format!("is_{term}");
+///         satisfy(|t| { t == *term }, name.as_str())
+///     }
 /// }
 ///
-/// let s = r#"prefix : <http://example.org/>
-///            :x :p 1.
+/// let s = r#"
+///     prefix : <http://example.org/>
+///     :x :p 1.
 /// "#;
-/// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-/// let x = IriS::new_unchecked("http://example.org/x");
-/// let term = <GenericGraph as SRDFBasic>::iri_s2term(&x);
-/// assert_eq!(is_term(&term).parse(&x, graph).unwrap(), ())
+///
+/// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+/// let x = OxNamedNode::new_unchecked("http://example.org/x".to_string());
+/// let term = x.clone().into();
+/// assert_eq!(is_term(&term).parse(&x.as_iri_s(), graph).unwrap(), ())
 /// ````
 #[macro_export]
 macro_rules! rdf_parser {

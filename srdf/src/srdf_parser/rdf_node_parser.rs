@@ -6,13 +6,14 @@ use std::marker::PhantomData;
 use iri_s::IriS;
 
 use crate::model::focus_rdf::FocusRdf;
+use crate::model::rdf::Literal;
 use crate::model::rdf::Object;
 use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
 use crate::model::rdf::Subject;
 use crate::model::Iri;
-use crate::model::Literal;
-use crate::model::Term as ITerm;
+use crate::model::Literal as _;
+use crate::model::Term as _;
 use crate::model::Triple;
 use crate::rdf_parser;
 use crate::RDF_FIRST;
@@ -57,20 +58,26 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     ///
     /// ```
     /// use iri_s::IriS;
-    /// use srdf::GenericGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, ReaderMode, PResult};
+    /// use srdf::oxgraph::OxGraph;
+    /// use srdf::{RDFNodeParse, RDFParseError, ParserResult};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::Iri;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::property_string;
+    /// use srdf::model::parse::RdfParse;
+    /// use oxrdf::NamedNode as OxNamedNode;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p "1" .
     /// "#;
     ///
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///
-    /// let x = iri!("http://example.org/x");
-    /// let p = iri!("http://example.org/p");
+    /// let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+    /// let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
     ///
-    /// fn cnv_int(s: String) -> PResult<isize> {
+    /// fn cnv_int(s: String) -> ParserResult<isize> {
     ///     s.parse().map_err(|_| RDFParseError::Custom{ msg: format!("Error converting {s}")})
     /// }
     ///
@@ -90,18 +97,24 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// automatically converted to a `RDFParseError`.
     ///
     /// ```
-    /// use iri_s::{IriS, iri};
-    /// use srdf::srdf_graph::GenericGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, RDFParseError, ReaderMode};
+    /// use iri_s::IriS;
+    /// use srdf::oxgraph::OxGraph;
+    /// use srdf::{RDFNodeParse, RDFParseError, property_string};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::Iri;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::parse::RdfParse;
+    /// use oxrdf::NamedNode as OxNamedNode;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p "1" .
     /// "#;
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///
-    /// let x = iri!("http://example.org/x");
-    /// let p = iri!("http://example.org/p");
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    ///
+    /// let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+    /// let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
     ///
     /// struct IntConversionError(String);
     ///
@@ -130,18 +143,25 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// Uses `f` to map over the parsed value.
     ///
     /// ```
-    /// use iri_s::{IriS, iri};
-    /// use srdf::srdf_graph::GenericGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_integer};
+    /// use iri_s::IriS;
+    /// use srdf::oxgraph::OxGraph;
+    /// use srdf::{RDFNodeParse, property_integer};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::Iri;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::parse::RdfParse;
+    /// use oxrdf::NamedNode as OxNamedNode;
+    /// use srdf::property_string;
+    ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p 1 .
     /// "#;
     ///
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    /// let p = iri!("http://example.org/p");
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    /// let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
     /// let mut parser = property_integer(&p).map(|n| n + 1);
-    /// assert_eq!(parser.parse(&iri!("http://example.org/x"), graph).unwrap(), 2)
+    /// assert_eq!(parser.parse(&OxNamedNode::new_unchecked("http://example.org/x").as_iri_s(), graph).unwrap(), 2)
     /// ```
     fn map<F, B>(self, f: F) -> Map<Self, F>
     where
@@ -156,19 +176,23 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     ///
     /// ```
     /// use iri_s::IriS;
-    /// use srdf::srdf_graph::GenericGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_bool, property_integer};
+    /// use srdf::oxgraph::OxGraph;
+    /// use srdf::{RDFNodeParse, property_bool, property_integer};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::parse::RdfParse;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p true ;
     ///     :q 1    .
     /// "#;
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///
-    /// let x = IriS::new_unchecked("http://example.org/x");
-    /// let p = IriS::new_unchecked("http://example.org/p");
-    /// let q = IriS::new_unchecked("http://example.org/q");
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    ///
+    /// let x = IriS::new_unchecked("http://example.org/x".to_string());
+    /// let p = IriS::new_unchecked("http://example.org/p".to_string());
+    /// let q = IriS::new_unchecked("http://example.org/q".to_string());
     ///
     /// let mut parser = property_bool(&p).and(property_integer(&q));
     /// assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
@@ -208,20 +232,23 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     ///
     /// ```
     /// use iri_s::IriS;
-    /// use srdf::srdf_graph::GenericGraph;
+    /// use srdf::oxgraph::OxGraph;
     /// use oxrdf::Term;
     /// use std::collections::HashSet;
-    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, ok, property_integers};
+    /// use srdf::{RDFNodeParse, ok, property_integers};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::parse::RdfParse;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p 1, 2, 3 .
     /// "#;
     ///
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///
-    /// let x = IriS::new_unchecked("http://example.org/x");
-    /// let p = IriS::new_unchecked("http://example.org/p");
+    /// let x = IriS::new_unchecked("http://example.org/x".to_string());
+    /// let p = IriS::new_unchecked("http://example.org/p".to_string());
     ///
     /// let mut parser = property_integers(&p).then_mut(
     ///     move |ns| {
@@ -245,19 +272,24 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     ///
     /// ```
     /// use iri_s::IriS;
-    /// use srdf::srdf_graph::GenericGraph;
-    /// use srdf::{RDFNodeParse, RDFFormat, ReaderMode, property_bool};
+    /// use srdf::oxgraph::OxGraph;
+    /// use srdf::{RDFNodeParse, property_bool};
+    /// use srdf::model::parse::ReaderMode;
     /// use std::collections::HashSet;
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::parse::RdfParse;
+    ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p 1, 2 ;
     ///     :q true .
     /// "#;
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///
-    /// let x = IriS::new_unchecked("http://example.org/x");
-    /// let p = IriS::new_unchecked("http://example.org/p");
-    /// let q = IriS::new_unchecked("http://example.org/q");
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    ///
+    /// let x = IriS::new_unchecked("http://example.org/x".to_string());
+    /// let p = IriS::new_unchecked("http://example.org/p".to_string());
+    /// let q = IriS::new_unchecked("http://example.org/q".to_string());
     ///
     /// let mut parser = property_bool(&p).or(property_bool(&q));
     /// assert_eq!(parser.parse(&x, graph).unwrap(), true)
@@ -282,17 +314,23 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     ///
     /// ```
     /// use iri_s::IriS;
-    /// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRdf, ReaderMode, satisfy, RDFNodeParse, Rdf, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
-    /// use srdf::srdf_graph::GenericGraph;
+    /// use srdf::oxgraph::OxGraph;
+    /// use oxrdf::Term;
+    /// use std::collections::HashSet;
+    /// use srdf::{RDFNodeParse, ok, property_integers};
+    /// use srdf::model::rdf_format::RdfFormat;
+    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::parse::RdfParse;
+    /// use srdf::property_value;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
     ///     :x :p :y .
     /// "#;
     ///
-    /// let mut graph = GenericGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    /// let p = IriS::new_unchecked("http://example.org/p");
-    /// let x = IriS::new_unchecked("http://example.org/x");
+    /// let mut graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+    /// let p = IriS::new_unchecked("http://example.org/p".to_string());
+    /// let x = IriS::new_unchecked("http://example.org/x".to_string());
     /// assert_eq!(property_value(&p).with(ok(&1)).parse(&x, graph).unwrap(), 1)
     /// ```
     fn with<P, A>(self, parser: P) -> With<Self, P>
@@ -605,12 +643,15 @@ where
 ///
 /// ## Example:
 /// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::GenericGraph;
-/// use srdf::{literal, not, RDFFormat, RDFNodeParse};
+/// use iri_s::IriS;
+/// use srdf::oxgraph::OxGraph;
+/// use srdf::{literal, not, RDFNodeParse};
+/// use oxrdf::NamedNode as OxNamedNode;
+/// use srdf::model::rdf_format::RdfFormat;
+/// use srdf::model::Iri;
 ///
-/// let graph = GenericGraph::new();
-/// let x = iri!("http://example.org/x");
+/// let graph = OxGraph::default();
+/// let x = OxNamedNode::new_unchecked("http://example.org/x".to_string()).as_iri_s();
 /// assert_eq!(not(literal()).parse(&x, graph).unwrap(), ())
 /// ```
 pub fn not<RDF, P>(parser: P) -> Not<P>
@@ -646,11 +687,14 @@ where
 
 /// Checks if the focus node is an IRI
 /// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::{GenericGraph, iri, RDFNodeParse};
+/// use iri_s::IriS;
+/// use srdf::{iri, RDFNodeParse};
+/// use srdf::oxgraph::OxGraph;
+/// use oxrdf::NamedNode as OxNamedNode;
+/// use crate::srdf::model::Iri;
 ///
-/// let graph = GenericGraph::new();
-/// let x = iri!("http://example.org/x");
+/// let graph = OxGraph::default();
+/// let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
 /// assert_eq!(iri().parse(&x, graph).unwrap(), x)
 /// ```
 pub fn iri<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = IriS> {
@@ -664,14 +708,17 @@ pub fn iri<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = IriS> {
 
 /// Checks if the focus node is an IRI
 /// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::{GenericGraph, iri, RDFNodeParse};
+/// use iri_s::IriS;
+/// use srdf::{iri, RDFNodeParse};
+/// use srdf::oxgraph::OxGraph;
+/// use oxrdf::NamedNode as OxNamedNode;
+/// use crate::srdf::model::Iri;
 ///
-/// let graph = GenericGraph::new();
-/// let x = iri!("http://example.org/x");
+/// let graph = OxGraph::default();
+/// let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
 /// assert_eq!(iri().parse(&x, graph).unwrap(), x)
 /// ```
-pub fn literal<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = impl Literal> {
+pub fn literal<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = Literal<RDF::Triple>> {
     term().flat_map(|ref t: Object<RDF>| match t.as_literal() {
         Some(literal) => Ok(literal.to_owned()),
         None => Err(RDFParseError::ExpectedLiteral {
@@ -1204,22 +1251,33 @@ pub fn bool<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = bool> {
 /// Parses the current focus node as an RDF List
 ///
 /// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::GenericGraph;
-/// use srdf::{property_value, then, RDFFormat, ReaderMode, RDFNodeParse, rdf_list, set_focus};
+/// use iri_s::IriS;
+/// use srdf::oxgraph::OxGraph;
+/// use srdf::{property_value, then, RDFNodeParse, rdf_list, set_focus};
 /// use oxrdf::{Literal, Term};
-
+/// use srdf::model::rdf_format::RdfFormat;
+/// use srdf::model::Iri;
+/// use srdf::model::parse::ReaderMode;
+/// use srdf::model::parse::RdfParse;
+/// use oxrdf::NamedNode as OxNamedNode;
+///
 /// let s = r#"prefix : <http://example.org/>
 ///  :x :p (1 2).
 /// "#;
-/// let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-/// let x = iri!("http://example.org/x");
-/// let p = iri!("http://example.org/p");
+///
+/// let graph = OxGraph::from_str(s, RdfFormat::Turtle, None, &ReaderMode::default()).unwrap();
+///
+/// let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
+/// let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
+///
 /// let mut parser = property_value(&p).then(move |obj| {
 ///   set_focus(&obj).with(rdf_list())
 /// });
-/// assert_eq!(parser.parse(&x, graph).unwrap(),
-///   vec![Term::from(Literal::from(1)), Term::from(Literal::from(2))])
+///
+/// assert_eq!(
+///     parser.parse(&x, graph).unwrap(),
+///     vec![Term::from(Literal::from(1)), Term::from(Literal::from(2))]
+/// )
 /// ````
 pub fn rdf_list<RDF: Rdf>() -> RDFList<RDF> {
     RDFList {
@@ -1448,7 +1506,7 @@ where
 //     })
 // }
 
-/*fn term_as_iri_s<RDF>(term: &Object<RDF>) -> PResult<IriS>
+/*fn term_as_iri_s<RDF>(term: &Object<RDF>) -> ParserResult<IriS>
 where
     RDF: FocusRdf,
 {
