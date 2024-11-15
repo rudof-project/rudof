@@ -13,6 +13,7 @@ use crate::node_kind::NodeKind;
 use crate::vocab::*;
 
 use super::shape::Shape;
+use super::value::Value;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Component<R: Rdf> {
@@ -342,15 +343,15 @@ impl<R: Rdf> Display for Closed<R> {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct HasValue<R: Rdf> {
-    value: Object<R>,
+    value: Value<R::Triple>,
 }
 
 impl<R: Rdf> HasValue<R> {
-    pub fn new(value: Object<R>) -> Self {
+    pub fn new(value: Value<R::Triple>) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &Object<R> {
+    pub fn value(&self) -> &Value<R::Triple> {
         &self.value
     }
 }
@@ -367,15 +368,15 @@ impl<R: Rdf> Display for HasValue<R> {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct In<R: Rdf> {
-    values: Vec<Object<R>>,
+    values: Vec<Value<R::Triple>>,
 }
 
 impl<R: Rdf> In<R> {
-    pub fn new(values: Vec<Object<R>>) -> Self {
+    pub fn new(values: Vec<Value<R::Triple>>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<Object<R>> {
+    pub fn values(&self) -> &Vec<Value<R::Triple>> {
         &self.values
     }
 }

@@ -1,16 +1,17 @@
 use std::fmt::Display;
 
+use srdf::model::rdf::Iri;
 use srdf::model::rdf::Literal;
 use srdf::model::Triple;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value<T: Triple> {
-    Iri(T::Iri),
+    Iri(Iri<T>),
     Literal(Literal<T>),
 }
 
 impl<T: Triple> Value<T> {
-    pub fn iri(iri: T::Iri) -> Value<T> {
+    pub fn iri(iri: Iri<T>) -> Value<T> {
         Value::Iri(iri)
     }
 

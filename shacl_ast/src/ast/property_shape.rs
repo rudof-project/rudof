@@ -3,13 +3,14 @@ use srdf::model::rdf::Rdf;
 
 use super::component::Component;
 use super::severity::Severity;
+use super::shacl_path::SHACLPath;
 use super::shape::Shape;
 use super::target::Target;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PropertyShape<R: Rdf> {
     id: Object<R>,
-    // path: SHACLPath,
+    path: SHACLPath<R::Triple>,
     components: Vec<Component<R>>,
     targets: Vec<Target<R>>,
     property_shapes: Vec<Shape<R>>,
@@ -27,27 +28,70 @@ pub struct PropertyShape<R: Rdf> {
 }
 
 impl<R: Rdf> PropertyShape<R> {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        id: Object<R>,
-        // path: SHACLPath,
-        components: Vec<Component<R>>,
-        targets: Vec<Target<R>>,
-        property_shapes: Vec<Shape<R>>,
-        closed: bool,
-        deactivated: bool,
-        severity: Option<Severity<R>>,
-    ) -> Self {
+    pub fn new(id: Object<R>, path: SHACLPath<R::Triple>) -> Self {
         PropertyShape {
             id,
-            // path,
-            components,
-            targets,
-            property_shapes,
-            closed,
-            deactivated,
-            severity,
+            path,
+            components: Vec::new(),
+            targets: Vec::new(),
+            property_shapes: Vec::new(),
+            closed: false,
+            // ignored_properties: Vec::new(),
+            deactivated: false,
+            // message: MessageMap::new(),
+            severity: None,
+            // name: MessageMap::new(),
+            // description: MessageMap::new(),
+            // order: None,
+            // group: None,
+            // source_iri: None,
+            // annotations: Vec::new()
         }
+    }
+
+    // pub fn with_name(mut self, name: MessageMap) -> Self {
+    //     self.name = name;
+    //     self
+    // }
+
+    // pub fn with_description(mut self, description: MessageMap) -> Self {
+    //     self.description = description;
+    //     self
+    // }
+
+    // pub fn with_order(mut self, order: Option<NumericLiteral>) -> Self {
+    //     self.order = order;
+    //     self
+    // }
+
+    // pub fn with_group(mut self, group: Option<RDFNode>) -> Self {
+    //     self.group = group;
+    //     self
+    // }
+
+    pub fn with_targets(mut self, targets: Vec<Target<R>>) -> Self {
+        self.targets = targets;
+        self
+    }
+
+    pub fn with_property_shapes(mut self, property_shapes: Vec<Shape<R>>) -> Self {
+        self.property_shapes = property_shapes;
+        self
+    }
+
+    pub fn with_components(mut self, components: Vec<Component<R>>) -> Self {
+        self.components = components;
+        self
+    }
+
+    pub fn with_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
+    }
+
+    pub fn with_severity(mut self, severity: Option<Severity<R>>) -> Self {
+        self.severity = severity;
+        self
     }
 
     pub fn id(&self) -> &Object<R> {

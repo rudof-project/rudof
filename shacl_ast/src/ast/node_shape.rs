@@ -24,24 +24,46 @@ pub struct NodeShape<R: Rdf> {
 }
 
 impl<R: Rdf> NodeShape<R> {
-    pub fn new(
-        id: Object<R>,
-        components: Vec<Component<R>>,
-        targets: Vec<Target<R>>,
-        property_shapes: Vec<Shape<R>>,
-        closed: bool,
-        deactivated: bool,
-        severity: Option<Severity<R>>,
-    ) -> Self {
+    pub fn new(id: Object<R>) -> Self {
         NodeShape {
             id,
-            components,
-            targets,
-            property_shapes,
-            closed,
-            deactivated,
-            severity,
+            components: Vec::new(),
+            targets: Vec::new(),
+            property_shapes: Vec::new(),
+            closed: false,
+            // ignored_properties: Vec::new(),
+            deactivated: false,
+            // message: MessageMap::new(),
+            severity: None,
+            // name: MessageMap::new(),
+            // description: MessageMap::new(),
+            // group: None,
+            // source_iri: None,
         }
+    }
+
+    pub fn with_targets(mut self, targets: Vec<Target<R>>) -> Self {
+        self.targets = targets;
+        self
+    }
+
+    pub fn set_targets(&mut self, targets: Vec<Target<R>>) {
+        self.targets = targets;
+    }
+
+    pub fn with_property_shapes(mut self, property_shapes: Vec<Shape<R>>) -> Self {
+        self.property_shapes = property_shapes;
+        self
+    }
+
+    pub fn with_components(mut self, components: Vec<Component<R>>) -> Self {
+        self.components = components;
+        self
+    }
+
+    pub fn with_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
     }
 
     pub fn id(&self) -> &Object<R> {

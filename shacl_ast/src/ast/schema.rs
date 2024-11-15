@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use prefixmap::PrefixMap;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::Subject;
 
 use super::shape::Shape;
 
@@ -11,22 +11,25 @@ use super::shape::Shape;
 pub struct Schema<R: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<Subject<R>, Shape<R>>,
+    shapes: HashMap<Object<R>, Shape<R>>,
     prefixmap: PrefixMap,
     base: Option<Predicate<R>>,
 }
 
 impl<R: Rdf> Schema<R> {
-    pub fn new(
-        shapes: HashMap<Subject<R>, Shape<R>>,
-        prefixmap: PrefixMap,
-        base: Option<Predicate<R>>,
-    ) -> Schema<R> {
-        Schema {
-            shapes,
-            prefixmap,
-            base,
-        }
+    pub fn with_shapes(mut self, shapes: HashMap<Object<R>, Shape<R>>) -> Self {
+        self.shapes = shapes;
+        self
+    }
+
+    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
+        self.prefixmap = prefixmap;
+        self
+    }
+
+    pub fn with_base(mut self, base: Option<Predicate<R>>) -> Self {
+        self.base = base;
+        self
     }
 
     pub fn prefix_map(&self) -> PrefixMap {
@@ -37,11 +40,11 @@ impl<R: Rdf> Schema<R> {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&Subject<R>, &Shape<R>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Object<R>, &Shape<R>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &Subject<R>) -> Option<&Shape<R>> {
+    pub fn get_shape(&self, sref: &Object<R>) -> Option<&Shape<R>> {
         self.shapes.get(sref)
     }
 }

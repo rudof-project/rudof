@@ -6,6 +6,7 @@ pub mod property_shape;
 pub mod schema;
 pub mod severity;
 pub mod shacl_error;
+pub mod shacl_path;
 pub mod shape;
 pub mod target;
 pub mod value;

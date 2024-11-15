@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::hash::Hash;
 
 use prefixmap::PrefixMap;
 
@@ -13,6 +14,7 @@ pub type Subject<R> = <<R as Rdf>::Triple as Triple>::Subject;
 pub type Predicate<R> = <<R as Rdf>::Triple as Triple>::Iri;
 pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
 pub type Literal<T> = <<T as Triple>::Term as Term>::Literal;
+pub type Iri<T> = <<T as Triple>::Term as Term>::Iri;
 
 pub type OutgoinArcs<R> = HashMap<Predicate<R>, HashSet<Object<R>>>;
 pub type IncomingArcs<R> = HashMap<Predicate<R>, HashSet<Subject<R>>>;
@@ -22,7 +24,7 @@ pub type IncomingArcs<R> = HashMap<Predicate<R>, HashSet<Subject<R>>>;
 /// * Finding the triples provided a given pattern
 /// * Obtaining the neighborhood of a node
 pub trait Rdf {
-    type Triple: Triple;
+    type Triple: Triple + Clone + Debug + Eq + Hash;
     type Error: Display + Debug;
 
     // Add explicit lifetime bounds on Iri and Term

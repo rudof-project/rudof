@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::io::Read;
 
@@ -113,7 +114,7 @@ impl RdfParse for GenericGraph<OxTriple> {
     }
 }
 
-impl<T: Triple> Rdf for GenericGraph<T> {
+impl<T: Triple + Clone + Debug + Eq + Hash> Rdf for GenericGraph<T> {
     type Triple = T;
     type Error = GraphError;
 
@@ -147,7 +148,7 @@ impl<T: Triple> Rdf for GenericGraph<T> {
     }
 }
 
-impl<T: Triple + Eq + Hash> MutableRdf for GenericGraph<T> {
+impl<T: Triple + Clone + Debug + Eq + Hash> MutableRdf for GenericGraph<T> {
     type MutableRdfError = MutableGraphError;
 
     fn add_triple(
@@ -180,7 +181,7 @@ impl<T: Triple + Eq + Hash> MutableRdf for GenericGraph<T> {
     }
 }
 
-impl<T: Triple> FocusRdf for GenericGraph<T> {
+impl<T: Triple + Clone + Debug + Eq + Hash> FocusRdf for GenericGraph<T> {
     fn set_focus(&mut self, focus: Object<Self>) {
         self.focus = Some(focus);
     }
