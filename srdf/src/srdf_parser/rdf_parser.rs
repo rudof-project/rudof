@@ -9,6 +9,7 @@ use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
 use crate::model::rdf::Subject;
 use crate::model::Iri;
+use crate::model::Term;
 use crate::model::Triple;
 use crate::RDF_TYPE;
 
@@ -66,7 +67,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn instances_of<'a>(
         &'a self,
         object: &'a Object<RDF>,
-    ) -> Result<impl Iterator<Item = Subject<RDF>> + '_, RDFParseError> {
+    ) -> Result<Vec<Subject<RDF>>, RDFParseError> {
         let binding = Self::rdf_type();
         let triples = match self
             .rdf
@@ -75,16 +76,20 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
             Ok(triples) => triples,
             Err(_) => {
                 return Err(RDFParseError::SRDFError {
-                    err: format!("Could not retrieve the triples"),
+                    err: format!("Error obtaining the triples"),
                 })
             }
         };
-        let subjects = triples.map(|triple| triple.subj().to_owned());
+        let subjects = triples
+            .map(Triple::subj)
+            .map(Clone::clone)
+            .collect::<Vec<_>>();
         Ok(subjects)
     }
 
     pub fn instance_of(&self, object: &Object<RDF>) -> Result<Subject<RDF>, RDFParseError> {
-        let mut values = self.instances_of(object)?;
+        let binding = self.instances_of(object)?;
+        let mut values = binding.iter();
         if let Some(value1) = values.next() {
             if let Some(value2) = values.next() {
                 Err(RDFParseError::MoreThanOneInstanceOf {
@@ -94,7 +99,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
                 })
             } else {
                 // Only one value
-                Ok(value1)
+                Ok(value1.clone())
             }
         } else {
             Err(RDFParseError::NoInstancesOf {
@@ -122,18 +127,22 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     }
 
     pub fn term_as_iri(term: &Object<RDF>) -> Result<IriS, RDFParseError> {
-        let obj = RDF::term_as_object(term);
-        match obj {
-            Object::Iri(iri) => Ok(iri),
-            Object::BlankNode(bnode) => Err(RDFParseError::ExpectedIRIFoundBNode { bnode }),
-            Object::Literal(lit) => Err(RDFParseError::ExpectedIRIFoundLiteral { lit }),
+        match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
+            (true, false, false) => Ok(term.as_iri().unwrap().as_iri_s()),
+            (false, true, false) => Err(RDFParseError::ExpectedIRIFoundBNode {
+                bnode: term.to_string(),
+            }),
+            (false, false, true) => Err(RDFParseError::ExpectedIRIFoundLiteral {
+                lit: term.to_string(),
+            }),
+            _ => unreachable!(),
         }
     }
 
     pub fn term_as_subject(term: &Object<RDF>) -> Result<Subject<RDF>, RDFParseError> {
-        match term.clone().into() {
-            Some(subj) => Ok(subj),
-            None => Err(RDFParseError::ExpectedSubject {
+        match term.clone().try_into() {
+            Ok(subj) => Ok(subj),
+            Err(_) => Err(RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
             }),
         }

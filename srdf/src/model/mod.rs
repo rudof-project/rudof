@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
 
@@ -23,9 +24,9 @@ pub trait Quad {
 }
 
 pub trait Triple: Display {
-    type Subject: Subject + Eq + Hash + Clone + TryFrom<Self::Term>;
-    type Iri: Iri + Eq + Hash + Clone;
-    type Term: Term + Eq + Hash + Clone + From<Self::Subject> + From<Self::Iri> + Display;
+    type Subject: Subject + Eq + Hash + Clone + Display + TryFrom<Self::Term>;
+    type Iri: Iri + Eq + Hash + Clone + Display + Debug;
+    type Term: Term + Eq + Hash + Clone + Display + Debug + From<Self::Subject> + From<Self::Iri>;
 
     fn new(subj: Self::Subject, pred: Self::Iri, obj: Self::Term) -> Self;
     fn subj(&self) -> &Self::Subject;

@@ -1,6 +1,10 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt::Debug;
+use std::fmt::Display;
+
+use prefixmap::PrefixMap;
 
 use super::Triple;
 
@@ -14,7 +18,7 @@ pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
 /// * Obtaining the neighborhood of a node
 pub trait Rdf {
     type Triple: Triple;
-    type Error;
+    type Error: Display + Debug;
 
     // Add explicit lifetime bounds on Iri and Term
     fn triples_matching<'a>(
@@ -111,4 +115,6 @@ pub trait Rdf {
         }
         Ok(results)
     }
+
+    fn prefixmap(&self) -> Option<PrefixMap>;
 }

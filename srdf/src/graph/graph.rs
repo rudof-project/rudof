@@ -140,6 +140,10 @@ impl<T: Triple> Rdf for GenericGraph<T> {
 
         Ok(Box::new(triples))
     }
+
+    fn prefixmap(&self) -> Option<PrefixMap> {
+        Some(self.pm.clone())
+    }
 }
 
 impl<T: Triple + Eq + Hash> MutableRdf for GenericGraph<T> {

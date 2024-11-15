@@ -13,6 +13,7 @@ use crate::model::rdf::Subject;
 use crate::model::Iri;
 use crate::model::Literal;
 use crate::model::Term as ITerm;
+use crate::model::Triple;
 use crate::rdf_parser;
 use crate::RDF_FIRST;
 use crate::RDF_NIL;
@@ -866,13 +867,30 @@ impl<'a, RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValues<RDF> {
     type Output = HashSet<Object<RDF>>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<HashSet<Object<RDF>>> {
-        let subject = rdf.get_focus();
+        let subject = match rdf.get_focus() {
+            Some(focus) => match focus.clone().try_into() {
+                Ok(subject) => subject,
+                Err(_) => {
+                    return Err(RDFParseError::ExpectedFocusAsSubject {
+                        focus: focus.to_string(),
+                    })
+                }
+            },
+            None => return Err(RDFParseError::NoFocusNode),
+        };
         let pred = Predicate::<RDF>::new(self.property.as_str()).into();
-        let values = rdf
-            .objects_for_subject_predicate(&subject, &pred)
-            .map_err(|e| RDFParseError::SRDFError {
-                err: format!("{e}"),
-            })?;
+        let triples = match rdf.triples_matching(Some(&subject), Some(&pred), None) {
+            Result::Ok(triples) => triples,
+            Err(_) => {
+                return Err(RDFParseError::SRDFError {
+                    err: format!("Error obtaining the triples"),
+                })
+            }
+        };
+        let values = triples
+            .map(Triple::obj)
+            .map(Clone::clone)
+            .collect::<HashSet<_>>();
         Ok(values)
     }
 }
@@ -952,7 +970,7 @@ impl<RDF: FocusRdf + Debug> RDFNodeParse<RDF> for PropertyValueDebug<RDF> {
         let focus_node_str = match rdf.get_focus() {
             None => "No focus node".to_string(),
             Some(focus_node) => {
-                format!("{focus_node:?}")
+                format!("{focus_node}")
             }
         };
         let outgoing_arcs = p.parse_impl(rdf)?;
@@ -963,8 +981,8 @@ impl<RDF: FocusRdf + Debug> RDFNodeParse<RDF> for PropertyValueDebug<RDF> {
                     Err(RDFParseError::MoreThanOneValuePredicate {
                         node: focus_node_str.to_string(),
                         pred: format!("{}", self.property),
-                        value1: format!("{value1:?}"),
-                        value2: format!("{value2:?}"),
+                        value1: format!("{value1}"),
+                        value2: format!("{value2}"),
                     })
                 } else {
                     Ok(value1.clone())
@@ -1006,7 +1024,14 @@ impl<RDF: FocusRdf> RDFNodeParse<RDF> for Neighs<RDF> {
     ) -> ParserResult<HashMap<Predicate<RDF>, HashSet<Object<RDF>>>> {
         match rdf.get_focus() {
             Some(focus) => {
-                let subj = Subject::<RDF>::into(focus.to_owned());
+                let subj = match focus.clone().try_into() {
+                    Ok(subject) => subject,
+                    Err(_) => {
+                        return Err(RDFParseError::ExpectedSubject {
+                            node: format!("{focus}"),
+                        })
+                    }
+                };
                 rdf.outgoing_arcs(&subj).map_err(|e| RDFParseError::Custom {
                     msg: format!("Error obtaining outgoing arcs from {focus}: {e}"),
                 })
@@ -1626,9 +1651,8 @@ pub fn subjects_with_property_value<RDF: FocusRdf>(
     property: &IriS,
     value: &Object<RDF>,
 ) -> SubjectsPropertyValue<RDF> {
-    let iri = property.as_iri();
     SubjectsPropertyValue {
-        property: iri,
+        property: Predicate::<RDF>::new(property.as_str()),
         value: value.clone(),
         _marker_rdf: PhantomData,
     }
@@ -1644,18 +1668,19 @@ impl<RDF: FocusRdf> RDFNodeParse<RDF> for SubjectsPropertyValue<RDF> {
     type Output = Vec<Subject<RDF>>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Vec<Subject<RDF>>> {
-        let subjects = rdf
-            .subjects_with_predicate_object(&self.property, &self.value)
-            .map_err(|e| RDFParseError::ErrorSubjectsPredicateObject {
-                property: format!("{}", self.property),
-                value: format!("{}", self.value),
-                err: e.to_string(),
-            })?;
-        let mut result = Vec::new();
-        for s in subjects {
-            result.push(s)
-        }
-        Ok(result)
+        let triples = match rdf.triples_matching(None, Some(&self.property), Some(&self.value)) {
+            Result::Ok(triples) => triples,
+            Err(_) => {
+                return Err(RDFParseError::SRDFError {
+                    err: format!("Error obtaining the triples"),
+                })
+            }
+        };
+        let subjects = triples
+            .map(Triple::subj)
+            .map(Clone::clone)
+            .collect::<Vec<_>>();
+        Ok(subjects)
     }
 }
 
