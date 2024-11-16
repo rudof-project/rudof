@@ -5,11 +5,13 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Literal as _;
 use srdf::model::Term;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::engine::Engine;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::helpers::constraint::validate_sparql_ask;
 use crate::store::Store;
@@ -18,12 +20,13 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf> NativeValidator<R> for MaxLength {
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MaxLength {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
         shape: &CompiledShape<R>,
-        _: &Store<R>,
+        store: &Store<R>,
+        engine: E,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
@@ -50,7 +53,7 @@ impl<R: Rdf> NativeValidator<R> for MaxLength {
     }
 }
 
-impl<S: Sparql> SparqlValidator<S> for MaxLength {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -61,7 +64,7 @@ impl<S: Sparql> SparqlValidator<S> for MaxLength {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let max_length_value = self.max_length();
 
-        let query = |value_node: &S::Term| {
+        let query = |value_node: &Object<S>| {
             formatdoc! {
                 " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
                 value_node, max_length_value

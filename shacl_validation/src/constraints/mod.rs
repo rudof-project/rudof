@@ -1,44 +1,31 @@
-use std::fmt::Debug;
-
+use crate::engine::native::NativeEngine;
+use crate::engine::Engine;
+use crate::store::Store;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodes;
+use crate::Subsetting;
 use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 
-use crate::engine::Engine;
-use crate::store::Store;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
-use crate::Subsetting;
-
 pub mod constraint_error;
 pub mod core;
 
-pub trait Validator<S: SRDFBasic + Debug> {
-    fn validate(
-        &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &Store<S>,
-        engine: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
-        subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult<R>>, ConstraintError>;
-}
-
-pub trait NativeValidator<R: Rdf> {
+pub trait NativeValidator<R: Rdf, E: Engine<R>> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
         shape: &CompiledShape<R>,
         store: &Store<R>,
+        engine: E,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError>;
 }
 
-pub trait SparqlValidator<S: Sparql> {
+pub trait SparqlValidator<S: Rdf + Sparql> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -65,8 +52,8 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<R: Rdf> NativeDeref for CompiledComponent<R> {
-    type Target = dyn NativeValidator<R>;
+impl<R: Rdf + 'static> NativeDeref for CompiledComponent<R> {
+    type Target = dyn NativeValidator<R, NativeEngine>;
 
     generate_deref_fn!(
         CompiledComponent,
@@ -106,7 +93,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: Sparql> SparqlDeref for CompiledComponent<S> {
+impl<S: Rdf + Sparql + 'static> SparqlDeref for CompiledComponent<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(

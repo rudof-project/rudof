@@ -30,12 +30,9 @@ fn apply<R: Rdf, I: IterationStrategy<R>>(
             if let Ok(condition) = evaluator(target) {
                 // if the condition is met --> Result
                 if condition {
-                    let focus = R::term_as_object(focus_node);
                     let component = RDFNode::iri(component.into());
-                    let severity = R::term_as_object(&shape.severity());
-                    let source = Some(R::term_as_object(&shape.id().to_owned()));
-                    let result = ValidationResult::new(focus, component, severity);
-                    return Some(result.with_source(source));
+                    let result = ValidationResult::new(focus_node, component, &shape.severity());
+                    return Some(result.with_source(Some(shape.id().clone())));
                 }
                 // if the condition is not met, the target passes :D
                 else if *subsetting != Subsetting::None {
@@ -67,7 +64,7 @@ pub fn validate_native_with_strategy<R: Rdf, I: IterationStrategy<R>>(
     )
 }
 
-pub fn validate_sparql_ask<R: Sparql>(
+pub fn validate_sparql_ask<R: Rdf + Sparql>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     store: &Store<R>,
@@ -80,7 +77,7 @@ pub fn validate_sparql_ask<R: Sparql>(
         shape,
         value_nodes,
         ValueNodeIteration,
-        |value_node| match store.inner_store().query_ask(&query(value_node)) {
+        |value_node| match store.inner_store().ask(&query(value_node)) {
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },

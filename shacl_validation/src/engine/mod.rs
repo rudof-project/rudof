@@ -1,6 +1,11 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ast::shacl_path::SHACLPath;
+use shacl_ast::target::Target;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
+use srdf::model::rdf::Rdf;
 
 use crate::focus_nodes::FocusNodes;
 use crate::store::Store;
@@ -12,40 +17,40 @@ use crate::Subsetting;
 pub mod native;
 pub mod sparql;
 
-pub trait Engine<S: SRDFBasic> {
+pub trait Engine<R: Rdf> {
     fn evaluate(
         &self,
-        store: &Store<S>,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
-        value_nodes: &ValueNodes<S>,
+        store: &Store<R>,
+        shape: &CompiledShape<R>,
+        component: &CompiledComponent<R>,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ValidateError>;
 
     fn focus_nodes(
         &self,
-        store: &Store<S>,
-        shape: &CompiledShape<S>,
-        targets: &[CompiledTarget<S>],
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Store<R>,
+        shape: &CompiledShape<R>,
+        targets: &[Target<R>],
+    ) -> Result<FocusNodes<R>, ValidateError> {
         let explicit = targets
             .iter()
             .flat_map(|target| match target {
-                CompiledTarget::TargetNode(node) => match self.target_node(store, node) {
+                Target::TargetNode(node) => match self.target_node(store, node) {
                     Ok(target_node) => Some(target_node),
                     Err(_) => None,
                 },
-                CompiledTarget::TargetClass(class) => match self.target_class(store, class) {
+                Target::TargetClass(class) => match self.target_class(store, class) {
                     Ok(target_node) => Some(target_node),
                     Err(_) => None,
                 },
-                CompiledTarget::TargetSubjectsOf(predicate) => {
+                Target::TargetSubjectsOf(predicate) => {
                     match self.target_subject_of(store, predicate) {
                         Ok(target_subject_of) => Some(target_subject_of),
                         Err(_) => None,
                     }
                 }
-                CompiledTarget::TargetObjectsOf(predicate) => {
+                Target::TargetObjectsOf(predicate) => {
                     match self.target_object_of(store, predicate) {
                         Ok(target_node) => Some(target_node),
                         Err(_) => None,
@@ -63,44 +68,44 @@ pub trait Engine<S: SRDFBasic> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &Store<S>, node: &S::Term)
-        -> Result<FocusNodes<S>, ValidateError>;
+    fn target_node(
+        &self,
+        store: &Store<R>,
+        node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_class(
         &self,
-        store: &Store<S>,
-        class: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        class: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_subject_of(
         &self,
-        store: &Store<S>,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        predicate: &Predicate<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_object_of(
         &self,
-        store: &Store<S>,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        predicate: &Predicate<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn implicit_target_class(
         &self,
-        store: &Store<S>,
-        shape: &CompiledShape<S>,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledShape<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn path(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError> {
         match shape.path() {
-            SHACLPath::Predicate { pred } => {
-                let predicate = S::iri_s2iri(pred);
-                self.predicate(store, shape, &predicate, focus_node)
-            }
+            SHACLPath::Predicate { pred } => self.predicate(store, shape, pred, focus_node),
             SHACLPath::Alternative { paths } => self.alternative(store, shape, paths, focus_node),
             SHACLPath::Sequence { paths } => self.sequence(store, shape, paths, focus_node),
             SHACLPath::Inverse { path } => self.inverse(store, shape, path, focus_node),
@@ -112,57 +117,57 @@ pub trait Engine<S: SRDFBasic> {
 
     fn predicate(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        predicate: &S::IRI,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        predicate: &Predicate<R>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn alternative(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        paths: &[SHACLPath],
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        paths: &[SHACLPath<R::Triple>],
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn sequence(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        paths: &[SHACLPath],
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        paths: &[SHACLPath<R::Triple>],
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn inverse(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        path: &SHACLPath,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        path: &SHACLPath<R::Triple>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn zero_or_more(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        path: &SHACLPath,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        path: &SHACLPath<R::Triple>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn one_or_more(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        path: &SHACLPath,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        path: &SHACLPath<R::Triple>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn zero_or_one(
         &self,
-        store: &Store<S>,
-        shape: &CompiledPropertyShape<S>,
-        path: &SHACLPath,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+        store: &Store<R>,
+        shape: &CompiledPropertyShape<R>,
+        path: &SHACLPath<R::Triple>,
+        focus_node: &Object<R>,
+    ) -> Result<FocusNodes<R>, ValidateError>;
 }

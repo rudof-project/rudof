@@ -1,16 +1,16 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LanguageIn;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Term;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::engine::sparql::SparqlEngine;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
@@ -18,18 +18,18 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<T: Triple> Validator<T> for LanguageIn<S> {
-    fn validate(
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for LanguageIn<R> {
+    fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &Store<S>,
-        _: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        engine: E,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let language_in = |value_node: &S::Term| {
-            if let Some(lang) = S::term_as_literal(value_node) {
+        let language_in = |value_node: &Object<R>| {
+            if let Some(lang) = value_node.as_literal() {
                 if self.langs().contains(&lang) {
                     return false;
                 }
@@ -48,27 +48,7 @@ impl<T: Triple> Validator<T> for LanguageIn<S> {
     }
 }
 
-impl<R: Rdf> NativeValidator<R> for LanguageIn<S> {
-    fn validate_native(
-        &self,
-        component: &CompiledComponent<R>,
-        shape: &CompiledShape<R>,
-        store: &Store<R>,
-        value_nodes: &ValueNodes<R>,
-        subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        self.validate(
-            component,
-            shape,
-            store,
-            NativeEngine,
-            value_nodes,
-            subsetting,
-        )
-    }
-}
-
-impl<S: Sparql> SparqlValidator<S> for LanguageIn<S> {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for LanguageIn<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -77,7 +57,7 @@ impl<S: Sparql> SparqlValidator<S> for LanguageIn<S> {
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(
+        self.validate_native(
             component,
             shape,
             store,

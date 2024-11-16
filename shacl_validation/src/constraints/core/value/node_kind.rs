@@ -13,6 +13,7 @@ use srdf::model::Term;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::engine::Engine;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::helpers::constraint::validate_sparql_ask;
 use crate::store::Store;
@@ -21,12 +22,13 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf> NativeValidator<R> for Nodekind {
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
         shape: &CompiledShape<R>,
-        _: &Store<R>,
+        store: &Store<R>,
+        engine: E,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
@@ -64,7 +66,7 @@ impl<R: Rdf> NativeValidator<R> for Nodekind {
     }
 }
 
-impl<S: Sparql> SparqlValidator<S> for Nodekind {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -75,14 +77,14 @@ impl<S: Sparql> SparqlValidator<S> for Nodekind {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
-        let query = move |value_node: &S::Term| {
-            if S::term_is_iri(value_node) {
+        let query = move |value_node: &Object<S>| {
+            if value_node.is_iri() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
                     ",node_kind
                 }
-            } else if S::term_is_bnode(value_node) {
+            } else if value_node.is_blank_node() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}

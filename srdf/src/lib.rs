@@ -22,6 +22,13 @@ pub mod srdf_parser;
 // pub mod srdf_sparql;
 pub mod vocab;
 
+#[macro_export]
+macro_rules! iri {
+    ($generic:ty, $lit: tt) => {
+        $crate::model::rdf::Predicate::<$generic>::new($lit);
+    };
+}
+
 /// Declares a named RDF parser which can be reused.
 ///
 /// The expression which creates the parser should have no side effects as it

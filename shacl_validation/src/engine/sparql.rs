@@ -5,6 +5,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
+use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 
@@ -20,7 +21,7 @@ use crate::Subsetting;
 
 pub struct SparqlEngine;
 
-impl<S: Sparql> Engine<S> for SparqlEngine {
+impl<S: Rdf + Sparql + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &Store<S>,
@@ -148,7 +149,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _paths: &[SHACLPath<S>],
+        _paths: &[SHACLPath<S::Triple>],
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -160,7 +161,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _paths: &[SHACLPath<S>],
+        _paths: &[SHACLPath<S::Triple>],
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -172,7 +173,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _path: &SHACLPath<S>,
+        _path: &SHACLPath<S::Triple>,
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -184,7 +185,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _path: &SHACLPath<S>,
+        _path: &SHACLPath<S::Triple>,
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -196,7 +197,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _path: &SHACLPath<S>,
+        _path: &SHACLPath<S::Triple>,
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -208,7 +209,7 @@ impl<S: Sparql> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _path: &SHACLPath<S>,
+        _path: &SHACLPath<S::Triple>,
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {

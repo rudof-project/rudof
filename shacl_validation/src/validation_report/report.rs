@@ -3,6 +3,8 @@ use std::fmt::Display;
 
 use colored::*;
 use prefixmap::PrefixMap;
+use shacl_ast::vocab::SH_RESULT_STR;
+use srdf::iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 use srdf::model::Iri;
@@ -74,7 +76,7 @@ impl<R: Rdf> ValidationReport<R> {
 
     pub fn parse(store: &R, subject: Object<R>) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &shacl_ast::vocab::SH_RESULT)? {
+        for result in get_objects_for(store, &subject, &iri!(R, SH_RESULT_STR).into())? {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))
@@ -89,8 +91,8 @@ impl<R: Rdf> Default for ValidationReport<R> {
     fn default() -> Self {
         ValidationReport {
             results: Vec::new(),
-            nodes_prefixmap: PrefixMap::new(),
-            shapes_prefixmap: PrefixMap::new(),
+            nodes_prefixmap: PrefixMap::default(),
+            shapes_prefixmap: PrefixMap::default(),
             ok_color: Some(Color::Green),
             fail_color: Some(Color::Red),
             display_with_colors: true,
@@ -145,9 +147,9 @@ impl<R: Rdf> Display for ValidationReport<R> {
                 writeln!(
                     f,
                     "Focus node {}, Component: {}, severity: {}",
-                    show_node(result.focus_node(), &self.nodes_prefixmap),
-                    show_component(result.component(), &shacl_prefixmap),
-                    show_severity(result.severity(), &shacl_prefixmap)
+                    show_node::<R>(result.focus_node(), &self.nodes_prefixmap),
+                    show_component::<R>(result.component(), &shacl_prefixmap),
+                    show_severity::<R>(result.severity(), &shacl_prefixmap)
                 )?;
             }
             Ok(())
@@ -158,7 +160,7 @@ impl<R: Rdf> Display for ValidationReport<R> {
 fn show_node<R: Rdf>(node: &Object<R>, prefixmap: &PrefixMap) -> String {
     match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
         (true, false, false) => prefixmap.qualify(&node.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", node.as_blank_node().unwrap()),
+        (false, true, false) => format!("_:{}", node.as_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", node.as_literal().unwrap()),
         _ => unreachable!(),
     }
@@ -171,7 +173,7 @@ fn show_component<R: Rdf>(component: &Object<R>, shacl_prefixmap: &PrefixMap) ->
         component.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&component.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", component.as_blank_node().unwrap()),
+        (false, true, false) => format!("_:{}", component.as_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", component.as_literal().unwrap()),
         _ => unreachable!(),
     }
@@ -184,7 +186,7 @@ fn show_severity<R: Rdf>(severity: &Object<R>, shacl_prefixmap: &PrefixMap) -> S
         severity.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&severity.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", severity.as_blank_node().unwrap()),
+        (false, true, false) => format!("_:{}", severity.as_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", severity.as_literal().unwrap()),
         _ => unreachable!(),
     }

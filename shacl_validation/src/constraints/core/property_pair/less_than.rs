@@ -7,25 +7,27 @@ use srdf::model::sparql::Sparql;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::engine::Engine;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf> NativeValidator<R> for LessThan<R> {
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for LessThan<R> {
     fn validate_native(
         &self,
-        _component: &CompiledComponent<R>,
-        _shape: &CompiledShape<R>,
-        _store: &Store<R>,
-        _value_nodes: &ValueNodes<R>,
-        _subsetting: &Subsetting,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        engine: E,
+        value_nodes: &ValueNodes<R>,
+        subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         Err(ConstraintError::NotImplemented("LessThan".to_string()))
     }
 }
 
-impl<S: Sparql> SparqlValidator<S> for LessThan<S> {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for LessThan<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

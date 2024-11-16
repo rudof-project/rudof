@@ -1,9 +1,12 @@
 use shacl_ast::vocab::*;
+use srdf::iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
+use srdf::model::Iri as _;
+
+use crate::helpers::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
-use crate::helpers::srdf::get_object_for;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,28 +80,35 @@ impl<R: Rdf> ValidationResult<R> {
     pub(crate) fn parse(store: &R, validation_result: &Object<R>) -> Result<Self, ResultError> {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised
-        let focus_node = match get_object_for(store, validation_result, &SH_FOCUS_NODE)? {
-            Some(focus_node) => focus_node,
-            None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
-        };
-        let severity = match get_object_for(store, validation_result, &SH_RESULT_SEVERITY)? {
-            Some(severity) => severity,
-            None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
-        };
-        let constraint_component =
-            match get_object_for(store, validation_result, &SH_SOURCE_CONSTRAINT_COMPONENT)? {
-                Some(constraint_component) => constraint_component,
-                None => {
-                    return Err(ResultError::MissingRequiredField(
-                        "SourceConstraintComponent".to_owned(),
-                    ))
-                }
+        let focus_node =
+            match get_object_for(store, validation_result, &iri!(R, SH_FOCUS_NODE_STR))? {
+                Some(focus_node) => focus_node,
+                None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
             };
 
+        let severity =
+            match get_object_for(store, validation_result, &iri!(R, SH_RESULT_SEVERITY_STR))? {
+                Some(severity) => severity,
+                None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
+            };
+
+        let constraint_component = match get_object_for(
+            store,
+            validation_result,
+            &iri!(R, SH_SOURCE_CONSTRAINT_COMPONENT_STR),
+        )? {
+            Some(constraint_component) => constraint_component,
+            None => {
+                return Err(ResultError::MissingRequiredField(
+                    "SourceConstraintComponent".to_owned(),
+                ))
+            }
+        };
+
         // 2. Second, we must process the optional fields
-        let path = get_object_for(store, validation_result, &SH_RESULT_PATH)?;
-        let source = get_object_for(store, validation_result, &SH_SOURCE_SHAPE)?;
-        let value = get_object_for(store, validation_result, &SH_VALUE)?;
+        let path = get_object_for(store, validation_result, &iri!(R, SH_RESULT_PATH_STR))?;
+        let source = get_object_for(store, validation_result, &iri!(R, SH_SOURCE_SHAPE_STR))?;
+        let value = get_object_for(store, validation_result, &iri!(R, SH_VALUE_STR))?;
 
         // 3. Lastly we build the ValidationResult<R>
         Ok(

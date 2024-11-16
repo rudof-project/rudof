@@ -2,16 +2,21 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
+use srdf::iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::RDFS_CLASS;
-use srdf::RDFS_SUBCLASS_OF;
-use srdf::RDF_TYPE;
+use srdf::model::Term as _;
+use srdf::model::Triple;
+use srdf::RDFS_CLASS_STR;
+use srdf::RDFS_SUBCLASS_OF_STR;
+use srdf::RDF_TYPE_STR;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
+use crate::helpers::srdf::get_objects_for;
+use crate::helpers::srdf::get_subjects_for;
 use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
@@ -20,7 +25,7 @@ use crate::Subsetting;
 
 pub struct NativeEngine;
 
-impl<R: Rdf> Engine<R> for NativeEngine {
+impl<R: Rdf + 'static> Engine<R> for NativeEngine {
     fn evaluate(
         &self,
         store: &Store<R>,
@@ -30,7 +35,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_native(component, shape, store, value_nodes, subsetting)?)
+        Ok(validator.validate_native(component, shape, store, Self, value_nodes, subsetting)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -48,21 +53,20 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         store: &Store<R>,
         class: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
-        if !R::term_is_iri(class) {
+        if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store
-            .inner_store()
-            .subjects_with_predicate_object(&R::iri_s2iri(&RDF_TYPE), class)
-        {
-            Ok(subjects) => subjects,
+        let triples = match store.inner_store().triples_matching(
+            None,
+            Some(&iri!(R, RDF_TYPE_STR)),
+            Some(class),
+        ) {
+            Ok(subjects) => subjects.map(Triple::subj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = subjects.iter().map(|subject| R::subject_as_term(subject));
-
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(triples))
     }
 
     fn target_subject_of(
@@ -71,15 +75,11 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples,
+            Ok(triples) => triples.map(Triple::subj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples
-            .iter()
-            .map(|triple| R::subject_as_term(&triple.subj()));
-
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(triples))
     }
 
     fn target_object_of(
@@ -88,13 +88,11 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples,
+            Ok(triples) => triples.map(Triple::obj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples.into_iter().map(|triple| triple.obj());
-
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(triples))
     }
 
     fn implicit_target_class(
@@ -102,28 +100,28 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         store: &Store<R>,
         shape: &CompiledShape<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
-        let ctypes = get_objects_for(store.inner_store(), shape.id(), &R::iri_s2iri(&RDF_TYPE))?;
+        let ctypes = get_objects_for(store.inner_store(), shape.id(), &iri!(R, RDF_TYPE_STR))?;
 
         let mut subclasses = get_subjects_for(
             store.inner_store(),
-            &R::iri_s2iri(&RDFS_SUBCLASS_OF),
-            &R::iri_s2term(&RDFS_CLASS),
+            &iri!(R, RDFS_SUBCLASS_OF_STR),
+            &iri!(R, RDFS_CLASS_STR).into(),
         )?;
 
-        subclasses.insert(R::iri_s2term(&RDFS_CLASS));
+        subclasses.insert(iri!(R, RDFS_SUBCLASS_OF_STR));
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
             let actual_class_nodes =
-                get_subjects_for(store.inner_store(), &R::iri_s2iri(&RDF_TYPE), shape.id())?;
+                get_subjects_for(store.inner_store(), &iri!(R, RDF_TYPE_STR), shape.id())?;
 
             let subclass_targets = get_subjects_for(
                 store.inner_store(),
-                &R::iri_s2iri(&RDFS_SUBCLASS_OF),
+                &iri!(R, RDFS_SUBCLASS_OF_STR),
                 shape.id(),
             )?
             .into_iter()
             .flat_map(move |subclass| {
-                get_subjects_for(store.inner_store(), &R::iri_s2iri(&RDF_TYPE), &subclass)
+                get_subjects_for(store.inner_store(), &iri!(R, RDF_TYPE_STR), &subclass)
                     .into_iter()
                     .flatten()
             });
@@ -152,7 +150,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _paths: &[SHACLPath<R>],
+        _paths: &[SHACLPath<R::Triple>],
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -164,7 +162,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _paths: &[SHACLPath<R>],
+        _paths: &[SHACLPath<R::Triple>],
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -176,7 +174,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _path: &SHACLPath<R>,
+        _path: &SHACLPath<R::Triple>,
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -188,7 +186,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _path: &SHACLPath<R>,
+        _path: &SHACLPath<R::Triple>,
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -200,7 +198,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _path: &SHACLPath<R>,
+        _path: &SHACLPath<R::Triple>,
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
@@ -212,7 +210,7 @@ impl<R: Rdf> Engine<R> for NativeEngine {
         &self,
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
-        _path: &SHACLPath<R>,
+        _path: &SHACLPath<R::Triple>,
         _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {

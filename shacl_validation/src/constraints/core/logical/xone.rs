@@ -1,14 +1,13 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
@@ -20,18 +19,19 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<T: Triple> Validator<T> for Xone<S> {
-    fn validate(
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Xone<R> {
+    fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &Store<S>,
-        engine: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        engine: E,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let xone = |value_node: &S::Term| {
-            self.shapes()
+        let xone = |value_node: &Object<R>| {
+            let count = self
+                .shapes()
                 .iter()
                 .filter(|shape| {
                     let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
@@ -40,8 +40,8 @@ impl<T: Triple> Validator<T> for Xone<S> {
                         Err(_) => false,
                     }
                 })
-                .count()
-                .ne(&1usize)
+                .count();
+            count != 1
         };
 
         validate_native_with_strategy(
@@ -55,27 +55,7 @@ impl<T: Triple> Validator<T> for Xone<S> {
     }
 }
 
-impl<R: Rdf> NativeValidator<R> for Xone<R> {
-    fn validate_native(
-        &self,
-        component: &CompiledComponent<R>,
-        shape: &CompiledShape<R>,
-        store: &Store<R>,
-        value_nodes: &ValueNodes<R>,
-        subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        self.validate(
-            component,
-            shape,
-            store,
-            NativeEngine,
-            value_nodes,
-            subsetting,
-        )
-    }
-}
-
-impl<S: Sparql> SparqlValidator<S> for Xone<S> {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for Xone<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -84,7 +64,7 @@ impl<S: Sparql> SparqlValidator<S> for Xone<S> {
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(
+        self.validate_native(
             component,
             shape,
             store,

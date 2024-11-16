@@ -5,7 +5,7 @@ mod engine;
 mod focus_nodes;
 mod helpers;
 /// Configuration
-pub mod shacl_config;
+// pub mod shacl_config;
 /// The SHACL processor implementation, used for validating a data graph against
 /// a shapes graph and obtaining a Validation Report as a result.
 pub mod shacl_processor;

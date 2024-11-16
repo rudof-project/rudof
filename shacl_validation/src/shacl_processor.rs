@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use clap::ValueEnum;
 use shacl_ast::compiled::schema::CompiledSchema;
 use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
 
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
@@ -32,7 +33,7 @@ pub struct ShaclProcessor<R: Rdf> {
     subsetting: Subsetting,
 }
 
-impl<R: Rdf + Debug + 'static> ShaclProcessor<R> {
+impl<R: Rdf + Sparql + 'static> ShaclProcessor<R> {
     pub fn new(srdf: R, mode: ShaclValidationMode, subsetting: Subsetting) -> Self {
         Self {
             store: Store::new(srdf, subsetting != Subsetting::None),

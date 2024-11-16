@@ -7,8 +7,6 @@ use srdf::model::sparql::Sparql;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
@@ -19,14 +17,15 @@ use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<T: Triple> Validator<T> for MaxCount {
-    fn validate(
+// TODO: is it necessary having a 'static?
+impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MaxCount {
+    fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &Store<S>,
-        _: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &Store<R>,
+        engine: E,
+        value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         validate_native_with_strategy(
@@ -34,34 +33,13 @@ impl<T: Triple> Validator<T> for MaxCount {
             shape,
             value_nodes,
             FocusNodeIteration,
-            |targets: &FocusNodes<S>| targets.len() > self.max_count(),
+            |targets: &FocusNodes<R>| targets.len() > self.max_count(),
             subsetting,
         )
     }
 }
 
-// TODO: is it necessary having a 'static?
-impl<R: Rdf> NativeValidator<R> for MaxCount {
-    fn validate_native(
-        &self,
-        component: &CompiledComponent<R>,
-        shape: &CompiledShape<R>,
-        store: &Store<R>,
-        value_nodes: &ValueNodes<R>,
-        subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        self.validate(
-            component,
-            shape,
-            store,
-            NativeEngine,
-            value_nodes,
-            subsetting,
-        )
-    }
-}
-
-impl<S: Sparql> SparqlValidator<S> for MaxCount {
+impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -70,7 +48,7 @@ impl<S: Sparql> SparqlValidator<S> for MaxCount {
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(
+        self.validate_native(
             component,
             shape,
             store,
