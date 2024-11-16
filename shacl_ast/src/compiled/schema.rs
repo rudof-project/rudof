@@ -61,7 +61,7 @@ impl<R: Rdf + Eq + Clone + Hash> TryFrom<Schema<R>> for CompiledSchema<R> {
                 Ok(term) => term,
                 Err(_) => return Err(CompiledShaclError::ShapeIdIsNotValid),
             };
-            let shape = CompiledShape::compile(shape, &schema)?;
+            let shape = CompiledShape::compile(shape.clone(), &schema)?;
             shapes.insert(term, shape);
         }
 

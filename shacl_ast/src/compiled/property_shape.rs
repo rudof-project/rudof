@@ -1,6 +1,3 @@
-use std::collections::HashSet;
-use std::hash::Hash;
-
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 
@@ -10,6 +7,7 @@ use crate::shacl_path::SHACLPath;
 use crate::target::Target;
 use crate::Schema;
 
+use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::shape::CompiledShape;
@@ -94,14 +92,13 @@ impl<R: Rdf> CompiledPropertyShape<R> {
     }
 }
 
-impl<R: Rdf + Eq + Hash + Clone> CompiledPropertyShape<R> {
+impl<R: Rdf + Clone> CompiledPropertyShape<R> {
     pub fn compile(
         shape: PropertyShape<R>,
         schema: &Schema<R>,
     ) -> Result<Self, CompiledShaclError> {
-        let components = shape.components().iter().collect::<HashSet<_>>();
         let mut compiled_components = Vec::new();
-        for component in components {
+        for component in shape.components() {
             let component = CompiledComponent::compile(component.to_owned(), schema)?;
             compiled_components.push(component);
         }

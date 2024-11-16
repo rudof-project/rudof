@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 
@@ -70,7 +68,7 @@ impl<R: Rdf> CompiledShape<R> {
     }
 }
 
-impl<R: Rdf + Eq + Clone + Hash> CompiledShape<R> {
+impl<R: Rdf + Clone> CompiledShape<R> {
     pub fn compile(shape: Shape<R>, schema: &Schema<R>) -> Result<Self, CompiledShaclError> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {

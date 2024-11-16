@@ -1,32 +1,33 @@
 use crate::{Schema, SH_STR};
 use iri_s::IriS;
-use srdf::{RDFFormat, SRDFBuilder, RDF, XSD};
+use srdf::model::mutable_rdf::MutableRdf;
+use srdf::model::rdf_format::RdfFormat;
+use srdf::{RDF, XSD};
 use std::io::Write;
 use std::str::FromStr;
 
-pub struct ShaclWriter<RDF>
-where
-    RDF: SRDFBuilder,
-{
+pub struct ShaclWriter<RDF: MutableRdf> {
     rdf: RDF,
 }
 
-impl<RDF> ShaclWriter<RDF>
-where
-    RDF: SRDFBuilder,
-{
+impl<RDF: MutableRdf + Default> ShaclWriter<RDF> {
     pub fn new() -> Self {
-        Self { rdf: RDF::empty() }
+        Self {
+            rdf: RDF::default(),
+        }
     }
 
-    pub fn write(&mut self, schema: &Schema) -> Result<(), RDF::Err> {
+    pub fn write(&mut self, schema: &Schema<RDF>) -> Result<(), RDF::Error> {
         let mut prefix_map = schema.prefix_map();
         let _ = prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
         let _ = prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());
         let _ = prefix_map.insert("sh", &IriS::from_str(SH_STR).unwrap());
 
         self.rdf.add_prefix_map(prefix_map)?;
-        self.rdf.add_base(&schema.base())?;
+
+        if let Some(base) = schema.base() {
+            self.rdf.add_base(base.clone())?;
+        }
 
         schema
             .iter()
@@ -35,16 +36,7 @@ where
         Ok(())
     }
 
-    pub fn serialize<W: Write>(&self, format: RDFFormat, writer: &mut W) -> Result<(), RDF::Err> {
+    pub fn serialize<W: Write>(&self, format: RdfFormat, writer: &mut W) -> Result<(), RDF::Error> {
         self.rdf.serialize(format, writer)
-    }
-}
-
-impl<RDF> Default for ShaclWriter<RDF>
-where
-    RDF: SRDFBuilder,
-{
-    fn default() -> Self {
-        Self::new()
     }
 }

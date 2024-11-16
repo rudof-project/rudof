@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use compiled::compile_shape;
+use compiled::compile_shapes;
 use iri_s::IriS;
 use node_kind::NodeKind;
 use srdf::model::rdf::Literal;
@@ -46,7 +48,8 @@ pub enum CompiledComponent<R: Rdf> {
     In(In<R>),
     QualifiedValueShape(QualifiedValueShape<R>),
 }
-impl<R: Rdf> CompiledComponent<R> {
+
+impl<R: Rdf + Clone> CompiledComponent<R> {
     pub fn compile(
         component: Component<R>,
         schema: &Schema<R>,
@@ -57,28 +60,30 @@ impl<R: Rdf> CompiledComponent<R> {
             Component::NodeKind(node_kind) => CompiledComponent::NodeKind(node_kind.into()),
             Component::MinCount(min_count) => CompiledComponent::MinCount(min_count.into()),
             Component::MaxCount(max_count) => CompiledComponent::MaxCount(max_count.into()),
-            Component::MinExclusive(lit) => CompiledComponent::MinExclusive(lit.into()),
-            Component::MaxExclusive(lit) => CompiledComponent::MaxExclusive(lit.into()),
-            Component::MinInclusive(lit) => CompiledComponent::MinInclusive(lit.into()),
-            Component::MaxInclusive(lit) => CompiledComponent::MaxInclusive(lit.into()),
-            Component::MinLength(length) => CompiledComponent::MinLength(length.into()),
-            Component::MaxLength(length) => CompiledComponent::MaxLength(length.into()),
+            Component::MinExclusive(min) => CompiledComponent::MinExclusive(min.into()),
+            Component::MaxExclusive(max) => CompiledComponent::MaxExclusive(max.into()),
+            Component::MinInclusive(min) => CompiledComponent::MinInclusive(min.into()),
+            Component::MaxInclusive(max) => CompiledComponent::MaxInclusive(max.into()),
+            Component::MinLength(min) => CompiledComponent::MinLength(min.into()),
+            Component::MaxLength(max) => CompiledComponent::MaxLength(max.into()),
             Component::Pattern(pattern) => CompiledComponent::Pattern(pattern.into()),
             Component::UniqueLang(lang) => CompiledComponent::UniqueLang(lang.into()),
             Component::LanguageIn(langs) => CompiledComponent::LanguageIn(langs.into()),
-            Component::Equals(iri_ref) => CompiledComponent::Equals(iri_ref.into()),
-            Component::Disjoint(iri_ref) => CompiledComponent::Disjoint(iri_ref.into()),
-            Component::LessThan(iri_ref) => CompiledComponent::LessThan(iri_ref.into()),
+            Component::Equals(eq) => CompiledComponent::Equals(eq.into()),
+            Component::Disjoint(disjoint) => CompiledComponent::Disjoint(disjoint.into()),
+            Component::LessThan(lt) => CompiledComponent::LessThan(lt.into()),
             Component::LessThanOrEquals(lte) => CompiledComponent::LessThanOrEquals(lte.into()),
-            Component::Or(or) => or.into(),
-            Component::And(and) => and.into(),
-            Component::Not(not) => not.into(),
-            Component::Xone(xone) => xone.into(),
+            Component::Or(or) => CompiledComponent::Or(or.compile(schema)?),
+            Component::And(and) => CompiledComponent::And(and.compile(schema)?),
+            Component::Not(not) => CompiledComponent::Not(not.compile(schema)?),
+            Component::Xone(xone) => CompiledComponent::Xone(xone.compile(schema)?),
             Component::Closed(closed) => CompiledComponent::Closed(closed.into()),
-            Component::Node(node) => node.into(),
+            Component::Node(node) => CompiledComponent::Node(node.compile(schema)?),
             Component::HasValue(has_value) => CompiledComponent::HasValue(has_value.into()),
             Component::In(i) => CompiledComponent::In(i.into()),
-            Component::QualifiedValueShape(qvs) => qvs.into(),
+            Component::QualifiedValueShape(q) => {
+                CompiledComponent::QualifiedValueShape(q.compile(schema)?)
+            }
         };
         Ok(component)
     }
@@ -160,6 +165,12 @@ impl<R: Rdf> And<R> {
     }
 }
 
+impl<R: Rdf + Clone> ast::component::And<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<And<R>, CompiledShaclError> {
+        Ok(And::new(compile_shapes(self.shapes().to_vec(), schema)?))
+    }
+}
+
 /// sh:not specifies the condition that each value node cannot conform to a
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
@@ -176,6 +187,12 @@ impl<R: Rdf> Not<R> {
 
     pub fn shape(&self) -> &CompiledShape<R> {
         &self.shape
+    }
+}
+
+impl<R: Rdf + Clone> ast::component::Not<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<Not<R>, CompiledShaclError> {
+        Ok(Not::new(compile_shape(self.shape().clone(), schema)?))
     }
 }
 
@@ -200,6 +217,12 @@ impl<R: Rdf> Or<R> {
     }
 }
 
+impl<R: Rdf + Clone> ast::component::Or<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<Or<R>, CompiledShaclError> {
+        Ok(Or::new(compile_shapes(self.shapes().to_vec(), schema)?))
+    }
+}
+
 /// sh:or specifies the condition that each value node conforms to at least one
 /// of the provided shapes. This is comparable to disjunction and the logical
 /// "or" operator.
@@ -217,6 +240,12 @@ impl<R: Rdf> Xone<R> {
 
     pub fn shapes(&self) -> &Vec<CompiledShape<R>> {
         &self.shapes
+    }
+}
+
+impl<R: Rdf + Clone> ast::component::Xone<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<Xone<R>, CompiledShaclError> {
+        Ok(Xone::new(compile_shapes(self.shapes().to_vec(), schema)?))
     }
 }
 
@@ -279,9 +308,9 @@ impl<R: Rdf> HasValue<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::HasValue<R>> for HasValue<R> {
+    fn from(value: ast::component::HasValue<R>) -> Self {
+        HasValue::new(value.value().clone())
     }
 }
 
@@ -304,9 +333,9 @@ impl<R: Rdf> In<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::In<R>> for In<R> {
+    fn from(value: ast::component::In<R>) -> Self {
+        In::new(value.values().to_vec())
     }
 }
 
@@ -330,9 +359,9 @@ impl<R: Rdf> Disjoint<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::Disjoint<R>> for Disjoint<R> {
+    fn from(value: ast::component::Disjoint<R>) -> Self {
+        Disjoint::new(value.iri_ref().clone())
     }
 }
 
@@ -356,9 +385,9 @@ impl<R: Rdf> Equals<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::Equals<R>> for Equals<R> {
+    fn from(value: ast::component::Equals<R>) -> Self {
+        Equals::new(value.iri_ref().clone())
     }
 }
 
@@ -384,9 +413,9 @@ impl<R: Rdf> LessThanOrEquals<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::LessThanOrEquals<R>> for LessThanOrEquals<R> {
+    fn from(value: ast::component::LessThanOrEquals<R>) -> Self {
+        LessThanOrEquals::new(value.iri_ref().clone())
     }
 }
 
@@ -410,9 +439,9 @@ impl<R: Rdf> LessThan<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::LessThan<R>> for LessThan<R> {
+    fn from(value: ast::component::LessThan<R>) -> Self {
+        LessThan::new(value.iri_ref().clone())
     }
 }
 
@@ -432,6 +461,12 @@ impl<R: Rdf> Node<R> {
 
     pub fn shape(&self) -> &CompiledShape<R> {
         &self.shape
+    }
+}
+
+impl<R: Rdf + Clone> ast::component::Node<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<Node<R>, CompiledShaclError> {
+        Ok(Node::new(compile_shape(self.shape().clone(), schema)?))
     }
 }
 
@@ -483,6 +518,17 @@ impl<R: Rdf> QualifiedValueShape<R> {
     }
 }
 
+impl<R: Rdf + Clone> ast::component::QualifiedValueShape<R> {
+    fn compile(&self, schema: &Schema<R>) -> Result<QualifiedValueShape<R>, CompiledShaclError> {
+        Ok(QualifiedValueShape::new(
+            compile_shape(self.shape().clone(), schema)?,
+            self.qualified_min_count(),
+            self.qualified_max_count(),
+            self.qualified_value_shapes_disjoint(),
+        ))
+    }
+}
+
 /// The condition specified by sh:languageIn is that the allowed language tags
 /// for each value node are limited by a given list of language tags.
 ///
@@ -502,9 +548,9 @@ impl<R: Rdf> LanguageIn<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::LanguageIn<R>> for LanguageIn<R> {
+    fn from(value: ast::component::LanguageIn<R>) -> Self {
+        LanguageIn::new(value.langs().to_vec())
     }
 }
 
@@ -528,9 +574,9 @@ impl MaxLength {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl From<ast::component::MaxLength> for MaxLength {
+    fn from(value: ast::component::MaxLength) -> Self {
+        MaxLength::new(value.max_length())
     }
 }
 
@@ -554,9 +600,9 @@ impl MinLength {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl From<ast::component::MinLength> for MinLength {
+    fn from(value: ast::component::MinLength) -> Self {
+        MinLength::new(value.min_length())
     }
 }
 
@@ -584,9 +630,9 @@ impl Pattern {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl From<ast::component::Pattern> for Pattern {
+    fn from(value: ast::component::Pattern) -> Self {
+        Pattern::new(value.pattern().clone(), value.flags().clone())
     }
 }
 
@@ -609,9 +655,9 @@ impl UniqueLang {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl From<ast::component::UniqueLang> for UniqueLang {
+    fn from(value: ast::component::UniqueLang) -> Self {
+        UniqueLang::new(value.unique_lang())
     }
 }
 
@@ -634,9 +680,9 @@ impl<R: Rdf> Class<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::Class<R>> for Class<R> {
+    fn from(value: ast::component::Class<R>) -> Self {
+        Class::new(value.class_rule().clone())
     }
 }
 
@@ -659,9 +705,9 @@ impl<R: Rdf> Datatype<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::Datatype<R>> for Datatype<R> {
+    fn from(value: ast::component::Datatype<R>) -> Self {
+        Datatype::new(value.datatype().clone())
     }
 }
 
@@ -684,9 +730,9 @@ impl Nodekind {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl From<ast::component::Nodekind> for Nodekind {
+    fn from(value: ast::component::Nodekind) -> Self {
+        Nodekind::new(value.node_kind().clone())
     }
 }
 
@@ -708,6 +754,12 @@ impl<R: Rdf> MaxExclusive<R> {
     }
 }
 
+impl<R: Rdf> From<ast::component::MaxExclusive<R>> for MaxExclusive<R> {
+    fn from(value: ast::component::MaxExclusive<R>) -> Self {
+        MaxExclusive::new(value.max_exclusive().clone())
+    }
+}
+
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug)]
 pub struct MaxInclusive<R: Rdf> {
@@ -726,9 +778,9 @@ impl<R: Rdf> MaxInclusive<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::MaxInclusive<R>> for MaxInclusive<R> {
+    fn from(value: ast::component::MaxInclusive<R>) -> Self {
+        MaxInclusive::new(value.max_inclusive().clone())
     }
 }
 
@@ -750,9 +802,9 @@ impl<R: Rdf> MinExclusive<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::MinExclusive<R>> for MinExclusive<R> {
+    fn from(value: ast::component::MinExclusive<R>) -> Self {
+        MinExclusive::new(value.min_exclusive().clone())
     }
 }
 
@@ -774,9 +826,9 @@ impl<R: Rdf> MinInclusive<R> {
     }
 }
 
-impl From<ast::component::MinCount> for MinCount {
-    fn from(value: ast::component::MinCount) -> Self {
-        MinCount::new(value.min_count())
+impl<R: Rdf> From<ast::component::MinInclusive<R>> for MinInclusive<R> {
+    fn from(value: ast::component::MinInclusive<R>) -> Self {
+        MinInclusive::new(value.min_inclusive().clone())
     }
 }
 

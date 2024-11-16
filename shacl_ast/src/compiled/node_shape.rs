@@ -1,6 +1,3 @@
-use std::collections::HashSet;
-use std::hash::Hash;
-
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 
@@ -9,6 +6,7 @@ use crate::severity::Severity;
 use crate::target::Target;
 use crate::Schema;
 
+use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::shape::CompiledShape;
@@ -83,14 +81,13 @@ impl<R: Rdf> CompiledNodeShape<R> {
     }
 }
 
-impl<R: Rdf + Eq + Hash + Clone> CompiledNodeShape<R> {
+impl<R: Rdf + Clone> CompiledNodeShape<R> {
     pub fn compile(
         shape: Box<NodeShape<R>>,
         schema: &Schema<R>,
     ) -> Result<Self, CompiledShaclError> {
-        let components = shape.components().iter().collect::<HashSet<_>>();
         let mut compiled_components = Vec::new();
-        for component in components {
+        for component in shape.components() {
             let component = CompiledComponent::compile(component.to_owned(), schema)?;
             compiled_components.push(component);
         }
@@ -104,7 +101,7 @@ impl<R: Rdf + Eq + Hash + Clone> CompiledNodeShape<R> {
         let compiled_node_shape = CompiledNodeShape::new(
             shape.id().clone(),
             compiled_components,
-            shape.targets().clone(),
+            shape.targets().to_vec(),
             property_shapes,
             shape.closed().clone(),
             shape.is_deactivated().clone(),
