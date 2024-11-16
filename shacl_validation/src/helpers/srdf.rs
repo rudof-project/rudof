@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDF};
+use srdf::model::rdf::Rdf;
 
 use crate::helpers::helper_error::SRDFError;
 
-pub(crate) fn get_object_for<S: SRDF>(
+pub(crate) fn get_object_for<R: Rdf>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,

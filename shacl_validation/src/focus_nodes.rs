@@ -1,12 +1,13 @@
 use std::collections::HashSet;
 
-use srdf::SRDFBasic;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
 
 #[derive(Debug)]
-pub struct FocusNodes<S: SRDFBasic>(HashSet<S::Term>);
+pub struct FocusNodes<R: Rdf>(HashSet<Object<R>>);
 
-impl<S: SRDFBasic> FocusNodes<S> {
-    pub fn new(iter: impl Iterator<Item = S::Term>) -> Self {
+impl<R: Rdf> FocusNodes<R> {
+    pub fn new(iter: impl Iterator<Item = Object<R>>) -> Self {
         Self(HashSet::from_iter(iter))
     }
 
@@ -14,26 +15,26 @@ impl<S: SRDFBasic> FocusNodes<S> {
         self.0.len()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &S::Term> {
+    pub fn iter(&self) -> impl Iterator<Item = &Object<R>> {
         self.0.iter()
     }
 }
 
-impl<S: SRDFBasic> Clone for FocusNodes<S> {
+impl<R: Rdf> Clone for FocusNodes<R> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<S: SRDFBasic> Default for FocusNodes<S> {
+impl<R: Rdf> Default for FocusNodes<R> {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-impl<S: SRDFBasic> IntoIterator for FocusNodes<S> {
-    type Item = S::Term;
-    type IntoIter = std::collections::hash_set::IntoIter<S::Term>;
+impl<R: Rdf> IntoIterator for FocusNodes<R> {
+    type Item = Object<R>;
+    type IntoIter = std::collections::hash_set::IntoIter<Object<R>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()

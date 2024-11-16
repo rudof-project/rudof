@@ -1,11 +1,12 @@
-use std::fmt::Debug;
-
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinLength;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
+use srdf::model::Literal;
+use srdf::model::Term;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -26,14 +27,14 @@ impl<R: Rdf> NativeValidator<R> for MinLength {
         _: &Store<R>,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_length = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
+        let min_length = |value_node: &Object<R>| {
+            if value_node.is_blank_node() {
                 true
             } else {
-                let string_representation = match S::term_as_string(value_node) {
-                    Some(string_representation) => string_representation,
-                    None => S::iri2iri_s(S::term_as_iri(value_node).unwrap()).to_string(),
+                let string_representation = match value_node.as_literal() {
+                    Some(string_representation) => string_representation.as_string().unwrap(),
+                    None => value_node.as_iri().unwrap().to_string(),
                 };
                 string_representation.len() < self.min_length() as usize
             }
@@ -58,7 +59,7 @@ impl<S: Sparql> SparqlValidator<S> for MinLength {
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let min_length_value = self.min_length();
 
         let query = |value_node: &S::Term| {

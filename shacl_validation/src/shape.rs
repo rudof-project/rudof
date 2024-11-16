@@ -1,3 +1,6 @@
+use shacl_ast::compiled::node_shape::CompiledNodeShape;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
 
 use crate::engine::Engine;
@@ -16,7 +19,7 @@ pub trait Validate<R: Rdf> {
         runner: &dyn Engine<R>,
         targets: Option<&FocusNodes<R>>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ValidateError>;
+    ) -> Result<Vec<ValidationResult<R>>, ValidateError>;
 }
 
 impl<R: Rdf> Validate<R> for CompiledShape<R> {
@@ -26,7 +29,7 @@ impl<R: Rdf> Validate<R> for CompiledShape<R> {
         runner: &dyn Engine<R>,
         targets: Option<&FocusNodes<R>>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
+    ) -> Result<Vec<ValidationResult<R>>, ValidateError> {
         // 0.
         if *self.is_deactivated() {
             // skipping because it is deactivated
@@ -69,11 +72,11 @@ impl<R: Rdf> Validate<R> for CompiledShape<R> {
     }
 }
 
-pub trait FocusNodesOps<R: SRDFBasic> {
+pub trait FocusNodesOps<R: Rdf> {
     fn focus_nodes(&self, store: &Store<R>, runner: &dyn Engine<R>) -> FocusNodes<R>;
 }
 
-impl<R: SRDFBasic> FocusNodesOps<R> for CompiledShape<R> {
+impl<R: Rdf> FocusNodesOps<R> for CompiledShape<R> {
     fn focus_nodes(&self, store: &Store<R>, runner: &dyn Engine<R>) -> FocusNodes<R> {
         runner
             .focus_nodes(store, self, self.targets())
@@ -90,7 +93,7 @@ pub trait ValueNodesOps<R: Rdf> {
     ) -> ValueNodes<R>;
 }
 
-impl<R: SRDFBasic> ValueNodesOps<R> for CompiledShape<R> {
+impl<R: Rdf> ValueNodesOps<R> for CompiledShape<R> {
     fn value_nodes(
         &self,
         store: &Store<R>,
@@ -104,7 +107,7 @@ impl<R: SRDFBasic> ValueNodesOps<R> for CompiledShape<R> {
     }
 }
 
-impl<R: SRDFBasic> ValueNodesOps<R> for CompiledNodeShape<R> {
+impl<R: Rdf> ValueNodesOps<R> for CompiledNodeShape<R> {
     fn value_nodes(
         &self,
         _: &Store<R>,
@@ -121,7 +124,7 @@ impl<R: SRDFBasic> ValueNodesOps<R> for CompiledNodeShape<R> {
     }
 }
 
-impl<R: SRDFBasic> ValueNodesOps<R> for CompiledPropertyShape<R> {
+impl<R: Rdf> ValueNodesOps<R> for CompiledPropertyShape<R> {
     fn value_nodes(
         &self,
         store: &Store<R>,

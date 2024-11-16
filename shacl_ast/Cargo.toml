@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ast"
-version = "0.1.49"
+version = "0.1.58"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ast"
@@ -18,15 +18,11 @@ srdf = { workspace = true }
 rbe = { workspace = true }
 prefixmap = { workspace = true }
 
-serde = "1"
-serde_derive = "1"
-void = "1"
-thiserror = "1.0"
-lazy_static = "1"
-rust_decimal = "1.32"
-rust_decimal_macros = "1.32"
-regex = "1.10"
+thiserror = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+lazy_static = { workspace = true }
 const_format = "0.2"
 itertools = "0.13"
 

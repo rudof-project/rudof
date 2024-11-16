@@ -15,18 +15,19 @@ edition.workspace = true
 rdf-star = [] # TODO: API with the rdf-star feature
 
 [dependencies]
+iri_s = { workspace = true }
 srdf = { workspace = true }
 shacl_ast = { workspace = true }
 prefixmap = { workspace = true } # TODO: is this necessary?
 
-serde = { workspace = true }     # needed for the config thing
-thiserror = { workspace = true } # needed for the definition of errors
-clap = { workspace = true }      # needed for creating the ValueEnums (ensuring compatibility with clap)
-serde_yml = { workspace = true } # needed for the config thing
+serde = { workspace = true }       # needed for the config thing
+thiserror = { workspace = true }   # needed for the definition of errors
+clap = { workspace = true }        # needed for creating the ValueEnums (ensuring compatibility with clap)
+serde_yml = { workspace = true }   # needed for the config thing
 colored = { workspace = true }
-lazy_static = "1"                # needed for the definition of the vocab
-const_format = "0.2"             # needed for the definition of the vocab
-indoc = "2"                      # needed for the definition of SPARQL queries
+lazy_static = { workspace = true } # needed for the definition of the vocab
+const_format = "0.2"               # needed for the definition of the vocab
+indoc = "2"                        # needed for the definition of SPARQL queries
 
 [dev-dependencies] # necessary for the tests
 # sparql_service = { workspace = true }

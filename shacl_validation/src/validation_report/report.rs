@@ -1,8 +1,12 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
+use std::fmt::Display;
 
 use colored::*;
 use prefixmap::PrefixMap;
-use srdf::{Object, SRDF};
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
+use srdf::model::Iri;
+use srdf::model::Term;
 
 use crate::helpers::srdf::get_objects_for;
 
@@ -10,8 +14,8 @@ use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
 
 #[derive(Debug, Clone)]
-pub struct ValidationReport {
-    results: Vec<ValidationResult>,
+pub struct ValidationReport<R: Rdf> {
+    results: Vec<ValidationResult<R>>,
     nodes_prefixmap: PrefixMap,
     shapes_prefixmap: PrefixMap,
     ok_color: Option<Color>,
@@ -19,12 +23,12 @@ pub struct ValidationReport {
     display_with_colors: bool,
 }
 
-impl ValidationReport {
+impl<R: Rdf> ValidationReport<R> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn with_results(mut self, results: Vec<ValidationResult>) -> Self {
+    pub fn with_results(mut self, results: Vec<ValidationResult<R>>) -> Self {
         self.results = results;
         self
     }
@@ -64,15 +68,13 @@ impl ValidationReport {
         self
     }
 
-    pub fn results(&self) -> &Vec<ValidationResult> {
+    pub fn results(&self) -> &Vec<ValidationResult<R>> {
         &self.results
     }
-}
 
-impl ValidationReport {
-    pub fn parse<S: SRDF>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+    pub fn parse(store: &R, subject: Object<R>) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
+        for result in get_objects_for(store, &subject, &shacl_ast::vocab::SH_RESULT)? {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))
@@ -83,7 +85,7 @@ impl ValidationReport {
     }
 }
 
-impl Default for ValidationReport {
+impl<R: Rdf> Default for ValidationReport<R> {
     fn default() -> Self {
         ValidationReport {
             results: Vec::new(),
@@ -96,7 +98,7 @@ impl Default for ValidationReport {
     }
 }
 
-impl PartialEq for ValidationReport {
+impl<R: Rdf> PartialEq for ValidationReport<R> {
     // TODO: Are we sure that this way to compare validation report results is OK?
     // Comparing only the len() seems weak??
     fn eq(&self, other: &Self) -> bool {
@@ -107,7 +109,7 @@ impl PartialEq for ValidationReport {
     }
 }
 
-impl Display for ValidationReport {
+impl<R: Rdf> Display for ValidationReport<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.results.is_empty() {
             let str = "No Errors found";
@@ -153,26 +155,37 @@ impl Display for ValidationReport {
     }
 }
 
-fn show_node(node: &Object, prefixmap: &PrefixMap) -> String {
-    match node {
-        Object::Iri(iri_s) => prefixmap.qualify(iri_s),
-        Object::BlankNode(node) => format!("_:{node}"),
-        Object::Literal(literal) => format!("{literal}"),
+fn show_node<R: Rdf>(node: &Object<R>, prefixmap: &PrefixMap) -> String {
+    match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
+        (true, false, false) => prefixmap.qualify(&node.as_iri().unwrap().as_iri_s()),
+        (false, true, false) => format!("_:{}", node.as_blank_node().unwrap()),
+        (false, false, true) => format!("{}", node.as_literal().unwrap()),
+        _ => unreachable!(),
     }
 }
 
-fn show_component(component: &Object, shacl_prefixmap: &PrefixMap) -> String {
-    match component {
-        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
-        Object::BlankNode(node) => format!("_:{node}"),
-        Object::Literal(literal) => format!("{literal}"),
+fn show_component<R: Rdf>(component: &Object<R>, shacl_prefixmap: &PrefixMap) -> String {
+    match (
+        component.is_iri(),
+        component.is_blank_node(),
+        component.is_literal(),
+    ) {
+        (true, false, false) => shacl_prefixmap.qualify(&component.as_iri().unwrap().as_iri_s()),
+        (false, true, false) => format!("_:{}", component.as_blank_node().unwrap()),
+        (false, false, true) => format!("{}", component.as_literal().unwrap()),
+        _ => unreachable!(),
     }
 }
 
-fn show_severity(severity: &Object, shacl_prefixmap: &PrefixMap) -> String {
-    match severity {
-        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
-        Object::BlankNode(node) => format!("_:{node}"),
-        Object::Literal(literal) => format!("{literal}"),
+fn show_severity<R: Rdf>(severity: &Object<R>, shacl_prefixmap: &PrefixMap) -> String {
+    match (
+        severity.is_iri(),
+        severity.is_blank_node(),
+        severity.is_literal(),
+    ) {
+        (true, false, false) => shacl_prefixmap.qualify(&severity.as_iri().unwrap().as_iri_s()),
+        (false, true, false) => format!("_:{}", severity.as_blank_node().unwrap()),
+        (false, false, true) => format!("{}", severity.as_literal().unwrap()),
+        _ => unreachable!(),
     }
 }

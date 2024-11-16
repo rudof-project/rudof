@@ -1,11 +1,8 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::In;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlValidator;
@@ -29,7 +26,7 @@ impl<T: Triple> Validator<T> for In<S> {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
         validate_native_with_strategy(
             component,
@@ -42,7 +39,7 @@ impl<T: Triple> Validator<T> for In<S> {
     }
 }
 
-impl<R: Rdf> NativeValidator<R> for In<S> {
+impl<R: Rdf> NativeValidator<R> for In<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -50,7 +47,7 @@ impl<R: Rdf> NativeValidator<R> for In<S> {
         store: &Store<R>,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         self.validate(
             component,
             shape,
@@ -70,7 +67,7 @@ impl<S: Sparql> SparqlValidator<S> for In<S> {
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(
             component,
             shape,

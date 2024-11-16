@@ -1,9 +1,6 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
-use shacl_ast::compiled::target::CompiledTarget;
-use srdf::SHACLPath;
-use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
 use crate::store::Store;
@@ -23,7 +20,7 @@ pub trait Engine<S: SRDFBasic> {
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ValidateError>;
+    ) -> Result<Vec<ValidationResult<R>>, ValidateError>;
 
     fn focus_nodes(
         &self,

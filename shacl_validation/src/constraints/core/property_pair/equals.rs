@@ -1,11 +1,8 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Equals;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -28,12 +25,12 @@ impl<T: Triple> Validator<T> for Equals<S> {
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
         _subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Equals".to_string()))
     }
 }
 
-impl<R: Rdf> NativeValidator<R> for Equals<S> {
+impl<R: Rdf> NativeValidator<R> for Equals<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -41,7 +38,7 @@ impl<R: Rdf> NativeValidator<R> for Equals<S> {
         store: &Store<R>,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         self.validate(
             component,
             shape,
@@ -61,7 +58,7 @@ impl<S: Sparql> SparqlValidator<S> for Equals<S> {
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         self.validate(
             component,
             shape,

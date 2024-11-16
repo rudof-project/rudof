@@ -2,8 +2,7 @@ use std::fmt::Debug;
 
 use clap::ValueEnum;
 use shacl_ast::compiled::schema::CompiledSchema;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::model::rdf::Rdf;
 
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
@@ -27,14 +26,14 @@ pub enum ShaclValidationMode {
     Sparql,
 }
 
-pub struct ShaclProcessor<S: SRDF + QuerySRDF> {
-    store: Store<S>,
+pub struct ShaclProcessor<R: Rdf> {
+    store: Store<R>,
     mode: ShaclValidationMode,
     subsetting: Subsetting,
 }
 
-impl<S: SRDF + QuerySRDF + Debug + 'static> ShaclProcessor<S> {
-    pub fn new(srdf: S, mode: ShaclValidationMode, subsetting: Subsetting) -> Self {
+impl<R: Rdf + Debug + 'static> ShaclProcessor<R> {
+    pub fn new(srdf: R, mode: ShaclValidationMode, subsetting: Subsetting) -> Self {
         Self {
             store: Store::new(srdf, subsetting != Subsetting::None),
             mode,
@@ -52,7 +51,7 @@ impl<S: SRDF + QuerySRDF + Debug + 'static> ShaclProcessor<S> {
     pub fn validate(
         &self,
         shapes_graph: &CompiledSchema<R>,
-    ) -> Result<ValidationReport, ValidateError> {
+    ) -> Result<ValidationReport<R>, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 

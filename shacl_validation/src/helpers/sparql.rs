@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
-use srdf::QuerySRDF;
+use srdf::model::rdf::Object;
+use srdf::model::sparql::Sparql;
 
 use crate::helpers::helper_error::SPARQLError;
 
-pub fn select<S: QuerySRDF>(
+pub fn select<S: Sparql>(
     store: &S,
     query_str: String,
     index: &str,
-) -> Result<HashSet<S::Term>, SPARQLError> {
+) -> Result<HashSet<Object<S>>, SPARQLError> {
     let mut ans = HashSet::new();
     let query = match store.query_select(&query_str) {
         Ok(ans) => ans,

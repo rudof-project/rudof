@@ -12,8 +12,8 @@ pub enum ReportError {
 
 #[derive(Error, Debug)]
 pub enum ResultError {
-    #[error("Error parsing the ValidationResult, the {} field is missing", _0)]
+    #[error("Error parsing the ValidationResult<R>, the {} field is missing", _0)]
     MissingRequiredField(String),
-    #[error("Error parsing the ValidationResult, {}", _0)]
+    #[error("Error parsing the ValidationResult<R>, {}", _0)]
     Srdf(#[from] SRDFError),
 }

@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::ops::Not;
 
 use indoc::formatdoc;
@@ -6,8 +5,10 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
+use srdf::model::Term;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -28,12 +29,12 @@ impl<R: Rdf> NativeValidator<R> for Nodekind {
         _: &Store<R>,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let node_kind = |value_node: &S::Term| {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
+        let node_kind = |value_node: &Object<R>| {
             match (
-                S::term_is_bnode(value_node),
-                S::term_is_iri(value_node),
-                S::term_is_literal(value_node),
+                value_node.is_blank_node(),
+                value_node.is_iri(),
+                value_node.is_literal(),
             ) {
                 (true, false, false) => matches!(
                     self.node_kind(),
@@ -71,7 +72,7 @@ impl<S: Sparql> SparqlValidator<S> for Nodekind {
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
         let query = move |value_node: &S::Term| {

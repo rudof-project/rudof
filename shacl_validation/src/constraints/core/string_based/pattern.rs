@@ -1,11 +1,10 @@
-use std::fmt::Debug;
-
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Rdf;
+use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -26,9 +25,9 @@ impl<R: Rdf> NativeValidator<R> for Pattern {
         _: &Store<R>,
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let pattern = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
+        let pattern = |value_node: &Object<R>| {
+            if value_node.is_blank_node() {
                 true
             } else {
                 todo!()
@@ -53,7 +52,7 @@ impl<S: Sparql> SparqlValidator<S> for Pattern {
         store: &Store<S>,
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();
 
