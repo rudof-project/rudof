@@ -12,7 +12,7 @@ use tracing::debug;
 
 use crate::model::focus_rdf::FocusRdf;
 use crate::model::mutable_rdf::MutableRdf;
-use crate::model::parse::RdfParse;
+use crate::model::parse::RdfReader;
 use crate::model::parse::ReaderMode;
 use crate::model::rdf::Object;
 use crate::model::rdf::Predicate;
@@ -69,8 +69,8 @@ impl<T: Triple> GenericGraph<T> {
     }
 }
 
-impl RdfParse for GenericGraph<OxTriple> {
-    type ParseError = GraphParseError;
+impl RdfReader for GenericGraph<OxTriple> {
+    type ReaderError = GraphParseError;
 
     fn merge_from_reader<R: Read>(
         &mut self,
@@ -78,7 +78,7 @@ impl RdfParse for GenericGraph<OxTriple> {
         format: RdfFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), Self::ParseError> {
+    ) -> Result<(), Self::ReaderError> {
         let reader = OxRdfParser::from_format(format.into()).for_reader(read);
 
         if let RdfFormat::Turtle = format {
@@ -217,7 +217,7 @@ mod tests {
     use crate::graph::oxgraph::ReaderMode;
     use crate::iri;
     use crate::model::mutable_rdf::MutableRdf;
-    use crate::model::parse::RdfParse;
+    use crate::model::parse::RdfReader;
     use crate::model::rdf::Object;
     use crate::model::rdf::Predicate;
     use crate::model::rdf::Rdf;
@@ -237,7 +237,7 @@ mod tests {
     use crate::set_focus;
     use crate::ParserResult;
     use crate::RDFNodeParse;
-    use crate::RDFParseError;
+    use crate::RdfParseError;
 
     use super::OxGraph;
 
@@ -460,9 +460,9 @@ mod tests {
             s.parse().map_err(|_| IntConversionError(s))
         }
 
-        impl From<IntConversionError> for RDFParseError {
-            fn from(error: IntConversionError) -> RDFParseError {
-                RDFParseError::Custom {
+        impl From<IntConversionError> for RdfParseError {
+            fn from(error: IntConversionError) -> RdfParseError {
+                RdfParseError::Custom {
                     msg: format!("Int conversion error: {}", error.0),
                 }
             }
@@ -479,7 +479,7 @@ mod tests {
         let p = OxNamedNode::new_unchecked("http://example.org/p").as_iri_s();
 
         fn cnv_int(s: String) -> ParserResult<isize> {
-            s.parse().map_err(|_| RDFParseError::Custom {
+            s.parse().map_err(|_| RdfParseError::Custom {
                 msg: format!("Error converting {s}"),
             })
         }

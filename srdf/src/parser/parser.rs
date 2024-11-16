@@ -13,8 +13,8 @@ use crate::model::Term;
 use crate::model::Triple;
 use crate::RDF_TYPE;
 
-use super::rdf_node_parser::*;
-use super::rdf_parser_error::RDFParseError;
+use super::node_parser::*;
+use super::parser_error::RdfParseError;
 
 /// The following code is an attempt to define parser combinators where the input
 /// is an RDF graph instead of a sequence of characters. Some parts of this
@@ -67,7 +67,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn instances_of<'a>(
         &'a self,
         object: &'a Object<RDF>,
-    ) -> Result<impl Iterator<Item = Subject<RDF>>, RDFParseError> {
+    ) -> Result<impl Iterator<Item = Subject<RDF>>, RdfParseError> {
         let rdf_type = Self::rdf_type();
 
         let triples = match self
@@ -76,7 +76,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
         {
             Ok(triples) => triples,
             Err(_) => {
-                return Err(RDFParseError::SRDFError {
+                return Err(RdfParseError::SRDFError {
                     err: "Error obtaining the triples".to_string(),
                 })
             }
@@ -90,11 +90,11 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
         Ok(subjects.into_iter())
     }
 
-    pub fn instance_of(&self, object: &Object<RDF>) -> Result<Subject<RDF>, RDFParseError> {
+    pub fn instance_of(&self, object: &Object<RDF>) -> Result<Subject<RDF>, RdfParseError> {
         let mut values = self.instances_of(object)?;
         if let Some(value1) = values.next() {
             if let Some(value2) = values.next() {
-                Err(RDFParseError::MoreThanOneInstanceOf {
+                Err(RdfParseError::MoreThanOneInstanceOf {
                     object: format!("{object}"),
                     value1: format!("{value1}"),
                     value2: format!("{value2}"),
@@ -104,47 +104,47 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
                 Ok(value1.clone())
             }
         } else {
-            Err(RDFParseError::NoInstancesOf {
+            Err(RdfParseError::NoInstancesOf {
                 object: format!("{object}"),
             })
         }
     }
 
-    pub fn predicate_values(&mut self, pred: &IriS) -> Result<HashSet<Object<RDF>>, RDFParseError> {
+    pub fn predicate_values(&mut self, pred: &IriS) -> Result<HashSet<Object<RDF>>, RdfParseError> {
         let mut p = property_values(pred);
         let vs = p.parse_impl(&mut self.rdf)?;
         Ok(vs)
     }
 
-    pub fn predicate_value(&mut self, pred: &IriS) -> Result<Object<RDF>, RDFParseError>
+    pub fn predicate_value(&mut self, pred: &IriS) -> Result<Object<RDF>, RdfParseError>
     where
         RDF: FocusRdf,
     {
         property_value(pred).parse_impl(&mut self.rdf)
     }
 
-    pub fn get_rdf_type(&mut self) -> Result<Object<RDF>, RDFParseError> {
+    pub fn get_rdf_type(&mut self) -> Result<Object<RDF>, RdfParseError> {
         let value = self.predicate_value(&RDF_TYPE)?;
         Ok(value)
     }
 
-    pub fn term_as_iri(term: &Object<RDF>) -> Result<IriS, RDFParseError> {
+    pub fn term_as_iri(term: &Object<RDF>) -> Result<IriS, RdfParseError> {
         match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
             (true, false, false) => Ok(term.as_iri().unwrap().as_iri_s()),
-            (false, true, false) => Err(RDFParseError::ExpectedIRIFoundBNode {
+            (false, true, false) => Err(RdfParseError::ExpectedIRIFoundBNode {
                 bnode: term.to_string(),
             }),
-            (false, false, true) => Err(RDFParseError::ExpectedIRIFoundLiteral {
+            (false, false, true) => Err(RdfParseError::ExpectedIRIFoundLiteral {
                 lit: term.to_string(),
             }),
             _ => unreachable!(),
         }
     }
 
-    pub fn term_as_subject(term: &Object<RDF>) -> Result<Subject<RDF>, RDFParseError> {
+    pub fn term_as_subject(term: &Object<RDF>) -> Result<Subject<RDF>, RdfParseError> {
         match term.clone().try_into() {
             Ok(subj) => Ok(subj),
-            Err(_) => Err(RDFParseError::ExpectedSubject {
+            Err(_) => Err(RdfParseError::ExpectedSubject {
                 node: format!("{term}"),
             }),
         }
@@ -153,7 +153,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn parse_list_for_predicate(
         &mut self,
         pred: &IriS,
-    ) -> Result<Vec<Object<RDF>>, RDFParseError> {
+    ) -> Result<Vec<Object<RDF>>, RdfParseError> {
         let list_node = self.predicate_value(pred)?;
         self.rdf.set_focus(list_node);
         let values = rdf_list().parse_impl(&mut self.rdf)?;

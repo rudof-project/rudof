@@ -1,4 +1,4 @@
-use srdf::RDFParseError;
+use srdf::RdfParseError;
 use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -18,7 +18,7 @@ pub enum ValidateError {
     #[error("Error during some I/O operation")]
     IO(#[from] std::io::Error),
     #[error("Error loading the Shapes")]
-    Shapes(#[from] RDFParseError),
+    Shapes(#[from] RdfParseError),
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
     #[error("Error during the SPARQL operation")]

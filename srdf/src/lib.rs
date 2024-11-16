@@ -10,17 +10,17 @@
 // pub use crate::neighs::*;
 pub use crate::rdf_data_config::*;
 pub use graph::*;
+pub use parser::*;
 pub use sparql::*;
-pub use srdf_parser::*;
 pub use vocab::*;
 
 // TODO: move to ShEx
 // pub mod neighs;
 pub mod graph;
 pub mod model;
+pub mod parser;
 pub mod rdf_data_config;
 pub mod sparql;
-pub mod srdf_parser;
 pub mod vocab;
 
 /// Declares a named RDF parser which can be reused.
@@ -125,7 +125,7 @@ macro_rules! combine_rdf_parser_impl {
             fn parse_impl(
                 &mut self,
                 input: &mut $input_type,
-                ) -> $crate::srdf_parser::ParserResult<$output_type>
+                ) -> $crate::parser::ParserResult<$output_type>
             {
                 let $type_name { $( $arg: ref mut $arg,)* .. } = *self;
                 let r = $parser.parse_impl(input)?;

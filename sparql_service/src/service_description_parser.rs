@@ -153,7 +153,7 @@ fn supported_language(iri: &IriS) -> PResult<SupportedLanguage> {
         SD_SPARQL10_QUERY_STR => Ok(SupportedLanguage::SPARQL10Query),
         SD_SPARQL11_QUERY_STR => Ok(SupportedLanguage::SPARQL11Query),
         SD_SPARQL11_UPDATE_STR => Ok(SupportedLanguage::SPARQL11Update),
-        _ => Err(srdf::RDFParseError::Custom {
+        _ => Err(srdf::RdfParseError::Custom {
             msg: format!("Unexpected value for supported language: {iri}"),
         }),
     }

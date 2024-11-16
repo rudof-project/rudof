@@ -3,8 +3,6 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 use iri_s::IriS;
-use rdf::Predicate;
-use rdf::Rdf;
 
 pub mod focus_rdf;
 pub mod mutable_rdf;

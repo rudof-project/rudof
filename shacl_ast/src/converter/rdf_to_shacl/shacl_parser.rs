@@ -523,23 +523,23 @@ fn parse_has_value_values<R: FocusRdf>() -> impl RDFNodeParse<R, Output = Compon
     term().flat_map(cnv_has_value::<R>)
 }
 
-fn cnv_has_value<R: Rdf>(term: Object<R>) -> std::result::Result<Component<R>, RDFParseError> {
+fn cnv_has_value<R: Rdf>(term: Object<R>) -> std::result::Result<Component<R>, RdfParseError> {
     let value = term_to_value::<R>(&term)?;
     Ok(Component::HasValue(HasValue::new(value)))
 }
 
-fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Object<R>, RDFParseError> {
+fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Object<R>, RdfParseError> {
     match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
         (true, false, false) => Ok(term.clone()),
         (false, false, true) => Ok(term.clone()),
-        (false, true, false) => Err(RDFParseError::BlankNodeNoValue {
+        (false, true, false) => Err(RdfParseError::BlankNodeNoValue {
             bnode: term.to_string(),
         }),
         _ => unreachable!(),
     }
 }
 
-fn cnv_in_list<R: Rdf>(ls: Vec<Object<R>>) -> std::result::Result<Component<R>, RDFParseError> {
+fn cnv_in_list<R: Rdf>(ls: Vec<Object<R>>) -> std::result::Result<Component<R>, RdfParseError> {
     let values = ls.iter().flat_map(term_to_value::<R>).collect();
     Ok(Component::In(In::new(values)))
 }

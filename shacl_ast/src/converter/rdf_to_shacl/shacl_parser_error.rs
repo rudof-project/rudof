@@ -1,5 +1,5 @@
 use crate::ShaclError;
-use srdf::RDFParseError;
+use srdf::RdfParseError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -26,6 +26,6 @@ pub enum ShaclParserError {
     #[error("RDF Parse error: {err}")]
     RdfParseError {
         #[from]
-        err: RDFParseError,
+        err: RdfParseError,
     },
 }

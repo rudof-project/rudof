@@ -2,7 +2,7 @@ use iri_s::IriS;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
-pub enum RDFParseError {
+pub enum RdfParseError {
     #[error("No focus node")]
     NoFocusNode,
 
@@ -81,8 +81,8 @@ pub enum RDFParseError {
 
     #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
     FailedOr {
-        err1: Box<RDFParseError>,
-        err2: Box<RDFParseError>,
+        err1: Box<RdfParseError>,
+        err2: Box<RdfParseError>,
     },
 
     #[error("Not parser failed because internal parser passed with value: {value}")]
