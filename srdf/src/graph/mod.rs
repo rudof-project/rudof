@@ -6,6 +6,8 @@ use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
+use crate::model::rdf::Predicate;
+use crate::model::rdf::Rdf;
 use crate::model::rdf_format::RdfFormat;
 use crate::model::BlankNode;
 use crate::model::Iri;
@@ -191,6 +193,10 @@ impl Literal for OxLiteral {
             Ok(int) => Some(int),
             Err(_) => None,
         }
+    }
+
+    fn datatype(&self) -> &str {
+        self.datatype().as_str()
     }
 }
 

@@ -3,6 +3,8 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 use iri_s::IriS;
+use rdf::Predicate;
+use rdf::Rdf;
 
 pub mod focus_rdf;
 pub mod mutable_rdf;
@@ -83,4 +85,5 @@ pub trait Literal {
     fn as_bool(&self) -> Option<bool>;
     fn as_string(&self) -> Option<String>;
     fn as_int(&self) -> Option<isize>;
+    fn datatype(&self) -> &str;
 }

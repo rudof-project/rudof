@@ -2,8 +2,11 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Iri;
+use srdf::model::Literal;
 use srdf::model::Term;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -30,7 +33,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Datatype<
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
         let datatype = |value_node: &Object<R>| {
             if let Some(literal) = value_node.as_literal() {
-                return literal.datatype() != *self.datatype();
+                return Predicate::<R>::new(literal.datatype()) != *self.datatype();
             }
             true
         };
