@@ -10,6 +10,7 @@ pub mod parse;
 pub mod rdf;
 pub mod rdf_format;
 pub mod sparql;
+pub mod value;
 
 pub enum GraphName {
     Default,

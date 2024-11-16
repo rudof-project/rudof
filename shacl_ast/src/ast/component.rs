@@ -7,12 +7,11 @@ use srdf::model::rdf::Literal;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::value::Value;
 use srdf::model::Literal as _;
 
 use crate::node_kind::NodeKind;
 use crate::vocab::*;
-
-use super::value::Value;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Component<R: Rdf> {

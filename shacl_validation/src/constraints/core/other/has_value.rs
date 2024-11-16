@@ -7,8 +7,8 @@ use srdf::model::sparql::Sparql;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::Engine;
 use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
@@ -32,7 +32,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for HasValue<R> {
             shape,
             value_nodes,
             FocusNodeIteration,
-            |targets: &FocusNodes<R>| !targets.iter().any(|value| value == self.value()),
+            |targets: &FocusNodes<R>| !targets.iter().any(|value| value.into() == self.value()),
             subsetting,
         )
     }

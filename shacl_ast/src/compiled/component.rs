@@ -8,7 +8,7 @@ use srdf::model::rdf::Literal;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use value::Value;
+use srdf::model::value::Value;
 use vocab::*;
 
 use crate::component::Component;

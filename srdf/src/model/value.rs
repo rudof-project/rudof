@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use srdf::model::rdf::Iri;
-use srdf::model::rdf::Literal;
-use srdf::model::Triple;
+use crate::model::rdf::Iri;
+use crate::model::rdf::Literal;
+use crate::model::Triple;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value<T: Triple> {

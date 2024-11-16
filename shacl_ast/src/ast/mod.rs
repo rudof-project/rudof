@@ -9,7 +9,6 @@ pub mod shacl_error;
 pub mod shacl_path;
 pub mod shape;
 pub mod target;
-pub mod value;
 
 pub use schema::*;
 pub use shacl_error::*;

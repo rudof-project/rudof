@@ -30,10 +30,10 @@ use prefixmap::PrefixMap;
 use property_shape::PropertyShape;
 use shacl_path::SHACLPath;
 use shape::Shape;
+use srdf::model::value::Value;
 use srdf::model::Iri;
 use srdf::*;
 use target::Target;
-use value::Value;
 
 use crate::vocab::*;
 use crate::*;

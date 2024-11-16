@@ -8,8 +8,8 @@ use srdf::model::sparql::Sparql;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::Engine;
 use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
@@ -32,7 +32,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for In<R> {
             shape,
             value_nodes,
             ValueNodeIteration,
-            |value_node: &Object<R>| !self.values().contains(value_node),
+            |value_node: &Object<R>| !self.values().contains(value_node.into()),
             subsetting,
         )
     }
