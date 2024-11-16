@@ -7,6 +7,7 @@ use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
 use crate::model::rdf_format::RdfFormat;
+use crate::model::value::Value;
 use crate::model::BlankNode;
 use crate::model::Iri;
 use crate::model::Literal;
@@ -107,7 +108,6 @@ impl Term for OxTerm {
     type BlankNode = OxBlankNode;
     type Iri = OxIri;
     type Literal = OxLiteral;
-    #[cfg(feature = "rdf-star")]
     type Triple = OxTriple;
 
     fn is_blank_node(&self) -> bool {
@@ -164,6 +164,14 @@ impl Term for OxTerm {
             OxTerm::BlankNode(_) => None,
             OxTerm::Literal(_) => None,
             OxTerm::Triple(triple) => Some(&triple),
+        }
+    }
+
+    fn as_value(&self) -> Option<Value<OxTriple>> {
+        match self {
+            OxTerm::NamedNode(named_node) => Some(Value::iri(named_node.clone())),
+            OxTerm::BlankNode(_) => None,
+            OxTerm::Literal(literal) => Some(Value::literal(literal.clone())),
         }
     }
 }

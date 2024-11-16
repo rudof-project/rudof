@@ -3,6 +3,7 @@ use shacl_ast::compiled::component::HasValue;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Term as _;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -32,7 +33,11 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for HasValue<
             shape,
             value_nodes,
             FocusNodeIteration,
-            |targets: &FocusNodes<R>| !targets.iter().any(|value| value.into() == self.value()),
+            |targets: &FocusNodes<R>| {
+                !targets
+                    .iter()
+                    .any(|value| value.as_value().unwrap() == self.value())
+            },
             subsetting,
         )
     }

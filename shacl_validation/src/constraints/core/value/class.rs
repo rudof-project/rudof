@@ -2,13 +2,14 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::iri;
 use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Iri;
 use srdf::model::Term;
-use srdf::RDFS_SUBCLASS_OF_STR;
-use srdf::RDF_TYPE_STR;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -41,7 +42,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Class<R> 
             let is_class_valid = get_objects_for(
                 store.inner_store(),
                 value_node,
-                &iri!(R, RDF_TYPE_STR).into(),
+                &Predicate::<R>::new(RDF_TYPE.as_str()).into(),
             )
             .unwrap_or_default()
             .iter()
@@ -50,7 +51,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Class<R> 
                     || get_objects_for(
                         store.inner_store(),
                         ctype,
-                        &iri!(R, RDFS_SUBCLASS_OF_STR).into(),
+                        &Predicate::<R>::new(RDFS_SUBCLASS_OF.as_str()).into(),
                     )
                     .unwrap_or_default()
                     .contains(self.class_rule())

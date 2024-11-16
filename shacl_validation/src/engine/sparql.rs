@@ -3,6 +3,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
+use srdf::model::rdf::Iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
@@ -137,7 +138,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         &self,
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
-        _predicate: &Predicate<S>,
+        _predicate: &Iri<S::Triple>,
         _focus_node: &Object<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {

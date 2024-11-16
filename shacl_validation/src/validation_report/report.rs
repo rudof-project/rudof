@@ -3,9 +3,9 @@ use std::fmt::Display;
 
 use colored::*;
 use prefixmap::PrefixMap;
-use shacl_ast::vocab::SH_RESULT_STR;
-use srdf::iri;
+use shacl_ast::vocab::SH_RESULT;
 use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::Iri;
 use srdf::model::Term;
@@ -76,7 +76,11 @@ impl<R: Rdf> ValidationReport<R> {
 
     pub fn parse(store: &R, subject: Object<R>) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &iri!(R, SH_RESULT_STR).into())? {
+        for result in get_objects_for(
+            store,
+            &subject,
+            &Predicate::<R>::new(SH_RESULT.as_str()).into(),
+        )? {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))

@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 pub const RDF: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 pub const RDFS: &str = "http://www.w3.org/2000/01/rdf-schema#";
 pub const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
+
 pub const RDF_TYPE_STR: &str = concatcp!(RDF, "type");
 pub const RDF_FIRST_STR: &str = concatcp!(RDF, "first");
 pub const RDF_REST_STR: &str = concatcp!(RDF, "rest");

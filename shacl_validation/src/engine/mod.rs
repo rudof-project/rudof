@@ -3,6 +3,7 @@ use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
 use shacl_ast::target::Target;
+use srdf::model::rdf::Iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
@@ -119,7 +120,7 @@ pub trait Engine<R: Rdf> {
         &self,
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
-        predicate: &Predicate<R>,
+        predicate: &Iri<R::Triple>,
         focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 

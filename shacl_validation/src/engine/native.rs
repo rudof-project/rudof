@@ -2,17 +2,17 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
-use srdf::iri;
+use srdf::model::rdf::Iri;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::Iri as _;
 use srdf::model::Term as _;
 use srdf::model::Triple;
-use srdf::RDFS_CLASS_STR;
-use srdf::RDFS_SUBCLASS_OF_STR;
-use srdf::RDF_TYPE_STR;
+use srdf::RDFS_CLASS;
+use srdf::RDFS_SUBCLASS_OF;
+use srdf::RDF_TYPE;
 
-use super::Engine;
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::srdf::get_objects_for;
@@ -22,6 +22,8 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
+
+use super::Engine;
 
 pub struct NativeEngine;
 
@@ -57,11 +59,12 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let triples = match store.inner_store().triples_matching(
-            None,
-            Some(&iri!(R, RDF_TYPE_STR)),
-            Some(class),
-        ) {
+        let rdf_type = Predicate::<R>::new(RDF_TYPE.as_str());
+
+        let triples = match store
+            .inner_store()
+            .triples_matching(None, Some(&rdf_type), Some(class))
+        {
             Ok(subjects) => subjects.map(Triple::subj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -100,30 +103,41 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         store: &Store<R>,
         shape: &CompiledShape<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
-        let ctypes = get_objects_for(store.inner_store(), shape.id(), &iri!(R, RDF_TYPE_STR))?;
+        let ctypes = get_objects_for(
+            store.inner_store(),
+            shape.id(),
+            &Predicate::<R>::new(RDF_TYPE.as_str()),
+        )?;
 
         let mut subclasses = get_subjects_for(
             store.inner_store(),
-            &iri!(R, RDFS_SUBCLASS_OF_STR),
-            &iri!(R, RDFS_CLASS_STR).into(),
+            &Predicate::<R>::new(RDFS_SUBCLASS_OF.as_str()),
+            &Predicate::<R>::new(RDFS_CLASS.as_str()).into(),
         )?;
 
-        subclasses.insert(iri!(R, RDFS_SUBCLASS_OF_STR));
+        subclasses.insert(Predicate::<R>::new(RDFS_SUBCLASS_OF.as_str()).into());
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes =
-                get_subjects_for(store.inner_store(), &iri!(R, RDF_TYPE_STR), shape.id())?;
+            let actual_class_nodes = get_subjects_for(
+                store.inner_store(),
+                &Predicate::<R>::new(RDF_TYPE.as_str()),
+                shape.id(),
+            )?;
 
             let subclass_targets = get_subjects_for(
                 store.inner_store(),
-                &iri!(R, RDFS_SUBCLASS_OF_STR),
+                &Predicate::<R>::new(RDFS_SUBCLASS_OF.as_str()),
                 shape.id(),
             )?
             .into_iter()
             .flat_map(move |subclass| {
-                get_subjects_for(store.inner_store(), &iri!(R, RDF_TYPE_STR), &subclass)
-                    .into_iter()
-                    .flatten()
+                get_subjects_for(
+                    store.inner_store(),
+                    &Predicate::<R>::new(RDF_TYPE.as_str()),
+                    &subclass,
+                )
+                .into_iter()
+                .flatten()
             });
 
             let focus_nodes = actual_class_nodes.into_iter().chain(subclass_targets);
@@ -138,11 +152,12 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         &self,
         store: &Store<R>,
         _: &CompiledPropertyShape<R>,
-        predicate: &Predicate<R>,
+        predicate: &Iri<R::Triple>,
         focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
+        let predicate = Predicate::<R>::new(&predicate.to_string());
         Ok(FocusNodes::new(
-            get_objects_for(store.inner_store(), focus_node, predicate)?.into_iter(),
+            get_objects_for(store.inner_store(), focus_node, &predicate)?.into_iter(),
         ))
     }
 

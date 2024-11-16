@@ -22,9 +22,10 @@ pub fn select<S: Rdf + Sparql>(
         }
     };
     for solution in query.iter() {
-        if let Some(solution) = solution.find_solution(index) {
-            ans.insert(solution.to_owned());
-        }
+        // if let Some(solution) = solution.find_solution(index) {
+        //     ans.insert(solution.to_owned());
+        // }
+        todo!()
     }
     Ok(ans)
 }

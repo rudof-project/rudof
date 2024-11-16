@@ -3,6 +3,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 use iri_s::IriS;
+use value::Value;
 
 pub mod focus_rdf;
 pub mod mutable_rdf;
@@ -61,7 +62,6 @@ pub trait Term {
     type BlankNode: BlankNode + ToString;
     type Iri: Iri + Clone + Eq + Display + Debug + Hash;
     type Literal: Literal + Clone + Eq + Display + Debug + Hash;
-    #[cfg(feature = "rdf-star")]
     type Triple: Triple;
 
     fn is_blank_node(&self) -> bool;
@@ -75,6 +75,8 @@ pub trait Term {
     fn as_literal(&self) -> Option<&Self::Literal>;
     #[cfg(feature = "rdf-star")]
     fn as_triple(&self) -> Option<&Self::Triple>;
+
+    fn as_value(&self) -> Option<Value<Self::Triple>>;
 }
 
 pub trait BlankNode {

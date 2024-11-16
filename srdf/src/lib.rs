@@ -5,6 +5,7 @@
 //! - [`Rdf`]: Definitions on RDF graphs
 //! - [`FocusRDF`]: RDF graphs with a focus node
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
+
 // pub use crate::neighs::*;
 pub use crate::rdf_data_config::*;
 // pub use graph::shacl_path::*;
@@ -21,13 +22,6 @@ pub mod rdf_data_config;
 pub mod srdf_parser;
 // pub mod srdf_sparql;
 pub mod vocab;
-
-#[macro_export]
-macro_rules! iri {
-    ($generic:ty, $lit: tt) => {
-        $crate::model::rdf::Predicate::<$generic>::new($lit);
-    };
-}
 
 /// Declares a named RDF parser which can be reused.
 ///
