@@ -1,3 +1,5 @@
+use std::fmt::Display;
+use std::rc::Rc;
 use std::str::FromStr;
 
 use iri_s::IriS;
@@ -8,6 +10,7 @@ use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
+use regex::Regex;
 use reqwest::blocking::Client;
 
 use crate::model::rdf::Rdf;
@@ -104,7 +107,7 @@ impl FromStr for SRDFSparql {
             let client = sparql_client()?;
             Ok(SRDFSparql {
                 endpoint_iri: iri_s,
-                prefixmap: PrefixMap::new(),
+                prefixmap: PrefixMap::default(),
                 client,
             })
         } else {

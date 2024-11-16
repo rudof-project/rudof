@@ -1,5 +1,6 @@
 //! SPARQL Service
-//!
+
+pub mod data_config;
 pub mod query_config;
 pub mod query_processor;
 pub mod service_config;

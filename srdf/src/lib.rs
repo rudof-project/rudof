@@ -8,7 +8,6 @@
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 
 // pub use crate::neighs::*;
-pub use crate::rdf_data_config::*;
 pub use graph::*;
 pub use parser::*;
 pub use sparql::*;
@@ -19,7 +18,6 @@ pub use vocab::*;
 pub mod graph;
 pub mod model;
 pub mod parser;
-pub mod rdf_data_config;
 pub mod sparql;
 pub mod vocab;
 

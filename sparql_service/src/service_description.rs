@@ -5,7 +5,7 @@ use std::{fmt::Display, io::BufRead, path::Path};
 
 use iri_s::IriS;
 use itertools::Itertools;
-use srdf::{RDFFormat, ReaderMode, GenericGraph};
+use srdf::{GenericGraph, RDFFormat, ReaderMode};
 
 use crate::{ServiceDescriptionError, ServiceDescriptionParser};
 

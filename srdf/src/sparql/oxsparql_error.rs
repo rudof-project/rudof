@@ -1,5 +1,4 @@
-use iri_s::IriSError;
-use oxiri::IriParseError;
+use iri_s::error::GenericIriError;
 use oxrdf::Term;
 //use sparesults::QuerySolution;
 use thiserror::Error;
@@ -47,10 +46,7 @@ pub enum SparqlError {
     NoSubject { term: Term },
 
     #[error(transparent)]
-    IriSError {
-        #[from]
-        err: IriSError,
-    },
+    SimpleIri(#[from] GenericIriError),
 }
 
 impl From<reqwest::Error> for SparqlError {
