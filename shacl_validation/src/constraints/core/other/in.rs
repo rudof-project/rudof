@@ -4,7 +4,6 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
-use srdf::model::Term as _;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -33,7 +32,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for In<R> {
             shape,
             value_nodes,
             ValueNodeIteration,
-            |value_node: &Object<R>| !self.values().contains(&value_node.as_value().unwrap()),
+            |value_node: &Object<R>| !self.values().contains(value_node),
             subsetting,
         )
     }

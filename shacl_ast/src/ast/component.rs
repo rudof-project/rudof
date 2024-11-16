@@ -7,7 +7,6 @@ use srdf::model::rdf::Literal;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::value::Value;
 use srdf::model::Literal as _;
 
 use crate::node_kind::NodeKind;
@@ -322,15 +321,15 @@ impl<R: Rdf> Display for Closed<R> {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct HasValue<R: Rdf> {
-    value: Value<R::Triple>,
+    value: Object<R>,
 }
 
 impl<R: Rdf> HasValue<R> {
-    pub fn new(value: Value<R::Triple>) -> Self {
+    pub fn new(value: Object<R>) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &Value<R::Triple> {
+    pub fn value(&self) -> &Object<R> {
         &self.value
     }
 }
@@ -347,15 +346,15 @@ impl<R: Rdf> Display for HasValue<R> {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct In<R: Rdf> {
-    values: Vec<Value<R::Triple>>,
+    values: Vec<Object<R>>,
 }
 
 impl<R: Rdf> In<R> {
-    pub fn new(values: Vec<Value<R::Triple>>) -> Self {
+    pub fn new(values: Vec<Object<R>>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<Value<R::Triple>> {
+    pub fn values(&self) -> &Vec<Object<R>> {
         &self.values
     }
 }

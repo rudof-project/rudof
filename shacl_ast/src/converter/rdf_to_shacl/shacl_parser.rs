@@ -30,7 +30,6 @@ use prefixmap::PrefixMap;
 use property_shape::PropertyShape;
 use shacl_path::SHACLPath;
 use shape::Shape;
-use srdf::model::value::Value;
 use srdf::model::Iri;
 use srdf::*;
 use target::Target;
@@ -529,13 +528,13 @@ fn cnv_has_value<R: Rdf>(term: Object<R>) -> std::result::Result<Component<R>, R
     Ok(Component::HasValue(HasValue::new(value)))
 }
 
-fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Value<R::Triple>, RDFParseError> {
+fn term_to_value<R: Rdf>(term: &Object<R>) -> std::result::Result<Object<R>, RDFParseError> {
     match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
-        (true, false, false) => Ok(Value::Iri(term.as_iri().unwrap().clone())),
+        (true, false, false) => Ok(term.clone()),
+        (false, false, true) => Ok(term.clone()),
         (false, true, false) => Err(RDFParseError::BlankNodeNoValue {
-            bnode: term.as_blank_node().unwrap().to_string(),
+            bnode: term.to_string(),
         }),
-        (false, false, true) => Ok(Value::Literal(term.as_literal().unwrap().clone())),
         _ => unreachable!(),
     }
 }
