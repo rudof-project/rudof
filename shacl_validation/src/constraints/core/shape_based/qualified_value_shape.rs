@@ -14,7 +14,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for QualifiedValueShape<R> {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for QualifiedValueShape<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -30,7 +30,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for QualifiedValueSha
     }
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for QualifiedValueShape<S> {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for QualifiedValueShape<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

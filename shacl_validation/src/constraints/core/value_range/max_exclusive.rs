@@ -16,7 +16,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MaxExclusive<R> {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for MaxExclusive<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -30,16 +30,16 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MaxExclusive<R> {
     }
 }
 
-impl<R: Rdf + Sparql> SparqlValidator<R> for MaxExclusive<R> {
+impl<S: Rdf + Sparql + Clone> SparqlValidator<S> for MaxExclusive<S> {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<R>,
-        shape: &CompiledShape<R>,
-        store: &Store<R>,
-        value_nodes: &ValueNodes<R>,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
+        store: &Store<S>,
+        value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
-    ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let query = |value_node: &Object<R>| {
+    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        let query = |value_node: &Object<S>| {
             formatdoc! {
                 " ASK {{ FILTER ({} > {}) }} ",
                 value_node, self.max_exclusive()

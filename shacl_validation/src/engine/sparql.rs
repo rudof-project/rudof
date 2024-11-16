@@ -21,7 +21,7 @@ use crate::Subsetting;
 
 pub struct SparqlEngine;
 
-impl<S: Rdf + Sparql + 'static> Engine<S> for SparqlEngine {
+impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &Store<S>,

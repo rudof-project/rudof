@@ -13,7 +13,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Disjoint<R> {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Disjoint<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -27,7 +27,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Disjoint<R> {
     }
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for Disjoint<S> {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for Disjoint<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

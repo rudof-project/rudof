@@ -1,8 +1,11 @@
+use iri_s::IriS;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
+use srdf::model::Iri;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::store::Store;
@@ -12,7 +15,7 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-fn apply<R: Rdf, I: IterationStrategy<R>>(
+fn apply<R: Rdf + Clone, I: IterationStrategy<R>>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     value_nodes: &ValueNodes<R>,
@@ -30,8 +33,11 @@ fn apply<R: Rdf, I: IterationStrategy<R>>(
             if let Ok(condition) = evaluator(target) {
                 // if the condition is met --> Result
                 if condition {
-                    let component = RDFNode::iri(component.into());
-                    let result = ValidationResult::new(focus_node, component, &shape.severity());
+                    let result = ValidationResult::new(
+                        focus_node.clone(),
+                        Predicate::<R>::new(IriS::from(component.clone()).as_str()).into(),
+                        Predicate::<R>::new(IriS::from(shape.severity()).as_str()).into(),
+                    );
                     return Some(result.with_source(Some(shape.id().clone())));
                 }
                 // if the condition is not met, the target passes :D
@@ -46,7 +52,7 @@ fn apply<R: Rdf, I: IterationStrategy<R>>(
     Ok(results)
 }
 
-pub fn validate_native_with_strategy<R: Rdf, I: IterationStrategy<R>>(
+pub fn validate_native_with_strategy<R: Rdf + Clone, I: IterationStrategy<R>>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     value_nodes: &ValueNodes<R>,
@@ -64,7 +70,7 @@ pub fn validate_native_with_strategy<R: Rdf, I: IterationStrategy<R>>(
     )
 }
 
-pub fn validate_sparql_ask<R: Rdf + Sparql>(
+pub fn validate_sparql_ask<R: Rdf + Sparql + Clone>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     store: &Store<R>,

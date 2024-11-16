@@ -11,7 +11,7 @@ use super::component::CompiledComponent;
 use super::node_shape::CompiledNodeShape;
 use super::property_shape::CompiledPropertyShape;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CompiledShape<R: Rdf> {
     NodeShape(CompiledNodeShape<R>),
     PropertyShape(CompiledPropertyShape<R>),

@@ -17,7 +17,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MinCount {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for MinCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -43,7 +43,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for MinCount {
     }
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for MinCount {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for MinCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

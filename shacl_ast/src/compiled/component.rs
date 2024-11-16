@@ -18,7 +18,7 @@ use crate::*;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CompiledComponent<R: Rdf> {
     Class(Class<R>),
     Datatype(Datatype<R>),
@@ -95,7 +95,7 @@ impl<R: Rdf + Clone> CompiledComponent<R> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxCount {
     max_count: usize,
 }
@@ -125,7 +125,7 @@ impl From<ast::component::MaxCount> for MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinCount {
     min_count: isize,
 }
@@ -150,7 +150,7 @@ impl From<ast::component::MinCount> for MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct And<R: Rdf> {
     shapes: Vec<CompiledShape<R>>,
 }
@@ -175,7 +175,7 @@ impl<R: Rdf + Clone> ast::component::And<R> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Not<R: Rdf> {
     shape: CompiledShape<R>,
 }
@@ -202,7 +202,7 @@ impl<R: Rdf + Clone> ast::component::Not<R> {
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Or<R: Rdf> {
     shapes: Vec<CompiledShape<R>>,
 }
@@ -228,7 +228,7 @@ impl<R: Rdf + Clone> ast::component::Or<R> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Xone<R: Rdf> {
     shapes: Vec<CompiledShape<R>>,
 }
@@ -260,7 +260,7 @@ impl<R: Rdf + Clone> ast::component::Xone<R> {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Closed<R: Rdf> {
     is_closed: bool,
     ignored_properties: Vec<Predicate<R>>,
@@ -293,7 +293,7 @@ impl<R: Rdf> From<ast::component::Closed<R>> for Closed<R> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HasValue<R: Rdf> {
     value: Value<R::Triple>,
 }
@@ -318,7 +318,7 @@ impl<R: Rdf> From<ast::component::HasValue<R>> for HasValue<R> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct In<R: Rdf> {
     values: Vec<Value<R::Triple>>,
 }
@@ -344,7 +344,7 @@ impl<R: Rdf> From<ast::component::In<R>> for In<R> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Disjoint<R: Rdf> {
     iri_ref: Predicate<R>,
 }
@@ -370,7 +370,7 @@ impl<R: Rdf> From<ast::component::Disjoint<R>> for Disjoint<R> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Equals<R: Rdf> {
     iri_ref: Predicate<R>,
 }
@@ -398,7 +398,7 @@ impl<R: Rdf> From<ast::component::Equals<R>> for Equals<R> {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LessThanOrEquals<R: Rdf> {
     iri_ref: Predicate<R>,
 }
@@ -424,7 +424,7 @@ impl<R: Rdf> From<ast::component::LessThanOrEquals<R>> for LessThanOrEquals<R> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LessThan<R: Rdf> {
     iri_ref: Predicate<R>,
 }
@@ -449,7 +449,7 @@ impl<R: Rdf> From<ast::component::LessThan<R>> for LessThan<R> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<R: Rdf> {
     shape: CompiledShape<R>,
 }
@@ -478,7 +478,7 @@ impl<R: Rdf + Clone> ast::component::Node<R> {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QualifiedValueShape<R: Rdf> {
     shape: CompiledShape<R>,
     qualified_min_count: Option<isize>,
@@ -533,7 +533,7 @@ impl<R: Rdf + Clone> ast::component::QualifiedValueShape<R> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LanguageIn<R: Rdf> {
     langs: Vec<Literal<R::Triple>>,
 }
@@ -559,7 +559,7 @@ impl<R: Rdf> From<ast::component::LanguageIn<R>> for LanguageIn<R> {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxLength {
     max_length: isize,
 }
@@ -585,7 +585,7 @@ impl From<ast::component::MaxLength> for MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinLength {
     min_length: isize,
 }
@@ -610,7 +610,7 @@ impl From<ast::component::MinLength> for MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -640,7 +640,7 @@ impl From<ast::component::Pattern> for Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -665,7 +665,7 @@ impl From<ast::component::UniqueLang> for UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Class<R: Rdf> {
     class_rule: Object<R>,
 }
@@ -690,7 +690,7 @@ impl<R: Rdf> From<ast::component::Class<R>> for Class<R> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Datatype<R: Rdf> {
     datatype: Predicate<R>,
 }
@@ -715,7 +715,7 @@ impl<R: Rdf> From<ast::component::Datatype<R>> for Datatype<R> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -737,7 +737,7 @@ impl From<ast::component::Nodekind> for Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxExclusive<R: Rdf> {
     max_exclusive: Object<R>,
 }
@@ -761,7 +761,7 @@ impl<R: Rdf> From<ast::component::MaxExclusive<R>> for MaxExclusive<R> {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxInclusive<R: Rdf> {
     max_inclusive: Object<R>,
 }
@@ -785,7 +785,7 @@ impl<R: Rdf> From<ast::component::MaxInclusive<R>> for MaxInclusive<R> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinExclusive<R: Rdf> {
     min_exclusive: Object<R>,
 }
@@ -809,7 +809,7 @@ impl<R: Rdf> From<ast::component::MinExclusive<R>> for MinExclusive<R> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinInclusive<R: Rdf> {
     min_inclusive: Object<R>,
 }

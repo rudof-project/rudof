@@ -18,7 +18,7 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Datatype<R> {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Datatype<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -46,7 +46,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for Datatype<R> {
     }
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for Datatype<S> {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for Datatype<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

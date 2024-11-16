@@ -11,7 +11,7 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::shape::CompiledShape;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompiledNodeShape<R: Rdf> {
     id: Object<R>,
     components: Vec<CompiledComponent<R>>,

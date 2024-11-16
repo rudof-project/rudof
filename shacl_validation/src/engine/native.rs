@@ -25,7 +25,7 @@ use crate::Subsetting;
 
 pub struct NativeEngine;
 
-impl<R: Rdf + 'static> Engine<R> for NativeEngine {
+impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
     fn evaluate(
         &self,
         store: &Store<R>,

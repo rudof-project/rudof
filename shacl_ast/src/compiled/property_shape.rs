@@ -12,7 +12,7 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::shape::CompiledShape;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompiledPropertyShape<R: Rdf> {
     id: Object<R>,
     path: SHACLPath<R::Triple>,

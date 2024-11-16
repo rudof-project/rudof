@@ -9,8 +9,8 @@ use srdf::model::Term;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::engine::Engine;
 use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::helpers::constraint::validate_native_with_strategy;
 use crate::store::Store;
 use crate::validation_report::result::ValidationResult;
@@ -18,7 +18,7 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use crate::Subsetting;
 
-impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for LanguageIn<R> {
+impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for LanguageIn<R> {
     fn validate_native(
         &self,
         component: &CompiledComponent<R>,
@@ -48,7 +48,7 @@ impl<R: Rdf + 'static, E: Engine<R>> NativeValidator<R, E> for LanguageIn<R> {
     }
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlValidator<S> for LanguageIn<S> {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for LanguageIn<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

@@ -52,7 +52,7 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<R: Rdf + 'static> NativeDeref for CompiledComponent<R> {
+impl<R: Rdf + Clone + 'static> NativeDeref for CompiledComponent<R> {
     type Target = dyn NativeValidator<R, NativeEngine>;
 
     generate_deref_fn!(
@@ -93,7 +93,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: Rdf + Sparql + 'static> SparqlDeref for CompiledComponent<S> {
+impl<S: Rdf + Sparql + Clone + 'static> SparqlDeref for CompiledComponent<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(

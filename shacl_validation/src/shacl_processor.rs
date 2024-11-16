@@ -33,7 +33,7 @@ pub struct ShaclProcessor<R: Rdf> {
     subsetting: Subsetting,
 }
 
-impl<R: Rdf + Sparql + 'static> ShaclProcessor<R> {
+impl<R: Rdf + Sparql + Clone + 'static> ShaclProcessor<R> {
     pub fn new(srdf: R, mode: ShaclValidationMode, subsetting: Subsetting) -> Self {
         Self {
             store: Store::new(srdf, subsetting != Subsetting::None),
