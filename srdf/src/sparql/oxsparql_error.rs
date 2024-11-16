@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::SparqlVars;
 
 #[derive(Error, Debug)]
-pub enum SRDFSparqlError {
+pub enum SparqlError {
     #[error("HTTP Request error: {e:?}")]
     HTTPRequestError { e: reqwest::Error },
 
@@ -53,20 +53,20 @@ pub enum SRDFSparqlError {
     },
 }
 
-impl From<reqwest::Error> for SRDFSparqlError {
-    fn from(e: reqwest::Error) -> SRDFSparqlError {
-        SRDFSparqlError::HTTPRequestError { e }
+impl From<reqwest::Error> for SparqlError {
+    fn from(e: reqwest::Error) -> SparqlError {
+        SparqlError::HTTPRequestError { e }
     }
 }
 
-impl From<url::ParseError> for SRDFSparqlError {
-    fn from(e: url::ParseError) -> SRDFSparqlError {
-        SRDFSparqlError::URLParseError { e }
+impl From<url::ParseError> for SparqlError {
+    fn from(e: url::ParseError) -> SparqlError {
+        SparqlError::URLParseError { e }
     }
 }
 
-impl From<sparesults::QueryResultsParseError> for SRDFSparqlError {
-    fn from(e: sparesults::QueryResultsParseError) -> SRDFSparqlError {
-        SRDFSparqlError::SPAResults { e }
+impl From<sparesults::QueryResultsParseError> for SparqlError {
+    fn from(e: sparesults::QueryResultsParseError) -> SparqlError {
+        SparqlError::SPAResults { e }
     }
 }

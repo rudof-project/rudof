@@ -1,4 +1,5 @@
-//! This crate contains a _Simple_ RDF wrapper which can be useful to work with RDF data
+//! This crate contains a _Simple_ RDF wrapper which can be useful to work with
+//! RDF data.
 //!
 //! It contains several traits that handle RDF data:
 //! - [`SRDFBasic`]: Basic comparisons on RDF nodes
@@ -8,19 +9,18 @@
 
 // pub use crate::neighs::*;
 pub use crate::rdf_data_config::*;
-// pub use graph::shacl_path::*;
-pub use srdf_parser::*;
-// pub use srdf_sparql::*;
 pub use graph::*;
+pub use sparql::*;
+pub use srdf_parser::*;
 pub use vocab::*;
 
-pub mod graph;
-pub mod model;
 // TODO: move to ShEx
 // pub mod neighs;
+pub mod graph;
+pub mod model;
 pub mod rdf_data_config;
+pub mod sparql;
 pub mod srdf_parser;
-// pub mod srdf_sparql;
 pub mod vocab;
 
 /// Declares a named RDF parser which can be reused.

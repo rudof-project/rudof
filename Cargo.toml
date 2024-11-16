@@ -17,7 +17,7 @@ members = [
     "shacl_ast",
     "shacl_validation",
     # "shapes_converter",
-    # "sparql_service",
+    "sparql_service",
     # "python",
 ]
 
@@ -49,12 +49,12 @@ rbe = { version = "0.1.7", path = "./rbe" }
 # shex_ast = { version = "0.1.0", path = "./shex_ast" }
 # shapemap = { version = "0.1.0", path = "./shapemap" }
 shacl_ast = { version = "*", path = "./shacl_ast" }
-shacl_validation = { version = "0.1.37", path = "./shacl_validation" }
+shacl_validation = { version = "*", path = "./shacl_validation" }
 # shapes_converter = { version = "0.1.33", path = "./shapes_converter" }
 # shex_validation = { version = "0.1.0", path = "./shex_validation" }
 # shex_compact = { version = "0.1.0", path = "./shex_compact" }
-srdf = { version = "0.1.35", path = "./srdf" }
-# sparql_service = { version = "0.1.37", path = "./sparql_service" }
+srdf = { version = "*", path = "./srdf" }
+sparql_service = { version = "0.1.37", path = "./sparql_service" }
 
 # External dependencies
 anyhow = "1.0"
@@ -71,4 +71,4 @@ thiserror = "2.0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 lazy_static = "1"
-oxrdf = "0.2.0"                                                     # necessary for the tests
+oxrdf = "0.2.0"

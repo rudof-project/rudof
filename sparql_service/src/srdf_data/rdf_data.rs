@@ -1,57 +1,18 @@
-use super::RdfDataError;
-use colored::*;
-use iri_s::IriS;
-use oxigraph::sparql::Query;
-use oxigraph::sparql::QueryResults;
-use oxigraph::store::Store;
-use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
-};
-use oxrdfio::RdfFormat;
-use prefixmap::IriRef;
-use prefixmap::PrefixMap;
-use rust_decimal::Decimal;
-use sparesults::QuerySolution as SparQuerySolution;
-use srdf::graph::lang::Lang;
-use srdf::graph::literal::Literal;
-use srdf::graph::numeric_literal::NumericLiteral;
-use srdf::FocusRDF;
-use srdf::GenericGraph;
-use srdf::ListOfIriAndTerms;
-use srdf::MutableRdf;
-use srdf::Object;
-use srdf::QuerySRDF;
-use srdf::QuerySolution;
-use srdf::QuerySolutions;
-use srdf::RDFFormat;
-use srdf::Rdf;
-use srdf::ReaderMode;
-use srdf::SRDFBasic;
-use srdf::SRDFSparql;
-use srdf::VarName;
-use srdf::RDF_TYPE_STR;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::Debug;
-use std::hash::Hash;
-use std::io;
-use std::rc::Rc;
-use std::str::FromStr;
 
-/// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
-/// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
+use oxigraph::store::Store;
+
+/// Generic abstraction that represents RDF Data which can be  behind SPARQL
+/// endpoints or an in-memory graph or both. The triples in RdfData are taken as
+/// the union of the triples of the endpoints and the in-memory graph.
 #[derive(Clone)]
 pub struct RdfData {
     /// Current focus node used when parsing
     focus: Option<OxTerm>,
-
     /// List of SPARQL endpoints
     endpoints: Vec<SRDFSparql>,
-
     /// In-memory graph
     graph: Option<GenericGraph>,
-
     /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
 }
@@ -66,7 +27,7 @@ impl Debug for RdfData {
 }
 
 impl RdfData {
-    pub fn new() -> RdfData {
+    pub fn default() -> RdfData {
         RdfData {
             endpoints: Vec::new(),
             graph: None,
