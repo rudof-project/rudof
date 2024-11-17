@@ -1,9 +1,6 @@
 use iri_s::error::GenericIriError;
 use oxrdf::Term;
-//use sparesults::QuerySolution;
 use thiserror::Error;
-
-use crate::SparqlVars;
 
 #[derive(Error, Debug)]
 pub enum SparqlError {
@@ -18,12 +15,6 @@ pub enum SparqlError {
         e: sparesults::QueryResultsParseError,
     },
 
-    #[error(transparent)]
-    IriParseError {
-        #[from]
-        err: IriParseError,
-    },
-
     #[error("Unknown name for endpoint: {name}")]
     UnknownEndpontName { name: String },
 
@@ -32,9 +23,6 @@ pub enum SparqlError {
 
     #[error("SPARQL solutions error: Expected IRI, got {value}")]
     SPARQLSolutionErrorNoIRI { value: Term },
-
-    #[error("SPARQL solutions error: Not found vars {vars} in solution {solution:?}")]
-    NotFoundVarsInSolution { vars: SparqlVars, solution: String },
 
     #[error("SPARQL solutions error: Expected Subject, got {value}")]
     SPARQLSolutionErrorNoSubject { value: Term },

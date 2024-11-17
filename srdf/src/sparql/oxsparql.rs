@@ -1,10 +1,6 @@
-use std::fmt::Display;
-use std::rc::Rc;
 use std::str::FromStr;
 
 use iri_s::IriS;
-use oxrdf::BlankNode as OxBlankNode;
-use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxIri;
 use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
@@ -12,13 +8,23 @@ use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
 use regex::Regex;
 use reqwest::blocking::Client;
+use reqwest::header;
+use reqwest::header::ACCEPT;
+use reqwest::header::USER_AGENT;
+use reqwest::Url;
+use sparesults::QueryResultsFormat;
+use sparesults::QueryResultsParser;
+use sparesults::QuerySolution as OxQuerySolution;
+use sparesults::ReaderQueryResultsParserOutput;
 
+use crate::model::rdf::Object;
+use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
+use crate::model::rdf::Subject;
+use crate::model::sparql::QuerySolution;
 use crate::model::sparql::Sparql;
 
 use super::oxsparql_error::SparqlError;
-
-type Result<A> = std::result::Result<A, SparqlError>;
 
 /// Implements SRDF interface as a SPARQL endpoint
 #[derive(Debug, Clone)]
@@ -29,7 +35,7 @@ pub struct SRDFSparql {
 }
 
 impl SRDFSparql {
-    pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<SRDFSparql> {
+    pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<Self, SparqlError> {
         let client = sparql_client()?;
         Ok(SRDFSparql {
             endpoint_iri: iri.clone(),
@@ -38,16 +44,11 @@ impl SRDFSparql {
         })
     }
 
-    pub fn with_prefixmap(mut self, pm: PrefixMap) -> SRDFSparql {
-        self.prefixmap = pm;
-        self
-    }
-
     pub fn iri(&self) -> &IriS {
         &self.endpoint_iri
     }
 
-    pub fn wikidata() -> Result<SRDFSparql> {
+    pub fn wikidata() -> Result<Self, SparqlError> {
         let endpoint = SRDFSparql::new(
             &IriS::new_unchecked("https://query.wikidata.org/sparql".to_string()),
             &PrefixMap::wikidata(),
@@ -62,38 +63,68 @@ impl Rdf for SRDFSparql {
 
     fn triples_matching<'a>(
         &self,
-        subject: Option<&'a crate::model::rdf::Subject<Self>>,
-        predicate: Option<&'a crate::model::rdf::Predicate<Self>>,
-        object: Option<&'a crate::model::rdf::Object<Self>>,
-    ) -> std::result::Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
-        todo!()
+        subject: Option<&'a Subject<Self>>,
+        predicate: Option<&'a Predicate<Self>>,
+        object: Option<&'a Object<Self>>,
+    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+        let query = format!(
+            "SELECT * WHERE {{ {} {} {} . }}",
+            subject.map_or("?subj".to_string(), |s| s.to_string()),
+            predicate.map_or("?pred".to_string(), |p| p.to_string()),
+            object.map_or("?obj".to_string(), |o| o.to_string()),
+        );
+
+        let triples: Vec<_> = self
+            .select(&query)?
+            .iter()
+            .map(move |solution| {
+                let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
+                let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
+                let obj = solution.get(2).unwrap().clone();
+                OxTriple::new(subj, pred, obj)
+            })
+            .collect();
+
+        Ok(triples.iter())
     }
 
     fn prefixmap(&self) -> Option<PrefixMap> {
-        Some(self.prefixmap)
+        Some(self.prefixmap.clone())
     }
 }
 
 impl Sparql for SRDFSparql {
-    type QuerySolution;
-    type Error;
+    type QuerySolution = OxQuerySolution;
+    type Object = OxTerm;
+    type SparqlError = SparqlError;
 
-    fn select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
-        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
-        Ok(QuerySolutions::new(qs))
+    fn make_sparql_query(
+        &self,
+        query: &str,
+    ) -> Result<Vec<Self::QuerySolution>, Self::SparqlError> {
+        let url = Url::parse_with_params(self.endpoint_iri.as_str(), &[("query", query)])?;
+        let body = self.client.get(url.clone()).send()?.text()?;
+        let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+
+        tracing::debug!("SPARQL query: {}", url);
+
+        match json_parser.for_reader(body.as_bytes())? {
+            ReaderQueryResultsParserOutput::Solutions(solutions) => {
+                let mut results = Vec::new();
+                for solution in solutions {
+                    let sol = solution?;
+                    results.push(sol)
+                }
+                Ok(results)
+            }
+            ReaderQueryResultsParserOutput::Boolean(_) => Err(SparqlError::ParsingBody { body }),
+        }
     }
+}
 
-    fn ask(&self, query: &str) -> Result<bool> {
-        make_sparql_query(query, &self.client, &self.endpoint_iri)?
-            .first()
-            .and_then(|query_solution| query_solution.get(0))
-            .and_then(|term| match term {
-                OxTerm::Literal(literal) => Some(literal.value()),
-                _ => None,
-            })
-            .and_then(|value| value.parse().ok())
-            .ok_or_else(|| todo!())
+impl QuerySolution<OxTerm> for OxQuerySolution {
+    fn get(&self, index: usize) -> Option<OxTerm> {
+        self.get(index).cloned()
     }
 }
 
@@ -121,89 +152,51 @@ impl FromStr for SRDFSparql {
     }
 }
 
-fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
-    let mut variables = Vec::new();
-    let mut values = Vec::new();
-    for v in qs.variables() {
-        let varname = VarName::new(v.as_str());
-        variables.push(varname);
-    }
-    for t in qs.values() {
-        let term = t.clone();
-        values.push(term)
-    }
-    QuerySolution::new(Rc::new(variables), values)
-}
-
-fn sparql_client() -> Result<Client> {
+fn sparql_client() -> Result<Client, SparqlError> {
     let mut headers = header::HeaderMap::new();
+
     headers.insert(
         ACCEPT,
         header::HeaderValue::from_static("application/sparql-results+json"),
     );
+
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
     let client = reqwest::blocking::Client::builder()
         .default_headers(headers)
         .build()?;
+
     Ok(client)
-}
-
-fn make_sparql_query(
-    query: &str,
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<Vec<OxQuerySolution>> {
-    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    tracing::debug!("SPARQL query: {}", url);
-    let body = client.get(url).send()?.text()?;
-    let mut results = Vec::new();
-    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
-        for solution in solutions {
-            let sol = solution?;
-            results.push(sol)
-        }
-        Ok(results)
-    } else {
-        Err(SparqlError::ParsingBody { body })
-    }
-}
-
-#[derive(Debug)]
-pub struct SparqlVars {
-    values: Vec<String>,
-}
-
-impl SparqlVars {
-    pub(crate) fn new(vs: Vec<String>) -> SparqlVars {
-        SparqlVars { values: vs }
-    }
-}
-
-impl Display for SparqlVars {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.values.join(", ").as_str())
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::model::Triple;
+
     use super::*;
     use oxrdf::{NamedNode, Subject};
+
+    const ENTITY: &str = "http://www.wikidata.org/entity/";
+    const PROPERTY: &str = "http://www.wikidata.org/prop/";
+
+    fn q80() -> Subject {
+        Subject::NamedNode(NamedNode::new_unchecked(format!("{ENTITY}Q80")))
+    }
+
+    fn p19() -> NamedNode {
+        NamedNode::new_unchecked(format!("{PROPERTY}P19"))
+    }
 
     #[test]
     fn check_sparql() {
         let wikidata = SRDFSparql::wikidata().unwrap();
-        let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
-            "http://www.wikidata.org/entity/Q80".to_string(),
-        ));
-        let maybe_data = wikidata.predicates_for_subject(&q80);
-        let data = maybe_data.unwrap();
-        let p19: NamedNode =
-            NamedNode::new_unchecked("http://www.wikidata.org/prop/P19".to_string());
 
-        assert!(data.contains(&p19));
+        let data: Vec<_> = wikidata
+            .triples_matching(Some(&q80()), None, None)
+            .unwrap()
+            .map(Triple::pred)
+            .map(Clone::clone)
+            .collect();
+
+        assert!(data.contains(&p19()));
     }
 }
