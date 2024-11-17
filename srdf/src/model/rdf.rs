@@ -10,81 +10,82 @@ use prefixmap::PrefixMap;
 use super::Term;
 use super::Triple;
 
-pub type Subject<R> = <<R as Rdf>::Triple as Triple>::Subject;
-pub type Predicate<R> = <<R as Rdf>::Triple as Triple>::Iri;
-pub type Object<R> = <<R as Rdf>::Triple as Triple>::Term;
-pub type Literal<T> = <<T as Triple>::Term as Term>::Literal;
-pub type Iri<T> = <<T as Triple>::Term as Term>::Iri;
+pub type Triples<'a, R> = Box<dyn Iterator<Item = <R as Rdf>::Triple<'a>> + 'a>;
+pub type Subjects<'a, R> = Box<dyn Iterator<Item = TSubject<'a, R>> + 'a>;
+pub type Predicates<'a, R> = Box<dyn Iterator<Item = TPredicate<'a, R>> + 'a>;
+pub type Objects<'a, R> = Box<dyn Iterator<Item = TObject<'a, R>> + 'a>;
 
-pub type OutgoinArcs<R> = HashMap<Predicate<R>, HashSet<Object<R>>>;
-pub type IncomingArcs<R> = HashMap<Predicate<R>, HashSet<Subject<R>>>;
+pub type TSubject<'a, R> = <<R as Rdf>::Triple<'a> as Triple>::Subject<'a>;
+pub type TPredicate<'a, R> = <<R as Rdf>::Triple<'a> as Triple>::Iri<'a>;
+pub type TObject<'a, R> = <<R as Rdf>::Triple<'a> as Triple>::Term<'a>;
+
+pub type TLiteral<'a, T> = <<T as Triple>::Term<'a> as Term>::Literal<'a>;
+pub type TIri<'a, T> = <<T as Triple>::Term<'a> as Term>::Iri<'a>;
+
+pub type OutgoingArcs<'a, R> = HashMap<TPredicate<'a, R>, HashSet<TObject<'a, R>>>;
+pub type IncomingArcs<'a, R> = HashMap<TPredicate<'a, R>, HashSet<TSubject<'a, R>>>;
 
 /// This trait provides methods to handle Simple RDF graphs.
 ///
 /// * Finding the triples provided a given pattern
 /// * Obtaining the neighborhood of a node
 pub trait Rdf {
-    type Triple: Triple + Clone + Debug + Eq + Hash;
+    type Triple<'a>: Triple + Clone + Debug + Eq + Hash
+    where
+        Self: 'a;
+
     type Error: Display + Debug;
 
-    // Add explicit lifetime bounds on Iri and Term
-    fn triples_matching<'a>(
-        &self,
-        subject: Option<&'a Subject<Self>>,
-        predicate: Option<&'a Predicate<Self>>,
-        object: Option<&'a Object<Self>>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error>;
+    fn prefixmap(&self) -> Option<PrefixMap>;
 
-    fn triples(&self) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+    fn triples_matching(
+        &self,
+        subject: Option<TSubject<Self>>,
+        predicate: Option<TPredicate<Self>>,
+        object: Option<TObject<Self>>,
+    ) -> Result<Triples<Self>, Self::Error>;
+
+    fn triples(&self) -> Result<Triples<Self>, Self::Error> {
         self.triples_matching(None, None, None)
     }
 
-    fn subjects(&self) -> Result<impl Iterator<Item = &Subject<Self>>, Self::Error> {
+    fn subjects(&self) -> Result<Subjects<Self>, Self::Error> {
         let subjects = self.triples()?.map(Triple::subj);
         Ok(subjects)
     }
 
-    fn predicates(&self) -> Result<impl Iterator<Item = &Predicate<Self>>, Self::Error> {
+    fn predicates(&self) -> Result<Predicates<Self>, Self::Error> {
         let predicates = self.triples()?.map(Triple::pred);
         Ok(predicates)
     }
 
-    fn objects(&self) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
+    fn objects(&self) -> Result<Objects<Self>, Self::Error> {
         let objects = self.triples()?.map(Triple::obj);
         Ok(objects)
     }
 
-    fn triples_with_subject<'a>(
-        &'a self,
-        subject: &'a Subject<Self>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+    fn triples_with_subject(&self, subject: TSubject<Self>) -> Result<Triples<Self>, Self::Error> {
         self.triples_matching(Some(subject), None, None)
     }
 
-    fn triples_with_predicate<'a>(
-        &'a self,
-        predicate: &'a Predicate<Self>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+    fn triples_with_predicate(
+        &self,
+        predicate: TPredicate<Self>,
+    ) -> Result<Triples<Self>, Self::Error> {
         self.triples_matching(None, Some(predicate), None)
     }
 
-    fn triples_with_object<'a>(
-        &'a self,
-        object: &'a Object<Self>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+    fn triples_with_object(&self, object: TObject<Self>) -> Result<Triples<Self>, Self::Error> {
         self.triples_matching(None, None, Some(object))
     }
 
-    fn neighs<'a>(
-        &'a self,
-        node: &'a Subject<Self>,
-    ) -> Result<impl Iterator<Item = &Object<Self>>, Self::Error> {
+    fn neighs(&self, node: TSubject<Self>) -> Result<Objects<Self>, Self::Error> {
         let objects = self.triples_with_subject(node)?.map(Triple::obj);
         Ok(objects)
     }
 
-    fn outgoing_arcs(&self, subject: &Subject<Self>) -> Result<OutgoinArcs<Self>, Self::Error> {
-        let mut results: HashMap<Predicate<Self>, HashSet<Object<Self>>> = HashMap::new();
+    fn outgoing_arcs(&self, subject: &TSubject<Self>) -> Result<OutgoingArcs<Self>, Self::Error> {
+        let mut results: HashMap<TPredicate<Self>, HashSet<TObject<Self>>> = HashMap::new();
         for triple in self.triples_with_subject(subject)? {
             let pred = triple.pred().clone();
             let term = triple.obj().clone();
@@ -100,8 +101,8 @@ pub trait Rdf {
         Ok(results)
     }
 
-    fn incoming_arcs(&self, object: &Object<Self>) -> Result<IncomingArcs<Self>, Self::Error> {
-        let mut results: HashMap<Predicate<Self>, HashSet<Subject<Self>>> = HashMap::new();
+    fn incoming_arcs(&self, object: &TObject<Self>) -> Result<IncomingArcs<Self>, Self::Error> {
+        let mut results: HashMap<TPredicate<Self>, HashSet<TSubject<Self>>> = HashMap::new();
         for triple in self.triples_with_object(object)? {
             let pred = triple.pred().clone();
             let term = triple.subj().clone();
@@ -116,6 +117,4 @@ pub trait Rdf {
         }
         Ok(results)
     }
-
-    fn prefixmap(&self) -> Option<PrefixMap>;
 }

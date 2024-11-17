@@ -17,10 +17,10 @@ use sparesults::QueryResultsParser;
 use sparesults::QuerySolution as OxQuerySolution;
 use sparesults::ReaderQueryResultsParserOutput;
 
-use crate::model::rdf::Object;
-use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::Subject;
+use crate::model::rdf::TObject;
+use crate::model::rdf::TPredicate;
+use crate::model::rdf::TSubject;
 use crate::model::sparql::QuerySolution;
 use crate::model::sparql::Sparql;
 
@@ -63,10 +63,10 @@ impl Rdf for SRDFSparql {
 
     fn triples_matching<'a>(
         &self,
-        subject: Option<&'a Subject<Self>>,
-        predicate: Option<&'a Predicate<Self>>,
-        object: Option<&'a Object<Self>>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
+        subject: Option<&'a TSubject<Self>>,
+        predicate: Option<&'a TPredicate<Self>>,
+        object: Option<&'a TObject<Self>>,
+    ) -> Result<Triples<Self>, Self::Error> {
         let query = format!(
             "SELECT * WHERE {{ {} {} {} . }}",
             subject.map_or("?subj".to_string(), |s| s.to_string()),
@@ -74,18 +74,14 @@ impl Rdf for SRDFSparql {
             object.map_or("?obj".to_string(), |o| o.to_string()),
         );
 
-        let triples: Vec<_> = self
-            .select(&query)?
-            .iter()
-            .map(move |solution| {
-                let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
-                let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
-                let obj = solution.get(2).unwrap().clone();
-                OxTriple::new(subj, pred, obj)
-            })
-            .collect();
+        let triples = self.select(&query)?.iter().map(move |solution| {
+            let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
+            let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
+            let obj = solution.get(2).unwrap().clone();
+            OxTriple::new(subj, pred, obj)
+        });
 
-        Ok(triples.iter())
+        Ok(triples)
     }
 
     fn prefixmap(&self) -> Option<PrefixMap> {

@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use shacl_ast::vocab::*;
-use srdf::model::rdf::Object;
-use srdf::model::rdf::Predicate;
+use srdf::model::rdf::TObject;
+use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::Iri as _;
 
@@ -12,22 +12,22 @@ use super::validation_report_error::ResultError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidationResult<R: Rdf> {
-    focus_node: Object<R>,           // required
-    path: Option<Object<R>>,         // optional
-    value: Option<Object<R>>,        // optional
-    source: Option<Object<R>>,       // optional
-    constraint_component: Object<R>, // required
-    details: Option<Vec<Object<R>>>, // optional
-    message: Option<Object<R>>,      // optional
-    severity: Object<R>,             // required (TODO: Replace by Severity?)
+    focus_node: TObject<R>,           // required
+    path: Option<TObject<R>>,         // optional
+    value: Option<TObject<R>>,        // optional
+    source: Option<TObject<R>>,       // optional
+    constraint_component: TObject<R>, // required
+    details: Option<Vec<TObject<R>>>, // optional
+    message: Option<TObject<R>>,      // optional
+    severity: TObject<R>,             // required (TODO: Replace by Severity?)
 }
 
 impl<R: Rdf> ValidationResult<R> {
     // Creates a new validation result
     pub fn new(
-        focus_node: Object<R>,
-        constraint_component: Object<R>,
-        severity: Object<R>,
+        focus_node: TObject<R>,
+        constraint_component: TObject<R>,
+        severity: TObject<R>,
     ) -> Self {
         Self {
             focus_node,
@@ -41,50 +41,50 @@ impl<R: Rdf> ValidationResult<R> {
         }
     }
 
-    pub fn with_path(mut self, path: Option<Object<R>>) -> Self {
+    pub fn with_path(mut self, path: Option<TObject<R>>) -> Self {
         self.path = path;
         self
     }
 
-    pub fn with_value(mut self, value: Option<Object<R>>) -> Self {
+    pub fn with_value(mut self, value: Option<TObject<R>>) -> Self {
         self.value = value;
         self
     }
 
-    pub fn with_source(mut self, source: Option<Object<R>>) -> Self {
+    pub fn with_source(mut self, source: Option<TObject<R>>) -> Self {
         self.source = source;
         self
     }
 
-    pub fn with_details(mut self, details: Option<Vec<Object<R>>>) -> Self {
+    pub fn with_details(mut self, details: Option<Vec<TObject<R>>>) -> Self {
         self.details = details;
         self
     }
 
-    pub fn with_message(mut self, message: Option<Object<R>>) -> Self {
+    pub fn with_message(mut self, message: Option<TObject<R>>) -> Self {
         self.message = message;
         self
     }
 
-    pub fn focus_node(&self) -> &Object<R> {
+    pub fn focus_node(&self) -> &TObject<R> {
         &self.focus_node
     }
 
-    pub fn component(&self) -> &Object<R> {
+    pub fn component(&self) -> &TObject<R> {
         &self.constraint_component
     }
 
-    pub fn severity(&self) -> &Object<R> {
+    pub fn severity(&self) -> &TObject<R> {
         &self.severity
     }
 
-    pub(crate) fn parse(store: &R, validation_result: &Object<R>) -> Result<Self, ResultError> {
+    pub(crate) fn parse(store: &R, validation_result: &TObject<R>) -> Result<Self, ResultError> {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised
         let focus_node = match get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_FOCUS_NODE.as_str()),
+            &TPredicate::<R>::new(SH_FOCUS_NODE.as_str()),
         )? {
             Some(focus_node) => focus_node,
             None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
@@ -93,7 +93,7 @@ impl<R: Rdf> ValidationResult<R> {
         let severity = match get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_RESULT_SEVERITY.as_str()),
+            &TPredicate::<R>::new(SH_RESULT_SEVERITY.as_str()),
         )? {
             Some(severity) => severity,
             None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
@@ -102,7 +102,7 @@ impl<R: Rdf> ValidationResult<R> {
         let constraint_component = match get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_SOURCE_CONSTRAINT_COMPONENT.as_str()),
+            &TPredicate::<R>::new(SH_SOURCE_CONSTRAINT_COMPONENT.as_str()),
         )? {
             Some(constraint_component) => constraint_component,
             None => {
@@ -116,17 +116,17 @@ impl<R: Rdf> ValidationResult<R> {
         let path = get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_RESULT_PATH.as_str()),
+            &TPredicate::<R>::new(SH_RESULT_PATH.as_str()),
         )?;
         let source = get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_SOURCE_SHAPE.as_str()),
+            &TPredicate::<R>::new(SH_SOURCE_SHAPE.as_str()),
         )?;
         let value = get_object_for(
             store,
             validation_result,
-            &Predicate::<R>::new(SH_VALUE.as_str()),
+            &TPredicate::<R>::new(SH_VALUE.as_str()),
         )?;
 
         // 3. Lastly we build the ValidationResult<R>

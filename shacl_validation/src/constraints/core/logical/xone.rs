@@ -1,7 +1,7 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::model::rdf::Object;
+use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 
@@ -29,7 +29,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Xone<R> {
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let xone = |value_node: &Object<R>| {
+        let xone = |value_node: &TObject<R>| {
             let count = self
                 .shapes()
                 .iter()

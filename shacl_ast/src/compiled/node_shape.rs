@@ -1,4 +1,4 @@
-use srdf::model::rdf::Object;
+use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
 
 use crate::node_shape::NodeShape;
@@ -13,7 +13,7 @@ use super::shape::CompiledShape;
 
 #[derive(Debug, Clone)]
 pub struct CompiledNodeShape<R: Rdf> {
-    id: Object<R>,
+    id: TObject<R>,
     components: Vec<CompiledComponent<R>>,
     targets: Vec<Target<R>>,
     property_shapes: Vec<CompiledShape<R>>,
@@ -30,7 +30,7 @@ pub struct CompiledNodeShape<R: Rdf> {
 
 impl<R: Rdf> CompiledNodeShape<R> {
     pub fn new(
-        id: Object<R>,
+        id: TObject<R>,
         components: Vec<CompiledComponent<R>>,
         targets: Vec<Target<R>>,
         property_shapes: Vec<CompiledShape<R>>,
@@ -49,7 +49,7 @@ impl<R: Rdf> CompiledNodeShape<R> {
         }
     }
 
-    pub fn id(&self) -> &Object<R> {
+    pub fn id(&self) -> &TObject<R> {
         &self.id
     }
 

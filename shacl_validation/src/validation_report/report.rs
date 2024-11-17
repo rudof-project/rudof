@@ -4,8 +4,8 @@ use std::fmt::Display;
 use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::vocab::SH_RESULT;
-use srdf::model::rdf::Object;
-use srdf::model::rdf::Predicate;
+use srdf::model::rdf::TObject;
+use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::Iri;
 use srdf::model::Term;
@@ -74,12 +74,12 @@ impl<R: Rdf> ValidationReport<R> {
         &self.results
     }
 
-    pub fn parse(store: &R, subject: Object<R>) -> Result<Self, ReportError> {
+    pub fn parse(store: &R, subject: TObject<R>) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(
             store,
             &subject,
-            &Predicate::<R>::new(SH_RESULT.as_str()).into(),
+            &TPredicate::<R>::new(SH_RESULT.as_str()).into(),
         )? {
             results.push(ValidationResult::parse(store, &result)?);
         }
@@ -161,7 +161,7 @@ impl<R: Rdf> Display for ValidationReport<R> {
     }
 }
 
-fn show_node<R: Rdf>(node: &Object<R>, prefixmap: &PrefixMap) -> String {
+fn show_node<R: Rdf>(node: &TObject<R>, prefixmap: &PrefixMap) -> String {
     match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
         (true, false, false) => prefixmap.qualify(&node.as_iri().unwrap().as_iri_s()),
         (false, true, false) => format!("_:{}", node.as_blank_node().unwrap().to_string()),
@@ -170,7 +170,7 @@ fn show_node<R: Rdf>(node: &Object<R>, prefixmap: &PrefixMap) -> String {
     }
 }
 
-fn show_component<R: Rdf>(component: &Object<R>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_component<R: Rdf>(component: &TObject<R>, shacl_prefixmap: &PrefixMap) -> String {
     match (
         component.is_iri(),
         component.is_blank_node(),
@@ -183,7 +183,7 @@ fn show_component<R: Rdf>(component: &Object<R>, shacl_prefixmap: &PrefixMap) ->
     }
 }
 
-fn show_severity<R: Rdf>(severity: &Object<R>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_severity<R: Rdf>(severity: &TObject<R>, shacl_prefixmap: &PrefixMap) -> String {
     match (
         severity.is_iri(),
         severity.is_blank_node(),

@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use prefixmap::PrefixMap;
-use srdf::model::rdf::Predicate;
+use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::Subject;
+use srdf::model::rdf::TSubject;
 
 use crate::Schema;
 
@@ -15,16 +15,16 @@ use super::shape::CompiledShape;
 pub struct CompiledSchema<R: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<Subject<R>, CompiledShape<R>>,
+    shapes: HashMap<TSubject<R>, CompiledShape<R>>,
     prefixmap: PrefixMap,
-    base: Option<Predicate<R>>,
+    base: Option<TPredicate<R>>,
 }
 
 impl<R: Rdf> CompiledSchema<R> {
     pub fn new(
-        shapes: HashMap<Subject<R>, CompiledShape<R>>,
+        shapes: HashMap<TSubject<R>, CompiledShape<R>>,
         prefixmap: PrefixMap,
-        base: Option<Predicate<R>>,
+        base: Option<TPredicate<R>>,
     ) -> CompiledSchema<R> {
         CompiledSchema {
             shapes,
@@ -37,15 +37,15 @@ impl<R: Rdf> CompiledSchema<R> {
         self.prefixmap.clone()
     }
 
-    pub fn base(&self) -> &Option<Predicate<R>> {
+    pub fn base(&self) -> &Option<TPredicate<R>> {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&Subject<R>, &CompiledShape<R>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&TSubject<R>, &CompiledShape<R>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &Subject<R>) -> Option<&CompiledShape<R>> {
+    pub fn get_shape(&self, sref: &TSubject<R>) -> Option<&CompiledShape<R>> {
         self.shapes.get(sref)
     }
 }
@@ -54,7 +54,7 @@ impl<R: Rdf + Eq + Clone + Hash> TryFrom<Schema<R>> for CompiledSchema<R> {
     type Error = CompiledShaclError;
 
     fn try_from(schema: Schema<R>) -> Result<Self, Self::Error> {
-        let mut shapes: HashMap<Subject<R>, CompiledShape<R>> = HashMap::default();
+        let mut shapes: HashMap<TSubject<R>, CompiledShape<R>> = HashMap::default();
 
         for (term, shape) in schema.iter() {
             let term = match term.clone().try_into() {

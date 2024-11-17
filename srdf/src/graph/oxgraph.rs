@@ -14,10 +14,11 @@ use crate::model::focus_rdf::FocusRdf;
 use crate::model::mutable_rdf::MutableRdf;
 use crate::model::parse::RdfReader;
 use crate::model::parse::ReaderMode;
-use crate::model::rdf::Object;
-use crate::model::rdf::Predicate;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::Subject;
+use crate::model::rdf::TObject;
+use crate::model::rdf::TPredicate;
+use crate::model::rdf::TSubject;
+use crate::model::rdf::Triples;
 use crate::model::rdf_format::RdfFormat;
 use crate::model::GraphName;
 use crate::model::Iri;
@@ -120,27 +121,16 @@ impl<T: Triple + Clone + Debug + Eq + Hash> Rdf for GenericGraph<T> {
 
     fn triples_matching<'a>(
         &self,
-        subject: Option<&'a Subject<Self>>,
-        predicate: Option<&'a Predicate<Self>>,
-        object: Option<&'a Object<Self>>,
-    ) -> Result<impl Iterator<Item = &Self::Triple>, Self::Error> {
-        let triples = self
-            .graph
-            .iter()
-            .filter(move |triple| match (subject, predicate, object) {
-                (None, None, None) => true,
-                (None, None, Some(obj)) => triple.obj() == obj,
-                (None, Some(pred), None) => triple.pred() == pred,
-                (None, Some(pred), Some(obj)) => triple.pred() == pred && triple.obj() == obj,
-                (Some(subj), None, None) => triple.subj() == subj,
-                (Some(subj), None, Some(obj)) => triple.subj() == subj && triple.obj() == obj,
-                (Some(subj), Some(pred), None) => triple.subj() == subj && triple.pred() == pred,
-                (Some(subj), Some(pred), Some(obj)) => {
-                    triple.subj() == subj && triple.pred() == pred && triple.obj() == obj
-                }
-            });
-
-        Ok(Box::new(triples))
+        subject: Option<&'a TSubject<Self>>,
+        predicate: Option<&'a TPredicate<Self>>,
+        object: Option<&'a TObject<Self>>,
+    ) -> Result<Triples<Self>, Self::Error> {
+        let triples = self.graph.iter().filter(move |triple| {
+            subject.map_or(true, |subj| triple.subj() == subj)
+                && predicate.map_or(true, |pred| triple.pred() == pred)
+                && object.map_or(true, |obj| triple.obj() == obj)
+        });
+        Ok(triples)
     }
 
     fn prefixmap(&self) -> Option<PrefixMap> {
@@ -153,9 +143,9 @@ impl<T: Triple + Clone + Debug + Eq + Hash> MutableRdf for GenericGraph<T> {
 
     fn add_triple(
         &mut self,
-        subject: Subject<Self>,
-        predicate: Predicate<Self>,
-        object: Object<Self>,
+        subject: TSubject<Self>,
+        predicate: TPredicate<Self>,
+        object: TObject<Self>,
     ) -> Result<(), Self::MutableRdfError> {
         self.graph.insert(T::new(subject, predicate, object));
         Ok(())
@@ -166,7 +156,7 @@ impl<T: Triple + Clone + Debug + Eq + Hash> MutableRdf for GenericGraph<T> {
         Ok(())
     }
 
-    fn add_base(&mut self, base: Predicate<Self>) -> Result<(), Self::MutableRdfError> {
+    fn add_base(&mut self, base: TPredicate<Self>) -> Result<(), Self::MutableRdfError> {
         self.base = Some(base);
         Ok(())
     }
@@ -174,7 +164,7 @@ impl<T: Triple + Clone + Debug + Eq + Hash> MutableRdf for GenericGraph<T> {
     fn add_prefix(
         &mut self,
         alias: &str,
-        iri: Predicate<Self>,
+        iri: TPredicate<Self>,
     ) -> Result<(), Self::MutableRdfError> {
         self.pm.insert(alias, &iri.as_iri_s())?;
         Ok(())
@@ -182,11 +172,11 @@ impl<T: Triple + Clone + Debug + Eq + Hash> MutableRdf for GenericGraph<T> {
 }
 
 impl<T: Triple + Clone + Debug + Eq + Hash> FocusRdf for GenericGraph<T> {
-    fn set_focus(&mut self, focus: Object<Self>) {
+    fn set_focus(&mut self, focus: TObject<Self>) {
         self.focus = Some(focus);
     }
 
-    fn get_focus(&self) -> Option<&Object<Self>> {
+    fn get_focus(&self) -> Option<&TObject<Self>> {
         match &self.focus {
             Some(focus) => Some(focus),
             None => None,
@@ -218,9 +208,9 @@ mod tests {
     use crate::iri;
     use crate::model::mutable_rdf::MutableRdf;
     use crate::model::parse::RdfReader;
-    use crate::model::rdf::Object;
-    use crate::model::rdf::Predicate;
     use crate::model::rdf::Rdf;
+    use crate::model::rdf::TObject;
+    use crate::model::rdf::TPredicate;
     use crate::model::rdf_format::RdfFormat;
     use crate::model::Iri;
     use crate::model::Triple;
@@ -491,7 +481,7 @@ mod tests {
     #[test]
     fn test_rdf_parser_macro() {
         rdf_parser! {
-              fn is_term['a, RDF](term: &'a Object<RDF>)(RDF) -> ()
+              fn is_term['a, RDF](term: &'a TObject<RDF>)(RDF) -> ()
               where [
               ] {
                 let name = format!("is_{term}");
@@ -501,8 +491,8 @@ mod tests {
 
         let graph = graph_from_str(DUMMY_GRAPH_9);
         let x = OxNamedNode::new_unchecked("http://example.org/x").as_iri_s();
-        let predicate = Predicate::<OxGraph>::new(x.as_str()).unwrap();
-        let term = Object::<OxGraph>::from(predicate);
+        let predicate = TPredicate::<OxGraph>::new(x.as_str()).unwrap();
+        let term = TObject::<OxGraph>::from(predicate);
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph);
         assert!(result.is_ok())

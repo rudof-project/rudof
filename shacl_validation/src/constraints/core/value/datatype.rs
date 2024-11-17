@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::model::rdf::Object;
-use srdf::model::rdf::Predicate;
+use srdf::model::rdf::TObject;
+use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 use srdf::model::Iri;
@@ -31,9 +31,9 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Datatype<
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let datatype = |value_node: &Object<R>| {
+        let datatype = |value_node: &TObject<R>| {
             if let Some(literal) = value_node.as_literal() {
-                return Predicate::<R>::new(literal.datatype()) != *self.datatype();
+                return TPredicate::<R>::new(literal.datatype()) != *self.datatype();
             }
             true
         };
