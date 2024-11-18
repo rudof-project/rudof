@@ -2,8 +2,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinExclusive;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;

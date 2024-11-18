@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
 use shacl_ast::vocab::*;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use srdf::model::Iri as _;
 
 use crate::helpers::srdf::get_object_for;

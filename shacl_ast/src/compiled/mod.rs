@@ -1,7 +1,7 @@
 use compiled_shacl_error::CompiledShaclError;
 use shape::CompiledShape;
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 
 use crate::Schema;
 

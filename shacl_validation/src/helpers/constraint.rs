@@ -1,9 +1,9 @@
 use iri_s::IriS;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use srdf::model::sparql::Sparql;
 use srdf::model::Iri;
 

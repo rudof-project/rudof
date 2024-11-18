@@ -4,10 +4,10 @@ use compiled::compile_shape;
 use compiled::compile_shapes;
 use iri_s::IriS;
 use node_kind::NodeKind;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TLiteral;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use vocab::*;
 
 use crate::component::Component;

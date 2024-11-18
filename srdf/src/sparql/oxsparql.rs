@@ -18,9 +18,7 @@ use sparesults::QuerySolution as OxQuerySolution;
 use sparesults::ReaderQueryResultsParserOutput;
 
 use crate::model::rdf::Rdf;
-use crate::model::rdf::TObject;
-use crate::model::rdf::TPredicate;
-use crate::model::rdf::TSubject;
+use crate::model::rdf::Triples;
 use crate::model::sparql::QuerySolution;
 use crate::model::sparql::Sparql;
 
@@ -36,12 +34,12 @@ pub struct SRDFSparql {
 
 impl SRDFSparql {
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<Self, SparqlError> {
-        let client = sparql_client()?;
-        Ok(SRDFSparql {
+        let sparql = SRDFSparql {
             endpoint_iri: iri.clone(),
             prefixmap: prefixmap.clone(),
-            client,
-        })
+            client: sparql_client()?,
+        };
+        Ok(sparql)
     }
 
     pub fn iri(&self) -> &IriS {
@@ -49,11 +47,10 @@ impl SRDFSparql {
     }
 
     pub fn wikidata() -> Result<Self, SparqlError> {
-        let endpoint = SRDFSparql::new(
+        SRDFSparql::new(
             &IriS::new_unchecked("https://query.wikidata.org/sparql".to_string()),
             &PrefixMap::wikidata(),
-        )?;
-        Ok(endpoint)
+        )
     }
 }
 
@@ -61,31 +58,22 @@ impl Rdf for SRDFSparql {
     type Triple = OxTriple;
     type Error = SparqlError;
 
-    fn triples_matching<'a>(
-        &self,
-        subject: Option<&'a TSubject<Self>>,
-        predicate: Option<&'a TPredicate<Self>>,
-        object: Option<&'a TObject<Self>>,
-    ) -> Result<Triples<Self>, Self::Error> {
-        let query = format!(
-            "SELECT * WHERE {{ {} {} {} . }}",
-            subject.map_or("?subj".to_string(), |s| s.to_string()),
-            predicate.map_or("?pred".to_string(), |p| p.to_string()),
-            object.map_or("?obj".to_string(), |o| o.to_string()),
-        );
-
-        let triples = self.select(&query)?.iter().map(move |solution| {
-            let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
-            let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
-            let obj = solution.get(2).unwrap().clone();
-            OxTriple::new(subj, pred, obj)
-        });
-
-        Ok(triples)
-    }
-
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
+    }
+
+    fn triples(&self) -> Result<Triples<Self>, Self::Error> {
+        let triples = self
+            .select("SELECT * WHERE {{ ?s ?p ?o . }}")?
+            .iter()
+            .map(|solution| {
+                let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
+                let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
+                let obj = solution.get(2).unwrap().clone();
+                OxTriple::new(subj, pred, obj)
+            });
+
+        Ok(triples)
     }
 }
 
@@ -120,7 +108,7 @@ impl Sparql for SRDFSparql {
 
 impl QuerySolution<OxTerm> for OxQuerySolution {
     fn get(&self, index: usize) -> Option<OxTerm> {
-        self.get(index).cloned()
+        self.get(index)
     }
 }
 
@@ -189,8 +177,7 @@ mod tests {
         let data: Vec<_> = wikidata
             .triples_matching(Some(&q80()), None, None)
             .unwrap()
-            .map(Triple::pred)
-            .map(Clone::clone)
+            .map(Triple::predicate)
             .collect();
 
         assert!(data.contains(&p19()));

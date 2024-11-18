@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 
 use crate::focus_nodes::FocusNodes;
 

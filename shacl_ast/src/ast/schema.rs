@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use prefixmap::PrefixMap;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 
 use super::shape::Shape;
 

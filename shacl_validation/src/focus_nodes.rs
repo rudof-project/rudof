@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 
 #[derive(Debug)]
 pub struct FocusNodes<R: Rdf>(HashSet<TObject<R>>);

@@ -2,8 +2,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 use srdf::model::sparql::Sparql;
 use srdf::model::Literal as _;
 use srdf::model::Term;
@@ -34,7 +34,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for MaxLength
             if value_node.is_blank_node() {
                 true
             } else {
-                let string_representation = match value_node.as_literal() {
+                let string_representation = match value_node.literal() {
                     Some(string_representation) => string_representation.as_string().unwrap(),
                     None => value_node.as_iri().unwrap().to_string(),
                 };

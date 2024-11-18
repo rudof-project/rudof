@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::Literal as _;
+use super::Literal;
 use super::Term;
 
 pub trait Sparql {
@@ -19,12 +19,12 @@ pub trait Sparql {
         self.make_sparql_query(query)?
             .first()
             .and_then(|solution| solution.get(0))
-            .and_then(|term: Self::Object| term.as_literal().cloned())
-            .and_then(|literal| literal.as_bool())
+            .and_then(Term::literal)
+            .and_then(Literal::as_bool)
             .ok_or_else(|| todo!())
     }
 }
 
 pub trait QuerySolution<R> {
-    fn get(&self, index: usize) -> Option<R>;
+    fn get(&self, index: usize) -> Option<&R>;
 }

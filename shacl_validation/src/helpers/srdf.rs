@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use srdf::model::Triple;
 
 use crate::helpers::helper_error::SRDFError;
@@ -36,7 +36,7 @@ pub(crate) fn get_objects_for<R: Rdf>(
     };
 
     let ans = match store.triples_matching(Some(&subject), Some(predicate), None) {
-        Ok(triples) => Ok(triples.map(Triple::obj).map(Clone::clone).collect()),
+        Ok(triples) => Ok(triples.map(Triple::object).collect()),
         Err(e) => Err(SRDFError::ObjectsWithSubjectPredicate {
             predicate: format!("{predicate}"),
             subject: format!("{subject}"),
@@ -53,11 +53,7 @@ pub(crate) fn get_subjects_for<R: Rdf>(
     object: &TObject<R>,
 ) -> Result<HashSet<TObject<R>>, SRDFError> {
     let ans = match store.triples_matching(None, Some(predicate), Some(object)) {
-        Ok(triples) => Ok(triples
-            .map(Triple::subj)
-            .map(Clone::clone)
-            .map(Into::into)
-            .collect()),
+        Ok(triples) => Ok(triples.map(Triple::subject).map(Into::into).collect()),
         Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
             predicate: format!("{predicate}"),
             object: format!("{object}"),

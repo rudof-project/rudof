@@ -46,14 +46,14 @@ impl<T: Triple> GenericGraph<T> {
         self.graph.is_empty()
     }
 
-    pub fn quads<Q: Quad<Triple = T>>(&self) -> impl Iterator<Item = Q> + '_
-    where
-        T: Clone,
-    {
-        self.graph
-            .iter()
-            .map(move |t| Q::new(t.clone(), GraphName::Default))
-    }
+    // pub fn quads<Q: Quad<Triple = T>>(&self) -> impl Iterator<Item = Q> + '_
+    // where
+    //     T: Clone,
+    // {
+    //     self.graph
+    //         .iter()
+    //         .map(move |t| Q::new(t.clone(), GraphName::Default))
+    // }
 
     pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), GraphError> {
         self.pm.merge(prefixmap)?;
@@ -116,25 +116,15 @@ impl RdfReader for GenericGraph<OxTriple> {
 }
 
 impl<T: Triple + Clone + Debug + Eq + Hash> Rdf for GenericGraph<T> {
-    type Triple = T;
+    type Triple<'x> = T where Self: 'x;
     type Error = GraphError;
-
-    fn triples_matching<'a>(
-        &self,
-        subject: Option<&'a TSubject<Self>>,
-        predicate: Option<&'a TPredicate<Self>>,
-        object: Option<&'a TObject<Self>>,
-    ) -> Result<Triples<Self>, Self::Error> {
-        let triples = self.graph.iter().filter(move |triple| {
-            subject.map_or(true, |subj| triple.subj() == subj)
-                && predicate.map_or(true, |pred| triple.pred() == pred)
-                && object.map_or(true, |obj| triple.obj() == obj)
-        });
-        Ok(triples)
-    }
 
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.pm.clone())
+    }
+
+    fn triples(&self) -> Result<Triples<Self>, Self::Error> {
+        Ok(Box::new(self.graph.iter().map(AsRef::as_ref)))
     }
 }
 
@@ -206,13 +196,10 @@ mod tests {
 
     use crate::graph::oxgraph::ReaderMode;
     use crate::iri;
-    use crate::model::mutable_rdf::MutableRdf;
     use crate::model::parse::RdfReader;
-    use crate::model::rdf::Rdf;
     use crate::model::rdf::TObject;
     use crate::model::rdf::TPredicate;
     use crate::model::rdf_format::RdfFormat;
-    use crate::model::Iri;
     use crate::model::Triple;
     use crate::not;
     use crate::ok;
@@ -304,7 +291,7 @@ mod tests {
         let subject = graph
             .triples_matching(Some(&x), Some(&p), None)
             .unwrap()
-            .map(Triple::obj)
+            .map(Triple::object)
             .next()
             .unwrap()
             .to_owned()

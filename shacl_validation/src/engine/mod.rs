@@ -3,10 +3,10 @@ use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
 use shacl_ast::target::Target;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TIri;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 
 use crate::focus_nodes::FocusNodes;
 use crate::store::Store;

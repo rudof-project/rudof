@@ -1,7 +1,7 @@
 use iri_s::iri;
 use iri_s::IriS;
-use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TPredicate;
 use srdf::model::Iri;
 
 use crate::vocab::SH_INFO_STR;
@@ -22,7 +22,7 @@ impl<R: Rdf> From<&Severity<R>> for IriS {
             Severity::Violation => iri!(SH_VIOLATION_STR),
             Severity::Warning => iri!(SH_WARNING_STR),
             Severity::Info => iri!(SH_INFO_STR),
-            Severity::Generic(iri) => iri.as_iri_s(),
+            Severity::Generic(iri) => iri.into_iri_s(),
         }
     }
 }

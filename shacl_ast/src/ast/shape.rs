@@ -1,7 +1,7 @@
 use iri_s::IriS;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use srdf::model::Iri;
 
 use super::component::Component;

@@ -4,9 +4,9 @@ use std::fmt::Display;
 use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::vocab::SH_RESULT;
+use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TObject;
 use srdf::model::rdf::TPredicate;
-use srdf::model::rdf::Rdf;
 use srdf::model::Iri;
 use srdf::model::Term;
 
@@ -164,8 +164,8 @@ impl<R: Rdf> Display for ValidationReport<R> {
 fn show_node<R: Rdf>(node: &TObject<R>, prefixmap: &PrefixMap) -> String {
     match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
         (true, false, false) => prefixmap.qualify(&node.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", node.as_blank_node().unwrap().to_string()),
-        (false, false, true) => format!("{}", node.as_literal().unwrap()),
+        (false, true, false) => format!("_:{}", node.blank_node().unwrap().to_string()),
+        (false, false, true) => format!("{}", node.literal().unwrap()),
         _ => unreachable!(),
     }
 }
@@ -177,8 +177,8 @@ fn show_component<R: Rdf>(component: &TObject<R>, shacl_prefixmap: &PrefixMap) -
         component.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&component.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", component.as_blank_node().unwrap().to_string()),
-        (false, false, true) => format!("{}", component.as_literal().unwrap()),
+        (false, true, false) => format!("_:{}", component.blank_node().unwrap().to_string()),
+        (false, false, true) => format!("{}", component.literal().unwrap()),
         _ => unreachable!(),
     }
 }
@@ -190,8 +190,8 @@ fn show_severity<R: Rdf>(severity: &TObject<R>, shacl_prefixmap: &PrefixMap) -> 
         severity.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&severity.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", severity.as_blank_node().unwrap().to_string()),
-        (false, false, true) => format!("{}", severity.as_literal().unwrap()),
+        (false, true, false) => format!("_:{}", severity.blank_node().unwrap().to_string()),
+        (false, false, true) => format!("{}", severity.literal().unwrap()),
         _ => unreachable!(),
     }
 }

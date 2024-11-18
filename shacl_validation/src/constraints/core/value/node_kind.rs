@@ -5,8 +5,8 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 

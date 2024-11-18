@@ -1,5 +1,5 @@
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 
 use crate::severity::Severity;
 use crate::shape::Shape;

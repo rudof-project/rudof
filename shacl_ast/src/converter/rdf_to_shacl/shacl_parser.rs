@@ -18,9 +18,9 @@ use component::Not;
 use component::Or;
 use component::Xone;
 use model::focus_rdf::FocusRdf;
+use model::rdf::Rdf;
 use model::rdf::TObject;
 use model::rdf::TPredicate;
-use model::rdf::Rdf;
 use model::rdf::TSubject;
 use model::Term;
 use model::Triple;
@@ -99,10 +99,7 @@ impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
                 .rdf
                 .triples_matching(None, Some(&rdf_type), Some(&node_shape))
             {
-                Ok(triples) => triples
-                    .map(Triple::subj)
-                    .map(Clone::clone)
-                    .collect::<HashSet<_>>(),
+                Ok(triples) => triples.map(Triple::subject).collect::<HashSet<_>>(),
                 Err(e) => {
                     return Err(ShaclParserError::Custom {
                         msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
@@ -278,7 +275,7 @@ impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
     }
 
     fn triple_object_as_subject(triple: &R::Triple) -> Result<TSubject<R>> {
-        match triple.obj().clone().try_into() {
+        match triple.object().clone().try_into() {
             Ok(obj) => Ok(obj),
             Err(_) => Err(ShaclParserError::Custom {
                 msg: format!("Expected triple object value to act as a subject: {triple}"),
@@ -425,7 +422,9 @@ fn path<R: FocusRdf>() -> impl RDFNodeParse<R, Output = SHACLPath<R::Triple>> {
 }
 
 /// Parses the current focus node as a SHACL path
-fn shacl_path<R: FocusRdf>(term: TObject<R>) -> impl RDFNodeParse<R, Output = SHACLPath<R::Triple>> {
+fn shacl_path<R: FocusRdf>(
+    term: TObject<R>,
+) -> impl RDFNodeParse<R, Output = SHACLPath<R::Triple>> {
     match term.as_iri() {
         Some(iri) => ok(&SHACLPath::iri(iri.clone())),
         None => todo!(),

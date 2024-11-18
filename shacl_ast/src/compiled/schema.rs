@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use prefixmap::PrefixMap;
-use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TPredicate;
 use srdf::model::rdf::TSubject;
 
 use crate::Schema;

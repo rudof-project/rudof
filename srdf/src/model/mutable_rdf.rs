@@ -1,26 +1,27 @@
-use crate::model::rdf::TObject;
-use crate::model::rdf::TPredicate;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::TSubject;
+
+use super::Iri;
+use super::Subject;
+use super::Term;
+use super::Triple;
 
 /// Provides the functionality to implementors of being mutable.
 pub trait MutableRdf: Rdf {
     type MutableRdfError;
 
-    fn add_triple(
+    fn add_triple<S, P, O>(
         &mut self,
-        subject: TSubject<Self>,
-        predicate: TPredicate<Self>,
-        object: TObject<Self>,
-    ) -> Result<(), Self::MutableRdfError>;
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> Result<(), Self::MutableRdfError>
+    where
+        S: Subject,
+        P: Iri,
+        O: Term;
 
-    fn remove_triple(&mut self, triple: &Self::Triple) -> Result<(), Self::MutableRdfError>;
+    fn remove_triple<T: Triple>(&mut self, triple: T) -> Result<(), Self::MutableRdfError>;
 
-    fn add_base(&mut self, base: TPredicate<Self>) -> Result<(), Self::MutableRdfError>;
-
-    fn add_prefix(
-        &mut self,
-        alias: &str,
-        iri: TPredicate<Self>,
-    ) -> Result<(), Self::MutableRdfError>;
+    fn add_base<I: Iri>(&mut self, base: I) -> Result<(), Self::MutableRdfError>;
+    fn add_prefix<I: Iri>(&mut self, alias: &str, iri: I) -> Result<(), Self::MutableRdfError>;
 }

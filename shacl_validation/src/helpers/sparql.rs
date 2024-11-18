@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use srdf::model::rdf::TObject;
 use srdf::model::rdf::Rdf;
+use srdf::model::rdf::TObject;
 use srdf::model::sparql::Sparql;
 
 use crate::helpers::helper_error::SPARQLError;
