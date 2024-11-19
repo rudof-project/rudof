@@ -6,7 +6,7 @@ use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 
@@ -32,7 +32,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Nodekind 
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let node_kind = |value_node: &TObject<R>| {
+        let node_kind = |value_node: &TObjectRef<R>| {
             match (
                 value_node.is_blank_node(),
                 value_node.is_iri(),
@@ -77,7 +77,7 @@ impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for Nodekind {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
-        let query = move |value_node: &TObject<S>| {
+        let query = move |value_node: &TObjectRef<S>| {
             if value_node.is_iri() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>

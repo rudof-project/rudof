@@ -4,9 +4,9 @@ use std::str::FromStr;
 use iri_s::IriS;
 use itertools::Itertools;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TLiteral;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TLiteralRef;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::Literal as _;
 
 use crate::node_kind::NodeKind;
@@ -173,15 +173,15 @@ impl Display for MinCount {
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct And<R: Rdf> {
-    shapes: Vec<TObject<R>>,
+    shapes: Vec<TObjectRef<R>>,
 }
 
 impl<R: Rdf> And<R> {
-    pub fn new(shapes: Vec<TObject<R>>) -> Self {
+    pub fn new(shapes: Vec<TObjectRef<R>>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<TObject<R>> {
+    pub fn shapes(&self) -> &Vec<TObjectRef<R>> {
         &self.shapes
     }
 }
@@ -198,15 +198,15 @@ impl<R: Rdf> Display for And<R> {
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Not<R: Rdf> {
-    shape: TObject<R>,
+    shape: TObjectRef<R>,
 }
 
 impl<R: Rdf> Not<R> {
-    pub fn new(shape: TObject<R>) -> Self {
+    pub fn new(shape: TObjectRef<R>) -> Self {
         Not { shape }
     }
 
-    pub fn shape(&self) -> &TObject<R> {
+    pub fn shape(&self) -> &TObjectRef<R> {
         &self.shape
     }
 }
@@ -225,15 +225,15 @@ impl<R: Rdf> Display for Not<R> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Or<R: Rdf> {
-    shapes: Vec<TObject<R>>,
+    shapes: Vec<TObjectRef<R>>,
 }
 
 impl<R: Rdf> Or<R> {
-    pub fn new(shapes: Vec<TObject<R>>) -> Self {
+    pub fn new(shapes: Vec<TObjectRef<R>>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<TObject<R>> {
+    pub fn shapes(&self) -> &Vec<TObjectRef<R>> {
         &self.shapes
     }
 }
@@ -251,15 +251,15 @@ impl<R: Rdf> Display for Or<R> {
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Xone<R: Rdf> {
-    shapes: Vec<TObject<R>>,
+    shapes: Vec<TObjectRef<R>>,
 }
 
 impl<R: Rdf> Xone<R> {
-    pub fn new(shapes: Vec<TObject<R>>) -> Self {
+    pub fn new(shapes: Vec<TObjectRef<R>>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<TObject<R>> {
+    pub fn shapes(&self) -> &Vec<TObjectRef<R>> {
         &self.shapes
     }
 }
@@ -284,11 +284,11 @@ impl<R: Rdf> Display for Xone<R> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Closed<R: Rdf> {
     is_closed: bool,
-    ignored_properties: Vec<TPredicate<R>>,
+    ignored_properties: Vec<TPredicateRef<R>>,
 }
 
 impl<R: Rdf> Closed<R> {
-    pub fn new(is_closed: bool, ignored_properties: Vec<TPredicate<R>>) -> Self {
+    pub fn new(is_closed: bool, ignored_properties: Vec<TPredicateRef<R>>) -> Self {
         Closed {
             is_closed,
             ignored_properties,
@@ -299,7 +299,7 @@ impl<R: Rdf> Closed<R> {
         self.is_closed
     }
 
-    pub fn ignored_properties(&self) -> &Vec<TPredicate<R>> {
+    pub fn ignored_properties(&self) -> &Vec<TPredicateRef<R>> {
         &self.ignored_properties
     }
 }
@@ -321,15 +321,15 @@ impl<R: Rdf> Display for Closed<R> {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct HasValue<R: Rdf> {
-    value: TObject<R>,
+    value: TObjectRef<R>,
 }
 
 impl<R: Rdf> HasValue<R> {
-    pub fn new(value: TObject<R>) -> Self {
+    pub fn new(value: TObjectRef<R>) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &TObject<R> {
+    pub fn value(&self) -> &TObjectRef<R> {
         &self.value
     }
 }
@@ -346,15 +346,15 @@ impl<R: Rdf> Display for HasValue<R> {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct In<R: Rdf> {
-    values: Vec<TObject<R>>,
+    values: Vec<TObjectRef<R>>,
 }
 
 impl<R: Rdf> In<R> {
-    pub fn new(values: Vec<TObject<R>>) -> Self {
+    pub fn new(values: Vec<TObjectRef<R>>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<TObject<R>> {
+    pub fn values(&self) -> &Vec<TObjectRef<R>> {
         &self.values
     }
 }
@@ -372,15 +372,15 @@ impl<R: Rdf> Display for In<R> {
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Disjoint<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Disjoint<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         Disjoint { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -398,15 +398,15 @@ impl<R: Rdf> Display for Disjoint<R> {
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Equals<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Equals<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         Equals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -426,15 +426,15 @@ impl<R: Rdf> Display for Equals<R> {
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct LessThanOrEquals<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> LessThanOrEquals<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         LessThanOrEquals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -452,15 +452,15 @@ impl<R: Rdf> Display for LessThanOrEquals<R> {
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct LessThan<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> LessThan<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         LessThan { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -477,15 +477,15 @@ impl<R: Rdf> Display for LessThan<R> {
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Node<R: Rdf> {
-    shape: TObject<R>,
+    shape: TObjectRef<R>,
 }
 
 impl<R: Rdf> Node<R> {
-    pub fn new(shape: TObject<R>) -> Self {
+    pub fn new(shape: TObjectRef<R>) -> Self {
         Node { shape }
     }
 
-    pub fn shape(&self) -> &TObject<R> {
+    pub fn shape(&self) -> &TObjectRef<R> {
         &self.shape
     }
 }
@@ -506,7 +506,7 @@ impl<R: Rdf> Display for Node<R> {
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QualifiedValueShape<R: Rdf> {
-    shape: TObject<R>,
+    shape: TObjectRef<R>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
@@ -514,7 +514,7 @@ pub struct QualifiedValueShape<R: Rdf> {
 
 impl<R: Rdf> QualifiedValueShape<R> {
     pub fn new(
-        shape: TObject<R>,
+        shape: TObjectRef<R>,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
@@ -527,7 +527,7 @@ impl<R: Rdf> QualifiedValueShape<R> {
         }
     }
 
-    pub fn shape(&self) -> &TObject<R> {
+    pub fn shape(&self) -> &TObjectRef<R> {
         &self.shape
     }
 
@@ -556,15 +556,15 @@ impl<R: Rdf> Display for QualifiedValueShape<R> {
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct LanguageIn<R: Rdf> {
-    langs: Vec<TLiteral<R::Triple>>,
+    langs: Vec<TLiteralRef<R::Triple>>,
 }
 
 impl<R: Rdf> LanguageIn<R> {
-    pub fn new(langs: Vec<TLiteral<R::Triple>>) -> Self {
+    pub fn new(langs: Vec<TLiteralRef<R::Triple>>) -> Self {
         LanguageIn { langs }
     }
 
-    pub fn langs(&self) -> &Vec<TLiteral<R::Triple>> {
+    pub fn langs(&self) -> &Vec<TLiteralRef<R::Triple>> {
         &self.langs
     }
 }
@@ -695,15 +695,15 @@ impl Display for UniqueLang {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Class<R: Rdf> {
-    class_rule: TObject<R>,
+    class_rule: TObjectRef<R>,
 }
 
 impl<R: Rdf> Class<R> {
-    pub fn new(class_rule: TObject<R>) -> Self {
+    pub fn new(class_rule: TObjectRef<R>) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &TObject<R> {
+    pub fn class_rule(&self) -> &TObjectRef<R> {
         &self.class_rule
     }
 }
@@ -720,15 +720,15 @@ impl<R: Rdf> Display for Class<R> {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Datatype<R: Rdf> {
-    datatype: TPredicate<R>,
+    datatype: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Datatype<R> {
-    pub fn new(datatype: TPredicate<R>) -> Self {
+    pub fn new(datatype: TPredicateRef<R>) -> Self {
         Datatype { datatype }
     }
 
-    pub fn datatype(&self) -> &TPredicate<R> {
+    pub fn datatype(&self) -> &TPredicateRef<R> {
         &self.datatype
     }
 }
@@ -767,17 +767,17 @@ impl Display for Nodekind {
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MaxExclusive<R: Rdf> {
-    max_exclusive: TObject<R>,
+    max_exclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MaxExclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MaxExclusive {
             max_exclusive: literal,
         }
     }
 
-    pub fn max_exclusive(&self) -> &TObject<R> {
+    pub fn max_exclusive(&self) -> &TObjectRef<R> {
         &self.max_exclusive
     }
 }
@@ -791,17 +791,17 @@ impl<R: Rdf> Display for MaxExclusive<R> {
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MaxInclusive<R: Rdf> {
-    max_inclusive: TObject<R>,
+    max_inclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MaxInclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MaxInclusive {
             max_inclusive: literal,
         }
     }
 
-    pub fn max_inclusive(&self) -> &TObject<R> {
+    pub fn max_inclusive(&self) -> &TObjectRef<R> {
         &self.max_inclusive
     }
 }
@@ -815,17 +815,17 @@ impl<R: Rdf> Display for MaxInclusive<R> {
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MinExclusive<R: Rdf> {
-    min_exclusive: TObject<R>,
+    min_exclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MinExclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MinExclusive {
             min_exclusive: literal,
         }
     }
 
-    pub fn min_exclusive(&self) -> &TObject<R> {
+    pub fn min_exclusive(&self) -> &TObjectRef<R> {
         &self.min_exclusive
     }
 }
@@ -839,17 +839,17 @@ impl<R: Rdf> Display for MinExclusive<R> {
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct MinInclusive<R: Rdf> {
-    min_inclusive: TObject<R>,
+    min_inclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MinInclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MinInclusive {
             min_inclusive: literal,
         }
     }
 
-    pub fn min_inclusive(&self) -> &TObject<R> {
+    pub fn min_inclusive(&self) -> &TObjectRef<R> {
         &self.min_inclusive
     }
 }

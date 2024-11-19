@@ -1,5 +1,5 @@
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 
 use crate::severity::Severity;
 use crate::shape::Shape;
@@ -25,7 +25,7 @@ impl<R: Rdf> CompiledShape<R> {
         }
     }
 
-    pub fn id(&self) -> &TObject<R> {
+    pub fn id(&self) -> &TObjectRef<R> {
         match self {
             CompiledShape::NodeShape(ns) => ns.id(),
             CompiledShape::PropertyShape(ps) => ps.id(),
@@ -53,7 +53,7 @@ impl<R: Rdf> CompiledShape<R> {
         }
     }
 
-    pub fn path(&self) -> Option<TObject<R>> {
+    pub fn path(&self) -> Option<TObjectRef<R>> {
         match self {
             CompiledShape::NodeShape(_) => None,
             CompiledShape::PropertyShape(_ps) => todo!(),

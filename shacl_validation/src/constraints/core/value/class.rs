@@ -3,8 +3,8 @@ use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Iri;
 use srdf::model::Term;
@@ -34,7 +34,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Class<R> 
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let class = |value_node: &TObject<R>| {
+        let class = |value_node: &TObjectRef<R>| {
             if value_node.is_literal() {
                 return true;
             }
@@ -42,7 +42,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Class<R> 
             let is_class_valid = get_objects_for(
                 store.inner_store(),
                 value_node,
-                &TPredicate::<R>::new(RDF_TYPE.as_str()).into(),
+                &TPredicateRef::<R>::new(RDF_TYPE.as_str()).into(),
             )
             .unwrap_or_default()
             .iter()
@@ -51,7 +51,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Class<R> 
                     || get_objects_for(
                         store.inner_store(),
                         ctype,
-                        &TPredicate::<R>::new(RDFS_SUBCLASS_OF.as_str()).into(),
+                        &TPredicateRef::<R>::new(RDFS_SUBCLASS_OF.as_str()).into(),
                     )
                     .unwrap_or_default()
                     .contains(self.class_rule())
@@ -82,7 +82,7 @@ impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for Class<S> {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let class_value = self.class_rule().clone();
 
-        let query = move |value_node: &TObject<S>| {
+        let query = move |value_node: &TObjectRef<S>| {
             formatdoc! {"
                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

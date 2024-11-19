@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
 use iri_s::IriS;
-use oxrdf::NamedNode as OxIri;
-use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
@@ -55,7 +53,7 @@ impl SRDFSparql {
 }
 
 impl Rdf for SRDFSparql {
-    type Triple = OxTriple;
+    type Triple<'a> = OxTriple where Self: 'a;
     type Error = SparqlError;
 
     fn prefixmap(&self) -> Option<PrefixMap> {
@@ -67,13 +65,13 @@ impl Rdf for SRDFSparql {
             .select("SELECT * WHERE {{ ?s ?p ?o . }}")?
             .iter()
             .map(|solution| {
-                let subj: OxSubject = solution.get(0).unwrap().clone().try_into().unwrap();
-                let pred: OxIri = solution.get(1).unwrap().clone().try_into().unwrap();
+                let subj = solution.get(0).unwrap().clone().try_into().unwrap(); // TODO: remove all the clones
+                let pred = solution.get(1).unwrap().clone().try_into().unwrap();
                 let obj = solution.get(2).unwrap().clone();
                 OxTriple::new(subj, pred, obj)
             });
 
-        Ok(triples)
+        Ok(Box::new(triples))
     }
 }
 
@@ -107,7 +105,7 @@ impl Sparql for SRDFSparql {
 }
 
 impl QuerySolution<OxTerm> for OxQuerySolution {
-    fn get(&self, index: usize) -> Option<OxTerm> {
+    fn get(&self, index: usize) -> Option<&OxTerm> {
         self.get(index)
     }
 }
@@ -175,9 +173,9 @@ mod tests {
         let wikidata = SRDFSparql::wikidata().unwrap();
 
         let data: Vec<_> = wikidata
-            .triples_matching(Some(&q80()), None, None)
+            .triples_matching(Some(q80().as_ref()), None, None)
             .unwrap()
-            .map(Triple::predicate)
+            .map(Triple::as_predicate)
             .collect();
 
         assert!(data.contains(&p19()));

@@ -2,7 +2,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Not;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -29,7 +29,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Not<R> {
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let not = |value_node: &TObject<R>| {
+        let not = |value_node: &TObjectRef<R>| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
             let inner_results =
                 self.shape()

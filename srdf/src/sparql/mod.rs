@@ -4,5 +4,5 @@
 pub mod oxsparql;
 pub mod oxsparql_error;
 
-pub use crate::error::*;
 pub use crate::oxsparql::*;
+pub use crate::oxsparql_error::*;

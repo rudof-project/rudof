@@ -5,9 +5,9 @@ use compiled::compile_shapes;
 use iri_s::IriS;
 use node_kind::NodeKind;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TLiteral;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TLiteralRef;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use vocab::*;
 
 use crate::component::Component;
@@ -262,11 +262,11 @@ impl<R: Rdf + Clone> ast::component::Xone<R> {
 #[derive(Debug, Clone)]
 pub struct Closed<R: Rdf> {
     is_closed: bool,
-    ignored_properties: Vec<TPredicate<R>>,
+    ignored_properties: Vec<TPredicateRef<R>>,
 }
 
 impl<R: Rdf> Closed<R> {
-    pub fn new(is_closed: bool, ignored_properties: Vec<TPredicate<R>>) -> Self {
+    pub fn new(is_closed: bool, ignored_properties: Vec<TPredicateRef<R>>) -> Self {
         Closed {
             is_closed,
             ignored_properties,
@@ -277,7 +277,7 @@ impl<R: Rdf> Closed<R> {
         self.is_closed
     }
 
-    pub fn ignored_properties(&self) -> &Vec<TPredicate<R>> {
+    pub fn ignored_properties(&self) -> &Vec<TPredicateRef<R>> {
         &self.ignored_properties
     }
 }
@@ -294,15 +294,15 @@ impl<R: Rdf> From<ast::component::Closed<R>> for Closed<R> {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone)]
 pub struct HasValue<R: Rdf> {
-    value: TObject<R>,
+    value: TObjectRef<R>,
 }
 
 impl<R: Rdf> HasValue<R> {
-    pub fn new(value: TObject<R>) -> Self {
+    pub fn new(value: TObjectRef<R>) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &TObject<R> {
+    pub fn value(&self) -> &TObjectRef<R> {
         &self.value
     }
 }
@@ -319,15 +319,15 @@ impl<R: Rdf> From<ast::component::HasValue<R>> for HasValue<R> {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone)]
 pub struct In<R: Rdf> {
-    values: Vec<TObject<R>>,
+    values: Vec<TObjectRef<R>>,
 }
 
 impl<R: Rdf> In<R> {
-    pub fn new(values: Vec<TObject<R>>) -> Self {
+    pub fn new(values: Vec<TObjectRef<R>>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<TObject<R>> {
+    pub fn values(&self) -> &Vec<TObjectRef<R>> {
         &self.values
     }
 }
@@ -345,15 +345,15 @@ impl<R: Rdf> From<ast::component::In<R>> for In<R> {
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Disjoint<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Disjoint<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         Disjoint { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -371,15 +371,15 @@ impl<R: Rdf> From<ast::component::Disjoint<R>> for Disjoint<R> {
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Equals<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Equals<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         Equals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -399,15 +399,15 @@ impl<R: Rdf> From<ast::component::Equals<R>> for Equals<R> {
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
 #[derive(Debug, Clone)]
 pub struct LessThanOrEquals<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> LessThanOrEquals<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         LessThanOrEquals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -425,15 +425,15 @@ impl<R: Rdf> From<ast::component::LessThanOrEquals<R>> for LessThanOrEquals<R> {
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
 #[derive(Debug, Clone)]
 pub struct LessThan<R: Rdf> {
-    iri_ref: TPredicate<R>,
+    iri_ref: TPredicateRef<R>,
 }
 
 impl<R: Rdf> LessThan<R> {
-    pub fn new(iri_ref: TPredicate<R>) -> Self {
+    pub fn new(iri_ref: TPredicateRef<R>) -> Self {
         LessThan { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &TPredicate<R> {
+    pub fn iri_ref(&self) -> &TPredicateRef<R> {
         &self.iri_ref
     }
 }
@@ -534,15 +534,15 @@ impl<R: Rdf + Clone> ast::component::QualifiedValueShape<R> {
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
 #[derive(Debug, Clone)]
 pub struct LanguageIn<R: Rdf> {
-    langs: Vec<TLiteral<R::Triple>>,
+    langs: Vec<TLiteralRef<R::Triple>>,
 }
 
 impl<R: Rdf> LanguageIn<R> {
-    pub fn new(langs: Vec<TLiteral<R::Triple>>) -> Self {
+    pub fn new(langs: Vec<TLiteralRef<R::Triple>>) -> Self {
         LanguageIn { langs }
     }
 
-    pub fn langs(&self) -> &Vec<TLiteral<R::Triple>> {
+    pub fn langs(&self) -> &Vec<TLiteralRef<R::Triple>> {
         &self.langs
     }
 }
@@ -666,15 +666,15 @@ impl From<ast::component::UniqueLang> for UniqueLang {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Class<R: Rdf> {
-    class_rule: TObject<R>,
+    class_rule: TObjectRef<R>,
 }
 
 impl<R: Rdf> Class<R> {
-    pub fn new(class_rule: TObject<R>) -> Self {
+    pub fn new(class_rule: TObjectRef<R>) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &TObject<R> {
+    pub fn class_rule(&self) -> &TObjectRef<R> {
         &self.class_rule
     }
 }
@@ -691,15 +691,15 @@ impl<R: Rdf> From<ast::component::Class<R>> for Class<R> {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Datatype<R: Rdf> {
-    datatype: TPredicate<R>,
+    datatype: TPredicateRef<R>,
 }
 
 impl<R: Rdf> Datatype<R> {
-    pub fn new(datatype: TPredicate<R>) -> Self {
+    pub fn new(datatype: TPredicateRef<R>) -> Self {
         Datatype { datatype }
     }
 
-    pub fn datatype(&self) -> &TPredicate<R> {
+    pub fn datatype(&self) -> &TPredicateRef<R> {
         &self.datatype
     }
 }
@@ -738,17 +738,17 @@ impl From<ast::component::Nodekind> for Nodekind {
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxExclusive<R: Rdf> {
-    max_exclusive: TObject<R>,
+    max_exclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MaxExclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MaxExclusive {
             max_exclusive: literal,
         }
     }
 
-    pub fn max_exclusive(&self) -> &TObject<R> {
+    pub fn max_exclusive(&self) -> &TObjectRef<R> {
         &self.max_exclusive
     }
 }
@@ -762,17 +762,17 @@ impl<R: Rdf> From<ast::component::MaxExclusive<R>> for MaxExclusive<R> {
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxInclusive<R: Rdf> {
-    max_inclusive: TObject<R>,
+    max_inclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MaxInclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MaxInclusive {
             max_inclusive: literal,
         }
     }
 
-    pub fn max_inclusive(&self) -> &TObject<R> {
+    pub fn max_inclusive(&self) -> &TObjectRef<R> {
         &self.max_inclusive
     }
 }
@@ -786,17 +786,17 @@ impl<R: Rdf> From<ast::component::MaxInclusive<R>> for MaxInclusive<R> {
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinExclusive<R: Rdf> {
-    min_exclusive: TObject<R>,
+    min_exclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MinExclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MinExclusive {
             min_exclusive: literal,
         }
     }
 
-    pub fn min_exclusive(&self) -> &TObject<R> {
+    pub fn min_exclusive(&self) -> &TObjectRef<R> {
         &self.min_exclusive
     }
 }
@@ -810,17 +810,17 @@ impl<R: Rdf> From<ast::component::MinExclusive<R>> for MinExclusive<R> {
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinInclusive<R: Rdf> {
-    min_inclusive: TObject<R>,
+    min_inclusive: TObjectRef<R>,
 }
 
 impl<R: Rdf> MinInclusive<R> {
-    pub fn new(literal: TObject<R>) -> Self {
+    pub fn new(literal: TObjectRef<R>) -> Self {
         MinInclusive {
             min_inclusive: literal,
         }
     }
 
-    pub fn min_inclusive(&self) -> &TObject<R> {
+    pub fn min_inclusive(&self) -> &TObjectRef<R> {
         &self.min_inclusive
     }
 }

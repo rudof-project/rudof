@@ -5,8 +5,8 @@ use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
 use srdf::model::rdf::Rdf;
 use srdf::model::rdf::TIri;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 
@@ -40,7 +40,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
     fn target_node(
         &self,
         store: &Store<S>,
-        node: &TObject<S>,
+        node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         if node.is_blank_node() {
             return Err(ValidateError::TargetNodeBlankNode);
@@ -63,7 +63,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
     fn target_class(
         &self,
         store: &Store<S>,
-        class: &TObject<S>,
+        class: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
@@ -89,7 +89,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
     fn target_subject_of(
         &self,
         store: &Store<S>,
-        predicate: &TPredicate<S>,
+        predicate: &TPredicateRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
@@ -108,7 +108,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
     fn target_object_of(
         &self,
         store: &Store<S>,
-        predicate: &TPredicate<S>,
+        predicate: &TPredicateRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
@@ -139,7 +139,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _predicate: &TIri<S::Triple>,
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "predicate".to_string(),
@@ -151,7 +151,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath<S::Triple>],
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "alternative".to_string(),
@@ -163,7 +163,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath<S::Triple>],
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "sequence".to_string(),
@@ -175,7 +175,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath<S::Triple>,
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "inverse".to_string(),
@@ -187,7 +187,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath<S::Triple>,
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_more".to_string(),
@@ -199,7 +199,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath<S::Triple>,
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "one_or_more".to_string(),
@@ -211,7 +211,7 @@ impl<S: Rdf + Sparql + Clone + 'static> Engine<S> for SparqlEngine {
         _store: &Store<S>,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath<S::Triple>,
-        _focus_node: &TObject<S>,
+        _focus_node: &TObjectRef<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_one".to_string(),

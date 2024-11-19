@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::Iri;
 
 use super::component::Component;
@@ -23,7 +23,7 @@ impl<R: Rdf> Shape<R> {
         }
     }
 
-    pub fn id(&self) -> &TObject<R> {
+    pub fn id(&self) -> &TObjectRef<R> {
         match self {
             Shape::NodeShape(ns) => ns.id(),
             Shape::PropertyShape(ps) => ps.id(),
@@ -44,25 +44,25 @@ impl<R: Rdf> Shape<R> {
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<TObject<R>> {
+    pub fn property_shapes(&self) -> &Vec<TObjectRef<R>> {
         match self {
             Shape::NodeShape(ns) => ns.property_shapes(),
             Shape::PropertyShape(ps) => ps.property_shapes(),
         }
     }
 
-    pub fn path(&self) -> Option<TObject<R>> {
+    pub fn path(&self) -> Option<TObjectRef<R>> {
         match self {
             Shape::NodeShape(_) => None,
             Shape::PropertyShape(_ps) => todo!(),
         }
     }
 
-    pub fn severity(&self) -> TObject<R> {
+    pub fn severity(&self) -> TObjectRef<R> {
         let iri_s: IriS = match self {
             Shape::NodeShape(ns) => ns.severity().into(),
             Shape::PropertyShape(ps) => ps.severity().into(),
         };
-        TPredicate::<R>::new(iri_s.as_str()).into()
+        TPredicateRef::<R>::new(iri_s.as_str()).into()
     }
 }

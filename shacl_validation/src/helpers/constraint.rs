@@ -2,8 +2,8 @@ use iri_s::IriS;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Iri;
 
@@ -35,8 +35,8 @@ fn apply<R: Rdf + Clone, I: IterationStrategy<R>>(
                 if condition {
                     let result = ValidationResult::new(
                         focus_node.clone(),
-                        TPredicate::<R>::new(IriS::from(component.clone()).as_str()).into(),
-                        TPredicate::<R>::new(IriS::from(shape.severity()).as_str()).into(),
+                        TPredicateRef::<R>::new(IriS::from(component.clone()).as_str()).into(),
+                        TPredicateRef::<R>::new(IriS::from(shape.severity()).as_str()).into(),
                     );
                     return Some(result.with_source(Some(shape.id().clone())));
                 }
@@ -75,7 +75,7 @@ pub fn validate_sparql_ask<R: Rdf + Sparql + Clone>(
     shape: &CompiledShape<R>,
     store: &Store<R>,
     value_nodes: &ValueNodes<R>,
-    query: impl Fn(&TObject<R>) -> String,
+    query: impl Fn(&TObjectRef<R>) -> String,
     subsetting: &Subsetting,
 ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
     apply(

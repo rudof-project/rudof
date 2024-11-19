@@ -3,7 +3,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Literal as _;
 use srdf::model::Term;
@@ -30,7 +30,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for MaxLength
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let max_length = |value_node: &TObject<R>| {
+        let max_length = |value_node: &TObjectRef<R>| {
             if value_node.is_blank_node() {
                 true
             } else {
@@ -64,7 +64,7 @@ impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for MaxLength {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let max_length_value = self.max_length();
 
-        let query = |value_node: &TObject<S>| {
+        let query = |value_node: &TObjectRef<S>| {
             formatdoc! {
                 " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
                 value_node, max_length_value

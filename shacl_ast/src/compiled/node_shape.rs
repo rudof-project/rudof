@@ -1,5 +1,5 @@
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 
 use crate::node_shape::NodeShape;
 use crate::severity::Severity;
@@ -13,7 +13,7 @@ use super::shape::CompiledShape;
 
 #[derive(Debug, Clone)]
 pub struct CompiledNodeShape<R: Rdf> {
-    id: TObject<R>,
+    id: TObjectRef<R>,
     components: Vec<CompiledComponent<R>>,
     targets: Vec<Target<R>>,
     property_shapes: Vec<CompiledShape<R>>,
@@ -30,7 +30,7 @@ pub struct CompiledNodeShape<R: Rdf> {
 
 impl<R: Rdf> CompiledNodeShape<R> {
     pub fn new(
-        id: TObject<R>,
+        id: TObjectRef<R>,
         components: Vec<CompiledComponent<R>>,
         targets: Vec<Target<R>>,
         property_shapes: Vec<CompiledShape<R>>,
@@ -49,7 +49,7 @@ impl<R: Rdf> CompiledNodeShape<R> {
         }
     }
 
-    pub fn id(&self) -> &TObject<R> {
+    pub fn id(&self) -> &TObjectRef<R> {
         &self.id
     }
 

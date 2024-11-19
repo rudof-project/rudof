@@ -1,7 +1,7 @@
 use compiled_shacl_error::CompiledShaclError;
 use shape::CompiledShape;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 
 use crate::Schema;
 
@@ -13,7 +13,7 @@ pub mod schema;
 pub mod shape;
 
 fn compile_shape<R: Rdf + Clone>(
-    shape: TObject<R>,
+    shape: TObjectRef<R>,
     schema: &Schema<R>,
 ) -> Result<CompiledShape<R>, CompiledShaclError> {
     let shape = schema
@@ -23,7 +23,7 @@ fn compile_shape<R: Rdf + Clone>(
 }
 
 fn compile_shapes<R: Rdf + Clone>(
-    shapes: Vec<TObject<R>>,
+    shapes: Vec<TObjectRef<R>>,
     schema: &Schema<R>,
 ) -> Result<Vec<CompiledShape<R>>, CompiledShaclError> {
     let compiled_shapes = shapes

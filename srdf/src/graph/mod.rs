@@ -12,29 +12,29 @@ use oxrdf::TermRef as OxTermRef;
 use oxrdf::Triple as OxTriple;
 use oxrdf::TripleRef as OxTripleRef;
 
-use crate::model::rdf_format::RdfFormat;
 use crate::model::BlankNode;
 use crate::model::Iri;
 use crate::model::Literal;
+use crate::model::RdfFormat;
 use crate::model::Subject;
+use crate::model::SubjectKind;
 use crate::model::Term;
+use crate::model::TermKind;
 use crate::model::Triple;
 
-pub mod error;
 pub mod oxgraph;
-// pub mod lang;
-// pub mod literal;
-// pub mod numeric_literal;
-// pub mod object;
+pub mod oxgraph_error;
 pub mod serializer;
-// pub mod subject;
-// pub mod triple;
 
 impl Triple for OxTriple {
     type TripleRef<'x> = OxTripleRef<'x> where Self: 'x;
     type Subject = OxSubject;
     type Iri = OxIri;
     type Term = OxTerm;
+
+    fn from_spo(subject: Self::Subject, predicate: Self::Iri, object: Self::Term) -> Self {
+        OxTriple::new(subject, predicate, object)
+    }
 
     fn subject(&self) -> OxSubjectRef<'_> {
         self.subject.as_ref()
@@ -53,51 +53,109 @@ impl Triple for OxTriple {
     }
 }
 
+impl<'a> Triple for OxTripleRef<'a> {
+    type TripleRef<'x> = Self where Self: 'x;
+    type Subject = OxSubjectRef<'a>;
+    type Iri = OxIriRef<'a>;
+    type Term = OxTermRef<'a>;
+
+    fn from_spo(subject: Self::Subject, predicate: Self::Iri, object: Self::Term) -> Self {
+        OxTripleRef::new(subject, predicate, object)
+    }
+
+    fn subject(&self) -> OxSubjectRef<'a> {
+        self.subject
+    }
+
+    fn predicate(&self) -> OxIriRef<'a> {
+        self.predicate
+    }
+
+    fn object(&self) -> OxTermRef<'a> {
+        self.object
+    }
+
+    fn as_spo(self) -> (Self::Subject, Self::Iri, Self::Term) {
+        (self.subject, self.predicate, self.object)
+    }
+}
+
 impl Subject for OxSubject {
-    type SubjectRef<'x> = OxSubjectRef<'x>;
+    type SubjectRef<'x> = OxSubjectRef<'x> where Self: 'x;
+    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type Iri<'x> = OxIriRef<'x> where Self: 'x;
+    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
 
-    type BlankNode = OxBlankNode;
-    type Iri = OxIri;
-    #[cfg(feature = "rdf-star")]
-    type Triple = OxTriple;
-
-    fn is_blank_node(&self) -> bool {
-        self.is_blank_node()
-    }
-
-    fn is_iri(&self) -> bool {
-        self.is_named_node()
-    }
-
-    #[cfg(feature = "rdf-star")]
-    fn is_triple(&self) -> bool {
-        self.is_triple()
-    }
-
-    fn blank_node(&self) -> Option<OxBlankNode> {
+    fn kind(&self) -> SubjectKind {
         match self {
-            OxSubject::NamedNode(_) => None,
-            OxSubject::BlankNode(blank_node) => Some(blank_node),
+            OxSubject::NamedNode(_) => SubjectKind::Iri,
+            OxSubject::BlankNode(_) => SubjectKind::BlankNode,
             #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => None,
+            OxSubject::Triple(_) => SubjectKind::Triple,
         }
     }
 
-    fn iri(&self) -> Option<Self::Iri> {
-        match self {
-            OxSubject::NamedNode(named_node) => Some(named_node),
-            OxSubject::BlankNode(_) => None,
-            #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => None,
+    fn into_blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+        if let OxSubject::BlankNode(blank_node) = self {
+            Some(blank_node.as_ref())
+        } else {
+            None
         }
     }
 
-    #[cfg(feature = "rdf-star")]
-    fn triple(&self) -> Option<OxTriple> {
+    fn into_iri(&self) -> Option<OxIriRef<'_>> {
+        if let OxSubject::NamedNode(named_node) = self {
+            Some(named_node.as_ref())
+        } else {
+            None
+        }
+    }
+
+    fn into_triple(&self) -> Option<OxTripleRef<'_>> {
+        if let OxSubject::Triple(triple) = self {
+            Some(triple.as_ref().into())
+        } else {
+            None
+        }
+    }
+}
+
+impl Subject for OxSubjectRef<'_> {
+    type SubjectRef<'x> = Self where Self: 'x;
+    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type Iri<'x> = OxIriRef<'x> where Self: 'x;
+    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
+
+    fn kind(&self) -> SubjectKind {
         match self {
-            OxSubject::NamedNode(_) => None,
-            OxSubject::BlankNode(_) => None,
-            OxSubject::Triple(triple) => Some(triple),
+            OxSubjectRef::NamedNode(_) => SubjectKind::Iri,
+            OxSubjectRef::BlankNode(_) => SubjectKind::BlankNode,
+            #[cfg(feature = "rdf-star")]
+            OxSubjectRef::Triple(_) => SubjectKind::Triple,
+        }
+    }
+
+    fn into_blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+        if let OxSubjectRef::BlankNode(blank_node) = self {
+            Some(*blank_node)
+        } else {
+            None
+        }
+    }
+
+    fn into_iri(&self) -> Option<OxIriRef<'_>> {
+        if let OxSubjectRef::NamedNode(named_node) = self {
+            Some(*named_node)
+        } else {
+            None
+        }
+    }
+
+    fn into_triple(&self) -> Option<OxTripleRef<'_>> {
+        if let OxSubjectRef::Triple(triple) = self {
+            Some(triple.as_ref().into())
+        } else {
+            None
         }
     }
 }
@@ -105,180 +163,157 @@ impl Subject for OxSubject {
 impl Iri for OxIri {
     type IriRef<'x> = OxIriRef<'x>;
 
-    fn new(str: &str) -> Self {
-        OxIri::new_unchecked(str)
+    fn from_str(s: &str) -> Self {
+        OxIri::new_unchecked(s)
     }
 
-    fn into_iri_s(&self) -> IriS {
-        IriS::new_unchecked(self.as_ref().as_str().to_string())
+    fn as_iri_s(&self) -> IriS {
+        IriS::new_unchecked(self.as_str().to_string())
+    }
+}
+
+impl Iri for OxIriRef<'_> {
+    type IriRef<'x> = Self where Self: 'x;
+
+    fn from_str(s: &str) -> OxIriRef<'_> {
+        OxIriRef::new_unchecked(s)
+    }
+
+    fn as_iri_s(&self) -> IriS {
+        IriS::new_unchecked(self.as_str().to_string())
     }
 }
 
 impl Term for OxTerm {
-    type TermRef<'x> = OxTermRef<'x>;
-    type BlankNode = OxBlankNode;
-    type Iri = OxIri;
-    type Literal = OxLiteral;
-    type Triple = OxTriple;
+    type TermRef<'x> = OxTermRef<'x> where Self: 'x;
+    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type Iri<'x> = OxIriRef<'x> where Self: 'x;
+    type Literal<'x> = OxLiteralRef<'x> where Self: 'x;
+    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
 
-    fn is_blank_node(&self) -> bool {
-        self.is_blank_node()
-    }
-
-    fn is_iri(&self) -> bool {
-        self.is_named_node()
-    }
-
-    fn is_literal(&self) -> bool {
-        self.is_literal()
-    }
-
-    #[cfg(feature = "rdf-star")]
-    fn is_triple(&self) -> bool {
-        self.is_triple()
-    }
-
-    fn blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+    fn kind(&self) -> TermKind {
         match self {
-            OxTerm::NamedNode(_) => None,
-            OxTerm::BlankNode(blank_node) => Some(blank_node.as_ref()),
-            OxTerm::Literal(_) => None,
+            OxTerm::NamedNode(_) => TermKind::Iri,
+            OxTerm::BlankNode(_) => TermKind::BlankNode,
+            OxTerm::Literal(_) => TermKind::Literal,
             #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => None,
+            OxTerm::Triple(_) => TermKind::Triple,
         }
     }
 
-    fn iri(&self) -> Option<OxIriRef<'_>> {
-        match self {
-            OxTerm::NamedNode(named_node) => Some(named_node.as_ref()),
-            OxTerm::BlankNode(_) => None,
-            OxTerm::Literal(_) => None,
-            #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => None,
+    fn into_blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+        if let OxTerm::BlankNode(blank_node) = self {
+            Some(blank_node.as_ref())
+        } else {
+            None
         }
     }
 
-    fn literal(&self) -> Option<OxLiteralRef<'_>> {
-        match self {
-            OxTerm::NamedNode(_) => None,
-            OxTerm::BlankNode(_) => None,
-            OxTerm::Literal(literal) => Some(literal.as_ref()),
-            #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => None,
+    fn into_iri(&self) -> Option<OxIriRef<'_>> {
+        if let OxTerm::NamedNode(named_node) = self {
+            Some(named_node.as_ref())
+        } else {
+            None
         }
     }
 
-    #[cfg(feature = "rdf-star")]
-    fn triple(&self) -> Option<OxTripleRef<'_>> {
-        match self {
-            OxTerm::NamedNode(_) => None,
-            OxTerm::BlankNode(_) => None,
-            OxTerm::Literal(_) => None,
-            OxTerm::Triple(triple) => Some(triple.as_ref().into()),
+    fn into_literal(&self) -> Option<OxLiteralRef<'_>> {
+        if let OxTerm::Literal(literal) = self {
+            Some(literal.as_ref())
+        } else {
+            None
+        }
+    }
+
+    fn into_triple(&self) -> Option<OxTripleRef<'_>> {
+        if let OxTerm::Triple(triple) = self {
+            Some(triple.as_ref().into())
+        } else {
+            None
         }
     }
 }
 
 impl Term for OxTermRef<'_> {
     type TermRef<'x> = Self where Self: 'x;
-    type BlankNode = OxBlankNodeRef;
-    type Iri = OxIriRef;
-    type Literal = OxLiteralRef;
-    type Triple = OxTripleRef;
+    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type Iri<'x> = OxIriRef<'x> where Self: 'x;
+    type Literal<'x> = OxLiteralRef<'x> where Self: 'x;
+    #[cfg(feature = "rdf-star")]
+    type Triple<'x> = OxTripleRef<'x> where Self: 'x    ;
 
-    fn is_blank_node(&self) -> bool {
-        todo!()
+    fn kind(&self) -> TermKind {
+        match self {
+            OxTermRef::NamedNode(_) => TermKind::Iri,
+            OxTermRef::BlankNode(_) => TermKind::BlankNode,
+            OxTermRef::Literal(_) => TermKind::Literal,
+            #[cfg(feature = "rdf-star")]
+            OxTermRef::Triple(_) => TermKind::Triple,
+        }
     }
 
-    fn is_iri(&self) -> bool {
-        todo!()
+    fn into_blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+        if let OxTermRef::BlankNode(blank_node) = self {
+            Some(*blank_node)
+        } else {
+            None
+        }
     }
 
-    fn is_literal(&self) -> bool {
-        todo!()
+    fn into_iri(&self) -> Option<OxIriRef<'_>> {
+        if let OxTermRef::NamedNode(named_node) = self {
+            Some(*named_node)
+        } else {
+            None
+        }
     }
 
-    fn is_triple(&self) -> bool {
-        todo!()
+    fn into_literal(&self) -> Option<OxLiteralRef<'_>> {
+        if let OxTermRef::Literal(literal) = self {
+            Some(*literal)
+        } else {
+            None
+        }
     }
 
-    fn blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
-        todo!()
-    }
-
-    fn iri(&self) -> Option<OxIriRef<'_>> {
-        todo!()
-    }
-
-    fn literal(&self) -> Option<OxLiteralRef<'_>> {
-        todo!()
-    }
-
-    fn triple(&self) -> Option<OxTripleRef<'_>> {
-        todo!()
+    fn into_triple(&self) -> Option<OxTripleRef<'_>> {
+        if let OxTermRef::Triple(triple) = self {
+            Some(triple.as_ref().into())
+        } else {
+            None
+        }
     }
 }
 
 impl BlankNode for OxBlankNode {
-    type BlankNodeRef<'x> = OxBlankNodeRef<'x>;
-
-    fn label(&self) -> &str {
+    fn id(&self) -> &str {
         self.as_str()
     }
 }
 
 impl BlankNode for OxBlankNodeRef<'_> {
-    type BlankNodeRef<'x> = Self where Self: 'x;
-
-    fn label(&self) -> &str {
-        todo!()
+    fn id(&self) -> &str {
+        self.as_str()
     }
 }
 
 impl Literal for OxLiteral {
-    type LiteralRef<'x> = OxLiteralRef<'x>;
-
     fn datatype(&self) -> &str {
         self.datatype().as_str()
-    }
-
-    fn as_bool(&self) -> Option<bool> {
-        match self.value() {
-            "true" => Some(true),
-            "false" => Some(false),
-            _ => None,
-        }
     }
 
     fn as_string(&self) -> Option<String> {
         Some(self.value().to_string())
     }
-
-    fn as_int(&self) -> Option<isize> {
-        match self.value().parse() {
-            Ok(int) => Some(int),
-            Err(_) => None,
-        }
-    }
 }
 
 impl Literal for OxLiteralRef<'_> {
-    type LiteralRef<'x> = Self where Self: 'x;
-
     fn datatype(&self) -> &str {
-        todo!()
-    }
-
-    fn as_bool(&self) -> Option<bool> {
-        todo!()
+        OxLiteralRef::datatype(*self).as_str()
     }
 
     fn as_string(&self) -> Option<String> {
-        todo!()
-    }
-
-    fn as_int(&self) -> Option<isize> {
-        todo!()
+        Some(self.value().to_string())
     }
 }
 

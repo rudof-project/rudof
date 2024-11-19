@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 
 use crate::helpers::helper_error::SPARQLError;
@@ -10,7 +10,7 @@ pub fn select<S: Rdf + Sparql>(
     store: &S,
     query_str: String,
     index: &str,
-) -> Result<HashSet<TObject<S>>, SPARQLError> {
+) -> Result<HashSet<TObjectRef<S>>, SPARQLError> {
     let mut ans = HashSet::new();
     let query = match store.select(&query_str) {
         Ok(ans) => ans,

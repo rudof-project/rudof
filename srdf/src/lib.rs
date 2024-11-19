@@ -104,7 +104,7 @@ macro_rules! combine_rdf_parser_impl {
         $(#[$derive])*
         $struct_vis struct $type_name<$($type_params)*>
             where
-             $input_type : $crate::model::focus_rdf::FocusRdf,
+             $input_type : $crate::model::rdf::FocusRdf,
              $($where_clause)*
         {
             $(pub $arg : $arg_type,)*
@@ -113,7 +113,7 @@ macro_rules! combine_rdf_parser_impl {
 
         impl <$($type_params)*> $crate::RDFNodeParse<$input_type> for $type_name<$($type_params)*>
             where
-                $input_type : $crate::model::focus_rdf::FocusRdf,
+                $input_type : $crate::model::rdf::FocusRdf,
                 $($where_clause)*
         {
 
@@ -137,7 +137,7 @@ macro_rules! combine_rdf_parser_impl {
                 $($arg : $arg_type),*
             ) -> $type_name<$($type_params)*>
             where
-                $input_type: $crate::model::focus_rdf::FocusRdf,
+                $input_type: $crate::model::rdf::FocusRdf,
                 $($where_clause)*
         {
             $type_name {

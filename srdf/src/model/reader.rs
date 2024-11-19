@@ -6,7 +6,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use super::rdf::Rdf;
-use super::rdf_format::RdfFormat;
+use super::RdfFormat;
 
 /// Reader mode when parsing RDF data files
 #[derive(Debug, PartialEq, Clone, Default)]

@@ -5,8 +5,8 @@ use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::vocab::SH_RESULT;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
-use srdf::model::rdf::TPredicate;
+use srdf::model::rdf::TObjectRef;
+use srdf::model::rdf::TPredicateRef;
 use srdf::model::Iri;
 use srdf::model::Term;
 
@@ -74,12 +74,12 @@ impl<R: Rdf> ValidationReport<R> {
         &self.results
     }
 
-    pub fn parse(store: &R, subject: TObject<R>) -> Result<Self, ReportError> {
+    pub fn parse(store: &R, subject: TObjectRef<R>) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(
             store,
             &subject,
-            &TPredicate::<R>::new(SH_RESULT.as_str()).into(),
+            &TPredicateRef::<R>::new(SH_RESULT.as_str()).into(),
         )? {
             results.push(ValidationResult::parse(store, &result)?);
         }
@@ -161,36 +161,36 @@ impl<R: Rdf> Display for ValidationReport<R> {
     }
 }
 
-fn show_node<R: Rdf>(node: &TObject<R>, prefixmap: &PrefixMap) -> String {
+fn show_node<R: Rdf>(node: &TObjectRef<R>, prefixmap: &PrefixMap) -> String {
     match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
         (true, false, false) => prefixmap.qualify(&node.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", node.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", node.into_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", node.literal().unwrap()),
         _ => unreachable!(),
     }
 }
 
-fn show_component<R: Rdf>(component: &TObject<R>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_component<R: Rdf>(component: &TObjectRef<R>, shacl_prefixmap: &PrefixMap) -> String {
     match (
         component.is_iri(),
         component.is_blank_node(),
         component.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&component.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", component.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", component.into_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", component.literal().unwrap()),
         _ => unreachable!(),
     }
 }
 
-fn show_severity<R: Rdf>(severity: &TObject<R>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_severity<R: Rdf>(severity: &TObjectRef<R>, shacl_prefixmap: &PrefixMap) -> String {
     match (
         severity.is_iri(),
         severity.is_blank_node(),
         severity.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&severity.as_iri().unwrap().as_iri_s()),
-        (false, true, false) => format!("_:{}", severity.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", severity.into_blank_node().unwrap().to_string()),
         (false, false, true) => format!("{}", severity.literal().unwrap()),
         _ => unreachable!(),
     }

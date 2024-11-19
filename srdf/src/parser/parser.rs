@@ -3,13 +3,9 @@ use std::collections::HashSet;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 
-use crate::model::focus_rdf::FocusRdf;
+use crate::model::rdf::FocusRdf;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::TObject;
-use crate::model::rdf::TPredicate;
-use crate::model::rdf::TSubject;
-use crate::model::Iri;
-use crate::model::Term;
+use crate::model::rdf::Subjects;
 use crate::model::Triple;
 use crate::RDF_TYPE;
 
@@ -42,37 +38,35 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
         self.rdf.prefixmap()
     }
 
-    pub fn iri_unchecked(str: &str) -> TPredicate<RDF> {
-        TPredicate::<RDF>::new(str)
+    pub fn iri_unchecked(str: &str) -> TPredicateRef<RDF> {
+        TPredicateRef::<RDF>::new(str)
     }
 
-    pub fn set_focus(&mut self, focus: TObject<RDF>) {
+    pub fn set_focus(&mut self, focus: TObjectRef<RDF>) {
         self.rdf.set_focus(focus)
     }
 
     pub fn set_focus_iri(&mut self, iri: &IriS) {
-        let iri = TPredicate::<RDF>::new(iri.as_str());
-        self.rdf.set_focus(TObject::<RDF>::from(iri))
+        let iri = TPredicateRef::<RDF>::new(iri.as_str());
+        self.rdf.set_focus(TObjectRef::<RDF>::from(iri))
     }
 
-    pub fn term_iri_unchecked(str: &str) -> TObject<RDF> {
-        TObject::<RDF>::from(Self::iri_unchecked(str))
+    pub fn term_iri_unchecked(str: &str) -> TObjectRef<RDF> {
+        TObjectRef::<RDF>::from(Self::iri_unchecked(str))
     }
 
     #[inline]
-    fn rdf_type() -> TPredicate<RDF> {
-        TPredicate::<RDF>::new(RDF_TYPE.as_str())
+    fn rdf_type() -> TPredicateRef<'static, RDF> {
+        TPredicateRef::<RDF>::new(RDF_TYPE.as_str())
     }
 
-    pub fn instances_of(
-        &self,
-        object: TObject<RDF>,
-    ) -> Result<impl Iterator<Item = TSubject<RDF>>, RdfParseError> {
+    pub fn instances_of(&self, object: TObjectRef<RDF>) -> Result<Subjects<RDF>, RdfParseError> {
         let triples = match self
             .rdf
             .triples_matching(None, Some(Self::rdf_type()), Some(object))
         {
-            Ok(triples) => triples,
+            // TODO: can this match be removed?
+            Ok(triples) => triples.map(Triple::as_subject),
             Err(_) => {
                 return Err(RdfParseError::SRDFError {
                     err: "Error obtaining the triples".to_string(),
@@ -80,10 +74,10 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
             }
         };
 
-        Ok(triples.map(Triple::subject))
+        Ok(Box::new(triples))
     }
 
-    pub fn instance_of(&self, object: TObject<RDF>) -> Result<TSubject<RDF>, RdfParseError> {
+    pub fn instance_of(&self, object: TObjectRef<RDF>) -> Result<TSubjectRef<RDF>, RdfParseError> {
         let mut values = self.instances_of(object)?;
         if let Some(value1) = values.next() {
             if let Some(value2) = values.next() {
@@ -106,25 +100,25 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn predicate_values(
         &mut self,
         pred: &IriS,
-    ) -> Result<HashSet<TObject<RDF>>, RdfParseError> {
+    ) -> Result<HashSet<TObjectRef<RDF>>, RdfParseError> {
         let mut p = property_values(pred);
         let vs = p.parse_impl(&mut self.rdf)?;
         Ok(vs)
     }
 
-    pub fn predicate_value(&mut self, pred: &IriS) -> Result<TObject<RDF>, RdfParseError>
+    pub fn predicate_value(&mut self, pred: &IriS) -> Result<TObjectRef<RDF>, RdfParseError>
     where
         RDF: FocusRdf,
     {
         property_value(pred).parse_impl(&mut self.rdf)
     }
 
-    pub fn get_rdf_type(&mut self) -> Result<TObject<RDF>, RdfParseError> {
+    pub fn get_rdf_type(&mut self) -> Result<TObjectRef<RDF>, RdfParseError> {
         let value = self.predicate_value(&RDF_TYPE)?;
         Ok(value)
     }
 
-    pub fn term_as_iri(term: &TObject<RDF>) -> Result<IriS, RdfParseError> {
+    pub fn term_as_iri(term: &TObjectRef<RDF>) -> Result<IriS, RdfParseError> {
         match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
             (true, false, false) => Ok(term.as_iri().unwrap().as_iri_s()),
             (false, true, false) => Err(RdfParseError::ExpectedIRIFoundBNode {
@@ -137,7 +131,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
         }
     }
 
-    pub fn term_as_subject(term: &TObject<RDF>) -> Result<TSubject<RDF>, RdfParseError> {
+    pub fn term_as_subject(term: &TObjectRef<RDF>) -> Result<TSubjectRef<RDF>, RdfParseError> {
         match term.try_into() {
             Ok(subj) => Ok(subj),
             Err(_) => Err(RdfParseError::ExpectedSubject {
@@ -149,7 +143,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     pub fn parse_list_for_predicate(
         &mut self,
         pred: &IriS,
-    ) -> Result<Vec<TObject<RDF>>, RdfParseError> {
+    ) -> Result<Vec<TObjectRef<RDF>>, RdfParseError> {
         let list_node = self.predicate_value(pred)?;
         self.rdf.set_focus(list_node);
         let values = rdf_list().parse_impl(&mut self.rdf)?;

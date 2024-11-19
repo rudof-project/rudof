@@ -19,8 +19,8 @@ pub trait Sparql {
         self.make_sparql_query(query)?
             .first()
             .and_then(|solution| solution.get(0))
-            .and_then(Term::literal)
-            .and_then(Literal::as_bool)
+            .and_then(Term::into_literal)
+            .and_then(|literal| literal.as_bool())
             .ok_or_else(|| todo!())
     }
 }

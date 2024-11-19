@@ -1,5 +1,5 @@
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObject;
+use srdf::model::rdf::TObjectRef;
 
 use crate::property_shape::PropertyShape;
 use crate::severity::Severity;
@@ -14,7 +14,7 @@ use super::shape::CompiledShape;
 
 #[derive(Debug, Clone)]
 pub struct CompiledPropertyShape<R: Rdf> {
-    id: TObject<R>,
+    id: TObjectRef<R>,
     path: SHACLPath<R::Triple>,
     components: Vec<CompiledComponent<R>>,
     targets: Vec<Target<R>>,
@@ -35,7 +35,7 @@ pub struct CompiledPropertyShape<R: Rdf> {
 impl<R: Rdf> CompiledPropertyShape<R> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: TObject<R>,
+        id: TObjectRef<R>,
         path: SHACLPath<R::Triple>,
         components: Vec<CompiledComponent<R>>,
         targets: Vec<Target<R>>,
@@ -56,7 +56,7 @@ impl<R: Rdf> CompiledPropertyShape<R> {
         }
     }
 
-    pub fn id(&self) -> &TObject<R> {
+    pub fn id(&self) -> &TObjectRef<R> {
         &self.id
     }
 
