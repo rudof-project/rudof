@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::str::FromStr;
 
 use iri_s::IriS;
@@ -17,9 +18,9 @@ pub trait Triple: Sized {
     where
         Self: 'x;
 
-    type Subject: Subject;
-    type Iri: Iri;
-    type Term: Term;
+    type Subject: Subject + Hash + Eq + TryFrom<Self::Term>;
+    type Iri: Iri + Hash + Eq + TryFrom<Self::Subject> + TryFrom<Self::Term>;
+    type Term: Term + Hash + Eq + From<Self::Subject>;
 
     /// Create a triple from its subject, predicate and object.
     fn from_spo(subject: Self::Subject, predicate: Self::Iri, object: Self::Term) -> Self;
@@ -32,6 +33,11 @@ pub trait Triple: Sized {
 
     /// The object of this triple.
     fn object(&self) -> TObjectRef<Self>;
+
+    /// The components of this triple.
+    fn spo(&self) -> (TSubjectRef<Self>, TPredicateRef<Self>, TObjectRef<Self>) {
+        (self.subject(), self.predicate(), self.object())
+    }
 
     /// Consume this triple, returning all its components.
     fn as_spo(self) -> (Self::Subject, Self::Iri, Self::Term);
@@ -53,13 +59,6 @@ pub trait Triple: Sized {
         let (_, _, o) = self.as_spo();
         o
     }
-
-    /// Whether this triple is equal to another triple.
-    fn eq(&self, other: &Self) -> bool {
-        self.subject().eq(&other.subject())
-            && self.predicate().eq(&other.predicate())
-            && self.object().eq(&other.object())
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -71,22 +70,29 @@ pub enum SubjectKind {
 }
 
 pub trait Subject {
-    type SubjectRef<'x>: Subject + Copy
+    type SubjectRef<'x>: Subject + Copy + Hash + Eq
     where
         Self: 'x;
 
-    type BlankNode<'x>: BlankNode + Copy
-    where
-        Self: 'x;
+    // type BlankNodeRef<'x>: BlankNode + Copy
+    // where
+    //     Self: 'x;
 
-    type Iri<'x>: Iri + Copy
-    where
-        Self: 'x;
+    // type IriRef<'x>: Iri + Copy
+    // where
+    //     Self: 'x;
+
+    // #[cfg(feature = "rdf-star")]
+    // type TripleRef<'x>: Triple + Copy
+    // where
+    //     Self: 'x;
+
+    type BlankNode: BlankNode;
+
+    type Iri: Iri;
 
     #[cfg(feature = "rdf-star")]
-    type Triple<'x>: Triple + Copy
-    where
-        Self: 'x;
+    type Triple: Triple;
 
     /// The kind of this subject.
     fn kind(&self) -> SubjectKind;
@@ -108,49 +114,23 @@ pub trait Subject {
     }
 
     /// Tranform this subject, returning it as a blank node.
-    fn into_blank_node(&self) -> Option<Self::BlankNode<'_>>;
+    fn into_blank_node(&self) -> Option<&Self::BlankNode>;
 
     /// Tranform this subject, returning it as an IRI.
-    fn into_iri(&self) -> Option<Self::Iri<'_>>;
+    fn into_iri(&self) -> Option<Self::Iri>;
 
     #[cfg(feature = "rdf-star")]
     /// Tranform this subject, returning it as a triple.
-    fn into_triple(&self) -> Option<Self::Triple<'_>>;
-
-    /// Whether this subject is equal to another subject.
-    fn eq(&self, other: &Self) -> bool {
-        if self.kind() != other.kind() {
-            return false;
-        }
-        match self.kind() {
-            SubjectKind::Iri => self.into_iri().unwrap().eq(&other.into_iri().unwrap()),
-            SubjectKind::Triple => self
-                .into_triple()
-                .unwrap()
-                .eq(&other.into_triple().unwrap()),
-            SubjectKind::BlankNode => self
-                .into_blank_node()
-                .unwrap()
-                .eq(&other.into_blank_node().unwrap()),
-        }
-    }
+    fn into_triple(&self) -> Option<Self::Triple>;
 }
 
 pub trait Iri {
-    type IriRef<'x>: Iri + Copy
+    type IriRef<'x>: Iri + Copy + Hash + Eq
     where
         Self: 'x;
 
-    /// Create an IRI from a string.
-    fn from_str(s: &str) -> Self;
-
     /// Transform this IRI, returning it as an `IriS`.
-    fn as_iri_s(&self) -> IriS;
-
-    /// Whether this IRI is equal to another IRI.
-    fn eq(&self, other: &Self) -> bool {
-        self.as_iri_s() == other.as_iri_s()
-    }
+    fn into_iri_s(&self) -> IriS;
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -163,26 +143,35 @@ pub enum TermKind {
 }
 
 pub trait Term {
-    type TermRef<'x>: Term + Copy
+    type TermRef<'x>: Term + Copy + Hash + Eq
     where
         Self: 'x;
 
-    type BlankNode<'x>: BlankNode + Copy
-    where
-        Self: 'x;
+    // type BlankNodeRef<'x>: BlankNode + Copy
+    // where
+    //     Self: 'x;
 
-    type Iri<'x>: Iri + Copy
-    where
-        Self: 'x;
+    // type IriRef<'x>: Iri + Copy
+    // where
+    //     Self: 'x;
 
-    type Literal<'x>: Literal + Copy
-    where
-        Self: 'x;
+    // type LiteralRef<'x>: Literal + Copy
+    // where
+    //     Self: 'x;
+
+    // #[cfg(feature = "rdf-star")]
+    // type TripleRef<'x>: Triple + Copy
+    // where
+    //     Self: 'x;
+
+    type BlankNode: BlankNode;
+
+    type Iri: Iri;
+
+    type Literal: Literal;
 
     #[cfg(feature = "rdf-star")]
-    type Triple<'x>: Triple + Copy
-    where
-        Self: 'x;
+    type Triple: Triple;
 
     /// The kind of this term.
     fn kind(&self) -> TermKind;
@@ -209,48 +198,21 @@ pub trait Term {
     }
 
     /// Transform this term, returning it as a blank node.
-    fn into_blank_node(&self) -> Option<Self::BlankNode<'_>>;
+    fn into_blank_node(&self) -> Option<Self::BlankNode>;
 
     /// Transform this term, returning it as an IRI.
-    fn into_iri(&self) -> Option<Self::Iri<'_>>;
+    fn into_iri(&self) -> Option<Self::Iri>;
 
     /// Transform this term, returning it as a literal.
-    fn into_literal(&self) -> Option<Self::Literal<'_>>;
+    fn into_literal(&self) -> Option<Self::Literal>;
 
     #[cfg(feature = "rdf-star")]
     /// Transform this term, returning it as a triple.
-    fn into_triple(&self) -> Option<Self::Triple<'_>>;
-
-    /// Whether this term is equal to another term.
-    fn eq(&self, other: &Self) -> bool {
-        if self.kind() != other.kind() {
-            return false;
-        }
-        match self.kind() {
-            TermKind::Iri => self.into_iri().unwrap().eq(&other.into_iri().unwrap()),
-            TermKind::Literal => self
-                .into_literal()
-                .unwrap()
-                .eq(&other.into_literal().unwrap()),
-            TermKind::BlankNode => self
-                .into_blank_node()
-                .unwrap()
-                .eq(&other.into_blank_node().unwrap()),
-            TermKind::Triple => self
-                .into_triple()
-                .unwrap()
-                .eq(&other.into_triple().unwrap()),
-        }
-    }
+    fn into_triple(&self) -> Option<Self::Triple>;
 }
 
 pub trait BlankNode {
     fn id(&self) -> &str;
-
-    /// Whether this blank node is equal to another blank node.
-    fn eq(&self, other: &Self) -> bool {
-        self.id() == other.id()
-    }
 }
 
 pub trait Literal {
@@ -277,11 +239,6 @@ pub trait Literal {
     /// Tranform this literal, returning it as a float.
     fn as_float(&self) -> Option<f64> {
         self.as_string().and_then(|s| s.parse().ok())
-    }
-
-    /// Whether this literal is equal to another literal.
-    fn eq(&self, other: &Self) -> bool {
-        self.as_string() == other.as_string()
     }
 }
 

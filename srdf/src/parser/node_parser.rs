@@ -7,6 +7,9 @@ use iri_s::IriS;
 
 use crate::model::rdf::FocusRdf;
 use crate::model::rdf::Rdf;
+use crate::model::rdf::TObjectRef;
+use crate::model::rdf::TPredicateRef;
+use crate::model::rdf::TSubjectRef;
 use crate::model::Iri;
 use crate::model::Literal as _;
 use crate::model::Term as _;
@@ -694,11 +697,11 @@ where
 /// assert_eq!(iri().parse(&x, graph).unwrap(), x)
 /// ```
 pub fn iri<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = IriS> {
-    term().flat_map(|t: TObjectRef<RDF>| match t.as_iri() {
+    term().flat_map(|t: TObjectRef<RDF>| match t.into_iri() {
         None => Err(RdfParseError::ExpectedIRI {
             term: format!("{t}"),
         }),
-        Some(v) => Ok(v.as_iri_s()),
+        Some(v) => Ok(v.into_iri_s()),
     })
 }
 
@@ -772,8 +775,8 @@ pub fn property_bool<RDF: FocusRdf>(prop: &IriS) -> impl RDFNodeParse<RDF, Outpu
 
 pub fn parse_rdf_nil<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = ()> {
     satisfy(
-        |node: &TObjectRef<RDF>| match node.as_iri() {
-            Some(iri) => iri.as_iri_s().as_str() == RDF_NIL_STR,
+        |node: &TObjectRef<RDF>| match node.into_iri() {
+            Some(iri) => iri.into_iri_s().as_str() == RDF_NIL_STR,
             None => false,
         },
         "rdf_nil",
@@ -858,8 +861,8 @@ pub fn property_values_iri<RDF: FocusRdf>(
     property_values(property).flat_map(|values| {
         let ints: Vec<_> = values
             .iter()
-            .flat_map(|t: &TObjectRef<RDF>| match t.as_iri() {
-                Some(iri) => Ok::<IriS, RdfParseError>(iri.as_iri_s()),
+            .flat_map(|t: &TObjectRef<RDF>| match t.into_iri() {
+                Some(iri) => Ok::<IriS, RdfParseError>(iri.into_iri_s()),
                 None => todo!(),
             })
             .collect();
@@ -918,7 +921,7 @@ impl<RDF: FocusRdf> RDFNodeParse<RDF> for PropertyValues<RDF> {
             },
             None => return Err(RdfParseError::NoFocusNode),
         };
-        let pred = TPredicateRef::<RDF>::new(self.property.as_str());
+        let pred = TPredicateRef::<RDF>::from_str(self.property.as_str());
         let triples = match rdf.triples_matching(Some(subject), Some(pred), None) {
             Result::Ok(triples) => triples,
             Err(_) => {
@@ -1083,7 +1086,7 @@ pub fn property_integers<RDF: FocusRdf>(
     property_values(property).flat_map(|terms| {
         let values = terms
             .iter()
-            .flat_map(|term: &TObjectRef<RDF>| match term.literal() {
+            .flat_map(|term: &TObjectRef<RDF>| match term.into_literal() {
                 Some(literal) => match literal.as_int() {
                     Some(int) => Ok(int),
                     None => Err(RdfParseError::ExpectedInteger {
@@ -1104,7 +1107,7 @@ pub fn property_iri<'a, RDF: FocusRdf + 'a>(
     property: &'a IriS,
 ) -> impl RDFNodeParse<RDF, Output = IriS> + 'a {
     get_focus().then(move |focus| {
-        property_value(property).flat_map(move |term: TObjectRef<RDF>| match term.iri() {
+        property_value(property).flat_map(move |term: TObjectRef<RDF>| match term.into_iri() {
             Some(iri) => Ok(iri.into_iri_s()),
             None => Err(RdfParseError::PropertyValueExpectedIRI {
                 focus: format!("{focus}"),
@@ -1120,7 +1123,7 @@ pub fn property_iri<'a, RDF: FocusRdf + 'a>(
 
 /// Returns the integer value of `property` for the focus node
 pub fn property_integer<RDF: FocusRdf>(property: &IriS) -> impl RDFNodeParse<RDF, Output = isize> {
-    property_value(property).flat_map(|term: TObjectRef<RDF>| match term.literal() {
+    property_value(property).flat_map(|term: TObjectRef<RDF>| match term.into_literal() {
         Some(literal) => match literal.as_int() {
             Some(int) => Ok(int),
             None => Err(RdfParseError::ExpectedInteger {
@@ -1135,7 +1138,7 @@ pub fn property_integer<RDF: FocusRdf>(property: &IriS) -> impl RDFNodeParse<RDF
 
 /// Returns the string value of `property` for the focus node
 pub fn property_string<RDF: FocusRdf>(property: &IriS) -> impl RDFNodeParse<RDF, Output = String> {
-    property_value(property).flat_map(|term: TObjectRef<RDF>| match term.literal() {
+    property_value(property).flat_map(|term: TObjectRef<RDF>| match term.into_literal() {
         Some(literal) => Ok(literal.as_string().unwrap()),
         None => Err(RdfParseError::ExpectedLiteral {
             term: format!("{term}"),
@@ -1183,7 +1186,7 @@ where
 
 /// Parses a node as a bool
 pub fn bool<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = bool> {
-    get_focus().flat_map(|ref term: TObjectRef<RDF>| match term.literal() {
+    get_focus().flat_map(|ref term: TObjectRef<RDF>| match term.into_literal() {
         Some(literal) => match literal.as_bool() {
             Some(bool) => Ok(bool),
             None => Err(RdfParseError::ExpectedBoolean {
@@ -1372,7 +1375,7 @@ fn parse_list<RDF: FocusRdf>(
 }
 
 fn node_is_rdf_nil<RDF: Rdf>(node: &TObjectRef<RDF>) -> bool {
-    if let Some(iri) = node.iri() {
+    if let Some(iri) = node.into_iri() {
         iri.into_iri_s() == *RDF_NIL
     } else {
         false
@@ -1383,7 +1386,7 @@ fn node_is_rdf_nil<RDF: Rdf>(node: &TObjectRef<RDF>) -> bool {
 pub fn is_expected_iri<RDF: FocusRdf>(expected_iri: IriS) -> impl RDFNodeParse<RDF, Output = ()> {
     let name = format!("Is {}", expected_iri.as_str());
     satisfy(
-        move |node: &TObjectRef<RDF>| match node.iri() {
+        move |node: &TObjectRef<RDF>| match node.into_iri() {
             Some(iri) => iri.into_iri_s() == expected_iri,
             None => false,
         },
@@ -1587,7 +1590,7 @@ where
 pub fn instances_of<RDF: FocusRdf>(
     expected: &IriS,
 ) -> impl RDFNodeParse<RDF, Output = Vec<TSubjectRef<RDF>>> {
-    let iri = TPredicateRef::<RDF>::new(expected.as_str());
+    let iri = TPredicateRef::<RDF>::from_str(expected.as_str());
     subjects_with_property_value::<RDF>(&RDF_TYPE, &iri.into())
 }
 
@@ -1618,7 +1621,7 @@ pub fn subjects_with_property_value<RDF: FocusRdf>(
     value: &TObjectRef<RDF>,
 ) -> SubjectsPropertyValue<RDF> {
     SubjectsPropertyValue {
-        property: TPredicateRef::<RDF>::new(property.as_str()),
+        property: TPredicateRef::<RDF>::from_str(property.as_str()),
         value: value.clone(),
         _marker_rdf: PhantomData,
     }
@@ -1689,7 +1692,7 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> ParserResult<Self::Output> {
         let rdf_type = parse_rdf_type().parse_impl(rdf)?;
-        let iri_type = match rdf_type.iri() {
+        let iri_type = match rdf_type.into_iri() {
             Some(iri) => iri.into_iri_s(),
             None => {
                 return Err(RdfParseError::ExpectedIRI {

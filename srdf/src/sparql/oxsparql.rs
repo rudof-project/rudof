@@ -70,7 +70,6 @@ impl Rdf for SRDFSparql {
                 let obj = solution.get(2).unwrap().clone();
                 OxTriple::new(subj, pred, obj)
             });
-
         Ok(Box::new(triples))
     }
 }
@@ -171,13 +170,11 @@ mod tests {
     #[test]
     fn check_sparql() {
         let wikidata = SRDFSparql::wikidata().unwrap();
-
         let data: Vec<_> = wikidata
             .triples_matching(Some(q80().as_ref()), None, None)
             .unwrap()
             .map(Triple::as_predicate)
             .collect();
-
-        assert!(data.contains(&p19()));
+        assert!(data.contains(&p19().as_ref()));
     }
 }

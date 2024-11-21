@@ -6,6 +6,11 @@ use prefixmap::PrefixMap;
 use crate::model::rdf::FocusRdf;
 use crate::model::rdf::Rdf;
 use crate::model::rdf::Subjects;
+use crate::model::rdf::TObjectRef;
+use crate::model::rdf::TPredicateRef;
+use crate::model::rdf::TSubjectRef;
+use crate::model::Iri as _;
+use crate::model::Term;
 use crate::model::Triple;
 use crate::RDF_TYPE;
 
@@ -39,7 +44,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     }
 
     pub fn iri_unchecked(str: &str) -> TPredicateRef<RDF> {
-        TPredicateRef::<RDF>::new(str)
+        TPredicateRef::<RDF>::from_str(str)
     }
 
     pub fn set_focus(&mut self, focus: TObjectRef<RDF>) {
@@ -47,7 +52,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
     }
 
     pub fn set_focus_iri(&mut self, iri: &IriS) {
-        let iri = TPredicateRef::<RDF>::new(iri.as_str());
+        let iri = TPredicateRef::<RDF>::from_str(iri.as_str());
         self.rdf.set_focus(TObjectRef::<RDF>::from(iri))
     }
 
@@ -57,7 +62,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
 
     #[inline]
     fn rdf_type() -> TPredicateRef<'static, RDF> {
-        TPredicateRef::<RDF>::new(RDF_TYPE.as_str())
+        TPredicateRef::<RDF>::from_str(RDF_TYPE.as_str())
     }
 
     pub fn instances_of(&self, object: TObjectRef<RDF>) -> Result<Subjects<RDF>, RdfParseError> {
@@ -120,7 +125,7 @@ impl<RDF: FocusRdf> RDFParser<RDF> {
 
     pub fn term_as_iri(term: &TObjectRef<RDF>) -> Result<IriS, RdfParseError> {
         match (term.is_iri(), term.is_blank_node(), term.is_literal()) {
-            (true, false, false) => Ok(term.as_iri().unwrap().as_iri_s()),
+            (true, false, false) => Ok(term.into_iri().unwrap().into_iri_s()),
             (false, true, false) => Err(RdfParseError::ExpectedIRIFoundBNode {
                 bnode: term.to_string(),
             }),

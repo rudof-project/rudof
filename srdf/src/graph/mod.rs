@@ -1,8 +1,6 @@
 use iri_s::IriS;
 use oxrdf::BlankNode as OxBlankNode;
-use oxrdf::BlankNodeRef as OxBlankNodeRef;
 use oxrdf::Literal as OxLiteral;
-use oxrdf::LiteralRef as OxLiteralRef;
 use oxrdf::NamedNode as OxIri;
 use oxrdf::NamedNodeRef as OxIriRef;
 use oxrdf::Subject as OxSubject;
@@ -18,13 +16,13 @@ use crate::model::Literal;
 use crate::model::RdfFormat;
 use crate::model::Subject;
 use crate::model::SubjectKind;
+use crate::model::TSubjectRef;
 use crate::model::Term;
 use crate::model::TermKind;
 use crate::model::Triple;
 
-pub mod oxgraph;
+// pub mod oxgraph;
 pub mod oxgraph_error;
-pub mod serializer;
 
 impl Triple for OxTriple {
     type TripleRef<'x> = OxTripleRef<'x> where Self: 'x;
@@ -82,9 +80,9 @@ impl<'a> Triple for OxTripleRef<'a> {
 
 impl Subject for OxSubject {
     type SubjectRef<'x> = OxSubjectRef<'x> where Self: 'x;
-    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
-    type Iri<'x> = OxIriRef<'x> where Self: 'x;
-    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
+    type BlankNode = OxBlankNode;
+    type Iri = OxIri;
+    type Triple = OxTriple;
 
     fn kind(&self) -> SubjectKind {
         match self {
@@ -95,9 +93,9 @@ impl Subject for OxSubject {
         }
     }
 
-    fn into_blank_node(&self) -> Option<OxBlankNodeRef<'_>> {
+    fn into_blank_node(&self) -> Option<&OxBlankNode> {
         if let OxSubject::BlankNode(blank_node) = self {
-            Some(blank_node.as_ref())
+            Some(blank_node)
         } else {
             None
         }
@@ -118,13 +116,22 @@ impl Subject for OxSubject {
             None
         }
     }
+
+    fn into_term<T: Triple>(&self) -> T::Term {
+        self.into()
+    }
+
+    fn try_into_iri<T: Triple>(&self) -> Result<Self::IriRef<'_>, Self::TryIntoError> {
+        todo!()
+    }
 }
 
 impl Subject for OxSubjectRef<'_> {
     type SubjectRef<'x> = Self where Self: 'x;
-    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
-    type Iri<'x> = OxIriRef<'x> where Self: 'x;
-    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
+    type BlankNodeRef<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type IriRef<'x> = OxIriRef<'x> where Self: 'x;
+    type TripleRef<'x> = OxTripleRef<'x> where Self: 'x;
+    type TryIntoError;
 
     fn kind(&self) -> SubjectKind {
         match self {
@@ -161,13 +168,9 @@ impl Subject for OxSubjectRef<'_> {
 }
 
 impl Iri for OxIri {
-    type IriRef<'x> = OxIriRef<'x>;
+    type IriRef<'x> = OxIriRef<'x> where Self: 'x;
 
-    fn from_str(s: &str) -> Self {
-        OxIri::new_unchecked(s)
-    }
-
-    fn as_iri_s(&self) -> IriS {
+    fn into_iri_s(&self) -> IriS {
         IriS::new_unchecked(self.as_str().to_string())
     }
 }
@@ -175,21 +178,18 @@ impl Iri for OxIri {
 impl Iri for OxIriRef<'_> {
     type IriRef<'x> = Self where Self: 'x;
 
-    fn from_str(s: &str) -> OxIriRef<'_> {
-        OxIriRef::new_unchecked(s)
-    }
-
-    fn as_iri_s(&self) -> IriS {
+    fn into_iri_s(&self) -> IriS {
         IriS::new_unchecked(self.as_str().to_string())
     }
 }
 
 impl Term for OxTerm {
     type TermRef<'x> = OxTermRef<'x> where Self: 'x;
-    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
-    type Iri<'x> = OxIriRef<'x> where Self: 'x;
-    type Literal<'x> = OxLiteralRef<'x> where Self: 'x;
-    type Triple<'x> = OxTripleRef<'x> where Self: 'x;
+    type BlankNodeRef<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type IriRef<'x> = OxIriRef<'x> where Self: 'x;
+    type LiteralRef<'x> = OxLiteralRef<'x> where Self: 'x;
+    type TripleRef<'x> = OxTripleRef<'x> where Self: 'x;
+    type TryIntoError;
 
     fn kind(&self) -> TermKind {
         match self {
@@ -232,15 +232,20 @@ impl Term for OxTerm {
             None
         }
     }
+
+    fn try_into_subject<T: Triple>(&self) -> Result<TSubjectRef<T>, Self::TryIntoError> {
+        self.try_into()
+    }
 }
 
 impl Term for OxTermRef<'_> {
     type TermRef<'x> = Self where Self: 'x;
-    type BlankNode<'x> = OxBlankNodeRef<'x> where Self: 'x;
-    type Iri<'x> = OxIriRef<'x> where Self: 'x;
-    type Literal<'x> = OxLiteralRef<'x> where Self: 'x;
+    type BlankNodeRef<'x> = OxBlankNodeRef<'x> where Self: 'x;
+    type IriRef<'x> = OxIriRef<'x> where Self: 'x;
+    type LiteralRef<'x> = OxLiteralRef<'x> where Self: 'x;
     #[cfg(feature = "rdf-star")]
-    type Triple<'x> = OxTripleRef<'x> where Self: 'x    ;
+    type TripleRef<'x> = OxTripleRef<'x> where Self: 'x;
+    type TryIntoError;
 
     fn kind(&self) -> TermKind {
         match self {
@@ -282,6 +287,10 @@ impl Term for OxTermRef<'_> {
         } else {
             None
         }
+    }
+
+    fn try_into_subject<T: Triple>(&self) -> Result<TSubjectRef<T>, Self::TryIntoError> {
+        self.try_into()
     }
 }
 
