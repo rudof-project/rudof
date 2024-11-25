@@ -4,6 +4,7 @@ use iri_s::IriS;
 use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use shex_compact::ShExParser;
 use srdf::literal::Literal;
+use srdf::{SRDFBuilder, SRDFGraph};
 use std::io;
 use serde_json;
 use generator::utils::file_reader::read_and_parse_schema;
@@ -72,13 +73,13 @@ fn main3(){
 
 fn main() -> io::Result<()> {
     // Read and parse the schema file
-    let file_path = "/home/diego/Documents/rudof/generator/examples/schema.shex";
+    let file_path = "examples/schema.shex";
     let schema = read_and_parse_schema(file_path)?;
-    
     // Create a visitor and traverse the schema 
-    let mut visitor = ShexVisitor;  
-    schema.accept(&mut visitor);    
-
+    let mut visitor = ShexVisitor::new(SRDFGraph::empty());  
+    schema.accept(&mut visitor); 
+       
+    print!("{:?}", visitor.rdf);
     
 
 
