@@ -3,18 +3,32 @@ use crate::traverse::Visitor;
 use shex_ast::{
     NodeConstraint, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprWrapper, TripleExprWrapper,
 };
-use srdf::SRDFGraph;
-use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
+
+
+// ----------------- Implement the ShexVisitor -----------------
 
 pub struct ShexVisitor {
-    pub rdf: SRDFGraph,
+    pub shapes: Vec<Shape>,
+    pub prefixmap: PrefixMap,
 }
 
 impl ShexVisitor {
-    pub fn new(rdf: SRDFGraph) -> Self {
-        ShexVisitor { rdf }
+    pub fn new() -> Self {
+        ShexVisitor { shapes: Vec::new(), prefixmap: PrefixMap::new() }
     }
+
+    pub fn add_shape(&mut self, shape: Shape) {
+        self.shapes.push(shape);
+    }
+
+    pub fn merge_prefix_map(&mut self, prefix_map: PrefixMap) {
+        self.prefixmap.merge(prefix_map).unwrap();
+    }
+
 }
+
+// ----------------- Implement the Traversable trait for Shex AST nodes -----------------
 
 impl Traversable for Schema {
     fn accept(&self, visitor: &mut dyn Visitor) {
@@ -80,7 +94,7 @@ impl Visitor for ShexVisitor {
 
     fn visit_shape(&mut self, shape: &Shape) {
         println!("Shape visited");
-        
+        self.add_shape(shape.clone());
     }
 
     fn visit_shape_not(&mut self, shape_not: &Box<ShapeExprWrapper>) {
@@ -110,8 +124,8 @@ impl Visitor for ShexVisitor {
 
   
     fn visit_prefix_map(&mut self, prefixmap: &PrefixMap) {
-        println!("PrefixMap visited {:?}", prefixmap);
-        self.rdf.merge_prefixes(prefixmap.clone()).unwrap();
+        println!("PrefixMap visited");
+        self.merge_prefix_map(prefixmap.clone());
        
     }
 }
