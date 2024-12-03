@@ -2,130 +2,109 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::str::FromStr;
 
+use conversions::*;
 use iri_s::IriS;
 use thiserror::Error;
 
+pub mod conversions;
 pub mod rdf;
 pub mod reader;
 pub mod sparql;
 
-pub type TSubjectRef<'a, T> = <<T as Triple>::Subject as Subject>::SubjectRef<'a>;
-pub type TPredicateRef<'a, T> = <<T as Triple>::Iri as Iri>::IriRef<'a>;
-pub type TObjectRef<'a, T> = <<T as Triple>::Term as Term>::TermRef<'a>;
+pub type TSubjectRef<'a, T> = <T as Triple>::SubjectRef<'a>;
+pub type TPredicateRef<'a, T> = <T as Triple>::Iri<'a>;
+pub type TObjectRef<'a, T> = <T as Triple>::TermRef<'a>;
 
 pub trait Triple: Sized {
+    /// Reference to the subject of a triple.
+    type Subject<'a>: Subject + Copy
+    where
+        Self: 'a;
+
+    /// Reference to the IRI of a triple.
+    type Iri<'a>: Iri + Copy
+    where
+        Self: 'a;
+
+    /// Reference to the term of a triple.
+    type Term<'a>: Term + Copy
+    where
+        Self: 'a;
+
+    /// The subject of this triple.
+    fn subject<'a>(&'a self) -> Self::SubjectRef<'a>;
+
+    /// The predicate of this triple.
+    fn predicate<'a>(&'a self) -> Self::Iri<'a>;
+
+    /// The object of this triple.
+    fn object<'a>(&'a self) -> Self::TermRef<'a>;
+
+    /// The components of this triple.
+    fn spo<'a>(&'a self) -> (Self::SubjectRef<'a>, Self::Iri<'a>, Self::TermRef<'a>) {
+        (self.subject(), self.predicate(), self.object())
+    }
+}
+
+pub trait FromComponents: Triple {
+    type Subject;
+    type Predicate;
+    type Object;
+
+    /// Create a triple from its subject, predicate and object.
+    fn from_spo(
+        subject: impl Into<Self::Subject>,
+        predicate: impl Into<Self::Predicate>,
+        object: impl Into<Self::Object>,
+    ) -> Self;
+}
+
+pub trait Subject: IntoTerm + Hash + Eq {
+    /// Reference to the blank node of a subject.
+    type BlankNodeRef<'x>: BlankNode + Copy
+    where
+        Self: 'x;
+
+    /// Reference to the IRI of a subject.
+    type IriRef<'x>: Iri + Copy
+    where
+        Self: 'x;
+
+    #[cfg(feature = "rdf-star")]
+    /// Reference to the triple of a subject.
     type TripleRef<'x>: Triple + Copy
     where
         Self: 'x;
 
-    type Subject: Subject + Hash + Eq + TryFrom<Self::Term>;
-    type Iri: Iri + Hash + Eq + TryFrom<Self::Subject> + TryFrom<Self::Term>;
-    type Term: Term + Hash + Eq + From<Self::Subject>;
-
-    /// Create a triple from its subject, predicate and object.
-    fn from_spo(subject: Self::Subject, predicate: Self::Iri, object: Self::Term) -> Self;
-
-    /// The subject of this triple.
-    fn subject(&self) -> TSubjectRef<Self>;
-
-    /// The predicate of this triple.
-    fn predicate(&self) -> TPredicateRef<Self>;
-
-    /// The object of this triple.
-    fn object(&self) -> TObjectRef<Self>;
-
-    /// The components of this triple.
-    fn spo(&self) -> (TSubjectRef<Self>, TPredicateRef<Self>, TObjectRef<Self>) {
-        (self.subject(), self.predicate(), self.object())
-    }
-
-    /// Consume this triple, returning all its components.
-    fn as_spo(self) -> (Self::Subject, Self::Iri, Self::Term);
-
-    /// Consume this triple, returning its subject.
-    fn as_subject(self) -> Self::Subject {
-        let (s, _, _) = self.as_spo();
-        s
-    }
-
-    /// Consume this triple, returning its predicate.
-    fn as_predicate(self) -> Self::Iri {
-        let (_, p, _) = self.as_spo();
-        p
-    }
-
-    /// Consume this triple, returning its object.
-    fn as_object(self) -> Self::Term {
-        let (_, _, o) = self.as_spo();
-        o
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum SubjectKind {
-    BlankNode,
-    Iri,
-    #[cfg(feature = "rdf-star")]
-    Triple,
-}
-
-pub trait Subject {
-    type SubjectRef<'x>: Subject + Copy + Hash + Eq
-    where
-        Self: 'x;
-
-    // type BlankNodeRef<'x>: BlankNode + Copy
-    // where
-    //     Self: 'x;
-
-    // type IriRef<'x>: Iri + Copy
-    // where
-    //     Self: 'x;
-
-    // #[cfg(feature = "rdf-star")]
-    // type TripleRef<'x>: Triple + Copy
-    // where
-    //     Self: 'x;
-
-    type BlankNode: BlankNode;
-
-    type Iri: Iri;
-
-    #[cfg(feature = "rdf-star")]
-    type Triple: Triple;
-
-    /// The kind of this subject.
-    fn kind(&self) -> SubjectKind;
-
     /// Whether this subject is a blank node.
     fn is_blank_node(&self) -> bool {
-        matches!(self.kind(), SubjectKind::BlankNode)
+        self.into_blank_node().is_some()
     }
 
     /// Whether this subject is an IRI.
     fn is_iri(&self) -> bool {
-        matches!(self.kind(), SubjectKind::Iri)
+        self.into_iri().is_some()
     }
 
     #[cfg(feature = "rdf-star")]
     /// Whether this subject is a triple.
     fn is_triple(&self) -> bool {
-        matches!(self.kind(), SubjectKind::Triple)
+        self.into_triple().is_some()
     }
 
     /// Tranform this subject, returning it as a blank node.
-    fn into_blank_node(&self) -> Option<&Self::BlankNode>;
+    fn into_blank_node<'a>(&'a self) -> Option<Self::BlankNodeRef<'a>>;
 
     /// Tranform this subject, returning it as an IRI.
-    fn into_iri(&self) -> Option<Self::Iri>;
+    fn into_iri<'a>(&'a self) -> Option<Self::IriRef<'a>>;
 
     #[cfg(feature = "rdf-star")]
     /// Tranform this subject, returning it as a triple.
-    fn into_triple(&self) -> Option<Self::Triple>;
+    fn into_triple<'a>(&'a self) -> Option<Self::TripleRef<'a>>;
 }
 
-pub trait Iri {
-    type IriRef<'x>: Iri + Copy + Hash + Eq
+pub trait Iri: Hash + Eq {
+    type IriRef<'x>: Iri + Copy
     where
         Self: 'x;
 
@@ -133,82 +112,61 @@ pub trait Iri {
     fn into_iri_s(&self) -> IriS;
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum TermKind {
-    BlankNode,
-    Iri,
-    Literal,
-    #[cfg(feature = "rdf-star")]
-    Triple,
-}
-
-pub trait Term {
-    type TermRef<'x>: Term + Copy + Hash + Eq
+pub trait Term: IntoSubject + Hash + Eq {
+    /// Reference to the blank node of a term.
+    type BlankNodeRef<'x>: BlankNode + Copy
     where
         Self: 'x;
 
-    // type BlankNodeRef<'x>: BlankNode + Copy
-    // where
-    //     Self: 'x;
+    /// Reference to the IRI of a term.
+    type IriRef<'x>: Iri + Copy
+    where
+        Self: 'x;
 
-    // type IriRef<'x>: Iri + Copy
-    // where
-    //     Self: 'x;
-
-    // type LiteralRef<'x>: Literal + Copy
-    // where
-    //     Self: 'x;
-
-    // #[cfg(feature = "rdf-star")]
-    // type TripleRef<'x>: Triple + Copy
-    // where
-    //     Self: 'x;
-
-    type BlankNode: BlankNode;
-
-    type Iri: Iri;
-
-    type Literal: Literal;
+    /// Reference to the literal of a term.
+    type LiteralRef<'x>: Literal + Copy
+    where
+        Self: 'x;
 
     #[cfg(feature = "rdf-star")]
-    type Triple: Triple;
-
-    /// The kind of this term.
-    fn kind(&self) -> TermKind;
+    /// Reference to the triple of a term.
+    type TripleRef<'x>: Triple + Copy
+    where
+        Self: 'x;
 
     /// Whether this term is a blank node.
     fn is_blank_node(&self) -> bool {
-        matches!(self.kind(), TermKind::BlankNode)
+        self.into_blank_node().is_some()
     }
 
     /// Whether this term is an IRI.
     fn is_iri(&self) -> bool {
-        matches!(self.kind(), TermKind::Iri)
+        self.into_iri().is_some()
     }
 
     /// Whether this term is a literal.
     fn is_literal(&self) -> bool {
-        matches!(self.kind(), TermKind::Literal)
+        self.into_literal().is_some()
     }
 
     #[cfg(feature = "rdf-star")]
     /// Whether this term is a triple.
     fn is_triple(&self) -> bool {
-        matches!(self.kind(), TermKind::Triple)
+        self.into_triple().is_some()
     }
 
     /// Transform this term, returning it as a blank node.
-    fn into_blank_node(&self) -> Option<Self::BlankNode>;
+    fn into_blank_node<'a>(&'a self) -> Option<Self::BlankNodeRef<'a>>;
 
     /// Transform this term, returning it as an IRI.
-    fn into_iri(&self) -> Option<Self::Iri>;
+    fn into_iri<'a>(&'a self) -> Option<Self::IriRef<'a>>;
 
     /// Transform this term, returning it as a literal.
-    fn into_literal(&self) -> Option<Self::Literal>;
+    fn into_literal<'a>(&'a self) -> Option<Self::LiteralRef<'a>>;
 
     #[cfg(feature = "rdf-star")]
     /// Transform this term, returning it as a triple.
-    fn into_triple(&self) -> Option<Self::Triple>;
+    fn into_triple<'a>(&'a self) -> Option<Self::TripleRef<'a>>;
 }
 
 pub trait BlankNode {

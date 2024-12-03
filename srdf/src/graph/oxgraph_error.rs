@@ -31,3 +31,15 @@ pub enum GraphParseError {
     #[error(transparent)]
     IO(#[from] std::io::Error),
 }
+
+#[derive(Error, Debug)]
+pub enum SubjectConversionError {
+    #[error("The term: {}, is not a valid subject", _0)]
+    FromTerm(String),
+}
+
+#[derive(Error, Debug)]
+pub enum TermConversionError {
+    #[error("The subject: {}, is not a valid term", _0)]
+    FromSubject(String),
+}

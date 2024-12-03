@@ -4,22 +4,19 @@
 //! It contains several traits that handle RDF data:
 //! - [`SRDFBasic`]: Basic comparisons on RDF nodes
 //! - [`Rdf`]: Definitions on RDF graphs
-//! - [`FocusRDF`]: RDF graphs with a focus node
+//! - [`FocusRDF`]: RDF graphs with a focus nodes
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 
-// pub use crate::neighs::*;
 pub use graph::*;
 // pub use parser::*;
-// pub use sparql::*;
-// pub use vocab::*;
+pub use sparql::*;
+pub use vocab::*;
 
-// TODO: move to ShEx
-// pub mod neighs;
 pub mod graph;
 pub mod model;
 // pub mod parser;
-// pub mod sparql;
-// pub mod vocab;
+pub mod sparql;
+pub mod vocab;
 
 // /// Declares a named RDF parser which can be reused.
 // ///

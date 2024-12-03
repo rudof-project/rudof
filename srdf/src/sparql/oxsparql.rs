@@ -15,10 +15,11 @@ use sparesults::QueryResultsParser;
 use sparesults::QuerySolution as OxQuerySolution;
 use sparesults::ReaderQueryResultsParserOutput;
 
+use crate::model::conversions::IntoSubject;
 use crate::model::rdf::Rdf;
-use crate::model::rdf::Triples;
 use crate::model::sparql::QuerySolution;
 use crate::model::sparql::Sparql;
+use crate::model::Term;
 
 use super::oxsparql_error::SparqlError;
 
@@ -60,17 +61,21 @@ impl Rdf for SRDFSparql {
         Some(self.prefixmap.clone())
     }
 
-    fn triples(&self) -> Result<Triples<Self>, Self::Error> {
+    fn triples(&self) -> Result<impl Iterator<Item = &Self::Triple<'_>>, Self::Error> {
         let triples = self
             .select("SELECT * WHERE {{ ?s ?p ?o . }}")?
             .iter()
             .map(|solution| {
-                let subj = solution.get(0).unwrap().clone().try_into().unwrap(); // TODO: remove all the clones
-                let pred = solution.get(1).unwrap().clone().try_into().unwrap();
-                let obj = solution.get(2).unwrap().clone();
-                OxTriple::new(subj, pred, obj)
+                let subj = solution.get(0).unwrap().as_ref();
+                let pred = solution.get(1).unwrap().as_ref();
+                let obj = solution.get(2).unwrap().as_ref();
+                Self::Triple::new(
+                    subj.try_into_subject().unwrap(),
+                    pred.into_iri().unwrap(),
+                    obj,
+                )
             });
-        Ok(Box::new(triples))
+        Ok(triples)
     }
 }
 
@@ -170,10 +175,11 @@ mod tests {
     #[test]
     fn check_sparql() {
         let wikidata = SRDFSparql::wikidata().unwrap();
+        let tim_berners_lee = q80();
         let data: Vec<_> = wikidata
-            .triples_matching(Some(q80().as_ref()), None, None)
+            .triples_matching(Some(tim_berners_lee.as_ref()), None, None)
             .unwrap()
-            .map(Triple::as_predicate)
+            .map(Triple::predicate)
             .collect();
         assert!(data.contains(&p19().as_ref()));
     }
