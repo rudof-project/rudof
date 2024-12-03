@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::str::FromStr;
 
 use iri_s::IriS;
@@ -15,11 +16,10 @@ use sparesults::QueryResultsParser;
 use sparesults::QuerySolution as OxQuerySolution;
 use sparesults::ReaderQueryResultsParserOutput;
 
-use crate::model::conversions::IntoSubject;
 use crate::model::rdf::Rdf;
+use crate::model::rdf::Triples;
 use crate::model::sparql::QuerySolution;
 use crate::model::sparql::Sparql;
-use crate::model::Term;
 
 use super::oxsparql_error::SparqlError;
 
@@ -53,29 +53,32 @@ impl SRDFSparql {
     }
 }
 
-impl Rdf for SRDFSparql {
-    type Triple<'a> = OxTriple where Self: 'a;
+impl Triples for SRDFSparql {
+    type Triple = OxTriple;
     type Error = SparqlError;
 
-    fn prefixmap(&self) -> Option<PrefixMap> {
-        Some(self.prefixmap.clone())
-    }
-
-    fn triples(&self) -> Result<impl Iterator<Item = &Self::Triple<'_>>, Self::Error> {
+    fn triples<'a>(&'a self) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
         let triples = self
             .select("SELECT * WHERE {{ ?s ?p ?o . }}")?
-            .iter()
+            .into_iter()
             .map(|solution| {
-                let subj = solution.get(0).unwrap().as_ref();
-                let pred = solution.get(1).unwrap().as_ref();
-                let obj = solution.get(2).unwrap().as_ref();
-                Self::Triple::new(
+                let subj = solution.get(0).unwrap();
+                let pred = solution.get(1).unwrap();
+                let obj = solution.get(2).unwrap();
+                let triple = Self::Triple::new(
                     subj.try_into_subject().unwrap(),
                     pred.into_iri().unwrap(),
                     obj,
-                )
+                );
+                Cow::Owned(triple)
             });
         Ok(triples)
+    }
+}
+
+impl Rdf for SRDFSparql {
+    fn prefixmap(&self) -> Option<PrefixMap> {
+        Some(self.prefixmap.clone())
     }
 }
 
@@ -177,10 +180,10 @@ mod tests {
         let wikidata = SRDFSparql::wikidata().unwrap();
         let tim_berners_lee = q80();
         let data: Vec<_> = wikidata
-            .triples_matching(Some(tim_berners_lee.as_ref()), None, None)
+            .triples_matching(Some(&tim_berners_lee), None, None)
             .unwrap()
             .map(Triple::predicate)
             .collect();
-        assert!(data.contains(&p19().as_ref()));
+        assert!(data.contains(&p19()));
     }
 }

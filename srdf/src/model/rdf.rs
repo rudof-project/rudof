@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
@@ -5,52 +6,51 @@ use std::error::Error;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 
-use super::FromComponents;
-use super::TObjectRef;
-use super::TPredicateRef;
-use super::TSubjectRef;
+use super::TObject;
+use super::TPredicate;
+use super::TSubject;
 use super::Triple;
 
-pub type OutgoingArcs<'a, R> = HashMap<TPredicateRef<'a, R>, HashSet<TObjectRef<'a, R>>>;
-pub type IncomingArcs<'a, R> = HashMap<TPredicateRef<'a, R>, HashSet<TSubjectRef<'a, R>>>;
+pub type OutgoingArcs<R> = HashMap<TPredicate<R>, HashSet<TObject<R>>>;
+pub type IncomingArcs<R> = HashMap<TPredicate<R>, HashSet<TSubject<R>>>;
 
-pub trait Triples<T: Triple> {
-    type TripleIter: Iterator<Item = T>;
+pub trait Triples {
+    type Triple: Triple + Clone;
     type Error: Error + 'static;
 
-    fn triples(&self) -> Result<Self::TripleIter, Self::Error>;
+    fn triples<'a>(&'a self) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error>;
 }
 
 /// This trait provides methods to handle Simple RDF graphs.
 ///
 /// * Finding the triples provided a given pattern
 /// * Obtaining the neighborhood of a node
-pub trait Rdf<T: Triple>: Triples<T> {
+pub trait Rdf: Triples {
     /// Obtain the `PrefixMap` associated with the graph, if any.
     fn prefixmap(&self) -> Option<PrefixMap>;
 
     /// An iterator over all the subjects in the graph.
-    fn subjects(&self) -> Result<impl Iterator<Item = TSubjectRef<T>>, Self::Error> {
+    fn subjects(&self) -> Result<impl Iterator<Item = &TSubject<Self::Triple>>, Self::Error> {
         Ok(self.triples()?.map(Triple::subject))
     }
 
     /// An iterator over all the predicates in the graph.
-    fn predicates(&self) -> Result<impl Iterator<Item = TPredicateRef<T>>, Self::Error> {
+    fn predicates(&self) -> Result<impl Iterator<Item = TPredicate<Self::Triple>>, Self::Error> {
         Ok(self.triples()?.map(Triple::predicate))
     }
 
     /// An iterator over all the objects in the graph.
-    fn objects(&self) -> Result<impl Iterator<Item = TObjectRef<T>>, Self::Error> {
+    fn objects(&self) -> Result<impl Iterator<Item = TObject<Self::Triple>>, Self::Error> {
         Ok(self.triples()?.map(Triple::object))
     }
 
     /// An iterator over all the triples in the graph matching a basic graph pattern.
     fn triples_matching<'a>(
         &'a self,
-        subject: Option<TSubjectRef<'a, T>>,
-        predicate: Option<TPredicateRef<'a, T>>,
-        object: Option<TObjectRef<'a, T>>,
-    ) -> Result<impl Iterator<Item = T>, Self::Error> {
+        subject: Option<&'a TSubject<Self::Triple>>,
+        predicate: Option<&'a TPredicate<Self::Triple>>,
+        object: Option<&'a TObject<Self::Triple>>,
+    ) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
         let triples = self.triples()?.filter(move |triple| {
             let is_subject_match = subject.map_or(true, |subj| triple.subject() == subj);
             let is_predicate_match = predicate.map_or(true, |pred| triple.predicate() == pred);
@@ -63,43 +63,41 @@ pub trait Rdf<T: Triple>: Triples<T> {
     /// An iterator over all the triples in the graph with a given subject.
     fn triples_with_subject<'a>(
         &'a self,
-        subject: TSubjectRef<'a, T>,
-    ) -> Result<impl Iterator<Item = T>, Self::Error> {
+        subject: &'a TSubject<Self::Triple>,
+    ) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
         self.triples_matching(Some(subject), None, None)
     }
 
     /// An iterator over all the triples in the graph with a given predicate.
     fn triples_with_predicate<'a>(
         &'a self,
-        predicate: TPredicateRef<'a, T>,
-    ) -> Result<impl Iterator<Item = T>, Self::Error> {
+        predicate: &'a TPredicate<Self::Triple>,
+    ) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
         self.triples_matching(None, Some(predicate), None)
     }
 
     /// An iterator over all the triples in the graph with a given object.
     fn triples_with_object<'a>(
         &'a self,
-        object: TObjectRef<'a, T>,
-    ) -> Result<impl Iterator<Item = T>, Self::Error> {
+        object: &'a TObject<Self::Triple>,
+    ) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
         self.triples_matching(None, None, Some(object))
     }
 
     /// An iterator over all the objects in the graph that are neighbors of a given subject.
     fn neighs<'a>(
         &'a self,
-        node: TSubjectRef<'a, T>,
-    ) -> Result<impl Iterator<Item = TObjectRef<'a, T>>, Self::Error> {
-        Ok(self
-            .triples_with_subject(node)?
-            .map(|triple| triple.object()))
+        node: &'a TSubject<Self::Triple>,
+    ) -> Result<impl Iterator<Item = TObject<Self::Triple>>, Self::Error> {
+        Ok(self.triples_with_subject(node)?.map(Triple::object))
     }
 
     /// An iterator over all the outgoing arcs from a given subject.
     fn outgoing_arcs<'a>(
         &'a self,
-        subject: TSubjectRef<'a, T>,
-    ) -> Result<OutgoingArcs<'a, T>, Self::Error> {
-        let mut results: OutgoingArcs<T> = HashMap::new();
+        subject: &'a TSubject<Self::Triple>,
+    ) -> Result<OutgoingArcs<Self::Triple>, Self::Error> {
+        let mut results: OutgoingArcs<Self::Triple> = HashMap::new();
         for triple in self.triples_with_subject(subject)? {
             let (_, p, o) = triple.spo();
             results.entry(p).or_default().insert(o);
@@ -110,9 +108,9 @@ pub trait Rdf<T: Triple>: Triples<T> {
     /// An iterator over all the incoming arcs to a given object.
     fn incoming_arcs<'a>(
         &'a self,
-        object: TObjectRef<'a, T>,
-    ) -> Result<IncomingArcs<'a, T>, Self::Error> {
-        let mut results: IncomingArcs<T> = HashMap::new();
+        object: &'a TObject<Self::Triple>,
+    ) -> Result<IncomingArcs<Self::Triple>, Self::Error> {
+        let mut results: IncomingArcs<Self::Triple> = HashMap::new();
         for triple in self.triples_with_object(object)? {
             let (s, p, _) = triple.spo();
             results.entry(p).or_default().insert(s);
@@ -122,8 +120,7 @@ pub trait Rdf<T: Triple>: Triples<T> {
 }
 
 /// Provides the functionality to implementors of being mutable.
-pub trait MutableRdf {
-    type Triple: FromComponents;
+pub trait MutableRdf: Rdf {
     type MutableRdfError;
 
     /// Add a triple to the graph.
@@ -132,9 +129,9 @@ pub trait MutableRdf {
     /// Add a set of triples to the graph.
     fn add_triple_from_components(
         &mut self,
-        subject: impl Into<<Self::Triple as FromComponents>::Subject>,
-        predicate: impl Into<<Self::Triple as FromComponents>::Predicate>,
-        object: impl Into<<Self::Triple as FromComponents>::Object>,
+        subject: impl Into<TSubject<Self::Triple>>,
+        predicate: impl Into<TPredicate<Self::Triple>>,
+        object: impl Into<TObject<Self::Triple>>,
     ) -> Result<(), Self::MutableRdfError> {
         self.add_triple(Self::Triple::from_spo(subject, predicate, object))
     }
@@ -152,10 +149,10 @@ pub trait MutableRdf {
 /// Represents RDF graphs that contain a focus node.
 ///
 /// This trait contains methods to get the focus node and for setting its value.
-pub trait FocusRdf<'a>: Rdf {
+pub trait FocusRdf: Rdf {
     /// Set the value of the focus node
-    fn set_focus(&mut self, focus: TObjectRef<'a, T>);
+    fn set_focus(&mut self, focus: TObject<Self::Triple>);
 
     /// Get the focus node if it exists
-    fn get_focus(&self) -> Option<TObjectRef<T>>;
+    fn get_focus(&self) -> Option<TObject<Self::Triple>>;
 }

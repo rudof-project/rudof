@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -13,26 +14,26 @@ use tracing::debug;
 use crate::model::rdf::FocusRdf;
 use crate::model::rdf::MutableRdf;
 use crate::model::rdf::Rdf;
+use crate::model::rdf::Triples;
 use crate::model::reader::RdfReader;
 use crate::model::reader::ReaderMode;
-use crate::model::FromComponents;
 use crate::model::RdfFormat;
-use crate::model::TObjectRef;
+use crate::model::TObject;
 use crate::model::Triple;
 
 use super::oxgraph_error::*;
 
-pub type OxGraph<'a> = GenericGraph<'a, OxTriple>;
+pub type OxGraph = GenericGraph<OxTriple>;
 
 #[derive(Debug, Clone)]
-pub struct GenericGraph<'a, T: Triple> {
-    focus: Option<T::TermRef<'a>>,
+pub struct GenericGraph<T: Triple> {
+    focus: Option<T::Term>,
     graph: HashSet<T>, // TODO: is a BTree better for larger datasets?
     pm: PrefixMap,
     base: Option<IriS>,
 }
 
-impl<'a, T: Triple> GenericGraph<'a, T> {
+impl<T: Triple> GenericGraph<T> {
     pub fn len(&self) -> usize {
         self.graph.len()
     }
@@ -52,7 +53,7 @@ impl<'a, T: Triple> GenericGraph<'a, T> {
     }
 }
 
-impl<'a, T: Triple> Default for GenericGraph<'a, T> {
+impl<T: Triple> Default for GenericGraph<T> {
     fn default() -> Self {
         Self {
             focus: None,
@@ -63,24 +64,22 @@ impl<'a, T: Triple> Default for GenericGraph<'a, T> {
     }
 }
 
-impl<'a, T: Triple> Rdf for GenericGraph<'a, T> {
-    type Triple<'x> = T where Self: 'x;
+impl<T: Triple + Clone> Triples for GenericGraph<T> {
+    type Triple = T;
     type Error = GraphError;
 
-    fn prefixmap(&self) -> Option<PrefixMap> {
-        Some(self.pm.clone())
-    }
-
-    fn triples(&self) -> Result<impl Iterator<Item = &Self::Triple<'a>>, Self::Error> {
-        Ok(self.graph.iter())
+    fn triples<'a>(&'a self) -> Result<impl Iterator<Item = Cow<'a, Self::Triple>>, Self::Error> {
+        Ok(self.graph.iter().map(|triple| Cow::Borrowed(triple)))
     }
 }
 
-impl<'a, T> MutableRdf for GenericGraph<'a, T>
-where
-    T: FromComponents + Hash + Eq + 'a,
-{
-    type Triple = T;
+impl<T: Triple + Clone> Rdf for GenericGraph<T> {
+    fn prefixmap(&self) -> Option<PrefixMap> {
+        Some(self.pm.clone())
+    }
+}
+
+impl<T: Triple + Clone + Hash + Eq> MutableRdf for GenericGraph<T> {
     type MutableRdfError = MutableGraphError;
 
     fn add_triple(&mut self, triple: Self::Triple) -> Result<(), Self::MutableRdfError> {
@@ -104,17 +103,17 @@ where
     }
 }
 
-impl<'a, T: Triple> FocusRdf<'a> for GenericGraph<'a, T> {
-    fn set_focus(&mut self, focus: TObjectRef<'a, Self::Triple<'a>>) {
+impl<T: Triple + Clone> FocusRdf for GenericGraph<T> {
+    fn set_focus(&mut self, focus: TObject<Self::Triple>) {
         self.focus = Some(focus);
     }
 
-    fn get_focus(&self) -> Option<TObjectRef<Self::Triple<'a>>> {
+    fn get_focus(&self) -> Option<TObject<Self::Triple>> {
         todo!()
     }
 }
 
-impl RdfReader for GenericGraph<'_, OxTriple> {
+impl RdfReader for GenericGraph<OxTriple> {
     type ReaderError = GraphParseError;
 
     fn merge_from_reader<R: Read>(
@@ -165,6 +164,7 @@ mod tests {
     use oxrdf::Term as OxTerm;
 
     use crate::graph::oxgraph::ReaderMode;
+    use crate::model::conversions::IntoSubject;
     // use crate::model::conversions::IntoSubject;
     // use crate::iri;
     use crate::model::rdf::MutableRdf;
@@ -264,7 +264,7 @@ mod tests {
         let one = OxTerm::Literal(1.into());
 
         let subject = graph
-            .triples_matching(Some(x.as_ref()), Some(p.as_ref()), None)
+            .triples_matching(Some(&x), Some(&p), None)
             .unwrap()
             .map(Triple::object)
             .next()
@@ -273,10 +273,10 @@ mod tests {
             .try_into_subject()
             .unwrap();
 
-        let actual = graph.outgoing_arcs(subject).unwrap();
-        let expected = HashSet::from([one.as_ref()]);
+        let actual = graph.outgoing_arcs(&subject).unwrap();
+        let expected = HashSet::from([one]);
 
-        assert_eq!(actual.get(&p.as_ref()), Some(&expected))
+        assert_eq!(actual.get(&p), Some(&expected))
     }
 
     #[test]
@@ -314,7 +314,7 @@ mod tests {
     // #[test]
     // fn test_parser() {
     //     rdf_parser! {
-    //         fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
+    //         fn my_ok[A, RDF](value: &'a A)(RDF) -> A
     //         where [
     //             A: Clone
     //         ] { ok(&value.clone()) }
@@ -444,7 +444,7 @@ mod tests {
     // #[test]
     // fn test_rdf_parser_macro() {
     //     rdf_parser! {
-    //           fn is_term['a, RDF](term: &'a TObjectRef<RDF>)(RDF) -> ()
+    //           fn is_term[RDF](term: &'a TObjectRef<RDF>)(RDF) -> ()
     //           where [
     //           ] {
     //             let name = format!("is_{term}");
