@@ -22,7 +22,7 @@ pub trait Quad {
     fn graph_name(&self) -> &GraphName;
 }
 
-pub trait Triple: Sized {
+pub trait Triple: Sized + Hash + Eq + Clone + Debug + Display {
     type Subject: Subject + TryFrom<Self::Term>;
     type Iri: Iri;
     type Term: Term + From<Self::Subject> + From<Self::Iri>;
@@ -160,7 +160,7 @@ pub trait BlankNode {
     fn label(&self) -> &str;
 }
 
-pub trait Literal: Clone {
+pub trait Literal: Hash + Eq + Clone + Debug + Display {
     /// Returns the datatype of the literal.
     fn datatype(&self) -> &str;
 

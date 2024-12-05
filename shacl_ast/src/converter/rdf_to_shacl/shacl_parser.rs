@@ -20,6 +20,7 @@ use component::Xone;
 use model::rdf::FocusRdf;
 use model::rdf::Object;
 use model::rdf::Predicate;
+use model::rdf::PrefixMapRdf;
 use model::rdf::Rdf;
 use model::rdf::Subject;
 use model::Term;
@@ -60,7 +61,7 @@ pub struct ShaclParser<R: FocusRdf> {
     shapes: HashMap<Object<R>, Shape<R>>,
 }
 
-impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
+impl<R: FocusRdf + PrefixMapRdf + Default + Clone> ShaclParser<R> {
     pub fn new(rdf: R) -> ShaclParser<R> {
         ShaclParser {
             rdf_parser: RDFParser::new(rdf),
@@ -99,10 +100,7 @@ impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
                 .rdf
                 .triples_matching(None, Some(&rdf_type), Some(&node_shape))
             {
-                Ok(triples) => triples
-                    .map(Triple::subj)
-                    .map(Clone::clone)
-                    .collect::<HashSet<_>>(),
+                Ok(triples) => triples.map(Triple::into_subject).collect::<HashSet<_>>(),
                 Err(e) => {
                     return Err(ShaclParserError::Custom {
                         msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
@@ -234,15 +232,16 @@ impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
     }
 
     fn objects_with_predicate(&self, pred: Predicate<R>) -> Result<HashSet<Subject<R>>> {
-        let triples = self
+        let subjects = self
             .rdf_parser
             .rdf
             .triples_with_predicate(&pred)
             .map_err(|e| ShaclParserError::Custom {
                 msg: format!("Error obtaining values with predicate sh:property: {e}"),
-            })?;
-        let values_as_subjects = triples.flat_map(Self::triple_object_as_subject).collect();
-        Ok(values_as_subjects)
+            })?
+            .map(Triple::into_subject)
+            .collect();
+        Ok(subjects)
     }
 
     fn rdf_type() -> Predicate<R> {
@@ -275,15 +274,6 @@ impl<R: FocusRdf + Clone + Default> ShaclParser<R> {
 
     fn sh_node() -> Predicate<R> {
         Predicate::<R>::from_str(SH_NODE_STR)
-    }
-
-    fn triple_object_as_subject(triple: &R::Triple) -> Result<Subject<R>> {
-        match triple.obj().clone().try_into() {
-            Ok(obj) => Ok(obj),
-            Err(_) => Err(ShaclParserError::Custom {
-                msg: format!("Expected triple object value to act as a subject: {triple}"),
-            }),
-        }
     }
 
     fn subject_to_node(subject: &Subject<R>) -> Object<R> {
