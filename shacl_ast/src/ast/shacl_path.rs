@@ -1,4 +1,4 @@
-use srdf::model::rdf::TIri;
+use srdf::model::rdf::Iri;
 use srdf::model::Triple;
 use std::fmt::Display;
 
@@ -7,7 +7,7 @@ use std::fmt::Display;
 ///
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SHACLPath<T: Triple> {
-    Predicate { pred: TIri<T> },
+    Predicate { pred: Iri<T> },
     Alternative { paths: Vec<SHACLPath<T>> },
     Sequence { paths: Vec<SHACLPath<T>> },
     Inverse { path: Box<SHACLPath<T>> },
@@ -17,7 +17,7 @@ pub enum SHACLPath<T: Triple> {
 }
 
 impl<T: Triple> SHACLPath<T> {
-    pub fn iri(pred: TIri<T>) -> Self {
+    pub fn iri(pred: Iri<T>) -> Self {
         SHACLPath::Predicate { pred }
     }
 }

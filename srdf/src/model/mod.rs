@@ -1,30 +1,37 @@
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
 
-use conversions::*;
 use iri_s::IriS;
 use thiserror::Error;
 
-pub mod conversions;
+pub mod parse;
 pub mod rdf;
-pub mod reader;
 pub mod sparql;
 
-pub type TSubject<T> = <T as Triple>::Subject;
-pub type TPredicate<T> = <T as Triple>::Iri;
-pub type TObject<T> = <T as Triple>::Term;
+pub enum GraphName {
+    Default,
+}
+
+pub trait Quad {
+    type Triple: Triple;
+
+    fn new(triple: Self::Triple, graph_name: GraphName) -> Self;
+    fn triple(&self) -> &Self::Triple;
+    fn graph_name(&self) -> &GraphName;
+}
 
 pub trait Triple: Sized {
-    type Subject: Subject;
+    type Subject: Subject + TryFrom<Self::Term>;
     type Iri: Iri;
-    type Term: Term;
+    type Term: Term + From<Self::Subject> + From<Self::Iri>;
 
     /// Create a triple from its subject, predicate and object.
     fn from_spo(
-        subject: impl Into<Self::Subject>,
-        predicate: impl Into<Self::Iri>,
-        object: impl Into<Self::Term>,
+        subj: impl Into<Self::Subject>,
+        pred: impl Into<Self::Iri>,
+        obj: impl Into<Self::Term>,
     ) -> Self;
 
     /// The subject of this triple.
@@ -40,9 +47,30 @@ pub trait Triple: Sized {
     fn spo(&self) -> (&Self::Subject, &Self::Iri, &Self::Term) {
         (self.subject(), self.predicate(), self.object())
     }
+
+    /// Consumes this triple and returns its components.
+    fn into_spo(self) -> (Self::Subject, Self::Iri, Self::Term);
+
+    /// Consumes this triple and returns its subject.
+    fn into_subject(self) -> Self::Subject {
+        let (s, _, _) = self.into_spo();
+        s
+    }
+
+    /// Consumes this triple and returns its predicate.
+    fn into_predicate(self) -> Self::Iri {
+        let (_, p, _) = self.into_spo();
+        p
+    }
+
+    /// Consumes this triple and returns its object.
+    fn into_object(self) -> Self::Term {
+        let (_, _, o) = self.into_spo();
+        o
+    }
 }
 
-pub trait Subject: IntoTerm + Hash + Eq {
+pub trait Subject: Hash + Eq + Clone + Debug + Display {
     type BlankNode: BlankNode;
     type Iri: Iri;
 
@@ -51,41 +79,40 @@ pub trait Subject: IntoTerm + Hash + Eq {
 
     /// Whether this subject is a blank node.
     fn is_blank_node(&self) -> bool {
-        self.into_blank_node().is_some()
+        self.blank_node().is_some()
     }
 
     /// Whether this subject is an IRI.
     fn is_iri(&self) -> bool {
-        self.into_iri().is_some()
+        self.iri().is_some()
     }
 
     #[cfg(feature = "rdf-star")]
     /// Whether this subject is a triple.
     fn is_triple(&self) -> bool {
-        self.into_triple().is_some()
+        self.triple().is_some()
     }
 
-    /// Tranform this subject, returning it as a blank node.
-    fn into_blank_node<'a>(&'a self) -> Option<&Self::BlankNode>;
+    /// Returns the blank node if this subject is a blank node.
+    fn blank_node(&self) -> Option<&Self::BlankNode>;
 
-    /// Tranform this subject, returning it as an IRI.
-    fn into_iri<'a>(&'a self) -> Option<&Self::Iri>;
+    /// Returns the IRI if this subject is an IRI.
+    fn iri(&self) -> Option<&Self::Iri>;
 
     #[cfg(feature = "rdf-star")]
-    /// Tranform this subject, returning it as a triple.
-    fn into_triple<'a>(&'a self) -> Option<&Self::Triple>;
+    /// Returns the triple if this subject is a triple.
+    fn triple(&self) -> Option<&Self::Triple>;
 }
 
-pub trait Iri: Hash + Eq {
-    type IriRef<'x>: Iri + Copy
-    where
-        Self: 'x;
+pub trait Iri: Hash + Eq + Clone + Debug + Display {
+    /// Creates a new IRI from a string.
+    fn from_str(str: &str) -> Self;
 
-    /// Transform this IRI, returning it as an `IriS`.
+    /// Converts the IRI to an IriS.
     fn into_iri_s(&self) -> IriS;
 }
 
-pub trait Term: IntoSubject + Hash + Eq {
+pub trait Term: Hash + Eq + Clone + Debug + Display {
     type BlankNode: BlankNode;
     type Iri: Iri;
     type Literal: Literal;
@@ -93,47 +120,48 @@ pub trait Term: IntoSubject + Hash + Eq {
     #[cfg(feature = "rdf-star")]
     type Triple: Triple;
 
-    /// Whether this term is a blank node.
+    /// Whether the term is a blank node.
     fn is_blank_node(&self) -> bool {
-        self.into_blank_node().is_some()
+        self.blank_node().is_some()
     }
 
-    /// Whether this term is an IRI.
+    /// Whether the term is an IRI.
     fn is_iri(&self) -> bool {
-        self.into_iri().is_some()
+        self.iri().is_some()
     }
 
-    /// Whether this term is a literal.
+    /// Whether the term is a literal.
     fn is_literal(&self) -> bool {
-        self.into_literal().is_some()
+        self.literal().is_some()
     }
 
     #[cfg(feature = "rdf-star")]
-    /// Whether this term is a triple.
+    /// Whether the term is a triple.
     fn is_triple(&self) -> bool {
-        self.into_triple().is_some()
+        self.triple().is_some()
     }
 
-    /// Transform this term, returning it as a blank node.
-    fn into_blank_node<'a>(&'a self) -> Option<&Self::BlankNode>;
+    /// Returns the blank node if the term is a blank node.
+    fn blank_node(&self) -> Option<&Self::BlankNode>;
 
-    /// Transform this term, returning it as an IRI.
-    fn into_iri<'a>(&'a self) -> Option<&Self::Iri>;
+    /// Returns the IRI if the term is an IRI.
+    fn iri(&self) -> Option<&Self::Iri>;
 
-    /// Transform this term, returning it as a literal.
-    fn into_literal<'a>(&'a self) -> Option<&Self::Literal>;
+    /// Returns the literal if the term is a literal.
+    fn literal(&self) -> Option<&Self::Literal>;
 
     #[cfg(feature = "rdf-star")]
-    /// Transform this term, returning it as a triple.
-    fn into_triple<'a>(&'a self) -> Option<&Self::Triple>;
+    /// Returns the triple if the term is a triple.
+    fn triple(&self) -> Option<&Self::Triple>;
 }
 
 pub trait BlankNode {
-    fn id(&self) -> &str;
+    /// Returns the label of the blank node.
+    fn label(&self) -> &str;
 }
 
-pub trait Literal {
-    /// The datatype of this literal.
+pub trait Literal: Clone {
+    /// Returns the datatype of the literal.
     fn datatype(&self) -> &str;
 
     /// Tranform this literal, returning it as a string.

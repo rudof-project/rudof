@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 
 #[derive(Debug)]
-pub struct FocusNodes<R: Rdf>(HashSet<TObjectRef<R>>);
+pub struct FocusNodes<R: Rdf>(HashSet<Object<R>>);
 
 impl<R: Rdf> FocusNodes<R> {
-    pub fn new(iter: impl Iterator<Item = TObjectRef<R>>) -> Self {
+    pub fn new(iter: impl Iterator<Item = Object<R>>) -> Self {
         Self(HashSet::from_iter(iter))
     }
 
@@ -15,7 +15,7 @@ impl<R: Rdf> FocusNodes<R> {
         self.0.len()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &TObjectRef<R>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Object<R>> {
         self.0.iter()
     }
 }
@@ -33,8 +33,8 @@ impl<R: Rdf> Default for FocusNodes<R> {
 }
 
 impl<R: Rdf> IntoIterator for FocusNodes<R> {
-    type Item = TObjectRef<R>;
-    type IntoIter = std::collections::hash_set::IntoIter<TObjectRef<R>>;
+    type Item = Object<R>;
+    type IntoIter = std::collections::hash_set::IntoIter<Object<R>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()

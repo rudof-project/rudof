@@ -3,10 +3,10 @@ use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
 use shacl_ast::target::Target;
+use srdf::model::rdf::Iri;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TIri;
-use srdf::model::rdf::TObjectRef;
-use srdf::model::rdf::TPredicateRef;
 
 use crate::focus_nodes::FocusNodes;
 use crate::store::Store;
@@ -72,25 +72,25 @@ pub trait Engine<R: Rdf> {
     fn target_node(
         &self,
         store: &Store<R>,
-        node: &TObjectRef<R>,
+        node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_class(
         &self,
         store: &Store<R>,
-        class: &TObjectRef<R>,
+        class: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_subject_of(
         &self,
         store: &Store<R>,
-        predicate: &TPredicateRef<R>,
+        predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn target_object_of(
         &self,
         store: &Store<R>,
-        predicate: &TPredicateRef<R>,
+        predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn implicit_target_class(
@@ -103,7 +103,7 @@ pub trait Engine<R: Rdf> {
         &self,
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         match shape.path() {
             SHACLPath::Predicate { pred } => self.predicate(store, shape, pred, focus_node),
@@ -120,8 +120,8 @@ pub trait Engine<R: Rdf> {
         &self,
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
-        predicate: &TIri<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        predicate: &Iri<R::Triple>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn alternative(
@@ -129,7 +129,7 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         paths: &[SHACLPath<R::Triple>],
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn sequence(
@@ -137,7 +137,7 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         paths: &[SHACLPath<R::Triple>],
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn inverse(
@@ -145,7 +145,7 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         path: &SHACLPath<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn zero_or_more(
@@ -153,7 +153,7 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         path: &SHACLPath<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn one_or_more(
@@ -161,7 +161,7 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         path: &SHACLPath<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 
     fn zero_or_one(
@@ -169,6 +169,6 @@ pub trait Engine<R: Rdf> {
         store: &Store<R>,
         shape: &CompiledPropertyShape<R>,
         path: &SHACLPath<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError>;
 }

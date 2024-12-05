@@ -2,8 +2,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxInclusive;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -39,7 +39,7 @@ impl<S: Rdf + Sparql + Clone> SparqlValidator<S> for MaxInclusive<S> {
         value_nodes: &ValueNodes<S>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        let query = |value_node: &TObjectRef<S>| {
+        let query = |value_node: &Object<S>| {
             formatdoc! {
                 " ASK {{ FILTER ({} >= {}) }} ",
                 value_node, self.max_inclusive()

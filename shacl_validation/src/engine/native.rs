@@ -2,10 +2,10 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::shacl_path::SHACLPath;
+use srdf::model::rdf::Iri;
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TIri;
-use srdf::model::rdf::TObjectRef;
-use srdf::model::rdf::TPredicateRef;
 use srdf::model::Iri as _;
 use srdf::model::Term as _;
 use srdf::model::Triple;
@@ -42,7 +42,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &Store<R>, node: &TObjectRef<R>) -> Result<FocusNodes<R>, ValidateError> {
+    fn target_node(&self, _: &Store<R>, node: &Object<R>) -> Result<FocusNodes<R>, ValidateError> {
         if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -53,19 +53,19 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
     fn target_class(
         &self,
         store: &Store<R>,
-        class: &TObjectRef<R>,
+        class: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let rdf_type = TPredicateRef::<R>::new(RDF_TYPE.as_str());
+        let rdf_type = Predicate::<R>::from_str(RDF_TYPE.as_str());
 
         let triples = match store
             .inner_store()
             .triples_matching(None, Some(&rdf_type), Some(class))
         {
-            Ok(subjects) => subjects.map(Triple::subject).map(Into::into),
+            Ok(subjects) => subjects.map(Triple::subj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
@@ -75,10 +75,10 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
     fn target_subject_of(
         &self,
         store: &Store<R>,
-        predicate: &TPredicateRef<R>,
+        predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples.map(Triple::subject).map(Into::into),
+            Ok(triples) => triples.map(Triple::subj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
@@ -88,10 +88,10 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
     fn target_object_of(
         &self,
         store: &Store<R>,
-        predicate: &TPredicateRef<R>,
+        predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples.map(Triple::object).map(Into::into),
+            Ok(triples) => triples.map(Triple::obj).map(Clone::clone).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
@@ -106,34 +106,34 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         let ctypes = get_objects_for(
             store.inner_store(),
             shape.id(),
-            &TPredicateRef::<R>::new(RDF_TYPE.as_str()),
+            &Predicate::<R>::from_str(RDF_TYPE.as_str()),
         )?;
 
         let mut subclasses = get_subjects_for(
             store.inner_store(),
-            &TPredicateRef::<R>::new(RDFS_SUBCLASS_OF.as_str()),
-            &TPredicateRef::<R>::new(RDFS_CLASS.as_str()).into(),
+            &Predicate::<R>::from_str(RDFS_SUBCLASS_OF.as_str()),
+            &Predicate::<R>::from_str(RDFS_CLASS.as_str()).into(),
         )?;
 
-        subclasses.insert(TPredicateRef::<R>::new(RDFS_SUBCLASS_OF.as_str()).into());
+        subclasses.insert(Predicate::<R>::from_str(RDFS_SUBCLASS_OF.as_str()).into());
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
             let actual_class_nodes = get_subjects_for(
                 store.inner_store(),
-                &TPredicateRef::<R>::new(RDF_TYPE.as_str()),
+                &Predicate::<R>::from_str(RDF_TYPE.as_str()),
                 shape.id(),
             )?;
 
             let subclass_targets = get_subjects_for(
                 store.inner_store(),
-                &TPredicateRef::<R>::new(RDFS_SUBCLASS_OF.as_str()),
+                &Predicate::<R>::from_str(RDFS_SUBCLASS_OF.as_str()),
                 shape.id(),
             )?
             .into_iter()
             .flat_map(move |subclass| {
                 get_subjects_for(
                     store.inner_store(),
-                    &TPredicateRef::<R>::new(RDF_TYPE.as_str()),
+                    &Predicate::<R>::from_str(RDF_TYPE.as_str()),
                     &subclass,
                 )
                 .into_iter()
@@ -152,10 +152,10 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         &self,
         store: &Store<R>,
         _: &CompiledPropertyShape<R>,
-        predicate: &TIri<R::Triple>,
-        focus_node: &TObjectRef<R>,
+        predicate: &Iri<R::Triple>,
+        focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
-        let predicate = TPredicateRef::<R>::new(&predicate.to_string());
+        let predicate = Predicate::<R>::from_str(&predicate.to_string());
         Ok(FocusNodes::new(
             get_objects_for(store.inner_store(), focus_node, &predicate)?.into_iter(),
         ))
@@ -166,7 +166,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _paths: &[SHACLPath<R::Triple>],
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "alternative".to_string(),
@@ -178,7 +178,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _paths: &[SHACLPath<R::Triple>],
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "sequence".to_string(),
@@ -190,7 +190,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _path: &SHACLPath<R::Triple>,
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "inverse".to_string(),
@@ -202,7 +202,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _path: &SHACLPath<R::Triple>,
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_more".to_string(),
@@ -214,7 +214,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _path: &SHACLPath<R::Triple>,
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "one_or_more".to_string(),
@@ -226,7 +226,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         _store: &Store<R>,
         _shape: &CompiledPropertyShape<R>,
         _path: &SHACLPath<R::Triple>,
-        _focus_node: &TObjectRef<R>,
+        _focus_node: &Object<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_one".to_string(),

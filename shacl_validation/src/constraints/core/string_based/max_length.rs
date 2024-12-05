@@ -2,8 +2,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Literal as _;
 use srdf::model::Term;
@@ -30,13 +30,13 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for MaxLength
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let max_length = |value_node: &TObjectRef<R>| {
+        let max_length = |value_node: &Object<R>| {
             if value_node.is_blank_node() {
                 true
             } else {
                 let string_representation = match value_node.literal() {
                     Some(string_representation) => string_representation.as_string().unwrap(),
-                    None => value_node.as_iri().unwrap().to_string(),
+                    None => value_node.iri().unwrap().to_string(),
                 };
                 string_representation.len() > self.max_length() as usize
             }
@@ -64,7 +64,7 @@ impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for MaxLength {
     ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
         let max_length_value = self.max_length();
 
-        let query = |value_node: &TObjectRef<S>| {
+        let query = |value_node: &Object<S>| {
             formatdoc! {
                 " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",
                 value_node, max_length_value

@@ -2,8 +2,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term as _;
 
@@ -29,7 +29,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Pattern {
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let pattern = |value_node: &TObjectRef<R>| {
+        let pattern = |value_node: &Object<R>| {
             if value_node.is_blank_node() {
                 true
             } else {
@@ -59,7 +59,7 @@ impl<S: Rdf + Sparql + Clone + 'static> SparqlValidator<S> for Pattern {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();
 
-        let query = |value_node: &TObjectRef<S>| match &flags {
+        let query = |value_node: &Object<S>| match &flags {
             Some(flags) => formatdoc! {
                 "ASK {{ FILTER (regex(str({}), {}, {})) }}",
                 value_node, pattern, flags

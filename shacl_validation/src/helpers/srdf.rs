@@ -1,17 +1,17 @@
 use std::collections::HashSet;
 
+use srdf::model::rdf::Object;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
-use srdf::model::rdf::TPredicateRef;
 use srdf::model::Triple;
 
 use crate::helpers::helper_error::SRDFError;
 
 pub(crate) fn get_object_for<R: Rdf>(
     store: &R,
-    subject: &TObjectRef<R>,
-    predicate: &TPredicateRef<R>,
-) -> Result<Option<TObjectRef<R>>, SRDFError> {
+    subject: &Object<R>,
+    predicate: &Predicate<R>,
+) -> Result<Option<Object<R>>, SRDFError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
         .next()
@@ -23,9 +23,9 @@ pub(crate) fn get_object_for<R: Rdf>(
 
 pub(crate) fn get_objects_for<R: Rdf>(
     store: &R,
-    subject: &TObjectRef<R>,
-    predicate: &TPredicateRef<R>,
-) -> Result<HashSet<TObjectRef<R>>, SRDFError> {
+    subject: &Object<R>,
+    predicate: &Predicate<R>,
+) -> Result<HashSet<Object<R>>, SRDFError> {
     let subject = match subject.clone().try_into() {
         Ok(subject) => subject,
         Err(_) => {
@@ -36,7 +36,7 @@ pub(crate) fn get_objects_for<R: Rdf>(
     };
 
     let ans = match store.triples_matching(Some(&subject), Some(predicate), None) {
-        Ok(triples) => Ok(triples.map(Triple::object).collect()),
+        Ok(triples) => Ok(triples.map(Triple::obj).map(Clone::clone).collect()),
         Err(e) => Err(SRDFError::ObjectsWithSubjectPredicate {
             predicate: format!("{predicate}"),
             subject: format!("{subject}"),
@@ -49,11 +49,15 @@ pub(crate) fn get_objects_for<R: Rdf>(
 
 pub(crate) fn get_subjects_for<R: Rdf>(
     store: &R,
-    predicate: &TPredicateRef<R>,
-    object: &TObjectRef<R>,
-) -> Result<HashSet<TObjectRef<R>>, SRDFError> {
+    predicate: &Predicate<R>,
+    object: &Object<R>,
+) -> Result<HashSet<Object<R>>, SRDFError> {
     let ans = match store.triples_matching(None, Some(predicate), Some(object)) {
-        Ok(triples) => Ok(triples.map(Triple::subject).map(Into::into).collect()),
+        Ok(triples) => Ok(triples
+            .map(Triple::subj)
+            .map(Clone::clone)
+            .map(Into::into)
+            .collect()),
         Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
             predicate: format!("{predicate}"),
             object: format!("{object}"),

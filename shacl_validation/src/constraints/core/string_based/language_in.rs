@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LanguageIn;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 
@@ -28,7 +28,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for LanguageI
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let language_in = |value_node: &TObjectRef<R>| {
+        let language_in = |value_node: &Object<R>| {
             if let Some(lang) = value_node.literal() {
                 if self.langs().contains(&lang) {
                     return false;

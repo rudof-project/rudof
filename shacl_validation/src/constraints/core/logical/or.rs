@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Or;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -29,7 +29,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for Or<R> {
         value_nodes: &ValueNodes<R>,
         subsetting: &Subsetting,
     ) -> Result<Vec<ValidationResult<R>>, ConstraintError> {
-        let or = |value_node: &TObjectRef<R>| {
+        let or = |value_node: &Object<R>| {
             let any = self.shapes().iter().any(|shape| {
                 let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
                 match shape.validate(store, &engine, Some(&focus_nodes), subsetting) {

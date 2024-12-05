@@ -4,8 +4,8 @@ use std::rc::Rc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 use srdf::model::Term;
 
@@ -36,7 +36,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for UniqueLan
         }
 
         let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
-        let unique_lang = |value_node: &TObjectRef<R>| {
+        let unique_lang = |value_node: &Object<R>| {
             if let Some(lang) = value_node.literal() {
                 let lang = lang.clone();
                 let mut langs_borrowed = langs.borrow_mut();

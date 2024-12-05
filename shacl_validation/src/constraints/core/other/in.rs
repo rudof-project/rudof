@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::In;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 use srdf::model::sparql::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -32,7 +32,7 @@ impl<R: Rdf + Clone + 'static, E: Engine<R>> NativeValidator<R, E> for In<R> {
             shape,
             value_nodes,
             ValueNodeIteration,
-            |value_node: &TObjectRef<R>| !self.values().contains(value_node),
+            |value_node: &Object<R>| !self.values().contains(value_node),
             subsetting,
         )
     }

@@ -1,5 +1,5 @@
+use srdf::model::rdf::Object;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TObjectRef;
 
 use super::component::Component;
 use super::severity::Severity;
@@ -7,10 +7,10 @@ use super::target::Target;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NodeShape<R: Rdf> {
-    id: TObjectRef<R>,
+    id: Object<R>,
     components: Vec<Component<R>>,
     targets: Vec<Target<R>>,
-    property_shapes: Vec<TObjectRef<R>>,
+    property_shapes: Vec<Object<R>>,
     closed: bool,
     // ignored_properties: Vec<R::IRI>,
     deactivated: bool,
@@ -23,7 +23,7 @@ pub struct NodeShape<R: Rdf> {
 }
 
 impl<R: Rdf> NodeShape<R> {
-    pub fn new(id: TObjectRef<R>) -> Self {
+    pub fn new(id: Object<R>) -> Self {
         NodeShape {
             id,
             components: Vec::new(),
@@ -50,7 +50,7 @@ impl<R: Rdf> NodeShape<R> {
         self.targets = targets;
     }
 
-    pub fn with_property_shapes(mut self, property_shapes: Vec<TObjectRef<R>>) -> Self {
+    pub fn with_property_shapes(mut self, property_shapes: Vec<Object<R>>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
@@ -65,7 +65,7 @@ impl<R: Rdf> NodeShape<R> {
         self
     }
 
-    pub fn id(&self) -> &TObjectRef<R> {
+    pub fn id(&self) -> &Object<R> {
         &self.id
     }
 
@@ -88,7 +88,7 @@ impl<R: Rdf> NodeShape<R> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<TObjectRef<R>> {
+    pub fn property_shapes(&self) -> &Vec<Object<R>> {
         &self.property_shapes
     }
 

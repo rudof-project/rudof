@@ -1,7 +1,7 @@
 use iri_s::iri;
 use iri_s::IriS;
+use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
-use srdf::model::rdf::TPredicateRef;
 use srdf::model::Iri;
 
 use crate::vocab::SH_INFO_STR;
@@ -13,7 +13,7 @@ pub enum Severity<R: Rdf> {
     Violation,
     Warning,
     Info,
-    Generic(TPredicateRef<R>),
+    Generic(Predicate<R>),
 }
 
 impl<R: Rdf> From<&Severity<R>> for IriS {

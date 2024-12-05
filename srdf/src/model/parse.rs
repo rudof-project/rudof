@@ -25,7 +25,7 @@ impl ReaderMode {
 }
 
 pub trait RdfReader: Rdf + Sized + Default {
-    type ReaderError: From<std::io::Error> + From<std::io::Error>;
+    type ReaderError: From<std::io::Error>;
 
     fn merge_from_reader<R: Read>(
         &mut self,
