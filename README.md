@@ -134,50 +134,63 @@ where `value` can be `debug` to show more verbose information or `info` to show 
 ## Command line usage
 
 ```sh
-RDF Data shapes implementation in Rust
+A tool to process and validate RDF data using shapes, and convert between different RDF data models
 
 Usage: rudof [OPTIONS] [COMMAND]
 
 Commands:
-  shapemap        Information about ShEx shapemaps
-  shex            Information about ShEx schemas
-  validate        RDF Validation using ShEx or SHACL
-  shex-validate   RDF Validation using ShEx schemas
-  shacl-validate  RDF Validation using SHACL shapes
-  data            Information about RDF data
-  node            Information about RDF nodes which are part of RDF Graphs
-  shacl           Information about SHACL shapes
-  dctap           Information and processing of DCTAP files
-  convert         Conversion between different Data modeling technologies
+  shapemap        Show information about ShEx ShapeMaps
+  shex            Show information about ShEx schemas
+  validate        Validate RDF data using ShEx or SHACL
+  shex-validate   Validate RDF using ShEx schemas
+  shacl-validate  Validate RDF data using SHACL shapes
+  data            Show information about RDF data
+  node            Show information about a node in an RDF Graph
+  shacl           Show information about SHACL shapes
+  dctap           Show information and process DCTAP files
+  convert         Convert between different Data modeling technologies
+  service         Show information about SPARQL service
+  query           Run SPARQL queries
   help            Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --debug...  
-  -h, --help      Print help (see more with '--help')
-  -V, --version   Print version
+  -d, --debug...
+
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
 ```
 
 ### Obtaining information about a ShEx schema
 
 ```sh
 $ rudof shex --help
-Information about ShEx schemas
+Show information about ShEx schemas
 
 Usage: rudof shex [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
-          
+
   -f, --format <Schema format>
-          [default: shexc] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+          [default: shexc] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
   -r, --result-format <Result schema format>
-          [default: shexj] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -t, --show elapsed time
-          
-      --statistics
-          
+          [default: shexj] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -t, --show elapsed time <SHOW_TIME>
+          [possible values: true, false]
+      --statistics <SHOW_STATISTICS>
+          [possible values: true, false]
   -o, --output-file <Output file name, default = terminal>
-          
+
+      --reader-mode <RDF Reader mode>
+          [default: strict] [possible values: lax, strict]
+      --force-overwrite
+
+  -c, --config-file <Config file name>
+          Config file path, if unset it assumes default config
   -h, --help
           Print help
 ```
@@ -186,17 +199,26 @@ Options:
 
 ```sh
 $ rudof data --help
-Information about RDF data
+Show information about RDF data
 
-Usage: rudof data [OPTIONS] --data <RDF data path>
+Usage: rudof data [OPTIONS] [DATA]...
+
+Arguments:
+  [DATA]...
 
 Options:
-  -d, --data <RDF data path>
-          
   -t, --data-format <RDF Data format>
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+      --reader-mode <RDF Reader mode>
+          RDF Reader mode [default: strict] [possible values: lax, strict]
   -o, --output-file <Output file name, default = terminal>
-          
+
+  -r, --result-format <Ouput result format>
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+  -c, --config-file <Config file name>
+          Config file path, if unset it assumes default config
+      --force-overwrite
+
   -h, --help
           Print help
 ```
@@ -207,27 +229,34 @@ This command can be useful to obtain the neighbourhood of a node.
 
 ```sh
 $ rudof node --help
-Information about RDF nodes which are part of RDF Graphs
+Show information about a node in an RDF Graph
 
-Usage: rudof node [OPTIONS] --node <NODE>
+Usage: rudof node [OPTIONS] --node <NODE> [DATA]...
+
+Arguments:
+  [DATA]...
 
 Options:
   -n, --node <NODE>
-          
-  -d, --data <RDF data path>
-          
+
   -t, --data-format <RDF Data format>
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
   -e, --endpoint <Endpoint with RDF data>
-          
+
+      --reader-mode <RDF Reader mode>
+          RDF Reader mode [default: strict] [possible values: lax, strict]
   -m, --show-node-mode <Show Node Mode>
           [default: outgoing] [possible values: outgoing, incoming, both]
       --show hyperlinks
-          
+
   -p, --predicates <PREDICATES>
-          
+
   -o, --output-file <Output file name, default = terminal>
-          
+
+  -c, --config <Path to config file>
+
+      --force-overwrite
+
   -h, --help
           Print help
 ```
@@ -242,37 +271,74 @@ rudof node -e wikidata -n wd:Q80
 
 ```sh
 $ rudof validate --help
-RDF Validation using ShEx or SHACL
+Validate RDF data using ShEx or SHACL
 
-Usage: rudof validate [OPTIONS] --schema <Schema file name>
+Usage: rudof validate [OPTIONS] [DATA]...
+
+Arguments:
+  [DATA]...
+
 
 Options:
   -M, --mode <Validation mode>
-          [default: shex] [possible values: shex, shacl]
+          [default: shex]
+          [possible values: shex, shacl]
+
   -s, --schema <Schema file name>
-          
+
+
   -f, --schema-format <Schema format>
-          [default: shexc] [possible values: internal, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -m, --shapemap <ShapeMap file name>
-          
+          [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
+
+  -m, --shapemap <ShapeMap>
+
+
       --shapemap-format <ShapeMap format>
-          [default: compact] [possible values: compact, internal]
+          [default: compact]
+          [possible values: compact, internal]
+
   -n, --node <NODE>
-          
+
+
   -l, --shape-label <shape label (default = START)>
-          
-  -d, --data <RDF data path>
-          
+
+
   -t, --data-format <RDF Data format>
-          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+          [default: turtle]
+          [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
+
   -e, --endpoint <Endpoint with RDF data>
-          
+
+
       --max-steps <max steps to run>
           [default: 100]
+
+  -S, --shacl-mode <SHACL validation mode>
+          Execution mode
+
+          [default: native]
+
+          Possible values:
+          - native: We use a Rust native engine in an imperative manner (performance)
+          - sparql: We use a  SPARQL-based engine, which is declarative
+
+      --reader-mode <RDF Reader mode>
+          RDF Reader mode
+
+          [default: strict]
+          [possible values: lax, strict]
+
   -o, --output-file <Output file name, default = terminal>
-          
+
+
+      --force-overwrite
+
+
+  -c, --config-file <Config file name>
+          Config file path, if unset it assumes default config
+
   -h, --help
-          Print help
+          Print help (see a summary with '-h')
 ```
 
 Example: Assuming there a ShEx file in `examples/user.shex` and an RDF turtle file in `examples/user.ttl` we can ask to validate node `:a` with shape label `:User` using:
@@ -297,25 +363,31 @@ rudof shacl-validate --shapes examples/simple_shacl.ttl examples/simple.ttl
 
 ```sh
 $ rudof convert --help
-Conversion between different Data modeling technologies
+Convert between different Data modeling technologies
 
 Usage: rudof convert [OPTIONS] --input-mode <Input mode> --source-file <Source file name> --export-mode <Result mode>
 
 Options:
+  -c, --config <Path to config file>
+
   -m, --input-mode <Input mode>
-          [possible values: shex, dctap]
+          [possible values: shacl, shex, dctap]
+      --force-overwrite
+
   -s, --source-file <Source file name>
-          
+
   -f, --format <Input file format>
-          [default: shexc] [possible values: csv, shexc, shexj, turtle]
+          [default: shexc] [possible values: csv, shexc, shexj, turtle, xlsx]
   -r, --result-format <Result format>
           [default: default] [possible values: default, internal, json, shexc, shexj, turtle, plantuml, html, svg, png]
   -o, --output-file <Output file name, default = terminal>
-          
+
   -t, --target-folder <Target folder>
-          
+
   -l, --shape-label <shape label (default = START)>
-          
+
+      --reader-mode <RDF Reader mode>
+          RDF Reader mode [default: strict] [possible values: lax, strict]
   -x, --export-mode <Result mode>
           [possible values: sparql, shex, uml, html]
   -h, --help
@@ -391,9 +463,9 @@ Options:
   -p, --print_result_mode <PRINT_RESULT_MODE>
           [default: basic] [possible values: basic, failed, passed, not-implemented, all]
   -e, --entry <Entry names>
-          
+
   -t, --trait <Trait names>
-          
+
   -h, --help
           Print help
   -V, --version
