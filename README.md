@@ -27,7 +27,7 @@ You can download a binary from the [latest release](https://github.com/rudof-pro
 
 #### Ubuntu
 
-Download the binary from [https://github.com/rudof-project/rudof/releases] and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
+Download the binary from <https://github.com/rudof-project/rudof/releases> and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
 wget https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.X_amd64.deb
@@ -36,11 +36,11 @@ sudo dpkg -i rudof_vX.X.X_amd64.deb
 
 #### Windows
 
-The binary can be downloaded from [https://github.com/rudof-project/rudof/releases]
+The binary can be downloaded from <https://github.com/rudof-project/rudof/releases>.
 
 #### Mac
 
-The binary is available at: [https://github.com/rudof-project/rudof/releases] so you can download the corresponding binary to your machine.
+The binary is available at: <https://github.com/rudof-project/rudof/releases> so you can download the corresponding binary to your machine.
 
 The usual way to run/install a binary in Mac is to download it in a folder, add that folder to your PATH and activating the binary using:
 
