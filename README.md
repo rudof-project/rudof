@@ -21,7 +21,7 @@ We provide binaries for Linux, Windows, Mac and Docker
 as well as Python bindings.
 
 - [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
-- [List of issues](https://github.com/rudof-project/rudof)
+- [List of issues](https://github.com/rudof-project/rudof/issues)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)
 - [FAQ](https://github.com/rudof-project/rudof/wiki/FAQ)
 - [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
