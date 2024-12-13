@@ -103,7 +103,8 @@ sudo dpkg -i target/debian/rudof_0.0.11-1_amd64.deb
 
 ## Docker
 
-The library is also published as a Docker image.
+The library is also published as a Docker image
+(`angelip2303/rudof:latest`).
 
 </details>
 
