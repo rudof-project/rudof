@@ -13,8 +13,8 @@ use std::{fmt::Formatter, path::PathBuf};
 // #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
-    long_about = r#"
- A tool to process and validate RDF data using shapes, and convert between different RDF data models"#
+    long_about = "\
+A tool to process and validate RDF data using shapes, and convert between different RDF data models"
 )]
 pub struct Cli {
     #[command(subcommand)]
