@@ -414,7 +414,7 @@ The repo is divided in the following modules:
 ## Publishing the crates
 
 ```sh
-cargo workspaces publish 
+cargo workspaces publish
 ```
 
 ## Worskpaces
@@ -475,7 +475,7 @@ Options:
 ### Validation conformance tests for ShEx
 
 ```sh
-cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation 
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation
 ```
 
 ### Schemas tests
