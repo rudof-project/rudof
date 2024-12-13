@@ -78,7 +78,7 @@ The command `cargo run` can be used to compile and run locally the code.
 For example:
 
 ```sh
-cargo run -- validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm 
+cargo run -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 ### Compiling from source and installing the binary (Debian)
@@ -116,7 +116,7 @@ The folder `examples` contains several example files with ShEx schemas and RDF d
 ### Validate a simple RDF file with a ShEx schema using a ShapeMap
 
 ```sh
-rudof validate --data examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
+rudof validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 We maintain a Wiki page with some common [Usage scenarios and How-to guides](https://github.com/rudof-project/rudof/wiki/Howto-guides).
