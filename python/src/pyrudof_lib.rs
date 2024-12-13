@@ -727,10 +727,9 @@ impl PyQuerySolution {
 
     /// Returns the value of a variable name if exists, None if it doesn't
     pub fn find(&self, var_name: &str) -> Option<String> {
-        match self.inner.find_solution(&VarName::new(var_name)) {
-            None => None,
-            Some(t) => Some(format!("{t}")),
-        }
+        self.inner
+            .find_solution(&VarName::new(var_name))
+            .map(|t| format!("{t}"))
     }
 }
 
