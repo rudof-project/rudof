@@ -6,11 +6,19 @@
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 
 This repo contains an RDF data shapes library implemented in Rust.
-The implementation supports [ShEx](http://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTap](https://www.dublincore.org/specifications/dctap/) and conversions between different RDF data modeling formalisms.
+The implementation supports
+[ShEx](http://shex.io/),
+[SHACL](https://www.w3.org/TR/shacl/),
+[DCTap](https://www.dublincore.org/specifications/dctap/)
+and conversions between different RDF data modeling formalisms.
 
-The code can be used as a Rust library but it also contains a binary called `rudof` which can be used as an RDF playground.
+The code can be used as a Rust library
+but it also contains a binary called `rudof`
+which can be used as an RDF playground.
 
-We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://github.com/rudof-project/rudof/releases)), as well as Python bindings.
+We provide binaries for Linux, Windows, Mac and Docker
+(see [releases](https://github.com/rudof-project/rudof/releases)),
+as well as Python bindings.
 
 - [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/rudof-project/rudof)
@@ -23,11 +31,14 @@ We provide binaries for Linux, Windows, Mac and Docker (see [releases](https://g
 
 ### Official releases
 
-You can download a binary from the [latest release](https://github.com/rudof-project/rudof/releases/latest) page. There you will also find the compiled packages for the installation on your system using a package manager.
+You can download a binary from the [latest release](https://github.com/rudof-project/rudof/releases/latest) page.
+There you will also find the compiled packages
+for the installation on your system using a package manager.
 
 #### Ubuntu
 
-Download the binary from <https://github.com/rudof-project/rudof/releases> and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
+Download the binary from <https://github.com/rudof-project/rudof/releases>
+and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
 wget https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.X_amd64.deb
@@ -40,22 +51,29 @@ The binary can be downloaded from <https://github.com/rudof-project/rudof/releas
 
 #### Mac
 
-The binary is available at: <https://github.com/rudof-project/rudof/releases> so you can download the corresponding binary to your machine.
+The binary is available at:
+<https://github.com/rudof-project/rudof/releases>
+so you can download the corresponding binary to your machine.
 
-The usual way to run/install a binary in Mac is to download it in a folder, add that folder to your PATH and activating the binary using:
+The usual way to run/install a binary in Mac is to download it in a folder,
+add that folder to your PATH and activating the binary using:
 
 ```sh
 chmod +x <binary_file>
 ```
 
-After that, the processor may complain the first time about security and you have to agree to use it. Once you agree, it should work.
+After that, the processor may complain the first time about security
+and you have to agree to use it.
+Once you agree, it should work.
 
 <details markdown="block">
 <summary>Compiling from source</summary>
 
 ### Compiling from source
 
-`rudof` has been implemented in Rust and is compiled using [cargo](https://doc.rust-lang.org/cargo/). The command `cargo run` can be used to compile and run locally the code.
+`rudof` has been implemented in Rust
+and is compiled using [cargo](https://doc.rust-lang.org/cargo/).
+The command `cargo run` can be used to compile and run locally the code.
 
 For example:
 
@@ -417,6 +435,7 @@ at your option.
 ### Contribution
 
 Unless you explicitly state otherwise,
-any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
-additional terms or conditions.
+any contribution intentionally submitted for inclusion in the work by you,
+as defined in the Apache-2.0 license,
+shall be dual licensed as above,
+without any additional terms or conditions.
