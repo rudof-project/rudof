@@ -1,7 +1,6 @@
 use shex_ast::CompiledSchemaError;
 use std::fmt::Debug;
 use thiserror::Error;
-use tokio::task::JoinError;
 
 use crate::CardinalityError;
 
@@ -21,24 +20,24 @@ where
     #[error("Compiling schema: {error:?}")]
     CompilingSchema { error: CompiledSchemaError },
 
-
     #[error("SRDF Error {error:?}")]
     SRDFError { error: String },
 
     #[error("Cardinality error: {ce:?}")]
     CardinalityError { ce: CardinalityError },
 
+    #[cfg(not(target_family = "wasm"))]
     #[error("JoinError: {je:?}")]
-    JoinError { je: JoinError },
-
+    JoinError { je: tokio::task::JoinError },
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl<'a, SL> From<JoinError> for ValidationError<'a, SL>
 where
     SL: Debug,
 {
     fn from(je: JoinError) -> Self {
-        ValidationError::JoinError { je: je }
+        ValidationError::JoinError { je }
     }
 }
 

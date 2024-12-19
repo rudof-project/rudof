@@ -1,7 +1,5 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
-use reqwest::header;
-use reqwest::header::USER_AGENT;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -9,7 +7,6 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
-use std::fs;
 use std::str::FromStr;
 use url::Url;
 
@@ -107,7 +104,12 @@ impl IriS {
     /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
     /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     ///
+    #[cfg(not(target_family = "wasm"))]
     pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {
+        use reqwest::header;
+        use reqwest::header::USER_AGENT;
+        use std::fs;
+
         let url = match base {
             Some(base_iri) => {
                 let base =
@@ -171,6 +173,13 @@ impl IriS {
                 Ok(body)
             }
         }
+    }
+
+    #[cfg(target_family = "wasm")]
+    pub fn dereference(&self, _base: &Option<IriS>) -> Result<String, IriSError> {
+        return Err(IriSError::ReqwestClientCreation {
+            error: String::from("reqwest is not enabled"),
+        });
     }
 
     /*    pub fn is_absolute(&self) -> bool {

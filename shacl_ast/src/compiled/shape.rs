@@ -58,6 +58,13 @@ impl<S: SRDFBasic> CompiledShape<S> {
         }
     }
 
+    pub fn path_str(&self) -> Option<String> {
+        match self {
+            CompiledShape::NodeShape(_) => None,
+            CompiledShape::PropertyShape(ps) => Some(ps.path().to_string()),
+        }
+    }
+
     pub fn severity(&self) -> S::Term {
         let iri_s = match self {
             CompiledShape::NodeShape(ns) => ns.severity().into(),

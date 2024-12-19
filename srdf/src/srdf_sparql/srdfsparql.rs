@@ -9,20 +9,19 @@ use oxrdf::{
 };
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
-use reqwest::{
-    blocking::Client,
-    header::{self, ACCEPT, USER_AGENT},
-    Url,
-};
-use sparesults::{
-    QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution,
-    ReaderQueryResultsParserOutput,
-};
+use sparesults::QuerySolution as OxQuerySolution;
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     fmt::Display,
     str::FromStr,
 };
+
+#[cfg(target_family = "wasm")]
+#[derive(Debug, Clone)]
+struct Client();
+
+#[cfg(not(target_family = "wasm"))]
+pub use reqwest::blocking::Client;
 
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
@@ -462,7 +461,15 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
     QuerySolution::new(variables, values)
 }
 
+#[cfg(target_family = "wasm")]
 fn sparql_client() -> Result<Client> {
+    Ok(Client())
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn sparql_client() -> Result<Client> {
+    use reqwest::header::{self, ACCEPT, USER_AGENT};
+
     let mut headers = header::HeaderMap::new();
     headers.insert(
         ACCEPT,
@@ -475,11 +482,26 @@ fn sparql_client() -> Result<Client> {
     Ok(client)
 }
 
+#[cfg(target_family = "wasm")]
+fn make_sparql_query(
+    _query: &str,
+    _client: &Client,
+    _endpoint_iri: &IriS,
+) -> Result<Vec<OxQuerySolution>> {
+    Err(SRDFSparqlError::UnknownEndpontName {
+        name: String::from("WASM"),
+    })
+}
+
+#[cfg(not(target_family = "wasm"))]
 fn make_sparql_query(
     query: &str,
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<Vec<OxQuerySolution>> {
+    use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
+    use url::Url;
+
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
     tracing::debug!("SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
@@ -515,11 +537,17 @@ impl Display for SparqlVars {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn outgoing_neighs(
     subject: &str,
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<HashMap<OxNamedNode, HashSet<OxTerm>>> {
+    use std::collections::hash_map::Entry;
+
+    use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
+    use url::Url;
+
     let pred = "pred";
     let obj = "obj";
     let query = format!("select ?{pred} ?{obj} where {{ {subject} ?{pred} ?{obj} }}");
@@ -572,6 +600,17 @@ fn outgoing_neighs(
     }
 }
 
+#[cfg(target_family = "wasm")]
+fn outgoing_neighs(
+    _subject: &str,
+    _client: &Client,
+    _endpoint_iri: &IriS,
+) -> Result<HashMap<OxNamedNode, HashSet<OxTerm>>> {
+    Err(SRDFSparqlError::UnknownEndpontName {
+        name: String::from("WASM"),
+    })
+}
+
 type OutputNodes = HashMap<OxNamedNode, HashSet<OxTerm>>;
 
 fn outgoing_neighs_from_list(
@@ -597,11 +636,27 @@ fn outgoing_neighs_from_list(
     Ok((all_results, remainder))
 }
 
+#[cfg(target_family = "wasm")]
+fn incoming_neighs(
+    _object: &str,
+    _client: &Client,
+    _endpoint_iri: &IriS,
+) -> Result<HashMap<OxNamedNode, HashSet<OxSubject>>> {
+    Err(SRDFSparqlError::UnknownEndpontName {
+        name: String::from("WASM"),
+    })
+}
+
+#[cfg(not(target_family = "wasm"))]
 fn incoming_neighs(
     object: &str,
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<HashMap<OxNamedNode, HashSet<OxSubject>>> {
+    use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
+    use std::collections::hash_map::Entry;
+    use url::Url;
+
     let pred = "pred";
     let subj = "subj";
     let query = format!("select ?{pred} ?{subj} where {{ ?{subj} ?{pred} {object} }}");
