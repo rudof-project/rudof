@@ -115,14 +115,29 @@ TBD
 
 ### From SHACL to ShEx
 
-A possible conversion among RDF data modelling technologies includes the conversion from a simple SHACL shapes graph to ShEx schemas.
-For users to do so, one can use the instructions below.
+It is possible to convert between a subset of SHACL shapes to ShEx schemas.
+As an example, the following command:
 
 ```sh
 rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex
 ```
 
-> The converter only works for a subset of SHACL. We should still document what are the features supported and the features that are not yet supported but this is still work in progress.
+> The converter only works for a subset of SHACL. This is a work-in-progress feature and [the following issue](https://github.com/rudof-project/rudof/issues/127) is expected to document the subset of SHACL supported.
+
+### Specifying base IRI to handle relative IRIs
+
+If the RDF data contains relative IRIs, it is necessary to resolve them by specifying a base IRI. It can be done by providing a base declaration in the `rdf_data` entry of the configuration file. For example, assuming the configuration file contains `examples/config/data_config.yaml`
+
+```yaml
+rdf_data:
+  base: http://example.org/
+```
+
+it is possible to specify the conversion as:
+
+```sh
+rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex -c examples/config/data_config.yml
+```
 
 ## From ShEx
 

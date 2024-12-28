@@ -1335,7 +1335,7 @@ where
 fn run_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
-    _debug: u8,
+    debug: u8,
     output: &Option<PathBuf>,
     result_format: &DataFormat,
     force_overwrite: bool,
@@ -1344,6 +1344,9 @@ fn run_data(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
+    if debug > 0 {
+        println!("Config: {config:?}")
+    }
     get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
     let format: RDFFormat = RDFFormat::from(*result_format);
     rudof.get_rdf_data().serialize(&format, &mut writer)?;
