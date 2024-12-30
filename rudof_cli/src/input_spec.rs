@@ -3,7 +3,7 @@ use iri_s::IriS;
 use reqwest::{
     blocking::{Client, ClientBuilder},
     header::{HeaderValue, ACCEPT},
-    Url,
+    // Url as ReqwestUrl,
 };
 use std::{
     fmt::Display,
@@ -13,6 +13,7 @@ use std::{
     str::FromStr,
 };
 use thiserror::Error;
+use url::Url;
 
 // Consider using clio
 #[derive(Debug, Clone)]
@@ -95,6 +96,20 @@ impl InputSpec {
             }
         }
     }
+
+    pub fn guess_base(&self) -> Result<String, InputSpecError> {
+        match self {
+            InputSpec::Path(path) => {
+                let url: Url =
+                    Url::from_file_path(path).map_err(|_| InputSpecError::GuessBaseFromPath {
+                        path: path.to_path_buf(),
+                    })?;
+                Ok(url.to_string())
+            }
+            InputSpec::Stdin => Ok("stdin://".to_string()),
+            InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
+        }
+    }
 }
 
 impl FromStr for InputSpec {
@@ -144,6 +159,9 @@ pub enum InputSpecError {
     #[error("From file path: {path}")]
     FromFilePath { path: PathBuf },
 
+    #[error("Guessing base from path: {path}")]
+    GuessBaseFromPath { path: PathBuf },
+
     #[error("Parsing path error for {str}, error: {error}")]
     ParsingPathError { str: String, error: String },
 
@@ -188,5 +206,9 @@ impl UrlSpec {
                     error: format!("{e}"),
                 })?;
         Ok(UrlSpec { url, client })
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.url.as_str()
     }
 }

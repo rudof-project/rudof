@@ -11,7 +11,12 @@ use serde_derive::{Deserialize, Serialize};
 pub struct RdfDataConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
     pub base: Option<IriS>,
+
+    /// Endpoints to query RDF data. Each endpoint description is identified by a name
     pub endpoints: Option<HashMap<String, EndpointDescription>>,
+
+    /// If true, the base IRI will be automatically set to the local file or URI of the document
+    pub automatic_base: Option<bool>,
 }
 
 impl RdfDataConfig {
@@ -19,6 +24,7 @@ impl RdfDataConfig {
         RdfDataConfig {
             base: None,
             endpoints: None,
+            automatic_base: Some(true),
         }
     }
 

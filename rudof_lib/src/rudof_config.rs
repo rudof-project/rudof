@@ -126,4 +126,11 @@ impl RudofConfig {
             Some(rdf_data_config) => rdf_data_config.base.as_ref().map(|i| i.as_str()),
         }
     }
+
+    pub fn automatic_base(&self) -> bool {
+        match &self.rdf_data {
+            None => true,
+            Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
+        }
+    }
 }

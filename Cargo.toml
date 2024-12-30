@@ -80,3 +80,4 @@ serde_yml = "0.0.12"
 thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+url = "2.2.2"

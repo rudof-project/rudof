@@ -40,10 +40,10 @@ oxiri = "0.2.3-alpha.1"
 oxsdatatypes = "0.2.0-alpha.2"
 sparesults = { version = "0.2.0-rc.2" }
 tokio = { version = "1.38", features = ["full"] }
-colored = "2"
+colored = { workspace = true }
 reqwest = { version = "0.12", features = ["blocking", "json"] }
-url = "2.2.2"
-regex = "1.10"
+url = { workspace = true }
+regex = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

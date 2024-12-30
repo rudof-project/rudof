@@ -1095,7 +1095,6 @@ fn get_data_rudof(
     reader_mode: &RDFReaderMode,
     config: &RudofConfig,
 ) -> Result<()> {
-    let base = config.rdf_data_base();
     match (data.is_empty(), endpoint) {
         (true, None) => {
             bail!("None of `data` or `endpoint` parameters have been specified for validation")
@@ -1108,7 +1107,8 @@ fn get_data_rudof(
             };
             for d in data {
                 let data_reader = d.open_read(Some(&data_format.mime_type()))?;
-                rudof.read_data(data_reader, &rdf_format, base, &reader_mode)?;
+                let base = get_base(d, config)?;
+                rudof.read_data(data_reader, &rdf_format, base.as_deref(), &reader_mode)?;
             }
             Ok(())
         }
@@ -1130,6 +1130,21 @@ fn get_data_rudof(
             bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
         }
     }
+}
+
+fn get_base(input: &InputSpec, config: &RudofConfig) -> Result<Option<String>> {
+    let base = match config.rdf_data_base() {
+        Some(base) => Some(base.to_string()),
+        None => {
+            if config.automatic_base() {
+                let base = input.guess_base()?;
+                Some(base)
+            } else {
+                None
+            }
+        }
+    };
+    Ok(base)
 }
 
 /*fn get_query_str(input: &InputSpec) -> Result<String> {
