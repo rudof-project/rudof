@@ -1044,35 +1044,6 @@ fn get_writer(
     }
 }
 
-/*
-fn get_data(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
-    _debug: u8,
-    config: &RdfDataConfig,
-) -> Result<RdfData> {
-    match (data.is_empty(), endpoint) {
-        (true, None) => {
-            bail!("None of `data` or `endpoint` parameters have been specified for validation")
-        }
-        (false, None) => {
-            // let data_path = cast_to_data_path(data)?;
-            let data = parse_data(data, data_format, reader_mode, config)?;
-            Ok(RdfData::from_graph(data)?)
-        }
-        (true, Some(endpoint)) => {
-            let endpoint = SRDFSparql::from_str(endpoint)?;
-            Ok(RdfData::from_endpoint(endpoint))
-        }
-        (false, Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
-        }
-    }
-}
-    */
-
 fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -1082,8 +1053,8 @@ fn add_shacl_schema_rudof(
 ) -> Result<()> {
     let reader = schema.open_read(Some(shapes_format.mime_type().as_str()))?;
     let shapes_format = shacl_format_convert(shapes_format)?;
-    let base = config.rdf_data_base();
-    rudof.read_shacl(reader, &shapes_format, base, reader_mode)?;
+    let base = get_base(schema, config)?;
+    rudof.read_shacl(reader, &shapes_format, base.as_deref(), reader_mode)?;
     Ok(())
 }
 
@@ -1146,27 +1117,6 @@ fn get_base(input: &InputSpec, config: &RudofConfig) -> Result<Option<String>> {
     };
     Ok(base)
 }
-
-/*fn get_query_str(input: &InputSpec) -> Result<String> {
-    let mut str = String::new();
-    let mut data = input.open_read(None)?;
-    data.read_to_string(&mut str)?;
-    Ok(str)
-}*/
-
-/*fn make_node_selector(node: Node) -> Result<NodeSelector> {
-    let object = node.as_object();
-    match object {
-        Object::Iri { iri } => Ok(NodeSelector::Node(ObjectValue::iri(iri.clone()))),
-        Object::BlankNode(_) => bail!("Blank nodes can not be used as node selectors to validate"),
-        Object::Literal(lit) => Ok(NodeSelector::Node(ObjectValue::Literal(lit.clone()))),
-    }
-}
-
-fn make_shape_selector(shape_label: ShapeExprLabel) -> ShapeSelector {
-    ShapeSelector::Label(shape_label)
-}
-*/
 
 fn start() -> ShapeSelector {
     ShapeSelector::start()
