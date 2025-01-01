@@ -100,10 +100,16 @@ impl InputSpec {
     pub fn guess_base(&self) -> Result<String, InputSpecError> {
         match self {
             InputSpec::Path(path) => {
-                let url: Url =
-                    Url::from_file_path(path).map_err(|_| InputSpecError::GuessBaseFromPath {
-                        path: path.to_path_buf(),
+                let absolute_path =
+                    fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
+                        path: path.to_string_lossy().to_string(),
+                        error: err,
                     })?;
+                let url: Url = Url::from_file_path(absolute_path).map_err(|_| {
+                    InputSpecError::GuessBaseFromPath {
+                        path: path.to_path_buf(),
+                    }
+                })?;
                 Ok(url.to_string())
             }
             InputSpec::Stdin => Ok("stdin://".to_string()),

@@ -2,6 +2,16 @@
 
 ## Current changes without release yet
 
+## [v0.1.59] - 2025-01-01
+
+- Fixes bug in feature added to solve issue #227 for local files which are relative that it didn't generate an absolute IRI. Now it does.
+- Added option to SHACL2ShEx converter to optionally add `rdf:type` declaration for each `sh:targetClass` declaration. Previously, this behaviour was not optional and now it can be disabled.
+- Fixes option to generate `rdf:type` for `sh:targetClass` declarations when there are more than one (previously it generated one rdf:type for each target class, and not it generates a value set).
+
+## [v0.1.58] - 2024-12-31
+
+- Solves issue #227 to automatically generate a base URL from the local file name or URL.
+
 ## [v0.1.57] - 2024-11-14
 
 - Simple release to bump a new version that solve a issue with pyrudof in Google Colab
