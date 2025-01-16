@@ -63,6 +63,9 @@ use tracing_subscriber::{filter::EnvFilter, fmt};
 
 #[allow(unused_variables)]
 fn main() -> Result<()> {
+    // Load environment variables from `.env`:
+    clientele::dotenv().ok();
+
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_target(false)
@@ -80,7 +83,11 @@ fn main() -> Result<()> {
 
     // tracing::info!("rudof is running...");
 
-    let cli = Cli::parse();
+    // Expand wildcards and @argfiles:
+    let args = clientele::args_os()?;
+
+    // Parse command-line options:
+    let cli = Cli::parse_from(args);
 
     match &cli.command {
         Some(Command::Service {
