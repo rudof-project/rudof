@@ -1449,10 +1449,10 @@ fn shacl_format_convert(shacl_format: &cli::ShaclFormat) -> Result<ShaclFormat> 
 
 fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
     match data_format {
-        DataFormat::N3 => RDFFormat::N3,
+        DataFormat::N3 => RDFFormat::Notation3,
         DataFormat::NQuads => RDFFormat::NQuads,
         DataFormat::NTriples => RDFFormat::NTriples,
-        DataFormat::RDFXML => RDFFormat::RDFXML,
+        DataFormat::RDFXML => RDFFormat::RdfXml,
         DataFormat::TriG => RDFFormat::TriG,
         DataFormat::Turtle => RDFFormat::Turtle,
     }
