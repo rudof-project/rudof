@@ -334,9 +334,9 @@ impl Rudof {
             ShaclFormat::Internal => Err(RudofError::InternalSHACLFormatNonReadable),
             ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
             ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-            ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+            ShaclFormat::RDFXML => Ok(RDFFormat::RdfXml),
             ShaclFormat::TriG => Ok(RDFFormat::TriG),
-            ShaclFormat::N3 => Ok(RDFFormat::N3),
+            ShaclFormat::N3 => Ok(RDFFormat::Notation3),
             ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
         }?;
 
@@ -678,10 +678,10 @@ fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclS
 
 fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
     match shacl_format {
-        ShaclFormat::N3 => Ok(RDFFormat::N3),
+        ShaclFormat::N3 => Ok(RDFFormat::Notation3),
         ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
         ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-        ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        ShaclFormat::RDFXML => Ok(RDFFormat::RdfXml),
         ShaclFormat::TriG => Ok(RDFFormat::TriG),
         ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
         ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),

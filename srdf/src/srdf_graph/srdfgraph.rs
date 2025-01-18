@@ -104,7 +104,7 @@ impl SRDFGraph {
                     }
                 }
             }
-            RDFFormat::RDFXML => {
+            RDFFormat::RdfXml => {
                 let parser = RdfXmlParser::new();
                 let mut reader = parser.for_reader(read);
                 for triple_result in reader.by_ref() {
@@ -119,7 +119,7 @@ impl SRDFGraph {
                 }
             }
             RDFFormat::TriG => todo!(),
-            RDFFormat::N3 => todo!(),
+            RDFFormat::Notation3 => todo!(),
             RDFFormat::NQuads => {
                 let parser = NQuadsParser::new();
                 let mut reader = parser.for_reader(read);
@@ -134,6 +134,7 @@ impl SRDFGraph {
                     }
                 }
             }
+            _ => todo!("{} format not implemented yet", format),
         }
         Ok(())
     }
@@ -722,14 +723,7 @@ impl SRDFBuilder for SRDFGraph {
 }
 
 fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
-    match rdf_format {
-        RDFFormat::NTriples => RdfFormat::NTriples,
-        RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
-        RDFFormat::TriG => RdfFormat::TriG,
-        RDFFormat::N3 => RdfFormat::N3,
-        RDFFormat::NQuads => RdfFormat::NQuads,
-    }
+    rdf_format.try_into().expect("RDF format not supported")
 }
 
 fn rdf_type() -> OxNamedNode {

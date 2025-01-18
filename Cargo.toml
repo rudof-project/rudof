@@ -71,6 +71,7 @@ clap = { version = "4.2.1", features = ["derive"] }
 colored = "2"
 indexmap = "2.1"
 oxrdf = "0.2.0-alpha.5"
+rdf-format = { version = "0.2", features = ["oxrdf"] }
 regex = "1.10.4"
 supports-color = "3.0.0"
 serde = "1"

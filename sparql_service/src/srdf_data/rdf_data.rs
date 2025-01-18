@@ -514,10 +514,11 @@ fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
+        RDFFormat::RdfXml => RdfFormat::RdfXml,
         RDFFormat::TriG => RdfFormat::TriG,
-        RDFFormat::N3 => RdfFormat::N3,
+        RDFFormat::Notation3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
+        _ => todo!("{} format not implemented yet", rdf_format),
     }
 }
 

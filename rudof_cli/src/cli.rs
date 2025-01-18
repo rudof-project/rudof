@@ -843,9 +843,9 @@ impl From<DataFormat> for RDFFormat {
         match val {
             DataFormat::Turtle => RDFFormat::Turtle,
             DataFormat::NTriples => RDFFormat::NTriples,
-            DataFormat::RDFXML => RDFFormat::RDFXML,
+            DataFormat::RDFXML => RDFFormat::RdfXml,
             DataFormat::TriG => RDFFormat::TriG,
-            DataFormat::N3 => RDFFormat::N3,
+            DataFormat::N3 => RDFFormat::Notation3,
             DataFormat::NQuads => RDFFormat::NQuads,
         }
     }
