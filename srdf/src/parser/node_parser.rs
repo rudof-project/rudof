@@ -64,9 +64,9 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use srdf::ParserResult;
     /// use srdf::model::RdfFormat;
     /// use srdf::model::Iri;
-    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::reader::ReaderMode;
     /// use srdf::property_string;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::RdfReader;
     /// use oxrdf::NamedNode as OxNamedNode;
     ///
     /// let s = r#"
@@ -106,8 +106,8 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use srdf::property_string;
     /// use srdf::model::RdfFormat;
     /// use srdf::model::Iri;
-    /// use srdf::model::parse::ReaderMode;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::ReaderMode;
+    /// use srdf::model::reader::RdfReader;
     /// use oxrdf::NamedNode as OxNamedNode;
     ///
     /// let s = r#"
@@ -153,8 +153,8 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use srdf::RDFNodeParse;
     /// use srdf::model::RdfFormat;
     /// use srdf::model::Iri;
-    /// use srdf::model::parse::ReaderMode;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::ReaderMode;
+    /// use srdf::model::reader::RdfReader;
     /// use oxrdf::NamedNode as OxNamedNode;
     /// use srdf::property_string;
     ///
@@ -184,8 +184,8 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use srdf::oxgraph::OxGraph;
     /// use srdf::{RDFNodeParse, property_bool, property_integer};
     /// use srdf::model::RdfFormat;
-    /// use srdf::model::parse::ReaderMode;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::ReaderMode;
+    /// use srdf::model::reader::RdfReader;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
@@ -242,8 +242,8 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use std::collections::HashSet;
     /// use srdf::{RDFNodeParse, ok, property_integers};
     /// use srdf::model::RdfFormat;
-    /// use srdf::model::parse::ReaderMode;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::ReaderMode;
+    /// use srdf::model::reader::RdfReader;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
@@ -279,10 +279,10 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use iri_s::IriS;
     /// use srdf::oxgraph::OxGraph;
     /// use srdf::{RDFNodeParse, property_bool};
-    /// use srdf::model::parse::ReaderMode;
+    /// use srdf::model::reader::ReaderMode;
     /// use std::collections::HashSet;
     /// use srdf::model::RdfFormat;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::RdfReader;
     ///
     /// let s = r#"
     ///     prefix : <http://example.org/>
@@ -324,8 +324,8 @@ pub trait RDFNodeParse<RDF: FocusRdf> {
     /// use std::collections::HashSet;
     /// use srdf::{RDFNodeParse, ok, property_integers};
     /// use srdf::model::RdfFormat;
-    /// use srdf::model::parse::ReaderMode;
-    /// use srdf::model::parse::RdfReader;
+    /// use srdf::model::reader::ReaderMode;
+    /// use srdf::model::reader::RdfReader;
     /// use srdf::property_value;
     ///
     /// let s = r#"
@@ -1261,8 +1261,8 @@ pub fn bool<RDF: FocusRdf>() -> impl RDFNodeParse<RDF, Output = bool> {
 /// use oxrdf::{Literal, Term};
 /// use srdf::model::RdfFormat;
 /// use srdf::model::Iri;
-/// use srdf::model::parse::ReaderMode;
-/// use srdf::model::parse::RdfReader;
+/// use srdf::model::reader::ReaderMode;
+/// use srdf::model::reader::RdfReader;
 /// use oxrdf::NamedNode as OxNamedNode;
 ///
 /// let s = r#"prefix : <http://example.org/>

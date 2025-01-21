@@ -1,5 +1,5 @@
 use prefixmap::PrefixMap;
-use srdf::{QuerySolutions, Rdf};
+use srdf::model::rdf::Rdf;
 
 use crate::RdfData;
 
@@ -17,9 +17,5 @@ impl QueryProcessor {
 
     pub fn prefix_map(&self) -> Option<PrefixMap> {
         Some(self.rdf_data.prefixmap_in_memory())
-    }
-
-    pub fn query_select<S: Rdf>(_str: &str) -> QuerySolutions<S> {
-        todo!()
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.52"
+version = "0.1.58"
 readme = "README.md"
 license.workspace = true
 authors.workspace = true
@@ -30,5 +30,5 @@ const_format = "0.2"               # needed for the definition of the vocab
 indoc = "2"                        # needed for the definition of SPARQL queries
 
 [dev-dependencies] # necessary for the tests
-# sparql_service = { workspace = true }
+sparql_service = { workspace = true }
 oxrdf = { workspace = true }

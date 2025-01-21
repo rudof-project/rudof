@@ -5,7 +5,10 @@ use std::{fmt::Display, io::BufRead, path::Path};
 
 use iri_s::IriS;
 use itertools::Itertools;
-use srdf::{GenericGraph, RDFFormat, ReaderMode};
+use srdf::{
+    model::{reader::ReaderMode, RdfFormat},
+    oxgraph::GenericGraph,
+};
 
 use crate::{ServiceDescriptionError, ServiceDescriptionParser};
 
@@ -154,7 +157,7 @@ impl ServiceDescription {
 
     pub fn from_path<P: AsRef<Path>>(
         path: P,
-        format: &RDFFormat,
+        format: &RdfFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
@@ -166,7 +169,7 @@ impl ServiceDescription {
 
     pub fn from_reader<R: BufRead>(
         read: R,
-        format: &RDFFormat,
+        format: &RdfFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {

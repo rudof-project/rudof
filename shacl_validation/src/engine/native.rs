@@ -65,7 +65,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
             .inner_store()
             .triples_matching(None, Some(&rdf_type), Some(class))
         {
-            Ok(subjects) => subjects.map(Triple::subj).map(Clone::clone).map(Into::into),
+            Ok(subjects) => subjects.map(Triple::into_subject).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
@@ -78,7 +78,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples.map(Triple::subj).map(Clone::clone).map(Into::into),
+            Ok(triples) => triples.map(Triple::into_subject).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 
@@ -91,7 +91,7 @@ impl<R: Rdf + Clone + 'static> Engine<R> for NativeEngine {
         predicate: &Predicate<R>,
     ) -> Result<FocusNodes<R>, ValidateError> {
         let triples = match store.inner_store().triples_with_predicate(predicate) {
-            Ok(triples) => triples.map(Triple::obj).map(Clone::clone).map(Into::into),
+            Ok(triples) => triples.map(Triple::into_object).map(Into::into),
             Err(_) => return Err(ValidateError::SRDF),
         };
 

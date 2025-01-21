@@ -7,6 +7,7 @@ use shacl_ast::vocab::SH_RESULT;
 use srdf::model::rdf::Object;
 use srdf::model::rdf::Predicate;
 use srdf::model::rdf::Rdf;
+use srdf::model::BlankNode;
 use srdf::model::Iri;
 use srdf::model::Term;
 
@@ -164,7 +165,7 @@ impl<R: Rdf> Display for ValidationReport<R> {
 fn show_node<R: Rdf>(node: &Object<R>, prefixmap: &PrefixMap) -> String {
     match (node.is_iri(), node.is_blank_node(), node.is_literal()) {
         (true, false, false) => prefixmap.qualify(&node.iri().unwrap().into_iri_s()),
-        (false, true, false) => format!("_:{}", node.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", node.blank_node().unwrap().label()),
         (false, false, true) => format!("{}", node.literal().unwrap()),
         _ => unreachable!(),
     }
@@ -177,7 +178,7 @@ fn show_component<R: Rdf>(component: &Object<R>, shacl_prefixmap: &PrefixMap) ->
         component.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&component.iri().unwrap().into_iri_s()),
-        (false, true, false) => format!("_:{}", component.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", component.blank_node().unwrap().label()),
         (false, false, true) => format!("{}", component.literal().unwrap()),
         _ => unreachable!(),
     }
@@ -190,7 +191,7 @@ fn show_severity<R: Rdf>(severity: &Object<R>, shacl_prefixmap: &PrefixMap) -> S
         severity.is_literal(),
     ) {
         (true, false, false) => shacl_prefixmap.qualify(&severity.iri().unwrap().into_iri_s()),
-        (false, true, false) => format!("_:{}", severity.blank_node().unwrap().to_string()),
+        (false, true, false) => format!("_:{}", severity.blank_node().unwrap().label()),
         (false, false, true) => format!("{}", severity.literal().unwrap()),
         _ => unreachable!(),
     }

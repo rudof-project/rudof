@@ -1,47 +1,46 @@
 use std::io;
 
-use oxigraph::{
-    sparql::{EvaluationError, SparqlSyntaxError},
-    store::StorageError,
-};
+use oxigraph::sparql::EvaluationError;
+use oxigraph::sparql::SparqlSyntaxError;
+use oxigraph::store::StorageError;
+use srdf::oxgraph_error::GraphError;
+use srdf::oxsparql_error::SparqlError;
 use thiserror::Error;
-
-use srdf::{SRDFGraphError, SRDFSparqlError};
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
     #[error(transparent)]
-    SRDFSparqlError {
+    Sparql {
         #[from]
-        err: SRDFSparqlError,
+        err: SparqlError,
     },
 
     #[error(transparent)]
-    SRDFGraphError {
+    Graph {
         #[from]
-        err: SRDFGraphError,
+        err: GraphError,
     },
 
     #[error(transparent)]
-    IOError {
+    IO {
         #[from]
         err: io::Error,
     },
 
     #[error(transparent)]
-    StorageError {
+    Storage {
         #[from]
         err: StorageError,
     },
 
     #[error(transparent)]
-    SparqlParseError {
+    SparqlParse {
         #[from]
         err: SparqlSyntaxError,
     },
 
     #[error(transparent)]
-    SparqlEvaluationError {
+    SparqlEvaluation {
         #[from]
         err: EvaluationError,
     },

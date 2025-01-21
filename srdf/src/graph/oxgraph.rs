@@ -11,14 +11,14 @@ use oxrdfio::RdfParser as OxRdfParser;
 use prefixmap::PrefixMap;
 use tracing::debug;
 
-use crate::model::parse::RdfReader;
-use crate::model::parse::ReaderMode;
 use crate::model::rdf::FocusRdf;
 use crate::model::rdf::MutableRdf;
 use crate::model::rdf::Object;
 use crate::model::rdf::Predicate;
 use crate::model::rdf::PrefixMapRdf;
 use crate::model::rdf::Rdf;
+use crate::model::reader::RdfReader;
+use crate::model::reader::ReaderMode;
 use crate::model::GraphName;
 use crate::model::Iri;
 use crate::model::Quad;
@@ -206,11 +206,11 @@ mod tests {
 
     use crate::graph::oxgraph::ReaderMode;
     use crate::iri;
-    use crate::model::parse::RdfReader;
     use crate::model::rdf::MutableRdf as _;
     use crate::model::rdf::Object;
     use crate::model::rdf::Predicate;
     use crate::model::rdf::Rdf;
+    use crate::model::reader::RdfReader;
     use crate::model::Iri;
     use crate::model::RdfFormat;
     use crate::model::Triple;
@@ -234,12 +234,12 @@ mod tests {
     const DUMMY_GRAPH_1: &str = r#"
         prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        :x :p [ :p 1 ].
+        :x :p [ :p 1 ] .
     "#;
 
     const DUMMY_GRAPH_2: &str = r#"
         prefix : <http://example.org/>
-        :x :p (1 2).
+        :x :p (1 2) .
     "#;
 
     const DUMMY_GRAPH_3: &str = r#"

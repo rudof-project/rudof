@@ -83,7 +83,7 @@ pub fn validate_sparql_ask<R: Rdf + Sparql + Clone>(
         shape,
         value_nodes,
         ValueNodeIteration,
-        |value_node| match store.inner_store().ask(&query(value_node)) {
+        |value_node| match store.inner_store().ask(query(value_node)) {
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },

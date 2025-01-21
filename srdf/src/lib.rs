@@ -34,7 +34,7 @@ pub mod vocab;
 /// use srdf::RDFParser;
 /// use srdf::RDF;
 /// use srdf::satisfy;
-/// use srdf::model::parse::ReaderMode;
+/// use srdf::model::reader::ReaderMode;
 /// use srdf::RDFNodeParse;
 /// use srdf::property_value;
 /// use srdf::rdf_list;
@@ -44,7 +44,7 @@ pub mod vocab;
 /// use srdf::model::rdf::Rdf;
 /// use srdf::model::rdf::Object;
 /// use srdf::model::RdfFormat;
-/// use srdf::model::parse::RdfReader;
+/// use srdf::model::reader::RdfReader;
 /// use oxrdf::NamedNode as OxNamedNode;
 /// use srdf::model::Iri;
 ///

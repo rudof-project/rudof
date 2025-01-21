@@ -1,4 +1,5 @@
-use srdf::{RdfParseError, SRDFGraphError};
+use srdf::oxgraph_error::GraphError;
+use srdf::RdfParseError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -15,6 +16,6 @@ pub enum ServiceDescriptionError {
     #[error(transparent)]
     SRDFGraphError {
         #[from]
-        error: SRDFGraphError,
+        error: GraphError,
     },
 }

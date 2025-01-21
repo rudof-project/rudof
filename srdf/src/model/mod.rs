@@ -6,8 +6,8 @@ use std::str::FromStr;
 use iri_s::IriS;
 use thiserror::Error;
 
-pub mod parse;
 pub mod rdf;
+pub mod reader;
 pub mod sparql;
 
 pub enum GraphName {
@@ -24,7 +24,7 @@ pub trait Quad {
 
 pub trait Triple: Sized + Hash + Eq + Clone + Debug + Display {
     type Subject: Subject + TryFrom<Self::Term>;
-    type Iri: Iri;
+    type Iri: Iri + TryFrom<Self::Term>;
     type Term: Term + From<Self::Subject> + From<Self::Iri>;
 
     /// Create a triple from its subject, predicate and object.

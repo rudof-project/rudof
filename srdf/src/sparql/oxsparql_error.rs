@@ -16,10 +16,10 @@ pub enum SparqlError {
     },
 
     #[error("Unknown name for endpoint: {name}")]
-    UnknownEndpontName { name: String },
+    UnknownEndpointName { name: String },
 
-    #[error("Error parsing body: {body}")]
-    ParsingBody { body: String },
+    #[error("Error parsing the body of the SPARQL response")]
+    ParsingBody,
 
     #[error("SPARQL solutions error: Expected IRI, got {value}")]
     SPARQLSolutionErrorNoIRI { value: Term },
@@ -35,6 +35,9 @@ pub enum SparqlError {
 
     #[error(transparent)]
     SimpleIri(#[from] GenericIriError),
+
+    #[error("Could not convert the term: {term} to a {term_type}")]
+    ConversionError { term: String, term_type: String },
 }
 
 impl From<reqwest::Error> for SparqlError {

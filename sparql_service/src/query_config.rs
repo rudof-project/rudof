@@ -1,10 +1,11 @@
-use std::{io, path::Path};
+use std::io;
+use std::path::Path;
 
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 use thiserror::Error;
 
-use serde_derive::{Deserialize, Serialize};
-
-use srdf::RdfDataConfig;
+use crate::data_config::RdfDataConfig;
 
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

@@ -1,5 +1,7 @@
 use iri_s::IriS;
-use srdf::{ok, property_iri, property_values_iri, FocusRDF, PResult, RDFNodeParse, RDFParser};
+use srdf::{
+    model::rdf::FocusRdf, ok, property_iri, property_values_iri, RDFNodeParse, RDFParser, Term,
+};
 use std::fmt::Debug;
 
 use crate::{
@@ -14,14 +16,14 @@ type Result<A> = std::result::Result<A, ServiceDescriptionError>;
 
 pub struct ServiceDescriptionParser<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRdf + Debug,
 {
     rdf_parser: RDFParser<RDF>,
 }
 
 impl<RDF> ServiceDescriptionParser<RDF>
 where
-    RDF: FocusRDF + Debug + 'static,
+    RDF: FocusRdf + Debug + 'static,
 {
     pub fn new(rdf: RDF) -> ServiceDescriptionParser<RDF> {
         ServiceDescriptionParser {
@@ -39,7 +41,7 @@ where
 
     pub fn service_description() -> impl RDFNodeParse<RDF, Output = ServiceDescription>
     where
-        RDF: FocusRDF + 'static,
+        RDF: FocusRdf + 'static,
     {
         Self::endpoint().then(|iri| {
             Self::supported_language().then(move |supported_language| {
@@ -74,21 +76,21 @@ where
 
     pub fn default_dataset() -> impl RDFNodeParse<RDF, Output = Dataset>
     where
-        RDF: FocusRDF + 'static,
+        RDF: FocusRdf + 'static,
     {
         property_iri(&SD_DEFAULT_DATASET).then(move |iri| ok(&Dataset::new(&iri)))
     }
 
     pub fn endpoint() -> impl RDFNodeParse<RDF, Output = IriS>
     where
-        RDF: FocusRDF + 'static,
+        RDF: FocusRdf + 'static,
     {
         property_iri(&SD_ENDPOINT)
     }
 
     pub fn feature() -> impl RDFNodeParse<RDF, Output = Vec<Feature>>
     where
-        RDF: FocusRDF,
+        RDF: FocusRdf,
     {
         property_values_iri(&SD_FEATURE).flat_map(|ref iris| {
             let features = get_features(iris)?;
@@ -98,7 +100,7 @@ where
 
     pub fn result_format() -> impl RDFNodeParse<RDF, Output = Vec<ResultFormat>>
     where
-        RDF: FocusRDF,
+        RDF: FocusRdf,
     {
         property_values_iri(&SD_RESULT_FORMAT).flat_map(|ref iris| {
             let result_format = get_result_formats(iris)?;
@@ -108,7 +110,7 @@ where
 
     pub fn supported_language() -> impl RDFNodeParse<RDF, Output = Vec<SupportedLanguage>>
     where
-        RDF: FocusRDF,
+        RDF: FocusRdf,
     {
         property_values_iri(&SD_SUPPORTED_LANGUAGE).flat_map(|ref iris| {
             let langs = get_supported_languages(iris)?;
@@ -116,7 +118,7 @@ where
         })
     }
 
-    fn sd_service() -> RDF::Term {
+    fn sd_service() -> Term<RDF> {
         RDF::iri_s2term(&SD_SERVICE)
     }
 }
