@@ -23,7 +23,7 @@ impl SHACLPath {
     pub fn pred(&self) -> Option<&IriS> {
         match self {
             SHACLPath::Predicate { pred } => Some(pred),
-            _ => None
+            _ => None,
         }
     }
 }
