@@ -56,6 +56,10 @@ impl ValidationResult {
         self
     }
 
+    pub fn source(&self) -> Option<&Object> {
+        self.source.as_ref()
+    }
+
     pub fn focus_node(&self) -> &Object {
         &self.focus_node
     }
