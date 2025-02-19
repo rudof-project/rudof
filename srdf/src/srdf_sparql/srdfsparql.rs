@@ -1,5 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, Rdf, VarName, Query};
+use crate::{AsyncSRDF, Sparql, QuerySolution, QuerySolutions, Rdf, VarName, Query};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -427,7 +427,7 @@ impl QuerySRDF for SRDFSparql {
     }
 } */
 
-impl QuerySRDF for SRDFSparql {
+impl Sparql for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();

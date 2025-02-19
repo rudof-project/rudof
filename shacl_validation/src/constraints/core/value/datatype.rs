@@ -12,7 +12,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Rdf;
 use srdf::Query;
 use std::fmt::Debug;
@@ -49,7 +49,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Datatype<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Datatype<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Datatype<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

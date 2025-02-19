@@ -1,7 +1,7 @@
 use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Rdf;
 use srdf::Query;
 use std::fmt::Debug;
@@ -34,7 +34,7 @@ pub trait NativeValidator<S: Query> {
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
-pub trait SparqlValidator<S: QuerySRDF + Debug> {
+pub trait SparqlValidator<S: Sparql + Debug> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -101,7 +101,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
+impl<S: Sparql + Debug + 'static> SparqlDeref for CompiledComponent<S> {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(

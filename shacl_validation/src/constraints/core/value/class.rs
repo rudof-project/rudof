@@ -11,7 +11,7 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use srdf::Query;
@@ -47,7 +47,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

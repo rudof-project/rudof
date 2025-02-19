@@ -10,7 +10,7 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinLength;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Query;
 use std::fmt::Debug;
 
@@ -44,7 +44,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinLength {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

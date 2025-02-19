@@ -20,7 +20,6 @@ use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Object;
 use srdf::Query;
-use srdf::QuerySRDF;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
@@ -29,12 +28,9 @@ use srdf::ReaderMode;
 use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
+use srdf::Sparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-<<<<<<< HEAD
-=======
-use srdf::Query;
->>>>>>> 7cae141f90f1c66117d5cd779c249f4fd163bfac
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -457,7 +453,7 @@ impl Rdf for RdfData {
     }
 }
 
-impl QuerySRDF for RdfData {
+impl Sparql for RdfData {
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,

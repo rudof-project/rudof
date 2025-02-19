@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::Rdf;
 
-pub trait QuerySRDF: Rdf {
+pub trait Sparql: Rdf {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>, Self::Err>
     where
         Self: Sized;

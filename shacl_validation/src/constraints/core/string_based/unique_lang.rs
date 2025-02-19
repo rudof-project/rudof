@@ -15,7 +15,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Rdf;
 use srdf::Query;
 use std::fmt::Debug;
@@ -72,7 +72,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for UniqueLang {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

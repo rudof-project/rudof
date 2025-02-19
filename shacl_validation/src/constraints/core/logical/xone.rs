@@ -1,7 +1,7 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Rdf;
 use srdf::Query;
 use std::fmt::Debug;
@@ -59,7 +59,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Xone<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Xone<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Xone<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

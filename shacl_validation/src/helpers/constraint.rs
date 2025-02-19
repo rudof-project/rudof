@@ -1,7 +1,7 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Object;
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::Rdf;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -54,7 +54,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     )
 }
 
-pub fn validate_ask_with<S: QuerySRDF>(
+pub fn validate_ask_with<S: Sparql>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     store: &S,
