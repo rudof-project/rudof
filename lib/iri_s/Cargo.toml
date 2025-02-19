@@ -1,0 +1,22 @@
+[package]
+name = "iri_s"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/iri_s"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[features]
+
+[dependencies]
+lazy_static.workspace = true
+serde.workspace = true
+serde_derive.workspace = true
+thiserror.workspace = true
+oxrdf.workspace = true
+oxiri = "0.2.0-alpha.5"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+url = "2.2.2"

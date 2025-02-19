@@ -1,29 +1,14 @@
 [workspace]
 resolver = "2"
-members = [
-    # "dctap",
-    "rbe",
-    # "rbe_testsuite",
-    "iri_s",
-    "prefixmap",
-    "srdf",
-    # "shex_ast",
-    # "shex_compact",
-    # "rudof_lib",
-    # "rudof_cli",
-    # "shex_testsuite",
-    # "shex_validation",
-    # "shapemap",
-    "shacl_ast",
-    "shacl_validation",
-    # "shapes_converter",
-    "sparql_service",
-    # "python",
-]
-
-exclude = ["shex_compact_winnow"]
+members = ["lib/*"]
 
 [workspace.package]
+version = "0.1.0"
+authors = [
+    "Jose Emilio Labra Gayo <labra@uniovi.es>",
+    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
+    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
+]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
@@ -32,29 +17,24 @@ homepage = "https://rudof-project.github.io/rudof"
 readme = "./README.md"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["database"]
-authors = [
-    "Jose Emilio Labra Gayo <labra@uniovi.es>",
-    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
-    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
-]
 
 [workspace.dependencies]
-iri_s = { version = "*", path = "./iri_s" }
+iri_s = { version = "0.1.53" }
 # dctap = { version = "0.1.31", path = "./dctap" }
-prefixmap = { version = "*", path = "./prefixmap" }
-rbe = { version = "0.1.7", path = "./rbe" }
+prefixmap = { version = "0.1.53" }
+rbe = { version = "0.1.29" }
 # rbe_testsuite = { version = "0.1.7", path = "./rbe_testsuite" }
 # rudof_lib = { version = "0.1.35", path = "./rudof_lib" }
 # rudof_cli = { version = "0.1.35", path = "./rudof_cli" }
 # shex_ast = { version = "0.1.0", path = "./shex_ast" }
 # shapemap = { version = "0.1.0", path = "./shapemap" }
-shacl_ast = { version = "*", path = "./shacl_ast" }
-shacl_validation = { version = "*", path = "./shacl_validation" }
+shacl_ast = { version = "0.1.53" }
+shacl_validation = { version = "0.1.52" }
 # shapes_converter = { version = "0.1.33", path = "./shapes_converter" }
 # shex_validation = { version = "0.1.0", path = "./shex_validation" }
 # shex_compact = { version = "0.1.0", path = "./shex_compact" }
-srdf = { version = "*", path = "./srdf" }
-sparql_service = { version = "*", path = "./sparql_service" }
+srdf = { version = "0.1.53" }
+sparql_service = { version = "0.1.55" }
 
 anyhow = "1.0"
 clap = { version = "4.5.23", features = ["derive"] }
