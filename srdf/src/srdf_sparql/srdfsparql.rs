@@ -114,13 +114,6 @@ impl Rdf for SRDFSparql {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
-    }
-
     fn term_is_iri(object: &OxTerm) -> bool {
         matches!(object, OxTerm::NamedNode(_))
     }

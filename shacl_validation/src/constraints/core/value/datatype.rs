@@ -27,7 +27,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
-            if let Some(literal) = S::term_as_literal(value_node) {
+            if let Ok(literal) = value_node.clone().try_into() {
                 return S::datatype(&literal) != *self.datatype();
             }
             true

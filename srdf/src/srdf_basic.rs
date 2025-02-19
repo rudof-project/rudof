@@ -22,14 +22,22 @@ pub trait Rdf {
     /// RDF predicates
     type IRI: Debug + Display + Hash + Eq + Clone + TryFrom<Self::Term>;
 
+    /// RDF terms
+    type Term: Debug
+        + Clone
+        + Display
+        + PartialEq
+        + Eq
+        + Hash
+        + From<Self::IRI>
+        + From<Self::BNode>
+        + From<Self::Literal>;
+
     /// Blank nodes
     type BNode: Debug + Display + PartialEq + TryFrom<Self::Term>;
 
     /// RDF Literals
-    type Literal: Debug + Display + PartialEq + Eq + Hash;
-
-    /// RDF terms
-    type Term: Debug + Clone + Display + PartialEq + Eq + Hash + From<Self::IRI> + From<Self::BNode>;
+    type Literal: Debug + Display + PartialEq + Eq + Hash + TryFrom<Self::Term>;
 
     /// RDF errors
     type Err: Display;
@@ -49,11 +57,22 @@ pub trait Rdf {
     // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>; TODO: remove this
 
     // fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>; TODO: remove this
-    fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>;
-    fn term_as_boolean(object: &Self::Term) -> Option<bool> {
-        let literal = Self::term_as_literal(object)?;
+    // fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>; TODO: remove this
+
+    fn term_as_boolean(term: &Self::Term) -> Option<bool> {
+        let literal = term.clone().try_into().ok()?;
         Self::literal_as_boolean(&literal)
     }
+    fn term_as_integer(term: &Self::Term) -> Option<isize> {
+        let literal = term.clone().try_into().ok()?;
+        Self::literal_as_integer(&literal)
+    }
+
+    fn term_as_string(term: &Self::Term) -> Option<String> {
+        let literal = term.clone().try_into().ok()?;
+        Self::literal_as_string(&literal)
+    }
+
     fn term_as_object(term: &Self::Term) -> Object;
 
     fn object_as_term(obj: &Object) -> Self::Term;
@@ -87,14 +106,6 @@ pub trait Rdf {
             Err(_) => return None,
         };
         Some(iri_s)
-    }
-
-    fn term_as_integer(term: &Self::Term) -> Option<isize> {
-        Self::term_as_literal(term).and_then(|l| Self::literal_as_integer(&l))
-    }
-
-    fn term_as_string(term: &Self::Term) -> Option<String> {
-        Self::term_as_literal(term).and_then(|l| Self::literal_as_string(&l))
     }
 
     fn term_is_iri(object: &Self::Term) -> bool;

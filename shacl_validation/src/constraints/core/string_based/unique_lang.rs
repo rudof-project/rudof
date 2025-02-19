@@ -36,7 +36,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
         let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
 
         let unique_lang = |value_node: &S::Term| {
-            if let Some(literal) = S::term_as_literal(value_node) {
+            if let Ok(literal) = value_node.clone().try_into() {
                 if let Some(lang) = S::lang(&literal) {
                     let mut langs_borrowed = langs.borrow_mut();
 

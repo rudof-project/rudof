@@ -219,13 +219,6 @@ impl Rdf for RdfData {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_literal(object: &Self::Term) -> Option<Self::Literal> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
-    }
-
     fn term_as_object(term: &Self::Term) -> srdf::Object {
         match term {
             OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),

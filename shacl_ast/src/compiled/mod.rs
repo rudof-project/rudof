@@ -29,7 +29,10 @@ fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError
 fn convert_lang<S: Rdf>(lang: Lang) -> Result<S::Literal, CompiledShaclError> {
     let object = RDFNode::literal(Literal::str(&lang.value()));
     let term = S::object_as_term(&object);
-    S::term_as_literal(&term).ok_or(CompiledShaclError::LiteralConversion)
+    match term.try_into() {
+        Ok(literal) => Ok(literal),
+        Err(_) => Err(CompiledShaclError::LiteralConversion),
+    }
 }
 
 fn compile_shape<S: Rdf>(
