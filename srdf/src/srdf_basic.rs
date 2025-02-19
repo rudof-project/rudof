@@ -159,7 +159,7 @@ pub trait Rdf {
 
     // fn iri_as_term(iri: Self::IRI) -> Self::Term;
 
-    fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
+    // fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
 
