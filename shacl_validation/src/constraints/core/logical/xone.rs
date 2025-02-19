@@ -3,7 +3,7 @@ use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::Rdf;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -47,7 +47,7 @@ impl<S: Rdf + Debug> Validator<S> for Xone<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Xone<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Xone<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,

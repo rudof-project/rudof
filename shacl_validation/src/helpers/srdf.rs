@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDF};
+use srdf::{RDFNode, Query};
 
 use super::helper_error::SRDFError;
 
-pub(crate) fn get_object_for<S: SRDF>(
+pub(crate) fn get_object_for<S: Query>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -18,7 +18,7 @@ pub(crate) fn get_object_for<S: SRDF>(
     }
 }
 
-pub(crate) fn get_objects_for<S: SRDF>(
+pub(crate) fn get_objects_for<S: Query>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -41,7 +41,7 @@ pub(crate) fn get_objects_for<S: SRDF>(
         })
 }
 
-pub(crate) fn get_subjects_for<S: SRDF>(
+pub(crate) fn get_subjects_for<S: Query>(
     store: &S,
     predicate: &S::IRI,
     object: &S::Term,

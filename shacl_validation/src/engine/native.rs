@@ -1,11 +1,11 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Query;
 use srdf::SHACLPath;
 use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::SRDF;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
@@ -19,7 +19,7 @@ use std::fmt::Debug;
 
 pub struct NativeEngine;
 
-impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
+impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,

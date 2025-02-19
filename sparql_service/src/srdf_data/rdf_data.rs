@@ -30,7 +30,7 @@ use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-use srdf::SRDF;
+use srdf::Query;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -533,7 +533,7 @@ fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
     todo!()
 }
 
-impl SRDF for RdfData {
+impl Query for RdfData {
     fn predicates_for_subject(
         &self,
         _subject: &Self::Subject,

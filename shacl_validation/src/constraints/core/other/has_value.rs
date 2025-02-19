@@ -15,7 +15,7 @@ use shacl_ast::compiled::component::HasValue;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::Rdf;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
@@ -33,7 +33,7 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for HasValue<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for HasValue<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,

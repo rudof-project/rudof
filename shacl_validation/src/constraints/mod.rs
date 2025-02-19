@@ -3,7 +3,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::Rdf;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
 use crate::engine::Engine;
@@ -24,7 +24,7 @@ pub trait Validator<S: Rdf + Debug> {
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
-pub trait NativeValidator<S: SRDF> {
+pub trait NativeValidator<S: Query> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -60,7 +60,7 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: SRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
+impl<S: Query + Debug + 'static> NativeDeref for CompiledComponent<S> {
     type Target = dyn NativeValidator<S>;
 
     generate_deref_fn!(

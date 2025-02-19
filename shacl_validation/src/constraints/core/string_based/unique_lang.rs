@@ -17,7 +17,7 @@ use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::Rdf;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for UniqueLang {
@@ -60,7 +60,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
+impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,

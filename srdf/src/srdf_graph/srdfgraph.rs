@@ -6,7 +6,7 @@ use tracing::debug;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
+use crate::{FocusRDF, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, Query};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
@@ -459,7 +459,7 @@ fn cnv_decimal(_d: &Decimal) -> OxDecimal {
     todo!()
 }
 
-impl SRDF for SRDFGraph {
+impl Query for SRDFGraph {
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
@@ -739,7 +739,7 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{int, srdf, SRDFGraph, SRDF};
+    use crate::{int, srdf, SRDFGraph, Query};
     use iri_s::iri;
 
     #[tokio::test]
@@ -778,7 +778,7 @@ mod tests {
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let subject = <SRDFGraph as Rdf>::term_as_subject(&term).unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
@@ -797,7 +797,7 @@ mod tests {
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
         let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let bnode = <SRDFGraph as Rdf>::term_as_bnode(&term).unwrap();
         let subject = <SRDFGraph as Rdf>::bnode_id2subject(bnode.as_str());

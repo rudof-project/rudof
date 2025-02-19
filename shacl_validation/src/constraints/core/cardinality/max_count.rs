@@ -3,7 +3,7 @@ use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::Rdf;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -33,7 +33,7 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
     }
 }
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MaxCount {
+impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
