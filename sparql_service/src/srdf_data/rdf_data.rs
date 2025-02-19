@@ -31,6 +31,10 @@ use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
+<<<<<<< HEAD
+=======
+use srdf::Query;
+>>>>>>> 7cae141f90f1c66117d5cd779c249f4fd163bfac
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
