@@ -11,10 +11,10 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Query;
 use srdf::Sparql;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::Query;
 use std::fmt::Debug;
 
 impl<S: Query + 'static> NativeValidator<S> for Class<S> {

@@ -1,9 +1,9 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Sparql;
-use srdf::Rdf;
 use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
 use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;

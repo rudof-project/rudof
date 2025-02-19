@@ -1,7 +1,7 @@
 use iri_s::{iri, IriS};
 use oxrdf::{BlankNode, Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
 use srdf::{
-    numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph, Query,
+    numeric_literal::NumericLiteral, Query, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph,
     XSD_DECIMAL_STR,
 };
 use std::{collections::HashSet, fmt::Display};

@@ -6,8 +6,8 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LessThanOrEquals;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Sparql;
 use srdf::Query;
+use srdf::Sparql;
 use std::fmt::Debug;
 
 impl<S: Query + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {

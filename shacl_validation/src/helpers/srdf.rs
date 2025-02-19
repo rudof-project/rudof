@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, Query};
+use srdf::{Query, RDFNode};
 
 use super::helper_error::SRDFError;
 

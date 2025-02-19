@@ -1,5 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, Sparql, QuerySolution, QuerySolutions, Rdf, VarName, Query};
+use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;

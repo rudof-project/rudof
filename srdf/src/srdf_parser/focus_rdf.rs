@@ -1,4 +1,4 @@
-use crate::{RDFParseError, Query};
+use crate::{Query, RDFParseError};
 
 /// Represents RDF graphs that contain a focus node
 ///

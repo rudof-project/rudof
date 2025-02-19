@@ -8,9 +8,9 @@ use shacl_validation::store::graph::Graph;
 use shacl_validation::store::Store;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
+use srdf::Query;
 use srdf::RDFFormat;
 use srdf::Rdf;
-use srdf::Query;
 
 use crate::helper::srdf::get_object_for;
 use crate::helper::srdf::get_objects_for;

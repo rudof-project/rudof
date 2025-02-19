@@ -6,7 +6,7 @@ use tracing::debug;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, Query};
+use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
@@ -739,7 +739,7 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{int, srdf, SRDFGraph, Query};
+    use crate::{int, srdf, Query, SRDFGraph};
     use iri_s::iri;
 
     #[tokio::test]

@@ -1,5 +1,5 @@
 use prefixmap::PrefixMap;
-use srdf::{QuerySolutions, Query};
+use srdf::{Query, QuerySolutions};
 
 use crate::RdfData;
 

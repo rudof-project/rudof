@@ -34,7 +34,7 @@ use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, U
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{RdfData, ServiceDescription};
-use srdf::{QuerySolution, RDFFormat, ReaderMode, VarName, Query};
+use srdf::{Query, QuerySolution, RDFFormat, ReaderMode, VarName};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};

@@ -7,8 +7,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, FocusRDF, Object, PResult, RDFParseError, Rdf, RDF_FIRST,
-    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, Query,
+    literal::Literal, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
+    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node.

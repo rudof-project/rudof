@@ -1,7 +1,7 @@
 use super::validation_report_error::ResultError;
 use crate::helpers::srdf::get_object_for;
 use shacl_ast::*;
-use srdf::{Object, RDFNode, Query};
+use srdf::{Object, Query, RDFNode};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]

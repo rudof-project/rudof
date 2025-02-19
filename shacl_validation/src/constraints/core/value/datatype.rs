@@ -12,9 +12,9 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Sparql;
-use srdf::Rdf;
 use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for Datatype<S> {

@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Object;
-use srdf::Sparql;
 use srdf::Rdf;
+use srdf::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;

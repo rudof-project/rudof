@@ -3,7 +3,7 @@ use std::io::Write;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 
-use crate::{RDFFormat, RDFNode, Query};
+use crate::{Query, RDFFormat, RDFNode};
 
 /// Types that implement this trait can build RDF data
 pub trait SRDFBuilder: Query {
