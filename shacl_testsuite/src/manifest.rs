@@ -47,7 +47,7 @@ pub trait Manifest<S: Query + Rdf> {
                 &S::iri_s2iri(&shacl_validation_vocab::MF_ACTION),
             )? {
                 Some(action) => match action.try_into() {
-                    Ok(action) => S::bnode_as_term(action),
+                    Ok(action) => action,
                     Err(_) => todo!(),
                 },
                 None => todo!(),

@@ -215,10 +215,6 @@ impl Rdf for SRDFSparql {
         OxBlankNode::new_unchecked(id)
     }
 
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
     fn object_as_term(_obj: &Object) -> Self::Term {
         todo!()
     }

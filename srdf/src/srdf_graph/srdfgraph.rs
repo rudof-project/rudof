@@ -350,10 +350,6 @@ impl Rdf for SRDFGraph {
         OxBlankNode::new_unchecked(id)
     }
 
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
             Object::Iri(iri) => Self::iri_s2term(iri),
