@@ -242,12 +242,6 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
     fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
         match subject {
             OxSubject::BlankNode(b) => Some(b.clone()),

@@ -211,13 +211,6 @@ impl Rdf for RdfData {
         self.graph.as_ref().map(|g| g.prefixmap())
     }
 
-    fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-
     fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode> {
         match subject {
             OxSubject::BlankNode(b) => Some(b.clone()),

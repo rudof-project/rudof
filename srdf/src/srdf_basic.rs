@@ -10,12 +10,12 @@ use crate::Object;
 /// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
 pub trait Rdf {
     /// RDF subjects
-    type Subject: Debug + Display + PartialEq + Clone + Eq + Hash;
+    type Subject: Debug + Display + PartialEq + Clone + Eq + Hash + From<Self::IRI>;
 
     /// RDF predicates
     type IRI: Debug + Display + Hash + Eq + Clone;
 
-    /// Blannk nodes
+    /// Blank nodes
     type BNode: Debug + Display + PartialEq;
 
     /// RDF Literals
@@ -28,7 +28,7 @@ pub trait Rdf {
     type Err: Display;
 
     /// Returns the RDF subject as an IRI if it is an IRI, None if it isn't
-    fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
+    // fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
 
     /// Returns the RDF subject as a Blank Node if it is a blank node, None if it isn't
     fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>;
