@@ -163,7 +163,7 @@ pub trait Rdf {
 
     // fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
 
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
+    // fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
 
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 

@@ -319,10 +319,6 @@ impl Rdf for RdfData {
         OxBlankNode::new_unchecked(id)
     }
 
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
-        OxSubject::BlankNode(bnode)
-    }
-
     fn iri2iri_s(iri: &Self::IRI) -> iri_s::IriS {
         IriS::from_named_node(iri)
     }

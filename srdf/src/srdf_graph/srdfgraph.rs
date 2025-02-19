@@ -384,10 +384,6 @@ impl Rdf for SRDFGraph {
             }
         }
     }
-
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
-        OxSubject::BlankNode(bnode)
-    }
 }
 
 fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {

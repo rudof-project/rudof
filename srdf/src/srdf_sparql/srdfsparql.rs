@@ -218,10 +218,6 @@ impl Rdf for SRDFSparql {
     fn object_as_term(_obj: &Object) -> Self::Term {
         todo!()
     }
-
-    fn bnode_as_subject(_bnode: Self::BNode) -> Self::Subject {
-        todo!()
-    }
 }
 
 #[async_trait]
