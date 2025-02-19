@@ -51,7 +51,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = subjects.iter().map(|subject| S::subject_as_term(subject));
+        let focus_nodes = subjects.iter().map(|subject| subject.clone().into());
 
         Ok(FocusNodes::new(focus_nodes))
     }
@@ -66,11 +66,9 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples
-            .iter()
-            .map(|triple| S::subject_as_term(&triple.subj()));
-
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(
+            triples.iter().map(|triple| triple.subj().into()),
+        ))
     }
 
     fn target_object_of(

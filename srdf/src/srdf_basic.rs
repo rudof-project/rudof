@@ -14,10 +14,18 @@ use prefixmap::PrefixMapError;
 use crate::Object;
 
 pub trait Rdf {
-    type Subject: Subject + TryFrom<Self::Term> + From<Self::IRI> + From<Self::BNode>;
-    type Term: Term + From<Self::IRI> + From<Self::BNode> + From<Self::Literal>;
+    type Subject: Subject + From<Self::IRI> + From<Self::BNode> + TryFrom<Self::Term>;
+
+    type Term: Term
+        + From<Self::Subject>
+        + From<Self::IRI>
+        + From<Self::BNode>
+        + From<Self::Literal>;
+
     type IRI: Iri + TryFrom<Self::Term>;
+
     type BNode: BlankNode + TryFrom<Self::Term>;
+
     type Literal: Literal + TryFrom<Self::Term>;
 
     type Err: Display;
@@ -104,10 +112,11 @@ pub trait Rdf {
 
     // fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
 
-    fn subject_as_term(subject: &Self::Subject) -> Self::Term;
+    // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
     fn subject_as_object(subject: &Self::Subject) -> Object {
-        Self::term_as_object(&Self::subject_as_term(subject))
+        let term = subject.clone().into();
+        Self::term_as_object(&term)
     }
 
     fn lexical_form(literal: &Self::Literal) -> &str;

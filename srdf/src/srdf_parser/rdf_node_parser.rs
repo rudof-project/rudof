@@ -1445,7 +1445,7 @@ where
 {
     ApplyRDF {
         function: move |rdf: &mut RDF| {
-            let term = RDF::subject_as_term(&subject);
+            let term = subject.clone().into();
             rdf.set_focus(&term);
             Ok(())
         },

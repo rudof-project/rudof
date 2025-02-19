@@ -47,10 +47,7 @@ pub(crate) fn get_subjects_for<S: Query>(
     object: &S::Term,
 ) -> Result<HashSet<S::Term>, SRDFError> {
     match store.subjects_with_predicate_object(predicate, object) {
-        Ok(ans) => Ok(ans
-            .into_iter()
-            .map(|subject| S::subject_as_term(&subject))
-            .collect()),
+        Ok(ans) => Ok(ans.into_iter().map(Into::into).collect()),
         Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
             predicate: format!("{predicate}"),
             object: format!("{object}"),

@@ -295,15 +295,6 @@ impl Rdf for RdfData {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn subject_as_term(subject: &Self::Subject) -> Self::Term {
-        match subject {
-            OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-            OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            // #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
-        }
-    }
-
     fn lexical_form(literal: &Self::Literal) -> &str {
         literal.value()
     }

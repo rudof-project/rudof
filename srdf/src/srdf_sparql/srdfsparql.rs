@@ -126,10 +126,6 @@ impl Rdf for SRDFSparql {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn subject_as_term(subject: &Self::Subject) -> OxTerm {
-        subject_as_term(subject)
-    }
-
     fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }

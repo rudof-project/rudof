@@ -126,9 +126,8 @@ where
 
     fn get_sh_or_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_or())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_or())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
                 if let Ok(subj) = v.clone().try_into() {
@@ -145,9 +144,8 @@ where
 
     fn get_sh_xone_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_xone())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_xone())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
                 if let Ok(subj) = v.clone().try_into() {
@@ -164,9 +162,8 @@ where
 
     fn get_sh_and_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_and())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_and())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
                 if let Ok(subj) = v.clone().try_into() {
