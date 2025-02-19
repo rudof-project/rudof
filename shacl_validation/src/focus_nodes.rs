@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 #[derive(Debug)]
-pub struct FocusNodes<S: SRDFBasic>(HashSet<S::Term>);
+pub struct FocusNodes<S: Rdf>(HashSet<S::Term>);
 
-impl<S: SRDFBasic> FocusNodes<S> {
+impl<S: Rdf> FocusNodes<S> {
     pub fn new(iter: impl Iterator<Item = S::Term>) -> Self {
         Self(HashSet::from_iter(iter))
     }
@@ -23,19 +23,19 @@ impl<S: SRDFBasic> FocusNodes<S> {
     }
 }
 
-impl<S: SRDFBasic> Clone for FocusNodes<S> {
+impl<S: Rdf> Clone for FocusNodes<S> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<S: SRDFBasic> Default for FocusNodes<S> {
+impl<S: Rdf> Default for FocusNodes<S> {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-impl<S: SRDFBasic> IntoIterator for FocusNodes<S> {
+impl<S: Rdf> IntoIterator for FocusNodes<S> {
     type Item = S::Term;
     type IntoIter = std::collections::hash_set::IntoIter<S::Term>;
 

@@ -24,7 +24,7 @@ use srdf::QuerySolution;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
@@ -199,7 +199,7 @@ impl Default for RdfData {
     }
 }
 
-impl SRDFBasic for RdfData {
+impl Rdf for RdfData {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;

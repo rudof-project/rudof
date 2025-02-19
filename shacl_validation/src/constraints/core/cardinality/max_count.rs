@@ -2,7 +2,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDF;
 use std::fmt::Debug;
 
@@ -19,7 +19,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + Debug> Validator<S> for MaxCount {
+impl<S: Rdf + Debug> Validator<S> for MaxCount {
     fn validate(
         &self,
         component: &CompiledComponent<S>,

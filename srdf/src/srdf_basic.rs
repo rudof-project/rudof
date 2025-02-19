@@ -8,9 +8,7 @@ use prefixmap::{PrefixMap, PrefixMapError};
 use crate::Object;
 
 /// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
-///
-/// TODO: Consider splitting this trait in two traits: RDFNodeComparison, RDFNodeConversion
-pub trait SRDFBasic {
+pub trait Rdf {
     /// RDF subjects
     type Subject: Debug + Display + PartialEq + Clone + Eq + Hash;
 

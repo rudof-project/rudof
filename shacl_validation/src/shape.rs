@@ -6,11 +6,11 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::node_shape::CompiledNodeShape;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use std::fmt::Debug;
 
 /// Validate RDF data using SHACL
-pub trait Validate<S: SRDFBasic> {
+pub trait Validate<S: Rdf> {
     fn validate(
         &self,
         store: &S,
@@ -19,7 +19,7 @@ pub trait Validate<S: SRDFBasic> {
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
-impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
+impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
     fn validate(
         &self,
         store: &S,
@@ -69,11 +69,11 @@ impl<S: SRDFBasic + Debug> Validate<S> for CompiledShape<S> {
     }
 }
 
-pub trait FocusNodesOps<S: SRDFBasic> {
+pub trait FocusNodesOps<S: Rdf> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S>;
 }
 
-impl<S: SRDFBasic> FocusNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> FocusNodesOps<S> for CompiledShape<S> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
             .focus_nodes(store, self, self.targets())
@@ -81,7 +81,7 @@ impl<S: SRDFBasic> FocusNodesOps<S> for CompiledShape<S> {
     }
 }
 
-pub trait ValueNodesOps<S: SRDFBasic> {
+pub trait ValueNodesOps<S: Rdf> {
     fn value_nodes(
         &self,
         store: &S,
@@ -90,7 +90,7 @@ pub trait ValueNodesOps<S: SRDFBasic> {
     ) -> ValueNodes<S>;
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledShape<S> {
     fn value_nodes(
         &self,
         store: &S,
@@ -104,7 +104,7 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledShape<S> {
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape<S> {
     fn value_nodes(&self, _: &S, focus_nodes: &FocusNodes<S>, _: &dyn Engine<S>) -> ValueNodes<S> {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
@@ -116,7 +116,7 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledPropertyShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledPropertyShape<S> {
     fn value_nodes(
         &self,
         store: &S,

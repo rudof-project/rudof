@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::node_shape::NodeShape;
 use crate::Schema;
@@ -13,7 +13,7 @@ use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub struct CompiledNodeShape<S: SRDFBasic> {
+pub struct CompiledNodeShape<S: Rdf> {
     id: S::Term,
     components: Vec<CompiledComponent<S>>,
     targets: Vec<CompiledTarget<S>>,
@@ -29,7 +29,7 @@ pub struct CompiledNodeShape<S: SRDFBasic> {
     // source_iri: S::IRI,
 }
 
-impl<S: SRDFBasic> CompiledNodeShape<S> {
+impl<S: Rdf> CompiledNodeShape<S> {
     pub fn new(
         id: S::Term,
         components: Vec<CompiledComponent<S>>,
@@ -82,7 +82,7 @@ impl<S: SRDFBasic> CompiledNodeShape<S> {
     }
 }
 
-impl<S: SRDFBasic> CompiledNodeShape<S> {
+impl<S: Rdf> CompiledNodeShape<S> {
     pub fn compile(shape: Box<NodeShape>, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let id = S::object_as_term(shape.id());
         let closed = shape.is_closed().to_owned();

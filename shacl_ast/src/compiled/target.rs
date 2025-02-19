@@ -1,4 +1,4 @@
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::target::Target;
 
@@ -6,14 +6,14 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 
 #[derive(Debug)]
-pub enum CompiledTarget<S: SRDFBasic> {
+pub enum CompiledTarget<S: Rdf> {
     TargetNode(S::Term),
     TargetClass(S::Term),
     TargetSubjectsOf(S::IRI),
     TargetObjectsOf(S::IRI),
 }
 
-impl<S: SRDFBasic> CompiledTarget<S> {
+impl<S: Rdf> CompiledTarget<S> {
     pub fn compile(target: Target) -> Result<Self, CompiledShaclError> {
         let ans = match target {
             Target::TargetNode(object) => CompiledTarget::TargetNode(S::object_as_term(&object)),

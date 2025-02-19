@@ -2,8 +2,8 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::compiled::target::CompiledTarget;
+use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
@@ -13,7 +13,7 @@ use crate::value_nodes::ValueNodes;
 pub mod native;
 pub mod sparql;
 
-pub trait Engine<S: SRDFBasic> {
+pub trait Engine<S: Rdf> {
     fn evaluate(
         &self,
         store: &S,

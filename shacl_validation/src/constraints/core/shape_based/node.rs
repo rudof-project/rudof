@@ -15,11 +15,11 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Node;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDFBasic + Debug> Validator<S> for Node<S> {
+impl<S: Rdf + Debug> Validator<S> for Node<S> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,

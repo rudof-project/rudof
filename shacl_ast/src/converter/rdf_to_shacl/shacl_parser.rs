@@ -3,7 +3,7 @@ use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
     property_values_non_empty, rdf_list, term, FocusRDF, Object, PResult, RDFNode, RDFNodeParse,
-    RDFParseError, RDFParser, SHACLPath, SRDFBasic, Triple, RDF_TYPE,
+    RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -369,7 +369,7 @@ fn parse_xone_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Compone
 
 fn cnv_xone_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
     Ok(Component::Xone { shapes })
@@ -381,7 +381,7 @@ fn parse_and_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Componen
 
 fn cnv_and_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
     Ok(Component::And { shapes })
@@ -397,7 +397,7 @@ fn parse_node_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Componen
 
 fn cnv_node<RDF>(t: RDF::Term) -> PResult<Component>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let shape = RDF::term_as_object(&t);
     Ok(Component::Node { shape })
@@ -405,7 +405,7 @@ where
 
 fn cnv_not<RDF>(t: RDF::Term) -> PResult<Component>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let shape = RDF::term_as_object(&t);
     Ok(Component::Not { shape })
@@ -417,7 +417,7 @@ fn parse_or_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component
 
 fn cnv_or_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
     Ok(Component::Or { shapes })
@@ -574,7 +574,7 @@ where
 
 fn cnv_has_value<RDF>(term: RDF::Term) -> std::result::Result<Component, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let value = term_to_value::<RDF>(&term)?;
     Ok(Component::HasValue { value })
@@ -582,7 +582,7 @@ where
 
 fn term_to_value<RDF>(term: &RDF::Term) -> std::result::Result<Value, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     match RDF::term_as_object(term) {
         Object::Iri(iri) => Ok(Value::Iri(IriRef::Iri(iri))),
@@ -595,7 +595,7 @@ where
 
 fn cnv_in_list<RDF>(ls: Vec<RDF::Term>) -> std::result::Result<Component, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let values = ls.iter().flat_map(term_to_value::<RDF>).collect();
     Ok(Component::In { values })
@@ -653,7 +653,7 @@ where
 
 fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     match RDF::term_as_iri(term) {
         Some(iri) => {

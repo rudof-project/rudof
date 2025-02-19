@@ -7,7 +7,7 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, FocusRDF, Object, PResult, RDFParseError, SRDFBasic, RDF_FIRST,
+    literal::Literal, rdf_parser, FocusRDF, Object, PResult, RDFParseError, Rdf, RDF_FIRST,
     RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF,
 };
 
@@ -1075,7 +1075,7 @@ where
 
 fn terms_to_ints<RDF>(terms: HashSet<RDF::Term>) -> Result<HashSet<isize>, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let ints: HashSet<_> = terms.iter().flat_map(|t| term_to_int::<RDF>(t)).collect();
     Ok(ints)
@@ -1083,7 +1083,7 @@ where
 
 fn term_to_int<RDF>(term: &RDF::Term) -> Result<isize, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let n = RDF::term_as_integer(term).ok_or_else(|| RDFParseError::ExpectedInteger {
         term: format!("{term}"),
@@ -1093,7 +1093,7 @@ where
 
 fn term_to_iri<RDF>(term: &RDF::Term) -> Result<IriS, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let iri = RDF::term_as_iri(term).ok_or_else(|| RDFParseError::ExpectedIRI {
         term: format!("{term}"),
@@ -1103,7 +1103,7 @@ where
 
 fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let n = RDF::term_as_string(term).ok_or_else(|| RDFParseError::ExpectedString {
         term: format!("{term}"),

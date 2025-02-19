@@ -2,7 +2,7 @@ use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDF;
 use std::fmt::Debug;
 
@@ -13,7 +13,7 @@ use crate::value_nodes::ValueNodes;
 pub mod constraint_error;
 pub mod core;
 
-pub trait Validator<S: SRDFBasic + Debug> {
+pub trait Validator<S: Rdf + Debug> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,

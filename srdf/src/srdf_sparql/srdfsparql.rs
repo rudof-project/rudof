@@ -1,5 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, SRDF};
+use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, Rdf, VarName, SRDF};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -99,7 +99,7 @@ impl FromStr for SRDFSparql {
     }
 }
 
-impl SRDFBasic for SRDFSparql {
+impl Rdf for SRDFSparql {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;

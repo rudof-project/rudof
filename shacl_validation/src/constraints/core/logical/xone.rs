@@ -2,7 +2,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDF;
 use std::fmt::Debug;
 
@@ -20,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic + Debug> Validator<S> for Xone<S> {
+impl<S: Rdf + Debug> Validator<S> for Xone<S> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,

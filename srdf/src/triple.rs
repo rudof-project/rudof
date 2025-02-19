@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use crate::SRDFBasic;
+use crate::Rdf;
 
 pub struct Triple<S>
 where
-    S: SRDFBasic + ?Sized,
+    S: Rdf + ?Sized,
 {
     subj: S::Subject,
     pred: S::IRI,
@@ -13,7 +13,7 @@ where
 
 impl<S> Triple<S>
 where
-    S: SRDFBasic,
+    S: Rdf,
 {
     pub fn new(subj: S::Subject, pred: S::IRI, obj: S::Term) -> Self {
         Triple { subj, pred, obj }
@@ -31,7 +31,7 @@ where
         self.obj.clone()
     }
 
-    pub fn cnv<T: SRDFBasic>(self) -> Triple<T>
+    pub fn cnv<T: Rdf>(self) -> Triple<T>
     where
         T::Subject: From<S::Subject>,
         T::Term: From<S::Term>,
@@ -47,7 +47,7 @@ where
 
 impl<S> Display for Triple<S>
 where
-    S: SRDFBasic,
+    S: Rdf,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<{},{},{}>", self.subj, self.pred, self.obj)
