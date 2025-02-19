@@ -9,10 +9,10 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinExclusive;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinExclusive<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for MinExclusive<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,

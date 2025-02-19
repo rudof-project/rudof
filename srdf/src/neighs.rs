@@ -1,10 +1,10 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::SRDF;
+use crate::Query;
 
 pub enum Neigh<S>
 where
-    S: SRDF,
+    S: Query,
 {
     Direct { p: S::IRI, o: S::Term },
     Inverse { s: S::Subject, p: S::IRI },
@@ -12,7 +12,7 @@ where
 
 impl<S> Neigh<S>
 where
-    S: SRDF,
+    S: Query,
 {
     pub fn direct(pred: S::IRI, object: S::Term) -> Neigh<S> {
         Neigh::Direct { p: pred, o: object }
@@ -30,7 +30,7 @@ where
 // I would like to generate the neighs as an iterator...
 pub struct NeighsIterator<S>
 where
-    S: SRDF,
+    S: Query,
 {
     _term: S::Term,
     _neigh_iter: IntoIter<Neigh<S>>,
@@ -38,7 +38,7 @@ where
 
 impl<S> NeighsIterator<S>
 where
-    S: SRDF,
+    S: Query,
 {
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
         match S::term_as_subject(&term) {
@@ -61,7 +61,7 @@ where
 
 impl<S> FromIterator<Neigh<S>> for NeighsIterator<S>
 where
-    S: SRDF,
+    S: Query,
 {
     fn from_iter<T>(_t: T) -> Self
     where
@@ -73,7 +73,7 @@ where
 
 impl<S> Iterator for NeighsIterator<S>
 where
-    S: SRDF,
+    S: Query,
 {
     type Item = Neigh<S>;
 

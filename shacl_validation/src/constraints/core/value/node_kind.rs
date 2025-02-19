@@ -14,10 +14,10 @@ use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,

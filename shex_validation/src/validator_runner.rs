@@ -13,7 +13,7 @@ use shex_ast::compiled::shape_expr::ShapeExpr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
-use srdf::{Object, SRDF};
+use srdf::{Object, Query};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use tracing::debug;
@@ -215,7 +215,7 @@ impl Engine {
         rdf: &S,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: SRDF,
+        S: Query,
     {
         debug!(
             "Step {}. Checking node {node:?} with shape_expr: {se:?}",
@@ -286,7 +286,7 @@ impl Engine {
         rdf: &S,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: SRDF,
+        S: Query,
     {
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
@@ -363,7 +363,7 @@ impl Engine {
 
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
     where
-        S: SRDF,
+        S: Query,
     {
         let iri = S::iri2iri_s(&iri);
         Pred::from(iri)
@@ -371,7 +371,7 @@ impl Engine {
 
     fn cnv_object<S>(&self, term: &S::Term) -> Node
     where
-        S: SRDF,
+        S: Query,
     {
         let object = S::term_as_object(term);
         Node::from(object)
@@ -379,7 +379,7 @@ impl Engine {
 
     fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Neighs>
     where
-        S: SRDF,
+        S: Query,
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
@@ -408,14 +408,14 @@ impl Engine {
 
     fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
     where
-        S: SRDF,
+        S: Query,
     {
         todo!()
     }
 
     fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
     where
-        S: SRDF,
+        S: Query,
     {
         match node.as_object() {
             Object::Iri(iri) => {

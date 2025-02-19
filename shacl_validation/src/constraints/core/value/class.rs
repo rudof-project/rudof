@@ -14,10 +14,10 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::QuerySRDF;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::SRDF;
+use srdf::Query;
 use std::fmt::Debug;
 
-impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
+impl<S: Query + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
