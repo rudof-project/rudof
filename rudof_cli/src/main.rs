@@ -1293,7 +1293,7 @@ where
                     S::iri_s2iri(&iri_s)
                 }
             };
-            let term = S::iri_as_term(iri);
+            let term: S::Term = iri.into();
             match term.clone().try_into() {
                 Ok(subject) => Ok(subject),
                 Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),

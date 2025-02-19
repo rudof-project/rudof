@@ -136,10 +136,6 @@ impl Rdf for SRDFSparql {
         literal.datatype().into_owned()
     }
 
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
-        OxTerm::NamedNode(iri)
-    }
-
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI {
         iri_s.as_named_node().clone()
     }

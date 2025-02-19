@@ -128,30 +128,41 @@ pub trait Rdf {
         Self::iri2iri_s(&iri).to_string()
     }
 
+    // TODO: this is removable
     fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
 
+    // TODO: this is removable
     fn term_s2term(term: &OxTerm) -> Self::Term;
+
+    // TODO: this is removable
     fn bnode_id2bnode(id: &str) -> Self::BNode;
 
+    // TODO: this is removable
     fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
-        Self::iri_as_subject(Self::iri_s2iri(iri_s))
+        todo!()
     }
+
+    // TODO: this is removable
     fn iri_s2term(iri_s: &IriS) -> Self::Term {
-        Self::iri_as_term(Self::iri_s2iri(iri_s))
+        todo!()
     }
 
+    // TODO: this is removable
     fn bnode_id2term(id: &str) -> Self::Term {
-        Self::bnode_as_term(Self::bnode_id2bnode(id))
+        todo!()
     }
 
+    // TODO: this is removable
     fn bnode_id2subject(id: &str) -> Self::Subject {
-        Self::bnode_as_subject(Self::bnode_id2bnode(id))
+        todo!()
     }
 
-    fn iri_as_term(iri: Self::IRI) -> Self::Term;
+    // fn iri_as_term(iri: Self::IRI) -> Self::Term;
+
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject;
 
     fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
+
     fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
 
     fn iri2iri_s(iri: &Self::IRI) -> IriS;

@@ -60,7 +60,7 @@ fn convert_value<S: Rdf>(value: Value) -> Result<S::Term, CompiledShaclError> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri_ref = convert_iri_ref::<S>(iri_ref)?;
-            S::iri_as_term(iri_ref)
+            iri_ref.into()
         }
         Value::Literal(literal) => S::object_as_term(&RDFNode::literal(literal)),
     };

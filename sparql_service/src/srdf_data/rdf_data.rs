@@ -319,10 +319,6 @@ impl Rdf for RdfData {
         OxBlankNode::new_unchecked(id)
     }
 
-    fn iri_as_term(iri: Self::IRI) -> Self::Term {
-        OxTerm::NamedNode(iri)
-    }
-
     fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
         OxSubject::NamedNode(iri)
     }

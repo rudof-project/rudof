@@ -23,7 +23,8 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// Returns the parsed result if the parser succeeds, or an error otherwise.
     #[inline(always)]
     fn parse(&mut self, node: &IriS, mut rdf: RDF) -> PResult<Self::Output> {
-        let focus = RDF::iri_as_term(RDF::iri_s2iri(node));
+        let iri = RDF::iri_s2iri(node);
+        let focus = iri.into();
         rdf.set_focus(&focus);
         self.parse_impl(&mut rdf)
     }

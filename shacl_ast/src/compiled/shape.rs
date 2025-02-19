@@ -70,8 +70,8 @@ impl<S: Rdf> CompiledShape<S> {
             CompiledShape::NodeShape(ns) => ns.severity().into(),
             CompiledShape::PropertyShape(ps) => ps.severity().into(),
         };
-
-        S::iri_as_term(S::iri_s2iri(&iri_s))
+        let iri = S::iri_s2iri(&iri_s);
+        iri.into()
     }
 }
 

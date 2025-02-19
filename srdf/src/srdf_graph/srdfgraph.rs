@@ -276,10 +276,6 @@ impl Rdf for SRDFGraph {
         iri_s.as_named_node().clone()
     }
 
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
-        OxTerm::NamedNode(iri)
-    }
-
     fn iri_as_subject(iri: OxNamedNode) -> OxSubject {
         OxSubject::NamedNode(iri)
     }

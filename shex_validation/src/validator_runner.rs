@@ -420,7 +420,7 @@ impl Engine {
         match node.as_object() {
             Object::Iri(iri) => {
                 let i = S::iri_s2iri(iri);
-                S::iri_as_term(i)
+                i.into()
             }
             Object::BlankNode(_id) => {
                 todo!()

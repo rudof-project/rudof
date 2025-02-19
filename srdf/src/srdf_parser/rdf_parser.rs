@@ -51,7 +51,7 @@ where
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
-        RDF::iri_as_term(Self::iri_unchecked(str))
+        Self::iri_unchecked(str).into()
     }
 
     #[inline]
