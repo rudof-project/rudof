@@ -98,6 +98,7 @@ pub trait Rdf {
     //     Some(Self::lexical_form(literal).to_string())
     // }
 
+    // TODO: this is removable
     fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
         let iri_s = match term.clone().try_into() {
             Ok(iri) => Self::iri2iri_s(&iri),
@@ -114,6 +115,7 @@ pub trait Rdf {
 
     // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
+    // TODO: this is removable
     fn subject_as_object(subject: &Self::Subject) -> Object {
         let term = subject.clone().into();
         Self::term_as_object(&term)
@@ -165,6 +167,7 @@ pub trait Rdf {
 
     // fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
 
+    // TODO: this is removable
     fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
