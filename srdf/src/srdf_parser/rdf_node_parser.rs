@@ -6,6 +6,7 @@ use std::{
 use iri_s::IriS;
 use std::fmt::Debug;
 
+use crate::srdf_basic::Literal as _;
 use crate::{
     literal::Literal, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
     RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE,
@@ -692,15 +693,22 @@ where
 /// Created a parser that returns the boolean associated with the current focus node for `property`
 ///
 /// It doesn't move the current focus node
-pub fn property_bool<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = bool>
+pub fn property_bool<R>(prop: &IriS) -> impl RDFNodeParse<R, Output = bool>
 where
-    RDF: FocusRDF,
+    R: FocusRDF,
 {
-    property_value(prop).flat_map(|ref term| match RDF::term_as_boolean(term) {
-        None => Err(RDFParseError::ExpectedBoolean {
-            term: format!("{term}"),
-        }),
-        Some(b) => Ok(b),
+    property_value(prop).flat_map(|term: R::Term| {
+        let literal: R::Literal =
+            term.clone()
+                .try_into()
+                .map_err(|_| RDFParseError::ExpectedLiteral {
+                    term: format!("{term}"),
+                })?;
+        literal
+            .as_bool()
+            .ok_or_else(|| RDFParseError::ExpectedBoolean {
+                term: format!("{term}"),
+            })
     })
 }
 
@@ -1083,13 +1091,21 @@ where
     Ok(ints)
 }
 
-fn term_to_int<RDF>(term: &RDF::Term) -> Result<isize, RDFParseError>
+fn term_to_int<R>(term: &R::Term) -> Result<isize, RDFParseError>
 where
-    RDF: Rdf,
+    R: Rdf,
 {
-    let n = RDF::term_as_integer(term).ok_or_else(|| RDFParseError::ExpectedInteger {
-        term: format!("{term}"),
-    })?;
+    let literal: R::Literal =
+        term.clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
+    let n = literal
+        .as_integer()
+        .ok_or_else(|| RDFParseError::ExpectedInteger {
+            term: format!("{term}"),
+        })?;
     Ok(n)
 }
 
@@ -1106,14 +1122,17 @@ where
     Ok(R::iri2iri_s(&iri))
 }
 
-fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError>
+fn term_to_string<R>(term: &R::Term) -> Result<String, RDFParseError>
 where
-    RDF: Rdf,
+    R: Rdf,
 {
-    let n = RDF::term_as_string(term).ok_or_else(|| RDFParseError::ExpectedString {
-        term: format!("{term}"),
-    })?;
-    Ok(n)
+    let literal: R::Literal =
+        term.clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
+    Ok(literal.as_str().to_string())
 }
 
 /// Combines the results of parsers that return vectors of values
@@ -1157,15 +1176,23 @@ where
 
 /// Parses a node as a bool
 ///
-pub fn bool<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
+pub fn bool<R>() -> impl RDFNodeParse<R, Output = bool>
 where
-    RDF: FocusRDF,
+    R: FocusRDF,
 {
-    get_focus().flat_map(|ref term| match RDF::term_as_boolean(term) {
-        Some(b) => Ok(b),
-        None => Err(RDFParseError::ExpectedBoolean {
-            term: format!("{term}"),
-        }),
+    get_focus().flat_map(|term: R::Term| {
+        let literal: R::Literal =
+            term.clone()
+                .try_into()
+                .map_err(|_| RDFParseError::ExpectedLiteral {
+                    term: format!("{term}"),
+                })?;
+        let boolean = literal
+            .as_bool()
+            .ok_or_else(|| RDFParseError::ExpectedInteger {
+                term: format!("{term}"),
+            })?;
+        Ok(boolean)
     })
 }
 

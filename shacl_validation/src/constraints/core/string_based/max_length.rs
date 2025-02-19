@@ -10,6 +10,8 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Iri as _;
+use srdf::Literal as _;
 use srdf::Query;
 use srdf::Sparql;
 use std::fmt::Debug;
@@ -25,15 +27,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
         let max_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
-            } else {
-                let string_representation = match S::term_as_string(value_node) {
-                    Some(string_representation) => string_representation,
-                    None => match value_node.clone().try_into() {
-                        Ok(iri) => S::iri2iri_s(&iri).to_string(),
-                        Err(_) => todo!(),
-                    },
+            } else if S::term_is_iri(value_node) {
+                let iri: S::IRI = match value_node.clone().try_into() {
+                    Ok(iri) => iri,
+                    Err(_) => todo!(),
                 };
-                string_representation.len() > self.max_length() as usize
+                iri.as_str().len() > self.max_length() as usize
+            } else if S::term_is_literal(value_node) {
+                let literal: S::Literal = match value_node.clone().try_into() {
+                    Ok(literal) => literal,
+                    Err(_) => todo!(),
+                };
+                literal.as_str().len() > self.max_length() as usize
+            } else {
+                todo!()
             }
         };
 

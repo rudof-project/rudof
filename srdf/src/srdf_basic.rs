@@ -2,6 +2,10 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use iri_s::IriS;
+use oxrdf::BlankNode as OxBlankNode;
+use oxrdf::Literal as OxLiteral;
+use oxrdf::NamedNode as OxNamedNode;
+use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use prefixmap::{PrefixMap, PrefixMapError};
 
@@ -10,34 +14,19 @@ use crate::Object;
 /// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
 pub trait Rdf {
     /// RDF subjects
-    type Subject: Debug
-        + Display
-        + PartialEq
-        + Clone
-        + Eq
-        + Hash
-        + From<Self::IRI>
-        + From<Self::BNode>;
+    type Subject: Subject + From<Self::IRI> + From<Self::BNode>;
 
     /// RDF predicates
-    type IRI: Debug + Display + Hash + Eq + Clone + TryFrom<Self::Term>;
+    type IRI: Iri + TryFrom<Self::Term>;
 
     /// RDF terms
-    type Term: Debug
-        + Clone
-        + Display
-        + PartialEq
-        + Eq
-        + Hash
-        + From<Self::IRI>
-        + From<Self::BNode>
-        + From<Self::Literal>;
+    type Term: Term + From<Self::IRI> + From<Self::BNode> + From<Self::Literal>;
 
     /// Blank nodes
-    type BNode: Debug + Display + PartialEq + TryFrom<Self::Term>;
+    type BNode: BlankNode + TryFrom<Self::Term>;
 
     /// RDF Literals
-    type Literal: Debug + Display + PartialEq + Eq + Hash + TryFrom<Self::Term>;
+    type Literal: Literal + TryFrom<Self::Term> + From<bool>;
 
     /// RDF errors
     type Err: Display;
@@ -59,46 +48,55 @@ pub trait Rdf {
     // fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>; TODO: remove this
     // fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>; TODO: remove this
 
-    fn term_as_boolean(term: &Self::Term) -> Option<bool> {
-        let literal = term.clone().try_into().ok()?;
-        Self::literal_as_boolean(&literal)
-    }
-    fn term_as_integer(term: &Self::Term) -> Option<isize> {
-        let literal = term.clone().try_into().ok()?;
-        Self::literal_as_integer(&literal)
-    }
+    // TODO: this is removable
+    // fn term_as_boolean(term: &Self::Term) -> Option<bool> {
+    //     let literal = term.clone().try_into().ok()?;
+    //     Self::literal_as_boolean(&literal)
+    // }
 
-    fn term_as_string(term: &Self::Term) -> Option<String> {
-        let literal = term.clone().try_into().ok()?;
-        Self::literal_as_string(&literal)
-    }
+    // TODO: this is removable
+    // fn term_as_integer(term: &Self::Term) -> Option<isize> {
+    //     let literal = term.clone().try_into().ok()?;
+    //     Self::literal_as_integer(&literal)
+    // }
 
+    // TODO: this is removable
+    // fn term_as_string(term: &Self::Term) -> Option<String> {
+    //     let literal = term.clone().try_into().ok()?;
+    //     Self::literal_as_string(&literal)
+    // }
+
+    // TODO: this is removable
     fn term_as_object(term: &Self::Term) -> Object;
 
+    // TODO: this is removable
     fn object_as_term(obj: &Object) -> Self::Term;
+
+    // TODO: this is removable
     fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
         let term = Self::object_as_term(obj);
         Self::term_as_subject(&term)
     }
 
-    fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
-        match Self::lexical_form(literal) {
-            "true" => Some(true),
-            "false" => Some(false),
-            _ => None,
-        }
-    }
+    // TODO: this is removable
+    // fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
+    //     match Self::lexical_form(literal) {
+    //         "true" => Some(true),
+    //         "false" => Some(false),
+    //         _ => None,
+    //     }
+    // }
 
-    fn literal_as_integer(literal: &Self::Literal) -> Option<isize> {
-        match Self::lexical_form(literal).parse() {
-            Ok(n) => Some(n),
-            _ => None,
-        }
-    }
+    // fn literal_as_integer(literal: &Self::Literal) -> Option<isize> {
+    //     match Self::lexical_form(literal).parse() {
+    //         Ok(n) => Some(n),
+    //         _ => None,
+    //     }
+    // }
 
-    fn literal_as_string(literal: &Self::Literal) -> Option<String> {
-        Some(Self::lexical_form(literal).to_string())
-    }
+    // fn literal_as_string(literal: &Self::Literal) -> Option<String> {
+    //     Some(Self::lexical_form(literal).to_string())
+    // }
 
     fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
         let iri_s = match term.clone().try_into() {
@@ -166,3 +164,50 @@ pub trait Rdf {
     /// Resolves a a prefix and a local name and obtains the corresponding full `IriS`
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 }
+
+pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {}
+
+impl Subject for OxSubject {}
+
+pub trait Iri: Debug + Display + Hash + Eq + Clone {
+    fn as_str(&self) -> &str;
+}
+
+impl Iri for OxNamedNode {
+    fn as_str(&self) -> &str {
+        self.as_str()
+    }
+}
+
+pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {}
+
+impl Term for OxTerm {}
+
+pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
+    fn as_str(&self) -> &str;
+
+    fn as_bool(&self) -> Option<bool> {
+        match self.as_str() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+
+    fn as_integer(&self) -> Option<isize> {
+        match self.as_str().parse() {
+            Ok(n) => Some(n),
+            _ => None,
+        }
+    }
+}
+
+impl Literal for OxLiteral {
+    fn as_str(&self) -> &str {
+        self.value()
+    }
+}
+
+pub trait BlankNode: Debug + Display + PartialEq {}
+
+impl BlankNode for OxBlankNode {}
