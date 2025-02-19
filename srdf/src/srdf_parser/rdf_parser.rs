@@ -118,12 +118,13 @@ where
     }
 
     pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        match RDF::term_as_subject(term) {
-            None => Err(RDFParseError::ExpectedSubject {
+        let subject = term
+            .clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
-            }),
-            Some(subj) => Ok(subj),
-        }
+            })?;
+        Ok(subject)
     }
 
     pub fn parse_list_for_predicate(

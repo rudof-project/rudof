@@ -1294,9 +1294,9 @@ where
                 }
             };
             let term = S::iri_as_term(iri);
-            match S::term_as_subject(&term) {
-                None => bail!("node_to_subject: Can't convert term {term} to subject"),
-                Some(subject) => Ok(subject),
+            match term.clone().try_into() {
+                Ok(subject) => Ok(subject),
+                Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),
             }
         }
         ObjectValue::Literal(lit) => Err(anyhow!("Node must be an IRI, but found a literal {lit}")),

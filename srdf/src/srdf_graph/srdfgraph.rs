@@ -269,14 +269,6 @@ impl Rdf for SRDFGraph {
         }
     }
 
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
-        match object {
-            OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-            OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-            _ => None,
-        }
-    }
-
     fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }
@@ -748,7 +740,7 @@ mod tests {
         let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let subject = <SRDFGraph as Rdf>::term_as_subject(&term).unwrap();
+        let subject = term.try_into().unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
         let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))

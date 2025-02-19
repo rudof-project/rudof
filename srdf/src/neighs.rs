@@ -41,11 +41,8 @@ where
     S: Query,
 {
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
-        match S::term_as_subject(&term) {
-            None => {
-                todo!()
-            }
-            Some(subject) => {
+        match term.try_into() {
+            Ok(subject) => {
                 let preds: HashSet<S::IRI> = rdf.predicates_for_subject(&subject)?;
                 let _qs = preds.into_iter();
                 /*let vv = qs.flat_map(|p| {
@@ -53,6 +50,9 @@ where
                     objs.into_iter().map(|o| Neigh::Direct { p, o })
                 });*/
                 todo!(); // Ok(vv)
+            }
+            Err(_) => {
+                todo!()
             }
         }
         // NeighsIterator { term, objectsIter }

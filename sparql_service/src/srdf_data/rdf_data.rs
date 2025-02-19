@@ -295,14 +295,6 @@ impl Rdf for RdfData {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
-        match object {
-            OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-            OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-            _ => None,
-        }
-    }
-
     fn subject_as_term(subject: &Self::Subject) -> Self::Term {
         match subject {
             OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
@@ -594,17 +586,17 @@ impl Query for RdfData {
         &self,
         node: &Self::Term,
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        match Self::term_as_subject(node) {
-            None => Ok(Vec::new()),
-            Some(subject) => {
-                let mut result = Vec::new();
-                let preds = self.predicates_for_subject(&subject)?;
-                for pred in preds {
-                    let objs = self.objects_for_subject_predicate(&subject, &pred)?;
-                    result.push((pred.clone(), objs));
-                }
-                Ok(result)
+        let subject = node.clone().try_into().ok();
+        if let Some(subject) = subject {
+            let mut result = Vec::new();
+            let preds = self.predicates_for_subject(&subject)?;
+            for pred in preds {
+                let objs = self.objects_for_subject_predicate(&subject, &pred)?;
+                result.push((pred.clone(), objs));
             }
+            Ok(result)
+        } else {
+            Ok(Vec::new())
         }
     }
 }

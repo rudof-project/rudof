@@ -23,9 +23,9 @@ pub(crate) fn get_objects_for<S: Query>(
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    let subject = match S::term_as_subject(subject) {
-        Some(subject) => subject,
-        None => {
+    let subject = match subject.clone().try_into() {
+        Ok(subject) => subject,
+        Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
                 subject: format!("{subject}"),
             })

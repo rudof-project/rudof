@@ -131,7 +131,7 @@ where
             self.rdf_parser.set_focus(&term);
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::OrValueNoSubject {
@@ -150,7 +150,7 @@ where
             self.rdf_parser.set_focus(&term);
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::XOneValueNoSubject {
@@ -169,7 +169,7 @@ where
             self.rdf_parser.set_focus(&term);
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::AndValueNoSubject {
@@ -250,9 +250,12 @@ where
     }
 
     fn triple_object_as_subject(triple: &Triple<RDF>) -> Result<RDF::Subject> {
-        let subj = RDF::term_as_subject(&triple.obj()).ok_or_else(|| ShaclParserError::Custom {
-            msg: format!("Expected triple object value to act as a subject: {triple}"),
-        })?;
+        let subj = triple
+            .obj()
+            .try_into()
+            .map_err(|_| ShaclParserError::Custom {
+                msg: format!("Expected triple object value to act as a subject: {triple}"),
+            })?;
         Ok(subj)
     }
 

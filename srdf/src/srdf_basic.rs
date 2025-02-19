@@ -1,4 +1,5 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::hash::Hash;
 
 use iri_s::IriS;
@@ -7,28 +8,18 @@ use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
-use prefixmap::{PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
+use prefixmap::PrefixMapError;
 
 use crate::Object;
 
-/// Types that implement this trait contain basic comparisons and conversions between nodes in RDF graphs
 pub trait Rdf {
-    /// RDF subjects
-    type Subject: Subject + From<Self::IRI> + From<Self::BNode>;
-
-    /// RDF predicates
-    type IRI: Iri + TryFrom<Self::Term>;
-
-    /// RDF terms
+    type Subject: Subject + TryFrom<Self::Term> + From<Self::IRI> + From<Self::BNode>;
     type Term: Term + From<Self::IRI> + From<Self::BNode> + From<Self::Literal>;
-
-    /// Blank nodes
+    type IRI: Iri + TryFrom<Self::Term>;
     type BNode: BlankNode + TryFrom<Self::Term>;
+    type Literal: Literal + TryFrom<Self::Term>;
 
-    /// RDF Literals
-    type Literal: Literal + TryFrom<Self::Term> + From<bool>;
-
-    /// RDF errors
     type Err: Display;
 
     /// Returns the RDF subject as an IRI if it is an IRI, None if it isn't
@@ -75,7 +66,8 @@ pub trait Rdf {
     // TODO: this is removable
     fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
         let term = Self::object_as_term(obj);
-        Self::term_as_subject(&term)
+        let subject = term.try_into().ok()?;
+        Some(subject)
     }
 
     // TODO: this is removable
@@ -110,7 +102,7 @@ pub trait Rdf {
     fn term_is_bnode(object: &Self::Term) -> bool;
     fn term_is_literal(object: &Self::Term) -> bool;
 
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
+    // fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
 
     fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 

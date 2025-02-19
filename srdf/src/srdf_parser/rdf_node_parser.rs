@@ -1013,9 +1013,9 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashMap<RDF::IRI, HashSet<RDF::Term>>> {
         match rdf.get_focus() {
             Some(focus) => {
-                let subj = RDF::term_as_subject(focus).ok_or_else(|| {
+                let subj = focus.clone().try_into().map_err(|_| {
                     RDFParseError::ExpectedFocusAsSubject {
-                        focus: format!("{focus}"),
+                        focus: focus.to_string(),
                     }
                 })?;
                 rdf.outgoing_arcs(&subj).map_err(|e| RDFParseError::Custom {

@@ -23,9 +23,9 @@ pub(crate) fn get_objects_for<S: Query + Rdf>(
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, HelperError> {
-    let subject = match S::term_as_subject(subject) {
-        Some(subject) => subject,
-        None => todo!(),
+    let subject = match subject.clone().try_into() {
+        Ok(subject) => subject,
+        Err(_) => todo!(),
     };
 
     match store.objects_for_subject_predicate(&subject, predicate) {
