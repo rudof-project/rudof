@@ -20,7 +20,7 @@ pub trait Rdf {
         + From<Self::BNode>;
 
     /// RDF predicates
-    type IRI: Debug + Display + Hash + Eq + Clone;
+    type IRI: Debug + Display + Hash + Eq + Clone + TryFrom<Self::Term>;
 
     /// Blank nodes
     type BNode: Debug + Display + PartialEq;
@@ -29,16 +29,16 @@ pub trait Rdf {
     type Literal: Debug + Display + PartialEq + Eq + Hash;
 
     /// RDF terms
-    type Term: Debug + Clone + Display + PartialEq + Eq + Hash;
+    type Term: Debug + Clone + Display + PartialEq + Eq + Hash + From<Self::IRI>;
 
     /// RDF errors
     type Err: Display;
 
     /// Returns the RDF subject as an IRI if it is an IRI, None if it isn't
-    // fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>;
+    // fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>; TODO: remove this
 
     /// Returns the RDF subject as a Blank Node if it is a blank node, None if it isn't
-    // fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>;
+    // fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>; TODO: remove this
 
     /// Returns `true` if the subject is an IRI
     fn subject_is_iri(subject: &Self::Subject) -> bool;
@@ -46,8 +46,7 @@ pub trait Rdf {
     /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
-    // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>;
-    fn term_as_iri(object: &Self::Term) -> Option<&Self::IRI>;
+    // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>; TODO: remove this
 
     fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
     fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>;
@@ -83,7 +82,11 @@ pub trait Rdf {
     }
 
     fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
-        Self::term_as_iri(term).map(|iri| Self::iri2iri_s(iri))
+        let iri_s = match term.clone().try_into() {
+            Ok(iri) => Self::iri2iri_s(&iri),
+            Err(_) => return None,
+        };
+        Some(iri_s)
     }
 
     fn term_as_integer(term: &Self::Term) -> Option<isize> {

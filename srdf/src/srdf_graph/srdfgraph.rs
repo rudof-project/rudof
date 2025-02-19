@@ -249,12 +249,6 @@ impl Rdf for SRDFGraph {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_iri(object: &OxTerm) -> Option<&OxNamedNode> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n),
-            _ => None,
-        }
-    }
     fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
         match object {
             OxTerm::BlankNode(b) => Some(b.clone()),

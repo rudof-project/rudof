@@ -655,9 +655,10 @@ fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
 where
     RDF: Rdf,
 {
-    match RDF::term_as_iri(term) {
-        Some(iri) => {
-            let iri_s = RDF::iri2iri_s(iri);
+    match term.clone().try_into() {
+        // TODO: this clone can be removed
+        Ok(iri) => {
+            let iri_s = RDF::iri2iri_s(&iri);
             match iri_s.as_str() {
                 SH_IRI_STR => Ok(NodeKind::Iri),
                 SH_LITERAL_STR => Ok(NodeKind::Literal),
@@ -670,7 +671,7 @@ where
                 }),
             }
         }
-        None => Err(ShaclParserError::ExpectedNodeKind {
+        Err(_) => Err(ShaclParserError::ExpectedNodeKind {
             term: format!("{term}"),
         }),
     }

@@ -614,15 +614,17 @@ where
 /// let x = iri!("http://example.org/x");
 /// assert_eq!(iri().parse(&x, graph).unwrap(), x)
 /// ```
-pub fn iri<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
+pub fn iri<R>() -> impl RDFNodeParse<R, Output = IriS>
 where
-    RDF: FocusRDF,
+    R: FocusRDF,
 {
-    term().flat_map(|ref t| match RDF::term_as_iri(t) {
-        None => Err(RDFParseError::ExpectedIRI {
+    term().flat_map(|t: R::Term| match t.clone().try_into() {
+        // TODO: this clone can be removed as it is only necessary because of the error
+        //       and the error can be propagated from the try_into
+        Ok(v) => Ok(R::iri2iri_s(&v)),
+        Err(_) => Err(RDFParseError::ExpectedIRI {
             term: format!("{t}"),
         }),
-        Some(v) => Ok(RDF::iri2iri_s(v)),
     })
 }
 
@@ -702,17 +704,17 @@ where
     })
 }
 
-pub fn parse_rdf_nil<RDF>() -> impl RDFNodeParse<RDF, Output = ()>
+pub fn parse_rdf_nil<R>() -> impl RDFNodeParse<R, Output = ()>
 where
-    RDF: FocusRDF,
+    R: FocusRDF,
 {
     satisfy(
-        |node: &RDF::Term| match RDF::term_as_iri(node) {
-            Some(iri) => {
-                let iri_s = RDF::iri2iri_s(iri);
+        |term: &R::Term| match term.clone().try_into() {
+            Ok(iri) => {
+                let iri_s = R::iri2iri_s(&iri);
                 iri_s.as_str() == RDF_NIL_STR
             }
-            None => false,
+            Err(_) => false,
         },
         "rdf_nil",
     )
@@ -1091,14 +1093,17 @@ where
     Ok(n)
 }
 
-fn term_to_iri<RDF>(term: &RDF::Term) -> Result<IriS, RDFParseError>
+fn term_to_iri<R>(term: &R::Term) -> Result<IriS, RDFParseError>
 where
-    RDF: Rdf,
+    R: Rdf,
 {
-    let iri = RDF::term_as_iri(term).ok_or_else(|| RDFParseError::ExpectedIRI {
-        term: format!("{term}"),
-    })?;
-    Ok(RDF::iri2iri_s(iri))
+    let iri = term
+        .clone() // TODO: this clone could be removed?
+        .try_into()
+        .map_err(|_| RDFParseError::ExpectedIRI {
+            term: format!("{term}"),
+        })?;
+    Ok(R::iri2iri_s(&iri))
 }
 
 fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError>
@@ -1354,12 +1359,12 @@ where
     }
 }
 
-fn node_is_rdf_nil<RDF>(node: &RDF::Term) -> bool
+fn node_is_rdf_nil<R>(node: &R::Term) -> bool
 where
-    RDF: Query,
+    R: Query,
 {
-    if let Some(iri) = RDF::term_as_iri(node) {
-        RDF::iri2iri_s(iri) == *RDF_NIL
+    if let Ok(iri) = node.clone().try_into() {
+        R::iri2iri_s(&iri) == *RDF_NIL
     } else {
         false
     }
@@ -1372,12 +1377,13 @@ where
 {
     let name = format!("Is {}", expected_iri.as_str());
     satisfy(
-        move |node: &RDF::Term| match RDF::term_as_iri(node) {
-            Some(iri) => {
-                let iri_s = RDF::iri2iri_s(iri);
+        // TODO: this clone can be removed
+        move |node: &RDF::Term| match node.clone().try_into() {
+            Ok(iri) => {
+                let iri_s = RDF::iri2iri_s(&iri);
                 iri_s == expected_iri
             }
-            None => false,
+            Err(_) => false,
         },
         name.as_str(),
     )
@@ -1438,15 +1444,17 @@ pub fn term_as_iri<RDF>(term: &RDF::Term) -> impl RDFNodeParse<RDF, Output = Iri
 where
     RDF: FocusRDF,
 {
-    apply(term, |term| match &RDF::term_as_iri(term) {
-        Some(iri) => {
-            let iri_s = RDF::iri2iri_s(iri);
-            Ok(iri_s)
-        }
-        None => Err(RDFParseError::ExpectedIRI {
-            term: format!("{term}"),
-        }),
-    })
+    apply(term, |term|
+        // TODO: this clone can be removed
+        match term.clone().try_into() {
+            Ok(iri) => {
+                let iri_s = RDF::iri2iri_s(&iri);
+                Ok(iri_s)
+            }
+            Err(_) => Err(RDFParseError::ExpectedIRI {
+                term: format!("{term}"),
+            }),
+        })
 }
 
 /*fn term_as_iri_s<RDF>(term: &RDF::Term) -> PResult<IriS>
@@ -1750,9 +1758,10 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         let rdf_type = parse_rdf_type().parse_impl(rdf)?;
-        let iri_type = match RDF::term_as_iri(&rdf_type) {
-            Some(iri) => RDF::iri2iri_s(iri),
-            None => {
+        let iri_type = match rdf_type.clone().try_into() {
+            // TODO: this clone can be removed as it is only necessary because of the error
+            Ok(iri) => RDF::iri2iri_s(&iri),
+            Err(_) => {
                 return Err(RDFParseError::ExpectedIRI {
                     term: format!("{rdf_type}"),
                 })
