@@ -23,13 +23,13 @@ pub trait Rdf {
     type IRI: Debug + Display + Hash + Eq + Clone + TryFrom<Self::Term>;
 
     /// Blank nodes
-    type BNode: Debug + Display + PartialEq;
+    type BNode: Debug + Display + PartialEq + TryFrom<Self::Term>;
 
     /// RDF Literals
     type Literal: Debug + Display + PartialEq + Eq + Hash;
 
     /// RDF terms
-    type Term: Debug + Clone + Display + PartialEq + Eq + Hash + From<Self::IRI>;
+    type Term: Debug + Clone + Display + PartialEq + Eq + Hash + From<Self::IRI> + From<Self::BNode>;
 
     /// RDF errors
     type Err: Display;
@@ -48,7 +48,7 @@ pub trait Rdf {
 
     // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>; TODO: remove this
 
-    fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>;
+    // fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode>; TODO: remove this
     fn term_as_literal(object: &Self::Term) -> Option<Self::Literal>;
     fn term_as_boolean(object: &Self::Term) -> Option<bool> {
         let literal = Self::term_as_literal(object)?;

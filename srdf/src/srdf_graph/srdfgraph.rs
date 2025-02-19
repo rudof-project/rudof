@@ -249,13 +249,6 @@ impl Rdf for SRDFGraph {
         matches!(subject, OxSubject::BlankNode(_))
     }
 
-    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
-        match object {
-            OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-
     fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
         match object {
             OxTerm::Literal(l) => Some(l.clone()),
@@ -781,7 +774,7 @@ mod tests {
         let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let bnode = <SRDFGraph as Rdf>::term_as_bnode(&term).unwrap();
+        let bnode: <SRDFGraph as Rdf>::BNode = term.try_into().unwrap();
         let subject = <SRDFGraph as Rdf>::bnode_id2subject(bnode.as_str());
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
         let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
