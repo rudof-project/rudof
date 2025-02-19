@@ -30,10 +30,8 @@ pub trait Rdf {
 
     type Err: Display;
 
-    /// Returns the RDF subject as an IRI if it is an IRI, None if it isn't
     // fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>; TODO: remove this
 
-    /// Returns the RDF subject as a Blank Node if it is a blank node, None if it isn't
     // fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>; TODO: remove this
 
     /// Returns `true` if the subject is an IRI

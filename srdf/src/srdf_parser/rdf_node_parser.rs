@@ -654,21 +654,21 @@ where
 /// Creates a parser that returns the current focus node as a term
 ///
 /// This is equivalent to [`get_focus`]
-pub fn term<RDF>() -> Term<RDF>
+pub fn term<RDF>() -> ParseTerm<RDF>
 where
     RDF: FocusRDF,
 {
-    Term {
+    ParseTerm {
         _marker_rdf: PhantomData,
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Term<RDF> {
+pub struct ParseTerm<RDF> {
     _marker_rdf: PhantomData<RDF>,
 }
 
-impl<RDF> RDFNodeParse<RDF> for Term<RDF>
+impl<RDF> RDFNodeParse<RDF> for ParseTerm<RDF>
 where
     RDF: FocusRDF,
 {
@@ -1204,7 +1204,7 @@ where
 /// use srdf::SRDFGraph;
 /// use srdf::{property_value, then, RDFFormat, ReaderMode, RDFNodeParse, rdf_list, set_focus};
 /// use oxrdf::{Literal, Term};
-
+///
 /// let s = r#"prefix : <http://example.org/>
 ///  :x :p (1 2).
 /// "#;

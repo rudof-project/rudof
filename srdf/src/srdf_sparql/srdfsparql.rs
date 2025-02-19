@@ -701,16 +701,6 @@ fn term_as_subject(object: &OxTerm) -> Option<OxSubject> {
     }
 }
 
-fn subject_as_term(subject: &OxSubject) -> OxTerm {
-    match subject {
-        OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-        OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-        #[cfg(feature = "rdf-star")]
-        #[cfg(feature = "rdf-star")]
-        OxSubject::Triple(_) => unimplemented!(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

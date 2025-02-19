@@ -23,7 +23,6 @@ pub mod srdf_builder;
 pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
-pub mod subject;
 pub mod triple;
 pub mod vocab;
 
@@ -42,7 +41,6 @@ pub use srdf_builder::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
 pub use srdf_sparql::*;
-pub use subject::*;
 pub use triple::*;
 pub use vocab::*;
 
