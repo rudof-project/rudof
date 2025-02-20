@@ -45,8 +45,7 @@ where
     }
 
     pub fn set_focus_iri(&mut self, iri: &IriS) {
-        let term = RDF::iri_s2term(iri);
-        self.rdf.set_focus(&term)
+        self.rdf.set_focus(&iri.clone().into())
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {

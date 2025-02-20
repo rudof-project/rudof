@@ -96,10 +96,10 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         let mut subclasses = get_subjects_for(
             store,
             &RDFS_SUBCLASS_OF.clone().into(),
-            &S::iri_s2term(&RDFS_CLASS),
+            &RDFS_CLASS.clone().into(),
         )?;
 
-        subclasses.insert(S::iri_s2term(&RDFS_CLASS));
+        subclasses.insert(RDFS_CLASS.clone().into());
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
             let actual_class_nodes = get_subjects_for(store, &RDF_TYPE.clone().into(), shape.id())?;

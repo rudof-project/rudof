@@ -117,7 +117,7 @@ where
     }
 
     fn sd_service() -> RDF::Term {
-        RDF::iri_s2term(&SD_SERVICE)
+        SD_SERVICE.clone().into()
     }
 }
 

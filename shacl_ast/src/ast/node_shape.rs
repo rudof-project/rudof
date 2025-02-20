@@ -101,7 +101,7 @@ impl NodeShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id, RDF::iri_s2term(&SH_NODE_SHAPE))?;
+        rdf.add_type(&self.id, SH_NODE_SHAPE.clone().into())?;
 
         self.name.to_term_iter().try_for_each(|term| {
             rdf.add_triple(
@@ -164,7 +164,7 @@ impl NodeShape {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_SEVERITY.clone().into(),
-                &RDF::iri_s2term(&pred),
+                &pred.clone().into(),
             )?;
         }
 

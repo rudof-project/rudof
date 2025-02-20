@@ -32,12 +32,12 @@ impl Target {
             Self::TargetSubjectsOf(iri_ref) => rdf.add_triple(
                 &RDF::object_as_subject(rdf_node).unwrap(),
                 &SH_TARGET_CLASS.clone().into(),
-                &RDF::iri_s2term(&iri_ref.get_iri().unwrap()),
+                &iri_ref.get_iri().unwrap().clone().into(),
             ),
             Self::TargetObjectsOf(iri_ref) => rdf.add_triple(
                 &RDF::object_as_subject(rdf_node).unwrap(),
                 &SH_TARGET_CLASS.clone().into(),
-                &RDF::iri_s2term(&iri_ref.get_iri().unwrap()),
+                &iri_ref.get_iri().unwrap().clone().into(),
             ),
         }
     }

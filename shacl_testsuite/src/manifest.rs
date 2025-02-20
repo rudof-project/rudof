@@ -104,7 +104,7 @@ pub trait Manifest<S: Query + Rdf> {
             None => todo!(),
         };
 
-        let subject = S::iri_s2term(&IriS::new_unchecked(&base));
+        let subject = IriS::new_unchecked(&base).into();
         let graph = Self::load_data_graph(path, &base);
 
         let mut includes = Vec::new();

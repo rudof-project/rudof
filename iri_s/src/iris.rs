@@ -1,6 +1,7 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
 use oxrdf::Subject;
+use oxrdf::Term;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -215,14 +216,25 @@ impl FromStr for IriS {
     }
 }
 
-/*impl TryFrom<&str> for IriS {
-    type Error = IriSError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let iri = NamedNode::new(value)?;
-        Ok(IriS { iri })
+impl From<IriS> for NamedNode {
+    fn from(iri: IriS) -> Self {
+        NamedNode::new_unchecked(iri.as_str())
     }
-}*/
+}
+
+impl From<IriS> for Subject {
+    fn from(value: IriS) -> Self {
+        let named_node: NamedNode = value.into();
+        named_node.into()
+    }
+}
+
+impl From<IriS> for Term {
+    fn from(value: IriS) -> Self {
+        let named_node: NamedNode = value.into();
+        named_node.into()
+    }
+}
 
 impl Default for IriS {
     fn default() -> Self {
@@ -261,19 +273,6 @@ impl<'de> Deserialize<'de> for IriS {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_str(IriVisitor)
-    }
-}
-
-impl From<IriS> for NamedNode {
-    fn from(iri: IriS) -> Self {
-        NamedNode::new_unchecked(iri.as_str())
-    }
-}
-
-impl From<IriS> for Subject {
-    fn from(value: IriS) -> Self {
-        let named_node: NamedNode = value.into();
-        named_node.into()
     }
 }
 

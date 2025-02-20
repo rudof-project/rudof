@@ -348,7 +348,7 @@ impl Rdf for SRDFGraph {
 
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
-            Object::Iri(iri) => Self::iri_s2term(iri),
+            Object::Iri(iri) => iri.clone().into(),
             Object::BlankNode(bn) => Self::bnode_id2term(bn),
             Object::Literal(lit) => {
                 let literal: OxLiteral = match lit {
@@ -939,7 +939,7 @@ mod tests {
         let graph =
             SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
-        let term = <SRDFGraph as Rdf>::iri_s2term(&x);
+        let term = x.clone().into();
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph);
         assert!(result.is_ok())
@@ -1025,9 +1025,10 @@ fn test_add_triple() {
     use iri_s::iri;
 
     let mut graph = SRDFGraph::new();
+
     let alice = iri!("http://example.org/alice").into();
     let knows = iri!("http://example.org/knows").into();
-    let bob = <SRDFGraph as Rdf>::iri_s2term(&iri!("http://example.org/bob"));
+    let bob = iri!("http://example.org/bob").into();
 
     graph.add_triple(&alice, &knows, &bob).unwrap();
 

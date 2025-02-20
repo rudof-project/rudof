@@ -1669,8 +1669,7 @@ pub fn instances_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = Vec
 where
     RDF: FocusRDF,
 {
-    let term = RDF::iri_s2term(expected);
-    subjects_with_property_value::<RDF>(&RDF_TYPE, &term)
+    subjects_with_property_value::<RDF>(&RDF_TYPE, &expected.clone().into())
 }
 
 pub fn parse_rdf_type<RDF>() -> impl RDFNodeParse<RDF, Output = RDF::Term>
@@ -1684,7 +1683,7 @@ pub fn has_type<RDF>(expected: IriS) -> impl RDFNodeParse<RDF, Output = ()>
 where
     RDF: FocusRDF,
 {
-    parse_rdf_type().then(move |term: RDF::Term| equals(term.clone(), RDF::iri_s2term(&expected)))
+    parse_rdf_type().then(move |term: RDF::Term| equals(term.clone(), expected.clone().into()))
 }
 
 pub fn equals<RDF>(term: RDF::Term, expected: RDF::Term) -> impl RDFNodeParse<RDF, Output = ()>

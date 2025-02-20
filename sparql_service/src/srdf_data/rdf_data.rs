@@ -250,7 +250,7 @@ impl Rdf for RdfData {
 
     fn object_as_term(obj: &srdf::Object) -> Self::Term {
         match obj {
-            Object::Iri(iri) => Self::iri_s2term(iri),
+            Object::Iri(iri) => iri.clone().into(),
             Object::BlankNode(bn) => Self::bnode_id2term(bn),
             Object::Literal(lit) => {
                 let literal: OxLiteral = match lit {

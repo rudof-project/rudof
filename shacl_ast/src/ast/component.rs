@@ -289,7 +289,7 @@ impl Component {
         RDF: SRDFBuilder,
     {
         Self::write_term(
-            &RDF::iri_s2term(&value.get_iri().unwrap()),
+            &value.get_iri().unwrap().clone().into(),
             predicate,
             rdf_node,
             rdf,

@@ -182,7 +182,7 @@ impl PropertyShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id, RDF::iri_s2term(&SH_PROPERTY_SHAPE))?;
+        rdf.add_type(&self.id, SH_PROPERTY_SHAPE.clone().into())?;
 
         self.name.to_term_iter().try_for_each(|term| {
             rdf.add_triple(
@@ -227,7 +227,7 @@ impl PropertyShape {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_PATH.clone().into(),
-                &RDF::iri_s2term(pred),
+                &pred.clone().into(),
             )?;
         } else {
             unimplemented!()
@@ -262,7 +262,7 @@ impl PropertyShape {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_SEVERITY.clone().into(),
-                &RDF::iri_s2term(&pred),
+                &pred.clone().into(),
             )?;
         }
 
