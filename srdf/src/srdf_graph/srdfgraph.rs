@@ -341,7 +341,7 @@ impl Rdf for SRDFGraph {
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
             Object::Iri(iri) => iri.clone().into(),
-            Object::BlankNode(bn) => Self::bnode_id2term(bn),
+            Object::BlankNode(bn) => OxBlankNode::new_unchecked(bn).into(),
             Object::Literal(lit) => {
                 let literal: OxLiteral = match lit {
                     Literal::StringLiteral { lexical_form, lang } => match lang {
@@ -723,7 +723,7 @@ mod tests {
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let bnode: <SRDFGraph as Rdf>::BNode = term.try_into().unwrap();
-        let subject = <SRDFGraph as Rdf>::bnode_id2subject(bnode.as_str());
+        let subject = <SRDFGraph as Rdf>::BNode::new_unchecked(bnode.as_str()).into();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
         let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))

@@ -152,14 +152,14 @@ pub trait Rdf {
     // }
 
     // TODO: this is removable
-    fn bnode_id2term(id: &str) -> Self::Term {
-        todo!()
-    }
+    // fn bnode_id2term(id: &str) -> Self::Term {
+    //     todo!()
+    // }
 
     // TODO: this is removable
-    fn bnode_id2subject(id: &str) -> Self::Subject {
-        todo!()
-    }
+    // fn bnode_id2subject(id: &str) -> Self::Subject {
+    //     todo!()
+    // }
 
     // fn iri_as_term(iri: Self::IRI) -> Self::Term;
 
