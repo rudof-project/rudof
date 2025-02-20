@@ -125,7 +125,7 @@ pub trait Rdf {
 
     // fn lexical_form(literal: &Self::Literal) -> &str;
     // fn lang(literal: &Self::Literal) -> Option<String>;
-    fn datatype(literal: &Self::Literal) -> Self::IRI;
+    // fn datatype(literal: &Self::Literal) -> Self::IRI;
 
     // fn datatype_str(literal: &Self::Literal) -> String {
     //     let iri = Self::datatype(literal);
@@ -259,6 +259,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 
     fn lang(&self) -> Option<&str>;
 
+    fn datatype(&self) -> &str;
+
     fn as_bool(&self) -> Option<bool> {
         match self.lexical_form() {
             "true" => Some(true),
@@ -282,6 +284,10 @@ impl Literal for OxLiteral {
 
     fn lang(&self) -> Option<&str> {
         self.language()
+    }
+
+    fn datatype(&self) -> &str {
+        self.datatype().as_str()
     }
 }
 

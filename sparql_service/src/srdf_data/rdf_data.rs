@@ -275,10 +275,6 @@ impl Rdf for RdfData {
         }
     }
 
-    fn datatype(literal: &Self::Literal) -> Self::IRI {
-        literal.datatype().into_owned()
-    }
-
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
         if let Some(graph) = &self.graph {

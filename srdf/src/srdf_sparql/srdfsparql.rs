@@ -107,10 +107,6 @@ impl Rdf for SRDFSparql {
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn datatype(literal: &OxLiteral) -> OxNamedNode {
-        literal.datatype().into_owned()
-    }
-
     fn term_as_object(term: &Self::Term) -> Object {
         match term {
             Self::Term::BlankNode(bn) => Object::BlankNode(bn.to_string()),

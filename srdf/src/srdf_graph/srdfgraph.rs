@@ -242,10 +242,6 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn datatype(literal: &OxLiteral) -> OxNamedNode {
-        literal.datatype().into_owned()
-    }
-
     fn term_as_object(term: &OxTerm) -> Object {
         match term {
             OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),

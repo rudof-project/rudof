@@ -15,7 +15,6 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Literal as _;
 use srdf::Query;
 use srdf::Rdf;
 use srdf::Sparql;
