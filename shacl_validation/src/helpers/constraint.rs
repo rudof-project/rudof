@@ -1,8 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Object;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Rdf;
+use srdf::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
@@ -10,7 +10,7 @@ use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
+fn apply<S: Rdf, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     value_nodes: &ValueNodes<S>,
@@ -38,7 +38,7 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     Ok(results)
 }
 
-pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
+pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     value_nodes: &ValueNodes<S>,
@@ -54,7 +54,7 @@ pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
     )
 }
 
-pub fn validate_ask_with<S: QuerySRDF>(
+pub fn validate_ask_with<S: Sparql>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     store: &S,

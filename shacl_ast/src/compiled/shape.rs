@@ -1,4 +1,4 @@
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::shape::Shape;
 use crate::Schema;
@@ -10,12 +10,12 @@ use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub enum CompiledShape<S: SRDFBasic> {
+pub enum CompiledShape<S: Rdf> {
     NodeShape(CompiledNodeShape<S>),
     PropertyShape(CompiledPropertyShape<S>),
 }
 
-impl<S: SRDFBasic> CompiledShape<S> {
+impl<S: Rdf> CompiledShape<S> {
     pub fn is_deactivated(&self) -> &bool {
         match self {
             CompiledShape::NodeShape(ns) => ns.is_deactivated(),
@@ -75,7 +75,7 @@ impl<S: SRDFBasic> CompiledShape<S> {
     }
 }
 
-impl<S: SRDFBasic> CompiledShape<S> {
+impl<S: Rdf> CompiledShape<S> {
     pub fn compile(shape: Shape, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {

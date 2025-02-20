@@ -13,11 +13,11 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Sparql;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -52,7 +52,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

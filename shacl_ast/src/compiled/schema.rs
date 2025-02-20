@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use prefixmap::PrefixMap;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::Schema;
 
@@ -9,7 +9,7 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
 #[derive(Debug)]
-pub struct CompiledSchema<S: SRDFBasic> {
+pub struct CompiledSchema<S: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
     shapes: HashMap<S::Term, CompiledShape<S>>,
@@ -17,7 +17,7 @@ pub struct CompiledSchema<S: SRDFBasic> {
     base: Option<S::IRI>,
 }
 
-impl<S: SRDFBasic> CompiledSchema<S> {
+impl<S: Rdf> CompiledSchema<S> {
     pub fn new(
         shapes: HashMap<S::Term, CompiledShape<S>>,
         prefixmap: PrefixMap,
@@ -47,7 +47,7 @@ impl<S: SRDFBasic> CompiledSchema<S> {
     }
 }
 
-impl<S: SRDFBasic> TryFrom<Schema> for CompiledSchema<S> {
+impl<S: Rdf> TryFrom<Schema> for CompiledSchema<S> {
     type Error = CompiledShaclError;
 
     fn try_from(schema: Schema) -> Result<Self, Self::Error> {

@@ -9,7 +9,7 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compiled::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
-use srdf::QuerySRDF;
+use srdf::Sparql;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;

@@ -1,7 +1,7 @@
 use crate::{NodeSelector, ShapeSelector};
 use serde_derive::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
-use srdf::SRDF;
+use srdf::Query;
 use std::iter::once;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
@@ -24,7 +24,7 @@ impl Association {
         rdf: &S,
     ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)>
     where
-        S: SRDF,
+        S: Query,
     {
         self.node_selector.iter_node(rdf).flat_map(move |node| {
             self.shape_selector

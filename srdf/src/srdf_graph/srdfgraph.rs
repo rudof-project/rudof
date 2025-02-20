@@ -6,7 +6,7 @@ use tracing::debug;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
+use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
@@ -234,7 +234,7 @@ impl SRDFGraph {
     }
 }
 
-impl SRDFBasic for SRDFGraph {
+impl Rdf for SRDFGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
@@ -459,7 +459,7 @@ fn cnv_decimal(_d: &Decimal) -> OxDecimal {
     todo!()
 }
 
-impl SRDF for SRDFGraph {
+impl Query for SRDFGraph {
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
@@ -739,7 +739,7 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{int, srdf, SRDFGraph, SRDF};
+    use crate::{int, srdf, Query, SRDFGraph};
     use iri_s::iri;
 
     #[tokio::test]
@@ -776,13 +776,13 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
+        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let subject = <SRDFGraph as SRDFBasic>::term_as_subject(&term).unwrap();
+        let subject = <SRDFGraph as Rdf>::term_as_subject(&term).unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
+        let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
     }
 
@@ -795,14 +795,14 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
+        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
+        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let bnode = <SRDFGraph as SRDFBasic>::term_as_bnode(&term).unwrap();
-        let subject = <SRDFGraph as SRDFBasic>::bnode_id2subject(bnode.as_str());
+        let bnode = <SRDFGraph as Rdf>::term_as_bnode(&term).unwrap();
+        let subject = <SRDFGraph as Rdf>::bnode_id2subject(bnode.as_str());
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
+        let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
     }
 
@@ -990,7 +990,7 @@ mod tests {
     #[test]
     fn test_rdf_parser_macro() {
         use crate::SRDFGraph;
-        use crate::{rdf_parser, satisfy, RDFNodeParse, SRDFBasic};
+        use crate::{rdf_parser, satisfy, RDFNodeParse, Rdf};
         use iri_s::iri;
 
         rdf_parser! {
@@ -1008,7 +1008,7 @@ mod tests {
         let graph =
             SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
-        let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
+        let term = <SRDFGraph as Rdf>::iri_s2term(&x);
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph);
         assert!(result.is_ok())
@@ -1094,9 +1094,9 @@ fn test_add_triple() {
     use iri_s::iri;
 
     let mut graph = SRDFGraph::new();
-    let alice = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/alice"));
-    let knows = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/knows"));
-    let bob = <SRDFGraph as SRDFBasic>::iri_s2term(&iri!("http://example.org/bob"));
+    let alice = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/alice"));
+    let knows = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/knows"));
+    let bob = <SRDFGraph as Rdf>::iri_s2term(&iri!("http://example.org/bob"));
 
     graph.add_triple(&alice, &knows, &bob).unwrap();
 

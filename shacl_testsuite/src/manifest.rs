@@ -8,16 +8,16 @@ use shacl_validation::store::graph::Graph;
 use shacl_validation::store::Store;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
+use srdf::Query;
 use srdf::RDFFormat;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::Rdf;
 
 use crate::helper::srdf::get_object_for;
 use crate::helper::srdf::get_objects_for;
 use crate::manifest_error::ManifestError;
 use crate::ShaclTest;
 
-pub trait Manifest<S: SRDF + SRDFBasic> {
+pub trait Manifest<S: Query + Rdf> {
     fn new(base: String, store: S, includes: Vec<Self>, entries: HashSet<S::Term>) -> Self
     where
         Self: Sized;

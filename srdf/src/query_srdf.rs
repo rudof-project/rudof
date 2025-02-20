@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::SRDFBasic;
+use crate::Rdf;
 
-pub trait QuerySRDF: SRDFBasic {
+pub trait Sparql: Rdf {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>, Self::Err>
     where
         Self: Sized;
@@ -35,25 +35,25 @@ impl From<String> for VarName {
     }
 }
 
-pub trait VariableSolutionIndex<S: SRDFBasic> {
+pub trait VariableSolutionIndex<S: Rdf> {
     fn index(self, solution: &QuerySolution<S>) -> Option<usize>;
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for usize {
+impl<S: Rdf> VariableSolutionIndex<S> for usize {
     #[inline]
     fn index(self, _: &QuerySolution<S>) -> Option<usize> {
         Some(self)
     }
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for &str {
+impl<S: Rdf> VariableSolutionIndex<S> for &str {
     #[inline]
     fn index(self, solution: &QuerySolution<S>) -> Option<usize> {
         solution.variables.iter().position(|v| v.str == self)
     }
 }
 
-impl<S: SRDFBasic> VariableSolutionIndex<S> for &VarName {
+impl<S: Rdf> VariableSolutionIndex<S> for &VarName {
     #[inline]
     fn index(self, solution: &QuerySolution<S>) -> Option<usize> {
         solution.variables.iter().position(|v| *v.str == self.str)
@@ -62,12 +62,12 @@ impl<S: SRDFBasic> VariableSolutionIndex<S> for &VarName {
 
 /// Represents one query solution
 #[derive(Debug, Clone)]
-pub struct QuerySolution<S: SRDFBasic> {
+pub struct QuerySolution<S: Rdf> {
     variables: Vec<VarName>,
     values: Vec<Option<S::Term>>,
 }
 
-impl<S: SRDFBasic> QuerySolution<S> {
+impl<S: Rdf> QuerySolution<S> {
     pub fn new(variables: Vec<VarName>, values: Vec<Option<S::Term>>) -> QuerySolution<S> {
         QuerySolution { variables, values }
     }
@@ -83,7 +83,7 @@ impl<S: SRDFBasic> QuerySolution<S> {
         self.variables.iter()
     }
 
-    pub fn convert<T: SRDFBasic, F>(&self, cnv_term: F) -> QuerySolution<T>
+    pub fn convert<T: Rdf, F>(&self, cnv_term: F) -> QuerySolution<T>
     where
         F: Fn(&S::Term) -> T::Term,
     {
@@ -111,7 +111,7 @@ impl<S: SRDFBasic> QuerySolution<S> {
     }
 }
 
-impl<S: SRDFBasic, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
+impl<S: Rdf, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
     for QuerySolution<S>
 {
     #[inline]
@@ -125,11 +125,11 @@ impl<S: SRDFBasic, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V
 
 /// Represent a list of query solutions
 #[derive(Debug, Clone)]
-pub struct QuerySolutions<S: SRDFBasic> {
+pub struct QuerySolutions<S: Rdf> {
     solutions: Vec<QuerySolution<S>>,
 }
 
-impl<S: SRDFBasic> QuerySolutions<S> {
+impl<S: Rdf> QuerySolutions<S> {
     pub fn empty() -> QuerySolutions<S> {
         QuerySolutions {
             solutions: Vec::new(),
@@ -153,7 +153,7 @@ impl<S: SRDFBasic> QuerySolutions<S> {
     }
 }
 
-impl<S: SRDFBasic> IntoIterator for QuerySolutions<S> {
+impl<S: Rdf> IntoIterator for QuerySolutions<S> {
     type Item = QuerySolution<S>;
     type IntoIter = std::vec::IntoIter<QuerySolution<S>>;
 

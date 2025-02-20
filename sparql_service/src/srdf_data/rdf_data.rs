@@ -1,7 +1,7 @@
 use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::sparql::Query;
+use oxigraph::sparql::Query as OxQuery;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use oxrdf::{
@@ -19,18 +19,18 @@ use srdf::numeric_literal::NumericLiteral;
 use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Object;
-use srdf::QuerySRDF;
+use srdf::Query;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
+use srdf::Rdf;
 use srdf::ReaderMode;
-use srdf::SRDFBasic;
 use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
+use srdf::Sparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-use srdf::SRDF;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -199,7 +199,7 @@ impl Default for RdfData {
     }
 }
 
-impl SRDFBasic for RdfData {
+impl Rdf for RdfData {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
@@ -453,13 +453,13 @@ impl SRDFBasic for RdfData {
     }
 }
 
-impl QuerySRDF for RdfData {
+impl Sparql for RdfData {
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
-        let query = Query::parse(query_str, None)?;
+        let query = OxQuery::parse(query_str, None)?;
         if let Some(store) = &self.store {
             let new_sol = store.query(query)?;
             let sol = cnv_query_results(new_sol)?;
@@ -533,7 +533,7 @@ fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
     todo!()
 }
 
-impl SRDF for RdfData {
+impl Query for RdfData {
     fn predicates_for_subject(
         &self,
         _subject: &Self::Subject,

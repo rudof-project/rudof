@@ -1,5 +1,5 @@
 use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
-use crate::{AsyncSRDF, QuerySRDF, QuerySolution, QuerySolutions, SRDFBasic, VarName, SRDF};
+use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -99,7 +99,7 @@ impl FromStr for SRDFSparql {
     }
 }
 
-impl SRDFBasic for SRDFSparql {
+impl Rdf for SRDFSparql {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
@@ -312,7 +312,7 @@ impl AsyncSRDF for SRDFSparql {
     }
 }
 
-impl SRDF for SRDFSparql {
+impl Query for SRDFSparql {
     fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         tracing::debug!(
@@ -427,7 +427,7 @@ impl QuerySRDF for SRDFSparql {
     }
 } */
 
-impl QuerySRDF for SRDFSparql {
+impl Sparql for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();

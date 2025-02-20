@@ -7,8 +7,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, FocusRDF, Object, PResult, RDFParseError, SRDFBasic, RDF_FIRST,
-    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE, SRDF,
+    literal::Literal, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
+    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node.
@@ -723,7 +723,7 @@ where
 /// The `predicate_name` argument is useful in case of failure to know which condition has failed
 pub fn satisfy<RDF, P>(predicate: P, predicate_name: &str) -> Satisfy<RDF, P>
 where
-    RDF: SRDF,
+    RDF: Query,
     P: FnMut(&RDF::Term) -> bool,
 {
     Satisfy {
@@ -863,7 +863,7 @@ where
 /// It doesn't move the current focus node
 pub fn property_value<RDF>(property: &IriS) -> PropertyValue<RDF>
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     PropertyValue {
         property: property.clone(),
@@ -871,7 +871,7 @@ where
     }
 }
 
-pub struct PropertyValue<RDF: SRDF> {
+pub struct PropertyValue<RDF: Query> {
     property: IriS,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -920,7 +920,7 @@ where
 /// it shows the neighbourhood of the current node
 pub fn property_value_debug<RDF>(property: &IriS) -> PropertyValueDebug<RDF>
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     let property = RDF::iri_s2iri(property);
     PropertyValueDebug {
@@ -929,7 +929,7 @@ where
     }
 }
 
-pub struct PropertyValueDebug<RDF: SRDF> {
+pub struct PropertyValueDebug<RDF: Query> {
     property: RDF::IRI,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -983,14 +983,14 @@ where
 /// it shows the neighbourhood of the current node
 pub fn neighs<RDF>() -> Neighs<RDF>
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     Neighs {
         _marker_rdf: PhantomData,
     }
 }
 
-pub struct Neighs<RDF: SRDF> {
+pub struct Neighs<RDF: Query> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1075,7 +1075,7 @@ where
 
 fn terms_to_ints<RDF>(terms: HashSet<RDF::Term>) -> Result<HashSet<isize>, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let ints: HashSet<_> = terms.iter().flat_map(|t| term_to_int::<RDF>(t)).collect();
     Ok(ints)
@@ -1083,7 +1083,7 @@ where
 
 fn term_to_int<RDF>(term: &RDF::Term) -> Result<isize, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let n = RDF::term_as_integer(term).ok_or_else(|| RDFParseError::ExpectedInteger {
         term: format!("{term}"),
@@ -1093,7 +1093,7 @@ where
 
 fn term_to_iri<RDF>(term: &RDF::Term) -> Result<IriS, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let iri = RDF::term_as_iri(term).ok_or_else(|| RDFParseError::ExpectedIRI {
         term: format!("{term}"),
@@ -1103,7 +1103,7 @@ where
 
 fn term_to_string<RDF>(term: &RDF::Term) -> Result<String, RDFParseError>
 where
-    RDF: SRDFBasic,
+    RDF: Rdf,
 {
     let n = RDF::term_as_string(term).ok_or_else(|| RDFParseError::ExpectedString {
         term: format!("{term}"),
@@ -1186,7 +1186,7 @@ where
 /// ````
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     RDFList {
         _marker_rdf: PhantomData,
@@ -1257,7 +1257,7 @@ where
     }
 }
 
-pub struct RDFList<RDF: SRDF> {
+pub struct RDFList<RDF: Query> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1291,7 +1291,7 @@ where
 /// Parses a node as an RDF List applying each element of the list a parser
 pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     ParseRDFList { parser }
 }
@@ -1356,7 +1356,7 @@ where
 
 fn node_is_rdf_nil<RDF>(node: &RDF::Term) -> bool
 where
-    RDF: SRDF,
+    RDF: Query,
 {
     if let Some(iri) = RDF::term_as_iri(node) {
         RDF::iri2iri_s(iri) == *RDF_NIL
@@ -1680,7 +1680,7 @@ where
     }
 }
 
-pub struct SubjectsPropertyValue<RDF: SRDF> {
+pub struct SubjectsPropertyValue<RDF: Query> {
     property: RDF::IRI,
     value: RDF::Term,
     _marker_rdf: PhantomData<RDF>,

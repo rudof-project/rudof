@@ -6,11 +6,11 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LessThanOrEquals;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Sparql;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -24,7 +24,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

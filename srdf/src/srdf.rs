@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::{SRDFBasic, Triple};
+use crate::{Rdf, Triple};
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
 pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
@@ -11,7 +11,7 @@ type OutgoingArcs<I, T> = (HasMapOfIriAndItem<I, T>, Vec<I>);
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 ///
 /// TODO: Consider alternative names: RDFGraphOps
-pub trait SRDF: SRDFBasic {
+pub trait Query: Rdf {
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,

@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::QuerySRDF;
+use srdf::Sparql;
 
 use super::helper_error::SPARQLError;
 
-pub fn select<S: QuerySRDF>(
+pub fn select<S: Sparql>(
     store: &S,
     query_str: String,
     index: &str,
