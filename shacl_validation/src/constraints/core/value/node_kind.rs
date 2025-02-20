@@ -15,6 +15,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::Query;
 use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
@@ -28,7 +29,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
         let node_kind = |value_node: &S::Term| {
             match (
                 S::term_is_bnode(value_node),
-                S::term_is_iri(value_node),
+                value_node.is_iri(),
                 S::term_is_literal(value_node),
             ) {
                 (true, false, false) => matches!(
@@ -63,7 +64,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
         let node_kind = self.node_kind().clone();
 
         let query = move |value_node: &S::Term| {
-            if S::term_is_iri(value_node) {
+            if value_node.is_iri() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}

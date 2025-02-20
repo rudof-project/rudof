@@ -107,10 +107,6 @@ impl Rdf for SRDFSparql {
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn term_is_iri(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::NamedNode(_))
-    }
-
     fn term_is_bnode(object: &OxTerm) -> bool {
         matches!(object, OxTerm::BlankNode(_))
     }

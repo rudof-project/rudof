@@ -14,6 +14,7 @@ use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::Query;
 use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
@@ -27,7 +28,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
         let min_length = |value_node: &S::Term| {
             if S::term_is_bnode(value_node) {
                 true
-            } else if S::term_is_iri(value_node) {
+            } else if value_node.is_iri() {
                 let iri: S::IRI = match value_node.clone().try_into() {
                     Ok(iri) => iri,
                     Err(_) => todo!(),

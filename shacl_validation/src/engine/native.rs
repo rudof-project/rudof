@@ -3,6 +3,7 @@ use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::SHACLPath;
+use srdf::Term;
 use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
@@ -42,7 +43,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if !S::term_is_iri(class) {
+        if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
