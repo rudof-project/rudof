@@ -275,10 +275,6 @@ impl Rdf for RdfData {
         }
     }
 
-    fn term_is_literal(object: &Self::Term) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
     fn lexical_form(literal: &Self::Literal) -> &str {
         literal.value()
     }

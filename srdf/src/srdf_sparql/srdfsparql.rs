@@ -107,10 +107,6 @@ impl Rdf for SRDFSparql {
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn term_is_literal(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
     fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }

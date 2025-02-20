@@ -34,7 +34,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
                     Err(_) => todo!(),
                 };
                 iri.as_str().len() > self.min_length() as usize
-            } else if S::term_is_literal(value_node) {
+            } else if value_node.is_literal() {
                 let literal: S::Literal = match value_node.clone().try_into() {
                     Ok(literal) => literal,
                     Err(_) => todo!(),

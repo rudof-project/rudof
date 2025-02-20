@@ -30,7 +30,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
             match (
                 value_node.is_blank_node(),
                 value_node.is_iri(),
-                S::term_is_literal(value_node),
+                value_node.is_literal(),
             ) {
                 (true, false, false) => matches!(
                     self.node_kind(),
