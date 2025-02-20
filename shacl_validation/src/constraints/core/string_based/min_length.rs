@@ -39,7 +39,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
-                literal.as_str().len() > self.min_length() as usize
+                literal.lexical_form().len() > self.min_length() as usize
             } else {
                 todo!()
             }

@@ -123,7 +123,7 @@ pub trait Rdf {
 
     // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
-    fn lexical_form(literal: &Self::Literal) -> &str;
+    // fn lexical_form(literal: &Self::Literal) -> &str;
     fn lang(literal: &Self::Literal) -> Option<String>;
     fn datatype(literal: &Self::Literal) -> Self::IRI;
 
@@ -255,10 +255,10 @@ impl Term for OxTerm {
 }
 
 pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
-    fn as_str(&self) -> &str;
+    fn lexical_form(&self) -> &str;
 
     fn as_bool(&self) -> Option<bool> {
-        match self.as_str() {
+        match self.lexical_form() {
             "true" => Some(true),
             "false" => Some(false),
             _ => None,
@@ -266,7 +266,7 @@ pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
     }
 
     fn as_integer(&self) -> Option<isize> {
-        match self.as_str().parse() {
+        match self.lexical_form().parse() {
             Ok(n) => Some(n),
             _ => None,
         }
@@ -274,7 +274,7 @@ pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
 }
 
 impl Literal for OxLiteral {
-    fn as_str(&self) -> &str {
+    fn lexical_form(&self) -> &str {
         self.value()
     }
 }

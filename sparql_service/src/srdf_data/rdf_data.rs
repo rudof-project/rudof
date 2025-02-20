@@ -275,10 +275,6 @@ impl Rdf for RdfData {
         }
     }
 
-    fn lexical_form(literal: &Self::Literal) -> &str {
-        literal.value()
-    }
-
     fn lang(literal: &Self::Literal) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }

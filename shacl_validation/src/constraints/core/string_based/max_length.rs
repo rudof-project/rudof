@@ -39,7 +39,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
-                literal.as_str().len() > self.max_length() as usize
+                literal.lexical_form().len() > self.max_length() as usize
             } else {
                 todo!()
             }

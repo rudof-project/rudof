@@ -107,9 +107,6 @@ impl Rdf for SRDFSparql {
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn lexical_form(literal: &OxLiteral) -> &str {
-        literal.value()
-    }
     fn lang(literal: &OxLiteral) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }

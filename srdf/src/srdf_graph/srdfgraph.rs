@@ -242,10 +242,6 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn lexical_form(literal: &OxLiteral) -> &str {
-        literal.value()
-    }
-
     fn lang(literal: &OxLiteral) -> Option<String> {
         literal.language().map(|s| s.to_string())
     }
