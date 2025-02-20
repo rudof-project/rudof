@@ -242,7 +242,7 @@ impl Rdf for RdfData {
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(&iri)),
+            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
             // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
