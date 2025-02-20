@@ -275,10 +275,6 @@ impl Rdf for RdfData {
         }
     }
 
-    fn term_is_bnode(object: &Self::Term) -> bool {
-        matches!(object, OxTerm::BlankNode(_))
-    }
-
     fn term_is_literal(object: &Self::Term) -> bool {
         matches!(object, OxTerm::Literal(_))
     }

@@ -26,7 +26,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+            if value_node.is_blank_node() {
                 true
             } else if value_node.is_iri() {
                 let iri: S::IRI = match value_node.clone().try_into() {

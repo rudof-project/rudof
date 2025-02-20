@@ -32,7 +32,7 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if S::term_is_bnode(node) {
+        if node.is_blank_node() {
             return Err(ValidateError::TargetNodeBlankNode);
         }
 

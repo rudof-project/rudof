@@ -35,7 +35,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if S::term_is_bnode(node) {
+        if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
             Ok(FocusNodes::new(std::iter::once(node.clone())))

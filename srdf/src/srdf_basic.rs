@@ -116,7 +116,7 @@ pub trait Rdf {
     // fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     // fn term_is_iri(object: &Self::Term) -> bool;
-    fn term_is_bnode(object: &Self::Term) -> bool;
+    // fn term_is_bnode(object: &Self::Term) -> bool;
     fn term_is_literal(object: &Self::Term) -> bool;
 
     // fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;

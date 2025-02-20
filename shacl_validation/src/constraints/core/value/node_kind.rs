@@ -28,7 +28,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
-                S::term_is_bnode(value_node),
+                value_node.is_blank_node(),
                 value_node.is_iri(),
                 S::term_is_literal(value_node),
             ) {
@@ -70,7 +70,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
                         ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
                     ",node_kind
                 }
-            } else if S::term_is_bnode(value_node) {
+            } else if value_node.is_blank_node() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}
