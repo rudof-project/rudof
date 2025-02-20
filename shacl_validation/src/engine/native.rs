@@ -4,6 +4,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Term;
+use srdf::Triple;
 use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
@@ -82,9 +83,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             Err(_) => return Err(ValidateError::SRDF),
         };
 
-        let focus_nodes = triples.into_iter().map(|triple| triple.obj());
-
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::new(triples.iter().map(Triple::obj)))
     }
 
     fn implicit_target_class(

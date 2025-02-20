@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::{Rdf, Triple};
+use crate::Rdf;
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
 pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
@@ -29,7 +29,7 @@ pub trait Query: Rdf {
         object: &Self::Term,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
 
-    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Triple<Self>>, Self::Err>;
+    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err>;
 
     /*fn get_subjects_for_predicate_any_object(
         &self,

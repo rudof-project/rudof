@@ -6,7 +6,7 @@ use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
+    Term as OxTerm, Triple as OxTriple,
 };
 use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
@@ -205,6 +205,7 @@ impl Rdf for RdfData {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = RdfDataError;
 
     fn prefixmap(&self) -> std::option::Option<PrefixMap> {
@@ -452,20 +453,15 @@ impl Query for RdfData {
         Ok(result)
     }
 
-    fn triples_with_predicate(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<Vec<srdf::Triple<Self>>, Self::Err> {
+    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
         let mut result = Vec::new();
         if let Some(graph) = &self.graph {
             let s = graph.triples_with_predicate(pred)?;
-            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
-            result.extend(t)
+            result.extend(s)
         }
         for e in self.endpoints.iter() {
             let s = e.triples_with_predicate(pred)?;
-            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
-            result.extend(t)
+            result.extend(s)
         }
         Ok(result)
     }

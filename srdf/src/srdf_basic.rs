@@ -8,6 +8,7 @@ use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
+use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 
@@ -28,6 +29,8 @@ pub trait Rdf {
     type BNode: BlankNode + TryFrom<Self::Term>;
 
     type Literal: Literal + From<bool> + From<String> + From<i128> + From<f64> + TryFrom<Self::Term>; // TODO: can we use From<&str>?
+
+    type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
     type Err: Display;
 
@@ -298,5 +301,39 @@ pub trait BlankNode: Debug + Display + PartialEq {
 impl BlankNode for OxBlankNode {
     fn new(id: impl Into<String>) -> Self {
         OxBlankNode::new_unchecked(id)
+    }
+}
+
+pub trait Triple<S, P, O>: Debug + Clone + Display
+where
+    S: Subject,
+    P: Iri,
+    O: Term,
+{
+    fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
+    fn subj(&self) -> S;
+    fn pred(&self) -> P;
+    fn obj(&self) -> O;
+}
+
+impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
+    fn new(
+        subj: impl Into<OxSubject>,
+        pred: impl Into<OxNamedNode>,
+        obj: impl Into<OxTerm>,
+    ) -> Self {
+        OxTriple::new(subj, pred, obj)
+    }
+
+    fn subj(&self) -> OxSubject {
+        self.subject.clone()
+    }
+
+    fn pred(&self) -> OxNamedNode {
+        self.predicate.clone()
+    }
+
+    fn obj(&self) -> OxTerm {
+        self.object.clone()
     }
 }

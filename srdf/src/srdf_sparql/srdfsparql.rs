@@ -5,7 +5,7 @@ use colored::*;
 use iri_s::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
@@ -105,6 +105,7 @@ impl Rdf for SRDFSparql {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = SRDFSparqlError;
 
     fn term_as_object(term: &Self::Term) -> Object {
@@ -294,7 +295,7 @@ impl Query for SRDFSparql {
     fn triples_with_predicate(
         &self,
         _pred: &Self::IRI,
-    ) -> std::prelude::v1::Result<Vec<crate::Triple<Self>>, Self::Err> {
+    ) -> std::prelude::v1::Result<Vec<Self::Triple>, Self::Err> {
         todo!()
     }
 }

@@ -23,7 +23,7 @@ pub mod srdf_builder;
 pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
-pub mod triple;
+// pub mod triple;
 pub mod vocab;
 
 pub use crate::async_srdf::*;
@@ -41,7 +41,7 @@ pub use srdf_builder::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
 pub use srdf_sparql::*;
-pub use triple::*;
+// pub use triple::*;
 pub use vocab::*;
 
 /// Creates an integer literal
