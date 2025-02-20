@@ -179,9 +179,39 @@ pub trait Rdf {
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 }
 
-pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {}
+#[derive(PartialEq)]
+pub enum TermKind {
+    Iri,
+    BlankNode,
+    Literal,
+    Triple,
+}
 
-impl Subject for OxSubject {}
+pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {
+    fn kind(&self) -> TermKind;
+
+    fn is_iri(&self) -> bool {
+        self.kind() == TermKind::Iri
+    }
+
+    fn is_blank_node(&self) -> bool {
+        self.kind() == TermKind::BlankNode
+    }
+
+    fn is_triple(&self) -> bool {
+        self.kind() == TermKind::Triple
+    }
+}
+
+impl Subject for OxSubject {
+    fn kind(&self) -> TermKind {
+        match self {
+            OxSubject::NamedNode(_) => TermKind::Iri,
+            OxSubject::BlankNode(_) => TermKind::BlankNode,
+            OxSubject::Triple(_) => TermKind::Triple,
+        }
+    }
+}
 
 pub trait Iri: Debug + Display + Hash + Eq + Clone {
     fn as_str(&self) -> &str;
@@ -193,9 +223,36 @@ impl Iri for OxNamedNode {
     }
 }
 
-pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {}
+pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {
+    fn kind(&self) -> TermKind;
 
-impl Term for OxTerm {}
+    fn is_iri(&self) -> bool {
+        self.kind() == TermKind::Iri
+    }
+
+    fn is_blank_node(&self) -> bool {
+        self.kind() == TermKind::BlankNode
+    }
+
+    fn is_literal(&self) -> bool {
+        self.kind() == TermKind::Literal
+    }
+
+    fn is_triple(&self) -> bool {
+        self.kind() == TermKind::Triple
+    }
+}
+
+impl Term for OxTerm {
+    fn kind(&self) -> TermKind {
+        match self {
+            OxTerm::NamedNode(_) => TermKind::Iri,
+            OxTerm::BlankNode(_) => TermKind::BlankNode,
+            OxTerm::Literal(_) => TermKind::Literal,
+            OxTerm::Triple(_) => TermKind::Triple,
+        }
+    }
+}
 
 pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
     fn as_str(&self) -> &str;
