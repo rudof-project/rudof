@@ -39,16 +39,16 @@ pub trait Manifest<S: Query + Rdf> {
         let mut ans = Vec::new();
 
         for entry in &self.entries() {
-            let label = get_object_for(self.store(), entry, &S::iri_s2iri(&srdf::RDFS_LABEL))?;
+            let label = get_object_for(self.store(), entry, &srdf::RDFS_LABEL.clone().into())?;
 
             let action = match get_object_for(
                 self.store(),
                 entry,
-                &S::iri_s2iri(&shacl_validation_vocab::MF_ACTION),
+                &shacl_validation_vocab::MF_ACTION.clone().into(),
             )? {
-                Some(action) => match S::term_as_bnode(&action) {
-                    Some(action) => S::bnode_as_term(action),
-                    None => todo!(),
+                Some(action) => match action.try_into() {
+                    Ok(action) => action,
+                    Err(_) => todo!(),
                 },
                 None => todo!(),
             };
@@ -56,7 +56,7 @@ pub trait Manifest<S: Query + Rdf> {
             let result = match get_object_for(
                 self.store(),
                 entry,
-                &S::iri_s2iri(&shacl_validation_vocab::MF_RESULT),
+                &shacl_validation_vocab::MF_RESULT.clone().into(),
             )? {
                 Some(result) => ValidationReport::parse(self.store(), result)?,
                 None => todo!(),
@@ -65,14 +65,14 @@ pub trait Manifest<S: Query + Rdf> {
             let data_graph_iri = get_object_for(
                 self.store(),
                 &action,
-                &S::iri_s2iri(&shacl_validation_vocab::SHT_DATA_GRAPH),
+                &shacl_validation_vocab::SHT_DATA_GRAPH.clone().into(),
             )?
             .unwrap();
 
             let shapes_graph_iri = get_object_for(
                 self.store(),
                 &action,
-                &S::iri_s2iri(&shacl_validation_vocab::SHT_SHAPES_GRAPH),
+                &shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into(),
             )?
             .unwrap();
 
@@ -104,14 +104,14 @@ pub trait Manifest<S: Query + Rdf> {
             None => todo!(),
         };
 
-        let subject = S::iri_s2term(&IriS::new_unchecked(&base));
+        let subject = IriS::new_unchecked(&base).into();
         let graph = Self::load_data_graph(path, &base);
 
         let mut includes = Vec::new();
         for manifest in get_objects_for(
             &graph,
             &subject,
-            &S::iri_s2iri(&shacl_validation_vocab::MF_INCLUDE),
+            &shacl_validation_vocab::MF_INCLUDE.clone().into(),
         )? {
             let format_path = Self::format_path(manifest.to_string());
             let path = Path::new(&format_path);
@@ -125,19 +125,19 @@ pub trait Manifest<S: Query + Rdf> {
         let entry_subject = get_object_for(
             &graph,
             &subject,
-            &S::iri_s2iri(&shacl_validation_vocab::MF_ENTRIES),
+            &shacl_validation_vocab::MF_ENTRIES.clone().into(),
         )?;
 
         if let Some(mut subject) = entry_subject {
             loop {
                 entry_terms.insert(
-                    match get_object_for(&graph, &subject, &S::iri_s2iri(&srdf::RDF_FIRST))? {
+                    match get_object_for(&graph, &subject, &srdf::RDF_FIRST.clone().into())? {
                         Some(term) => term,
                         None => break,
                     },
                 );
 
-                subject = match get_object_for(&graph, &subject, &S::iri_s2iri(&srdf::RDF_REST))? {
+                subject = match get_object_for(&graph, &subject, &srdf::RDF_REST.clone().into())? {
                     Some(subject) => subject,
                     None => break,
                 };

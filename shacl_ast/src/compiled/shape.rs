@@ -1,3 +1,4 @@
+use iri_s::IriS;
 use srdf::Rdf;
 
 use crate::shape::Shape;
@@ -66,12 +67,12 @@ impl<S: Rdf> CompiledShape<S> {
     }
 
     pub fn severity(&self) -> S::Term {
-        let iri_s = match self {
+        let iri_s: IriS = match self {
             CompiledShape::NodeShape(ns) => ns.severity().into(),
             CompiledShape::PropertyShape(ps) => ps.severity().into(),
         };
-
-        S::iri_as_term(S::iri_s2iri(&iri_s))
+        let iri: S::IRI = iri_s.into(); // TODO: this can be avoided
+        iri.into()
     }
 }
 

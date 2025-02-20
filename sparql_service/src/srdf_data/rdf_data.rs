@@ -211,54 +211,12 @@ impl Rdf for RdfData {
         self.graph.as_ref().map(|g| g.prefixmap())
     }
 
-    fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-
-    fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode> {
-        match subject {
-            OxSubject::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-
     fn subject_is_iri(subject: &Self::Subject) -> bool {
         matches!(subject, OxSubject::NamedNode(_))
     }
 
     fn subject_is_bnode(subject: &Self::Subject) -> bool {
         matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    /*fn term_as_iri(object: &Self::Term) -> Option<Self::IRI> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }*/
-
-    fn term_as_iri(object: &Self::Term) -> Option<&Self::IRI> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n),
-            _ => None,
-        }
-    }
-
-    fn term_as_bnode(object: &Self::Term) -> Option<Self::BNode> {
-        match object {
-            OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-
-    fn term_as_literal(object: &Self::Term) -> Option<Self::Literal> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
     }
 
     fn term_as_object(term: &Self::Term) -> srdf::Object {
@@ -276,7 +234,7 @@ impl Rdf for RdfData {
                         lang: Some(Lang::new(lang.as_str())),
                     }),
                     (s, Some(datatype), _) => {
-                        let iri_s = Self::iri2iri_s(&datatype);
+                        let iri_s = IriS::from_named_node(&datatype);
                         Object::Literal(Literal::DatatypeLiteral {
                             lexical_form: s,
                             datatype: IriRef::Iri(iri_s),
@@ -284,7 +242,7 @@ impl Rdf for RdfData {
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
             // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
@@ -292,8 +250,8 @@ impl Rdf for RdfData {
 
     fn object_as_term(obj: &srdf::Object) -> Self::Term {
         match obj {
-            Object::Iri(iri) => Self::iri_s2term(iri),
-            Object::BlankNode(bn) => Self::bnode_id2term(bn),
+            Object::Iri(iri) => iri.clone().into(),
+            Object::BlankNode(bn) => OxBlankNode::new_unchecked(bn).into(),
             Object::Literal(lit) => {
                 let literal: OxLiteral = match lit {
                     Literal::StringLiteral { lexical_form, lang } => match lang {
@@ -337,23 +295,6 @@ impl Rdf for RdfData {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
-        match object {
-            OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-            OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-            _ => None,
-        }
-    }
-
-    fn subject_as_term(subject: &Self::Subject) -> Self::Term {
-        match subject {
-            OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-            OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            // #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
-        }
-    }
-
     fn lexical_form(literal: &Self::Literal) -> &str {
         literal.value()
     }
@@ -364,38 +305,6 @@ impl Rdf for RdfData {
 
     fn datatype(literal: &Self::Literal) -> Self::IRI {
         literal.datatype().into_owned()
-    }
-
-    fn iri_s2iri(iri_s: &iri_s::IriS) -> Self::IRI {
-        iri_s.as_named_node().clone()
-    }
-
-    fn term_s2term(term: &oxrdf::Term) -> Self::Term {
-        term.clone()
-    }
-
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
-    fn iri_as_term(iri: Self::IRI) -> Self::Term {
-        OxTerm::NamedNode(iri)
-    }
-
-    fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
-        OxSubject::NamedNode(iri)
-    }
-
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
-        OxSubject::BlankNode(bnode)
-    }
-
-    fn iri2iri_s(iri: &Self::IRI) -> iri_s::IriS {
-        IriS::from_named_node(iri)
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
@@ -636,17 +545,17 @@ impl Query for RdfData {
         &self,
         node: &Self::Term,
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        match Self::term_as_subject(node) {
-            None => Ok(Vec::new()),
-            Some(subject) => {
-                let mut result = Vec::new();
-                let preds = self.predicates_for_subject(&subject)?;
-                for pred in preds {
-                    let objs = self.objects_for_subject_predicate(&subject, &pred)?;
-                    result.push((pred.clone(), objs));
-                }
-                Ok(result)
+        let subject = node.clone().try_into().ok();
+        if let Some(subject) = subject {
+            let mut result = Vec::new();
+            let preds = self.predicates_for_subject(&subject)?;
+            for pred in preds {
+                let objs = self.objects_for_subject_predicate(&subject, &pred)?;
+                result.push((pred.clone(), objs));
             }
+            Ok(result)
+        } else {
+            Ok(Vec::new())
         }
     }
 }

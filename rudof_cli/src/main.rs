@@ -1215,7 +1215,7 @@ where
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
                 writeln!(writer, "Incoming arcs")?;
-                let object = S::subject_as_term(&subject);
+                let object = subject.clone().into();
                 let map = match rdf.incoming_arcs(&object) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
@@ -1253,8 +1253,7 @@ where
             }
             IriRef::Iri(iri) => iri,
         };
-        let iri = S::iri_s2iri(&iri_s);
-        vs.push(iri)
+        vs.push(iri_s.into())
     }
     Ok(vs)
 }
@@ -1285,18 +1284,17 @@ where
 {
     match node {
         ObjectValue::IriRef(iri_ref) => {
-            let iri = match iri_ref {
-                IriRef::Iri(iri_s) => S::iri_s2iri(iri_s),
+            let iri: S::IRI = match iri_ref {
+                IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
                     let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-
-                    S::iri_s2iri(&iri_s)
+                    iri_s.into()
                 }
             };
-            let term = S::iri_as_term(iri);
-            match S::term_as_subject(&term) {
-                None => bail!("node_to_subject: Can't convert term {term} to subject"),
-                Some(subject) => Ok(subject),
+            let term: S::Term = iri.into();
+            match term.clone().try_into() {
+                Ok(subject) => Ok(subject),
+                Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),
             }
         }
         ObjectValue::Literal(lit) => Err(anyhow!("Node must be an IRI, but found a literal {lit}")),

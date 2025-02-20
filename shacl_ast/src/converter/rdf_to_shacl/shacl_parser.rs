@@ -2,8 +2,8 @@ use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Object, PResult, RDFNode, RDFNodeParse,
-    RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
+    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Object, PResult, RDFNode,
+    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -126,12 +126,11 @@ where
 
     fn get_sh_or_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_or())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_or())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::OrValueNoSubject {
@@ -145,12 +144,11 @@ where
 
     fn get_sh_xone_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_xone())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_xone())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::XOneValueNoSubject {
@@ -164,12 +162,11 @@ where
 
     fn get_sh_and_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for s in self.objects_with_predicate(Self::sh_and())? {
-            let term = RDF::subject_as_term(&s);
-            self.rdf_parser.set_focus(&term);
+        for subject in self.objects_with_predicate(Self::sh_and())? {
+            self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Some(subj) = RDF::term_as_subject(&v) {
+                if let Ok(subj) = v.clone().try_into() {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::AndValueNoSubject {
@@ -218,41 +215,45 @@ where
     }*/
 
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&RDF_TYPE)
+        RDF_TYPE.clone().into()
     }
 
     fn sh_node_shape() -> RDF::Term {
-        RDF::iri_s2term(&SH_NODE_SHAPE)
+        let iri: RDF::IRI = SH_NODE_SHAPE.clone().into();
+        iri.into()
     }
 
     fn sh_property() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_PROPERTY)
+        SH_PROPERTY.clone().into()
     }
 
     fn sh_or() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_OR)
+        SH_OR.clone().into()
     }
 
     fn sh_xone() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_XONE)
+        SH_XONE.clone().into()
     }
 
     fn sh_and() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_AND)
+        SH_AND.clone().into()
     }
 
     fn sh_not() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_NOT)
+        SH_NOT.clone().into()
     }
 
     fn sh_node() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_NODE)
+        SH_NODE.clone().into()
     }
 
     fn triple_object_as_subject(triple: &Triple<RDF>) -> Result<RDF::Subject> {
-        let subj = RDF::term_as_subject(&triple.obj()).ok_or_else(|| ShaclParserError::Custom {
-            msg: format!("Expected triple object value to act as a subject: {triple}"),
-        })?;
+        let subj = triple
+            .obj()
+            .try_into()
+            .map_err(|_| ShaclParserError::Custom {
+                msg: format!("Expected triple object value to act as a subject: {triple}"),
+            })?;
         Ok(subj)
     }
 
@@ -655,22 +656,20 @@ fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
 where
     RDF: Rdf,
 {
-    match RDF::term_as_iri(term) {
-        Some(iri) => {
-            let iri_s = RDF::iri2iri_s(iri);
-            match iri_s.as_str() {
-                SH_IRI_STR => Ok(NodeKind::Iri),
-                SH_LITERAL_STR => Ok(NodeKind::Literal),
-                SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
-                SH_BLANK_NODE_OR_IRI_STR => Ok(NodeKind::BlankNodeOrIri),
-                SH_BLANK_NODE_OR_LITERAL_STR => Ok(NodeKind::BlankNodeOrLiteral),
-                SH_IRI_OR_LITERAL_STR => Ok(NodeKind::IRIOrLiteral),
-                _ => Err(ShaclParserError::UnknownNodeKind {
-                    term: format!("{term}"),
-                }),
-            }
-        }
-        None => Err(ShaclParserError::ExpectedNodeKind {
+    let iri: RDF::IRI =
+        term.clone()
+            .try_into()
+            .map_err(|_| ShaclParserError::ExpectedNodeKind {
+                term: format!("{term}"),
+            })?;
+    match iri.as_str() {
+        SH_IRI_STR => Ok(NodeKind::Iri),
+        SH_LITERAL_STR => Ok(NodeKind::Literal),
+        SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
+        SH_BLANK_NODE_OR_IRI_STR => Ok(NodeKind::BlankNodeOrIri),
+        SH_BLANK_NODE_OR_LITERAL_STR => Ok(NodeKind::BlankNodeOrLiteral),
+        SH_IRI_OR_LITERAL_STR => Ok(NodeKind::IRIOrLiteral),
+        _ => Err(ShaclParserError::UnknownNodeKind {
             term: format!("{term}"),
         }),
     }

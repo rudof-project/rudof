@@ -93,8 +93,7 @@ pub trait Engine<S: Rdf> {
     ) -> Result<FocusNodes<S>, ValidateError> {
         match shape.path() {
             SHACLPath::Predicate { pred } => {
-                let predicate = S::iri_s2iri(pred);
-                self.predicate(store, shape, &predicate, focus_node)
+                self.predicate(store, shape, &pred.clone().into(), focus_node)
             }
             SHACLPath::Alternative { paths } => self.alternative(store, shape, paths, focus_node),
             SHACLPath::Sequence { paths } => self.sequence(store, shape, paths, focus_node),

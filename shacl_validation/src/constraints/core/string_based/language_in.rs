@@ -28,7 +28,7 @@ impl<S: Rdf + Debug> Validator<S> for LanguageIn<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
-            if let Some(lang) = S::term_as_literal(value_node) {
+            if let Ok(lang) = value_node.clone().try_into() {
                 if self.langs().contains(&lang) {
                     return false;
                 }

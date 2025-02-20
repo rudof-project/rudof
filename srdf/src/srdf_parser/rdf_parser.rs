@@ -8,7 +8,6 @@ use std::collections::HashSet;
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
-
 /// Represents a generic parser of RDF data
 pub trait RDFParse<RDF: Query> {
     /// The type which is returned if the parser is successful.
@@ -38,7 +37,7 @@ where
     }
 
     pub fn iri_unchecked(str: &str) -> RDF::IRI {
-        RDF::iri_s2iri(&IriS::new_unchecked(str))
+        IriS::new_unchecked(str).into()
     }
 
     pub fn set_focus(&mut self, focus: &RDF::Term) {
@@ -46,17 +45,16 @@ where
     }
 
     pub fn set_focus_iri(&mut self, iri: &IriS) {
-        let term = RDF::iri_s2term(iri);
-        self.rdf.set_focus(&term)
+        self.rdf.set_focus(&iri.clone().into())
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
-        RDF::iri_as_term(Self::iri_unchecked(str))
+        Self::iri_unchecked(str).into()
     }
 
     #[inline]
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&RDF_TYPE)
+        RDF_TYPE.clone().into()
     }
 
     pub fn instances_of(
@@ -118,12 +116,13 @@ where
     }
 
     pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        match RDF::term_as_subject(term) {
-            None => Err(RDFParseError::ExpectedSubject {
+        let subject = term
+            .clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
-            }),
-            Some(subj) => Ok(subj),
-        }
+            })?;
+        Ok(subject)
     }
 
     pub fn parse_list_for_predicate(

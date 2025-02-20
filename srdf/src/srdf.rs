@@ -48,9 +48,8 @@ pub trait Query: Rdf {
         &self,
         node: &Self::Term,
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        match Self::term_as_subject(node) {
-            None => Ok(Vec::new()),
-            Some(subject) => {
+        match node.clone().try_into() {
+            Ok(subject) => {
                 let mut result = Vec::new();
                 let preds = self.predicates_for_subject(&subject)?;
                 for pred in preds {
@@ -59,6 +58,7 @@ pub trait Query: Rdf {
                 }
                 Ok(result)
             }
+            Err(_) => Ok(Vec::new()),
         }
     }
 

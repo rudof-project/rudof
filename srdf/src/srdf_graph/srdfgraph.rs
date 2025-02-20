@@ -242,43 +242,11 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-    fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
-        match subject {
-            OxSubject::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
     fn subject_is_iri(subject: &OxSubject) -> bool {
         matches!(subject, OxSubject::NamedNode(_))
     }
     fn subject_is_bnode(subject: &OxSubject) -> bool {
         matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    fn term_as_iri(object: &OxTerm) -> Option<&OxNamedNode> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n),
-            _ => None,
-        }
-    }
-    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
-        match object {
-            OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-
-    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
     }
 
     fn term_is_iri(object: &OxTerm) -> bool {
@@ -292,23 +260,6 @@ impl Rdf for SRDFGraph {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn subject_as_term(subject: &Self::Subject) -> Self::Term {
-        match subject {
-            OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-            OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
-        }
-    }
-
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
-        match object {
-            OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-            OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-            _ => None,
-        }
-    }
-
     fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }
@@ -319,26 +270,6 @@ impl Rdf for SRDFGraph {
 
     fn datatype(literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
-    }
-
-    fn iri_s2iri(iri_s: &IriS) -> OxNamedNode {
-        iri_s.as_named_node().clone()
-    }
-
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
-        OxTerm::NamedNode(iri)
-    }
-
-    fn iri_as_subject(iri: OxNamedNode) -> OxSubject {
-        OxSubject::NamedNode(iri)
-    }
-
-    fn iri2iri_s(iri: &OxNamedNode) -> IriS {
-        IriS::from_named_node(iri)
-    }
-
-    fn term_s2term(term: &OxTerm) -> Self::Term {
-        term.clone()
     }
 
     fn term_as_object(term: &OxTerm) -> Object {
@@ -356,7 +287,7 @@ impl Rdf for SRDFGraph {
                         lang: Some(Lang::new(lang.as_str())),
                     }),
                     (s, Some(datatype), _) => {
-                        let iri_s = Self::iri2iri_s(&datatype);
+                        let iri_s = IriS::from_named_node(&datatype);
                         Object::Literal(Literal::DatatypeLiteral {
                             lexical_form: s,
                             datatype: IriRef::Iri(iri_s),
@@ -364,7 +295,7 @@ impl Rdf for SRDFGraph {
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
             #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
@@ -403,18 +334,10 @@ impl Rdf for SRDFGraph {
         Some(self.pm.clone())
     }
 
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
-            Object::Iri(iri) => Self::iri_s2term(iri),
-            Object::BlankNode(bn) => Self::bnode_id2term(bn),
+            Object::Iri(iri) => iri.clone().into(),
+            Object::BlankNode(bn) => OxBlankNode::new_unchecked(bn).into(),
             Object::Literal(lit) => {
                 let literal: OxLiteral = match lit {
                     Literal::StringLiteral { lexical_form, lang } => match lang {
@@ -444,10 +367,6 @@ impl Rdf for SRDFGraph {
                 OxTerm::Literal(literal)
             }
         }
-    }
-
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
-        OxSubject::BlankNode(bnode)
     }
 }
 
@@ -776,11 +695,11 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let x = iri!("http://example.org/x").into();
+        let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let subject = <SRDFGraph as Rdf>::term_as_subject(&term).unwrap();
+        let subject = term.try_into().unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
         let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
@@ -795,12 +714,12 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let x = iri!("http://example.org/x").into();
+        let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
-        let bnode = <SRDFGraph as Rdf>::term_as_bnode(&term).unwrap();
-        let subject = <SRDFGraph as Rdf>::bnode_id2subject(bnode.as_str());
+        let bnode: <SRDFGraph as Rdf>::BNode = term.try_into().unwrap();
+        let subject = <SRDFGraph as Rdf>::BNode::new_unchecked(bnode.as_str()).into();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
         let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
@@ -990,7 +909,7 @@ mod tests {
     #[test]
     fn test_rdf_parser_macro() {
         use crate::SRDFGraph;
-        use crate::{rdf_parser, satisfy, RDFNodeParse, Rdf};
+        use crate::{rdf_parser, satisfy, RDFNodeParse};
         use iri_s::iri;
 
         rdf_parser! {
@@ -1008,7 +927,7 @@ mod tests {
         let graph =
             SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let x = iri!("http://example.org/x");
-        let term = <SRDFGraph as Rdf>::iri_s2term(&x);
+        let term = x.clone().into();
         let mut parser = is_term(&term);
         let result = parser.parse(&x, graph);
         assert!(result.is_ok())
@@ -1094,9 +1013,10 @@ fn test_add_triple() {
     use iri_s::iri;
 
     let mut graph = SRDFGraph::new();
-    let alice = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/alice"));
-    let knows = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/knows"));
-    let bob = <SRDFGraph as Rdf>::iri_s2term(&iri!("http://example.org/bob"));
+
+    let alice = iri!("http://example.org/alice").into();
+    let knows = iri!("http://example.org/knows").into();
+    let bob = iri!("http://example.org/bob").into();
 
     graph.add_triple(&alice, &knows, &bob).unwrap();
 

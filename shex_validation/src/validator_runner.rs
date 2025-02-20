@@ -5,6 +5,7 @@ use crate::ResultValue;
 use crate::ValidatorConfig;
 use either::Either;
 use indexmap::IndexSet;
+use iri_s::iri;
 use iri_s::IriS;
 use rbe::MatchTableIter;
 use shex_ast::compiled::preds::Preds;
@@ -13,6 +14,7 @@ use shex_ast::compiled::shape_expr::ShapeExpr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use srdf::Iri as _;
 use srdf::{Object, Query};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -365,8 +367,9 @@ impl Engine {
     where
         S: Query,
     {
-        let iri = S::iri2iri_s(&iri);
-        Pred::from(iri)
+        let iri_string = iri.as_str();
+        let iri_s = iri!(iri_string);
+        Pred::from(iri_s)
     }
 
     fn cnv_object<S>(&self, term: &S::Term) -> Node
@@ -382,8 +385,8 @@ impl Engine {
         S: Query,
     {
         let node = self.get_rdf_node(node, rdf);
-        let list: Vec<_> = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
-        if let Some(subject) = S::term_as_subject(&node) {
+        let list: Vec<_> = preds.iter().map(|pred| pred.clone().into()).collect();
+        if let Ok(subject) = node.try_into() {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
@@ -418,9 +421,9 @@ impl Engine {
         S: Query,
     {
         match node.as_object() {
-            Object::Iri(iri) => {
-                let i = S::iri_s2iri(iri);
-                S::iri_as_term(i)
+            Object::Iri(iri_s) => {
+                let iri: S::IRI = iri_s.clone().into();
+                iri.into()
             }
             Object::BlankNode(_id) => {
                 todo!()

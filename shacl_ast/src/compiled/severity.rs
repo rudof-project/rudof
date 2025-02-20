@@ -1,5 +1,6 @@
 use iri_s::iri;
 use iri_s::IriS;
+use srdf::Iri as _;
 use srdf::Rdf;
 
 use crate::severity::Severity;
@@ -43,7 +44,10 @@ impl<S: Rdf> From<&CompiledSeverity<S>> for IriS {
             CompiledSeverity::Violation => iri!(SH_VIOLATION_STR),
             CompiledSeverity::Warning => iri!(SH_WARNING_STR),
             CompiledSeverity::Info => iri!(SH_INFO_STR),
-            CompiledSeverity::Generic(iri) => S::iri2iri_s(iri),
+            CompiledSeverity::Generic(iri) => {
+                let iri_string = iri.as_str();
+                iri!(iri_string)
+            }
         }
     }
 }

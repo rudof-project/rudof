@@ -20,16 +20,20 @@ pub mod shape;
 pub mod target;
 
 fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError> {
-    let iri_s = iri_ref
+    let iri = iri_ref
         .get_iri()
-        .map_err(|_| CompiledShaclError::IriRefConversion)?;
-    Ok(S::iri_s2iri(&iri_s))
+        .map_err(|_| CompiledShaclError::IriRefConversion)?
+        .into();
+    Ok(iri)
 }
 
 fn convert_lang<S: Rdf>(lang: Lang) -> Result<S::Literal, CompiledShaclError> {
     let object = RDFNode::literal(Literal::str(&lang.value()));
     let term = S::object_as_term(&object);
-    S::term_as_literal(&term).ok_or(CompiledShaclError::LiteralConversion)
+    match term.try_into() {
+        Ok(literal) => Ok(literal),
+        Err(_) => Err(CompiledShaclError::LiteralConversion),
+    }
 }
 
 fn compile_shape<S: Rdf>(
@@ -57,7 +61,7 @@ fn convert_value<S: Rdf>(value: Value) -> Result<S::Term, CompiledShaclError> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri_ref = convert_iri_ref::<S>(iri_ref)?;
-            S::iri_as_term(iri_ref)
+            iri_ref.into()
         }
         Value::Literal(literal) => S::object_as_term(&RDFNode::literal(literal)),
     };

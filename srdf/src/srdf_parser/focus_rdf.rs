@@ -23,9 +23,13 @@ pub trait FocusRDF: Query {
         match self.get_focus() {
             None => Err(RDFParseError::NoFocusNode),
             Some(term) => {
-                Self::term_as_subject(term).ok_or_else(|| RDFParseError::ExpectedSubject {
-                    node: format!("{term}"),
-                })
+                let subject =
+                    term.clone()
+                        .try_into()
+                        .map_err(|_| RDFParseError::ExpectedSubject {
+                            node: format!("{term}"),
+                        })?;
+                Ok(subject)
             }
         }
     }

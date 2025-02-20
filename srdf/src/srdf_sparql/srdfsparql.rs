@@ -107,42 +107,11 @@ impl Rdf for SRDFSparql {
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
-    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-    fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
-        match subject {
-            OxSubject::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
     fn subject_is_iri(subject: &OxSubject) -> bool {
         matches!(subject, OxSubject::NamedNode(_))
     }
     fn subject_is_bnode(subject: &OxSubject) -> bool {
         matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    fn term_as_iri(object: &OxTerm) -> Option<&OxNamedNode> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n),
-            _ => None,
-        }
-    }
-    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
-        match object {
-            OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
     }
 
     fn term_is_iri(object: &OxTerm) -> bool {
@@ -157,14 +126,6 @@ impl Rdf for SRDFSparql {
         matches!(object, OxTerm::Literal(_))
     }
 
-    fn term_as_subject(object: &Self::Term) -> Option<OxSubject> {
-        term_as_subject(object)
-    }
-
-    fn subject_as_term(subject: &Self::Subject) -> OxTerm {
-        subject_as_term(subject)
-    }
-
     fn lexical_form(literal: &OxLiteral) -> &str {
         literal.value()
     }
@@ -173,18 +134,6 @@ impl Rdf for SRDFSparql {
     }
     fn datatype(literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
-    }
-
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
-        OxTerm::NamedNode(iri)
-    }
-
-    fn iri_s2iri(iri_s: &IriS) -> Self::IRI {
-        iri_s.as_named_node().clone()
-    }
-
-    fn term_s2term(term: &OxTerm) -> Self::Term {
-        term.clone()
     }
 
     fn term_as_object(term: &Self::Term) -> Object {
@@ -200,22 +149,18 @@ impl Rdf for SRDFSparql {
                     lang: Some(Lang::new(lang.as_str())),
                 }),
                 (s, Some(datatype), _) => {
-                    let iri_s = Self::iri2iri_s(&datatype);
+                    let iri_s = IriS::from_named_node(&datatype);
                     Object::Literal(Literal::DatatypeLiteral {
                         lexical_form: s,
                         datatype: IriRef::Iri(iri_s),
                     })
                 }
             },
-            Self::Term::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+            Self::Term::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
 
             #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
-    }
-
-    fn iri2iri_s(iri: &Self::IRI) -> IriS {
-        IriS::from_named_node(iri)
     }
 
     fn resolve_prefix_local(
@@ -250,27 +195,11 @@ impl Rdf for SRDFSparql {
         }
     }
 
-    fn iri_as_subject(iri: Self::IRI) -> Self::Subject {
-        OxSubject::NamedNode(iri)
-    }
-
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
     }
 
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
     fn object_as_term(_obj: &Object) -> Self::Term {
-        todo!()
-    }
-
-    fn bnode_as_subject(_bnode: Self::BNode) -> Self::Subject {
         todo!()
     }
 }
@@ -753,16 +682,6 @@ fn term_as_subject(object: &OxTerm) -> Option<OxSubject> {
         OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
         OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
         _ => None,
-    }
-}
-
-fn subject_as_term(subject: &OxSubject) -> OxTerm {
-    match subject {
-        OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-        OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-        #[cfg(feature = "rdf-star")]
-        #[cfg(feature = "rdf-star")]
-        OxSubject::Triple(_) => unimplemented!(),
     }
 }
 

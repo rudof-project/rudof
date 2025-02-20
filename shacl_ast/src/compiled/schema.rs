@@ -61,7 +61,7 @@ impl<S: Rdf> TryFrom<Schema> for CompiledSchema<S> {
 
         let prefixmap = schema.prefix_map();
 
-        let base = schema.base().map(|base| S::iri_s2iri(&base));
+        let base = schema.base().map(Into::into);
 
         Ok(CompiledSchema::new(shapes, prefixmap, base))
     }

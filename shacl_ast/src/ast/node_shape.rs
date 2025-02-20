@@ -1,10 +1,9 @@
 use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target,
-    SH_CLOSED_STR, SH_DEACTIVATED_STR, SH_DESCRIPTION_STR, SH_GROUP_STR, SH_INFO_STR, SH_NAME_STR,
-    SH_NODE_SHAPE, SH_PROPERTY_STR, SH_SEVERITY_STR, SH_VIOLATION_STR, SH_WARNING_STR,
+    component::Component, message_map::MessageMap, severity::Severity, target::Target, SH_CLOSED,
+    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_NODE_SHAPE, SH_PROPERTY,
+    SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
 };
 use iri_s::iri;
-use oxrdf::{Literal as OxLiteral, Term as OxTerm};
 use srdf::{RDFNode, SRDFBuilder};
 use std::fmt::Display;
 
@@ -96,25 +95,34 @@ impl NodeShape {
         &self.property_shapes
     }
 
+    // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id, RDF::iri_s2term(&SH_NODE_SHAPE))?;
+        rdf.add_type(&self.id, SH_NODE_SHAPE.clone().into())?;
 
-        self.name.to_term_iter().try_for_each(|term| {
+        self.name.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_NAME_STR)),
-                &RDF::term_s2term(&term),
+                &SH_NAME.clone().into(),
+                &literal.into(),
             )
         })?;
 
-        self.description.to_term_iter().try_for_each(|term| {
+        self.description.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_DESCRIPTION_STR)),
-                &RDF::term_s2term(&term),
+                &SH_DESCRIPTION.clone().into(),
+                &literal.into(),
             )
         })?;
 
@@ -129,25 +137,25 @@ impl NodeShape {
         self.property_shapes.iter().try_for_each(|property_shape| {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_PROPERTY_STR)),
+                &SH_PROPERTY.clone().into(),
                 &RDF::object_as_term(property_shape),
             )
         })?;
 
         if self.deactivated {
-            let term = OxTerm::Literal(OxLiteral::new_simple_literal("true"));
+            let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_DEACTIVATED_STR)),
-                &RDF::term_s2term(&term),
+                &SH_DEACTIVATED.clone().into(),
+                &literal.into(),
             )?;
         }
 
         if let Some(group) = &self.group {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_GROUP_STR)),
+                &SH_GROUP.clone().into(),
                 &RDF::object_as_term(group),
             )?;
         }
@@ -162,18 +170,18 @@ impl NodeShape {
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_SEVERITY_STR)),
-                &RDF::iri_s2term(&pred),
+                &SH_SEVERITY.clone().into(),
+                &pred.clone().into(),
             )?;
         }
 
         if self.closed {
-            let term = OxTerm::Literal(OxLiteral::from(true));
+            let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_CLOSED_STR)),
-                &RDF::term_s2term(&term),
+                &SH_CLOSED.clone().into(),
+                &literal.into(),
             )?;
         }
 
