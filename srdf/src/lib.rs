@@ -6,7 +6,7 @@
 //! - [`FocusRDF`]: RDF graphs with a focus node
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 pub mod async_srdf;
-pub mod bnode;
+// pub mod bnode;
 pub mod lang;
 pub mod literal;
 pub mod neighs;
@@ -32,7 +32,7 @@ pub use crate::query_srdf::*;
 pub use crate::rdf_data_config::*;
 pub use crate::srdf::*;
 pub use crate::srdf_basic::*;
-pub use bnode::*;
+// pub use bnode::*;
 pub use object::*;
 pub use rdf::*;
 pub use rdf_format::*;
