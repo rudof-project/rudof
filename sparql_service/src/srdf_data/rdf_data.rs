@@ -307,10 +307,6 @@ impl Rdf for RdfData {
         literal.datatype().into_owned()
     }
 
-    fn term_s2term(term: &oxrdf::Term) -> Self::Term {
-        term.clone()
-    }
-
     fn bnode_id2bnode(id: &str) -> Self::BNode {
         OxBlankNode::new_unchecked(id)
     }

@@ -4,7 +4,6 @@ use crate::{
     SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
 };
 use iri_s::iri;
-use oxrdf::{Literal as OxLiteral, Term as OxTerm};
 use srdf::{RDFNode, SRDFBuilder};
 use std::fmt::Display;
 
@@ -103,19 +102,27 @@ impl NodeShape {
     {
         rdf.add_type(&self.id, SH_NODE_SHAPE.clone().into())?;
 
-        self.name.to_term_iter().try_for_each(|term| {
+        self.name.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_NAME.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )
         })?;
 
-        self.description.to_term_iter().try_for_each(|term| {
+        self.description.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_DESCRIPTION.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )
         })?;
 
@@ -136,12 +143,12 @@ impl NodeShape {
         })?;
 
         if self.deactivated {
-            let term = OxTerm::Literal(OxLiteral::new_simple_literal("true"));
+            let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_DEACTIVATED.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )?;
         }
 
@@ -169,12 +176,12 @@ impl NodeShape {
         }
 
         if self.closed {
-            let term = OxTerm::Literal(OxLiteral::from(true));
+            let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_CLOSED.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )?;
         }
 

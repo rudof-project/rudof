@@ -27,7 +27,7 @@ pub trait Rdf {
 
     type BNode: BlankNode + TryFrom<Self::Term>;
 
-    type Literal: Literal + TryFrom<Self::Term>;
+    type Literal: Literal + From<bool> + From<String> + From<i128> + From<f64> + TryFrom<Self::Term>; // TODO: can we use From<&str>?
 
     type Err: Display;
 
@@ -133,7 +133,7 @@ pub trait Rdf {
     // fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
 
     // TODO: this is removable
-    fn term_s2term(term: &OxTerm) -> Self::Term;
+    // fn term_s2term(term: &OxTerm) -> Self::Term;
 
     // TODO: this is removable
     fn bnode_id2bnode(id: &str) -> Self::BNode;

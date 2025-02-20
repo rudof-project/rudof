@@ -1,4 +1,3 @@
-use oxrdf::{Literal as OxLiteral, Term as OxTerm};
 use srdf::lang::Lang;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -22,16 +21,8 @@ impl MessageMap {
         &self.messages
     }
 
-    pub fn to_term_iter(&self) -> impl Iterator<Item = OxTerm> + '_ {
-        self.messages.iter().map(|(lang, message)| {
-            let literal = if let Some(lang) = lang {
-                OxLiteral::new_language_tagged_literal(message, lang.value()).unwrap()
-            } else {
-                OxLiteral::new_simple_literal(message)
-            };
-
-            OxTerm::Literal(literal)
-        })
+    pub fn iter(&self) -> impl Iterator<Item = (&Option<Lang>, &String)> {
+        self.messages.iter()
     }
 }
 

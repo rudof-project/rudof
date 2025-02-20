@@ -276,10 +276,6 @@ impl Rdf for SRDFGraph {
         IriS::from_named_node(iri)
     }
 
-    fn term_s2term(term: &OxTerm) -> Self::Term {
-        term.clone()
-    }
-
     fn term_as_object(term: &OxTerm) -> Object {
         match term {
             OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),

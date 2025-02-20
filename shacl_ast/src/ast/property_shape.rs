@@ -1,10 +1,8 @@
-use iri_s::{iri, IriS};
-use oxrdf::{BlankNode, Literal as OxLiteral, NamedNode, Subject, Term as OxTerm};
-use srdf::{
-    numeric_literal::NumericLiteral, Query, RDFNode, SHACLPath, SRDFBuilder, SRDFGraph,
-    XSD_DECIMAL_STR,
-};
-use std::{collections::HashSet, fmt::Display};
+use std::fmt::Display;
+
+use iri_s::iri;
+// use oxrdf::{BlankNode, Subject, Term};
+use srdf::{numeric_literal::NumericLiteral, Query, RDFNode, SHACLPath, SRDFBuilder};
 
 use crate::{
     component::Component, message_map::MessageMap, severity::Severity, target::Target,
@@ -138,44 +136,46 @@ impl PropertyShape {
         &self.property_shapes
     }
 
-    // I added the following because there seems to be an unreachable pattern in object with rdf-star and Triple
-    #[allow(unreachable_patterns)]
-    pub fn get_value_nodes(
-        &self,
-        data_graph: &SRDFGraph,
-        focus_node: &RDFNode,
-        path: &SHACLPath,
-    ) -> HashSet<RDFNode> {
-        match path {
-            SHACLPath::Predicate { pred } => {
-                let subject = match focus_node {
-                    RDFNode::Iri(iri_s) => Subject::NamedNode(iri_s.as_named_node().to_owned()),
-                    RDFNode::BlankNode(id) => Subject::BlankNode(BlankNode::new_unchecked(id)),
-                    RDFNode::Literal(_) => todo!(),
-                };
-                if let Ok(objects) =
-                    data_graph.objects_for_subject_predicate(&subject, pred.as_named_node())
-                {
-                    objects
-                        .into_iter()
-                        .map(|object| match object {
-                            OxTerm::NamedNode(node) => {
-                                RDFNode::iri(IriS::new_unchecked(node.as_str()))
-                            }
-                            OxTerm::BlankNode(node) => RDFNode::bnode(node.to_string()),
-                            OxTerm::Literal(literal) => RDFNode::literal(literal.into()),
-                            #[cfg(feature = "rdf-star")]
-                            OxTerm::Triple(_) => unimplemented!(),
-                            _ => unimplemented!(),
-                        })
-                        .collect::<HashSet<RDFNode>>()
-                } else {
-                    HashSet::new()
-                }
-            }
-            _ => HashSet::new(),
-        }
-    }
+    // pub fn get_value_nodes(
+    //     &self,
+    //     data_graph: &SRDFGraph,
+    //     focus_node: &RDFNode,
+    //     path: &SHACLPath,
+    // ) -> HashSet<RDFNode> {
+    //     match path {
+    //         SHACLPath::Predicate { pred } => {
+    //             let subject = match focus_node {
+    //                 RDFNode::Iri(iri_s) => Subject::NamedNode(iri_s.as_named_node().to_owned()),
+    //                 RDFNode::BlankNode(id) => Subject::BlankNode(BlankNode::new_unchecked(id)),
+    //                 RDFNode::Literal(_) => todo!(),
+    //             };
+    //             if let Ok(objects) =
+    //                 data_graph.objects_for_subject_predicate(&subject, pred.as_named_node())
+    //             {
+    //                 objects
+    //                     .into_iter()
+    //                     .map(|object| match object {
+    //                         Term::NamedNode(node) => {
+    //                             RDFNode::iri(IriS::new_unchecked(node.as_str()))
+    //                         }
+    //                         Term::BlankNode(node) => RDFNode::bnode(node.to_string()),
+    //                         Term::Literal(literal) => RDFNode::literal(literal.into()),
+    //                         #[cfg(feature = "rdf-star")]
+    //                         Term::Triple(_) => unimplemented!(),
+    //                     })
+    //                     .collect::<HashSet<RDFNode>>()
+    //             } else {
+    //                 HashSet::new()
+    //             }
+    //         }
+    //         SHACLPath::Alternative { .. } => todo!(),
+    //         SHACLPath::Sequence { .. } => todo!(),
+    //         SHACLPath::Inverse { .. } => todo!(),
+    //         SHACLPath::ZeroOrMore { .. } => todo!(),
+    //         SHACLPath::OneOrMore { .. } => todo!(),
+    //         SHACLPath::ZeroOrOne { .. } => todo!(),
+    //     }
+    // }
 
     // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
@@ -184,34 +184,43 @@ impl PropertyShape {
     {
         rdf.add_type(&self.id, SH_PROPERTY_SHAPE.clone().into())?;
 
-        self.name.to_term_iter().try_for_each(|term| {
+        self.name.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_NAME.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )
         })?;
 
-        self.description.to_term_iter().try_for_each(|term| {
+        self.description.iter().try_for_each(|(lang, value)| {
+            let literal: RDF::Literal = match lang {
+                Some(_) => todo!(),
+                None => value.clone().into(),
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_DESCRIPTION.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )
         })?;
 
-        if let Some(order) = &self.order {
-            let decimal_type = NamedNode::new(XSD_DECIMAL_STR).unwrap();
-
-            let term = OxTerm::Literal(OxLiteral::new_typed_literal(
-                order.to_string(),
-                decimal_type,
-            ));
-
+        if let Some(order) = self.order.clone() {
+            let literal: RDF::Literal = match order {
+                NumericLiteral::Decimal(decimal) => todo!(),
+                NumericLiteral::Double(float) => float.into(),
+                NumericLiteral::Integer(int) => {
+                    let i: i128 = int.try_into().unwrap();
+                    i.into()
+                }
+            };
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_ORDER.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )?;
         }
 
@@ -242,12 +251,12 @@ impl PropertyShape {
             .try_for_each(|target| target.write(&self.id, rdf))?;
 
         if self.deactivated {
-            let term = OxTerm::Literal(OxLiteral::new_simple_literal("true"));
+            let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
                 &SH_DEACTIVATED.clone().into(),
-                &RDF::term_s2term(&term),
+                &literal.into(),
             )?;
         }
 
