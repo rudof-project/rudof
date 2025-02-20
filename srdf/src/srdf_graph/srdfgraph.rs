@@ -707,7 +707,7 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
+        let x = iri!("http://example.org/x").into();
         let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
@@ -726,7 +726,7 @@ mod tests {
         "#;
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
+        let x = iri!("http://example.org/x").into();
         let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
@@ -1025,7 +1025,7 @@ fn test_add_triple() {
     use iri_s::iri;
 
     let mut graph = SRDFGraph::new();
-    let alice = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/alice"));
+    let alice = iri!("http://example.org/alice").into();
     let knows = iri!("http://example.org/knows").into();
     let bob = <SRDFGraph as Rdf>::iri_s2term(&iri!("http://example.org/bob"));
 

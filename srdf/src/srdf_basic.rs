@@ -14,7 +14,7 @@ use prefixmap::PrefixMapError;
 use crate::Object;
 
 pub trait Rdf {
-    type Subject: Subject + From<Self::IRI> + From<Self::BNode> + TryFrom<Self::Term>;
+    type Subject: Subject + From<Self::IRI> + From<Self::BNode> + From<IriS> + TryFrom<Self::Term>;
 
     type Term: Term
         + From<Self::Subject>
@@ -138,9 +138,9 @@ pub trait Rdf {
     fn bnode_id2bnode(id: &str) -> Self::BNode;
 
     // TODO: this is removable
-    fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
-        todo!()
-    }
+    // fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
+    //     todo!()
+    // }
 
     // TODO: this is removable
     fn iri_s2term(iri_s: &IriS) -> Self::Term {
