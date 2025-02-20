@@ -78,6 +78,12 @@ pub trait Rdf {
     }
 
     // TODO: this is removable
+    fn subject_as_object(subject: &Self::Subject) -> Object {
+        let term = subject.clone().into();
+        Self::term_as_object(&term)
+    }
+
+    // TODO: this is removable
     // fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
     //     match Self::lexical_form(literal) {
     //         "true" => Some(true),
@@ -106,6 +112,9 @@ pub trait Rdf {
         Some(iri_s)
     }
 
+    // TODO: this is removable
+    fn iri2iri_s(iri: &Self::IRI) -> IriS;
+
     fn term_is_iri(object: &Self::Term) -> bool;
     fn term_is_bnode(object: &Self::Term) -> bool;
     fn term_is_literal(object: &Self::Term) -> bool;
@@ -113,12 +122,6 @@ pub trait Rdf {
     // fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
 
     // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
-
-    // TODO: this is removable
-    fn subject_as_object(subject: &Self::Subject) -> Object {
-        let term = subject.clone().into();
-        Self::term_as_object(&term)
-    }
 
     fn lexical_form(literal: &Self::Literal) -> &str;
     fn lang(literal: &Self::Literal) -> Option<String>;
@@ -136,7 +139,7 @@ pub trait Rdf {
     // fn term_s2term(term: &OxTerm) -> Self::Term;
 
     // TODO: this is removable
-    fn bnode_id2bnode(id: &str) -> Self::BNode;
+    // fn bnode_id2bnode(id: &str) -> Self::BNode;
 
     // TODO: this is removable
     // fn iri_s2subject(iri_s: &IriS) -> Self::Subject {
@@ -165,9 +168,6 @@ pub trait Rdf {
     // fn bnode_as_term(bnode: Self::BNode) -> Self::Term;
 
     // fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject;
-
-    // TODO: this is removable
-    fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;
@@ -222,6 +222,12 @@ impl Literal for OxLiteral {
     }
 }
 
-pub trait BlankNode: Debug + Display + PartialEq {}
+pub trait BlankNode: Debug + Display + PartialEq {
+    fn new(id: impl Into<String>) -> Self;
+}
 
-impl BlankNode for OxBlankNode {}
+impl BlankNode for OxBlankNode {
+    fn new(id: impl Into<String>) -> Self {
+        OxBlankNode::new_unchecked(id)
+    }
+}

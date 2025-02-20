@@ -203,10 +203,6 @@ impl Rdf for SRDFSparql {
         Some(self.prefixmap.clone())
     }
 
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
     fn object_as_term(_obj: &Object) -> Self::Term {
         todo!()
     }

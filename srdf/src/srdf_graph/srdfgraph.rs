@@ -338,10 +338,6 @@ impl Rdf for SRDFGraph {
         Some(self.pm.clone())
     }
 
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
     fn object_as_term(obj: &Object) -> Self::Term {
         match obj {
             Object::Iri(iri) => iri.clone().into(),

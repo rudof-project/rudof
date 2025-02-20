@@ -307,10 +307,6 @@ impl Rdf for RdfData {
         literal.datatype().into_owned()
     }
 
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
     fn iri2iri_s(iri: &Self::IRI) -> iri_s::IriS {
         IriS::from_named_node(iri)
     }
