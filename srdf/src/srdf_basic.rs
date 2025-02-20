@@ -124,7 +124,7 @@ pub trait Rdf {
     // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
     // fn lexical_form(literal: &Self::Literal) -> &str;
-    fn lang(literal: &Self::Literal) -> Option<String>;
+    // fn lang(literal: &Self::Literal) -> Option<String>;
     fn datatype(literal: &Self::Literal) -> Self::IRI;
 
     // fn datatype_str(literal: &Self::Literal) -> String {
@@ -254,8 +254,10 @@ impl Term for OxTerm {
     }
 }
 
-pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
+pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lexical_form(&self) -> &str;
+
+    fn lang(&self) -> Option<&str>;
 
     fn as_bool(&self) -> Option<bool> {
         match self.lexical_form() {
@@ -276,6 +278,10 @@ pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
 impl Literal for OxLiteral {
     fn lexical_form(&self) -> &str {
         self.value()
+    }
+
+    fn lang(&self) -> Option<&str> {
+        self.language()
     }
 }
 

@@ -15,6 +15,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Literal as _;
 use srdf::Query;
 use srdf::Rdf;
 use srdf::Sparql;
@@ -36,15 +37,13 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
         let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
 
         let unique_lang = |value_node: &S::Term| {
-            if let Ok(literal) = value_node.clone().try_into() {
-                if let Some(lang) = S::lang(&literal) {
-                    let mut langs_borrowed = langs.borrow_mut();
-
-                    if langs_borrowed.contains(&lang) {
-                        return true;
-                    } else {
-                        langs_borrowed.push(lang);
-                    }
+            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
+            if let Ok(lang) = tmp {
+                let lang = lang.clone();
+                let mut langs_borrowed = langs.borrow_mut();
+                match langs_borrowed.contains(&lang) {
+                    true => return true,
+                    false => langs_borrowed.push(lang),
                 }
             }
             false

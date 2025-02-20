@@ -242,10 +242,6 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn lang(literal: &OxLiteral) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-
     fn datatype(literal: &OxLiteral) -> OxNamedNode {
         literal.datatype().into_owned()
     }

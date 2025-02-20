@@ -275,10 +275,6 @@ impl Rdf for RdfData {
         }
     }
 
-    fn lang(literal: &Self::Literal) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-
     fn datatype(literal: &Self::Literal) -> Self::IRI {
         literal.datatype().into_owned()
     }
