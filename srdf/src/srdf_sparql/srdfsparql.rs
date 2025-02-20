@@ -5,7 +5,7 @@ use colored::*;
 use iri_s::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::{IriRef, PrefixMap};
 use regex::Regex;
@@ -105,36 +105,8 @@ impl Rdf for SRDFSparql {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = SRDFSparqlError;
-
-    fn subject_is_iri(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::NamedNode(_))
-    }
-    fn subject_is_bnode(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    fn term_is_iri(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::NamedNode(_))
-    }
-
-    fn term_is_bnode(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::BlankNode(_))
-    }
-
-    fn term_is_literal(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
-    fn lexical_form(literal: &OxLiteral) -> &str {
-        literal.value()
-    }
-    fn lang(literal: &OxLiteral) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-    fn datatype(literal: &OxLiteral) -> OxNamedNode {
-        literal.datatype().into_owned()
-    }
 
     fn term_as_object(term: &Self::Term) -> Object {
         match term {
@@ -323,7 +295,7 @@ impl Query for SRDFSparql {
     fn triples_with_predicate(
         &self,
         _pred: &Self::IRI,
-    ) -> std::prelude::v1::Result<Vec<crate::Triple<Self>>, Self::Err> {
+    ) -> std::prelude::v1::Result<Vec<Self::Triple>, Self::Err> {
         todo!()
     }
 }

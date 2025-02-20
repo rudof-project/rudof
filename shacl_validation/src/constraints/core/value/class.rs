@@ -13,6 +13,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Sparql;
+use srdf::Term;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 use std::fmt::Debug;
@@ -26,7 +27,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
-            if S::term_is_literal(value_node) {
+            if value_node.is_literal() {
                 return true;
             }
 

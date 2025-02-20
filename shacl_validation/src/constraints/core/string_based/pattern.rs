@@ -12,6 +12,7 @@ use shacl_ast::compiled::component::Pattern;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
@@ -23,7 +24,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+            if value_node.is_blank_node() {
                 true
             } else {
                 todo!()
