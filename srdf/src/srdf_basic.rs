@@ -36,7 +36,7 @@ pub trait Rdf {
     // fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>; TODO: remove this
 
     /// Returns `true` if the subject is an IRI
-    fn subject_is_iri(subject: &Self::Subject) -> bool;
+    // fn subject_is_iri(subject: &Self::Subject) -> bool;
 
     /// Returns `true` if the subject is a Blank Node
     fn subject_is_bnode(subject: &Self::Subject) -> bool;

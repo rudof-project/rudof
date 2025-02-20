@@ -211,10 +211,6 @@ impl Rdf for RdfData {
         self.graph.as_ref().map(|g| g.prefixmap())
     }
 
-    fn subject_is_iri(subject: &Self::Subject) -> bool {
-        matches!(subject, OxSubject::NamedNode(_))
-    }
-
     fn subject_is_bnode(subject: &Self::Subject) -> bool {
         matches!(subject, OxSubject::BlankNode(_))
     }
