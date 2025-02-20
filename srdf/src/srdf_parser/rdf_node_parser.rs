@@ -245,7 +245,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, SRDF, SRDFBasic, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
+    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, Query, Rdf, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
     /// # use srdf::srdf_graph::SRDFGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
