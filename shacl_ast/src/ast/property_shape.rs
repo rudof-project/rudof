@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
 use iri_s::iri;
-// use oxrdf::{BlankNode, Subject, Term};
-use srdf::{numeric_literal::NumericLiteral, Query, RDFNode, SHACLPath, SRDFBuilder};
+use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder};
 
 use crate::{
     component::Component, message_map::MessageMap, severity::Severity, target::Target,
@@ -210,7 +209,7 @@ impl PropertyShape {
 
         if let Some(order) = self.order.clone() {
             let literal: RDF::Literal = match order {
-                NumericLiteral::Decimal(decimal) => todo!(),
+                NumericLiteral::Decimal(_) => todo!(),
                 NumericLiteral::Double(float) => float.into(),
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();

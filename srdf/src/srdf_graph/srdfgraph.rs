@@ -909,7 +909,7 @@ mod tests {
     #[test]
     fn test_rdf_parser_macro() {
         use crate::SRDFGraph;
-        use crate::{rdf_parser, satisfy, RDFNodeParse, Rdf};
+        use crate::{rdf_parser, satisfy, RDFNodeParse};
         use iri_s::iri;
 
         rdf_parser! {
