@@ -6,7 +6,7 @@ use tracing::debug;
 use crate::async_srdf::AsyncSRDF;
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, Triple as STriple, RDF_TYPE_STR};
+use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use rust_decimal::Decimal;
@@ -240,37 +240,8 @@ impl Rdf for SRDFGraph {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = SRDFGraphError;
-
-    fn subject_is_iri(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::NamedNode(_))
-    }
-    fn subject_is_bnode(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    fn term_is_iri(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::NamedNode(_))
-    }
-    fn term_is_bnode(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::BlankNode(_))
-    }
-
-    fn term_is_literal(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
-    fn lexical_form(literal: &OxLiteral) -> &str {
-        literal.value()
-    }
-
-    fn lang(literal: &OxLiteral) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-
-    fn datatype(literal: &OxLiteral) -> OxNamedNode {
-        literal.datatype().into_owned()
-    }
 
     fn term_as_object(term: &OxTerm) -> Object {
         match term {
@@ -485,16 +456,13 @@ impl Query for SRDFGraph {
         Ok((results, remainder))
     }
 
-    fn triples_with_predicate(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<Vec<crate::Triple<Self>>, Self::Err> {
+    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
         let mut result = Vec::new();
         for triple in self.graph.triples_for_predicate(pred) {
             let subj = triple.subject.into_owned();
             let pred = triple.predicate.into_owned();
             let obj = triple.object.into_owned();
-            result.push(STriple::new(subj, pred, obj))
+            result.push(Self::Triple::new(subj, pred, obj))
         }
         Ok(result)
     }

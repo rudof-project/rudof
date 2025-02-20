@@ -12,6 +12,8 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Iri;
+use srdf::Literal as _;
 use srdf::Query;
 use srdf::Rdf;
 use srdf::Sparql;
@@ -27,8 +29,9 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
-            if let Ok(literal) = value_node.clone().try_into() {
-                return S::datatype(&literal) != *self.datatype();
+            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
+            if let Ok(literal) = tmp {
+                return literal.datatype() != self.datatype().as_str();
             }
             true
         };

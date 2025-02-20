@@ -6,7 +6,7 @@ use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm,
+    Term as OxTerm, Triple as OxTriple,
 };
 use oxrdfio::RdfFormat;
 use prefixmap::IriRef;
@@ -205,18 +205,11 @@ impl Rdf for RdfData {
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = RdfDataError;
 
     fn prefixmap(&self) -> std::option::Option<PrefixMap> {
         self.graph.as_ref().map(|g| g.prefixmap())
-    }
-
-    fn subject_is_iri(subject: &Self::Subject) -> bool {
-        matches!(subject, OxSubject::NamedNode(_))
-    }
-
-    fn subject_is_bnode(subject: &Self::Subject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
     }
 
     fn term_as_object(term: &Self::Term) -> srdf::Object {
@@ -281,30 +274,6 @@ impl Rdf for RdfData {
                 OxTerm::Literal(literal)
             }
         }
-    }
-
-    fn term_is_iri(object: &Self::Term) -> bool {
-        matches!(object, OxTerm::NamedNode(_))
-    }
-
-    fn term_is_bnode(object: &Self::Term) -> bool {
-        matches!(object, OxTerm::BlankNode(_))
-    }
-
-    fn term_is_literal(object: &Self::Term) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
-    fn lexical_form(literal: &Self::Literal) -> &str {
-        literal.value()
-    }
-
-    fn lang(literal: &Self::Literal) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-
-    fn datatype(literal: &Self::Literal) -> Self::IRI {
-        literal.datatype().into_owned()
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
@@ -484,20 +453,15 @@ impl Query for RdfData {
         Ok(result)
     }
 
-    fn triples_with_predicate(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<Vec<srdf::Triple<Self>>, Self::Err> {
+    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
         let mut result = Vec::new();
         if let Some(graph) = &self.graph {
             let s = graph.triples_with_predicate(pred)?;
-            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
-            result.extend(t)
+            result.extend(s)
         }
         for e in self.endpoints.iter() {
             let s = e.triples_with_predicate(pred)?;
-            let t: Vec<srdf::Triple<RdfData>> = s.into_iter().map(|s| s.cnv::<RdfData>()).collect();
-            result.extend(t)
+            result.extend(s)
         }
         Ok(result)
     }

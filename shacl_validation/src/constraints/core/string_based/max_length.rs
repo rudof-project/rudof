@@ -14,6 +14,7 @@ use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::Query;
 use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
@@ -25,20 +26,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+            if value_node.is_blank_node() {
                 true
-            } else if S::term_is_iri(value_node) {
+            } else if value_node.is_iri() {
                 let iri: S::IRI = match value_node.clone().try_into() {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
                 iri.as_str().len() > self.max_length() as usize
-            } else if S::term_is_literal(value_node) {
+            } else if value_node.is_literal() {
                 let literal: S::Literal = match value_node.clone().try_into() {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
-                literal.as_str().len() > self.max_length() as usize
+                literal.lexical_form().len() > self.max_length() as usize
             } else {
                 todo!()
             }

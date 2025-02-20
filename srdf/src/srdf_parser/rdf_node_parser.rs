@@ -1138,7 +1138,7 @@ where
             .map_err(|_| RDFParseError::ExpectedLiteral {
                 term: format!("{term}"),
             })?;
-    Ok(literal.as_str().to_string())
+    Ok(literal.lexical_form().to_string())
 }
 
 /// Combines the results of parsers that return vectors of values

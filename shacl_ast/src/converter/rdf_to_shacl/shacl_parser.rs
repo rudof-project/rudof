@@ -3,7 +3,7 @@ use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
     property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Object, PResult, RDFNode,
-    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
+    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Triple as _, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -247,8 +247,8 @@ where
         SH_NODE.clone().into()
     }
 
-    fn triple_object_as_subject(triple: &Triple<RDF>) -> Result<RDF::Subject> {
-        let subj = triple
+    fn triple_object_as_subject(triple: &RDF::Triple) -> Result<RDF::Subject> {
+        let subj: RDF::Subject = triple
             .obj()
             .try_into()
             .map_err(|_| ShaclParserError::Custom {

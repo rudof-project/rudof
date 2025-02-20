@@ -8,6 +8,7 @@ use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
+use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 
@@ -29,6 +30,8 @@ pub trait Rdf {
 
     type Literal: Literal + From<bool> + From<String> + From<i128> + From<f64> + TryFrom<Self::Term>; // TODO: can we use From<&str>?
 
+    type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
+
     type Err: Display;
 
     // fn subject_as_iri(subject: &Self::Subject) -> Option<Self::IRI>; TODO: remove this
@@ -36,10 +39,10 @@ pub trait Rdf {
     // fn subject_as_bnode(subject: &Self::Subject) -> Option<Self::BNode>; TODO: remove this
 
     /// Returns `true` if the subject is an IRI
-    fn subject_is_iri(subject: &Self::Subject) -> bool;
+    // fn subject_is_iri(subject: &Self::Subject) -> bool;
 
     /// Returns `true` if the subject is a Blank Node
-    fn subject_is_bnode(subject: &Self::Subject) -> bool;
+    // fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
     // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>; TODO: remove this
 
@@ -115,17 +118,17 @@ pub trait Rdf {
     // TODO: this is removable
     // fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
-    fn term_is_iri(object: &Self::Term) -> bool;
-    fn term_is_bnode(object: &Self::Term) -> bool;
-    fn term_is_literal(object: &Self::Term) -> bool;
+    // fn term_is_iri(object: &Self::Term) -> bool;
+    // fn term_is_bnode(object: &Self::Term) -> bool;
+    // fn term_is_literal(object: &Self::Term) -> bool;
 
     // fn term_as_subject(object: &Self::Term) -> Option<Self::Subject>;
 
     // fn subject_as_term(subject: &Self::Subject) -> Self::Term;
 
-    fn lexical_form(literal: &Self::Literal) -> &str;
-    fn lang(literal: &Self::Literal) -> Option<String>;
-    fn datatype(literal: &Self::Literal) -> Self::IRI;
+    // fn lexical_form(literal: &Self::Literal) -> &str;
+    // fn lang(literal: &Self::Literal) -> Option<String>;
+    // fn datatype(literal: &Self::Literal) -> Self::IRI;
 
     // fn datatype_str(literal: &Self::Literal) -> String {
     //     let iri = Self::datatype(literal);
@@ -179,9 +182,39 @@ pub trait Rdf {
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 }
 
-pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {}
+#[derive(PartialEq)]
+pub enum TermKind {
+    Iri,
+    BlankNode,
+    Literal,
+    Triple,
+}
 
-impl Subject for OxSubject {}
+pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {
+    fn kind(&self) -> TermKind;
+
+    fn is_iri(&self) -> bool {
+        self.kind() == TermKind::Iri
+    }
+
+    fn is_blank_node(&self) -> bool {
+        self.kind() == TermKind::BlankNode
+    }
+
+    fn is_triple(&self) -> bool {
+        self.kind() == TermKind::Triple
+    }
+}
+
+impl Subject for OxSubject {
+    fn kind(&self) -> TermKind {
+        match self {
+            OxSubject::NamedNode(_) => TermKind::Iri,
+            OxSubject::BlankNode(_) => TermKind::BlankNode,
+            OxSubject::Triple(_) => TermKind::Triple,
+        }
+    }
+}
 
 pub trait Iri: Debug + Display + Hash + Eq + Clone {
     fn as_str(&self) -> &str;
@@ -193,15 +226,46 @@ impl Iri for OxNamedNode {
     }
 }
 
-pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {}
+pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {
+    fn kind(&self) -> TermKind;
 
-impl Term for OxTerm {}
+    fn is_iri(&self) -> bool {
+        self.kind() == TermKind::Iri
+    }
 
-pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
-    fn as_str(&self) -> &str;
+    fn is_blank_node(&self) -> bool {
+        self.kind() == TermKind::BlankNode
+    }
+
+    fn is_literal(&self) -> bool {
+        self.kind() == TermKind::Literal
+    }
+
+    fn is_triple(&self) -> bool {
+        self.kind() == TermKind::Triple
+    }
+}
+
+impl Term for OxTerm {
+    fn kind(&self) -> TermKind {
+        match self {
+            OxTerm::NamedNode(_) => TermKind::Iri,
+            OxTerm::BlankNode(_) => TermKind::BlankNode,
+            OxTerm::Literal(_) => TermKind::Literal,
+            OxTerm::Triple(_) => TermKind::Triple,
+        }
+    }
+}
+
+pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
+    fn lexical_form(&self) -> &str;
+
+    fn lang(&self) -> Option<&str>;
+
+    fn datatype(&self) -> &str;
 
     fn as_bool(&self) -> Option<bool> {
-        match self.as_str() {
+        match self.lexical_form() {
             "true" => Some(true),
             "false" => Some(false),
             _ => None,
@@ -209,7 +273,7 @@ pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
     }
 
     fn as_integer(&self) -> Option<isize> {
-        match self.as_str().parse() {
+        match self.lexical_form().parse() {
             Ok(n) => Some(n),
             _ => None,
         }
@@ -217,8 +281,16 @@ pub trait Literal: Debug + Display + PartialEq + Eq + Hash {
 }
 
 impl Literal for OxLiteral {
-    fn as_str(&self) -> &str {
+    fn lexical_form(&self) -> &str {
         self.value()
+    }
+
+    fn lang(&self) -> Option<&str> {
+        self.language()
+    }
+
+    fn datatype(&self) -> &str {
+        self.datatype().as_str()
     }
 }
 
@@ -229,5 +301,39 @@ pub trait BlankNode: Debug + Display + PartialEq {
 impl BlankNode for OxBlankNode {
     fn new(id: impl Into<String>) -> Self {
         OxBlankNode::new_unchecked(id)
+    }
+}
+
+pub trait Triple<S, P, O>: Debug + Clone + Display
+where
+    S: Subject,
+    P: Iri,
+    O: Term,
+{
+    fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
+    fn subj(&self) -> S;
+    fn pred(&self) -> P;
+    fn obj(&self) -> O;
+}
+
+impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
+    fn new(
+        subj: impl Into<OxSubject>,
+        pred: impl Into<OxNamedNode>,
+        obj: impl Into<OxTerm>,
+    ) -> Self {
+        OxTriple::new(subj, pred, obj)
+    }
+
+    fn subj(&self) -> OxSubject {
+        self.subject.clone()
+    }
+
+    fn pred(&self) -> OxNamedNode {
+        self.predicate.clone()
+    }
+
+    fn obj(&self) -> OxTerm {
+        self.object.clone()
     }
 }
