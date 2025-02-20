@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 use crate::{
     literal::Literal, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
-    RDF_NIL, RDF_NIL_STR, RDF_REST, RDF_TYPE,
+    RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 use crate::{srdf_basic::Literal as _, Iri as _};
 
@@ -1890,7 +1890,7 @@ impl<'p, P> ByRef<'p, P> {
     }
 }
 
-impl<'p, RDF, P, O> RDFNodeParse<RDF> for ByRef<'p, P>
+impl<RDF, P, O> RDFNodeParse<RDF> for ByRef<'_, P>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF, Output = O>,
