@@ -23,7 +23,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     /// Returns the parsed result if the parser succeeds, or an error otherwise.
     #[inline(always)]
     fn parse(&mut self, node: &IriS, mut rdf: RDF) -> PResult<Self::Output> {
-        let iri = RDF::iri_s2iri(node);
+        let iri: RDF::IRI = node.clone().into();
         let focus = iri.into();
         rdf.set_focus(&focus);
         self.parse_impl(&mut rdf)
@@ -859,7 +859,7 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
         let subject = rdf.get_focus_as_subject()?;
-        let pred = RDF::iri_s2iri(&self.property);
+        let pred = self.property.clone().into();
         let values = rdf
             .objects_for_subject_predicate(&subject, &pred)
             .map_err(|e| RDFParseError::SRDFError {
@@ -933,9 +933,8 @@ pub fn property_value_debug<RDF>(property: &IriS) -> PropertyValueDebug<RDF>
 where
     RDF: Query,
 {
-    let property = RDF::iri_s2iri(property);
     PropertyValueDebug {
-        property,
+        property: property.clone().into(),
         _marker_rdf: PhantomData,
     }
 }
@@ -1708,9 +1707,8 @@ pub fn subjects_with_property_value<RDF>(
 where
     RDF: FocusRDF,
 {
-    let iri = RDF::iri_s2iri(property);
     SubjectsPropertyValue {
-        property: iri,
+        property: property.clone().into(),
         value: value.clone(),
         _marker_rdf: PhantomData,
     }

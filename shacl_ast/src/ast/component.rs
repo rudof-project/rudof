@@ -307,7 +307,7 @@ impl Component {
     {
         rdf.add_triple(
             &RDF::object_as_subject(rdf_node).unwrap(),
-            &RDF::iri_s2iri(&iri!(predicate)),
+            &iri!(predicate).into(),
             value,
         )
     }

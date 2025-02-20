@@ -382,7 +382,7 @@ impl Engine {
         S: Query,
     {
         let node = self.get_rdf_node(node, rdf);
-        let list: Vec<_> = preds.iter().map(|pred| S::iri_s2iri(pred)).collect();
+        let list: Vec<_> = preds.iter().map(|pred| pred.clone().into()).collect();
         if let Ok(subject) = node.try_into() {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
@@ -418,9 +418,9 @@ impl Engine {
         S: Query,
     {
         match node.as_object() {
-            Object::Iri(iri) => {
-                let i = S::iri_s2iri(iri);
-                i.into()
+            Object::Iri(iri_s) => {
+                let iri: S::IRI = iri_s.clone().into();
+                iri.into()
             }
             Object::BlankNode(_id) => {
                 todo!()

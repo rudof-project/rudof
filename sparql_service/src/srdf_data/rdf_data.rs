@@ -307,10 +307,6 @@ impl Rdf for RdfData {
         literal.datatype().into_owned()
     }
 
-    fn iri_s2iri(iri_s: &iri_s::IriS) -> Self::IRI {
-        iri_s.as_named_node().clone()
-    }
-
     fn term_s2term(term: &oxrdf::Term) -> Self::Term {
         term.clone()
     }

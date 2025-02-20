@@ -272,10 +272,6 @@ impl Rdf for SRDFGraph {
         literal.datatype().into_owned()
     }
 
-    fn iri_s2iri(iri_s: &IriS) -> OxNamedNode {
-        iri_s.as_named_node().clone()
-    }
-
     fn iri2iri_s(iri: &OxNamedNode) -> IriS {
         IriS::from_named_node(iri)
     }
@@ -712,7 +708,7 @@ mod tests {
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let subject = term.try_into().unwrap();
@@ -731,7 +727,7 @@ mod tests {
 
         let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let x = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/p"));
+        let p = iri!("http://example.org/p").into();
         let terms = srdf::Query::objects_for_subject_predicate(&graph, &x, &p).unwrap();
         let term = terms.iter().next().unwrap().clone();
         let bnode: <SRDFGraph as Rdf>::BNode = term.try_into().unwrap();
@@ -1030,7 +1026,7 @@ fn test_add_triple() {
 
     let mut graph = SRDFGraph::new();
     let alice = <SRDFGraph as Rdf>::iri_s2subject(&iri!("http://example.org/alice"));
-    let knows = <SRDFGraph as Rdf>::iri_s2iri(&iri!("http://example.org/knows"));
+    let knows = iri!("http://example.org/knows").into();
     let bob = <SRDFGraph as Rdf>::iri_s2term(&iri!("http://example.org/bob"));
 
     graph.add_triple(&alice, &knows, &bob).unwrap();

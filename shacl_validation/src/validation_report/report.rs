@@ -72,7 +72,7 @@ impl ValidationReport {
 impl ValidationReport {
     pub fn parse<S: Query>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &S::iri_s2iri(&shacl_ast::SH_RESULT))? {
+        for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))

@@ -22,7 +22,7 @@ pub trait Rdf {
         + From<Self::BNode>
         + From<Self::Literal>;
 
-    type IRI: Iri + TryFrom<Self::Term>;
+    type IRI: Iri + From<IriS> + TryFrom<Self::Term>;
 
     type BNode: BlankNode + TryFrom<Self::Term>;
 
@@ -129,7 +129,7 @@ pub trait Rdf {
     }
 
     // TODO: this is removable
-    fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
+    // fn iri_s2iri(iri_s: &IriS) -> Self::IRI;
 
     // TODO: this is removable
     fn term_s2term(term: &OxTerm) -> Self::Term;

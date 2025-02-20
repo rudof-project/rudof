@@ -20,10 +20,11 @@ pub mod shape;
 pub mod target;
 
 fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError> {
-    let iri_s = iri_ref
+    let iri = iri_ref
         .get_iri()
-        .map_err(|_| CompiledShaclError::IriRefConversion)?;
-    Ok(S::iri_s2iri(&iri_s))
+        .map_err(|_| CompiledShaclError::IriRefConversion)?
+        .into();
+    Ok(iri)
 }
 
 fn convert_lang<S: Rdf>(lang: Lang) -> Result<S::Literal, CompiledShaclError> {

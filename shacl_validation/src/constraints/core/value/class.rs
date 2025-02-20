@@ -30,12 +30,12 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
                 return true;
             }
 
-            let is_class_valid = get_objects_for(store, value_node, &S::iri_s2iri(&RDF_TYPE))
+            let is_class_valid = get_objects_for(store, value_node, &RDF_TYPE.clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == self.class_rule()
-                        || get_objects_for(store, ctype, &S::iri_s2iri(&RDFS_SUBCLASS_OF))
+                        || get_objects_for(store, ctype, &RDFS_SUBCLASS_OF.clone().into())
                             .unwrap_or_default()
                             .contains(self.class_rule())
                 });

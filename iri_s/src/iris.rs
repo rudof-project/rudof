@@ -1,5 +1,6 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
+use reqwest::dns::Name;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -260,6 +261,12 @@ impl<'de> Deserialize<'de> for IriS {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_str(IriVisitor)
+    }
+}
+
+impl From<IriS> for NamedNode {
+    fn from(iri: IriS) -> Self {
+        NamedNode::new_unchecked(iri.as_str())
     }
 }
 

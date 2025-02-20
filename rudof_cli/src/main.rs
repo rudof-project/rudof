@@ -1253,8 +1253,7 @@ where
             }
             IriRef::Iri(iri) => iri,
         };
-        let iri = S::iri_s2iri(&iri_s);
-        vs.push(iri)
+        vs.push(iri_s.into())
     }
     Ok(vs)
 }
@@ -1285,12 +1284,11 @@ where
 {
     match node {
         ObjectValue::IriRef(iri_ref) => {
-            let iri = match iri_ref {
-                IriRef::Iri(iri_s) => S::iri_s2iri(iri_s),
+            let iri: S::IRI = match iri_ref {
+                IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
                     let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-
-                    S::iri_s2iri(&iri_s)
+                    iri_s.into()
                 }
             };
             let term: S::Term = iri.into();

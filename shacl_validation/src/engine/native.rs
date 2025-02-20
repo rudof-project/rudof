@@ -46,7 +46,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
+        let subjects = match store.subjects_with_predicate_object(&RDF_TYPE.clone().into(), class) {
             Ok(subjects) => subjects,
             Err(_) => return Err(ValidateError::SRDF),
         };
@@ -91,24 +91,24 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         shape: &CompiledShape<S>,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
+        let ctypes = get_objects_for(store, shape.id(), &RDF_TYPE.clone().into())?;
 
         let mut subclasses = get_subjects_for(
             store,
-            &S::iri_s2iri(&RDFS_SUBCLASS_OF),
+            &RDFS_SUBCLASS_OF.clone().into(),
             &S::iri_s2term(&RDFS_CLASS),
         )?;
 
         subclasses.insert(S::iri_s2term(&RDFS_CLASS));
 
         if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape.id())?;
+            let actual_class_nodes = get_subjects_for(store, &RDF_TYPE.clone().into(), shape.id())?;
 
             let subclass_targets =
-                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape.id())?
+                get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), shape.id())?
                     .into_iter()
                     .flat_map(move |subclass| {
-                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
+                        get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
                             .into_iter()
                             .flatten()
                     });

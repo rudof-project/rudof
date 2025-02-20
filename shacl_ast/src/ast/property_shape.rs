@@ -8,8 +8,8 @@ use std::{collections::HashSet, fmt::Display};
 
 use crate::{
     component::Component, message_map::MessageMap, severity::Severity, target::Target,
-    SH_DEACTIVATED_STR, SH_DESCRIPTION_STR, SH_GROUP_STR, SH_INFO_STR, SH_NAME_STR, SH_ORDER_STR,
-    SH_PATH_STR, SH_PROPERTY_SHAPE, SH_SEVERITY_STR, SH_VIOLATION_STR, SH_WARNING_STR,
+    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_ORDER, SH_PATH,
+    SH_PROPERTY_SHAPE, SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
 };
 
 #[derive(Debug, Clone)]
@@ -177,6 +177,7 @@ impl PropertyShape {
         }
     }
 
+    // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: SRDFBuilder,
@@ -186,7 +187,7 @@ impl PropertyShape {
         self.name.to_term_iter().try_for_each(|term| {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_NAME_STR)),
+                &SH_NAME.clone().into(),
                 &RDF::term_s2term(&term),
             )
         })?;
@@ -194,7 +195,7 @@ impl PropertyShape {
         self.description.to_term_iter().try_for_each(|term| {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_DESCRIPTION_STR)),
+                &SH_DESCRIPTION.clone().into(),
                 &RDF::term_s2term(&term),
             )
         })?;
@@ -209,7 +210,7 @@ impl PropertyShape {
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_ORDER_STR)),
+                &SH_ORDER.clone().into(),
                 &RDF::term_s2term(&term),
             )?;
         }
@@ -217,7 +218,7 @@ impl PropertyShape {
         if let Some(group) = &self.group {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_GROUP_STR)),
+                &SH_GROUP.clone().into(),
                 &RDF::object_as_term(group),
             )?;
         }
@@ -225,7 +226,7 @@ impl PropertyShape {
         if let SHACLPath::Predicate { pred } = &self.path {
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_PATH_STR)),
+                &SH_PATH.clone().into(),
                 &RDF::iri_s2term(pred),
             )?;
         } else {
@@ -245,7 +246,7 @@ impl PropertyShape {
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_DEACTIVATED_STR)),
+                &SH_DEACTIVATED.clone().into(),
                 &RDF::term_s2term(&term),
             )?;
         }
@@ -260,7 +261,7 @@ impl PropertyShape {
 
             rdf.add_triple(
                 &RDF::object_as_subject(&self.id).unwrap(),
-                &RDF::iri_s2iri(&iri!(SH_SEVERITY_STR)),
+                &SH_SEVERITY.clone().into(),
                 &RDF::iri_s2term(&pred),
             )?;
         }

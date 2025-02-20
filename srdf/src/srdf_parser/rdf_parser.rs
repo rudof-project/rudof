@@ -37,7 +37,7 @@ where
     }
 
     pub fn iri_unchecked(str: &str) -> RDF::IRI {
-        RDF::iri_s2iri(&IriS::new_unchecked(str))
+        IriS::new_unchecked(str).into()
     }
 
     pub fn set_focus(&mut self, focus: &RDF::Term) {
@@ -55,7 +55,7 @@ where
 
     #[inline]
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&RDF_TYPE)
+        RDF_TYPE.clone().into()
     }
 
     pub fn instances_of(

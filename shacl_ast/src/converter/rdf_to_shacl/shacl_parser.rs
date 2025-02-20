@@ -215,35 +215,36 @@ where
     }*/
 
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&RDF_TYPE)
+        RDF_TYPE.clone().into()
     }
 
     fn sh_node_shape() -> RDF::Term {
-        RDF::iri_s2term(&SH_NODE_SHAPE)
+        let iri: RDF::IRI = SH_NODE_SHAPE.clone().into();
+        iri.into()
     }
 
     fn sh_property() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_PROPERTY)
+        SH_PROPERTY.clone().into()
     }
 
     fn sh_or() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_OR)
+        SH_OR.clone().into()
     }
 
     fn sh_xone() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_XONE)
+        SH_XONE.clone().into()
     }
 
     fn sh_and() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_AND)
+        SH_AND.clone().into()
     }
 
     fn sh_not() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_NOT)
+        SH_NOT.clone().into()
     }
 
     fn sh_node() -> RDF::IRI {
-        RDF::iri_s2iri(&SH_NODE)
+        SH_NODE.clone().into()
     }
 
     fn triple_object_as_subject(triple: &Triple<RDF>) -> Result<RDF::Subject> {
