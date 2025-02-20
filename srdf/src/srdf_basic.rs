@@ -104,16 +104,16 @@ pub trait Rdf {
     // }
 
     // TODO: this is removable
-    fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
-        let iri_s = match term.clone().try_into() {
-            Ok(iri) => Self::iri2iri_s(&iri),
-            Err(_) => return None,
-        };
-        Some(iri_s)
-    }
+    // fn term_as_iri_s(term: &Self::Term) -> Option<IriS> {
+    //     let iri_s = match term.clone().try_into() {
+    //         Ok(iri) => Self::iri2iri_s(&iri),
+    //         Err(_) => return None,
+    //     };
+    //     Some(iri_s)
+    // }
 
     // TODO: this is removable
-    fn iri2iri_s(iri: &Self::IRI) -> IriS;
+    // fn iri2iri_s(iri: &Self::IRI) -> IriS;
 
     fn term_is_iri(object: &Self::Term) -> bool;
     fn term_is_bnode(object: &Self::Term) -> bool;
@@ -127,10 +127,10 @@ pub trait Rdf {
     fn lang(literal: &Self::Literal) -> Option<String>;
     fn datatype(literal: &Self::Literal) -> Self::IRI;
 
-    fn datatype_str(literal: &Self::Literal) -> String {
-        let iri = Self::datatype(literal);
-        Self::iri2iri_s(&iri).to_string()
-    }
+    // fn datatype_str(literal: &Self::Literal) -> String {
+    //     let iri = Self::datatype(literal);
+    //     Self::iri2iri_s(&iri).to_string()
+    // }
 
     // TODO: this is removable
     // fn iri_s2iri(iri_s: &IriS) -> Self::IRI;

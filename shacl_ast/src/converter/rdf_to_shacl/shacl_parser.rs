@@ -2,8 +2,8 @@ use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Object, PResult, RDFNode, RDFNodeParse,
-    RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
+    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Object, PResult, RDFNode,
+    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -656,23 +656,20 @@ fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
 where
     RDF: Rdf,
 {
-    match term.clone().try_into() {
-        // TODO: this clone can be removed
-        Ok(iri) => {
-            let iri_s = RDF::iri2iri_s(&iri);
-            match iri_s.as_str() {
-                SH_IRI_STR => Ok(NodeKind::Iri),
-                SH_LITERAL_STR => Ok(NodeKind::Literal),
-                SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
-                SH_BLANK_NODE_OR_IRI_STR => Ok(NodeKind::BlankNodeOrIri),
-                SH_BLANK_NODE_OR_LITERAL_STR => Ok(NodeKind::BlankNodeOrLiteral),
-                SH_IRI_OR_LITERAL_STR => Ok(NodeKind::IRIOrLiteral),
-                _ => Err(ShaclParserError::UnknownNodeKind {
-                    term: format!("{term}"),
-                }),
-            }
-        }
-        Err(_) => Err(ShaclParserError::ExpectedNodeKind {
+    let iri: RDF::IRI =
+        term.clone()
+            .try_into()
+            .map_err(|_| ShaclParserError::ExpectedNodeKind {
+                term: format!("{term}"),
+            })?;
+    match iri.as_str() {
+        SH_IRI_STR => Ok(NodeKind::Iri),
+        SH_LITERAL_STR => Ok(NodeKind::Literal),
+        SH_BLANKNODE_STR => Ok(NodeKind::BlankNode),
+        SH_BLANK_NODE_OR_IRI_STR => Ok(NodeKind::BlankNodeOrIri),
+        SH_BLANK_NODE_OR_LITERAL_STR => Ok(NodeKind::BlankNodeOrLiteral),
+        SH_IRI_OR_LITERAL_STR => Ok(NodeKind::IRIOrLiteral),
+        _ => Err(ShaclParserError::UnknownNodeKind {
             term: format!("{term}"),
         }),
     }

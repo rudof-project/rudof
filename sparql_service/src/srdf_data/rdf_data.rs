@@ -234,7 +234,7 @@ impl Rdf for RdfData {
                         lang: Some(Lang::new(lang.as_str())),
                     }),
                     (s, Some(datatype), _) => {
-                        let iri_s = Self::iri2iri_s(&datatype);
+                        let iri_s = IriS::from_named_node(&datatype);
                         Object::Literal(Literal::DatatypeLiteral {
                             lexical_form: s,
                             datatype: IriRef::Iri(iri_s),
@@ -242,7 +242,7 @@ impl Rdf for RdfData {
                     }
                 }
             }
-            OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
+            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(&iri)),
             // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
@@ -305,10 +305,6 @@ impl Rdf for RdfData {
 
     fn datatype(literal: &Self::Literal) -> Self::IRI {
         literal.datatype().into_owned()
-    }
-
-    fn iri2iri_s(iri: &Self::IRI) -> iri_s::IriS {
-        IriS::from_named_node(iri)
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {

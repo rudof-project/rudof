@@ -5,6 +5,7 @@ use crate::ResultValue;
 use crate::ValidatorConfig;
 use either::Either;
 use indexmap::IndexSet;
+use iri_s::iri;
 use iri_s::IriS;
 use rbe::MatchTableIter;
 use shex_ast::compiled::preds::Preds;
@@ -13,6 +14,7 @@ use shex_ast::compiled::shape_expr::ShapeExpr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use srdf::Iri as _;
 use srdf::{Object, Query};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -365,8 +367,9 @@ impl Engine {
     where
         S: Query,
     {
-        let iri = S::iri2iri_s(&iri);
-        Pred::from(iri)
+        let iri_string = iri.as_str();
+        let iri_s = iri!(iri_string);
+        Pred::from(iri_s)
     }
 
     fn cnv_object<S>(&self, term: &S::Term) -> Node
