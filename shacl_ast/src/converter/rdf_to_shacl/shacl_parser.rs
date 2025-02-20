@@ -257,10 +257,6 @@ where
         Ok(subj)
     }
 
-    fn subject_to_node(subject: &RDF::Subject) -> RDFNode {
-        RDF::subject_as_object(subject)
-    }
-
     fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a
     where
         RDF: FocusRDF + 'a,

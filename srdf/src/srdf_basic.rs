@@ -12,8 +12,6 @@ use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 
-use crate::Object;
-
 pub trait Rdf {
     type Subject: Subject + From<Self::IRI> + From<Self::BNode> + From<IriS> + TryFrom<Self::Term>;
 
@@ -67,24 +65,24 @@ pub trait Rdf {
     //     Self::literal_as_string(&literal)
     // }
 
-    // TODO: this is removable
-    fn term_as_object(term: &Self::Term) -> Object;
+    // // TODO: this is removable
+    // fn term_as_object(term: &Self::Term) -> Object;
 
-    // TODO: this is removable
-    fn object_as_term(obj: &Object) -> Self::Term;
+    // // TODO: this is removable
+    // fn object_as_term(obj: &Object) -> Self::Term;
 
-    // TODO: this is removable
-    fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
-        let term = Self::object_as_term(obj);
-        let subject = term.try_into().ok()?;
-        Some(subject)
-    }
+    // // TODO: this is removable
+    // fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
+    //     let term = Self::object_as_term(obj);
+    //     let subject = term.try_into().ok()?;
+    //     Some(subject)
+    // }
 
-    // TODO: this is removable
-    fn subject_as_object(subject: &Self::Subject) -> Object {
-        let term = subject.clone().into();
-        Self::term_as_object(&term)
-    }
+    // // TODO: this is removable
+    // fn subject_as_object(subject: &Self::Subject) -> Object {
+    //     let term = subject.clone().into();
+    //     Self::term_as_object(&term)
+    // }
 
     // TODO: this is removable
     // fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
@@ -296,11 +294,16 @@ impl Literal for OxLiteral {
 
 pub trait BlankNode: Debug + Display + PartialEq {
     fn new(id: impl Into<String>) -> Self;
+    fn id(&self) -> &str;
 }
 
 impl BlankNode for OxBlankNode {
     fn new(id: impl Into<String>) -> Self {
         OxBlankNode::new_unchecked(id)
+    }
+
+    fn id(&self) -> &str {
+        self.as_str()
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{lang::Lang, literal::Literal, Object, SRDFSparqlError};
+use crate::SRDFSparqlError;
 use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
 use async_trait::async_trait;
 use colored::*;
@@ -7,7 +7,7 @@ use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
     Term as OxTerm, Triple as OxTriple,
 };
-use prefixmap::{IriRef, PrefixMap};
+use prefixmap::PrefixMap;
 use regex::Regex;
 use sparesults::QuerySolution as OxQuerySolution;
 use std::{
@@ -108,33 +108,6 @@ impl Rdf for SRDFSparql {
     type Triple = OxTriple;
     type Err = SRDFSparqlError;
 
-    fn term_as_object(term: &Self::Term) -> Object {
-        match term {
-            Self::Term::BlankNode(bn) => Object::BlankNode(bn.to_string()),
-            Self::Term::Literal(lit) => match lit.to_owned().destruct() {
-                (s, None, None) => Object::Literal(Literal::StringLiteral {
-                    lexical_form: s,
-                    lang: None,
-                }),
-                (s, None, Some(lang)) => Object::Literal(Literal::StringLiteral {
-                    lexical_form: s,
-                    lang: Some(Lang::new(lang.as_str())),
-                }),
-                (s, Some(datatype), _) => {
-                    let iri_s = IriS::from_named_node(&datatype);
-                    Object::Literal(Literal::DatatypeLiteral {
-                        lexical_form: s,
-                        datatype: IriRef::Iri(iri_s),
-                    })
-                }
-            },
-            Self::Term::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
-
-            #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => unimplemented!(),
-        }
-    }
-
     fn resolve_prefix_local(
         &self,
         prefix: &str,
@@ -169,10 +142,6 @@ impl Rdf for SRDFSparql {
 
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
-    }
-
-    fn object_as_term(_obj: &Object) -> Self::Term {
-        todo!()
     }
 }
 

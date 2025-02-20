@@ -1,6 +1,7 @@
 use super::rdf_node_parser::*;
 use super::rdf_parser_error::RDFParseError;
-use crate::{FocusRDF, Object, Query, RDF_TYPE};
+use crate::{FocusRDF, Iri, Query, RDF_TYPE};
+use iri_s::iri;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -107,12 +108,14 @@ where
     }
 
     pub fn term_as_iri(term: &RDF::Term) -> Result<IriS, RDFParseError> {
-        let obj = RDF::term_as_object(term);
-        match obj {
-            Object::Iri(iri) => Ok(iri),
-            Object::BlankNode(bnode) => Err(RDFParseError::ExpectedIRIFoundBNode { bnode }),
-            Object::Literal(lit) => Err(RDFParseError::ExpectedIRIFoundLiteral { lit }),
-        }
+        let iri: RDF::IRI = term
+            .clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedIRI {
+                term: term.to_string(),
+            })?;
+        let iri_string = iri.as_str();
+        Ok(iri!(iri_string))
     }
 
     pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {

@@ -49,4 +49,7 @@ pub enum SRDFGraphError {
         #[from]
         err: PrefixMapError,
     },
+
+    #[error("Expected node to act as subject: {node}")]
+    ExpectedSubject { node: String },
 }
