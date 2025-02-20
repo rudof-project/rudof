@@ -211,10 +211,6 @@ impl Rdf for RdfData {
         self.graph.as_ref().map(|g| g.prefixmap())
     }
 
-    fn subject_is_bnode(subject: &Self::Subject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
-    }
-
     fn term_as_object(term: &Self::Term) -> srdf::Object {
         match term {
             OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),

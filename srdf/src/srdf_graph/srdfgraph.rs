@@ -242,10 +242,6 @@ impl Rdf for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    fn subject_is_bnode(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
-    }
-
     fn term_is_iri(object: &OxTerm) -> bool {
         matches!(object, OxTerm::NamedNode(_))
     }

@@ -39,7 +39,7 @@ pub trait Rdf {
     // fn subject_is_iri(subject: &Self::Subject) -> bool;
 
     /// Returns `true` if the subject is a Blank Node
-    fn subject_is_bnode(subject: &Self::Subject) -> bool;
+    // fn subject_is_bnode(subject: &Self::Subject) -> bool;
 
     // fn term_as_iri(object: &Self::Term) -> Option<Self::IRI>; TODO: remove this
 
