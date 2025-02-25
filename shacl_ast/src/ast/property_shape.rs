@@ -181,7 +181,7 @@ impl PropertyShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id, SH_PROPERTY_SHAPE.clone().into())?;
+        rdf.add_type(&self.id.clone().into(), SH_PROPERTY_SHAPE.clone().into())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {

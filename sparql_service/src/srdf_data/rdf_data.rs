@@ -491,7 +491,7 @@ impl SRDFBuilder for RdfData {
         todo!()
     }
 
-    fn add_type(&mut self, _node: &srdf::RDFNode, _type_: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, _node: &Self::Term, _type_: Self::Term) -> Result<(), Self::Err> {
         todo!()
     }
 

@@ -1,10 +1,10 @@
+use crate::async_srdf::AsyncSRDF;
+use crate::{FocusRDF, Query, RDFFormat, RDFNode, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use tracing::debug;
 // use log::debug;
-use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use std::collections::hash_map::Entry;
@@ -492,7 +492,7 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
-    fn add_type(&mut self, node: &crate::RDFNode, r#type: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, node: &Self::Term, r#type: Self::Term) -> Result<(), Self::Err> {
         let subject: Self::Subject =
             node.clone()
                 .try_into()

@@ -100,7 +100,7 @@ impl NodeShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id, SH_NODE_SHAPE.clone().into())?;
+        rdf.add_type(&self.id.clone().into(), SH_NODE_SHAPE.clone().into())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {

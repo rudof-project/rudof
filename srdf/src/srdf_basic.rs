@@ -342,11 +342,16 @@ impl Literal for OxLiteral {
 
 pub trait BlankNode: Debug + Display + PartialEq {
     fn new(id: impl Into<String>) -> Self;
+    fn id(&self) -> &str;
 }
 
 impl BlankNode for OxBlankNode {
     fn new(id: impl Into<String>) -> Self {
         OxBlankNode::new_unchecked(id)
+    }
+
+    fn id(&self) -> &str {
+        self.as_str()
     }
 }
 

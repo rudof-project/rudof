@@ -644,10 +644,7 @@ where
 /// let x = iri!("http://example.org/x");
 /// assert_eq!(iri().parse(&x, graph).unwrap(), x)
 /// ```
-pub fn literal<RDF>() -> impl RDFNodeParse<RDF, Output = Literal>
-where
-    RDF: FocusRDF,
-{
+pub fn literal<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Literal> {
     term().flat_map(|ref t: RDF::Term| {
         let literal: RDF::Literal =
             t.clone()
