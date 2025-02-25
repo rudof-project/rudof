@@ -11,24 +11,38 @@ use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
+use rust_decimal::Decimal;
 
 use crate::Object;
 
 pub trait Rdf {
-    type Subject: Subject + From<Self::IRI> + From<Self::BNode> + From<IriS> + TryFrom<Self::Term>;
+    type Subject: Subject
+        + From<Self::IRI>
+        + From<Self::BNode>
+        + From<IriS>
+        + TryFrom<Self::Term>
+        + TryFrom<Object>;
 
     type Term: Term
         + From<Self::Subject>
         + From<Self::IRI>
         + From<Self::BNode>
         + From<Self::Literal>
-        + From<IriS>;
+        + From<IriS>
+        + From<Object>
+        + Into<Object>;
 
     type IRI: Iri + From<IriS> + TryFrom<Self::Term>;
 
     type BNode: BlankNode + TryFrom<Self::Term>;
 
-    type Literal: Literal + From<bool> + From<String> + From<i128> + From<f64> + TryFrom<Self::Term>; // TODO: can we use From<&str>?
+    type Literal: Literal
+        + From<bool>
+        + From<String>
+        + From<i128>
+        + From<f64>
+        + TryFrom<Self::Term>
+        + From<crate::literal::Literal>; // TODO: can we use From<&str>?
 
     type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
@@ -68,23 +82,23 @@ pub trait Rdf {
     // }
 
     // TODO: this is removable
-    fn term_as_object(term: &Self::Term) -> Object;
+    // fn term_as_object(term: &Self::Term) -> Object;
 
     // TODO: this is removable
-    fn object_as_term(obj: &Object) -> Self::Term;
+    // fn object_as_term(obj: &Object) -> Self::Term;
 
     // TODO: this is removable
-    fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
-        let term = Self::object_as_term(obj);
-        let subject = term.try_into().ok()?;
-        Some(subject)
-    }
+    // fn object_as_subject(obj: &Object) -> Option<Self::Subject> {
+    //     let term = Self::object_as_term(obj);
+    //     let subject = term.try_into().ok()?;
+    //     Some(subject)
+    // }
 
     // TODO: this is removable
-    fn subject_as_object(subject: &Self::Subject) -> Object {
-        let term = subject.clone().into();
-        Self::term_as_object(&term)
-    }
+    // fn subject_as_object(subject: &Self::Subject) -> Object {
+    //     let term = subject.clone().into();
+    //     Self::term_as_object(&term)
+    // }
 
     // TODO: this is removable
     // fn literal_as_boolean(literal: &Self::Literal) -> Option<bool> {
@@ -211,6 +225,7 @@ impl Subject for OxSubject {
         match self {
             OxSubject::NamedNode(_) => TermKind::Iri,
             OxSubject::BlankNode(_) => TermKind::BlankNode,
+            #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => TermKind::Triple,
         }
     }
@@ -252,6 +267,7 @@ impl Term for OxTerm {
             OxTerm::NamedNode(_) => TermKind::Iri,
             OxTerm::BlankNode(_) => TermKind::BlankNode,
             OxTerm::Literal(_) => TermKind::Literal,
+            #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => TermKind::Triple,
         }
     }
@@ -276,6 +292,36 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         match self.lexical_form().parse() {
             Ok(n) => Some(n),
             _ => None,
+        }
+    }
+
+    fn as_double(&self) -> Option<f64> {
+        match self.lexical_form().parse() {
+            Ok(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    fn as_decimal(&self) -> Option<Decimal> {
+        match self.lexical_form().parse() {
+            Ok(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    fn as_literal(&self) -> crate::literal::Literal {
+        if let Some(bool) = self.as_bool() {
+            crate::literal::Literal::boolean(bool)
+        } else if let Some(int) = self.as_integer() {
+            crate::literal::Literal::integer(int)
+        } else if let Some(decimal) = self.as_double() {
+            crate::literal::Literal::double(decimal)
+        } else if let Some(decimal) = self.as_decimal() {
+            crate::literal::Literal::decimal(decimal)
+        } else if let Some(lang) = self.lang() {
+            crate::literal::Literal::lang_str(self.lexical_form(), crate::lang::Lang::new(lang))
+        } else {
+            crate::literal::Literal::str(self.lexical_form())
         }
     }
 }

@@ -107,7 +107,7 @@ where
     }
 
     pub fn term_as_iri(term: &RDF::Term) -> Result<IriS, RDFParseError> {
-        let obj = RDF::term_as_object(term);
+        let obj = term.clone().into();
         match obj {
             Object::Iri(iri) => Ok(iri),
             Object::BlankNode(bnode) => Err(RDFParseError::ExpectedIRIFoundBNode { bnode }),

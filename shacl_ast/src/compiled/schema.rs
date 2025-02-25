@@ -54,7 +54,7 @@ impl<S: Rdf> TryFrom<Schema> for CompiledSchema<S> {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {
-            let term = S::object_as_term(rdf_node);
+            let term = rdf_node.clone().into();
             let shape = CompiledShape::compile(shape.to_owned(), &schema)?;
             shapes.insert(term, shape);
         }

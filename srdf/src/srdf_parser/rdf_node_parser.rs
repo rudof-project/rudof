@@ -8,7 +8,7 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
+    literal::Literal, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
     RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 use crate::{srdf_basic::Literal as _, Iri as _};
@@ -648,11 +648,15 @@ pub fn literal<RDF>() -> impl RDFNodeParse<RDF, Output = Literal>
 where
     RDF: FocusRDF,
 {
-    term().flat_map(|ref t| match RDF::term_as_object(t) {
-        Object::Literal(lit) => Ok(lit),
-        _ => Err(RDFParseError::ExpectedLiteral {
-            term: format!("{t}"),
-        }),
+    term().flat_map(|ref t: RDF::Term| {
+        let literal: RDF::Literal =
+            t.clone()
+                .try_into()
+                .map_err(|_| RDFParseError::ExpectedLiteral {
+                    term: t.to_string(),
+                })?;
+        let literal: Literal = literal.as_literal();
+        Ok(literal)
     })
 }
 
@@ -1698,7 +1702,7 @@ where
     let expected_str = format!("{expected}");
     cond(
         &term,
-        move |t| RDF::term_as_object(t) == RDF::term_as_object(&expected),
+        move |t| t == &expected,
         format!("Term {term} not equals {}", expected_str),
     )
 }

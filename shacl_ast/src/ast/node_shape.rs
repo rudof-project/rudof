@@ -108,7 +108,7 @@ impl NodeShape {
                 None => value.clone().into(),
             };
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_NAME.clone().into(),
                 &literal.into(),
             )
@@ -120,7 +120,7 @@ impl NodeShape {
                 None => value.clone().into(),
             };
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_DESCRIPTION.clone().into(),
                 &literal.into(),
             )
@@ -136,9 +136,9 @@ impl NodeShape {
 
         self.property_shapes.iter().try_for_each(|property_shape| {
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_PROPERTY.clone().into(),
-                &RDF::object_as_term(property_shape),
+                &property_shape.clone().into(),
             )
         })?;
 
@@ -146,7 +146,7 @@ impl NodeShape {
             let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_DEACTIVATED.clone().into(),
                 &literal.into(),
             )?;
@@ -154,9 +154,9 @@ impl NodeShape {
 
         if let Some(group) = &self.group {
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_GROUP.clone().into(),
-                &RDF::object_as_term(group),
+                &group.clone().into(),
             )?;
         }
 
@@ -169,7 +169,7 @@ impl NodeShape {
             };
 
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_SEVERITY.clone().into(),
                 &pred.clone().into(),
             )?;
@@ -179,7 +179,7 @@ impl NodeShape {
             let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_CLOSED.clone().into(),
                 &literal.into(),
             )?;

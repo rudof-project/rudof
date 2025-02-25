@@ -9,16 +9,10 @@ use oxrdf::{
     Term as OxTerm, Triple as OxTriple,
 };
 use oxrdfio::RdfFormat;
-use prefixmap::IriRef;
 use prefixmap::PrefixMap;
-use rust_decimal::Decimal;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::lang::Lang;
-use srdf::literal::Literal;
-use srdf::numeric_literal::NumericLiteral;
 use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
-use srdf::Object;
 use srdf::Query;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
@@ -212,70 +206,6 @@ impl Rdf for RdfData {
         self.graph.as_ref().map(|g| g.prefixmap())
     }
 
-    fn term_as_object(term: &Self::Term) -> srdf::Object {
-        match term {
-            OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),
-            OxTerm::Literal(lit) => {
-                let lit = lit.to_owned();
-                match lit.destruct() {
-                    (s, None, None) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: None,
-                    }),
-                    (s, None, Some(lang)) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: Some(Lang::new(lang.as_str())),
-                    }),
-                    (s, Some(datatype), _) => {
-                        let iri_s = IriS::from_named_node(&datatype);
-                        Object::Literal(Literal::DatatypeLiteral {
-                            lexical_form: s,
-                            datatype: IriRef::Iri(iri_s),
-                        })
-                    }
-                }
-            }
-            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
-            // #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => unimplemented!(),
-        }
-    }
-
-    fn object_as_term(obj: &srdf::Object) -> Self::Term {
-        match obj {
-            Object::Iri(iri) => iri.clone().into(),
-            Object::BlankNode(bn) => OxBlankNode::new_unchecked(bn).into(),
-            Object::Literal(lit) => {
-                let literal: OxLiteral = match lit {
-                    Literal::StringLiteral { lexical_form, lang } => match lang {
-                        Some(lang) => OxLiteral::new_language_tagged_literal_unchecked(
-                            lexical_form,
-                            lang.to_string(),
-                        ),
-                        None => OxLiteral::new_simple_literal(lexical_form),
-                    },
-                    Literal::DatatypeLiteral {
-                        lexical_form,
-                        datatype,
-                    } => OxLiteral::new_typed_literal(lexical_form, cnv_iri_ref(datatype)),
-                    Literal::NumericLiteral(n) => match n {
-                        NumericLiteral::Integer(n) => {
-                            let n: i128 = *n as i128;
-                            OxLiteral::from(n)
-                        }
-                        NumericLiteral::Decimal(d) => {
-                            let decimal = cnv_decimal(d);
-                            OxLiteral::from(decimal)
-                        }
-                        NumericLiteral::Double(d) => OxLiteral::from(*d),
-                    },
-                    Literal::BooleanLiteral(b) => OxLiteral::from(*b),
-                };
-                OxTerm::Literal(literal)
-            }
-        }
-    }
-
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
         if let Some(graph) = &self.graph {
@@ -401,14 +331,6 @@ fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
 
 fn _rdf_type() -> OxNamedNode {
     OxNamedNode::new_unchecked(RDF_TYPE_STR)
-}
-
-fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
-    OxNamedNode::new_unchecked(iri_ref.to_string())
-}
-
-fn cnv_decimal(_d: &Decimal) -> oxsdatatypes::Decimal {
-    todo!()
 }
 
 impl Query for RdfData {

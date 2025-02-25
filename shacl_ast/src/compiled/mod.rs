@@ -2,9 +2,7 @@ use compiled_shacl_error::CompiledShaclError;
 use prefixmap::IriRef;
 use shape::CompiledShape;
 use srdf::lang::Lang;
-use srdf::literal::Literal;
 use srdf::Object;
-use srdf::RDFNode;
 use srdf::Rdf;
 
 use crate::value::Value;
@@ -28,12 +26,8 @@ fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError
 }
 
 fn convert_lang<S: Rdf>(lang: Lang) -> Result<S::Literal, CompiledShaclError> {
-    let object = RDFNode::literal(Literal::str(&lang.value()));
-    let term = S::object_as_term(&object);
-    match term.try_into() {
-        Ok(literal) => Ok(literal),
-        Err(_) => Err(CompiledShaclError::LiteralConversion),
-    }
+    let literal: S::Literal = lang.value().into();
+    Ok(literal)
 }
 
 fn compile_shape<S: Rdf>(
@@ -63,7 +57,10 @@ fn convert_value<S: Rdf>(value: Value) -> Result<S::Term, CompiledShaclError> {
             let iri_ref = convert_iri_ref::<S>(iri_ref)?;
             iri_ref.into()
         }
-        Value::Literal(literal) => S::object_as_term(&RDFNode::literal(literal)),
+        Value::Literal(literal) => {
+            let literal: S::Literal = literal.into();
+            literal.into()
+        }
     };
     Ok(ans)
 }

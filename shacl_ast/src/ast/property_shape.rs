@@ -189,7 +189,7 @@ impl PropertyShape {
                 None => value.clone().into(),
             };
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_NAME.clone().into(),
                 &literal.into(),
             )
@@ -201,7 +201,7 @@ impl PropertyShape {
                 None => value.clone().into(),
             };
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_DESCRIPTION.clone().into(),
                 &literal.into(),
             )
@@ -217,7 +217,7 @@ impl PropertyShape {
                 }
             };
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_ORDER.clone().into(),
                 &literal.into(),
             )?;
@@ -225,15 +225,15 @@ impl PropertyShape {
 
         if let Some(group) = &self.group {
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_GROUP.clone().into(),
-                &RDF::object_as_term(group),
+                &group.clone().into(),
             )?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_PATH.clone().into(),
                 &pred.clone().into(),
             )?;
@@ -253,7 +253,7 @@ impl PropertyShape {
             let literal: RDF::Literal = "true".to_string().into();
 
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_DEACTIVATED.clone().into(),
                 &literal.into(),
             )?;
@@ -268,7 +268,7 @@ impl PropertyShape {
             };
 
             rdf.add_triple(
-                &RDF::object_as_subject(&self.id).unwrap(),
+                &self.id.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_SEVERITY.clone().into(),
                 &pred.clone().into(),
             )?;

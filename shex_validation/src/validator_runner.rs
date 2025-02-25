@@ -376,8 +376,7 @@ impl Engine {
     where
         S: Query,
     {
-        let object = S::term_as_object(term);
-        Node::from(object)
+        Node::from(term.clone().into())
     }
 
     fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Neighs>

@@ -53,7 +53,7 @@ where
     }
 
     fn term_to_shape_label(term: &RDF::Term) -> Result<ShapeExprLabel> {
-        let object = RDF::term_as_object(term);
+        let object = term.clone().into();
         match object {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri)),
             Object::BlankNode(bnode) => Ok(ShapeExprLabel::bnode(BNode::new(bnode.as_str()))),
