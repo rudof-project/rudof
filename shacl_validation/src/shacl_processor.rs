@@ -68,6 +68,30 @@ pub trait ShaclProcessor<S: Rdf + Debug> {
     }
 }
 
+pub struct RdfDataValidation {
+    data: RdfData,
+    mode: ShaclValidationMode,
+}
+
+impl RdfDataValidation {
+    pub fn from_rdf_data(data: RdfData, mode: ShaclValidationMode) -> Self {
+        Self { data, mode }
+    }
+}
+
+impl ShaclProcessor<RdfData> for RdfDataValidation {
+    fn store(&self) -> &RdfData {
+        &self.data
+    }
+
+    fn runner(&self) -> &dyn Engine<RdfData> {
+        match self.mode {
+            ShaclValidationMode::Native => &NativeEngine,
+            ShaclValidationMode::Sparql => &SparqlEngine,
+        }
+    }
+}
+
 /// The In-Memory Graph Validation algorithm.
 ///
 /// ```
