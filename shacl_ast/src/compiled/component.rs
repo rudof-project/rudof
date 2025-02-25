@@ -12,7 +12,6 @@ use super::shape::CompiledShape;
 use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
-use srdf::RDFNode;
 use srdf::Rdf;
 
 #[derive(Debug)]
@@ -50,7 +49,7 @@ impl<S: Rdf> CompiledComponent<S> {
     pub fn compile(component: Component, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
-                let class_rule = S::object_as_term(&object);
+                let class_rule = object.into();
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
@@ -61,19 +60,23 @@ impl<S: Rdf> CompiledComponent<S> {
             Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
             Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
             Component::MinExclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MinExclusive(MinExclusive::new(term))
             }
             Component::MaxExclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MaxExclusive(MaxExclusive::new(term))
             }
             Component::MinInclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MinInclusive(MinInclusive::new(term))
             }
             Component::MaxInclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MaxInclusive(MaxInclusive::new(term))
             }
             Component::MinLength(length) => CompiledComponent::MinLength(MinLength::new(length)),

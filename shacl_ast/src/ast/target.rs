@@ -20,22 +20,22 @@ impl Target {
     {
         match self {
             Self::TargetNode(target_rdf_node) => rdf.add_triple(
-                &RDF::object_as_subject(rdf_node).unwrap(),
+                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_TARGET_NODE.clone().into(),
-                &RDF::object_as_term(target_rdf_node),
+                &target_rdf_node.clone().into(),
             ),
             Self::TargetClass(target_rdf_node) => rdf.add_triple(
-                &RDF::object_as_subject(rdf_node).unwrap(),
+                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_TARGET_CLASS.clone().into(),
-                &RDF::object_as_term(target_rdf_node),
+                &target_rdf_node.clone().into(),
             ),
             Self::TargetSubjectsOf(iri_ref) => rdf.add_triple(
-                &RDF::object_as_subject(rdf_node).unwrap(),
+                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_TARGET_CLASS.clone().into(),
                 &iri_ref.get_iri().unwrap().clone().into(),
             ),
             Self::TargetObjectsOf(iri_ref) => rdf.add_triple(
-                &RDF::object_as_subject(rdf_node).unwrap(),
+                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
                 &SH_TARGET_CLASS.clone().into(),
                 &iri_ref.get_iri().unwrap().clone().into(),
             ),

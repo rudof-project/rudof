@@ -95,7 +95,7 @@ impl<S: Rdf> CompiledPropertyShape<S> {
 
 impl<S: Rdf> CompiledPropertyShape<S> {
     pub fn compile(shape: PropertyShape, schema: &Schema) -> Result<Self, CompiledShaclError> {
-        let id = S::object_as_term(shape.id());
+        let id = shape.id().clone().into();
         let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();

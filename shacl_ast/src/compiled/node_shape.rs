@@ -84,7 +84,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
 
 impl<S: Rdf> CompiledNodeShape<S> {
     pub fn compile(shape: Box<NodeShape>, schema: &Schema) -> Result<Self, CompiledShaclError> {
-        let id = S::object_as_term(shape.id());
+        let id = shape.id().clone().into();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;

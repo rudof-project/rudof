@@ -49,4 +49,7 @@ pub enum SRDFGraphError {
         #[from]
         err: PrefixMapError,
     },
+
+    #[error("Unexepected node type: {node}")]
+    UnexepectedNodeType { node: String },
 }

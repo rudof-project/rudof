@@ -1,9 +1,10 @@
+use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Object, PResult, RDFNode,
-    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Triple as _, RDF_TYPE,
+    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, Object, PResult,
+    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple as _, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -56,8 +57,7 @@ where
         let mut state = State::from(self.shapes_candidates()?);
         while let Some(node) = state.pop_pending() {
             if let std::collections::hash_map::Entry::Vacant(e) = self.shapes.entry(node.clone()) {
-                let term = RDF::object_as_term(&node);
-                self.rdf_parser.rdf.set_focus(&term);
+                self.rdf_parser.rdf.set_focus(&node.clone().into());
                 let shape = Self::shape(&mut state)
                     .parse_impl(&mut self.rdf_parser.rdf)
                     .map_err(|e| ShaclParserError::RDFParseError { err: e })?;
@@ -118,9 +118,11 @@ where
         candidates.extend(shape_instances);
 
         let result: Vec<_> = candidates
-            .iter()
-            .map(|s| Self::subject_to_node(s))
+            .into_iter()
+            .flat_map(|subject| subject.try_into())
+            .map(|term: RDF::Term| term.into())
             .collect();
+
         Ok(result)
     }
 
@@ -257,10 +259,6 @@ where
         Ok(subj)
     }
 
-    fn subject_to_node(subject: &RDF::Subject) -> RDFNode {
-        RDF::subject_as_object(subject)
-    }
-
     fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a
     where
         RDF: FocusRDF + 'a,
@@ -336,10 +334,7 @@ where
 {
     not(property_values_non_empty(&SH_PATH)).with(
         term()
-            .then(move |t: RDF::Term| {
-                let id = RDF::term_as_object(&t.clone());
-                ok(&NodeShape::new(id))
-            })
+            .then(move |t: RDF::Term| ok(&NodeShape::new(t.into())))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ps| {
                 optional(closed()).flat_map(move |c| {
@@ -359,7 +354,7 @@ where
 
 fn property_shapes<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>> {
     property_values(&SH_PROPERTY).flat_map(|ts| {
-        let nodes = ts.iter().map(|t| RDF::term_as_object(t)).collect();
+        let nodes = ts.into_iter().map(Into::into).collect();
         Ok(nodes)
     })
 }
@@ -372,7 +367,7 @@ fn cnv_xone_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
+    let shapes: Vec<_> = ls.into_iter().map(Into::into).collect();
     Ok(Component::Xone { shapes })
 }
 
@@ -384,7 +379,7 @@ fn cnv_and_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
+    let shapes: Vec<_> = ls.into_iter().map(Into::into).collect();
     Ok(Component::And { shapes })
 }
 
@@ -400,16 +395,14 @@ fn cnv_node<RDF>(t: RDF::Term) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shape = RDF::term_as_object(&t);
-    Ok(Component::Node { shape })
+    Ok(Component::Node { shape: t.into() })
 }
 
 fn cnv_not<RDF>(t: RDF::Term) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shape = RDF::term_as_object(&t);
-    Ok(Component::Not { shape })
+    Ok(Component::Not { shape: t.into() })
 }
 
 fn parse_or_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component> {
@@ -420,7 +413,7 @@ fn cnv_or_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shapes: Vec<_> = ls.iter().map(RDF::term_as_object).collect();
+    let shapes: Vec<_> = ls.into_iter().map(Into::into).collect();
     Ok(Component::Or { shapes })
 }
 
@@ -428,10 +421,7 @@ fn id<RDF>() -> impl RDFNodeParse<RDF, Output = RDFNode>
 where
     RDF: FocusRDF,
 {
-    term().then(move |t: RDF::Term| {
-        let id = RDF::term_as_object(&t.clone());
-        ok(&id)
-    })
+    term().then(move |t: RDF::Term| ok(&t.into()))
 }
 
 /// Parses the property value of the focus node as a SHACL path
@@ -447,11 +437,13 @@ fn shacl_path<RDF>(term: RDF::Term) -> impl RDFNodeParse<RDF, Output = SHACLPath
 where
     RDF: FocusRDF,
 {
-    let obj = RDF::term_as_object(&term);
-    match obj {
-        Object::Iri(iri) => ok(&SHACLPath::iri(iri)),
-        Object::BlankNode(_) => todo!(),
-        Object::Literal(_) => todo!(),
+    if let Ok(iri) = term.try_into() {
+        let iri: RDF::IRI = iri;
+        let iri_string = iri.as_str();
+        let iri_s = IriS::new_unchecked(iri_string);
+        ok(&SHACLPath::iri(iri_s))
+    } else {
+        todo!()
     }
 }
 
@@ -518,7 +510,7 @@ where
 {
     property_values(&SH_CLASS).map(|ns| {
         ns.iter()
-            .map(|term| Component::Class(RDF::term_as_object(term)))
+            .map(|term: &RDF::Term| Component::Class(term.clone().into()))
             .collect()
     })
 }
@@ -585,12 +577,20 @@ fn term_to_value<RDF>(term: &RDF::Term) -> std::result::Result<Value, RDFParseEr
 where
     RDF: Rdf,
 {
-    match RDF::term_as_object(term) {
-        Object::Iri(iri) => Ok(Value::Iri(IriRef::Iri(iri))),
-        Object::BlankNode(bn) => Err(RDFParseError::BlankNodeNoValue {
-            bnode: bn.to_string(),
-        }),
-        Object::Literal(lit) => Ok(Value::Literal(lit)),
+    if term.is_blank_node() {
+        Err(RDFParseError::BlankNodeNoValue {
+            bnode: term.to_string(),
+        })
+    } else if let Ok(iri) = term.clone().try_into() {
+        let iri: RDF::IRI = iri;
+        let iri_string = iri.as_str();
+        let iri_s = IriS::new_unchecked(iri_string);
+        Ok(Value::Iri(IriRef::Iri(iri_s)))
+    } else if let Ok(literal) = term.clone().try_into() {
+        let literal: RDF::Literal = literal;
+        Ok(Value::Literal(literal.as_literal()))
+    } else {
+        todo!()
     }
 }
 
@@ -681,11 +681,8 @@ where
 {
     property_values(&SH_TARGET_CLASS).flat_map(move |ts| {
         let result = ts
-            .iter()
-            .map(|t| {
-                let node = RDF::term_as_object(t);
-                Target::TargetClass(node)
-            })
+            .into_iter()
+            .map(|t: RDF::Term| Target::TargetClass(t.into()))
             .collect();
         Ok(result)
     })
@@ -697,11 +694,8 @@ where
 {
     property_values(&SH_TARGET_NODE).flat_map(move |ts| {
         let result = ts
-            .iter()
-            .map(|t| {
-                let node = RDF::term_as_object(t);
-                Target::TargetNode(node)
-            })
+            .into_iter()
+            .map(|t: RDF::Term| Target::TargetNode(t.into()))
             .collect();
         Ok(result)
     })

@@ -16,8 +16,8 @@ pub enum CompiledTarget<S: Rdf> {
 impl<S: Rdf> CompiledTarget<S> {
     pub fn compile(target: Target) -> Result<Self, CompiledShaclError> {
         let ans = match target {
-            Target::TargetNode(object) => CompiledTarget::TargetNode(S::object_as_term(&object)),
-            Target::TargetClass(object) => CompiledTarget::TargetClass(S::object_as_term(&object)),
+            Target::TargetNode(object) => CompiledTarget::TargetNode(object.into()),
+            Target::TargetClass(object) => CompiledTarget::TargetClass(object.into()),
             Target::TargetSubjectsOf(iri_ref) => {
                 CompiledTarget::TargetSubjectsOf(convert_iri_ref::<S>(iri_ref)?)
             }

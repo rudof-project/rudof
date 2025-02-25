@@ -13,7 +13,7 @@ pub(crate) fn get_object_for<S: Query>(
         .into_iter()
         .next()
     {
-        Some(term) => Ok(Some(S::term_as_object(&term))),
+        Some(term) => Ok(Some(term.into())),
         None => Ok(None),
     }
 }

@@ -1,15 +1,12 @@
+use crate::async_srdf::AsyncSRDF;
+use crate::{FocusRDF, Query, RDFFormat, RDFNode, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use tracing::debug;
 // use log::debug;
-use crate::async_srdf::AsyncSRDF;
-use crate::literal::Literal;
-use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
-use rust_decimal::Decimal;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -17,16 +14,13 @@ use std::io::{self, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
-use crate::Object;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
     Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
 };
-use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
+use prefixmap::{prefixmap::*, PrefixMapError};
 
 #[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
@@ -243,35 +237,6 @@ impl Rdf for SRDFGraph {
     type Triple = OxTriple;
     type Err = SRDFGraphError;
 
-    fn term_as_object(term: &OxTerm) -> Object {
-        match term {
-            OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),
-            OxTerm::Literal(lit) => {
-                let lit = lit.to_owned();
-                match lit.destruct() {
-                    (s, None, None) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: None,
-                    }),
-                    (s, None, Some(lang)) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: Some(Lang::new(lang.as_str())),
-                    }),
-                    (s, Some(datatype), _) => {
-                        let iri_s = IriS::from_named_node(&datatype);
-                        Object::Literal(Literal::DatatypeLiteral {
-                            lexical_form: s,
-                            datatype: IriRef::Iri(iri_s),
-                        })
-                    }
-                }
-            }
-            OxTerm::NamedNode(iri) => Object::Iri(IriS::from_named_node(iri)),
-            #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => unimplemented!(),
-        }
-    }
-
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         let iri = self.pm.resolve_prefix_local(prefix, local)?;
         Ok(iri.clone())
@@ -304,49 +269,6 @@ impl Rdf for SRDFGraph {
     fn prefixmap(&self) -> Option<prefixmap::PrefixMap> {
         Some(self.pm.clone())
     }
-
-    fn object_as_term(obj: &Object) -> Self::Term {
-        match obj {
-            Object::Iri(iri) => iri.clone().into(),
-            Object::BlankNode(bn) => OxBlankNode::new_unchecked(bn).into(),
-            Object::Literal(lit) => {
-                let literal: OxLiteral = match lit {
-                    Literal::StringLiteral { lexical_form, lang } => match lang {
-                        Some(lang) => OxLiteral::new_language_tagged_literal_unchecked(
-                            lexical_form,
-                            lang.to_string(),
-                        ),
-                        None => OxLiteral::new_simple_literal(lexical_form),
-                    },
-                    Literal::DatatypeLiteral {
-                        lexical_form,
-                        datatype,
-                    } => OxLiteral::new_typed_literal(lexical_form, cnv_iri_ref(datatype)),
-                    Literal::NumericLiteral(n) => match n {
-                        NumericLiteral::Integer(n) => {
-                            let n: i128 = *n as i128;
-                            OxLiteral::from(n)
-                        }
-                        NumericLiteral::Decimal(d) => {
-                            let decimal = cnv_decimal(d);
-                            OxLiteral::from(decimal)
-                        }
-                        NumericLiteral::Double(d) => OxLiteral::from(*d),
-                    },
-                    Literal::BooleanLiteral(b) => OxLiteral::from(*b),
-                };
-                OxTerm::Literal(literal)
-            }
-        }
-    }
-}
-
-fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
-    OxNamedNode::new_unchecked(iri_ref.to_string())
-}
-
-fn cnv_decimal(_d: &Decimal) -> OxDecimal {
-    todo!()
 }
 
 impl Query for SRDFGraph {
@@ -570,17 +492,16 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
-    fn add_type(&mut self, node: &crate::RDFNode, r#type: Self::Term) -> Result<(), Self::Err> {
-        match Self::object_as_subject(node) {
-            Some(subj) => {
-                let triple = OxTriple::new(subj, rdf_type(), r#type.clone());
-                self.graph.insert(&triple);
-                Ok(())
-            }
-            None => {
-                panic!("Error adding type to {node} because it can't be converted to a subject")
-            }
-        }
+    fn add_type(&mut self, node: &Self::Term, r#type: Self::Term) -> Result<(), Self::Err> {
+        let subject: Self::Subject =
+            node.clone()
+                .try_into()
+                .map_err(|_| SRDFGraphError::UnexepectedNodeType {
+                    node: node.to_string(),
+                })?;
+        let triple = OxTriple::new(subject, rdf_type(), r#type.clone());
+        self.graph.insert(&triple);
+        Ok(())
     }
 
     fn empty() -> Self {
@@ -626,7 +547,7 @@ fn rdf_type() -> OxNamedNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{int, srdf, Query, SRDFGraph};
+    use crate::{srdf, Query, SRDFGraph};
     use iri_s::iri;
 
     #[tokio::test]
@@ -669,7 +590,7 @@ mod tests {
         let term = terms.iter().next().unwrap().clone();
         let subject = term.try_into().unwrap();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
+        let one = OxLiteral::from(1).into();
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
     }
 
@@ -689,7 +610,7 @@ mod tests {
         let bnode: <SRDFGraph as Rdf>::BNode = term.try_into().unwrap();
         let subject = <SRDFGraph as Rdf>::BNode::new_unchecked(bnode.as_str()).into();
         let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as Rdf>::object_as_term(&Object::Literal(int!(1)));
+        let one = OxLiteral::from(1).into();
         assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
     }
 
