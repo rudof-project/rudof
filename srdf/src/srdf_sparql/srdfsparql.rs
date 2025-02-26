@@ -221,17 +221,6 @@ impl Query for SRDFSparql {
         )
     }
 
-    fn incoming_arcs(
-        &self,
-        object: &Self::Term,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>> {
-        incoming_neighs(
-            object.to_string().as_str(),
-            &self.client,
-            &self.endpoint_iri,
-        )
-    }
-
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
@@ -481,82 +470,6 @@ fn outgoing_neighs_from_list(
     Ok((all_results, remainder))
 }
 
-#[cfg(target_family = "wasm")]
-fn incoming_neighs(
-    _object: &str,
-    _client: &Client,
-    _endpoint_iri: &IriS,
-) -> Result<HashMap<OxNamedNode, HashSet<OxSubject>>> {
-    Err(SRDFSparqlError::UnknownEndpontName {
-        name: String::from("WASM"),
-    })
-}
-
-#[cfg(not(target_family = "wasm"))]
-fn incoming_neighs(
-    object: &str,
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<HashMap<OxNamedNode, HashSet<OxSubject>>> {
-    use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
-    use std::collections::hash_map::Entry;
-    use url::Url;
-
-    let pred = "pred";
-    let subj = "subj";
-    let query = format!("select ?{pred} ?{subj} where {{ ?{subj} ?{pred} {object} }}");
-    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    let body = client.get(url).send()?.text()?;
-    let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
-    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
-        for solution in solutions {
-            let sol = solution?;
-            match (sol.get(pred), sol.get(subj)) {
-                (Some(p), Some(v)) => match p {
-                    OxTerm::NamedNode(iri) => match term_as_subject(v) {
-                        Some(subj) => match results.entry(iri.clone()) {
-                            Entry::Occupied(mut vs) => {
-                                vs.get_mut().insert(subj.clone());
-                            }
-                            Entry::Vacant(vacant) => {
-                                vacant.insert(HashSet::from([subj.clone()]));
-                            }
-                        },
-                        None => return Err(SRDFSparqlError::NoSubject { term: v.clone() }),
-                    },
-                    _ => {
-                        return Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: p.clone() })
-                    }
-                },
-                (None, None) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![pred.to_string(), subj.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-                (None, Some(_)) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![pred.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-                (Some(_), None) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![subj.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-            }
-        }
-        Ok(results)
-    } else {
-        Err(SRDFSparqlError::ParsingBody { body })
-    }
-}
-
 fn get_iri_solution(solution: OxQuerySolution, name: &str) -> Result<OxNamedNode> {
     match solution.get(name) {
         Some(v) => match v {
@@ -567,27 +480,6 @@ fn get_iri_solution(solution: OxQuerySolution, name: &str) -> Result<OxNamedNode
             value: name.to_string(),
             solution: format!("{solution:?}"),
         }),
-    }
-}
-
-fn get_subject_solution(solution: OxQuerySolution, name: &str) -> Result<OxSubject> {
-    match solution.get(name) {
-        Some(v) => match term_as_subject(v) {
-            Some(s) => Ok(s),
-            None => Err(SRDFSparqlError::SPARQLSolutionErrorNoSubject { value: v.clone() }),
-        },
-        None => Err(SRDFSparqlError::NotFoundInSolution {
-            value: name.to_string(),
-            solution: format!("{solution:?}"),
-        }),
-    }
-}
-
-fn term_as_subject(object: &OxTerm) -> Option<OxSubject> {
-    match object {
-        OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-        OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-        _ => None,
     }
 }
 

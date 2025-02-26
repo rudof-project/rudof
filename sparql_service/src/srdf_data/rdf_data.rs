@@ -358,13 +358,6 @@ impl Query for RdfData {
         Ok(result)
     }
 
-    fn incoming_arcs(
-        &self,
-        _object: &Self::Term,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
-        todo!()
-    }
-
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,

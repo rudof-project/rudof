@@ -94,7 +94,14 @@ pub trait Query: Rdf {
     fn incoming_arcs(
         &self,
         object: &Self::Term,
-    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err>;
+    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err> {
+        let mut results: HasMapOfIriAndItem<Self::IRI, Self::Subject> = HashMap::new();
+        for triple in self.triples_with_object(object.clone()) {
+            let (s, p, _) = triple.into_components();
+            results.entry(p).or_default().insert(s);
+        }
+        Ok(results)
+    }
 
     fn outgoing_arcs(
         &self,

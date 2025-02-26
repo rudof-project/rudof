@@ -376,9 +376,19 @@ where
     fn pred(&self) -> P;
     fn obj(&self) -> O;
 
-    fn into_subject(self) -> S;
-    fn into_predicate(self) -> P;
-    fn into_object(self) -> O;
+    fn into_components(self) -> (S, P, O);
+
+    fn into_subject(self) -> S {
+        self.into_components().0
+    }
+
+    fn into_predicate(self) -> P {
+        self.into_components().1
+    }
+
+    fn into_object(self) -> O {
+        self.into_components().2
+    }
 }
 
 impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
@@ -402,15 +412,7 @@ impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
         self.object.clone()
     }
 
-    fn into_subject(self) -> OxSubject {
-        self.subject
-    }
-
-    fn into_predicate(self) -> OxNamedNode {
-        self.predicate
-    }
-
-    fn into_object(self) -> OxTerm {
-        self.object
+    fn into_components(self) -> (OxSubject, OxNamedNode, OxTerm) {
+        (self.subject, self.predicate, self.object)
     }
 }
