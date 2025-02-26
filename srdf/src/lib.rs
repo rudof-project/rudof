@@ -24,6 +24,7 @@ pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
 // pub mod triple;
+pub mod matcher;
 pub mod vocab;
 
 pub use crate::async_srdf::*;

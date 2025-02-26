@@ -12,7 +12,6 @@ use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
 use srdf::FocusRDF;
-use srdf::ListOfIriAndTerms;
 use srdf::Query;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
@@ -25,10 +24,7 @@ use srdf::SRDFSparql;
 use srdf::Sparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::io;
 use std::str::FromStr;
 
@@ -334,115 +330,10 @@ fn _rdf_type() -> OxNamedNode {
 }
 
 impl Query for RdfData {
-    fn predicates_for_subject(
-        &self,
-        _subject: &Self::Subject,
-    ) -> Result<std::collections::HashSet<Self::IRI>, Self::Err> {
-        todo!()
-    }
-
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
-    ) -> Result<std::collections::HashSet<Self::Term>, Self::Err> {
-        let mut result = HashSet::new();
-        if let Some(graph) = &self.graph {
-            let os = graph.objects_for_subject_predicate(subject, pred)?;
-            result.extend(os)
-        }
-        for e in &self.endpoints {
-            let os = e.objects_for_subject_predicate(subject, pred)?;
-            result.extend(os)
-        }
-        Ok(result)
-    }
-
-    fn subjects_with_predicate_object(
-        &self,
-        pred: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<std::collections::HashSet<Self::Subject>, Self::Err> {
-        let mut result = HashSet::new();
-        if let Some(graph) = &self.graph {
-            let s = graph.subjects_with_predicate_object(pred, object)?;
-            result.extend(s);
-        }
-        for e in self.endpoints.iter() {
-            let s = e.subjects_with_predicate_object(pred, object)?;
-            result.extend(s)
-        }
-        Ok(result)
-    }
-
-    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
-        let mut result = Vec::new();
-        if let Some(graph) = &self.graph {
-            let s = graph.triples_with_predicate(pred)?;
-            result.extend(s)
-        }
-        for e in self.endpoints.iter() {
-            let s = e.triples_with_predicate(pred)?;
-            result.extend(s)
-        }
-        Ok(result)
-    }
-
-    fn outgoing_arcs(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        let mut result = HashMap::new();
-        if let Some(graph) = &self.graph {
-            let arcs = graph.outgoing_arcs(subject)?;
-            result.extend(arcs)
-        }
-        for e in &self.endpoints {
-            let arcs = e.outgoing_arcs(subject)?;
-            result.extend(arcs)
-        }
-        Ok(result)
-    }
-
-    fn incoming_arcs(
-        &self,
-        _object: &Self::Term,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
-        todo!()
-    }
-
-    fn outgoing_arcs_from_list(
-        &self,
-        subject: &Self::Subject,
-        preds: &[Self::IRI],
-    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
-        let mut result = (HashMap::new(), Vec::new());
-        if let Some(graph) = &self.graph {
-            merge_outgoing_arcs(&mut result, graph.outgoing_arcs_from_list(subject, preds)?);
-        }
-        for endpoint in &self.endpoints {
-            let next = endpoint.outgoing_arcs_from_list(subject, preds)?;
-            merge_outgoing_arcs(&mut result, next)
-        }
-        Ok(result)
-    }
-
-    fn neighs(
-        &self,
-        node: &Self::Term,
-    ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        let subject = node.clone().try_into().ok();
-        if let Some(subject) = subject {
-            let mut result = Vec::new();
-            let preds = self.predicates_for_subject(&subject)?;
-            for pred in preds {
-                let objs = self.objects_for_subject_predicate(&subject, &pred)?;
-                result.push((pred.clone(), objs));
-            }
-            Ok(result)
-        } else {
-            Ok(Vec::new())
-        }
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples).flatten();
+        let graph_triples = self.graph.iter().flat_map(Query::triples).flatten();
+        Ok(endpoints_triples.chain(graph_triples))
     }
 }
 
@@ -510,27 +401,5 @@ impl SRDFBuilder for RdfData {
             writeln!(writer, "Endpoint {}", endpoint.iri())?;
         }
         Ok(())
-    }
-}
-
-fn merge_outgoing_arcs<I, T>(
-    current: &mut (HashMap<I, HashSet<T>>, Vec<I>),
-    next: (HashMap<I, HashSet<T>>, Vec<I>),
-) where
-    I: Eq + Hash,
-    T: Eq + Hash,
-{
-    let (next_map, next_vs) = next;
-    let (ref mut current_map, ref mut current_vs) = current;
-    for v in next_vs {
-        current_vs.push(v)
-    }
-    for (key, values) in next_map {
-        current_map
-            .entry(key)
-            .and_modify(|current_values| {
-                let _ = current_values.union(&values);
-            })
-            .or_insert(values);
     }
 }

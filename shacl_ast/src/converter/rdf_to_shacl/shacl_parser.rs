@@ -1,10 +1,10 @@
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
-    combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
-    property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, Object, PResult,
-    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple as _, RDF_TYPE,
+    combine_parsers, combine_vec, has_type, matcher::Any, not, ok, optional, parse_nodes,
+    property_bool, property_value, property_values, property_values_int, property_values_iri,
+    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode,
+    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -72,13 +72,13 @@ where
 
     fn shapes_candidates(&mut self) -> Result<Vec<RDFNode>> {
         // subjects with type `sh:NodeShape`
-        let node_shape_instances = self
+        let node_shape_instances: HashSet<_> = self
             .rdf_parser
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), &Self::sh_node_shape())
-            .map_err(|e| ShaclParserError::Custom {
-                msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
-            })?;
+            .triples_matching(Any, Self::rdf_type(), Self::sh_node_shape())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
 
         // subjects with property `sh:property`
         let subjects_property = self.objects_with_predicate(Self::sh_property())?;
@@ -197,16 +197,13 @@ where
     }
 
     fn objects_with_predicate(&self, pred: RDF::IRI) -> Result<HashSet<RDF::Subject>> {
-        let triples = self
+        let values_as_subjects = self
             .rdf_parser
             .rdf
-            .triples_with_predicate(&pred)
-            .map_err(|e| ShaclParserError::Custom {
-                msg: format!("Error obtaining values with predicate sh:property: {e}"),
-            })?;
-        let values_as_subjects = triples
-            .iter()
-            .flat_map(Self::triple_object_as_subject)
+            .triples_with_predicate(pred)
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_object)
+            .flat_map(TryInto::try_into)
             .collect();
         Ok(values_as_subjects)
     }
@@ -247,16 +244,6 @@ where
 
     fn sh_node() -> RDF::IRI {
         SH_NODE.clone().into()
-    }
-
-    fn triple_object_as_subject(triple: &RDF::Triple) -> Result<RDF::Subject> {
-        let subj: RDF::Subject = triple
-            .obj()
-            .try_into()
-            .map_err(|_| ShaclParserError::Custom {
-                msg: format!("Expected triple object value to act as a subject: {triple}"),
-            })?;
-        Ok(subj)
     }
 
     fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a

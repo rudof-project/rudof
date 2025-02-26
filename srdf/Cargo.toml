@@ -31,6 +31,7 @@ rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
 const_format = "0.2"
 lazy_static = "1"
+itertools = "0.13"
 
 oxttl = { version = "0.1.0-alpha.6" }
 oxrdfio = { version = "0.1.0-alpha.5" }

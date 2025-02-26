@@ -21,9 +21,11 @@ use shacl_validation::validation_report::report::ValidationReport;
 use shacl_validation::validation_report::validation_report_error::ReportError;
 use sparql_service::RdfData;
 use sparql_service::RdfDataError;
+use srdf::matcher::Any;
 use srdf::Query;
 use srdf::RDFFormat;
 use srdf::Rdf;
+use srdf::Triple;
 use thiserror::Error;
 
 mod core;
@@ -83,37 +85,32 @@ impl Manifest {
     ) -> Result<HashSet<OxTerm>, TestSuiteError> {
         let mut entry_terms = HashSet::new();
 
+        let mf_entries: NamedNode = shacl_validation_vocab::MF_ENTRIES.clone().into();
         let entry_subject = store
-            .objects_for_subject_predicate(
-                &subject,
-                &shacl_validation_vocab::MF_ENTRIES.clone().into(),
-            )?
-            .into_iter()
+            .triples_matching(subject, mf_entries, Any)?
+            .map(Triple::into_object)
             .next();
 
         if let Some(mut subject) = entry_subject {
             loop {
+                let inner_subject: OxSubject = subject.clone().try_into().unwrap();
+                let rdf_first: NamedNode = srdf::RDF_FIRST.clone().into();
                 match store
-                    .objects_for_subject_predicate(
-                        &subject.clone().try_into().unwrap(),
-                        &srdf::RDF_FIRST.clone().into(),
-                    )?
-                    .into_iter()
+                    .triples_matching(inner_subject.clone(), rdf_first, Any)?
+                    .map(Triple::into_object)
                     .next()
                 {
                     Some(terms) => entry_terms.insert(terms),
                     None => break,
                 };
 
+                let rdf_rest: NamedNode = srdf::RDF_REST.clone().into();
                 subject = match store
-                    .objects_for_subject_predicate(
-                        &subject.clone().try_into().unwrap(),
-                        &srdf::RDF_REST.clone().into(),
-                    )?
-                    .into_iter()
+                    .triples_matching(inner_subject, rdf_rest, Any)?
+                    .map(Triple::into_object)
                     .next()
                 {
-                    Some(subject) => subject,
+                    Some(term) => term,
                     None => break,
                 };
             }
@@ -125,48 +122,41 @@ impl Manifest {
     fn collect_tests(&self) -> Result<Vec<ShaclTest<RdfData>>, TestSuiteError> {
         let mut entries = Vec::new();
         for entry in &self.entries {
-            let entry = entry.clone().try_into()?;
+            let entry: OxSubject = entry.clone().try_into()?;
 
-            let action = self
+            let mf_action: NamedNode = shacl_validation_vocab::MF_ACTION.clone().into();
+            let action: OxSubject = self
                 .store
-                .objects_for_subject_predicate(
-                    &entry,
-                    &shacl_validation_vocab::MF_ACTION.clone().into(),
-                )?
-                .into_iter()
+                .triples_matching(entry.clone(), mf_action, Any)?
+                .map(Triple::into_object)
                 .next()
-                .unwrap();
-            let action = action.try_into()?;
+                .unwrap()
+                .try_into()?;
 
+            let mf_result: NamedNode = shacl_validation_vocab::MF_RESULT.clone().into();
             let results = self
                 .store
-                .objects_for_subject_predicate(
-                    &entry,
-                    &shacl_validation_vocab::MF_RESULT.clone().into(),
-                )?
-                .into_iter()
+                .triples_matching(entry, mf_result, Any)?
+                .map(Triple::into_object)
                 .next()
                 .unwrap();
 
             let report = ValidationReport::parse(&self.store, results)?;
 
+            let sht_data_graph: NamedNode = shacl_validation_vocab::SHT_DATA_GRAPH.clone().into();
             let data_graph_iri = self
                 .store
-                .objects_for_subject_predicate(
-                    &action,
-                    &shacl_validation_vocab::SHT_DATA_GRAPH.clone().into(),
-                )?
-                .into_iter()
+                .triples_matching(action.clone(), sht_data_graph, Any)?
+                .map(Triple::into_object)
                 .next()
                 .unwrap();
 
+            let sht_shapes_graph: NamedNode =
+                shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into();
             let shapes_graph_iri = self
                 .store
-                .objects_for_subject_predicate(
-                    &action,
-                    &shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into(),
-                )?
-                .into_iter()
+                .triples_matching(action, sht_shapes_graph, Any)?
+                .map(Triple::into_object)
                 .next()
                 .unwrap();
 

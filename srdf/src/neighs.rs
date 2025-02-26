@@ -1,6 +1,6 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::Query;
+use crate::{Query, Triple};
 
 pub enum Neigh<S>
 where
@@ -43,7 +43,11 @@ where
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
         match term.try_into() {
             Ok(subject) => {
-                let preds: HashSet<S::IRI> = rdf.predicates_for_subject(&subject)?;
+                let subject: S::Subject = subject;
+                let preds: HashSet<S::IRI> = rdf
+                    .triples_with_subject(subject)?
+                    .map(Triple::into_predicate)
+                    .collect();
                 let _qs = preds.into_iter();
                 /*let vv = qs.flat_map(|p| {
                     let objs = rdf.get_objects_for_subject_predicate(&subject, &p)?;

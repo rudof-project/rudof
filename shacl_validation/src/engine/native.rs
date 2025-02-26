@@ -1,6 +1,7 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::matcher::Any;
 use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Term;
@@ -48,12 +49,13 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store.subjects_with_predicate_object(&RDF_TYPE.clone().into(), class) {
-            Ok(subjects) => subjects,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
+        let rdf_type: S::IRI = RDF_TYPE.clone().into();
 
-        let focus_nodes = subjects.iter().map(|subject| subject.clone().into());
+        let focus_nodes = store
+            .triples_matching(Any, rdf_type, class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
 
         Ok(FocusNodes::new(focus_nodes))
     }
@@ -63,14 +65,13 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        Ok(FocusNodes::new(
-            triples.iter().map(|triple| triple.subj().into()),
-        ))
+        let subjects = store
+            .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
+        let focus_nodes = FocusNodes::new(subjects);
+        Ok(focus_nodes)
     }
 
     fn target_object_of(
@@ -78,12 +79,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        Ok(FocusNodes::new(triples.iter().map(Triple::obj)))
+        let objects = store
+            .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_object);
+        Ok(FocusNodes::new(objects))
     }
 
     fn implicit_target_class(

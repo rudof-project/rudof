@@ -4,16 +4,12 @@ use crate::{
     BNode, NodeConstraint, NodeKind, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr,
     ShapeExprLabel, ValueSetValue,
 };
-use iri_s::iri;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use srdf::rdf_parser;
 use srdf::srdf_parser::*;
-use srdf::BlankNode as _;
 use srdf::FocusRDF;
-use srdf::Iri as _;
 use srdf::RDFParseError;
-use srdf::Term;
 use srdf::{Object, RDFParser};
 
 type Result<A> = std::result::Result<A, ShExRError>;
