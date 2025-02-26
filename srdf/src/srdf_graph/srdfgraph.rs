@@ -560,20 +560,75 @@ mod tests {
     }
 
     #[test]
+    fn test_triples_matching_subject_predicate_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(x, p, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
     fn test_triples_matching_subject_and_predicate() {
         let graph = graph_from_str(DUMMY_GRAPH);
         let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
         let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let triples = graph.triples_matching(x, p.clone(), Any).unwrap();
+        let triples = graph.triples_matching(x, p, Any).unwrap();
         assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_subject_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(x, Any, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_predicate_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(Any, p, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_subject() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let triples = graph.triples_matching(x, Any, Any).unwrap();
+        assert_eq!(triples.count(), 2)
     }
 
     #[test]
     fn test_triples_matching_predicate() {
         let graph = graph_from_str(DUMMY_GRAPH);
         let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let triples = graph.triples_matching(Any, p.clone(), Any).unwrap();
+        let triples = graph.triples_matching(Any, p, Any).unwrap();
         assert_eq!(triples.count(), 2)
+    }
+
+    #[test]
+    fn test_triples_matching_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(Any, Any, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_incoming_arcs() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let actual = graph.incoming_arcs(&one).unwrap();
+        let expected = HashSet::from([x]);
+        assert_eq!(actual.get(&p), Some(&expected))
     }
 
     #[test]
@@ -582,6 +637,7 @@ mod tests {
 
         let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
         let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
 
         let subject = graph
             .triples_matching(x, p.clone(), Any)
@@ -589,12 +645,11 @@ mod tests {
             .map(Triple::into_object)
             .next()
             .unwrap()
-            .clone()
             .try_into()
             .unwrap();
 
         let actual = graph.outgoing_arcs(&subject).unwrap();
-        let expected = HashSet::from([OxTerm::Literal(1.into())]);
+        let expected = HashSet::from([one]);
 
         assert_eq!(actual.get(&p), Some(&expected))
     }
