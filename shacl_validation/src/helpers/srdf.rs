@@ -43,12 +43,10 @@ pub(crate) fn get_subjects_for<S: Query>(
     predicate: &S::IRI,
     object: &S::Term,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    match store.subjects_with_predicate_object(predicate, object) {
-        Ok(ans) => Ok(ans.into_iter().map(Into::into).collect()),
-        Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
-            predicate: format!("{predicate}"),
-            object: format!("{object}"),
-            error: format!("{e}"),
-        }),
-    }
+    let values = store
+        .triples_matching(Any, predicate.clone(), object.clone())
+        .map(Triple::into_subject)
+        .map(Into::into)
+        .collect();
+    Ok(values)
 }

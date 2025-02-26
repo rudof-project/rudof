@@ -1,6 +1,7 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::matcher::Any;
 use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Term;
@@ -48,12 +49,12 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store.subjects_with_predicate_object(&RDF_TYPE.clone().into(), class) {
-            Ok(subjects) => subjects,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
+        let rdf_type: S::IRI = RDF_TYPE.clone().into();
 
-        let focus_nodes = subjects.iter().map(|subject| subject.clone().into());
+        let focus_nodes = store
+            .triples_matching(Any, rdf_type, class.clone())
+            .map(Triple::into_subject)
+            .map(Into::into);
 
         Ok(FocusNodes::new(focus_nodes))
     }

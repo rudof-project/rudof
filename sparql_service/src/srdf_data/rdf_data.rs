@@ -342,22 +342,6 @@ impl Query for RdfData {
         endpoints_triples.chain(graph_triples)
     }
 
-    fn subjects_with_predicate_object(
-        &self,
-        pred: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<std::collections::HashSet<Self::Subject>, Self::Err> {
-        let mut result = HashSet::new();
-        if let Some(graph) = &self.graph {
-            let s = graph.subjects_with_predicate_object(pred, object)?;
-            result.extend(s);
-        }
-        for e in self.endpoints.iter() {
-            let s = e.subjects_with_predicate_object(pred, object)?;
-            result.extend(s)
-        }
-        Ok(result)
-    }
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,

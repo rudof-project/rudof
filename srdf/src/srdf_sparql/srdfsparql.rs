@@ -210,21 +210,6 @@ impl Query for SRDFSparql {
         triples
     }
 
-    fn subjects_with_predicate_object(
-        &self,
-        pred: &OxNamedNode,
-        object: &OxTerm,
-    ) -> Result<HashSet<OxSubject>> {
-        let query = format!(r#"select ?subj where {{ ?subj {} {} . }}"#, pred, object);
-        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
-        let mut results = HashSet::new();
-        for solution in solutions {
-            let n = get_subject_solution(solution, "subj")?;
-            results.insert(n.clone());
-        }
-        Ok(results)
-    }
-
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,

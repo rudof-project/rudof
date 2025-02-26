@@ -1,5 +1,7 @@
 use super::rdf_node_parser::*;
 use super::rdf_parser_error::RDFParseError;
+use crate::matcher::Any;
+use crate::Triple;
 use crate::{FocusRDF, Iri, Query, RDF_TYPE};
 use iri_s::iri;
 use iri_s::IriS;
@@ -61,12 +63,12 @@ where
     pub fn instances_of(
         &self,
         object: &RDF::Term,
-    ) -> Result<impl Iterator<Item = RDF::Subject>, RDFParseError> {
+    ) -> Result<impl Iterator<Item = RDF::Subject> + '_, RDFParseError> {
         let values = self
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), object)
-            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?;
-        Ok(values.into_iter())
+            .triples_matching(Any, Self::rdf_type(), object.clone())
+            .map(Triple::into_subject);
+        Ok(values)
     }
 
     pub fn instance_of(&self, object: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {

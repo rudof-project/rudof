@@ -1732,17 +1732,10 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<RDF::Subject>> {
         let subjects = rdf
-            .subjects_with_predicate_object(&self.property, &self.value)
-            .map_err(|e| RDFParseError::ErrorSubjectsPredicateObject {
-                property: format!("{}", self.property),
-                value: format!("{}", self.value),
-                err: e.to_string(),
-            })?;
-        let mut result = Vec::new();
-        for s in subjects {
-            result.push(s)
-        }
-        Ok(result)
+            .triples_matching(Any, self.property.clone(), self.value.clone())
+            .map(Triple::into_subject)
+            .collect();
+        Ok(subjects)
     }
 }
 

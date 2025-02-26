@@ -1,8 +1,8 @@
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
-    combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
-    property_value, property_values, property_values_int, property_values_iri,
+    combine_parsers, combine_vec, has_type, matcher::Any, not, ok, optional, parse_nodes,
+    property_bool, property_value, property_values, property_values_int, property_values_iri,
     property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode,
     RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple, RDF_TYPE,
 };
@@ -72,13 +72,12 @@ where
 
     fn shapes_candidates(&mut self) -> Result<Vec<RDFNode>> {
         // subjects with type `sh:NodeShape`
-        let node_shape_instances = self
+        let node_shape_instances: HashSet<_> = self
             .rdf_parser
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), &Self::sh_node_shape())
-            .map_err(|e| ShaclParserError::Custom {
-                msg: format!("Error obtaining values with type sh:NodeShape: {e}"),
-            })?;
+            .triples_matching(Any, Self::rdf_type(), Self::sh_node_shape())
+            .map(Triple::into_subject)
+            .collect();
 
         // subjects with property `sh:property`
         let subjects_property = self.objects_with_predicate(Self::sh_property())?;

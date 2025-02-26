@@ -63,12 +63,6 @@ pub trait Query: Rdf {
         self.triples_matching(Any, Any, object)
     }
 
-    fn subjects_with_predicate_object(
-        &self,
-        pred: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<HashSet<Self::Subject>, Self::Err>;
-
     /// Get the neighbours of a term
     /// This code creates an intermediate vector and is not very efficient
     /// TODO: return an iterator
