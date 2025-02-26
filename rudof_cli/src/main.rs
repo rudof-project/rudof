@@ -1183,7 +1183,7 @@ where
             ShowNodeMode::Outgoing | ShowNodeMode::Both => {
                 writeln!(writer, "Outgoing arcs")?;
                 let map = if predicates.is_empty() {
-                    match rdf.outgoing_arcs(&subject) {
+                    match rdf.outgoing_arcs(subject.clone()) {
                         Result::Ok(rs) => rs,
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }

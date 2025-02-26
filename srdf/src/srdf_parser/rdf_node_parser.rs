@@ -1024,7 +1024,7 @@ where
                         focus: focus.to_string(),
                     }
                 })?;
-                rdf.outgoing_arcs(&subj).map_err(|e| RDFParseError::Custom {
+                rdf.outgoing_arcs(subj).map_err(|e| RDFParseError::Custom {
                     msg: format!("Error obtaining outgoing arcs from {focus}: {e}"),
                 })
             }

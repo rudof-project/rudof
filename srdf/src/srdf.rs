@@ -70,7 +70,7 @@ pub trait Query: Rdf {
         Ok(results)
     }
 
-    fn outgoing_arcs(&self, subject: &Self::Subject) -> Result<OutgoingArcs<Self>, Self::Err> {
+    fn outgoing_arcs(&self, subject: Self::Subject) -> Result<OutgoingArcs<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
         for triple in self.triples_with_subject(subject.clone())? {
             let (_, p, o) = triple.into_components();

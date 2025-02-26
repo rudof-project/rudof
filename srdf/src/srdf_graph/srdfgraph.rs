@@ -648,7 +648,7 @@ mod tests {
             .try_into()
             .unwrap();
 
-        let actual = graph.outgoing_arcs(&subject).unwrap();
+        let actual = graph.outgoing_arcs(subject).unwrap();
         let expected = HashSet::from([one]);
 
         assert_eq!(actual.get(&p), Some(&expected))
