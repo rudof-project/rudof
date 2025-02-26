@@ -626,7 +626,7 @@ mod tests {
         let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
         let p = OxNamedNode::new_unchecked("http://example.org/p");
         let one: OxTerm = OxLiteral::from(1).into();
-        let actual = graph.incoming_arcs(&one).unwrap();
+        let actual = graph.incoming_arcs(one).unwrap();
         let expected = HashSet::from([x]);
         assert_eq!(actual.get(&p), Some(&expected))
     }

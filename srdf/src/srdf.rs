@@ -61,7 +61,7 @@ pub trait Query: Rdf {
         self.triples_matching(Any, Any, object)
     }
 
-    fn incoming_arcs(&self, object: &Self::Term) -> Result<IncomingArcs<Self>, Self::Err> {
+    fn incoming_arcs(&self, object: Self::Term) -> Result<IncomingArcs<Self>, Self::Err> {
         let mut results = IncomingArcs::<Self>::new();
         for triple in self.triples_with_object(object.clone())? {
             let (s, p, _) = triple.into_components();

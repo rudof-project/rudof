@@ -1215,8 +1215,8 @@ where
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
                 writeln!(writer, "Incoming arcs")?;
-                let object = subject.clone().into();
-                let map = match rdf.incoming_arcs(&object) {
+                let object: S::Term = subject.clone().into();
+                let map = match rdf.incoming_arcs(object.clone()) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
                 };
