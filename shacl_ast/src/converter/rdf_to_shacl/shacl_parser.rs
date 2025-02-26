@@ -198,7 +198,10 @@ where
 
     fn objects_with_predicate(&self, pred: RDF::IRI) -> Result<HashSet<RDF::Subject>> {
         let triples = self.rdf_parser.rdf.triples_with_predicate(pred);
-        let values_as_subjects = triples.map(Triple::into_subject).collect();
+        let values_as_subjects = triples
+            .map(Triple::into_object)
+            .flat_map(TryInto::try_into)
+            .collect();
         Ok(values_as_subjects)
     }
 
