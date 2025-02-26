@@ -11,9 +11,7 @@ use oxrdf::{
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::matcher::Any;
 use srdf::FocusRDF;
-use srdf::ListOfIriAndTerms;
 use srdf::Query;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
@@ -24,13 +22,9 @@ use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::Sparql;
-use srdf::Triple;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::io;
 use std::str::FromStr;
 
@@ -407,27 +401,5 @@ impl SRDFBuilder for RdfData {
             writeln!(writer, "Endpoint {}", endpoint.iri())?;
         }
         Ok(())
-    }
-}
-
-fn merge_outgoing_arcs<I, T>(
-    current: &mut (HashMap<I, HashSet<T>>, Vec<I>),
-    next: (HashMap<I, HashSet<T>>, Vec<I>),
-) where
-    I: Eq + Hash,
-    T: Eq + Hash,
-{
-    let (next_map, next_vs) = next;
-    let (ref mut current_map, ref mut current_vs) = current;
-    for v in next_vs {
-        current_vs.push(v)
-    }
-    for (key, values) in next_map {
-        current_map
-            .entry(key)
-            .and_modify(|current_values| {
-                let _ = current_values.union(&values);
-            })
-            .or_insert(values);
     }
 }
