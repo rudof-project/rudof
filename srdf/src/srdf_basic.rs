@@ -45,7 +45,7 @@ pub trait Rdf: Sized {
         + From<i128>
         + From<f64>
         + TryFrom<Self::Term>
-        + From<crate::literal::Literal>; // TODO: can we use From<&str>?
+        + From<crate::literal::Literal>;
 
     type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
