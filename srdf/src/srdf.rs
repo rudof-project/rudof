@@ -14,7 +14,7 @@ type OutgoingArcs<I, T> = (HashMapOfIriAndItem<I, T>, Vec<I>);
 ///
 /// TODO: Consider alternative names: RDFGraphOps
 pub trait Query: Rdf {
-    fn triples(&self) -> impl Iterator<Item = Self::Triple>;
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
     /// Note to implementors: this function needs to retrieve all the triples of
     /// the graph. Therefore, for use-cases where the graph is large, this
@@ -27,38 +27,39 @@ pub trait Query: Rdf {
         subject: S,
         predicate: P,
         object: O,
-    ) -> impl Iterator<Item = Self::Triple>
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        self.triples().filter_map(move |triple| {
+        let triples = self.triples()?.filter_map(move |triple| {
             match subject == triple.subj() && predicate == triple.pred() && object == triple.obj() {
                 true => Some(triple),
                 false => None,
             }
-        })
+        });
+        Ok(triples)
     }
 
     fn triples_with_subject<S: Matcher<Self::Subject>>(
         &self,
         subject: S,
-    ) -> impl Iterator<Item = Self::Triple> {
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(subject, Any, Any)
     }
 
     fn triples_with_predicate<P: Matcher<Self::IRI>>(
         &self,
         predicate: P,
-    ) -> impl Iterator<Item = Self::Triple> {
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(Any, predicate, Any)
     }
 
     fn triples_with_object<O: Matcher<Self::Term>>(
         &self,
         object: O,
-    ) -> impl Iterator<Item = Self::Triple> {
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(Any, Any, object)
     }
 
@@ -75,13 +76,13 @@ pub trait Query: Rdf {
         };
 
         let preds = self
-            .triples_with_subject(subject.clone())
+            .triples_with_subject(subject.clone())?
             .map(Triple::into_predicate);
 
         let mut result = Vec::new();
         for pred in preds {
             let objs = self
-                .triples_matching(subject.clone(), pred.clone(), Any)
+                .triples_matching(subject.clone(), pred.clone(), Any)?
                 .map(Triple::into_object)
                 .collect();
             result.push((pred, objs));
@@ -95,7 +96,7 @@ pub trait Query: Rdf {
         object: &Self::Term,
     ) -> Result<HashMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err> {
         let mut results: HashMapOfIriAndItem<Self::IRI, Self::Subject> = HashMap::new();
-        for triple in self.triples_with_object(object.clone()) {
+        for triple in self.triples_with_object(object.clone())? {
             let (s, p, _) = triple.into_components();
             results.entry(p).or_default().insert(s);
         }
@@ -107,7 +108,7 @@ pub trait Query: Rdf {
         subject: &Self::Subject,
     ) -> Result<HashMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err> {
         let mut results: HashMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
-        for triple in self.triples_with_subject(subject.clone()) {
+        for triple in self.triples_with_subject(subject.clone())? {
             let (_, p, o) = triple.into_components();
             results.entry(p).or_default().insert(o);
         }
@@ -123,7 +124,7 @@ pub trait Query: Rdf {
     ) -> Result<OutgoingArcs<Self::IRI, Self::Term>, Self::Err> {
         let mut results: HashMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
         let mut remainder = Vec::new();
-        for triple in self.triples_with_subject(subject.clone()) {
+        for triple in self.triples_with_subject(subject.clone())? {
             let (_, p, o) = triple.into_components();
             if preds.contains(&p) {
                 results.entry(p).or_default().insert(o);

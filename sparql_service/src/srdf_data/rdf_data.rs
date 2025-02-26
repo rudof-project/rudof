@@ -330,10 +330,10 @@ fn _rdf_type() -> OxNamedNode {
 }
 
 impl Query for RdfData {
-    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
-        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples);
-        let graph_triples = self.graph.iter().flat_map(Query::triples);
-        endpoints_triples.chain(graph_triples)
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples).flatten();
+        let graph_triples = self.graph.iter().flat_map(Query::triples).flatten();
+        Ok(endpoints_triples.chain(graph_triples))
     }
 }
 

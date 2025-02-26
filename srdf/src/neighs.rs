@@ -45,7 +45,7 @@ where
             Ok(subject) => {
                 let subject: S::Subject = subject;
                 let preds: HashSet<S::IRI> = rdf
-                    .triples_with_subject(subject)
+                    .triples_with_subject(subject)?
                     .map(Triple::into_predicate)
                     .collect();
                 let _qs = preds.into_iter();

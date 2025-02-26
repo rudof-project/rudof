@@ -270,8 +270,8 @@ impl Rdf for SRDFGraph {
 }
 
 impl Query for SRDFGraph {
-    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
-        self.graph.iter().map(TripleRef::into_owned)
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        Ok(self.graph.iter().map(TripleRef::into_owned))
     }
 }
 
@@ -564,8 +564,7 @@ mod tests {
         let graph = graph_from_str(DUMMY_GRAPH);
         let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
         let p = OxNamedNode::new_unchecked("http://example.org/p");
-
-        let triples = graph.triples_matching(x, p.clone(), Any);
+        let triples = graph.triples_matching(x, p.clone(), Any).unwrap();
         assert_eq!(triples.count(), 1)
     }
 
@@ -573,7 +572,7 @@ mod tests {
     fn test_triples_matching_predicate() {
         let graph = graph_from_str(DUMMY_GRAPH);
         let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let triples = graph.triples_matching(Any, p.clone(), Any);
+        let triples = graph.triples_matching(Any, p.clone(), Any).unwrap();
         assert_eq!(triples.count(), 2)
     }
 
@@ -586,6 +585,7 @@ mod tests {
 
         let subject = graph
             .triples_matching(x, p.clone(), Any)
+            .unwrap()
             .map(Triple::into_object)
             .next()
             .unwrap()

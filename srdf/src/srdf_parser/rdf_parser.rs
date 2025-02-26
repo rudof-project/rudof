@@ -1,5 +1,5 @@
-use super::rdf_node_parser::*;
 use super::rdf_parser_error::RDFParseError;
+use super::{rdf_node_parser::*, PResult};
 use crate::matcher::Any;
 use crate::Triple;
 use crate::{FocusRDF, Iri, Query, RDF_TYPE};
@@ -63,10 +63,11 @@ where
     pub fn instances_of(
         &self,
         object: &RDF::Term,
-    ) -> Result<impl Iterator<Item = RDF::Subject> + '_, RDFParseError> {
+    ) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
         let values = self
             .rdf
             .triples_matching(Any, Self::rdf_type(), object.clone())
+            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_subject);
         Ok(values)
     }

@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    error,
     marker::PhantomData,
 };
 
@@ -868,6 +869,7 @@ where
         let pred: RDF::IRI = self.property.clone().into();
         let values = rdf
             .triples_matching(subject, pred, Any)
+            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_object)
             .collect();
         Ok(values)
@@ -1733,6 +1735,7 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<RDF::Subject>> {
         let subjects = rdf
             .triples_matching(Any, self.property.clone(), self.value.clone())
+            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_subject)
             .collect();
         Ok(subjects)

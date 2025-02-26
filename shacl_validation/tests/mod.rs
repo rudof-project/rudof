@@ -87,7 +87,7 @@ impl Manifest {
 
         let mf_entries: NamedNode = shacl_validation_vocab::MF_ENTRIES.clone().into();
         let entry_subject = store
-            .triples_matching(subject, mf_entries, Any)
+            .triples_matching(subject, mf_entries, Any)?
             .map(Triple::into_object)
             .next();
 
@@ -96,7 +96,7 @@ impl Manifest {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
                 let rdf_first: NamedNode = srdf::RDF_FIRST.clone().into();
                 match store
-                    .triples_matching(inner_subject.clone(), rdf_first, Any)
+                    .triples_matching(inner_subject.clone(), rdf_first, Any)?
                     .map(Triple::into_object)
                     .next()
                 {
@@ -106,7 +106,7 @@ impl Manifest {
 
                 let rdf_rest: NamedNode = srdf::RDF_REST.clone().into();
                 subject = match store
-                    .triples_matching(inner_subject, rdf_rest, Any)
+                    .triples_matching(inner_subject, rdf_rest, Any)?
                     .map(Triple::into_object)
                     .next()
                 {
@@ -127,7 +127,7 @@ impl Manifest {
             let mf_action: NamedNode = shacl_validation_vocab::MF_ACTION.clone().into();
             let action: OxSubject = self
                 .store
-                .triples_matching(entry.clone(), mf_action, Any)
+                .triples_matching(entry.clone(), mf_action, Any)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap()
@@ -136,7 +136,7 @@ impl Manifest {
             let mf_result: NamedNode = shacl_validation_vocab::MF_RESULT.clone().into();
             let results = self
                 .store
-                .triples_matching(entry, mf_result, Any)
+                .triples_matching(entry, mf_result, Any)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -146,7 +146,7 @@ impl Manifest {
             let sht_data_graph: NamedNode = shacl_validation_vocab::SHT_DATA_GRAPH.clone().into();
             let data_graph_iri = self
                 .store
-                .triples_matching(action.clone(), sht_data_graph, Any)
+                .triples_matching(action.clone(), sht_data_graph, Any)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -155,7 +155,7 @@ impl Manifest {
                 shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into();
             let shapes_graph_iri = self
                 .store
-                .triples_matching(action, sht_shapes_graph, Any)
+                .triples_matching(action, sht_shapes_graph, Any)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();

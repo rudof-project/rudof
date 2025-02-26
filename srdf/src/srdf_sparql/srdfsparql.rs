@@ -180,7 +180,7 @@ impl AsyncSRDF for SRDFSparql {
 }
 
 impl Query for SRDFSparql {
-    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>> {
         self.triples_matching(Any, Any, Any)
     }
 
@@ -189,7 +189,7 @@ impl Query for SRDFSparql {
         subject: S,
         predicate: P,
         object: O,
-    ) -> impl Iterator<Item = Self::Triple>
+    ) -> Result<impl Iterator<Item = Self::Triple>>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
@@ -211,8 +211,8 @@ impl Query for SRDFSparql {
             },
         );
 
-        self.query_select(&query)
-            .unwrap() // TODO: check this unwrap
+        let triples = self
+            .query_select(&query)? // TODO: check this unwrap
             .into_iter()
             .map(move |solution| {
                 let subject: Self::Subject = match subject.value() {
@@ -220,7 +220,7 @@ impl Query for SRDFSparql {
                     None => solution
                         .find_solution(0)
                         .and_then(|s| s.clone().try_into().ok())
-                        .unwrap(), // TODO: check this unwrap
+                        .unwrap(), // we know that this won't panic
                 };
 
                 let predicate: Self::IRI = match predicate.value() {
@@ -228,16 +228,18 @@ impl Query for SRDFSparql {
                     None => solution
                         .find_solution(1)
                         .and_then(|pred| pred.clone().try_into().ok())
-                        .unwrap(), // TODO: check this unwrap
+                        .unwrap(), // we know that this won't panic
                 };
 
                 let object = match object.value() {
                     Some(o) => o,
-                    None => solution.find_solution(2).cloned().unwrap(), // TODO: check this unwrap
+                    None => solution.find_solution(2).cloned().unwrap(), // we know that this won't panic
                 };
 
                 OxTriple::new(subject, predicate, object)
-            })
+            });
+
+        Ok(triples)
     }
 }
 
@@ -380,6 +382,7 @@ mod tests {
 
         let data: Vec<_> = wikidata
             .triples_with_subject(q80)
+            .unwrap()
             .map(Triple::into_predicate)
             .collect();
 

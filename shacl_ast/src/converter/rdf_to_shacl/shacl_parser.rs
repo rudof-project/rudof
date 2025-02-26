@@ -76,6 +76,7 @@ where
             .rdf_parser
             .rdf
             .triples_matching(Any, Self::rdf_type(), Self::sh_node_shape())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
             .map(Triple::into_subject)
             .collect();
 
@@ -196,8 +197,11 @@ where
     }
 
     fn objects_with_predicate(&self, pred: RDF::IRI) -> Result<HashSet<RDF::Subject>> {
-        let triples = self.rdf_parser.rdf.triples_with_predicate(pred);
-        let values_as_subjects = triples
+        let values_as_subjects = self
+            .rdf_parser
+            .rdf
+            .triples_with_predicate(pred)
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
             .map(Triple::into_object)
             .flat_map(TryInto::try_into)
             .collect();

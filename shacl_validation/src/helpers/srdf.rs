@@ -32,10 +32,15 @@ pub(crate) fn get_objects_for<S: Query>(
         }
     };
 
-    Ok(store
+    let triples = store
         .triples_matching(subject, predicate.clone(), Any)
+        .map_err(|e| SRDFError::Srdf {
+            error: e.to_string(),
+        })?
         .map(Triple::into_object)
-        .collect())
+        .collect();
+
+    Ok(triples)
 }
 
 pub(crate) fn get_subjects_for<S: Query>(
@@ -45,6 +50,9 @@ pub(crate) fn get_subjects_for<S: Query>(
 ) -> Result<HashSet<S::Term>, SRDFError> {
     let values = store
         .triples_matching(Any, predicate.clone(), object.clone())
+        .map_err(|e| SRDFError::Srdf {
+            error: e.to_string(),
+        })?
         .map(Triple::into_subject)
         .map(Into::into)
         .collect();

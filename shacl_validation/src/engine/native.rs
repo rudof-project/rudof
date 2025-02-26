@@ -53,6 +53,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
         let focus_nodes = store
             .triples_matching(Any, rdf_type, class.clone())
+            .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
 
@@ -66,6 +67,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     ) -> Result<FocusNodes<S>, ValidateError> {
         let subjects = store
             .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
         let focus_nodes = FocusNodes::new(subjects);
@@ -79,9 +81,9 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     ) -> Result<FocusNodes<S>, ValidateError> {
         let objects = store
             .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_object);
-        let focus_nodes = FocusNodes::new(objects);
-        Ok(focus_nodes)
+        Ok(FocusNodes::new(objects))
     }
 
     fn implicit_target_class(
