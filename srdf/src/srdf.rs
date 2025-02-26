@@ -10,8 +10,6 @@ pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
-///
-/// TODO: Consider alternative names: RDFGraphOps
 pub trait Query: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
