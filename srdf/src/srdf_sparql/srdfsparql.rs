@@ -180,12 +180,10 @@ impl AsyncSRDF for SRDFSparql {
 
 impl Query for SRDFSparql {
     fn triples(&self) -> impl Iterator<Item = Self::Triple> {
-        let basic_graph_pattern = format!("SELECT ?s ?p ?o WHERE {{ ?s ?p ?o . }}");
-
         let triples = self
-            .query_select(&basic_graph_pattern)
+            .query_select("SELECT ?s ?p ?o WHERE {{ ?s ?p ?o . }}")
+            .unwrap() // TODO: check this unwrap
             .into_iter()
-            .flat_map(|solutions| solutions.into_iter())
             .filter_map(move |solution| {
                 let subject: Option<Self::Subject> = solution
                     .find_solution(0)
