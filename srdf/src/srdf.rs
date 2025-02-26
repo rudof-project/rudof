@@ -42,6 +42,13 @@ pub trait Query: Rdf {
         })
     }
 
+    fn triples_with_subject<S: Matcher<Self::Subject>>(
+        &self,
+        subject: S,
+    ) -> impl Iterator<Item = Self::Triple> {
+        self.triples_matching(subject, Any, Any)
+    }
+
     fn triples_with_predicate<P: Matcher<Self::IRI>>(
         &self,
         predicate: P,
