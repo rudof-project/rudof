@@ -287,13 +287,6 @@ impl Query for SRDFSparql {
     > {
         outgoing_neighs_from_list(subject, preds, &self.client, &self.endpoint_iri)
     }
-
-    fn triples_with_predicate(
-        &self,
-        _pred: &Self::IRI,
-    ) -> std::prelude::v1::Result<Vec<Self::Triple>, Self::Err> {
-        todo!()
-    }
 }
 
 /*

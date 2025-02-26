@@ -3,8 +3,8 @@ use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, has_type, not, ok, optional, parse_nodes, property_bool,
     property_value, property_values, property_values_int, property_values_iri,
-    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, Object, PResult,
-    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple as _, RDF_TYPE,
+    property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode,
+    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -197,17 +197,8 @@ where
     }
 
     fn objects_with_predicate(&self, pred: RDF::IRI) -> Result<HashSet<RDF::Subject>> {
-        let triples = self
-            .rdf_parser
-            .rdf
-            .triples_with_predicate(&pred)
-            .map_err(|e| ShaclParserError::Custom {
-                msg: format!("Error obtaining values with predicate sh:property: {e}"),
-            })?;
-        let values_as_subjects = triples
-            .iter()
-            .flat_map(Self::triple_object_as_subject)
-            .collect();
+        let triples = self.rdf_parser.rdf.triples_with_predicate(pred);
+        let values_as_subjects = triples.map(Triple::into_subject).collect();
         Ok(values_as_subjects)
     }
 
@@ -247,16 +238,6 @@ where
 
     fn sh_node() -> RDF::IRI {
         SH_NODE.clone().into()
-    }
-
-    fn triple_object_as_subject(triple: &RDF::Triple) -> Result<RDF::Subject> {
-        let subj: RDF::Subject = triple
-            .obj()
-            .try_into()
-            .map_err(|_| ShaclParserError::Custom {
-                msg: format!("Expected triple object value to act as a subject: {triple}"),
-            })?;
-        Ok(subj)
     }
 
     fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a

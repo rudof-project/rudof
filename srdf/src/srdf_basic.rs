@@ -371,9 +371,14 @@ where
     O: Term,
 {
     fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
+
     fn subj(&self) -> S;
     fn pred(&self) -> P;
     fn obj(&self) -> O;
+
+    fn into_subject(self) -> S;
+    fn into_predicate(self) -> P;
+    fn into_object(self) -> O;
 }
 
 impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
@@ -395,5 +400,17 @@ impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
 
     fn obj(&self) -> OxTerm {
         self.object.clone()
+    }
+
+    fn into_subject(self) -> OxSubject {
+        self.subject
+    }
+
+    fn into_predicate(self) -> OxNamedNode {
+        self.predicate
+    }
+
+    fn into_object(self) -> OxTerm {
+        self.object
     }
 }

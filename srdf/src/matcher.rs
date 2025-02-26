@@ -4,6 +4,20 @@ pub struct Any;
 
 pub trait Matcher<T>: PartialEq<T> + Display {}
 
+impl<T> Matcher<T> for Any {}
+
+impl<T> PartialEq<T> for Any {
+    fn eq(&self, _other: &T) -> bool {
+        true
+    }
+}
+
+impl std::fmt::Display for Any {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
 // pub enum Matcher<R: Rdf> {
 //     Variable(String),
 //     Term(R::Term),

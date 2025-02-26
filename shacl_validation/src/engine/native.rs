@@ -63,14 +63,12 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        Ok(FocusNodes::new(
-            triples.iter().map(|triple| triple.subj().into()),
-        ))
+        let subjects = store
+            .triples_with_predicate(predicate.clone())
+            .map(Triple::into_subject)
+            .map(Into::into);
+        let focus_nodes = FocusNodes::new(subjects);
+        Ok(focus_nodes)
     }
 
     fn target_object_of(
@@ -78,12 +76,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        Ok(FocusNodes::new(triples.iter().map(Triple::obj)))
+        let objects = store
+            .triples_with_predicate(predicate.clone())
+            .map(Triple::into_object);
+        let focus_nodes = FocusNodes::new(objects);
+        Ok(focus_nodes)
     }
 
     fn implicit_target_class(

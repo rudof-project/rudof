@@ -381,17 +381,6 @@ impl Query for SRDFGraph {
         }
         Ok((results, remainder))
     }
-
-    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
-        let mut result = Vec::new();
-        for triple in self.graph.triples_for_predicate(pred) {
-            let subj = triple.subject.into_owned();
-            let pred = triple.predicate.into_owned();
-            let obj = triple.object.into_owned();
-            result.push(Self::Triple::new(subj, pred, obj))
-        }
-        Ok(result)
-    }
 }
 
 #[async_trait]

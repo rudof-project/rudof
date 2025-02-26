@@ -1,7 +1,10 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::{matcher::Matcher, Rdf, Triple as _};
+use crate::{
+    matcher::{Any, Matcher},
+    Rdf, Triple as _,
+};
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
 pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
@@ -39,6 +42,13 @@ pub trait Query: Rdf {
         })
     }
 
+    fn triples_with_predicate<P: Matcher<Self::IRI>>(
+        &self,
+        predicate: P,
+    ) -> impl Iterator<Item = Self::Triple> {
+        self.triples_matching(Any, predicate, Any)
+    }
+
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,
@@ -55,18 +65,6 @@ pub trait Query: Rdf {
         pred: &Self::IRI,
         object: &Self::Term,
     ) -> Result<HashSet<Self::Subject>, Self::Err>;
-
-    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err>;
-
-    /*fn get_subjects_for_predicate_any_object(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<HashSet<Self::Subject>, Self::Err>;
-
-    fn get_objects_for_predicate_any_subject(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<HashSet<Self::Term>, Self::Err>;*/
 
     /// Get the neighbours of a term
     /// This code creates an intermediate vector and is not very efficient

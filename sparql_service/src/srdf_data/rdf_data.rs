@@ -380,20 +380,6 @@ impl Query for RdfData {
         }
         Ok(result)
     }
-
-    fn triples_with_predicate(&self, pred: &Self::IRI) -> Result<Vec<Self::Triple>, Self::Err> {
-        let mut result = Vec::new();
-        if let Some(graph) = &self.graph {
-            let s = graph.triples_with_predicate(pred)?;
-            result.extend(s)
-        }
-        for e in self.endpoints.iter() {
-            let s = e.triples_with_predicate(pred)?;
-            result.extend(s)
-        }
-        Ok(result)
-    }
-
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,
