@@ -341,12 +341,6 @@ pub struct SparqlVars {
     values: Vec<String>,
 }
 
-impl SparqlVars {
-    pub(crate) fn new(vs: Vec<String>) -> SparqlVars {
-        SparqlVars { values: vs }
-    }
-}
-
 impl Display for SparqlVars {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.values.join(", ").as_str())

@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    error,
     marker::PhantomData,
 };
 
