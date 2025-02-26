@@ -1,3 +1,4 @@
+use crate::matcher::Matcher;
 use crate::SRDFSparqlError;
 use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
 use async_trait::async_trait;
@@ -203,35 +204,63 @@ impl Query for SRDFSparql {
 
         triples
     }
-}
 
-/*
-impl QuerySRDF for SRDFSparql {
-    fn query_select(&self, query: &str) -> Result<QuerySolutions<SRDFSparql>> {
-        let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
-        let mut variables = Vec::new();
-        let mut values = Vec::new();
-        for solution in solutions {
-            if variables.is_empty() {
-                variables.extend(solution.variables().iter().map(|v| v.to_string().into()))
-            }
-            values.push(Ok(solution.values().to_vec()))
-        }
-        Ok(QuerySolutions::new(Rc::new(variables), values.into_iter()))
-    }
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> impl Iterator<Item = Self::Triple>
+    where
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
+    {
+        let query = format!(
+            "SELECT ?s ?p ?o WHERE {{ {} {} {} }}",
+            match subject.value() {
+                Some(s) => s.to_string(),
+                None => "?s".to_string(),
+            },
+            match predicate.value() {
+                Some(p) => p.to_string(),
+                None => "?p".to_string(),
+            },
+            match object.value() {
+                Some(o) => o.to_string(),
+                None => "?o".to_string(),
+            },
+        );
 
-    fn query_ask(&self, query: &str) -> Result<bool> {
-        make_sparql_query(query, &self.client, &self.endpoint_iri)?
-            .first()
-            .and_then(|query_solution| query_solution.get(0))
-            .and_then(|term| match term {
-                OxTerm::Literal(literal) => Some(literal.value()),
-                _ => None,
+        self.query_select(&query)
+            .unwrap() // TODO: check this unwrap
+            .into_iter()
+            .map(move |solution| {
+                let subject: Self::Subject = match subject.value() {
+                    Some(s) => s,
+                    None => solution
+                        .find_solution(0)
+                        .and_then(|s| s.clone().try_into().ok())
+                        .unwrap(), // TODO: check this unwrap
+                };
+
+                let predicate: Self::IRI = match predicate.value() {
+                    Some(p) => p,
+                    None => solution
+                        .find_solution(1)
+                        .and_then(|pred| pred.clone().try_into().ok())
+                        .unwrap(), // TODO: check this unwrap
+                };
+
+                let object = match object.value() {
+                    Some(o) => o,
+                    None => solution.find_solution(2).cloned().unwrap(), // TODO: check this unwrap
+                };
+
+                OxTriple::new(subject, predicate, object)
             })
-            .and_then(|value| value.parse().ok())
-            .ok_or_else(|| todo!())
     }
-} */
+}
 
 impl Sparql for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {

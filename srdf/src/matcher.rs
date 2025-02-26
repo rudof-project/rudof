@@ -1,20 +1,18 @@
-use std::fmt::Display;
-
 pub struct Any;
 
-pub trait Matcher<T>: PartialEq<T> + Display {}
+pub trait Matcher<T>: PartialEq<T> {
+    fn value(&self) -> Option<T>;
+}
 
-impl<T> Matcher<T> for Any {}
+impl<T> Matcher<T> for Any {
+    fn value(&self) -> Option<T> {
+        None
+    }
+}
 
 impl<T> PartialEq<T> for Any {
     fn eq(&self, _other: &T) -> bool {
         true
-    }
-}
-
-impl std::fmt::Display for Any {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(())
     }
 }
 

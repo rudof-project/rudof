@@ -234,7 +234,11 @@ impl Subject for OxSubject {
     }
 }
 
-impl Matcher<OxSubject> for OxSubject {}
+impl Matcher<OxSubject> for OxSubject {
+    fn value(&self) -> Option<OxSubject> {
+        Some(self.clone())
+    }
+}
 
 pub trait Iri: Debug + Display + Hash + Eq + Clone {
     fn as_str(&self) -> &str;
@@ -246,7 +250,11 @@ impl Iri for OxNamedNode {
     }
 }
 
-impl Matcher<OxNamedNode> for OxNamedNode {}
+impl Matcher<OxNamedNode> for OxNamedNode {
+    fn value(&self) -> Option<OxNamedNode> {
+        Some(self.clone())
+    }
+}
 
 pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn kind(&self) -> TermKind;
@@ -280,7 +288,11 @@ impl Term for OxTerm {
     }
 }
 
-impl Matcher<OxTerm> for OxTerm {}
+impl Matcher<OxTerm> for OxTerm {
+    fn value(&self) -> Option<OxTerm> {
+        Some(self.clone())
+    }
+}
 
 pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lexical_form(&self) -> &str;
