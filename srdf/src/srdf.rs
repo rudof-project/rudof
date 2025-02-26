@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-//use std::hash::Hash;
 
 use crate::{
     matcher::{Any, Matcher},
@@ -7,9 +6,9 @@ use crate::{
 };
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
-pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
+pub type HashMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
 
-type OutgoingArcs<I, T> = (HasMapOfIriAndItem<I, T>, Vec<I>);
+type OutgoingArcs<I, T> = (HashMapOfIriAndItem<I, T>, Vec<I>);
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 ///
@@ -94,8 +93,8 @@ pub trait Query: Rdf {
     fn incoming_arcs(
         &self,
         object: &Self::Term,
-    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err> {
-        let mut results: HasMapOfIriAndItem<Self::IRI, Self::Subject> = HashMap::new();
+    ) -> Result<HashMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err> {
+        let mut results: HashMapOfIriAndItem<Self::IRI, Self::Subject> = HashMap::new();
         for triple in self.triples_with_object(object.clone()) {
             let (s, p, _) = triple.into_components();
             results.entry(p).or_default().insert(s);
@@ -106,8 +105,8 @@ pub trait Query: Rdf {
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,
-    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err> {
-        let mut results: HasMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
+    ) -> Result<HashMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err> {
+        let mut results: HashMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
         for triple in self.triples_with_subject(subject.clone()) {
             let (_, p, o) = triple.into_components();
             results.entry(p).or_default().insert(o);
@@ -121,5 +120,17 @@ pub trait Query: Rdf {
         &self,
         subject: &Self::Subject,
         preds: &[Self::IRI],
-    ) -> Result<OutgoingArcs<Self::IRI, Self::Term>, Self::Err>;
+    ) -> Result<OutgoingArcs<Self::IRI, Self::Term>, Self::Err> {
+        let mut results: HashMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
+        let mut remainder = Vec::new();
+        for triple in self.triples_with_subject(subject.clone()) {
+            let (_, p, o) = triple.into_components();
+            if preds.contains(&p) {
+                results.entry(p).or_default().insert(o);
+            } else {
+                remainder.push(p)
+            }
+        }
+        Ok((results, remainder))
+    }
 }

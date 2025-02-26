@@ -341,46 +341,6 @@ impl Query for RdfData {
         let graph_triples = self.graph.iter().flat_map(Query::triples);
         endpoints_triples.chain(graph_triples)
     }
-
-    fn outgoing_arcs_from_list(
-        &self,
-        subject: &Self::Subject,
-        preds: &[Self::IRI],
-    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
-        let mut result = (HashMap::new(), Vec::new());
-        if let Some(graph) = &self.graph {
-            merge_outgoing_arcs(&mut result, graph.outgoing_arcs_from_list(subject, preds)?);
-        }
-        for endpoint in &self.endpoints {
-            let next = endpoint.outgoing_arcs_from_list(subject, preds)?;
-            merge_outgoing_arcs(&mut result, next)
-        }
-        Ok(result)
-    }
-
-    fn neighs(
-        &self,
-        node: &Self::Term,
-    ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        let subject = node.clone().try_into().ok();
-        if let Some(subject) = subject {
-            let subject: Self::Subject = subject;
-            let preds = self
-                .triples_with_subject(subject.clone())
-                .map(Triple::into_predicate);
-            let mut result = Vec::new();
-            for pred in preds {
-                let objs = self
-                    .triples_matching(subject.clone(), pred.clone(), Any)
-                    .map(Triple::into_object)
-                    .collect();
-                result.push((pred, objs));
-            }
-            Ok(result)
-        } else {
-            Ok(Vec::new())
-        }
-    }
 }
 
 impl FocusRDF for RdfData {

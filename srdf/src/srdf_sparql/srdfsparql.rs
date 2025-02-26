@@ -10,11 +10,7 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use regex::Regex;
 use sparesults::QuerySolution as OxQuerySolution;
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-    str::FromStr,
-};
+use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 #[cfg(target_family = "wasm")]
 #[derive(Debug, Clone)]
@@ -209,17 +205,6 @@ impl Query for SRDFSparql {
 
         triples
     }
-
-    fn outgoing_arcs_from_list(
-        &self,
-        subject: &Self::Subject,
-        preds: &[Self::IRI],
-    ) -> std::prelude::v1::Result<
-        (HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>),
-        Self::Err,
-    > {
-        outgoing_neighs_from_list(subject, preds, &self.client, &self.endpoint_iri)
-    }
 }
 
 /*
@@ -358,105 +343,6 @@ impl Display for SparqlVars {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.values.join(", ").as_str())
     }
-}
-
-#[cfg(not(target_family = "wasm"))]
-fn outgoing_neighs(
-    subject: &str,
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<HashMap<OxNamedNode, HashSet<OxTerm>>> {
-    use std::collections::hash_map::Entry;
-
-    use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
-    use url::Url;
-
-    let pred = "pred";
-    let obj = "obj";
-    let query = format!("select ?{pred} ?{obj} where {{ {subject} ?{pred} ?{obj} }}");
-    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    let body = client.get(url).send()?.text()?;
-    let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
-    let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
-        for solution in solutions {
-            let sol = solution?;
-            match (sol.get(pred), sol.get(obj)) {
-                (Some(p), Some(v)) => match p {
-                    OxTerm::NamedNode(iri) => match results.entry(iri.clone()) {
-                        Entry::Occupied(mut vs) => {
-                            vs.get_mut().insert(v.clone());
-                        }
-                        Entry::Vacant(vacant) => {
-                            vacant.insert(HashSet::from([v.clone()]));
-                        }
-                    },
-                    _ => {
-                        return Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: p.clone() })
-                    }
-                },
-                (None, None) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![pred.to_string(), obj.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-                (None, Some(_)) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![pred.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-                (Some(_), None) => {
-                    return Err(SRDFSparqlError::NotFoundVarsInSolution {
-                        vars: SparqlVars::new(vec![obj.to_string()]),
-                        solution: format!("{sol:?}"),
-                    })
-                }
-            }
-        }
-        Ok(results)
-    } else {
-        Err(SRDFSparqlError::ParsingBody { body })
-    }
-}
-
-#[cfg(target_family = "wasm")]
-fn outgoing_neighs(
-    _subject: &str,
-    _client: &Client,
-    _endpoint_iri: &IriS,
-) -> Result<HashMap<OxNamedNode, HashSet<OxTerm>>> {
-    Err(SRDFSparqlError::UnknownEndpontName {
-        name: String::from("WASM"),
-    })
-}
-
-type OutputNodes = HashMap<OxNamedNode, HashSet<OxTerm>>;
-
-fn outgoing_neighs_from_list(
-    subject: &OxSubject,
-    preds: &[OxNamedNode],
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<(OutputNodes, Vec<OxNamedNode>)> {
-    // This is not an efficient way to obtain the neighbours related with a set of predicates
-    // At this moment, it obtains all neighbours and them removes the ones that are not in the list
-    let mut remainder = Vec::new();
-    let mut all_results = outgoing_neighs(subject.to_string().as_str(), client, endpoint_iri)?;
-    let mut remove_keys = Vec::new();
-    for key in all_results.keys() {
-        if !preds.contains(key) {
-            remainder.push(key.clone());
-            remove_keys.push(key.clone());
-        }
-    }
-    for key in remove_keys {
-        all_results.remove(&key);
-    }
-    Ok((all_results, remainder))
 }
 
 fn get_iri_solution(solution: OxQuerySolution, name: &str) -> Result<OxNamedNode> {

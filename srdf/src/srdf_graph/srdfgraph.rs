@@ -5,7 +5,6 @@ use colored::*;
 use iri_s::IriS;
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
-use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, Write};
@@ -273,32 +272,6 @@ impl Rdf for SRDFGraph {
 impl Query for SRDFGraph {
     fn triples(&self) -> impl Iterator<Item = Self::Triple> {
         self.graph.iter().map(TripleRef::into_owned)
-    }
-
-    fn outgoing_arcs_from_list(
-        &self,
-        subject: &Self::Subject,
-        preds: &[Self::IRI],
-    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
-        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
-        let mut remainder = Vec::new();
-        for triple in self.graph.triples_for_subject(subject) {
-            let pred = triple.predicate.into_owned();
-            let term = triple.object.into_owned();
-            if preds.contains(&pred) {
-                match results.entry(pred) {
-                    Entry::Occupied(mut vs) => {
-                        vs.get_mut().insert(term.clone());
-                    }
-                    Entry::Vacant(vacant) => {
-                        vacant.insert(HashSet::from([term.clone()]));
-                    }
-                }
-            } else {
-                remainder.push(pred)
-            }
-        }
-        Ok((results, remainder))
     }
 }
 

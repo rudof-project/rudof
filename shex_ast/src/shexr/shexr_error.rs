@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::{literal::Literal, RDFParseError};
+use srdf::RDFParseError;
 use std::fmt::Display;
 use thiserror::Error;
 
