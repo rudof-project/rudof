@@ -70,34 +70,36 @@ pub trait Query: Rdf {
         &self,
         node: &Self::Term,
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
-        match node.clone().try_into() {
-            Ok(subject) => {
-                let subject: Self::Subject = subject;
-                let preds = self
-                    .triples_with_subject(subject.clone())
-                    .map(Triple::into_predicate);
-                let mut result = Vec::new();
-                for pred in preds {
-                    let objs = self
-                        .triples_matching(subject.clone(), pred.clone(), Any)
-                        .map(Triple::into_object)
-                        .collect();
-                    result.push((pred, objs));
-                }
-                Ok(result)
-            }
-            Err(_) => Ok(Vec::new()),
+        let subject: Self::Subject = match node.clone().try_into() {
+            Ok(subject) => subject,
+            Err(_) => return Ok(Vec::default()), // TODO: this is inefficient
+        };
+
+        let preds = self
+            .triples_with_subject(subject.clone())
+            .map(Triple::into_predicate);
+
+        let mut result = Vec::new();
+        for pred in preds {
+            let objs = self
+                .triples_matching(subject.clone(), pred.clone(), Any)
+                .map(Triple::into_object)
+                .collect();
+            result.push((pred, objs));
         }
+
+        Ok(result)
     }
+
+    fn incoming_arcs(
+        &self,
+        object: &Self::Term,
+    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err>;
 
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,
     ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err>;
-    fn incoming_arcs(
-        &self,
-        object: &Self::Term,
-    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Subject>, Self::Err>;
 
     /// get outgoing arcs from a `node` taking into account only a controlled list of `preds`
     /// It returns a HashMap with the outgoing arcs and their values and a list of the predicates that have values and are not in the controlled list.
