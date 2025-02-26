@@ -11,6 +11,7 @@ use oxrdf::{
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
+use srdf::matcher::Any;
 use srdf::FocusRDF;
 use srdf::ListOfIriAndTerms;
 use srdf::Query;
@@ -341,23 +342,6 @@ impl Query for RdfData {
         endpoints_triples.chain(graph_triples)
     }
 
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
-    ) -> Result<std::collections::HashSet<Self::Term>, Self::Err> {
-        let mut result = HashSet::new();
-        if let Some(graph) = &self.graph {
-            let os = graph.objects_for_subject_predicate(subject, pred)?;
-            result.extend(os)
-        }
-        for e in &self.endpoints {
-            let os = e.objects_for_subject_predicate(subject, pred)?;
-            result.extend(os)
-        }
-        Ok(result)
-    }
-
     fn subjects_with_predicate_object(
         &self,
         pred: &Self::IRI,
@@ -425,8 +409,11 @@ impl Query for RdfData {
                 .map(Triple::into_predicate);
             let mut result = Vec::new();
             for pred in preds {
-                let objs = self.objects_for_subject_predicate(&subject, &pred)?;
-                result.push((pred.clone(), objs));
+                let objs = self
+                    .triples_matching(subject.clone(), pred.clone(), Any)
+                    .map(Triple::into_object)
+                    .collect();
+                result.push((pred, objs));
             }
             Ok(result)
         } else {

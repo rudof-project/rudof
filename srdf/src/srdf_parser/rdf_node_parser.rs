@@ -8,8 +8,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf, RDF_FIRST,
-    RDF_NIL_STR, RDF_REST, RDF_TYPE,
+    literal::Literal, matcher::Any, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf,
+    Triple, RDF_FIRST, RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 use crate::{srdf_basic::Literal as _, Iri as _};
 
@@ -865,12 +865,11 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
         let subject = rdf.get_focus_as_subject()?;
-        let pred = self.property.clone().into();
+        let pred: RDF::IRI = self.property.clone().into();
         let values = rdf
-            .objects_for_subject_predicate(&subject, &pred)
-            .map_err(|e| RDFParseError::SRDFError {
-                err: format!("{e}"),
-            })?;
+            .triples_matching(subject, pred, Any)
+            .map(Triple::into_object)
+            .collect();
         Ok(values)
     }
 }

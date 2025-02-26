@@ -210,21 +210,6 @@ impl Query for SRDFSparql {
         triples
     }
 
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &OxSubject,
-        pred: &OxNamedNode,
-    ) -> Result<HashSet<OxTerm>> {
-        let query = format!(r#"select ?obj where {{ {} {} ?obj . }}"#, subject, pred);
-        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
-        let mut results = HashSet::new();
-        for solution in solutions {
-            let n = get_object_solution(solution, "obj")?;
-            results.insert(n.clone());
-        }
-        Ok(results)
-    }
-
     fn subjects_with_predicate_object(
         &self,
         pred: &OxNamedNode,
@@ -593,16 +578,6 @@ fn get_iri_solution(solution: OxQuerySolution, name: &str) -> Result<OxNamedNode
             OxTerm::NamedNode(n) => Ok(n.clone()),
             _ => Err(SRDFSparqlError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
         },
-        None => Err(SRDFSparqlError::NotFoundInSolution {
-            value: name.to_string(),
-            solution: format!("{solution:?}"),
-        }),
-    }
-}
-
-fn get_object_solution(solution: OxQuerySolution, name: &str) -> Result<OxTerm> {
-    match solution.get(name) {
-        Some(v) => Ok(v.clone()),
         None => Err(SRDFSparqlError::NotFoundInSolution {
             value: name.to_string(),
             solution: format!("{solution:?}"),

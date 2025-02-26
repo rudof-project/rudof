@@ -63,12 +63,6 @@ pub trait Query: Rdf {
         self.triples_matching(Any, Any, object)
     }
 
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
-    ) -> Result<HashSet<Self::Term>, Self::Err>;
-
     fn subjects_with_predicate_object(
         &self,
         pred: &Self::IRI,
@@ -90,7 +84,10 @@ pub trait Query: Rdf {
                     .map(Triple::into_predicate);
                 let mut result = Vec::new();
                 for pred in preds {
-                    let objs = self.objects_for_subject_predicate(&subject, &pred)?;
+                    let objs = self
+                        .triples_matching(subject.clone(), pred.clone(), Any)
+                        .map(Triple::into_object)
+                        .collect();
                     result.push((pred, objs));
                 }
                 Ok(result)

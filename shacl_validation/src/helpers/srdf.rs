@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{Query, RDFNode};
+use srdf::{matcher::Any, Query, RDFNode, Triple};
 
 use super::helper_error::SRDFError;
 
@@ -23,7 +23,7 @@ pub(crate) fn get_objects_for<S: Query>(
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    let subject = match subject.clone().try_into() {
+    let subject: S::Subject = match subject.clone().try_into() {
         Ok(subject) => subject,
         Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
@@ -32,13 +32,10 @@ pub(crate) fn get_objects_for<S: Query>(
         }
     };
 
-    store
-        .objects_for_subject_predicate(&subject, predicate)
-        .map_err(|e| SRDFError::ObjectsWithSubjectPredicate {
-            predicate: format!("{predicate}"),
-            subject: format!("{subject}"),
-            error: format!("{e}"),
-        })
+    Ok(store
+        .triples_matching(subject, predicate.clone(), Any)
+        .map(Triple::into_object)
+        .collect())
 }
 
 pub(crate) fn get_subjects_for<S: Query>(

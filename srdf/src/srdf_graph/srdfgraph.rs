@@ -275,19 +275,6 @@ impl Query for SRDFGraph {
         self.graph.iter().map(TripleRef::into_owned)
     }
 
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
-    ) -> Result<HashSet<Self::Term>, Self::Err> {
-        let predicate = pred.as_ref();
-        let mut result = HashSet::new();
-        for o in self.graph.objects_for_subject_predicate(subject, predicate) {
-            result.insert(o.into_owned());
-        }
-        Ok(result)
-    }
-
     fn subjects_with_predicate_object(
         &self,
         pred: &Self::IRI,
