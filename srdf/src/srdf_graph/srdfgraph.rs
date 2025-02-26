@@ -595,6 +595,7 @@ mod tests {
 
         let actual = graph.outgoing_arcs(&subject).unwrap();
         let expected = HashSet::from([OxTerm::Literal(1.into())]);
+
         assert_eq!(actual.get(&p), Some(&expected))
     }
 
