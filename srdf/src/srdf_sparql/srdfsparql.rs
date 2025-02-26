@@ -1,4 +1,4 @@
-use crate::matcher::Matcher;
+use crate::matcher::{Any, Matcher};
 use crate::SRDFSparqlError;
 use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
 use async_trait::async_trait;
@@ -181,28 +181,7 @@ impl AsyncSRDF for SRDFSparql {
 
 impl Query for SRDFSparql {
     fn triples(&self) -> impl Iterator<Item = Self::Triple> {
-        let triples = self
-            .query_select("SELECT ?s ?p ?o WHERE {{ ?s ?p ?o . }}")
-            .unwrap() // TODO: check this unwrap
-            .into_iter()
-            .filter_map(move |solution| {
-                let subject: Option<Self::Subject> = solution
-                    .find_solution(0)
-                    .and_then(|s| s.clone().try_into().ok());
-
-                let predicate: Option<Self::IRI> = solution
-                    .find_solution(1)
-                    .and_then(|pred| pred.clone().try_into().ok());
-
-                let object = solution.find_solution(2).cloned();
-
-                match (subject, predicate, object) {
-                    (Some(subj), Some(pred), Some(obj)) => Some(OxTriple::new(subj, pred, obj)),
-                    _ => None,
-                }
-            });
-
-        triples
+        self.triples_matching(Any, Any, Any)
     }
 
     fn triples_matching<S, P, O>(
