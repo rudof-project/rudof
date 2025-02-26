@@ -594,6 +594,15 @@ mod tests {
     use super::ReaderMode;
     use super::SRDFGraph;
 
+    const DUMMY_GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+        :y :p "String" .
+        :y :q 2 .
+        :z :r 3 .
+        :x :s 4 .
+    "#;
+
     const DUMMY_GRAPH_1: &str = r#"
         prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -655,6 +664,24 @@ mod tests {
 
     fn graph_from_str(s: &str) -> SRDFGraph {
         SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    }
+
+    #[test]
+    fn test_triples_matching_subject_and_predicate() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+
+        let triples = graph.triples_matching(x, p.clone(), Any);
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_predicate() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let triples = graph.triples_matching(Any, p.clone(), Any);
+        assert_eq!(triples.count(), 2)
     }
 
     #[test]
