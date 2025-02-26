@@ -210,21 +210,6 @@ impl Query for SRDFSparql {
         triples
     }
 
-    fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
-        let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
-        tracing::debug!(
-            "SPARQL query (get predicates for subject {subject}): {}",
-            query
-        );
-        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
-        let mut results = HashSet::new();
-        for solution in solutions {
-            let n = get_iri_solution(solution, "pred")?;
-            results.insert(n.clone());
-        }
-        Ok(results)
-    }
-
     fn objects_for_subject_predicate(
         &self,
         subject: &OxSubject,
@@ -648,19 +633,22 @@ fn term_as_subject(object: &OxTerm) -> Option<OxSubject> {
 
 #[cfg(test)]
 mod tests {
+    use crate::Triple;
+
     use super::*;
     use oxrdf::{NamedNode, Subject};
 
     #[test]
     fn check_sparql() {
         let wikidata = SRDFSparql::wikidata().unwrap();
-        let q80: Subject = Subject::NamedNode(NamedNode::new_unchecked(
-            "http://www.wikidata.org/entity/Q80".to_string(),
-        ));
-        let maybe_data = wikidata.predicates_for_subject(&q80);
-        let data = maybe_data.unwrap();
-        let p19: NamedNode =
-            NamedNode::new_unchecked("http://www.wikidata.org/prop/P19".to_string());
+
+        let q80: Subject = NamedNode::new_unchecked("http://www.wikidata.org/entity/Q80").into();
+        let p19: NamedNode = NamedNode::new_unchecked("http://www.wikidata.org/prop/P19");
+
+        let data: Vec<_> = wikidata
+            .triples_with_subject(q80)
+            .map(Triple::into_predicate)
+            .collect();
 
         assert!(data.contains(&p19));
     }

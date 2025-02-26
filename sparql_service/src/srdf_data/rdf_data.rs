@@ -23,6 +23,7 @@ use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::Sparql;
+use srdf::Triple;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
 use std::collections::HashMap;
@@ -340,13 +341,6 @@ impl Query for RdfData {
         endpoints_triples.chain(graph_triples)
     }
 
-    fn predicates_for_subject(
-        &self,
-        _subject: &Self::Subject,
-    ) -> Result<std::collections::HashSet<Self::IRI>, Self::Err> {
-        todo!()
-    }
-
     fn objects_for_subject_predicate(
         &self,
         subject: &Self::Subject,
@@ -425,8 +419,11 @@ impl Query for RdfData {
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
         let subject = node.clone().try_into().ok();
         if let Some(subject) = subject {
+            let subject: Self::Subject = subject;
+            let preds = self
+                .triples_with_subject(subject.clone())
+                .map(Triple::into_predicate);
             let mut result = Vec::new();
-            let preds = self.predicates_for_subject(&subject)?;
             for pred in preds {
                 let objs = self.objects_for_subject_predicate(&subject, &pred)?;
                 result.push((pred.clone(), objs));

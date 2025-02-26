@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     matcher::{Any, Matcher},
-    Rdf, Triple as _,
+    Rdf, Triple,
 };
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
@@ -63,11 +63,6 @@ pub trait Query: Rdf {
         self.triples_matching(Any, Any, object)
     }
 
-    fn predicates_for_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashSet<Self::IRI>, Self::Err>;
-
     fn objects_for_subject_predicate(
         &self,
         subject: &Self::Subject,
@@ -89,11 +84,14 @@ pub trait Query: Rdf {
     ) -> Result<ListOfIriAndTerms<Self::IRI, Self::Term>, Self::Err> {
         match node.clone().try_into() {
             Ok(subject) => {
+                let subject: Self::Subject = subject;
+                let preds = self
+                    .triples_with_subject(subject.clone())
+                    .map(Triple::into_predicate);
                 let mut result = Vec::new();
-                let preds = self.predicates_for_subject(&subject)?;
                 for pred in preds {
                     let objs = self.objects_for_subject_predicate(&subject, &pred)?;
-                    result.push((pred.clone(), objs));
+                    result.push((pred, objs));
                 }
                 Ok(result)
             }
