@@ -8,6 +8,7 @@ use crate::Triple;
 
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;
+pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
 /// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
 pub trait Query: Rdf {
@@ -84,7 +85,7 @@ pub trait Query: Rdf {
         &self,
         subject: &Self::Subject,
         preds: &[Self::IRI],
-    ) -> Result<(OutgoingArcs<Self>, Vec<Self::IRI>), Self::Err> {
+    ) -> Result<OutgoingArcsFromList<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
         let mut remainder = Vec::new();
 
