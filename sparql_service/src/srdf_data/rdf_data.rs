@@ -342,22 +342,6 @@ impl Query for RdfData {
         endpoints_triples.chain(graph_triples)
     }
 
-    fn outgoing_arcs(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        let mut result = HashMap::new();
-        if let Some(graph) = &self.graph {
-            let arcs = graph.outgoing_arcs(subject)?;
-            result.extend(arcs)
-        }
-        for e in &self.endpoints {
-            let arcs = e.outgoing_arcs(subject)?;
-            result.extend(arcs)
-        }
-        Ok(result)
-    }
-
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,

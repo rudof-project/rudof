@@ -106,7 +106,14 @@ pub trait Query: Rdf {
     fn outgoing_arcs(
         &self,
         subject: &Self::Subject,
-    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err>;
+    ) -> Result<HasMapOfIriAndItem<Self::IRI, Self::Term>, Self::Err> {
+        let mut results: HasMapOfIriAndItem<Self::IRI, Self::Term> = HashMap::new();
+        for triple in self.triples_with_subject(subject.clone()) {
+            let (_, p, o) = triple.into_components();
+            results.entry(p).or_default().insert(o);
+        }
+        Ok(results)
+    }
 
     /// get outgoing arcs from a `node` taking into account only a controlled list of `preds`
     /// It returns a HashMap with the outgoing arcs and their values and a list of the predicates that have values and are not in the controlled list.

@@ -210,17 +210,6 @@ impl Query for SRDFSparql {
         triples
     }
 
-    fn outgoing_arcs(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>> {
-        outgoing_neighs(
-            subject.to_string().as_str(),
-            &self.client,
-            &self.endpoint_iri,
-        )
-    }
-
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,

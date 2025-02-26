@@ -275,26 +275,6 @@ impl Query for SRDFGraph {
         self.graph.iter().map(TripleRef::into_owned)
     }
 
-    fn outgoing_arcs(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
-        for triple in self.graph.triples_for_subject(subject) {
-            let pred = triple.predicate.into_owned();
-            let term = triple.object.into_owned();
-            match results.entry(pred) {
-                Entry::Occupied(mut vs) => {
-                    vs.get_mut().insert(term.clone());
-                }
-                Entry::Vacant(vacant) => {
-                    vacant.insert(HashSet::from([term.clone()]));
-                }
-            }
-        }
-        Ok(results)
-    }
-
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
