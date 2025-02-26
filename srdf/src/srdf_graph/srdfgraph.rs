@@ -1,5 +1,5 @@
 use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, Query, RDFFormat, RDFNode, Rdf, SRDFBuilder, RDF_TYPE_STR};
+use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -272,6 +272,10 @@ impl Rdf for SRDFGraph {
 }
 
 impl Query for SRDFGraph {
+    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
+        self.graph.iter().map(TripleRef::into_owned)
+    }
+
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,

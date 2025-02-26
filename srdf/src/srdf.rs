@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 //use std::hash::Hash;
 
-use crate::Rdf;
+use crate::{matcher::Matcher, Rdf, Triple as _};
 
 pub type ListOfIriAndTerms<I, T> = Vec<(I, HashSet<T>)>;
 pub type HasMapOfIriAndItem<I, T> = HashMap<I, HashSet<T>>;
@@ -12,6 +12,33 @@ type OutgoingArcs<I, T> = (HasMapOfIriAndItem<I, T>, Vec<I>);
 ///
 /// TODO: Consider alternative names: RDFGraphOps
 pub trait Query: Rdf {
+    fn triples(&self) -> impl Iterator<Item = Self::Triple>;
+
+    /// Note to implementors: this function needs to retrieve all the triples of
+    /// the graph. Therefore, for use-cases where the graph is large, this
+    /// function should be implemented in a way that it does not retrieve all
+    /// triples at once. As an example, for implementations of SPARQL, this
+    /// function should be implemented to retrieve just the triples that match
+    /// the given subject, predicate and object.
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> impl Iterator<Item = Self::Triple>
+    where
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
+    {
+        self.triples().filter_map(move |triple| {
+            match subject == triple.subj() && predicate == triple.pred() && object == triple.obj() {
+                true => Some(triple),
+                false => None,
+            }
+        })
+    }
+
     fn predicates_for_subject(
         &self,
         subject: &Self::Subject,

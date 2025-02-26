@@ -334,6 +334,12 @@ fn _rdf_type() -> OxNamedNode {
 }
 
 impl Query for RdfData {
+    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
+        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples);
+        let graph_triples = self.graph.iter().flat_map(Query::triples);
+        endpoints_triples.chain(graph_triples)
+    }
+
     fn predicates_for_subject(
         &self,
         _subject: &Self::Subject,

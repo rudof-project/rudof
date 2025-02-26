@@ -183,6 +183,33 @@ impl AsyncSRDF for SRDFSparql {
 }
 
 impl Query for SRDFSparql {
+    fn triples(&self) -> impl Iterator<Item = Self::Triple> {
+        let basic_graph_pattern = format!("SELECT ?s ?p ?o WHERE {{ ?s ?p ?o . }}");
+
+        let triples = self
+            .query_select(&basic_graph_pattern)
+            .into_iter()
+            .flat_map(|solutions| solutions.into_iter())
+            .filter_map(move |solution| {
+                let subject: Option<Self::Subject> = solution
+                    .find_solution(0)
+                    .and_then(|s| s.clone().try_into().ok());
+
+                let predicate: Option<Self::IRI> = solution
+                    .find_solution(1)
+                    .and_then(|pred| pred.clone().try_into().ok());
+
+                let object = solution.find_solution(2).cloned();
+
+                match (subject, predicate, object) {
+                    (Some(subj), Some(pred), Some(obj)) => Some(OxTriple::new(subj, pred, obj)),
+                    _ => None,
+                }
+            });
+
+        triples
+    }
+
     fn predicates_for_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
         tracing::debug!(

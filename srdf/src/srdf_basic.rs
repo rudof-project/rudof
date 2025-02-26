@@ -13,15 +13,19 @@ use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 use rust_decimal::Decimal;
 
+use crate::matcher::Matcher;
 use crate::Object;
 
-pub trait Rdf {
+pub trait Rdf: Sized {
     type Subject: Subject
         + From<Self::IRI>
         + From<Self::BNode>
         + From<IriS>
         + TryFrom<Self::Term>
-        + TryFrom<Object>;
+        + TryFrom<Object>
+        + Matcher<Self::Subject>;
+
+    type IRI: Iri + From<IriS> + TryFrom<Self::Term> + Matcher<Self::IRI>;
 
     type Term: Term
         + From<Self::Subject>
@@ -30,9 +34,8 @@ pub trait Rdf {
         + From<Self::Literal>
         + From<IriS>
         + From<Object>
-        + Into<Object>;
-
-    type IRI: Iri + From<IriS> + TryFrom<Self::Term>;
+        + Into<Object>
+        + Matcher<Self::Term>;
 
     type BNode: BlankNode + TryFrom<Self::Term>;
 
@@ -231,6 +234,8 @@ impl Subject for OxSubject {
     }
 }
 
+impl Matcher<OxSubject> for OxSubject {}
+
 pub trait Iri: Debug + Display + Hash + Eq + Clone {
     fn as_str(&self) -> &str;
 }
@@ -240,6 +245,8 @@ impl Iri for OxNamedNode {
         self.as_str()
     }
 }
+
+impl Matcher<OxNamedNode> for OxNamedNode {}
 
 pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn kind(&self) -> TermKind;
@@ -272,6 +279,8 @@ impl Term for OxTerm {
         }
     }
 }
+
+impl Matcher<OxTerm> for OxTerm {}
 
 pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lexical_form(&self) -> &str;
