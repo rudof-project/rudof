@@ -1,0 +1,15 @@
+@prefix ex:  <http://example.org/> .
+@prefix wd:  <http://www.wikidata.org/entity/> .
+@prefix wdt: <http://www.wikidata.org/prop/direct/> .
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:WikidataExampleShape 
+    a sh:NodeShape ;
+    sh:targetNode wd:Q80 ; 
+    sh:property [                  
+        sh:path     wdt:P1477 ; 
+        sh:minCount 1 ; 
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+    ] .
