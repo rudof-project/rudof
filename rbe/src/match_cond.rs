@@ -1,7 +1,7 @@
 use crate::{rbe_error::RbeError, Pending};
 use crate::{Key, Ref, Value};
 use core::hash::Hash;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::hash::Hasher;

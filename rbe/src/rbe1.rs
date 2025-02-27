@@ -3,7 +3,7 @@ use crate::{deriv_n, rbe_error::RbeError, Cardinality, MatchCond, Max, Min, Pend
 use crate::{Key, Ref, Value};
 use core::hash::Hash;
 use itertools::cloned;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};

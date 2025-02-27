@@ -9,9 +9,7 @@ license.workspace = true
 
 [dependencies]
 rbe = { workspace = true }
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = { workspace = true }
+serde.workspace = true
 serde_yml = "0.0.12"
 anyhow = "1.0.27"
 tracing = { workspace = true }

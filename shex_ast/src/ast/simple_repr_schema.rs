@@ -1,7 +1,7 @@
 use crate::{Shape, ShapeExprLabel};
 use iri_s::IriS;
 use prefixmap::IriRef;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use super::{Schema, ShapeDecl, ShapeExpr, TripleExpr, ValueSetValue};
 

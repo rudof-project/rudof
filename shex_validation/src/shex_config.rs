@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use iri_s::IriS;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use srdf::RdfDataConfig;
 use thiserror::Error;
 
@@ -9,7 +9,6 @@ use crate::ShExFormat;
 
 /// ShEx configuration on main
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
-
 pub struct ShExConfigMain {
     /// Show information about time
     pub show_time: Option<bool>,

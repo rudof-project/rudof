@@ -15,26 +15,18 @@ rdf-star = [
     "srdf/rdf-star",
 ]
 
-
 [dependencies]
-iri_s = { workspace = true }
-dctap = { workspace = true }
-rbe = { workspace = true }
-srdf = { workspace = true }
-shacl_ast = { workspace = true }
-shex_ast = { workspace = true }
-shex_compact = { workspace = true }
-shex_validation = { workspace = true }
-shacl_validation = { workspace = true }
-shapemap = { workspace = true }
-prefixmap = { workspace = true }
-colored = "2"
-either = "1"
-indexmap = { version = "2" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { workspace = true }
+iri_s.workspace = true
+dctap.workspace = true
+srdf.workspace = true
+shacl_ast.workspace = true
+shex_ast.workspace = true
+shex_compact.workspace = true
+shex_validation.workspace = true
+shacl_validation.workspace = true
+prefixmap.workspace = true
+serde.workspace = true
 serde_yml = "0.0.12"
-serde_derive = "1.0"
 chrono = "0.4.38"
 
 spargebra = "0.3.0-alpha.5"
@@ -42,6 +34,3 @@ thiserror = "1.0"
 tracing = { workspace = true }
 minijinja = { version = "2.0.3", features = ["loader"] }
 tempfile = "3.10.1"
-
-[dev-dependencies]
-oxrdf = { workspace = true }

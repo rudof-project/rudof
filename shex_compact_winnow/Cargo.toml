@@ -4,7 +4,6 @@ version = "0.0.11"
 
 [dependencies]
 shex_ast = { workspace = true }
-rbe = { workspace = true }
 iri_s = { workspace = true }
 srdf = { workspace = true }
 prefixmap = { workspace = true }
@@ -12,9 +11,7 @@ shapemap = { workspace = true }
 thiserror = "1"
 colored = "2"
 rust_decimal = "1.32"
-rust_decimal_macros = "1.32"
 pretty = "0.12.3"
-winnow = "0.5.37"
 
 [dev-dependencies]
 criterion = "0.5"

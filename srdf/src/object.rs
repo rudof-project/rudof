@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
 use iri_s::IriS;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
 ///

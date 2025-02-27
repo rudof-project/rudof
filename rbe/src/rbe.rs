@@ -1,6 +1,6 @@
 use crate::{deriv_error::DerivError, deriv_n, Bag, Cardinality, Max, Min};
 use core::hash::Hash;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};

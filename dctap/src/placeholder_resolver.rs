@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// Different types of Placeholder resolvers
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

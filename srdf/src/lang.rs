@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub struct Lang {

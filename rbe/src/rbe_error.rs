@@ -6,8 +6,7 @@ use crate::Keys;
 use crate::Ref;
 use crate::Value;
 use crate::Values;
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Represents a regular bag expression error.

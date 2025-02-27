@@ -2,8 +2,7 @@ use std::result;
 
 use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
-use serde::Serializer;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use srdf::numeric_literal::NumericLiteral;
 use void::Void;
 

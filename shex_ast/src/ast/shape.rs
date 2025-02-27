@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};

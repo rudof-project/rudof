@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use crate::PrefixMap;
 use crate::{Deref, DerefError};
 use iri_s::{IriS, IriSError};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]

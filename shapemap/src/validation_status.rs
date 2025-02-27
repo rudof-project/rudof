@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde_derive::Serialize;
+use serde::Serialize;
 use serde_json::Value;
 
 /// Represents the current status of validation

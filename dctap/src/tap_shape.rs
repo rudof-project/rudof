@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{tap_statement::TapStatement, ExtendsId};
 use crate::{ShapeId, TapReaderWarning};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct TapShape {

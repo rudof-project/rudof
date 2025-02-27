@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
-use serde_derive::Serialize;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::SRDF;
 

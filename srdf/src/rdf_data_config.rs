@@ -4,7 +4,7 @@ use prefixmap::PrefixMap;
 use thiserror::Error;
 
 use iri_s::{IriS, IriSError};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

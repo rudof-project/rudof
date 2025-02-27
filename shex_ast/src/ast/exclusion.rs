@@ -3,8 +3,7 @@ use std::{fmt, result};
 
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{de, Deserialize as DeserializeTrait, Serialize, Serializer};
-use serde_derive::Deserialize;
+use serde::{de, Deserialize, Serialize, Serializer};
 use srdf::lang::Lang;
 
 use prefixmap::IriRef;
@@ -178,7 +177,7 @@ impl Serialize for Exclusion {
     }
 }
 
-impl<'de> DeserializeTrait<'de> for Exclusion {
+impl<'de> Deserialize<'de> for Exclusion {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -188,7 +187,7 @@ impl<'de> DeserializeTrait<'de> for Exclusion {
             Stem,
         }
 
-        impl<'de> DeserializeTrait<'de> for Field {
+        impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
             where
                 D: serde::Deserializer<'de>,
