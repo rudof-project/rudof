@@ -23,7 +23,11 @@ members = [
 
 exclude = ["shex_compact_winnow"]
 
-default-members = ["rudof_cli", "shacl_validation", "srdf"]
+default-members = [
+    "rudof_cli",
+    # "shacl_validation",
+    "srdf",
+]
 
 [workspace.package]
 edition = "2021"
