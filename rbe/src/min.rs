@@ -61,7 +61,7 @@ impl Serialize for Min {
 
 struct MinVisitor;
 
-impl<'de> Visitor<'de> for MinVisitor {
+impl Visitor<'_> for MinVisitor {
     type Value = Min;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

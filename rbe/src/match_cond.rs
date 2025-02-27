@@ -75,14 +75,12 @@ where
             }
             MatchCond::And(cs) => {
                 write!(f, "And(")?;
-                cs.iter()
-                    .fold(Ok(()), |result, c| result.and_then(|_| write!(f, "|{c}")))?;
+                cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
             }
             MatchCond::Or(cs) => {
                 write!(f, "Or")?;
-                cs.iter()
-                    .fold(Ok(()), |result, c| result.and_then(|_| write!(f, "|{c}")))?;
+                cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
             }
             MatchCond::Not(c) => write!(f, "Not({c})"),

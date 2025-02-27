@@ -1171,7 +1171,7 @@ where
 /// use srdf::SRDFGraph;
 /// use srdf::{property_value, then, RDFFormat, ReaderMode, RDFNodeParse, rdf_list, set_focus};
 /// use oxrdf::{Literal, Term};
-
+///
 /// let s = r#"prefix : <http://example.org/>
 ///  :x :p (1 2).
 /// "#;
@@ -1183,7 +1183,7 @@ where
 /// });
 /// assert_eq!(parser.parse(&x, graph).unwrap(),
 ///   vec![Term::from(Literal::from(1)), Term::from(Literal::from(2))])
-/// ````
+/// ```
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
     RDF: SRDF,
@@ -1852,7 +1852,7 @@ impl<'p, P> ByRef<'p, P> {
     }
 }
 
-impl<'p, RDF, P, O> RDFNodeParse<RDF> for ByRef<'p, P>
+impl<RDF, P, O> RDFNodeParse<RDF> for ByRef<'_, P>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF, Output = O>,

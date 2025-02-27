@@ -158,8 +158,8 @@ where
             Rbe::Empty => true,
             Rbe::Symbol { card, .. } if card.nullable() => true,
             Rbe::Symbol { .. } => false,
-            Rbe::And { exprs } => exprs.iter().map(|v| v.nullable()).all(|v| v),
-            Rbe::Or { exprs } => exprs.iter().map(|v| v.nullable()).any(|v| v),
+            Rbe::And { exprs } => exprs.iter().all(|v| v.nullable()),
+            Rbe::Or { exprs } => exprs.iter().any(|v| v.nullable()),
             Rbe::Star { .. } => true,
             Rbe::Plus { expr } => expr.nullable(),
             Rbe::Repeat { expr: _, card } if card.min.is_0() => true,
@@ -456,11 +456,13 @@ where
 mod tests {
     use super::*;
 
+    impl Ref for i32 {}
+
+    impl Key for String {}
+
     #[test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
-
-        impl Ref for i32 {}
 
         let rbe: Rbe<char, i32, i32> = Rbe::and(vec![
             Rbe::symbol('a', 1, Max::IntMax(1)),
@@ -494,7 +496,6 @@ mod tests {
 
     #[test]
     fn deriv_symbol_b_2_3() {
-        impl Key for String {}
         let rbe: Rbe<String, String, String> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
         let mut pending = Pending::new();
         let d = rbe.deriv(

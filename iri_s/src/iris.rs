@@ -231,7 +231,7 @@ impl Default for IriS {
 
 struct IriVisitor;
 
-impl<'de> Visitor<'de> for IriVisitor {
+impl Visitor<'_> for IriVisitor {
     type Value = IriS;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

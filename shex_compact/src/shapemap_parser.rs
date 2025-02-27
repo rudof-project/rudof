@@ -21,7 +21,7 @@ pub struct ShapeMapParser<'a> {
     shapemap_statement_iterator: ShapeMapStatementIterator<'a>,
 }
 
-impl<'a> ShapeMapParser<'a> {
+impl ShapeMapParser<'_> {
     /// Parse a ShapeMap that uses [ShapeMap compact syntax](https://shexspec.github.io/shape-map/#grammar)
     ///
     pub fn parse(
@@ -114,7 +114,7 @@ struct ShapeMapStatementIterator<'a> {
     done: bool,
 }
 
-impl<'a> ShapeMapStatementIterator<'a> {
+impl ShapeMapStatementIterator<'_> {
     pub fn new(src: Span) -> Result<ShapeMapStatementIterator> {
         match tws0(src) {
             Ok((left, _)) => Ok(ShapeMapStatementIterator {
@@ -129,7 +129,7 @@ impl<'a> ShapeMapStatementIterator<'a> {
     }
 }
 
-impl<'a> Iterator for ShapeMapStatementIterator<'a> {
+impl Iterator for ShapeMapStatementIterator<'_> {
     type Item = Result<Vec<ShapeMapStatement>>;
 
     fn next(&mut self) -> Option<Self::Item> {

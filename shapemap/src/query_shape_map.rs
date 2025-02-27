@@ -48,7 +48,7 @@ impl QueryShapeMap {
     pub fn iter_node_shape<'a, S>(
         &'a self,
         rdf: &'a S,
-    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
+    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
     where
         S: SRDF,
     {

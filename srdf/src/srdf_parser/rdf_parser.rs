@@ -8,7 +8,6 @@ use std::collections::HashSet;
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
-
 /// Represents a generic parser of RDF data
 pub trait RDFParse<RDF: SRDF> {
     /// The type which is returned if the parser is successful.
