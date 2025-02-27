@@ -2,7 +2,7 @@ use colored::*;
 use indexmap::map::Iter;
 use indexmap::IndexMap;
 use iri_s::*;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{IriRef, PrefixMapError};
 use std::str::FromStr;

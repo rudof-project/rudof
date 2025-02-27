@@ -1,5 +1,5 @@
 use crate::{tap_config::TapConfig, tap_error::TapError, TapReader, TapReaderBuilder, TapShape};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
 use tracing::{debug, info};
 

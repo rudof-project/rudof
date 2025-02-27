@@ -13,25 +13,18 @@ repository.workspace = true
 default = []
 
 [dependencies]
-iri_s = { workspace = true }
-rbe = { workspace = true }
-srdf = { workspace = true }
-shex_ast = { workspace = true }
-shex_compact = { workspace = true }
-shapemap = { workspace = true }
-prefixmap = { workspace = true }
-async-recursion = "1.0.4"
+iri_s.workspace = true
+rbe.workspace = true
+srdf.workspace = true
+shex_ast.workspace = true
+shex_compact.workspace = true
+shapemap.workspace = true
+prefixmap.workspace = true
 thiserror = "1.0"
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = { workspace = true }
-tokio = { version = "^1.35", features = ["rt"], optional = true }
-tracing = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
 indexmap = { version = "2" }
-colored = "2"
 either = "1"
 serde_yml = "0.0.12"
 url = "2.2.2"
-
-[dev-dependencies]
-oxrdf = { workspace = true }

@@ -25,17 +25,14 @@ shapes_converter = { workspace = true, features = ["rdf-star"] }
 shacl_validation = { workspace = true, features = ["rdf-star"] }
 sparql_service = { workspace = true }
 rudof_lib = { workspace = true }
- 
-serde = { workspace = true }
-serde_derive = { workspace = true }
+
+serde.workspace = true
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-void = "1"
 clap = { workspace = true }
 clientele = "0.2"
 oxrdf = { workspace = true }
-oxiri = "0.2.3-alpha.1"
 regex = "^1.10"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

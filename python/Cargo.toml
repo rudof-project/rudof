@@ -19,8 +19,6 @@ crate-type = ["cdylib"]
 [dependencies]
 rudof_lib = { workspace = true }
 
-openssl = { version = "0.10", features = ["vendored"] }
-
 [dependencies.pyo3]
 version = "0.22.0"
 features = ["abi3-py37", "extension-module"]

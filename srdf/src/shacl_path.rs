@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use serde_derive::Serialize;
+use serde::Serialize;
 use std::fmt::Display;
 
 /// SHACL paths follow the [SHACL property paths spec](https://www.w3.org/TR/shacl/#property-paths)

@@ -1,6 +1,6 @@
 use crate::{deriv_error::DerivError, deriv_n, Bag, Cardinality, Max, Min};
 use core::hash::Hash;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
@@ -189,8 +189,8 @@ where
             Rbe::Empty => true,
             Rbe::Symbol { card, .. } if card.nullable() => true,
             Rbe::Symbol { .. } => false,
-            Rbe::And { values } => values.iter().map(|v| v.nullable()).all(|v| v),
-            Rbe::Or { values } => values.iter().map(|v| v.nullable()).any(|v| v),
+            Rbe::And { values } => values.iter().all(|v| v.nullable()),
+            Rbe::Or { values } => values.iter().any(|v| v.nullable()),
             Rbe::Star { .. } => true,
             Rbe::Plus { value } => value.nullable(),
             Rbe::Repeat { value: _, card } if card.min.is_0() => true,

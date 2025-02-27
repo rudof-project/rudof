@@ -120,9 +120,8 @@ impl Serialize for ObjectValue {
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
             ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
-                match lang {
-                    Some(lan) => map.serialize_entry("language", lan.value().as_str())?,
-                    None => {}
+                if let Some(lan) = lang {
+                    map.serialize_entry("language", lan.value().as_str())?;
                 }
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
@@ -191,7 +190,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

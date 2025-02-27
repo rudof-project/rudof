@@ -1,6 +1,5 @@
-use serde_derive::{Deserialize, Serialize};
-
 use prefixmap::{Deref, DerefError, IriRef};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct SemAct {

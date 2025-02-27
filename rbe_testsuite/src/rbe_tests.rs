@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Result};
 use std::{collections::HashSet, fs, path::Path};
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{RbeTest, RbeTestsResults};
 

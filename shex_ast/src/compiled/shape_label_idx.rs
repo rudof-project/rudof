@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use rbe::Ref;
-use serde_derive::Serialize;
+use serde::Serialize;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Serialize)]
 pub struct ShapeLabelIdx(usize);

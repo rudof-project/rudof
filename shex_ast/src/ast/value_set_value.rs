@@ -6,9 +6,8 @@ use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     de::{self, MapAccess, Unexpected, Visitor},
-    Deserialize, Serialize as SerializeTrait, Serializer,
+    Deserialize, Serialize, Serializer,
 };
-use serde_derive::Serialize;
 
 use srdf::lang::Lang;
 use srdf::literal::Literal;
@@ -208,7 +207,7 @@ impl ValueSetValueType {
 //const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
 //const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
-impl SerializeTrait for ValueSetValue {
+impl Serialize for ValueSetValue {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -371,7 +370,7 @@ impl<'de> Deserialize<'de> for Stem {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -486,7 +485,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

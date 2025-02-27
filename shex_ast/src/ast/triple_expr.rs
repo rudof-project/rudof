@@ -2,9 +2,7 @@ use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
-use serde::{Serialize as SerializeTrait, Serializer};
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;
 

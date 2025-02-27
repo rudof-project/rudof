@@ -1,5 +1,5 @@
 use crate::{NodeSelector, ShapeSelector};
-use serde_derive::Serialize;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::SRDF;
 use std::iter::once;

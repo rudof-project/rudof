@@ -2,7 +2,7 @@ use std::path::Path;
 
 use colored::*;
 use prefixmap::PrefixMap;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]

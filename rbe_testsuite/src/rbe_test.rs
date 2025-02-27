@@ -1,6 +1,6 @@
 use crate::{MatchResult, RbeTestResult, TestType};
 use rbe::{deriv_error::DerivError, rbe::Rbe, Bag};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RbeTest {

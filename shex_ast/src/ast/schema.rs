@@ -2,7 +2,7 @@ use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::ShapeExprLabel;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::{fs, io};

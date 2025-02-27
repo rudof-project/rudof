@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use serde_derive::Serialize;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, Node};
 use srdf::literal::Literal;
 use srdf::shacl_path::SHACLPath;
