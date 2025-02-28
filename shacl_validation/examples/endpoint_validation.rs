@@ -5,9 +5,10 @@ use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
+use shacl_validation::validate_error::ValidateError;
 use srdf::RDFFormat;
 
-fn main() {
+fn main() -> Result<(), ValidateError> {
     let shacl = r#"
         @prefix ex:  <http://example.org/> .
         @prefix wd:  <http://www.wikidata.org/entity/> .
@@ -26,16 +27,17 @@ fn main() {
             ] .
     "#;
 
-    let schema = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None).unwrap();
+    let schema = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
 
     let endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",
         &PrefixMap::default(),
         ShaclValidationMode::Native,
-    )
-    .unwrap();
+    )?;
 
-    let report = endpoint_validation.validate(&schema).unwrap();
+    let report = endpoint_validation.validate(&schema)?;
 
-    println!("{:?}", report.results());
+    println!("{:?}", report);
+
+    Ok(())
 }
