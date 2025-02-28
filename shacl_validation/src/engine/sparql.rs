@@ -113,7 +113,7 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
     fn implicit_target_class(
         &self,
         _store: &S,
-        _shape: &CompiledShape<S>,
+        _shape: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),

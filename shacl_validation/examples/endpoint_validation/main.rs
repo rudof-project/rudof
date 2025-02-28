@@ -8,7 +8,7 @@ use shacl_validation::store::ShaclDataManager;
 use srdf::RDFFormat;
 
 fn main() {
-    let shacl_schema_path = "./wikidata.ttl"; // TODO: fix this path
+    let shacl_schema_path = "./examples/endpoint_validation/wikidata.ttl";
     let shacl_schema = std::fs::read_to_string(shacl_schema_path).unwrap();
     let cursor = Cursor::new(shacl_schema);
 
