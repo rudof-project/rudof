@@ -26,9 +26,8 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        // 0.
+        // 0. skipping if it is deactivated
         if *self.is_deactivated() {
-            // skipping because it is deactivated
             return Ok(Vec::default());
         }
 
@@ -76,7 +75,7 @@ pub trait FocusNodesOps<S: Rdf> {
 impl<S: Rdf> FocusNodesOps<S> for CompiledShape<S> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
-            .focus_nodes(store, self, self.targets())
+            .focus_nodes(store, self.targets())
             .expect("Failed to retrieve focus nodes")
     }
 }

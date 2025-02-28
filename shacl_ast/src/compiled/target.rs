@@ -7,23 +7,25 @@ use super::convert_iri_ref;
 
 #[derive(Debug)]
 pub enum CompiledTarget<S: Rdf> {
-    TargetNode(S::Term),
-    TargetClass(S::Term),
-    TargetSubjectsOf(S::IRI),
-    TargetObjectsOf(S::IRI),
+    Node(S::Term),
+    Class(S::Term),
+    SubjectsOf(S::IRI),
+    ObjectsOf(S::IRI),
+    ImplicitClass(S::Term),
 }
 
 impl<S: Rdf> CompiledTarget<S> {
     pub fn compile(target: Target) -> Result<Self, CompiledShaclError> {
         let ans = match target {
-            Target::TargetNode(object) => CompiledTarget::TargetNode(object.into()),
-            Target::TargetClass(object) => CompiledTarget::TargetClass(object.into()),
+            Target::TargetNode(object) => CompiledTarget::Node(object.into()),
+            Target::TargetClass(object) => CompiledTarget::Class(object.into()),
             Target::TargetSubjectsOf(iri_ref) => {
-                CompiledTarget::TargetSubjectsOf(convert_iri_ref::<S>(iri_ref)?)
+                CompiledTarget::SubjectsOf(convert_iri_ref::<S>(iri_ref)?)
             }
             Target::TargetObjectsOf(iri_ref) => {
-                CompiledTarget::TargetObjectsOf(convert_iri_ref::<S>(iri_ref)?)
+                CompiledTarget::ObjectsOf(convert_iri_ref::<S>(iri_ref)?)
             }
+            Target::TargetImplicitClass(object) => CompiledTarget::ImplicitClass(object.into()),
         };
 
         Ok(ans)

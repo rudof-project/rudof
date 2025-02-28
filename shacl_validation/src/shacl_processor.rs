@@ -56,15 +56,16 @@ pub trait ShaclProcessor<S: Rdf + Debug> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
-        // for each shape in the schema
-        for (_, shape) in shapes_graph.iter() {
+        // for each shape in the schema that has at least one target
+        for (_, shape) in shapes_graph.iter_with_targets() {
             let results = shape.validate(self.store(), self.runner(), None)?;
             validation_results.extend(results);
         }
 
+        // return the possibly empty validation report
         Ok(ValidationReport::new()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map())) // return the possibly empty validation report
+            .with_prefixmap(shapes_graph.prefix_map()))
     }
 }
 
