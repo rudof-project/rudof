@@ -10,21 +10,18 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-srdf = { workspace = true }
-iri_s = { workspace = true }
-rbe = { workspace = true }
-prefixmap = { workspace = true }
-serde = "1"
-serde_derive = "1"
+srdf.workspace = true
+iri_s.workspace = true
+rbe.workspace = true
+prefixmap.workspace = true
+serde.workspace = true
 void = "1"
 thiserror = "1.0"
 lazy_static = "1"
 rust_decimal = "1.32"
-rust_decimal_macros = "1.32"
 regex = "1.10"
-serde_json = { workspace = true }
+serde_json.workspace = true
 const_format = "0.2"
-tracing = { workspace = true }
-url = { workspace = true }
+tracing.workspace = true
 
 [dev-dependencies]

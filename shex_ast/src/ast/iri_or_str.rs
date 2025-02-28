@@ -1,5 +1,5 @@
 use iri_s::{IriS, IriSError};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 use void::Void;

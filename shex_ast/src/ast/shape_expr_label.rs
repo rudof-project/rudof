@@ -2,7 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use iri_s::{IriS, IriSError};
 use regex::Regex;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use prefixmap::{Deref, DerefError, IriRef};
 use thiserror::Error;

@@ -2,8 +2,7 @@ use std::{fmt::Display, result};
 
 use iri_s::IriS;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
-use serde::Serializer;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use prefixmap::{Deref, DerefError, IriRef};

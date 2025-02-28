@@ -4,7 +4,7 @@ version = "0.1.53"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/prefixmap"
-edition.workspace = true 
+edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
@@ -14,8 +14,4 @@ iri_s = { workspace = true }
 indexmap = { version = "2", features = ["serde"] }
 thiserror = "1"
 colored = "2"
-serde = "1"
-serde_derive = "1"
-serde_json = "1"
-maplit = "1"
-
+serde.workspace = true

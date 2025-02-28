@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use shex_ast::{IriOrStr, Schema, SchemaJsonError, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use shex_compact::ShExParser;
 use std::collections::{hash_map::Entry, HashMap};
@@ -9,7 +9,6 @@ use url::Url;
 use crate::{ResolveMethod, SchemaWithoutImportsError, ShExFormat};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-
 pub struct SchemaWithoutImports {
     source_schema: Box<Schema>,
 

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
-use serde_derive::Serialize;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::Query;
 
@@ -48,7 +48,7 @@ impl QueryShapeMap {
     pub fn iter_node_shape<'a, S>(
         &'a self,
         rdf: &'a S,
-    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
+    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
     where
         S: Query,
     {

@@ -526,7 +526,7 @@ impl<'r, R: io::Read> ShapesIter<'r, R> {
     }
 }
 
-impl<'r, R: io::Read> Iterator for ShapesIter<'r, R> {
+impl<R: io::Read> Iterator for ShapesIter<'_, R> {
     type Item = Result<TapShape>;
 
     fn next(&mut self) -> Option<Result<TapShape>> {

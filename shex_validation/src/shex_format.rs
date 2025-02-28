@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// Contains possible ShEx formats
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]

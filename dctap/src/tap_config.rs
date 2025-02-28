@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{PlaceholderResolver, TapError};
 

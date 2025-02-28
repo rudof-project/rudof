@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Deserialize, Serialize, Debug, Hash, PartialEq, Eq, Clone)]

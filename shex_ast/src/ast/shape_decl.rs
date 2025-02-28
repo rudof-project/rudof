@@ -5,7 +5,7 @@ use crate::Annotation;
 use crate::ShapeExprLabel;
 use prefixmap::Deref;
 use prefixmap::DerefError;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct ShapeDecl {

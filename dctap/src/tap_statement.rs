@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 use crate::{DatatypeId, NodeType, PropertyId, ShapeId, ValueConstraint};

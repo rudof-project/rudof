@@ -98,7 +98,7 @@ pub(crate) fn tws1(input: Span) -> IRes<()> {
 */
 
 /// A combinator that creates a parser for a specific token.
-pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(tag(token), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
@@ -106,7 +106,7 @@ pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>
 
 /// A combinator that creates a parser for a specific token,
 /// surrounded by trailing whitespace or comments.
-pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(delimited(tws0, tag(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
@@ -114,7 +114,7 @@ pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span
 
 /// A combinator that creates a parser for a case insensitive tag,
 /// surrounded by trailing whitespace or comments.
-pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(delimited(tws0, tag_no_case(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })

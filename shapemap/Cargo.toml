@@ -10,19 +10,12 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-colored = { workspace = true }
-indexmap = { workspace = true }
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
-serde = { workspace = true }
-serde_derive = { workspace = true }
-serde_json = { workspace = true }
-serde_yml = { workspace = true }
-shex_ast = { workspace = true }
-srdf = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-
-
-[dev-dependencies]
-tracing-subscriber = {version = "0.3", default-features = false, features = ["env-filter", "fmt"]}
+colored.workspace = true
+iri_s.workspace = true
+prefixmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yml.workspace = true
+shex_ast.workspace = true
+srdf.workspace = true
+thiserror.workspace = true

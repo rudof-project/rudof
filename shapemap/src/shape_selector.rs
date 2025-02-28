@@ -1,5 +1,5 @@
 use prefixmap::IriRef;
-use serde_derive::Serialize;
+use serde::Serialize;
 use shex_ast::ShapeExprLabel;
 
 /// A ShapeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select shape expressions to validate

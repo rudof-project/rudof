@@ -1,5 +1,5 @@
 use iri_s::IriSError;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 use prefixmap::{Deref, DerefError, IriRef};

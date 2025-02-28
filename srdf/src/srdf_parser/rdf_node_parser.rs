@@ -1222,7 +1222,7 @@ where
 /// });
 /// assert_eq!(parser.parse(&x, graph).unwrap(),
 ///   vec![Term::from(Literal::from(1)), Term::from(Literal::from(2))])
-/// ````
+/// ```
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
     RDF: Query,

@@ -25,7 +25,7 @@ pub struct ShExParser<'a> {
     // done: bool,
 }
 
-impl<'a> ShExParser<'a> {
+impl ShExParser<'_> {
     /// Parse a ShEx schema that uses [ShEx compact syntax](https://shex.io/shex-semantics/index.html#shexc)
     ///
     /// `base` is an optional IRI that acts as the base for relative IRIs
@@ -89,7 +89,7 @@ struct StatementIterator<'a> {
     done: bool,
 }
 
-impl<'a> StatementIterator<'a> {
+impl StatementIterator<'_> {
     pub fn new(src: Span) -> Result<StatementIterator> {
         match tws0(src) {
             Ok((left, _)) => Ok(StatementIterator {

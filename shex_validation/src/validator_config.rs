@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use shapemap::ShapemapConfig;
 use srdf::RdfDataConfig;
 

@@ -13,25 +13,20 @@ repository.workspace = true
 rdf-star = ["oxrdf/rdf-star"]
 
 [dependencies]
-srdf = { workspace = true }
-iri_s = { workspace = true }
-shacl_ast = { workspace = true }
-shacl_validation = { workspace = true }
-shex_ast = { workspace = true }
-shex_validation = { workspace = true }
-shex_compact = { workspace = true }
-sparql_service = { workspace = true }
-shapemap = { workspace = true }
-prefixmap = { workspace = true }
-shapes_converter = { workspace = true }
-dctap = { workspace = true }
-serde = "1"
-serde_derive = "1"
-void = "1"
+srdf.workspace = true
+iri_s.workspace = true
+shacl_ast.workspace = true
+shacl_validation.workspace = true
+shex_ast.workspace = true
+shex_validation.workspace = true
+shex_compact.workspace = true
+sparql_service.workspace = true
+shapemap.workspace = true
+prefixmap.workspace = true
+shapes_converter.workspace = true
+dctap.workspace = true
+serde.workspace = true
 thiserror = "1.0"
-serde_json = { workspace = true }
+serde_json.workspace = true
 serde_yml = "0.0.12"
-itertools = "0.13"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
-
-[dev-dependencies]

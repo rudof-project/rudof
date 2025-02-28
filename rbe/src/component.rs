@@ -1,5 +1,5 @@
 use core::hash::Hash;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Display;
 
