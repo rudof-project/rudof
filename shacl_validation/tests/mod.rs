@@ -62,7 +62,7 @@ impl Manifest {
         let subject = OxSubject::NamedNode(NamedNode::new_unchecked(base.clone()));
 
         let graph = Graph::from_path(
-            &Path::new(path),
+            Path::new(path),
             RDFFormat::Turtle,
             Some(&base),
             // &ReaderMode::Lax,
