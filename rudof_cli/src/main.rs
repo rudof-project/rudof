@@ -34,7 +34,7 @@ use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, U
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{RdfData, ServiceDescription};
-use srdf::{QuerySolution, RDFFormat, ReaderMode, VarName, SRDF};
+use srdf::{Query, QuerySolution, RDFFormat, ReaderMode, VarName};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
@@ -1168,7 +1168,7 @@ fn show_node_info<S, W: Write>(
     writer: &mut W,
 ) -> Result<()>
 where
-    S: SRDF,
+    S: Query,
 {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
@@ -1183,7 +1183,7 @@ where
             ShowNodeMode::Outgoing | ShowNodeMode::Both => {
                 writeln!(writer, "Outgoing arcs")?;
                 let map = if predicates.is_empty() {
-                    match rdf.outgoing_arcs(&subject) {
+                    match rdf.outgoing_arcs(subject.clone()) {
                         Result::Ok(rs) => rs,
                         Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
                     }
@@ -1215,8 +1215,8 @@ where
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
                 writeln!(writer, "Incoming arcs")?;
-                let object = S::subject_as_term(&subject);
-                let map = match rdf.incoming_arcs(&object) {
+                let object: S::Term = subject.clone().into();
+                let map = match rdf.incoming_arcs(object.clone()) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
                 };
@@ -1242,7 +1242,7 @@ where
 
 fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
 where
-    S: SRDF,
+    S: Query,
 {
     let mut vs = Vec::new();
     for s in predicates {
@@ -1253,8 +1253,7 @@ where
             }
             IriRef::Iri(iri) => iri,
         };
-        let iri = S::iri_s2iri(&iri_s);
-        vs.push(iri)
+        vs.push(iri_s.into())
     }
     Ok(vs)
 }
@@ -1281,22 +1280,21 @@ fn run_shapemap(
 
 fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
 where
-    S: SRDF,
+    S: Query,
 {
     match node {
         ObjectValue::IriRef(iri_ref) => {
-            let iri = match iri_ref {
-                IriRef::Iri(iri_s) => S::iri_s2iri(iri_s),
+            let iri: S::IRI = match iri_ref {
+                IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
                     let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-
-                    S::iri_s2iri(&iri_s)
+                    iri_s.into()
                 }
             };
-            let term = S::iri_as_term(iri);
-            match S::term_as_subject(&term) {
-                None => bail!("node_to_subject: Can't convert term {term} to subject"),
-                Some(subject) => Ok(subject),
+            let term: S::Term = iri.into();
+            match term.clone().try_into() {
+                Ok(subject) => Ok(subject),
+                Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),
             }
         }
         ObjectValue::Literal(lit) => Err(anyhow!("Node must be an IRI, but found a literal {lit}")),

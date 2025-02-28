@@ -150,10 +150,22 @@ impl Deref for Literal {
     }
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<oxrdf::Literal> for Literal {
-    fn into(self) -> oxrdf::Literal {
-        match self {
+impl From<oxrdf::Literal> for Literal {
+    fn from(value: oxrdf::Literal) -> Self {
+        match value.destruct() {
+            (s, None, None) => Literal::str(&s),
+            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
+            (value, Some(dtype), None) => {
+                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
+            }
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<Literal> for oxrdf::Literal {
+    fn from(value: Literal) -> Self {
+        match value {
             Literal::StringLiteral { lexical_form, lang } => match lang {
                 Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(
                     lexical_form,
@@ -180,19 +192,6 @@ impl Into<oxrdf::Literal> for Literal {
                 NumericLiteral::Double(double) => double.into(),
             },
             Literal::BooleanLiteral(bool) => bool.into(),
-        }
-    }
-}
-
-impl From<oxrdf::Literal> for Literal {
-    fn from(value: oxrdf::Literal) -> Self {
-        match value.destruct() {
-            (s, None, None) => Literal::str(&s),
-            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
-            (value, Some(dtype), None) => {
-                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
-            }
-            _ => todo!(),
         }
     }
 }

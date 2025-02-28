@@ -2,8 +2,8 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::compiled::target::CompiledTarget;
+use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::SRDFBasic;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
@@ -13,7 +13,7 @@ use crate::value_nodes::ValueNodes;
 pub mod native;
 pub mod sparql;
 
-pub trait Engine<S: SRDFBasic> {
+pub trait Engine<S: Rdf> {
     fn evaluate(
         &self,
         store: &S,
@@ -25,40 +25,21 @@ pub trait Engine<S: SRDFBasic> {
     fn focus_nodes(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
         targets: &[CompiledTarget<S>],
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let explicit = targets
+        // TODO: here it would be nice to return an error...
+        let targets = targets
             .iter()
             .flat_map(|target| match target {
-                CompiledTarget::TargetNode(node) => match self.target_node(store, node) {
-                    Ok(target_node) => Some(target_node),
-                    Err(_) => None,
-                },
-                CompiledTarget::TargetClass(class) => match self.target_class(store, class) {
-                    Ok(target_node) => Some(target_node),
-                    Err(_) => None,
-                },
-                CompiledTarget::TargetSubjectsOf(predicate) => {
-                    match self.target_subject_of(store, predicate) {
-                        Ok(target_subject_of) => Some(target_subject_of),
-                        Err(_) => None,
-                    }
-                }
-                CompiledTarget::TargetObjectsOf(predicate) => {
-                    match self.target_object_of(store, predicate) {
-                        Ok(target_node) => Some(target_node),
-                        Err(_) => None,
-                    }
-                }
+                CompiledTarget::Node(node) => self.target_node(store, node),
+                CompiledTarget::Class(class) => self.target_class(store, class),
+                CompiledTarget::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
+                CompiledTarget::ObjectsOf(predicate) => self.target_object_of(store, predicate),
+                CompiledTarget::ImplicitClass(class) => self.implicit_target_class(store, class),
             })
             .flatten();
 
-        // we have to also look for implicit class FocusNodes, which are a "special"
-        // kind of target declarations...
-        let implicit = self.implicit_target_class(store, shape)?;
-
-        Ok(FocusNodes::new(implicit.into_iter().chain(explicit)))
+        Ok(FocusNodes::new(targets))
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -82,7 +63,7 @@ pub trait Engine<S: SRDFBasic> {
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
+        shape: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn path(
@@ -93,8 +74,7 @@ pub trait Engine<S: SRDFBasic> {
     ) -> Result<FocusNodes<S>, ValidateError> {
         match shape.path() {
             SHACLPath::Predicate { pred } => {
-                let predicate = S::iri_s2iri(pred);
-                self.predicate(store, shape, &predicate, focus_node)
+                self.predicate(store, shape, &pred.clone().into(), focus_node)
             }
             SHACLPath::Alternative { paths } => self.alternative(store, shape, paths, focus_node),
             SHACLPath::Sequence { paths } => self.sequence(store, shape, paths, focus_node),

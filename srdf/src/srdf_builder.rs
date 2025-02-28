@@ -3,10 +3,10 @@ use std::io::Write;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 
-use crate::{RDFFormat, RDFNode, SRDF};
+use crate::{Query, RDFFormat};
 
 /// Types that implement this trait can build RDF data
-pub trait SRDFBuilder: SRDF {
+pub trait SRDFBuilder: Query {
     /// Returns an empty RDF graph
     fn empty() -> Self;
 
@@ -36,7 +36,7 @@ pub trait SRDFBuilder: SRDF {
     ) -> Result<(), Self::Err>;
 
     /// Adds an `rdf:type` declaration to the current RDF graph
-    fn add_type(&mut self, node: &RDFNode, type_: Self::Term) -> Result<(), Self::Err>;
+    fn add_type(&mut self, node: &Self::Term, type_: Self::Term) -> Result<(), Self::Err>;
 
     /// Serialize the current graph to a Write implementation
     fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err>;

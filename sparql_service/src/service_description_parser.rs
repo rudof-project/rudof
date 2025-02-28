@@ -31,7 +31,7 @@ where
 
     pub fn parse(&mut self) -> Result<ServiceDescription> {
         let service_node = self.rdf_parser.instance_of(&Self::sd_service())?;
-        let term = RDF::subject_as_term(&service_node);
+        let term = service_node.into();
         self.rdf_parser.rdf.set_focus(&term);
         let service = Self::service_description().parse_impl(&mut self.rdf_parser.rdf)?;
         Ok(service)
@@ -117,7 +117,7 @@ where
     }
 
     fn sd_service() -> RDF::Term {
-        RDF::iri_s2term(&SD_SERVICE)
+        SD_SERVICE.clone().into()
     }
 }
 

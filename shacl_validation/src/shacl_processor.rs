@@ -3,7 +3,7 @@ use prefixmap::PrefixMap;
 use shacl_ast::compiled::schema::CompiledSchema;
 use sparql_service::RdfData;
 use srdf::RDFFormat;
-use srdf::SRDFBasic;
+use srdf::Rdf;
 use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
@@ -38,7 +38,7 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: SRDFBasic + Debug> {
+pub trait ShaclProcessor<S: Rdf + Debug> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
@@ -56,15 +56,40 @@ pub trait ShaclProcessor<S: SRDFBasic + Debug> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
-        // for each shape in the schema
-        for (_, shape) in shapes_graph.iter() {
+        // for each shape in the schema that has at least one target
+        for (_, shape) in shapes_graph.iter_with_targets() {
             let results = shape.validate(self.store(), self.runner(), None)?;
             validation_results.extend(results);
         }
 
+        // return the possibly empty validation report
         Ok(ValidationReport::new()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map())) // return the possibly empty validation report
+            .with_prefixmap(shapes_graph.prefix_map()))
+    }
+}
+
+pub struct RdfDataValidation {
+    data: RdfData,
+    mode: ShaclValidationMode,
+}
+
+impl RdfDataValidation {
+    pub fn from_rdf_data(data: RdfData, mode: ShaclValidationMode) -> Self {
+        Self { data, mode }
+    }
+}
+
+impl ShaclProcessor<RdfData> for RdfDataValidation {
+    fn store(&self) -> &RdfData {
+        &self.data
+    }
+
+    fn runner(&self) -> &dyn Engine<RdfData> {
+        match self.mode {
+            ShaclValidationMode::Native => &NativeEngine,
+            ShaclValidationMode::Sparql => &SparqlEngine,
+        }
     }
 }
 
@@ -167,12 +192,12 @@ pub struct EndpointValidation {
 
 impl EndpointValidation {
     pub fn new(
-        data: &str,
+        iri: &str,
         prefixmap: &PrefixMap,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
         Ok(EndpointValidation {
-            store: Endpoint::new(data, prefixmap)?,
+            store: Endpoint::new(iri, prefixmap)?,
             mode,
         })
     }

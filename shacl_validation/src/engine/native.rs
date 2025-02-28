@@ -1,11 +1,13 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::matcher::Any;
+use srdf::Query;
 use srdf::SHACLPath;
-use srdf::RDFS_CLASS;
+use srdf::Term;
+use srdf::Triple;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::SRDF;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
@@ -19,7 +21,7 @@ use std::fmt::Debug;
 
 pub struct NativeEngine;
 
-impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
+impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,
@@ -34,7 +36,7 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if S::term_is_bnode(node) {
+        if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
             Ok(FocusNodes::new(std::iter::once(node.clone())))
@@ -42,16 +44,18 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if !S::term_is_iri(class) {
+        if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        let subjects = match store.subjects_with_predicate_object(&S::iri_s2iri(&RDF_TYPE), class) {
-            Ok(subjects) => subjects,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
+        // TODO: this should not be necessary, check in others triples_matching calls
+        let rdf_type: S::IRI = RDF_TYPE.clone().into();
 
-        let focus_nodes = subjects.iter().map(|subject| S::subject_as_term(subject));
+        let focus_nodes = store
+            .triples_matching(Any, rdf_type, class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
 
         Ok(FocusNodes::new(focus_nodes))
     }
@@ -61,16 +65,13 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        let focus_nodes = triples
-            .iter()
-            .map(|triple| S::subject_as_term(&triple.subj()));
-
-        Ok(FocusNodes::new(focus_nodes))
+        let subjects = store
+            .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
+        let focus_nodes = FocusNodes::new(subjects);
+        Ok(focus_nodes)
     }
 
     fn target_object_of(
@@ -78,49 +79,29 @@ impl<S: SRDF + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         predicate: &S::IRI,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let triples = match store.triples_with_predicate(predicate) {
-            Ok(triples) => triples,
-            Err(_) => return Err(ValidateError::SRDF),
-        };
-
-        let focus_nodes = triples.into_iter().map(|triple| triple.obj());
-
-        Ok(FocusNodes::new(focus_nodes))
+        let objects = store
+            .triples_with_predicate(predicate.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_object);
+        Ok(FocusNodes::new(objects))
     }
 
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
+        subject: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let ctypes = get_objects_for(store, shape.id(), &S::iri_s2iri(&RDF_TYPE))?;
+        let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
 
-        let mut subclasses = get_subjects_for(
-            store,
-            &S::iri_s2iri(&RDFS_SUBCLASS_OF),
-            &S::iri_s2term(&RDFS_CLASS),
-        )?;
-
-        subclasses.insert(S::iri_s2term(&RDFS_CLASS));
-
-        if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes = get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), shape.id())?;
-
-            let subclass_targets =
-                get_subjects_for(store, &S::iri_s2iri(&RDFS_SUBCLASS_OF), shape.id())?
+        let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
+            .into_iter()
+            .flat_map(move |subclass| {
+                get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
                     .into_iter()
-                    .flat_map(move |subclass| {
-                        get_subjects_for(store, &S::iri_s2iri(&RDF_TYPE), &subclass)
-                            .into_iter()
-                            .flatten()
-                    });
+                    .flatten()
+            });
 
-            let focus_nodes = actual_class_nodes.into_iter().chain(subclass_targets);
-
-            Ok(FocusNodes::new(focus_nodes))
-        } else {
-            Ok(FocusNodes::default())
-        }
+        Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
     }
 
     fn predicate(

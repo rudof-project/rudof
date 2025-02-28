@@ -1,4 +1,4 @@
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::target::Target;
 
@@ -6,24 +6,26 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 
 #[derive(Debug)]
-pub enum CompiledTarget<S: SRDFBasic> {
-    TargetNode(S::Term),
-    TargetClass(S::Term),
-    TargetSubjectsOf(S::IRI),
-    TargetObjectsOf(S::IRI),
+pub enum CompiledTarget<S: Rdf> {
+    Node(S::Term),
+    Class(S::Term),
+    SubjectsOf(S::IRI),
+    ObjectsOf(S::IRI),
+    ImplicitClass(S::Term),
 }
 
-impl<S: SRDFBasic> CompiledTarget<S> {
+impl<S: Rdf> CompiledTarget<S> {
     pub fn compile(target: Target) -> Result<Self, CompiledShaclError> {
         let ans = match target {
-            Target::TargetNode(object) => CompiledTarget::TargetNode(S::object_as_term(&object)),
-            Target::TargetClass(object) => CompiledTarget::TargetClass(S::object_as_term(&object)),
+            Target::TargetNode(object) => CompiledTarget::Node(object.into()),
+            Target::TargetClass(object) => CompiledTarget::Class(object.into()),
             Target::TargetSubjectsOf(iri_ref) => {
-                CompiledTarget::TargetSubjectsOf(convert_iri_ref::<S>(iri_ref)?)
+                CompiledTarget::SubjectsOf(convert_iri_ref::<S>(iri_ref)?)
             }
             Target::TargetObjectsOf(iri_ref) => {
-                CompiledTarget::TargetObjectsOf(convert_iri_ref::<S>(iri_ref)?)
+                CompiledTarget::ObjectsOf(convert_iri_ref::<S>(iri_ref)?)
             }
+            Target::TargetImplicitClass(object) => CompiledTarget::ImplicitClass(object.into()),
         };
 
         Ok(ans)

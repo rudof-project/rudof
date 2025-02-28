@@ -13,11 +13,12 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -27,9 +28,9 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
-                S::term_is_bnode(value_node),
-                S::term_is_iri(value_node),
-                S::term_is_literal(value_node),
+                value_node.is_blank_node(),
+                value_node.is_iri(),
+                value_node.is_literal(),
             ) {
                 (true, false, false) => matches!(
                     self.node_kind(),
@@ -52,7 +53,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -63,13 +64,13 @@ impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
         let node_kind = self.node_kind().clone();
 
         let query = move |value_node: &S::Term| {
-            if S::term_is_iri(value_node) {
+            if value_node.is_iri() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) }}
                     ",node_kind
                 }
-            } else if S::term_is_bnode(value_node) {
+            } else if value_node.is_blank_node() {
                 formatdoc! {"
                         PREFIX sh: <http://www.w3.org/ns/shacl#>
                         ASK {{ FILTER ({} IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) }}

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
+use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::SRDFBasic;
 
 use crate::property_shape::PropertyShape;
 use crate::Schema;
@@ -14,7 +14,7 @@ use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub struct CompiledPropertyShape<S: SRDFBasic> {
+pub struct CompiledPropertyShape<S: Rdf> {
     id: S::Term,
     path: SHACLPath,
     components: Vec<CompiledComponent<S>>,
@@ -33,7 +33,7 @@ pub struct CompiledPropertyShape<S: SRDFBasic> {
     // annotations: Vec<(S::IRI, S::Term)>,
 }
 
-impl<S: SRDFBasic> CompiledPropertyShape<S> {
+impl<S: Rdf> CompiledPropertyShape<S> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: S::Term,
@@ -93,9 +93,9 @@ impl<S: SRDFBasic> CompiledPropertyShape<S> {
     }
 }
 
-impl<S: SRDFBasic> CompiledPropertyShape<S> {
+impl<S: Rdf> CompiledPropertyShape<S> {
     pub fn compile(shape: PropertyShape, schema: &Schema) -> Result<Self, CompiledShaclError> {
-        let id = S::object_as_term(shape.id());
+        let id = shape.id().clone().into();
         let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();

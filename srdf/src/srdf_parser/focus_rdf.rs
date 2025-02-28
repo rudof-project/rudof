@@ -1,9 +1,9 @@
-use crate::{RDFParseError, SRDF};
+use crate::{Query, RDFParseError};
 
 /// Represents RDF graphs that contain a focus node
 ///
 /// The trait contains methods to get the focus node and to set its value
-pub trait FocusRDF: SRDF {
+pub trait FocusRDF: Query {
     /// Set the value of the focus node
     fn set_focus(&mut self, focus: &Self::Term);
 
@@ -23,9 +23,13 @@ pub trait FocusRDF: SRDF {
         match self.get_focus() {
             None => Err(RDFParseError::NoFocusNode),
             Some(term) => {
-                Self::term_as_subject(term).ok_or_else(|| RDFParseError::ExpectedSubject {
-                    node: format!("{term}"),
-                })
+                let subject =
+                    term.clone()
+                        .try_into()
+                        .map_err(|_| RDFParseError::ExpectedSubject {
+                            node: format!("{term}"),
+                        })?;
+                Ok(subject)
             }
         }
     }

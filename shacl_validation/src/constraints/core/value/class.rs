@@ -11,13 +11,14 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
+use srdf::Query;
+use srdf::Sparql;
+use srdf::Term;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use srdf::SRDF;
 use std::fmt::Debug;
 
-impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
+impl<S: Query + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -26,16 +27,16 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
-            if S::term_is_literal(value_node) {
+            if value_node.is_literal() {
                 return true;
             }
 
-            let is_class_valid = get_objects_for(store, value_node, &S::iri_s2iri(&RDF_TYPE))
+            let is_class_valid = get_objects_for(store, value_node, &RDF_TYPE.clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == self.class_rule()
-                        || get_objects_for(store, ctype, &S::iri_s2iri(&RDFS_SUBCLASS_OF))
+                        || get_objects_for(store, ctype, &RDFS_SUBCLASS_OF.clone().into())
                             .unwrap_or_default()
                             .contains(self.class_rule())
                 });
@@ -47,7 +48,7 @@ impl<S: SRDF + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

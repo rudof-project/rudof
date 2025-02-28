@@ -16,18 +16,18 @@ members = [
     "shapemap",
     "shacl_ast",
     "shacl_validation",
-    "shacl_testsuite",
     "shapes_converter",
     "sparql_service",
     "python",
 ]
 
-exclude = [
-    "shex_compact_winnow"
-]
+exclude = ["shex_compact_winnow"]
 
 default-members = [
-    "rudof_cli"
+    "rudof_cli",
+    "shacl_ast",
+    # "shacl_validation",
+    "srdf",
 ]
 
 [workspace.package]
@@ -79,5 +79,5 @@ serde_derive = "1"
 serde_yml = "0.0.12"
 thiserror = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.2.2"

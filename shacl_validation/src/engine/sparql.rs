@@ -2,8 +2,9 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
 use srdf::SHACLPath;
+use srdf::Sparql;
+use srdf::Term;
 
 use super::Engine;
 use crate::constraints::SparqlDeref;
@@ -16,7 +17,7 @@ use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
-impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,
@@ -31,7 +32,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if S::term_is_bnode(node) {
+        if node.is_blank_node() {
             return Err(ValidateError::TargetNodeBlankNode);
         }
 
@@ -50,7 +51,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
     }
 
     fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if !S::term_is_iri(class) {
+        if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
@@ -112,7 +113,7 @@ impl<S: QuerySRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn implicit_target_class(
         &self,
         _store: &S,
-        _shape: &CompiledShape<S>,
+        _shape: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),

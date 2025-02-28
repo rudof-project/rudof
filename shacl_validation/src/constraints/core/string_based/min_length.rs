@@ -10,11 +10,14 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinLength;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Iri as _;
+use srdf::Literal as _;
+use srdf::Query;
+use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
+impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -23,14 +26,22 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+            if value_node.is_blank_node() {
                 true
-            } else {
-                let string_representation = match S::term_as_string(value_node) {
-                    Some(string_representation) => string_representation,
-                    None => S::iri2iri_s(S::term_as_iri(value_node).unwrap()).to_string(),
+            } else if value_node.is_iri() {
+                let iri: S::IRI = match value_node.clone().try_into() {
+                    Ok(iri) => iri,
+                    Err(_) => todo!(),
                 };
-                string_representation.len() < self.min_length() as usize
+                iri.as_str().len() > self.min_length() as usize
+            } else if value_node.is_literal() {
+                let literal: S::Literal = match value_node.clone().try_into() {
+                    Ok(literal) => literal,
+                    Err(_) => todo!(),
+                };
+                literal.lexical_form().len() > self.min_length() as usize
+            } else {
+                todo!()
             }
         };
 
@@ -44,7 +55,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for MinLength {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for MinLength {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

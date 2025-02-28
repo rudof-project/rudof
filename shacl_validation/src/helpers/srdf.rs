@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::{RDFNode, SRDF};
+use srdf::{matcher::Any, Query, RDFNode, Triple};
 
 use super::helper_error::SRDFError;
 
-pub(crate) fn get_object_for<S: SRDF>(
+pub(crate) fn get_object_for<S: Query>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -13,48 +13,48 @@ pub(crate) fn get_object_for<S: SRDF>(
         .into_iter()
         .next()
     {
-        Some(term) => Ok(Some(S::term_as_object(&term))),
+        Some(term) => Ok(Some(term.into())),
         None => Ok(None),
     }
 }
 
-pub(crate) fn get_objects_for<S: SRDF>(
+pub(crate) fn get_objects_for<S: Query>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    let subject = match S::term_as_subject(subject) {
-        Some(subject) => subject,
-        None => {
+    let subject: S::Subject = match subject.clone().try_into() {
+        Ok(subject) => subject,
+        Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
                 subject: format!("{subject}"),
             })
         }
     };
 
-    store
-        .objects_for_subject_predicate(&subject, predicate)
-        .map_err(|e| SRDFError::ObjectsWithSubjectPredicate {
-            predicate: format!("{predicate}"),
-            subject: format!("{subject}"),
-            error: format!("{e}"),
-        })
+    let triples = store
+        .triples_matching(subject, predicate.clone(), Any)
+        .map_err(|e| SRDFError::Srdf {
+            error: e.to_string(),
+        })?
+        .map(Triple::into_object)
+        .collect();
+
+    Ok(triples)
 }
 
-pub(crate) fn get_subjects_for<S: SRDF>(
+pub(crate) fn get_subjects_for<S: Query>(
     store: &S,
     predicate: &S::IRI,
     object: &S::Term,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    match store.subjects_with_predicate_object(predicate, object) {
-        Ok(ans) => Ok(ans
-            .into_iter()
-            .map(|subject| S::subject_as_term(&subject))
-            .collect()),
-        Err(e) => Err(SRDFError::SubjectsWithPredicateObject {
-            predicate: format!("{predicate}"),
-            object: format!("{object}"),
-            error: format!("{e}"),
-        }),
-    }
+    let values = store
+        .triples_matching(Any, predicate.clone(), object.clone())
+        .map_err(|e| SRDFError::Srdf {
+            error: e.to_string(),
+        })?
+        .map(Triple::into_subject)
+        .map(Into::into)
+        .collect();
+    Ok(values)
 }

@@ -1,7 +1,7 @@
 use super::validation_report_error::ResultError;
 use crate::helpers::srdf::get_object_for;
 use shacl_ast::*;
-use srdf::{Object, RDFNode, SRDF};
+use srdf::{Object, Query, RDFNode};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -74,26 +74,26 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: SRDF>(
+    pub(crate) fn parse<S: Query>(
         store: &S,
         validation_result: &S::Term,
     ) -> Result<Self, ResultError> {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised
         let focus_node =
-            match get_object_for(store, validation_result, &S::iri_s2iri(&SH_FOCUS_NODE))? {
+            match get_object_for(store, validation_result, &SH_FOCUS_NODE.clone().into())? {
                 Some(focus_node) => focus_node,
                 None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
             };
         let severity =
-            match get_object_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_SEVERITY))? {
+            match get_object_for(store, validation_result, &SH_RESULT_SEVERITY.clone().into())? {
                 Some(severity) => severity,
                 None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
             };
         let constraint_component = match get_object_for(
             store,
             validation_result,
-            &S::iri_s2iri(&SH_SOURCE_CONSTRAINT_COMPONENT),
+            &SH_SOURCE_CONSTRAINT_COMPONENT.clone().into(),
         )? {
             Some(constraint_component) => constraint_component,
             None => {
@@ -104,9 +104,9 @@ impl ValidationResult {
         };
 
         // 2. Second, we must process the optional fields
-        let path = get_object_for(store, validation_result, &S::iri_s2iri(&SH_RESULT_PATH))?;
-        let source = get_object_for(store, validation_result, &S::iri_s2iri(&SH_SOURCE_SHAPE))?;
-        let value = get_object_for(store, validation_result, &S::iri_s2iri(&SH_VALUE))?;
+        let path = get_object_for(store, validation_result, &SH_RESULT_PATH.clone().into())?;
+        let source = get_object_for(store, validation_result, &SH_SOURCE_SHAPE.clone().into())?;
+        let value = get_object_for(store, validation_result, &SH_VALUE.clone().into())?;
 
         // 3. Lastly we build the ValidationResult
         Ok(

@@ -1,4 +1,5 @@
-use srdf::SRDFBasic;
+use iri_s::IriS;
+use srdf::Rdf;
 
 use crate::shape::Shape;
 use crate::Schema;
@@ -10,12 +11,12 @@ use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub enum CompiledShape<S: SRDFBasic> {
+pub enum CompiledShape<S: Rdf> {
     NodeShape(CompiledNodeShape<S>),
     PropertyShape(CompiledPropertyShape<S>),
 }
 
-impl<S: SRDFBasic> CompiledShape<S> {
+impl<S: Rdf> CompiledShape<S> {
     pub fn is_deactivated(&self) -> &bool {
         match self {
             CompiledShape::NodeShape(ns) => ns.is_deactivated(),
@@ -66,16 +67,16 @@ impl<S: SRDFBasic> CompiledShape<S> {
     }
 
     pub fn severity(&self) -> S::Term {
-        let iri_s = match self {
+        let iri_s: IriS = match self {
             CompiledShape::NodeShape(ns) => ns.severity().into(),
             CompiledShape::PropertyShape(ps) => ps.severity().into(),
         };
-
-        S::iri_as_term(S::iri_s2iri(&iri_s))
+        let iri: S::IRI = iri_s.into(); // TODO: this can be avoided
+        iri.into()
     }
 }
 
-impl<S: SRDFBasic> CompiledShape<S> {
+impl<S: Rdf> CompiledShape<S> {
     pub fn compile(shape: Shape, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {

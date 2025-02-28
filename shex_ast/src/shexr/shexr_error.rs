@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::{literal::Literal, RDFParseError};
+use srdf::RDFParseError;
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -19,8 +19,8 @@ pub enum ShExRError {
     #[error("More than one nodes with `rdf:type sx:Schema`")]
     MoreThanOneSchema { nodes: Nodes },
 
-    #[error("Shape Label can not be a literal {lit}")]
-    ShapeExprLabelLiteral { lit: Literal },
+    #[error("Shape Label can not be a literal {term}")]
+    ShapeExprLabelLiteral { term: String },
 
     #[error("Unexpected value for nodeKind: {iri}")]
     UnexpectedNodeKind { iri: IriS },

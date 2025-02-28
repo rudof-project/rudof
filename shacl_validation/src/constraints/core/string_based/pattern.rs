@@ -10,11 +10,12 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Sparql;
+use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -23,7 +24,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern = |value_node: &S::Term| {
-            if S::term_is_bnode(value_node) {
+            if value_node.is_blank_node() {
                 true
             } else {
                 todo!()
@@ -33,7 +34,7 @@ impl<S: SRDF + Debug + 'static> NativeValidator<S> for Pattern {
     }
 }
 
-impl<S: QuerySRDF + Debug + 'static> SparqlValidator<S> for Pattern {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
