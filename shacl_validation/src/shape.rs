@@ -75,7 +75,7 @@ pub trait FocusNodesOps<S: Rdf> {
 impl<S: Rdf> FocusNodesOps<S> for CompiledShape<S> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
-            .focus_nodes(store, self, self.targets())
+            .focus_nodes(store, self.targets())
             .expect("Failed to retrieve focus nodes")
     }
 }

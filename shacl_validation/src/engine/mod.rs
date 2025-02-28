@@ -25,7 +25,6 @@ pub trait Engine<S: Rdf> {
     fn focus_nodes(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
         targets: &[CompiledTarget<S>],
     ) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: here it would be nice to return an error...

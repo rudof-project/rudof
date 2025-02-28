@@ -4,13 +4,10 @@ use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, matcher::Any, not, ok,
     optional, parse_nodes, property_bool, property_value, property_values, property_values_int,
     property_values_iri, property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal,
-    PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple, RDF,
+    PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
     RDFS_CLASS, RDF_TYPE,
 };
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,

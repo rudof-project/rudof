@@ -58,7 +58,6 @@ pub trait ShaclProcessor<S: Rdf + Debug> {
 
         // for each shape in the schema that has at least one target
         for (_, shape) in shapes_graph.iter_with_targets() {
-            println!("Shape: {:?}", shape);
             let results = shape.validate(self.store(), self.runner(), None)?;
             validation_results.extend(results);
         }
