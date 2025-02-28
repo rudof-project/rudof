@@ -120,7 +120,7 @@ where
 
         let result: Vec<_> = candidates
             .into_iter()
-            .flat_map(|subject| subject.try_into())
+            .map(|subject: RDF::Subject| subject.into())
             .map(|term: RDF::Term| term.into())
             .collect();
 
