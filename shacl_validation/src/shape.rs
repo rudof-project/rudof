@@ -26,9 +26,8 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        // 0.
+        // 0. skipping if it is deactivated
         if *self.is_deactivated() {
-            // skipping because it is deactivated
             return Ok(Vec::default());
         }
 

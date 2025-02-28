@@ -156,6 +156,7 @@ impl Shacl2ShEx {
             }
             Target::TargetSubjectsOf(_) => Ok(None),
             Target::TargetObjectsOf(_) => Ok(None),
+            Target::TargetImplicitClass(_) => Ok(None),
         }
     }
 

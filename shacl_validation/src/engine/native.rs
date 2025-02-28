@@ -6,7 +6,6 @@ use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
-use srdf::RDFS_CLASS;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 
@@ -49,6 +48,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
+        // TODO: this should not be necessary, check in others triples_matching calls
         let rdf_type: S::IRI = RDF_TYPE.clone().into();
 
         let focus_nodes = store
@@ -89,36 +89,19 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
+        subject: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let ctypes = get_objects_for(store, shape.id(), &RDF_TYPE.clone().into())?;
+        let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
 
-        let mut subclasses = get_subjects_for(
-            store,
-            &RDFS_SUBCLASS_OF.clone().into(),
-            &RDFS_CLASS.clone().into(),
-        )?;
-
-        subclasses.insert(RDFS_CLASS.clone().into());
-
-        if ctypes.iter().any(|t| subclasses.contains(t)) {
-            let actual_class_nodes = get_subjects_for(store, &RDF_TYPE.clone().into(), shape.id())?;
-
-            let subclass_targets =
-                get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), shape.id())?
+        let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
+            .into_iter()
+            .flat_map(move |subclass| {
+                get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
                     .into_iter()
-                    .flat_map(move |subclass| {
-                        get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
-                            .into_iter()
-                            .flatten()
-                    });
+                    .flatten()
+            });
 
-            let focus_nodes = actual_class_nodes.into_iter().chain(subclass_targets);
-
-            Ok(FocusNodes::new(focus_nodes))
-        } else {
-            Ok(FocusNodes::default())
-        }
+        Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
     }
 
     fn predicate(
