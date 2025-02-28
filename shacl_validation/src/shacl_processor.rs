@@ -191,12 +191,12 @@ pub struct EndpointValidation {
 
 impl EndpointValidation {
     pub fn new(
-        data: &str,
+        iri: &str,
         prefixmap: &PrefixMap,
         mode: ShaclValidationMode,
     ) -> Result<Self, ValidateError> {
         Ok(EndpointValidation {
-            store: Endpoint::new(data, prefixmap)?,
+            store: Endpoint::new(iri, prefixmap)?,
             mode,
         })
     }
