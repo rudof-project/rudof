@@ -7,8 +7,8 @@ use crate::ValidationStatus;
 pub enum ShapemapError {
     #[error("Trying to create an inconsistent status on node {node} and shape {label}. Old status: {old_status}, new status: {new_status}")]
     InconsistentStatus {
-        node: Node,
-        label: ShapeLabel,
+        node: Box<Node>,
+        label: Box<ShapeLabel>,
         old_status: ValidationStatus,
         new_status: ValidationStatus,
     },

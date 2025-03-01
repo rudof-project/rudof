@@ -845,15 +845,14 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 Ok(())
             } else {
                 Err(CompiledSchemaError::DatatypeDontMatchLangString {
-                    expected: dt.clone(),
                     lexical_form: lexical_form.clone(),
-                    lang: lang.clone(),
+                    lang: Box::new(lang.clone()),
                 })
             }
         }
         _ => Err(CompiledSchemaError::DatatypeNoLiteral {
-            expected: dt.clone(),
-            node: node.clone(),
+            expected: Box::new(dt.clone()),
+            node: Box::new(node.clone()),
         }),
     }
 }
