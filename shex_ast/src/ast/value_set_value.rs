@@ -217,7 +217,7 @@ impl Serialize for ValueSetValue {
             ValueSetValue::Language { language_tag } => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "Language")?;
-                map.serialize_entry("languageTag", &language_tag.value())?;
+                map.serialize_entry("languageTag", &language_tag)?;
                 map.end()
             }
             ValueSetValue::IriStem { stem } => {
@@ -236,7 +236,7 @@ impl Serialize for ValueSetValue {
             ValueSetValue::LanguageStem { stem } => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LanguageStem")?;
-                map.serialize_entry("stem", &stem.value())?;
+                map.serialize_entry("stem", &stem)?;
                 map.end()
             }
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
@@ -674,14 +674,14 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                 ))
                             })?;
                             Ok(ValueSetValue::LanguageStem {
-                                stem: Lang::new(&stem),
+                                stem: Lang::new_unchecked(stem),
                             })
                         }
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ValueSetValueType::Language) => match language_tag {
                         Some(language_tag) => Ok(ValueSetValue::Language {
-                            language_tag: Lang::new(language_tag.as_str()),
+                            language_tag: Lang::new_unchecked(language_tag),
                         }),
                         None => Err(de::Error::missing_field("languageTag")),
                     },
@@ -744,7 +744,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                             Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
                                 Literal::StringLiteral {
                                     lexical_form: v,
-                                    lang: Some(Lang::new(&lang)),
+                                    lang: Some(Lang::new_unchecked(lang)),
                                 },
                             ))),
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
@@ -756,7 +756,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                             Some(language) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
                                 Literal::StringLiteral {
                                     lexical_form,
-                                    lang: Some(Lang::new(&language)),
+                                    lang: Some(Lang::new_unchecked(language)),
                                 },
                             ))),
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(

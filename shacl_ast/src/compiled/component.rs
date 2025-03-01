@@ -6,12 +6,12 @@ use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
-use super::convert_lang;
 use super::convert_value;
 use super::shape::CompiledShape;
 use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
+use srdf::lang::Lang;
 use srdf::Rdf;
 
 #[derive(Debug)]
@@ -29,7 +29,7 @@ pub enum CompiledComponent<S: Rdf> {
     MaxLength(MaxLength),
     Pattern(Pattern),
     UniqueLang(UniqueLang),
-    LanguageIn(LanguageIn<S>),
+    LanguageIn(LanguageIn),
     Equals(Equals<S>),
     Disjoint(Disjoint<S>),
     LessThan(LessThan<S>),
@@ -86,11 +86,7 @@ impl<S: Rdf> CompiledComponent<S> {
             }
             Component::UniqueLang(lang) => CompiledComponent::UniqueLang(UniqueLang::new(lang)),
             Component::LanguageIn { langs } => {
-                let literals = langs
-                    .into_iter()
-                    .map(|lang| convert_lang::<S>(lang))
-                    .collect::<Result<Vec<_>, _>>()?;
-                CompiledComponent::LanguageIn(LanguageIn::new(literals))
+                CompiledComponent::LanguageIn(LanguageIn::new(langs))
             }
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref::<S>(iri_ref)?;
@@ -518,16 +514,16 @@ impl<S: Rdf> QualifiedValueShape<S> {
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
 #[derive(Debug)]
-pub struct LanguageIn<S: Rdf> {
-    langs: Vec<S::Literal>,
+pub struct LanguageIn {
+    langs: Vec<Lang>,
 }
 
-impl<S: Rdf> LanguageIn<S> {
-    pub fn new(langs: Vec<S::Literal>) -> Self {
+impl LanguageIn {
+    pub fn new(langs: Vec<Lang>) -> Self {
         LanguageIn { langs }
     }
 
-    pub fn langs(&self) -> &Vec<S::Literal> {
+    pub fn langs(&self) -> &Vec<Lang> {
         &self.langs
     }
 }

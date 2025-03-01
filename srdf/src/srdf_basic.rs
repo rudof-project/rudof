@@ -13,6 +13,8 @@ use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 use rust_decimal::Decimal;
 
+use crate::lang::Lang;
+use crate::literal::Literal as SRDFLiteral;
 use crate::matcher::Matcher;
 use crate::Object;
 
@@ -45,7 +47,7 @@ pub trait Rdf: Sized {
         + From<i128>
         + From<f64>
         + TryFrom<Self::Term>
-        + From<crate::literal::Literal>;
+        + From<SRDFLiteral>;
 
     type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
@@ -192,19 +194,19 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         }
     }
 
-    fn as_literal(&self) -> crate::literal::Literal {
+    fn as_literal(&self) -> SRDFLiteral {
         if let Some(bool) = self.as_bool() {
-            crate::literal::Literal::boolean(bool)
+            SRDFLiteral::boolean(bool)
         } else if let Some(int) = self.as_integer() {
-            crate::literal::Literal::integer(int)
+            SRDFLiteral::integer(int)
         } else if let Some(decimal) = self.as_double() {
-            crate::literal::Literal::double(decimal)
+            SRDFLiteral::double(decimal)
         } else if let Some(decimal) = self.as_decimal() {
-            crate::literal::Literal::decimal(decimal)
+            SRDFLiteral::decimal(decimal)
         } else if let Some(lang) = self.lang() {
-            crate::literal::Literal::lang_str(self.lexical_form(), crate::lang::Lang::new(lang))
+            SRDFLiteral::lang_str(self.lexical_form(), Lang::new_unchecked(lang))
         } else {
-            crate::literal::Literal::str(self.lexical_form())
+            SRDFLiteral::str(self.lexical_form())
         }
     }
 }

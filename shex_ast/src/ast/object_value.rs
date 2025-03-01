@@ -121,7 +121,7 @@ impl Serialize for ObjectValue {
             ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
                 if let Some(lan) = lang {
-                    map.serialize_entry("language", lan.value().as_str())?;
+                    map.serialize_entry("language", &Some(lan))?;
                 }
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
@@ -315,7 +315,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form: v,
-                                lang: Some(Lang::new(&lang)),
+                                lang: Some(Lang::new_unchecked(&lang)),
                             })),
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
@@ -325,7 +325,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         Some(lexical_form) => match language {
                             Some(language) => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form,
-                                lang: Some(Lang::new(&language)),
+                                lang: Some(Lang::new_unchecked(&language)),
                             })),
                             None => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form,

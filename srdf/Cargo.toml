@@ -43,6 +43,7 @@ reqwest = { version = "0.12", features = ["blocking", "json"] }
 url.workspace = true
 regex.workspace = true
 tracing.workspace = true
+oxilangtag = { version = "0.1.5", features = ["serde"] }
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -14,7 +14,8 @@ impl FromStr for LangOrWildcard {
     type Err = Void;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(LangOrWildcard::Lang(Lang::new(s)))
+        // TODO: here we should check if the string is a valid language tag
+        Ok(LangOrWildcard::Lang(Lang::new_unchecked(s)))
     }
 }
 
@@ -24,7 +25,7 @@ impl Serialize for LangOrWildcard {
         S: Serializer,
     {
         match self {
-            LangOrWildcard::Lang(lang) => serializer.serialize_str(&lang.value()),
+            LangOrWildcard::Lang(lang) => serializer.serialize_str(&lang.to_string()),
             LangOrWildcard::Wildcard => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_entry("type", "Wildcard")?;
