@@ -1,8 +1,10 @@
+use std::hash::Hash;
+
 use oxilangtag::LanguageTag;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Eq, Hash, Debug, Serialize, Deserialize, Clone)]
+#[derive(Eq, Debug, Serialize, Deserialize, Clone)]
 pub struct Lang {
     lang: LanguageTag<String>,
 }
@@ -32,6 +34,12 @@ impl PartialEq for Lang {
         } else {
             false
         }
+    }
+}
+
+impl Hash for Lang {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.lang.hash(state);
     }
 }
 
