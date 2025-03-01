@@ -807,7 +807,7 @@ mod tests {
             _ => panic!("Shape is not a NodeShape"),
         };
 
-        match shape.components().get(0).unwrap() {
+        match shape.components().first().unwrap() {
             crate::component::Component::LanguageIn { langs } => {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new_unchecked("en"));
