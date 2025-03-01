@@ -1,6 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LanguageIn;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::lang::Lang;
+use srdf::Literal;
 use srdf::Query;
 use srdf::Rdf;
 use srdf::Sparql;
@@ -18,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: Rdf + Debug> Validator<S> for LanguageIn<S> {
+impl<S: Rdf + Debug> Validator<S> for LanguageIn {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -28,10 +30,12 @@ impl<S: Rdf + Debug> Validator<S> for LanguageIn<S> {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
-            if let Ok(lang) = value_node.clone().try_into() {
-                if self.langs().contains(&lang) {
-                    return false;
-                }
+            if let Ok(literal) = value_node.clone().try_into() {
+                let literal: S::Literal = literal;
+                return match literal.lang() {
+                    Some(lang) => !self.langs().contains(&Lang::new_unchecked(lang)),
+                    None => true,
+                };
             }
             true
         };
@@ -46,7 +50,7 @@ impl<S: Rdf + Debug> Validator<S> for LanguageIn<S> {
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for LanguageIn<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for LanguageIn {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -58,7 +62,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for LanguageIn<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LanguageIn<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LanguageIn {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
