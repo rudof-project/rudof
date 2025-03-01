@@ -154,9 +154,10 @@ impl From<oxrdf::Literal> for Literal {
     fn from(value: oxrdf::Literal) -> Self {
         match value.destruct() {
             (s, None, None) => Literal::str(&s),
-            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
+            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new_unchecked(&language)),
             (value, Some(dtype), None) => {
-                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
+                let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                Literal::datatype(&value, &datatype)
             }
             _ => todo!(),
         }

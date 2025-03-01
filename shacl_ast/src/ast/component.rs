@@ -128,7 +128,7 @@ impl Component {
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
-                        &Literal::str(&lang.value()),
+                        &Literal::str(&lang.to_string()),
                         SH_LANGUAGE_IN_STR,
                         rdf_node,
                         rdf,

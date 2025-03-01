@@ -1325,11 +1325,12 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                     tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
                     ValueSetValue::LanguageStem {
-                        stem: Lang::new(""),
+                        // TODO: why is this empty?
+                        stem: Lang::new_unchecked(""),
                     }
                 } else {
                     ValueSetValue::LanguageStemRange {
-                        stem: LangOrWildcard::Lang(Lang::new("")),
+                        stem: LangOrWildcard::Lang(Lang::new_unchecked("")),
                         exclusions: Some(exclusions),
                     }
                 };
@@ -1682,7 +1683,7 @@ fn lang_tag(i: Span) -> IRes<Lang> {
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),
     )(i)?;
-    Ok((i, Lang::new(lang_str.fragment())))
+    Ok((i, Lang::new_unchecked(*lang_str.fragment())))
 }
 
 /// `[61] predicate ::= iri | RDF_TYPE`

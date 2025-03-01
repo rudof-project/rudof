@@ -48,7 +48,10 @@ pub enum CompiledSchemaError {
     },
 
     #[error("Datatype expected {expected} but found no literal {node}")]
-    DatatypeNoLiteral { expected: IriRef, node: Node },
+    DatatypeNoLiteral {
+        expected: Box<IriRef>,
+        node: Box<Node>,
+    },
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
     DatatypeDontMatchString {
@@ -56,11 +59,10 @@ pub enum CompiledSchemaError {
         lexical_form: String,
     },
 
-    #[error("Datatype expected {expected} but found String literal {lexical_form}")]
+    #[error("Expected language tag {lang} for StringLiteral with lexical form {lexical_form}")]
     DatatypeDontMatchLangString {
-        expected: IriRef,
         lexical_form: String,
-        lang: Lang,
+        lang: Box<Lang>,
     },
 
     #[error("Length of {node} = {found} doesn't match {expected}")]

@@ -66,7 +66,7 @@ impl Serialize for LanguageExclusion {
         S: Serializer,
     {
         match self {
-            LanguageExclusion::Language(lang) => serializer.serialize_str(lang.value().as_str()),
+            LanguageExclusion::Language(lang) => serializer.serialize_str(&lang.to_string()),
             LanguageExclusion::LanguageStem(stem) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LanguageStem")?;
@@ -141,7 +141,7 @@ impl Exclusion {
             match e {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    lang_excs.push(LanguageExclusion::Language(Lang::new(s.as_str())))
+                    lang_excs.push(LanguageExclusion::Language(Lang::new_unchecked(s)))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
@@ -280,7 +280,7 @@ impl<'de> Deserialize<'de> for Exclusion {
                             LanguageExclusion::LanguageStem(lang),
                         )),
                         Some(StemValue::Literal(l)) => Ok(Exclusion::LanguageExclusion(
-                            LanguageExclusion::LanguageStem(Lang::new(l.as_str())),
+                            LanguageExclusion::LanguageStem(Lang::new_unchecked(l)),
                         )),
                         Some(_) => Err(de::Error::custom(format!(
                             "Stem {stem:?} must be a language"

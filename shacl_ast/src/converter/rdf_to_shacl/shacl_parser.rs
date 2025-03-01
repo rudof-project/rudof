@@ -1,8 +1,8 @@
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
-    combine_parsers, combine_vec, get_focus, has_type, instances_of, matcher::Any, not, ok,
-    optional, parse_nodes, property_bool, property_value, property_values, property_values_int,
+    combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, matcher::Any, not,
+    ok, optional, parse_nodes, property_bool, property_value, property_values, property_values_int,
     property_values_iri, property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal,
     PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
     RDFS_CLASS, RDF_TYPE,
@@ -275,7 +275,8 @@ where
         node(),
         min_length(),
         max_length(),
-        has_value()
+        has_value(),
+        language_in()
     )
 }
 
@@ -545,6 +546,13 @@ where
     })
 }
 
+fn language_in<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
+    property_values(&SH_LANGUAGE_IN).then(move |node_set| {
+        let nodes: Vec<_> = node_set.into_iter().collect();
+        parse_nodes(nodes, parse_language_in_values())
+    })
+}
+
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
 where
     RDF: FocusRDF,
@@ -559,12 +567,23 @@ where
     term().flat_map(cnv_has_value::<RDF>)
 }
 
+fn parse_language_in_values<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Component> {
+    rdf_list().flat_map(cnv_language_in_list::<R>)
+}
+
 fn cnv_has_value<RDF>(term: RDF::Term) -> std::result::Result<Component, RDFParseError>
 where
     RDF: Rdf,
 {
     let value = term_to_value::<RDF>(&term)?;
     Ok(Component::HasValue { value })
+}
+
+fn cnv_language_in_list<R: FocusRDF>(
+    terms: Vec<R::Term>,
+) -> std::result::Result<Component, RDFParseError> {
+    let langs: Vec<Lang> = terms.iter().flat_map(term_to_lang::<R>).collect();
+    Ok(Component::LanguageIn { langs })
 }
 
 fn term_to_value<RDF>(term: &RDF::Term) -> std::result::Result<Value, RDFParseError>
@@ -583,6 +602,23 @@ where
     } else if let Ok(literal) = term.clone().try_into() {
         let literal: RDF::Literal = literal;
         Ok(Value::Literal(literal.as_literal()))
+    } else {
+        todo!()
+    }
+}
+
+fn term_to_lang<R: FocusRDF>(term: &R::Term) -> std::result::Result<Lang, RDFParseError> {
+    if term.is_blank_node() {
+        Err(RDFParseError::BlankNodeNoValue {
+            bnode: term.to_string(),
+        })
+    } else if let Ok(literal) = term.clone().try_into() {
+        let literal: R::Literal = literal;
+        let lang = Lang::new(literal.lexical_form());
+        match lang {
+            Ok(lang) => Ok(lang),
+            Err(_) => todo!(),
+        }
     } else {
         todo!()
     }
@@ -733,4 +769,51 @@ fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Targe
             .collect();
         Ok(result)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use iri_s::IriS;
+    use srdf::lang::Lang;
+    use srdf::Object;
+    use srdf::RDFFormat;
+    use srdf::ReaderMode;
+    use srdf::SRDFGraph;
+
+    use crate::shape::Shape;
+
+    use super::ShaclParser;
+
+    #[test]
+    fn test_language_in() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+            @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:targetNode "Hello"@en ;
+                sh:languageIn ( "en" "fr" ) .
+        "#;
+
+        let rdf_format = RDFFormat::Turtle;
+        let reader_mode = ReaderMode::default();
+        let shape_id: Object = IriS::new_unchecked("http://example.org/TestShape").into();
+
+        let graph = SRDFGraph::from_str(shape, &rdf_format, None, &reader_mode).unwrap();
+        let schema = ShaclParser::new(graph).parse().unwrap();
+        let shape = match schema.get_shape(&shape_id).unwrap() {
+            Shape::NodeShape(ns) => ns,
+            _ => panic!("Shape is not a NodeShape"),
+        };
+
+        match shape.components().first().unwrap() {
+            crate::component::Component::LanguageIn { langs } => {
+                assert_eq!(langs.len(), 2);
+                assert_eq!(langs[0], Lang::new_unchecked("en"));
+                assert_eq!(langs[1], Lang::new_unchecked("fr"));
+            }
+            _ => panic!("Shape has not a LanguageIn component"),
+        }
+    }
 }

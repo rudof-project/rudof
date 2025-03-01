@@ -1,7 +1,6 @@
 use compiled_shacl_error::CompiledShaclError;
 use prefixmap::IriRef;
 use shape::CompiledShape;
-use srdf::lang::Lang;
 use srdf::Object;
 use srdf::Rdf;
 
@@ -23,11 +22,6 @@ fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError
         .map_err(|_| CompiledShaclError::IriRefConversion)?
         .into();
     Ok(iri)
-}
-
-fn convert_lang<S: Rdf>(lang: Lang) -> Result<S::Literal, CompiledShaclError> {
-    let literal: S::Literal = lang.value().into();
-    Ok(literal)
 }
 
 fn compile_shape<S: Rdf>(
