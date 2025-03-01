@@ -37,7 +37,7 @@ fn main() -> Result<(), ValidateError> {
 
     let report = endpoint_validation.validate(&schema)?;
 
-    println!("{:?}", report);
+    println!("{report}");
 
     Ok(())
 }
