@@ -1159,17 +1159,14 @@ fn run_node(
     )
 }
 
-fn show_node_info<S, W: Write>(
+fn show_node_info<Q: Query, W: Write>(
     node_selector: NodeSelector,
     predicates: &Vec<String>,
-    rdf: &S,
+    rdf: &Q,
     show_node_mode: &ShowNodeMode,
     _show_hyperlinks: &bool,
     writer: &mut W,
-) -> Result<()>
-where
-    S: Query,
-{
+) -> Result<()> {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
         writeln!(
@@ -1215,7 +1212,7 @@ where
         match show_node_mode {
             ShowNodeMode::Incoming | ShowNodeMode::Both => {
                 writeln!(writer, "Incoming arcs")?;
-                let object: S::Term = subject.clone().into();
+                let object: Q::Term = subject.clone().into();
                 let map = match rdf.incoming_arcs(object.clone()) {
                     Result::Ok(m) => m,
                     Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
@@ -1240,10 +1237,7 @@ where
     Ok(())
 }
 
-fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
-where
-    S: Query,
-{
+fn cnv_predicates<Q: Query>(predicates: &Vec<String>, rdf: &Q) -> Result<Vec<Q::IRI>> {
     let mut vs = Vec::new();
     for s in predicates {
         let iri_ref = parse_iri_ref(s)?;
@@ -1278,20 +1272,17 @@ fn run_shapemap(
     Ok(())
 }
 
-fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
-where
-    S: Query,
-{
+fn node_to_subject<Q: Query>(node: &ObjectValue, rdf: &Q) -> Result<Q::Subject> {
     match node {
         ObjectValue::IriRef(iri_ref) => {
-            let iri: S::IRI = match iri_ref {
+            let iri: Q::IRI = match iri_ref {
                 IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
                     let iri_s = rdf.resolve_prefix_local(prefix, local)?;
                     iri_s.into()
                 }
             };
-            let term: S::Term = iri.into();
+            let term: Q::Term = iri.into();
             match term.clone().try_into() {
                 Ok(subject) => Ok(subject),
                 Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),

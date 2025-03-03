@@ -21,21 +21,21 @@ use std::fmt::Debug;
 
 pub struct NativeEngine;
 
-impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
+impl<Q: Query + Debug + 'static> Engine<Q> for NativeEngine {
     fn evaluate(
         &self,
-        store: &S,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
-        value_nodes: &ValueNodes<S>,
+        store: &Q,
+        shape: &CompiledShape<Q>,
+        component: &CompiledComponent<Q>,
+        value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_native(component, shape, store, value_nodes)?)
+        Ok(validator.validate(component, shape, store, value_nodes, NativeEngine)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(&self, _: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -43,13 +43,13 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         }
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(&self, store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
         // TODO: this should not be necessary, check in others triples_matching calls
-        let rdf_type: S::IRI = RDF_TYPE.clone().into();
+        let rdf_type: Q::IRI = RDF_TYPE.clone().into();
 
         let focus_nodes = store
             .triples_matching(Any, rdf_type, class.clone())
@@ -62,9 +62,9 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn target_subject_of(
         &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Q,
+        predicate: &Q::IRI,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         let subjects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
@@ -76,9 +76,9 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn target_object_of(
         &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Q,
+        predicate: &Q::IRI,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         let objects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
@@ -88,9 +88,9 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn implicit_target_class(
         &self,
-        store: &S,
-        subject: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Q,
+        subject: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
 
         let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
@@ -106,11 +106,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn predicate(
         &self,
-        store: &S,
-        _: &CompiledPropertyShape<S>,
-        predicate: &S::IRI,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        store: &Q,
+        _: &CompiledPropertyShape<Q>,
+        predicate: &Q::IRI,
+        focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Ok(FocusNodes::new(
             get_objects_for(store, focus_node, predicate)?.into_iter(),
         ))
@@ -118,11 +118,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn alternative(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "alternative".to_string(),
         })
@@ -130,11 +130,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn sequence(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "sequence".to_string(),
         })
@@ -142,11 +142,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn inverse(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "inverse".to_string(),
         })
@@ -154,11 +154,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn zero_or_more(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_more".to_string(),
         })
@@ -166,11 +166,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn one_or_more(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "one_or_more".to_string(),
         })
@@ -178,11 +178,11 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
 
     fn zero_or_one(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_one".to_string(),
         })

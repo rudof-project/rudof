@@ -70,7 +70,7 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<S: Query>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+    pub fn parse<Q: Query>(store: &Q, subject: Q::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
             results.push(ValidationResult::parse(store, &result)?);

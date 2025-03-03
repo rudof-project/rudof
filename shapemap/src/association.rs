@@ -19,13 +19,10 @@ impl Association {
         }
     }
 
-    pub fn iter_node_shape<S>(
+    pub fn iter_node_shape<Q: Query>(
         &self,
-        rdf: &S,
-    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)>
-    where
-        S: Query,
-    {
+        rdf: &Q,
+    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> {
         self.node_selector.iter_node(rdf).flat_map(move |node| {
             self.shape_selector
                 .iter_shape()

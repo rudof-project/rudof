@@ -1,14 +1,6 @@
+use std::fmt::Debug;
 use std::ops::Not;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
-use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -16,17 +8,28 @@ use shacl_ast::node_kind::NodeKind;
 use srdf::Query;
 use srdf::Sparql;
 use srdf::Term;
-use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
-    fn validate_native(
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::Engine;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
+use indoc::formatdoc;
+
+impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for Nodekind {
+    fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<Q>,
+        shape: &CompiledShape<Q>,
+        store: &Q,
+        value_nodes: &ValueNodes<Q>,
+        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let node_kind = |value_node: &S::Term| {
+        let node_kind = |value_node: &Q::Term| {
             match (
                 value_node.is_blank_node(),
                 value_node.is_iri(),
@@ -53,7 +56,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

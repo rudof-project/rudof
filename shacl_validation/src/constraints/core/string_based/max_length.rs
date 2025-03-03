@@ -1,11 +1,5 @@
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
+use std::fmt::Debug;
+
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
@@ -15,27 +9,37 @@ use srdf::Literal as _;
 use srdf::Query;
 use srdf::Sparql;
 use srdf::Term;
-use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
-    fn validate_native<'a>(
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::Engine;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
+
+impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MaxLength {
+    fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<Q>,
+        shape: &CompiledShape<Q>,
+        store: &Q,
+        value_nodes: &ValueNodes<Q>,
+        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let max_length = |value_node: &S::Term| {
+        let max_length = |value_node: &Q::Term| {
             if value_node.is_blank_node() {
                 true
             } else if value_node.is_iri() {
-                let iri: S::IRI = match value_node.clone().try_into() {
+                let iri: Q::IRI = match value_node.clone().try_into() {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
                 iri.as_str().len() > self.max_length() as usize
             } else if value_node.is_literal() {
-                let literal: S::Literal = match value_node.clone().try_into() {
+                let literal: Q::Literal = match value_node.clone().try_into() {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
@@ -55,7 +59,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxLength {
+impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

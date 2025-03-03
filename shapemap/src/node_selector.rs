@@ -48,10 +48,7 @@ impl NodeSelector {
         NodeSelector::Node(ObjectValue::prefixed(alias, local))
     }
 
-    pub fn iter_node<S>(&self, _rdf: &S) -> impl Iterator<Item = &ObjectValue>
-    where
-        S: Query,
-    {
+    pub fn iter_node<Q: Query>(&self, _rdf: &Q) -> impl Iterator<Item = &ObjectValue> {
         match self {
             NodeSelector::Node(value) => std::iter::once(value),
             _ => todo!(),
@@ -63,10 +60,7 @@ impl NodeSelector {
 pub enum NodeSelectorError {}
 
 impl NodeSelect for NodeSelector {
-    fn select<S>(&self, _rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
-    where
-        S: Query,
-    {
+    fn select<Q: Query>(&self, _rdf: Q) -> Result<Vec<Q::Term>, NodeSelectorError> {
         match self {
             NodeSelector::Node(_node) => {
                 todo!()
@@ -98,7 +92,5 @@ pub enum Pattern {
 
 #[allow(dead_code)]
 trait NodeSelect {
-    fn select<S>(&self, rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
-    where
-        S: Query;
+    fn select<Q: Query>(&self, rdf: Q) -> Result<Vec<Q::Term>, NodeSelectorError>;
 }

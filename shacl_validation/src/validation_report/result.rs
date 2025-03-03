@@ -74,9 +74,9 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: Query>(
-        store: &S,
-        validation_result: &S::Term,
+    pub(crate) fn parse<Q: Query>(
+        store: &Q,
+        validation_result: &Q::Term,
     ) -> Result<Self, ResultError> {
         // 1. First, we must start processing the required fields. In case some
         //    don't appear, an error message must be raised

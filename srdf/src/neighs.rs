@@ -2,23 +2,17 @@ use std::{collections::HashSet, vec::IntoIter};
 
 use crate::{Query, Triple};
 
-pub enum Neigh<S>
-where
-    S: Query,
-{
-    Direct { p: S::IRI, o: S::Term },
-    Inverse { s: S::Subject, p: S::IRI },
+pub enum Neigh<Q: Query> {
+    Direct { p: Q::IRI, o: Q::Term },
+    Inverse { s: Q::Subject, p: Q::IRI },
 }
 
-impl<S> Neigh<S>
-where
-    S: Query,
-{
-    pub fn direct(pred: S::IRI, object: S::Term) -> Neigh<S> {
+impl<Q: Query> Neigh<Q> {
+    pub fn direct(pred: Q::IRI, object: Q::Term) -> Neigh<Q> {
         Neigh::Direct { p: pred, o: object }
     }
 
-    pub fn inverse(pred: S::IRI, subject: S::Subject) -> Neigh<S> {
+    pub fn inverse(pred: Q::IRI, subject: Q::Subject) -> Neigh<Q> {
         Neigh::Inverse {
             p: pred,
             s: subject,
@@ -28,23 +22,17 @@ where
 
 // TODO...the following code is just a draft...
 // I would like to generate the neighs as an iterator...
-pub struct NeighsIterator<S>
-where
-    S: Query,
-{
-    _term: S::Term,
-    _neigh_iter: IntoIter<Neigh<S>>,
+pub struct NeighsIterator<Q: Query> {
+    _term: Q::Term,
+    _neigh_iter: IntoIter<Neigh<Q>>,
 }
 
-impl<S> NeighsIterator<S>
-where
-    S: Query,
-{
-    pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
+impl<Q: Query> NeighsIterator<Q> {
+    pub fn new(term: Q::Term, rdf: Q) -> Result<NeighsIterator<Q>, Q::Err> {
         match term.try_into() {
             Ok(subject) => {
-                let subject: S::Subject = subject;
-                let preds: HashSet<S::IRI> = rdf
+                let subject: Q::Subject = subject;
+                let preds: HashSet<Q::IRI> = rdf
                     .triples_with_subject(subject)?
                     .map(Triple::into_predicate)
                     .collect();
@@ -63,10 +51,7 @@ where
     }
 }
 
-impl<S> FromIterator<Neigh<S>> for NeighsIterator<S>
-where
-    S: Query,
-{
+impl<Q: Query> FromIterator<Neigh<Q>> for NeighsIterator<Q> {
     fn from_iter<T>(_t: T) -> Self
     where
         T: IntoIterator,
@@ -75,11 +60,8 @@ where
     }
 }
 
-impl<S> Iterator for NeighsIterator<S>
-where
-    S: Query,
-{
-    type Item = Neigh<S>;
+impl<Q: Query> Iterator for NeighsIterator<Q> {
+    type Item = Neigh<Q>;
 
     fn next(&mut self) -> Option<Self::Item> {
         todo!()

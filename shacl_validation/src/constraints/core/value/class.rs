@@ -1,12 +1,5 @@
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_ask_with;
-use crate::helpers::constraint::validate_with;
-use crate::helpers::srdf::get_objects_for;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
-use crate::value_nodes::ValueNodes;
+use std::fmt::Debug;
+
 use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
@@ -16,17 +9,28 @@ use srdf::Sparql;
 use srdf::Term;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
-use std::fmt::Debug;
 
-impl<S: Query + 'static> NativeValidator<S> for Class<S> {
-    fn validate_native(
+use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::Engine;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::helpers::srdf::get_objects_for;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
+use crate::value_nodes::ValueNodes;
+
+impl<Q: Query + 'static, E: Engine<Q>> Validator<Q, E> for Class<Q> {
+    fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<Q>,
+        shape: &CompiledShape<Q>,
+        store: &Q,
+        value_nodes: &ValueNodes<Q>,
+        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let class = |value_node: &S::Term| {
+        let class = |value_node: &Q::Term| {
             if value_node.is_literal() {
                 return true;
             }
@@ -48,7 +52,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

@@ -4,10 +4,10 @@ use srdf::{matcher::Any, Query, RDFNode, Triple};
 
 use super::helper_error::SRDFError;
 
-pub(crate) fn get_object_for<S: Query>(
-    store: &S,
-    subject: &S::Term,
-    predicate: &S::IRI,
+pub(crate) fn get_object_for<Q: Query>(
+    store: &Q,
+    subject: &Q::Term,
+    predicate: &Q::IRI,
 ) -> Result<Option<RDFNode>, SRDFError> {
     match get_objects_for(store, subject, predicate)?
         .into_iter()
@@ -18,12 +18,12 @@ pub(crate) fn get_object_for<S: Query>(
     }
 }
 
-pub(crate) fn get_objects_for<S: Query>(
-    store: &S,
-    subject: &S::Term,
-    predicate: &S::IRI,
-) -> Result<HashSet<S::Term>, SRDFError> {
-    let subject: S::Subject = match subject.clone().try_into() {
+pub(crate) fn get_objects_for<Q: Query>(
+    store: &Q,
+    subject: &Q::Term,
+    predicate: &Q::IRI,
+) -> Result<HashSet<Q::Term>, SRDFError> {
+    let subject: Q::Subject = match subject.clone().try_into() {
         Ok(subject) => subject,
         Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
@@ -43,11 +43,11 @@ pub(crate) fn get_objects_for<S: Query>(
     Ok(triples)
 }
 
-pub(crate) fn get_subjects_for<S: Query>(
-    store: &S,
-    predicate: &S::IRI,
-    object: &S::Term,
-) -> Result<HashSet<S::Term>, SRDFError> {
+pub(crate) fn get_subjects_for<Q: Query>(
+    store: &Q,
+    predicate: &Q::IRI,
+    object: &Q::Term,
+) -> Result<HashSet<Q::Term>, SRDFError> {
     let values = store
         .triples_matching(Any, predicate.clone(), object.clone())
         .map_err(|e| SRDFError::Srdf {

@@ -2,6 +2,7 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
@@ -17,7 +18,7 @@ use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
-impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: Sparql + Query + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,

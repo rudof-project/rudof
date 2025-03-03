@@ -210,15 +210,12 @@ impl Engine {
         }
     }
 
-    pub(crate) fn check_node_shape_expr<S>(
+    pub(crate) fn check_node_shape_expr<Q: Query>(
         &mut self,
         node: &Node,
         se: &ShapeExpr,
-        rdf: &S,
-    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-    where
-        S: Query,
-    {
+        rdf: &Q,
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>> {
         debug!(
             "Step {}. Checking node {node:?} with shape_expr: {se:?}",
             self.step_counter
@@ -281,15 +278,12 @@ impl Engine {
         }
     }
 
-    fn check_node_shape<S>(
+    fn check_node_shape<Q: Query>(
         &mut self,
         node: &Node,
         shape: &Shape,
-        rdf: &S,
-    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-    where
-        S: Query,
-    {
+        rdf: &Q,
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>> {
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
             let errs = vec![ValidatorError::ClosedShapeWithRemainderPreds {
@@ -363,43 +357,34 @@ impl Engine {
         }
     }
 
-    fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
-    where
-        S: Query,
-    {
+    fn cnv_iri<Q: Query>(&self, iri: Q::IRI) -> Pred {
         let iri_string = iri.as_str();
         let iri_s = iri!(iri_string);
         Pred::from(iri_s)
     }
 
-    fn cnv_object<S>(&self, term: &S::Term) -> Node
-    where
-        S: Query,
-    {
+    fn cnv_object<Q: Query>(&self, term: &Q::Term) -> Node {
         Node::from(term.clone().into())
     }
 
-    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Neighs>
-    where
-        S: Query,
-    {
+    fn neighs<Q: Query>(&self, node: &Node, preds: Vec<IriS>, rdf: &Q) -> Result<Neighs> {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.clone().into()).collect();
         if let Ok(subject) = node.try_into() {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
-                .map_err(|e| self.cnv_err::<S>(e))?;
+                .map_err(|e| self.cnv_err::<Q>(e))?;
             let mut result = Vec::new();
             for (pred, values) in outgoing_arcs.into_iter() {
                 for obj in values.into_iter() {
-                    let iri = self.cnv_iri::<S>(pred.clone());
-                    let object = self.cnv_object::<S>(&obj);
+                    let iri = self.cnv_iri::<Q>(pred.clone());
+                    let object = self.cnv_object::<Q>(&obj);
                     result.push((iri.clone(), object))
                 }
             }
             let mut remainder_preds = Vec::new();
             for r in remainder {
-                let iri_r = self.cnv_iri::<S>(r.clone());
+                let iri_r = self.cnv_iri::<Q>(r.clone());
                 remainder_preds.push(iri_r)
             }
             Ok((result, remainder_preds))
@@ -408,20 +393,14 @@ impl Engine {
         }
     }
 
-    fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
-    where
-        S: Query,
-    {
+    fn cnv_err<Q: Query>(&self, _err: Q::Err) -> ValidatorError {
         todo!()
     }
 
-    fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
-    where
-        S: Query,
-    {
+    fn get_rdf_node<Q: Query>(&self, node: &Node, _rdf: &Q) -> Q::Term {
         match node.as_object() {
             Object::Iri(iri_s) => {
-                let iri: S::IRI = iri_s.clone().into();
+                let iri: Q::IRI = iri_s.clone().into();
                 iri.into()
             }
             Object::BlankNode(_id) => {
