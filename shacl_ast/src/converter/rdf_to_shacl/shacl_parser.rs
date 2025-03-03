@@ -848,7 +848,7 @@ mod tests {
 
         match shape.components().first().unwrap() {
             crate::component::Component::UniqueLang(b) => {
-                assert_eq!(*b, true);
+                assert!(*b);
             }
             _ => panic!("Shape has not a UniqueLang component"),
         }

@@ -1,4 +1,3 @@
-use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
 use srdf::lang::Lang;
@@ -743,38 +742,35 @@ impl<R: Rdf> MinInclusive<R> {
 
 impl<R: Rdf> From<&CompiledComponent<R>> for IriS {
     fn from(value: &CompiledComponent<R>) -> Self {
-        match value {
-            CompiledComponent::Class(_) => iri!(SH_CLASS_STR),
-            CompiledComponent::Datatype(_) => iri!(SH_DATATYPE_STR),
-            CompiledComponent::NodeKind(_) => iri!(SH_IRI_STR),
-            CompiledComponent::MinCount(_) => iri!(SH_MIN_COUNT_STR),
-            CompiledComponent::MaxCount(_) => iri!(SH_MAX_COUNT_STR),
-            CompiledComponent::MinExclusive(_) => iri!(SH_MIN_EXCLUSIVE_STR),
-            CompiledComponent::MaxExclusive(_) => iri!(SH_MAX_EXCLUSIVE_STR),
-            CompiledComponent::MinInclusive(_) => iri!(SH_MIN_INCLUSIVE_STR),
-            CompiledComponent::MaxInclusive(_) => iri!(SH_MAX_INCLUSIVE_STR),
-            CompiledComponent::MinLength(_) => iri!(SH_MIN_LENGTH_STR),
-            CompiledComponent::MaxLength(_) => iri!(SH_MAX_LENGTH_STR),
-            CompiledComponent::Pattern { .. } => iri!(SH_PATTERN_STR),
-            CompiledComponent::UniqueLang(_) => iri!(SH_UNIQUE_LANG_STR),
-            CompiledComponent::LanguageIn { .. } => iri!(SH_LANGUAGE_IN_STR),
-            CompiledComponent::Equals(_) => iri!(SH_EQUALS_STR),
-            CompiledComponent::Disjoint(_) => iri!(SH_DISJOINT_STR),
-            CompiledComponent::LessThan(_) => iri!(SH_LESS_THAN_STR),
-            CompiledComponent::LessThanOrEquals(_) => {
-                iri!(SH_LESS_THAN_OR_EQUALS_STR)
-            }
-            CompiledComponent::Or { .. } => iri!(SH_OR_STR),
-            CompiledComponent::And { .. } => iri!(SH_AND_STR),
-            CompiledComponent::Not { .. } => iri!(SH_NOT_STR),
-            CompiledComponent::Xone { .. } => iri!(SH_XONE_STR),
-            CompiledComponent::Closed { .. } => iri!(SH_CLOSED_STR),
-            CompiledComponent::Node { .. } => iri!(SH_NODE_STR),
-            CompiledComponent::HasValue { .. } => iri!(SH_HAS_VALUE_STR),
-            CompiledComponent::In { .. } => iri!(SH_IN_STR),
-            CompiledComponent::QualifiedValueShape { .. } => {
-                iri!(SH_QUALIFIED_VALUE_SHAPE_STR)
-            }
-        }
+        let iri_str = match value {
+            CompiledComponent::Class(_) => SH_CLASS_STR,
+            CompiledComponent::Datatype(_) => SH_DATATYPE_STR,
+            CompiledComponent::NodeKind(_) => SH_IRI_STR,
+            CompiledComponent::MinCount(_) => SH_MIN_COUNT_STR,
+            CompiledComponent::MaxCount(_) => SH_MAX_COUNT_STR,
+            CompiledComponent::MinExclusive(_) => SH_MIN_EXCLUSIVE_STR,
+            CompiledComponent::MaxExclusive(_) => SH_MAX_EXCLUSIVE_STR,
+            CompiledComponent::MinInclusive(_) => SH_MIN_INCLUSIVE_STR,
+            CompiledComponent::MaxInclusive(_) => SH_MAX_INCLUSIVE_STR,
+            CompiledComponent::MinLength(_) => SH_MIN_LENGTH_STR,
+            CompiledComponent::MaxLength(_) => SH_MAX_LENGTH_STR,
+            CompiledComponent::Pattern { .. } => SH_PATTERN_STR,
+            CompiledComponent::UniqueLang(_) => SH_UNIQUE_LANG_STR,
+            CompiledComponent::LanguageIn { .. } => SH_LANGUAGE_IN_STR,
+            CompiledComponent::Equals(_) => SH_EQUALS_STR,
+            CompiledComponent::Disjoint(_) => SH_DISJOINT_STR,
+            CompiledComponent::LessThan(_) => SH_LESS_THAN_STR,
+            CompiledComponent::LessThanOrEquals(_) => SH_LESS_THAN_OR_EQUALS_STR,
+            CompiledComponent::Or { .. } => SH_OR_STR,
+            CompiledComponent::And { .. } => SH_AND_STR,
+            CompiledComponent::Not { .. } => SH_NOT_STR,
+            CompiledComponent::Xone { .. } => SH_XONE_STR,
+            CompiledComponent::Closed { .. } => SH_CLOSED_STR,
+            CompiledComponent::Node { .. } => SH_NODE_STR,
+            CompiledComponent::HasValue { .. } => SH_HAS_VALUE_STR,
+            CompiledComponent::In { .. } => SH_IN_STR,
+            CompiledComponent::QualifiedValueShape { .. } => SH_QUALIFIED_VALUE_SHAPE_STR,
+        };
+        IriS::new_unchecked(iri_str)
     }
 }
