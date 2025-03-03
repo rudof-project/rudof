@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LanguageIn;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -24,7 +22,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for LanguageIn {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &Q::Term| {
             if let Ok(literal) = value_node.clone().try_into() {

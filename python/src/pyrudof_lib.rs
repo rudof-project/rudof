@@ -362,7 +362,7 @@ impl PyRudof {
         let shapes_graph_source = cnv_shapes_graph_source(shapes_graph_source);
         let result = self
             .inner
-            .validate_shacl(&mode, &shapes_graph_source)
+            .validate_shacl(&shapes_graph_source, mode)
             .map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
     }

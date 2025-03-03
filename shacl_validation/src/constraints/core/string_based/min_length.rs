@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinLength;
@@ -27,7 +25,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinLength {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &Q::Term| {
             if value_node.is_blank_node() {

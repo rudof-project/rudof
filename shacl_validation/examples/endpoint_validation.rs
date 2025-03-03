@@ -1,15 +1,14 @@
-use std::io::Cursor;
-
-use prefixmap::PrefixMap;
-use shacl_validation::shacl_processor::EndpointValidation;
-use shacl_validation::shacl_processor::ShaclProcessor as _;
-use shacl_validation::shacl_processor::ShaclValidationMode;
-use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate_error::ValidateError;
+use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
+use shacl_ast::compiled::schema::CompiledSchema;
+use shacl_ast::ShaclParser;
+use shacl_validation::shacl_processor::DefaultShaclProcessor;
 use srdf::RDFFormat;
+use srdf::ReaderMode;
+use srdf::SRDFGraph;
+use srdf::SRDFSparql;
+use thiserror::Error;
 
-fn main() -> Result<(), ValidateError> {
-    let shacl = r#"
+const SCHEMA: &str = r#"
         @prefix ex:  <http://example.org/> .
         @prefix wd:  <http://www.wikidata.org/entity/> .
         @prefix wdt: <http://www.wikidata.org/prop/direct/> .
@@ -27,17 +26,29 @@ fn main() -> Result<(), ValidateError> {
             ] .
     "#;
 
-    let schema = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
-
-    let endpoint_validation = EndpointValidation::new(
-        "https://query.wikidata.org/sparql",
-        &PrefixMap::default(),
-        ShaclValidationMode::Native,
-    )?;
-
-    let report = endpoint_validation.validate(&schema)?;
-
-    println!("{report}");
-
+fn main() -> Result<(), ExampleError> {
+    let shapes_graph = SRDFGraph::from_str(SCHEMA, &RDFFormat::Turtle, None, &ReaderMode::Lax)?;
+    let schema: CompiledSchema<_> = ShaclParser::new(shapes_graph).parse()?.try_into()?;
+    let endpoint = SRDFSparql::wikidata()?;
+    let report = DefaultShaclProcessor::new(endpoint).validate(&schema)?;
+    println!("{report}"); // report implements the Display trait (nice output)
     Ok(())
+}
+
+#[derive(Error, Debug)]
+pub enum ExampleError {
+    #[error("Error related to the creation of the Rdf graph")]
+    SRDF(#[from] srdf::srdf_graph::srdfgraph_error::SRDFGraphError),
+
+    #[error("Error related to the parsing of the SHACL schema")]
+    ShaclParser(#[from] shacl_ast::shacl_parser_error::ShaclParserError),
+
+    #[error("Error related to the validation of the SHACL schema against the RDF graph")]
+    Validate(#[from] shacl_validation::validate_error::ValidateError),
+
+    #[error("Error related to the connection to the SPARQL endpoint")]
+    Endpoint(#[from] srdf::srdf_sparql::SRDFSparqlError),
+
+    #[error("Error related to the compilation of the SHACL schema")]
+    CompiledShacl(#[from] CompiledShaclError),
 }

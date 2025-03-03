@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -23,7 +21,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxCount {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<Q>| targets.len() > self.max_count();
         validate_with(component, shape, value_nodes, FocusNodeIteration, max_count)

@@ -627,9 +627,9 @@ fn run_validate_shacl(
         let reader_mode = reader_mode_convert(*reader_mode);
         let shapes_format = shapes_format.unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
+        rudof.validate_shacl(&ShapesGraphSource::current_schema(), mode)
     } else {
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
+        rudof.validate_shacl(&ShapesGraphSource::current_schema(), mode)
     }?;
 
     writeln!(writer, "Result:\n{}", result)?;

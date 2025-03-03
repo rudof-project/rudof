@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -24,20 +22,23 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Xone<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let xone = |value_node: &Q::Term| {
-            self.shapes()
+            let valid_count = self
+                .shapes()
                 .iter()
-                .filter(|shape| {
+                .filter(|&xone_shape| {
                     let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes)) {
+                    match Validate::<Q>::validate::<E>(xone_shape, store, Some(&focus_nodes)) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }
                 })
-                .count()
-                .ne(&1usize)
+                .count();
+
+            println!("valid_count: {valid_count}");
+
+            valid_count != 1usize
         };
 
         validate_with(component, shape, value_nodes, ValueNodeIteration, xone)

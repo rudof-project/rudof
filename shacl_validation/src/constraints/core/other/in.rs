@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::In;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -22,7 +20,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for In<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &Q::Term| !self.values().contains(value_node);
         validate_with(component, shape, value_nodes, ValueNodeIteration, r#in)

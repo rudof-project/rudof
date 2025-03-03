@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::fmt::Debug;
 use std::rc::Rc;
 
 use shacl_ast::compiled::component::CompiledComponent;
@@ -24,7 +23,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for UniqueLang {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if !self.unique_lang() {
             return Ok(Default::default());

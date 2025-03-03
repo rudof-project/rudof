@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Datatype;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -24,7 +22,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Datatype<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &Q::Term| {
             let tmp: Result<Q::Literal, _> = value_node.clone().try_into();

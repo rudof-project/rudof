@@ -23,19 +23,18 @@ pub struct NativeEngine;
 
 impl<Q: Query> Engine<Q> for NativeEngine {
     fn evaluate(
-        &self,
         store: &Q,
         shape: &CompiledShape<Q>,
         component: &CompiledComponent<Q>,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate(component, shape, store, value_nodes, NativeEngine)?)
+        Ok(validator.validate(component, shape, store, value_nodes)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
+    fn target_node(_: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -43,7 +42,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         }
     }
 
-    fn target_class(&self, store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
+    fn target_class(store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
@@ -60,25 +59,16 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         Ok(FocusNodes::new(focus_nodes))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &Q,
-        predicate: &Q::IRI,
-    ) -> Result<FocusNodes<Q>, ValidateError> {
+    fn target_subject_of(store: &Q, predicate: &Q::IRI) -> Result<FocusNodes<Q>, ValidateError> {
         let subjects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
-        let focus_nodes = FocusNodes::new(subjects);
-        Ok(focus_nodes)
+        Ok(FocusNodes::new(subjects))
     }
 
-    fn target_object_of(
-        &self,
-        store: &Q,
-        predicate: &Q::IRI,
-    ) -> Result<FocusNodes<Q>, ValidateError> {
+    fn target_object_of(store: &Q, predicate: &Q::IRI) -> Result<FocusNodes<Q>, ValidateError> {
         let objects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
@@ -86,11 +76,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         Ok(FocusNodes::new(objects))
     }
 
-    fn implicit_target_class(
-        &self,
-        store: &Q,
-        subject: &Q::Term,
-    ) -> Result<FocusNodes<Q>, ValidateError> {
+    fn implicit_target_class(store: &Q, subject: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
 
         let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
@@ -105,19 +91,16 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn predicate(
-        &self,
         store: &Q,
         _: &CompiledPropertyShape<Q>,
         predicate: &Q::IRI,
         focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Ok(FocusNodes::new(
-            get_objects_for(store, focus_node, predicate)?.into_iter(),
-        ))
+        let values = get_objects_for(store, focus_node, predicate)?;
+        Ok(FocusNodes::new(values.into_iter()))
     }
 
     fn alternative(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
@@ -129,7 +112,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn sequence(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
@@ -141,7 +123,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn inverse(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
@@ -153,7 +134,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn zero_or_more(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
@@ -165,7 +145,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn one_or_more(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
@@ -177,7 +156,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     }
 
     fn zero_or_one(
-        &self,
         _store: &Q,
         _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,

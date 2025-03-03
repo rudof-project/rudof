@@ -10,21 +10,19 @@ use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ast::shacl_parser_error::ShaclParserError;
 use shacl_ast::Schema;
 use shacl_ast::ShaclParser;
-use shacl_validation::shacl_processor::RdfDataValidation;
+use shacl_validation::engine::Engine;
 use shacl_validation::shacl_processor::ShaclProcessor;
-use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::shacl_validation_vocab;
-use shacl_validation::store::graph::Graph;
-use shacl_validation::store::Store;
 use shacl_validation::validate_error::ValidateError;
 use shacl_validation::validation_report::report::ValidationReport;
 use shacl_validation::validation_report::validation_report_error::ReportError;
 use sparql_service::RdfData;
-use sparql_service::RdfDataError;
 use srdf::matcher::Any;
 use srdf::Query;
 use srdf::RDFFormat;
 use srdf::Rdf;
+use srdf::ReaderMode;
+use srdf::SRDFGraph;
 use srdf::Triple;
 use thiserror::Error;
 
@@ -59,18 +57,17 @@ impl Manifest {
             None => panic!("Path not found!!"),
         };
 
-        let subject = OxSubject::NamedNode(NamedNode::new_unchecked(base.clone()));
-
-        let graph = Graph::from_path(
+        let graph = SRDFGraph::from_path(
             Path::new(path),
-            RDFFormat::Turtle,
+            &RDFFormat::Turtle,
             Some(&base),
-            // &ReaderMode::Lax,
-        )?;
+            &srdf::ReaderMode::Lax,
+        )
+        .map_err(|_| TestSuiteError::GraphCreation)?;
 
-        let store = graph.store().clone();
-
-        let entries = Manifest::parse_entries(&store, subject)?;
+        let store = RdfData::from_graph(graph).map_err(|_| TestSuiteError::StoreCreation)?;
+        let entries =
+            Manifest::parse_entries(&store, NamedNode::new_unchecked(base.clone()).into())?;
 
         Ok(Self {
             base,
@@ -87,7 +84,8 @@ impl Manifest {
 
         let mf_entries: NamedNode = shacl_validation_vocab::MF_ENTRIES.clone().into();
         let entry_subject = store
-            .triples_matching(subject, mf_entries, Any)?
+            .triples_matching(subject, mf_entries, Any)
+            .map_err(|_| TestSuiteError::Query)?
             .map(Triple::into_object)
             .next();
 
@@ -96,7 +94,8 @@ impl Manifest {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
                 let rdf_first: NamedNode = srdf::RDF_FIRST.clone().into();
                 match store
-                    .triples_matching(inner_subject.clone(), rdf_first, Any)?
+                    .triples_matching(inner_subject.clone(), rdf_first, Any)
+                    .map_err(|_| TestSuiteError::Query)?
                     .map(Triple::into_object)
                     .next()
                 {
@@ -106,7 +105,8 @@ impl Manifest {
 
                 let rdf_rest: NamedNode = srdf::RDF_REST.clone().into();
                 subject = match store
-                    .triples_matching(inner_subject, rdf_rest, Any)?
+                    .triples_matching(inner_subject, rdf_rest, Any)
+                    .map_err(|_| TestSuiteError::Query)?
                     .map(Triple::into_object)
                     .next()
                 {
@@ -127,7 +127,8 @@ impl Manifest {
             let mf_action: NamedNode = shacl_validation_vocab::MF_ACTION.clone().into();
             let action: OxSubject = self
                 .store
-                .triples_matching(entry.clone(), mf_action, Any)?
+                .triples_matching(entry.clone(), mf_action, Any)
+                .map_err(|_| TestSuiteError::Query)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap()
@@ -136,7 +137,8 @@ impl Manifest {
             let mf_result: NamedNode = shacl_validation_vocab::MF_RESULT.clone().into();
             let results = self
                 .store
-                .triples_matching(entry, mf_result, Any)?
+                .triples_matching(entry, mf_result, Any)
+                .map_err(|_| TestSuiteError::Query)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -146,7 +148,8 @@ impl Manifest {
             let sht_data_graph: NamedNode = shacl_validation_vocab::SHT_DATA_GRAPH.clone().into();
             let data_graph_iri = self
                 .store
-                .triples_matching(action.clone(), sht_data_graph, Any)?
+                .triples_matching(action.clone(), sht_data_graph, Any)
+                .map_err(|_| TestSuiteError::Query)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -155,7 +158,8 @@ impl Manifest {
                 shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into();
             let shapes_graph_iri = self
                 .store
-                .triples_matching(action, sht_shapes_graph, Any)?
+                .triples_matching(action, sht_shapes_graph, Any)
+                .map_err(|_| TestSuiteError::Query)?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -163,22 +167,24 @@ impl Manifest {
             let data_graph_path = Self::format_path(data_graph_iri.to_string());
             let shapes_graph_path = Self::format_path(shapes_graph_iri.to_string());
 
-            let graph = Graph::from_path(
+            let graph = SRDFGraph::from_path(
                 Path::new(&data_graph_path),
-                RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 Some(&self.base),
-                // &ReaderMode::default(),
-            )?;
-            let data_graph = graph.store().clone();
+                &ReaderMode::default(),
+            )
+            .map_err(|_| TestSuiteError::GraphCreation)?;
+            let data_graph =
+                RdfData::from_graph(graph).map_err(|_| TestSuiteError::StoreCreation)?;
 
-            let shapes = Graph::from_path(
+            let shapes = SRDFGraph::from_path(
                 Path::new(&shapes_graph_path),
-                RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 Some(&self.base),
-                // &ReaderMode::default(),
-            )?;
-            let shapes_graph = shapes.store().clone();
-            let schema = ShaclParser::new(shapes_graph).parse()?;
+                &ReaderMode::default(),
+            )
+            .map_err(|_| TestSuiteError::GraphCreation)?;
+            let schema = ShaclParser::new(shapes).parse()?;
 
             entries.push(ShaclTest::new(data_graph, schema, report));
         }
@@ -194,16 +200,15 @@ impl Manifest {
     }
 }
 
-fn test(
+fn test<E: Engine<RdfData>>(
     path: String,
-    mode: ShaclValidationMode,
     // subsetting: Subsetting,
 ) -> Result<(), TestSuiteError> {
     let manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 
     for test in tests {
-        let validator = RdfDataValidation::from_rdf_data(test.data, mode);
+        let validator = ShaclProcessor::<RdfData, E>::new(test.data);
         let report = validator.validate(&test.shapes.try_into()?)?;
         if report != test.report {
             return Err(TestSuiteError::NotEquals);
@@ -221,8 +226,14 @@ pub enum TestSuiteError {
     #[error(transparent)]
     InputOutput(#[from] Error),
 
-    #[error(transparent)]
-    RdfData(#[from] RdfDataError),
+    #[error("Error when creating the RDF data graph")]
+    GraphCreation,
+
+    #[error("Error when creating the RDF data store")]
+    StoreCreation,
+
+    #[error("Error when querying the RDF data store")]
+    Query,
 
     #[error(transparent)]
     CompilingShapes(#[from] CompiledShaclError),

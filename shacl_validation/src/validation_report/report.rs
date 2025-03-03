@@ -20,10 +20,6 @@ pub struct ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn with_results(mut self, results: Vec<ValidationResult>) -> Self {
         self.results = results;
         self
@@ -75,7 +71,7 @@ impl ValidationReport {
         for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
             results.push(ValidationResult::parse(store, &result)?);
         }
-        Ok(ValidationReport::new().with_results(results))
+        Ok(ValidationReport::default().with_results(results))
     }
 
     pub fn conforms(&self) -> bool {

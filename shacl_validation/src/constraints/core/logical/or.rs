@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::ops::Not;
 
 use shacl_ast::compiled::component::CompiledComponent;
@@ -25,17 +24,13 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Or<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let or = |value_node: &Q::Term| {
             self.shapes()
                 .iter()
-                .any(|shape| {
-                    match shape.validate(
-                        store,
-                        &engine,
-                        Some(&FocusNodes::new(std::iter::once(value_node.clone()))),
-                    ) {
+                .any(|or_shape| {
+                    let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
+                    match Validate::<Q>::validate::<E>(or_shape, store, Some(&focus_nodes)) {
                         Ok(validation_results) => validation_results.is_empty(),
                         Err(_) => false,
                     }

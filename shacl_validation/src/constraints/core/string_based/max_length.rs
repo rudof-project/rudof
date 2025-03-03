@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxLength;
@@ -27,7 +25,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxLength {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &Q::Term| {
             if value_node.is_blank_node() {

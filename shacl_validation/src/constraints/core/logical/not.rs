@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Not;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -24,12 +22,11 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Not<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let not = |value_node: &Q::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-            let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
-            inner_results.is_err() || inner_results.unwrap().is_empty()
+            let results = Validate::<Q>::validate::<E>(self.shape(), store, Some(&focus_nodes));
+            results.is_err() || results.unwrap().is_empty()
         };
 
         validate_with(component, shape, value_nodes, ValueNodeIteration, not)

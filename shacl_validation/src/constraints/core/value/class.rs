@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use indoc::formatdoc;
 use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
@@ -28,7 +26,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Class<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &Q::Term| {
             if value_node.is_literal() {

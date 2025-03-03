@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::QualifiedValueShape;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -20,7 +18,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for QualifiedValueShape<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "QualifiedValueShape".to_string(),

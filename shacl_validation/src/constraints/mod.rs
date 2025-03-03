@@ -20,7 +20,6 @@ pub trait Validator<Q: Query, E: Engine<Q>> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -32,7 +31,7 @@ pub trait SparqlValidator<S: Sparql + Query>: Validator<S, SparqlEngine> {
         store: &S,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, value_nodes, SparqlEngine)
+        self.validate(component, shape, store, value_nodes)
     }
 }
 

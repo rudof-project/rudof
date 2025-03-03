@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::ops::Not;
 
 use shacl_ast::compiled::component::CompiledComponent;
@@ -27,7 +26,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Nodekind {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &Q::Term| {
             match (

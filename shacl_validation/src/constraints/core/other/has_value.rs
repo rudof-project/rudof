@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::HasValue;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -23,7 +21,6 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for HasValue<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-        engine: E,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<Q>| !targets.iter().any(|value| value == self.value());
