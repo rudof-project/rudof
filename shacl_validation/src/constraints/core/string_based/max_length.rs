@@ -20,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MaxLength {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxLength {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -59,7 +59,7 @@ impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MaxLength {
     }
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for MaxLength {
+impl<S: Sparql + Query> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

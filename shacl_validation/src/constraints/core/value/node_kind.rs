@@ -20,7 +20,7 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 
-impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for Nodekind {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Nodekind {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -56,7 +56,7 @@ impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for Nodekind {
     }
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: Sparql + Query> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

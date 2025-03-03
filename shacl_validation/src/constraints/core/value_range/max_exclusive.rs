@@ -15,7 +15,7 @@ use crate::helpers::constraint::validate_ask_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MaxExclusive<Q> {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxExclusive<Q> {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -28,7 +28,7 @@ impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MaxExclusive<
     }
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for MaxExclusive<S> {
+impl<S: Sparql + Query> SparqlValidator<S> for MaxExclusive<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

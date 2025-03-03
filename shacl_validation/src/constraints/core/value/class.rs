@@ -21,7 +21,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query + 'static, E: Engine<Q>> Validator<Q, E> for Class<Q> {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Class<Q> {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -52,7 +52,7 @@ impl<Q: Query + 'static, E: Engine<Q>> Validator<Q, E> for Class<Q> {
     }
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: Sparql + Query> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

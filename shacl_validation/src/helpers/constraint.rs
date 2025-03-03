@@ -10,10 +10,10 @@ use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-fn apply<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
-    value_nodes: &ValueNodes<S>,
+fn apply<R: Rdf, I: IterationStrategy<R>>(
+    component: &CompiledComponent<R>,
+    shape: &CompiledShape<R>,
+    value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
@@ -38,10 +38,10 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     Ok(results)
 }
 
-pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
-    value_nodes: &ValueNodes<S>,
+pub fn validate_with<R: Rdf, I: IterationStrategy<R>>(
+    component: &CompiledComponent<R>,
+    shape: &CompiledShape<R>,
+    value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {

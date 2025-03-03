@@ -1,8 +1,11 @@
-use super::validation_report_error::ResultError;
-use crate::helpers::srdf::get_object_for;
+use std::fmt::Debug;
+
 use shacl_ast::*;
 use srdf::{Object, Query, RDFNode};
-use std::fmt::Debug;
+
+use crate::helpers::srdf::get_object_for;
+
+use super::validation_report_error::ResultError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidationResult {

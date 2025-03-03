@@ -16,7 +16,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MinCount {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinCount {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -34,4 +34,4 @@ impl<Q: Query + Debug + 'static, E: Engine<Q>> Validator<Q, E> for MinCount {
     }
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlValidator<S> for MinCount {}
+impl<S: Sparql + Query> SparqlValidator<S> for MinCount {}

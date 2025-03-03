@@ -1,3 +1,6 @@
+use std::fmt::Debug;
+use std::path::Path;
+
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
 use shacl_ast::compiled::schema::CompiledSchema;
@@ -5,8 +8,6 @@ use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::SRDFSparql;
-use std::fmt::Debug;
-use std::path::Path;
 
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
@@ -38,7 +39,7 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: Rdf + Debug> {
+pub trait ShaclProcessor<S: Rdf> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 

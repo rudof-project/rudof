@@ -7,18 +7,18 @@ use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 
-use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
+
+use super::Engine;
 
 pub struct SparqlEngine;
 
-impl<S: Sparql + Query + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: Sparql + Query> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,

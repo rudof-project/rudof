@@ -9,7 +9,6 @@ use srdf::Triple;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 
-use super::Engine;
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::srdf::get_objects_for;
@@ -17,11 +16,12 @@ use crate::helpers::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
+
+use super::Engine;
 
 pub struct NativeEngine;
 
-impl<Q: Query + Debug + 'static> Engine<Q> for NativeEngine {
+impl<Q: Query> Engine<Q> for NativeEngine {
     fn evaluate(
         &self,
         store: &Q,

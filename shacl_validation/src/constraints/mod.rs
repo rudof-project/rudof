@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
@@ -26,7 +24,7 @@ pub trait Validator<Q: Query, E: Engine<Q>> {
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
-pub trait SparqlValidator<S: Sparql + Query + Debug + 'static>: Validator<S, SparqlEngine> {
+pub trait SparqlValidator<S: Sparql + Query>: Validator<S, SparqlEngine> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
@@ -40,7 +38,7 @@ pub trait SparqlValidator<S: Sparql + Query + Debug + 'static>: Validator<S, Spa
 
 macro_rules! generate_deref_fn {
     ($enum_name:ident, $($variant:ident),+) => {
-        fn deref(&self) -> &Self::Target {
+        fn deref(&'a self) -> &'a Self::Target {
             match self {
                 $( $enum_name::$variant(inner) => inner, )+
             }
@@ -48,14 +46,14 @@ macro_rules! generate_deref_fn {
     };
 }
 
-pub trait NativeDeref {
+pub trait NativeDeref<'a> {
     type Target: ?Sized;
 
-    fn deref(&self) -> &Self::Target;
+    fn deref(&'a self) -> &'a Self::Target;
 }
 
-impl<Q: Query + Debug + 'static> NativeDeref for CompiledComponent<Q> {
-    type Target = dyn Validator<Q, NativeEngine>;
+impl<'a, Q: Query> NativeDeref<'a> for CompiledComponent<Q> {
+    type Target = dyn Validator<Q, NativeEngine> + 'a;
 
     generate_deref_fn!(
         CompiledComponent,
@@ -89,14 +87,14 @@ impl<Q: Query + Debug + 'static> NativeDeref for CompiledComponent<Q> {
     );
 }
 
-pub trait SparqlDeref {
+pub trait SparqlDeref<'a> {
     type Target: ?Sized;
 
-    fn deref(&self) -> &Self::Target;
+    fn deref(&'a self) -> &'a Self::Target;
 }
 
-impl<S: Sparql + Query + Debug + 'static> SparqlDeref for CompiledComponent<S> {
-    type Target = dyn SparqlValidator<S>;
+impl<'a, S: Sparql + Query> SparqlDeref<'a> for CompiledComponent<S> {
+    type Target = dyn SparqlValidator<S> + 'a;
 
     generate_deref_fn!(
         CompiledComponent,

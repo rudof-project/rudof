@@ -51,7 +51,7 @@ pub trait Rdf: Sized {
 
     type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
-    type Err: Display;
+    type Err: std::error::Error + 'static;
 
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;

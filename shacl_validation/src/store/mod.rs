@@ -1,10 +1,11 @@
+use std::io::BufRead;
+
 use shacl_ast::compiled::schema::CompiledSchema;
 use shacl_ast::ShaclParser;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
-use std::io::BufRead;
 
 use crate::validate_error::ValidateError;
 
