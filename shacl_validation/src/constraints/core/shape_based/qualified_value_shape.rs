@@ -14,10 +14,10 @@ use crate::value_nodes::ValueNodes;
 impl<Q: Query, E: Engine<Q>> Validator<Q, E> for QualifiedValueShape<Q> {
     fn validate(
         &self,
-        component: &CompiledComponent<Q>,
-        shape: &CompiledShape<Q>,
-        store: &Q,
-        value_nodes: &ValueNodes<Q>,
+        _component: &CompiledComponent<Q>,
+        _shape: &CompiledShape<Q>,
+        _store: &Q,
+        _value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "QualifiedValueShape".to_string(),

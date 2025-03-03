@@ -21,7 +21,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for UniqueLang {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if !self.unique_lang() {

@@ -20,7 +20,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for LanguageIn {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &Q::Term| {

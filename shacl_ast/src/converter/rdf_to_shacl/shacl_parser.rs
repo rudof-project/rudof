@@ -555,12 +555,8 @@ fn language_in<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
 }
 
 fn unique_lang<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
-    property_values_bool(&SH_UNIQUE_LANG).map(move |node_set| {
-        node_set
-            .into_iter()
-            .map(|b| Component::UniqueLang(b))
-            .collect()
-    })
+    property_values_bool(&SH_UNIQUE_LANG)
+        .map(move |node_set| node_set.into_iter().map(Component::UniqueLang).collect())
 }
 
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>

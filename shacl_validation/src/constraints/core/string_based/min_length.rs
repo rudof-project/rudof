@@ -23,7 +23,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinLength {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &Q::Term| {

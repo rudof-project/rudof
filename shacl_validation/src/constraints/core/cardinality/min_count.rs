@@ -19,7 +19,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinCount {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         // If min_count is 0, then it always passes

@@ -18,7 +18,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for In<Q> {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &Q::Term| !self.values().contains(value_node);

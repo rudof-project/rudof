@@ -24,7 +24,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Nodekind {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &Q::Term| {

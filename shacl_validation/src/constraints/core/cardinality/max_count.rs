@@ -19,7 +19,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxCount {
         &self,
         component: &CompiledComponent<Q>,
         shape: &CompiledShape<Q>,
-        store: &Q,
+        _store: &Q,
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<Q>| targets.len() > self.max_count();
