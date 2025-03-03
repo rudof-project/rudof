@@ -2,10 +2,10 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, matcher::Any, not,
-    ok, optional, parse_nodes, property_bool, property_value, property_values, property_values_int,
-    property_values_iri, property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal,
-    PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
-    RDFS_CLASS, RDF_TYPE,
+    ok, optional, parse_nodes, property_bool, property_value, property_values,
+    property_values_bool, property_values_int, property_values_iri, property_values_non_empty,
+    rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode, RDFNodeParse, RDFParseError,
+    RDFParser, Rdf, SHACLPath, Term, Triple, RDFS_CLASS, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -276,7 +276,8 @@ where
         min_length(),
         max_length(),
         has_value(),
-        language_in()
+        language_in(),
+        unique_lang()
     )
 }
 
@@ -553,6 +554,15 @@ fn language_in<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
     })
 }
 
+fn unique_lang<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
+    property_values_bool(&SH_UNIQUE_LANG).map(move |node_set| {
+        node_set
+            .into_iter()
+            .map(|b| Component::UniqueLang(b))
+            .collect()
+    })
+}
+
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
 where
     RDF: FocusRDF,
@@ -814,6 +824,37 @@ mod tests {
                 assert_eq!(langs[1], Lang::new_unchecked("fr"));
             }
             _ => panic!("Shape has not a LanguageIn component"),
+        }
+    }
+
+    #[test]
+    fn test_unique_lang() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+            @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:targetNode "Hello"@en ;
+                sh:uniqueLang true .
+        "#;
+
+        let rdf_format = RDFFormat::Turtle;
+        let reader_mode = ReaderMode::default();
+        let shape_id: Object = IriS::new_unchecked("http://example.org/TestShape").into();
+
+        let graph = SRDFGraph::from_str(shape, &rdf_format, None, &reader_mode).unwrap();
+        let schema = ShaclParser::new(graph).parse().unwrap();
+        let shape = match schema.get_shape(&shape_id).unwrap() {
+            Shape::NodeShape(ns) => ns,
+            _ => panic!("Shape is not a NodeShape"),
+        };
+
+        match shape.components().first().unwrap() {
+            crate::component::Component::UniqueLang(b) => {
+                assert_eq!(*b, true);
+            }
+            _ => panic!("Shape has not a UniqueLang component"),
         }
     }
 }

@@ -23,4 +23,3 @@ thiserror = "1.0"
 lazy_static = "1"
 const_format = "0.2"
 itertools = "0.13"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }

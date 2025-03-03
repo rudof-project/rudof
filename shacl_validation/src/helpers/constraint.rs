@@ -33,7 +33,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
             }
             None
         })
-        .collect();
+        .collect(); // TODO: could this be removed?
 
     Ok(results)
 }
