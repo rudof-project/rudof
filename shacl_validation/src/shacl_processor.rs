@@ -30,23 +30,20 @@ impl<R: Rdf, E: Engine<R>> ShaclProcessor<R, E> {
     ///
     /// # Arguments
     ///
-    /// * `shapes_graph` - A compiled SHACL shapes graph
-    pub fn validate(
-        &self,
-        shapes_graph: &CompiledSchema<R>,
-    ) -> Result<ValidationReport, ValidateError> {
+    /// * `schema` - A compiled SHACL shapes graph
+    pub fn validate(&self, schema: &CompiledSchema<R>) -> Result<ValidationReport, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
         // for each shape in the schema that has at least one target
-        for (_, shape) in shapes_graph.iter_with_targets() {
+        for (_, shape) in schema.iter_with_targets() {
             let results = shape.validate::<E>(&self.store, None)?;
             validation_results.extend(results);
         }
 
         let report = ValidationReport::default()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map());
+            .with_prefixmap(schema.prefix_map());
 
         Ok(report) // return the possibly empty validation report
     }

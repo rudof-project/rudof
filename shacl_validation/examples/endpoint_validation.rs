@@ -22,7 +22,6 @@ const SCHEMA: &str = r#"
                 sh:path     wdt:P1477 ; 
                 sh:minCount 1 ; 
                 sh:maxCount 1 ;
-                sh:datatype xsd:string ;
             ] .
     "#;
 
@@ -31,7 +30,7 @@ fn main() -> Result<(), ExampleError> {
     let schema: CompiledSchema<_> = ShaclParser::new(shapes_graph).parse()?.try_into()?;
     let endpoint = SRDFSparql::wikidata()?;
     let report = DefaultShaclProcessor::new(endpoint).validate(&schema)?;
-    println!("{report}"); // report implements the Display trait (nice output)
+    println!("{report}"); // ValidationReport implements the Display trait (nice output)
     Ok(())
 }
 

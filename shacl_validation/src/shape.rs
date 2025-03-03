@@ -96,7 +96,6 @@ impl<R: Rdf> ValueNodesOps<R> for CompiledNodeShape<R> {
             let single_focus_node = FocusNodes::new(std::iter::once(focus_node.clone()));
             (focus_node.clone(), single_focus_node)
         });
-
         ValueNodes::new(value_nodes)
     }
 }
