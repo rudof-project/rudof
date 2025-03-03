@@ -60,7 +60,7 @@ impl<R: Rdf> Validate<R> for CompiledShape<R> {
         let validation_results = component_validation_results
             .chain(property_shapes_validation_results)
             .flatten()
-            .collect();
+            .collect(); // TODO: is it necessary to collect?
 
         Ok(validation_results)
     }
@@ -92,13 +92,11 @@ impl<R: Rdf> ValueNodesOps<R> for CompiledShape<R> {
 
 impl<R: Rdf> ValueNodesOps<R> for CompiledNodeShape<R> {
     fn value_nodes<E: Engine<R>>(&self, _: &R, focus_nodes: &FocusNodes<R>) -> ValueNodes<R> {
-        // TODO: beautify this code
         let value_nodes = focus_nodes.iter().map(|focus_node| {
-            (
-                focus_node.clone(),
-                FocusNodes::new(std::iter::once(focus_node.clone())),
-            )
+            let single_focus_node = FocusNodes::new(std::iter::once(focus_node.clone()));
+            (focus_node.clone(), single_focus_node)
         });
+
         ValueNodes::new(value_nodes)
     }
 }
