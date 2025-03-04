@@ -9,12 +9,12 @@ use srdf::Triple;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -26,21 +26,21 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Class<Q> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let class = |value_node: &Q::Term| {
             let subject: Q::Subject = match value_node.clone().try_into() {
                 Ok(subject) => subject,
-                Err(_) => return true,
+                Err(_) => return Ok(true),
             };
 
-            let is_class_valid = store
+            let is_instance_of = store
                 .triples_matching(subject, RDF_TYPE.clone(), Any)
                 .unwrap() // TODO: check this unwrap
                 .map(Triple::into_object)
                 .any(|ctype| {
                     let subject: Q::Subject = match ctype.clone().try_into() {
                         Ok(subject) => subject,
-                        Err(_) => return false,
+                        Err(_) => return false, // TODO: return an error here
                     };
                     &ctype == self.class_rule()
                         || store
@@ -49,7 +49,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Class<Q> {
                             .any(|triple| triple.obj() == self.class_rule())
                 });
 
-            !is_class_valid
+            Ok(!is_instance_of)
         };
 
         validate_with(component, shape, value_nodes, ValueNodeIteration, class)
@@ -63,7 +63,7 @@ impl<S: Sparql + Query> SparqlValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let class_value = self.class_rule().clone();
 
         let query = move |value_node: &S::Term| {

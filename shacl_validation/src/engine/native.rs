@@ -27,7 +27,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate(component, shape, store, value_nodes)?)
+        validator.validate(component, shape, store, value_nodes)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -111,9 +111,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _paths: &[SHACLPath],
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "alternative".to_string(),
-        })
+        Err(ValidateError::NotImplemented("alternative path"))
     }
 
     fn sequence(
@@ -122,9 +120,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _paths: &[SHACLPath],
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "sequence".to_string(),
-        })
+        Err(ValidateError::NotImplemented("sequence path"))
     }
 
     fn inverse(
@@ -133,9 +129,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "inverse".to_string(),
-        })
+        Err(ValidateError::NotImplemented("inverse path"))
     }
 
     fn zero_or_more(
@@ -144,9 +138,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or more path"))
     }
 
     fn one_or_more(
@@ -155,9 +147,7 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "one_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("one or more path"))
     }
 
     fn zero_or_one(
@@ -166,8 +156,6 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         _path: &SHACLPath,
         _focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_one".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or one path"))
     }
 }

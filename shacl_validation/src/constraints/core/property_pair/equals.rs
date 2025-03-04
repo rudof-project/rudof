@@ -4,10 +4,10 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Sparql;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
@@ -18,8 +18,8 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Equals<Q> {
         _shape: &CompiledShape<Q>,
         _store: &Q,
         _value_nodes: &ValueNodes<Q>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented("Equals".to_string()))
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
+        Err(ValidateError::NotImplemented("Equals"))
     }
 }
 

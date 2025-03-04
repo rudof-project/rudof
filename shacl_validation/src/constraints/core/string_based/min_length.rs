@@ -8,12 +8,12 @@ use srdf::Query;
 use srdf::Sparql;
 use srdf::Term;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -25,10 +25,10 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinLength {
         shape: &CompiledShape<Q>,
         _store: &Q,
         value_nodes: &ValueNodes<Q>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let min_length = |value_node: &Q::Term| {
             if value_node.is_blank_node() {
-                true
+                Ok(true)
             } else {
                 let string_length = value_node
                     .clone()
@@ -42,7 +42,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinLength {
                     })
                     .unwrap_or_else(|_| unreachable!());
 
-                string_length < self.min_length() as usize
+                Ok(string_length < self.min_length() as usize)
             }
         };
 
@@ -63,7 +63,7 @@ impl<S: Sparql + Query> SparqlValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let min_length_value = self.min_length();
 
         let query = |value_node: &S::Term| {

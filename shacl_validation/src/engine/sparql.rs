@@ -26,7 +26,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
+        validator.validate_sparql(component, shape, store, value_nodes)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -45,9 +45,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_node".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_node"))
     }
 
     fn target_class(store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
@@ -67,9 +65,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_class".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_class"))
     }
 
     fn target_subject_of(store: &S, predicate: &S::IRI) -> Result<FocusNodes<S>, ValidateError> {
@@ -82,9 +78,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_subject_of".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_subject_of"))
     }
 
     fn target_object_of(store: &S, predicate: &S::IRI) -> Result<FocusNodes<S>, ValidateError> {
@@ -97,15 +91,11 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_object_of".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_object_of"))
     }
 
     fn implicit_target_class(_store: &S, _class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "implicit_target_class".to_string(),
-        })
+        Err(ValidateError::NotImplemented("implicit_target_class"))
     }
 
     fn predicate(
@@ -114,9 +104,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "predicate".to_string(),
-        })
+        Err(ValidateError::NotImplemented("predicate path"))
     }
 
     fn alternative(
@@ -125,9 +113,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "alternative".to_string(),
-        })
+        Err(ValidateError::NotImplemented("alternative path"))
     }
 
     fn sequence(
@@ -136,9 +122,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "sequence".to_string(),
-        })
+        Err(ValidateError::NotImplemented("sequence path"))
     }
 
     fn inverse(
@@ -147,9 +131,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "inverse".to_string(),
-        })
+        Err(ValidateError::NotImplemented("inverse path"))
     }
 
     fn zero_or_more(
@@ -158,9 +140,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or more path"))
     }
 
     fn one_or_more(
@@ -169,9 +149,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "one_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("one or more path"))
     }
 
     fn zero_or_one(
@@ -180,8 +158,6 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_one".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or one path"))
     }
 }

@@ -1,15 +1,14 @@
 use thiserror::Error;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::helper_error::SPARQLError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
-    #[error("Expected a Subject but found a Term: {_0}")]
+    #[error("Expected a Subject but found {_0}")]
     ExpectedSubject(String),
 
-    #[error(transparent)]
-    Constraint(#[from] ConstraintError),
+    #[error("Expected a Literal but found {_0}")]
+    ExpectedLiteral(String),
 
     #[error("Error during the SPARQL operation")]
     SRDF,
@@ -23,6 +22,6 @@ pub enum ValidateError {
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
 
-    #[error("Not yet implemented: {msg}")]
-    NotImplemented { msg: String },
+    #[error("Not yet implemented: {_0}")]
+    NotImplemented(&'static str),
 }

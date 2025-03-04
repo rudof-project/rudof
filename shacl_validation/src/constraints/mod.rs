@@ -1,4 +1,3 @@
-use constraint_error::ConstraintError;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
@@ -7,10 +6,10 @@ use srdf::Sparql;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-pub mod constraint_error;
 pub mod core;
 
 pub trait Validator<Q: Query, E: Engine<Q>> {
@@ -20,7 +19,7 @@ pub trait Validator<Q: Query, E: Engine<Q>> {
         shape: &CompiledShape<Q>,
         store: &Q,
         value_nodes: &ValueNodes<Q>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
 pub trait SparqlValidator<S: Sparql + Query>: Validator<S, SparqlEngine> {
@@ -30,7 +29,7 @@ pub trait SparqlValidator<S: Sparql + Query>: Validator<S, SparqlEngine> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         self.validate(component, shape, store, value_nodes)
     }
 }
