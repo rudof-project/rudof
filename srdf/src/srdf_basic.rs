@@ -98,12 +98,6 @@ impl Subject for OxSubject {
     }
 }
 
-impl Matcher<OxSubject> for OxSubject {
-    fn value(&self) -> Option<OxSubject> {
-        Some(self.clone())
-    }
-}
-
 pub trait Iri: Debug + Display + Hash + Eq + Clone {
     fn as_str(&self) -> &str;
 }
@@ -111,12 +105,6 @@ pub trait Iri: Debug + Display + Hash + Eq + Clone {
 impl Iri for OxNamedNode {
     fn as_str(&self) -> &str {
         self.as_str()
-    }
-}
-
-impl Matcher<OxNamedNode> for OxNamedNode {
-    fn value(&self) -> Option<OxNamedNode> {
-        Some(self.clone())
     }
 }
 
@@ -149,12 +137,6 @@ impl Term for OxTerm {
             #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => TermKind::Triple,
         }
-    }
-}
-
-impl Matcher<OxTerm> for OxTerm {
-    fn value(&self) -> Option<OxTerm> {
-        Some(self.clone())
     }
 }
 
@@ -248,9 +230,9 @@ where
 {
     fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
 
-    fn subj(&self) -> S;
-    fn pred(&self) -> P;
-    fn obj(&self) -> O;
+    fn subj(&self) -> &S;
+    fn pred(&self) -> &P;
+    fn obj(&self) -> &O;
 
     fn into_components(self) -> (S, P, O);
 
@@ -276,16 +258,16 @@ impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
         OxTriple::new(subj, pred, obj)
     }
 
-    fn subj(&self) -> OxSubject {
-        self.subject.clone()
+    fn subj(&self) -> &OxSubject {
+        &self.subject
     }
 
-    fn pred(&self) -> OxNamedNode {
-        self.predicate.clone()
+    fn pred(&self) -> &OxNamedNode {
+        &self.predicate
     }
 
-    fn obj(&self) -> OxTerm {
-        self.object.clone()
+    fn obj(&self) -> &OxTerm {
+        &self.object
     }
 
     fn into_components(self) -> (OxSubject, OxNamedNode, OxTerm) {
