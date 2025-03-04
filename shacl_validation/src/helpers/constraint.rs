@@ -22,12 +22,12 @@ fn apply<R: Rdf, I: IterationStrategy<R>>(
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    let focus = focus_node.clone().into();
+                    let focus_node = focus_node.clone().into();
                     let component = Object::iri(component.into());
                     let severity = shape.severity().clone().into();
                     let source = Some(shape.id().clone().into());
                     return Some(
-                        ValidationResult::new(focus, component, severity).with_source(source),
+                        ValidationResult::new(focus_node, component, severity).with_source(source),
                     );
                 }
             }

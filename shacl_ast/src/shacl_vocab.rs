@@ -210,7 +210,7 @@ lazy_static! {
     pub static ref SH_DATATYPE_CONSTRAINT_COMPONENT: IriS =
         IriS::new_unchecked(SH_DATATYPE_CONSTRAINT_COMPONENT_STR);
     pub static ref SH_NODE_KIND_CONSTRAINT_COMPONENT: IriS =
-        IriS::new_unchecked(SH_NODE_CONSTRAINT_COMPONENT_STR);
+        IriS::new_unchecked(SH_NODE_KIND_CONSTRAINT_COMPONENT_STR);
     pub static ref SH_MIN_COUNT_CONSTRAINT_COMPONENT: IriS =
         IriS::new_unchecked(SH_MIN_COUNT_CONSTRAINT_COMPONENT_STR);
     pub static ref SH_MAX_COUNT_CONSTRAINT_COMPONENT: IriS =

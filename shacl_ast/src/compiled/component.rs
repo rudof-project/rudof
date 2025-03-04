@@ -746,7 +746,7 @@ impl<R: Rdf> From<&CompiledComponent<R>> for IriS {
         let iri_str = match value {
             CompiledComponent::Class(_) => SH_CLASS_CONSTRAINT_COMPONENT_STR,
             CompiledComponent::Datatype(_) => SH_DATATYPE_CONSTRAINT_COMPONENT_STR,
-            CompiledComponent::NodeKind(_) => SH_NODE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::NodeKind(_) => SH_NODE_KIND_CONSTRAINT_COMPONENT_STR,
             CompiledComponent::MinCount(_) => SH_MIN_COUNT_CONSTRAINT_COMPONENT_STR,
             CompiledComponent::MaxCount(_) => SH_MAX_COUNT_CONSTRAINT_COMPONENT_STR,
             CompiledComponent::MinExclusive(_) => SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT_STR,

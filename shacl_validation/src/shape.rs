@@ -66,6 +66,7 @@ impl<R: Rdf> Validate<R> for CompiledShape<R> {
     }
 }
 
+// TODO: rename this trait to a more appropriate name
 pub trait FocusNodesOps<R: Rdf> {
     fn focus_nodes<E: Engine<R>>(&self, store: &R) -> FocusNodes<R>;
 }
@@ -77,6 +78,7 @@ impl<R: Rdf> FocusNodesOps<R> for CompiledShape<R> {
     }
 }
 
+// TODO: rename this trait to a more appropriate name
 pub trait ValueNodesOps<R: Rdf> {
     fn value_nodes<E: Engine<R>>(&self, store: &R, focus_nodes: &FocusNodes<R>) -> ValueNodes<R>;
 }
