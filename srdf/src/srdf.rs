@@ -32,7 +32,10 @@ pub trait Query: Rdf {
         O: Matcher<Self::Term>,
     {
         let triples = self.triples()?.filter_map(move |triple| {
-            match subject == triple.subj() && predicate == triple.pred() && object == triple.obj() {
+            match subject.matches(triple.subj())
+                && predicate.matches(triple.pred())
+                && object.matches(triple.obj())
+            {
                 true => Some(triple),
                 false => None,
             }

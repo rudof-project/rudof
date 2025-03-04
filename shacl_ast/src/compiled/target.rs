@@ -5,7 +5,7 @@ use crate::target::Target;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum CompiledTarget<S: Rdf> {
     Node(S::Term),
     Class(S::Term),

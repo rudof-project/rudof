@@ -2,71 +2,45 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
-use srdf::Rdf;
 use srdf::Sparql;
-use std::fmt::Debug;
 
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_with;
 use crate::shape::Validate;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: Rdf + Debug> Validator<S> for Xone<S> {
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Xone<Q> {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        engine: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let xone = |value_node: &S::Term| {
-            self.shapes()
+        component: &CompiledComponent<Q>,
+        shape: &CompiledShape<Q>,
+        store: &Q,
+        value_nodes: &ValueNodes<Q>,
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
+        let xone = |value_node: &Q::Term| {
+            let valid_count = self
+                .shapes()
                 .iter()
-                .filter(|shape| {
+                .filter(|&xone_shape| {
                     let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes)) {
+                    match Validate::<Q>::validate::<E>(xone_shape, store, Some(&focus_nodes)) {
                         Ok(results) => results.is_empty(),
-                        Err(_) => false,
+                        Err(_) => false, // TODO: return an error here
                     }
                 })
-                .count()
-                .ne(&1usize)
+                .count();
+
+            Ok(valid_count != 1usize)
         };
 
         validate_with(component, shape, value_nodes, ValueNodeIteration, xone)
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Xone<S> {
-    fn validate_native(
-        &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
-    }
-}
-
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Xone<S> {
-    fn validate_sparql(
-        &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
-    }
-}
+impl<S: Sparql + Query> SparqlValidator<S> for Xone<S> {}

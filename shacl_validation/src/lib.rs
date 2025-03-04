@@ -10,9 +10,6 @@ pub mod shacl_config;
 pub mod shacl_processor;
 pub mod shacl_validation_vocab;
 pub mod shape;
-/// Utilities for handling local graphs (serialized), SPARQL endpoints and SHACL
-/// shapes graphs.
-pub mod store;
 pub mod validate_error;
 /// The result of the validation process.
 pub mod validation_report;

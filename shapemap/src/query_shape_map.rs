@@ -45,13 +45,10 @@ impl QueryShapeMap {
         self.associations.iter()
     }
 
-    pub fn iter_node_shape<'a, S>(
+    pub fn iter_node_shape<'a, Q: Query>(
         &'a self,
-        rdf: &'a S,
-    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
-    where
-        S: Query,
-    {
+        rdf: &'a Q,
+    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
     }
 }

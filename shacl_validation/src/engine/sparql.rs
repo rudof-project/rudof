@@ -2,36 +2,36 @@ use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
 use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 
-use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
+
+use super::Engine;
 
 pub struct SparqlEngine;
 
-impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: Sparql + Query> Engine<S> for SparqlEngine {
     fn evaluate(
-        &self,
         store: &S,
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
+        validator.validate_sparql(component, shape, store, value_nodes)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         if node.is_blank_node() {
             return Err(ValidateError::TargetNodeBlankNode);
         }
@@ -45,12 +45,10 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_node".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_node"))
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
@@ -67,16 +65,10 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_class".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_class"))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_subject_of(store: &S, predicate: &S::IRI) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -86,16 +78,10 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_subject_of".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_subject_of"))
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_object_of(store: &S, predicate: &S::IRI) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -105,102 +91,73 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
 
         select(store, query, "this")?;
 
-        Err(ValidateError::NotImplemented {
-            msg: "target_object_of".to_string(),
-        })
+        Err(ValidateError::NotImplemented("target_object_of"))
     }
 
-    fn implicit_target_class(
-        &self,
-        _store: &S,
-        _shape: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "implicit_target_class".to_string(),
-        })
+    fn implicit_target_class(_store: &S, _class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+        Err(ValidateError::NotImplemented("implicit_target_class"))
     }
 
     fn predicate(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "predicate".to_string(),
-        })
+        Err(ValidateError::NotImplemented("predicate path"))
     }
 
     fn alternative(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "alternative".to_string(),
-        })
+        Err(ValidateError::NotImplemented("alternative path"))
     }
 
     fn sequence(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "sequence".to_string(),
-        })
+        Err(ValidateError::NotImplemented("sequence path"))
     }
 
     fn inverse(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "inverse".to_string(),
-        })
+        Err(ValidateError::NotImplemented("inverse path"))
     }
 
     fn zero_or_more(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or more path"))
     }
 
     fn one_or_more(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "one_or_more".to_string(),
-        })
+        Err(ValidateError::NotImplemented("one or more path"))
     }
 
     fn zero_or_one(
-        &self,
         _store: &S,
         _shape: &CompiledPropertyShape<S>,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_one".to_string(),
-        })
+        Err(ValidateError::NotImplemented("zero or one path"))
     }
 }

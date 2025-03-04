@@ -1,7 +1,7 @@
 use crate::input_spec::InputSpec;
 use crate::{InputConvertFormat, OutputConvertFormat};
 use clap::{Parser, Subcommand, ValueEnum};
-use shacl_validation::shacl_processor::ShaclValidationMode;
+use rudof_lib::ShaclValidationMode;
 use srdf::{RDFFormat, ReaderMode};
 use std::fmt::Display;
 use std::{fmt::Formatter, path::PathBuf};

@@ -19,7 +19,7 @@ impl QueryProcessor {
         Some(self.rdf_data.prefixmap_in_memory())
     }
 
-    pub fn query_select<S: Query>(_str: &str) -> QuerySolutions<S> {
+    pub fn query_select<Q: Query>(_str: &str) -> QuerySolutions<Q> {
         todo!()
     }
 }

@@ -2,9 +2,9 @@ use std::fmt::{Debug, Display};
 
 use colored::*;
 use prefixmap::PrefixMap;
-use srdf::{Object, Query};
-
-use crate::helpers::srdf::get_objects_for;
+use shacl_ast::SH_RESULT;
+use srdf::matcher::Any;
+use srdf::{Object, Query, Triple};
 
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
@@ -20,10 +20,6 @@ pub struct ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn with_results(mut self, results: Vec<ValidationResult>) -> Self {
         self.results = results;
         self
@@ -70,12 +66,17 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<S: Query>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
-        let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
-            results.push(ValidationResult::parse(store, &result)?);
-        }
-        Ok(ValidationReport::new().with_results(results))
+    pub fn parse<Q: Query>(store: &Q, report: Q::Term) -> Result<Self, ReportError> {
+        let report: Q::Subject = report
+            .clone()
+            .try_into()
+            .map_err(|_| ReportError::ExpectedSubject)?;
+        let results = store
+            .triples_matching(report, SH_RESULT.clone(), Any)
+            .map_err(|_| ReportError::Query)?
+            .flat_map(|triple| ValidationResult::parse(store, triple.obj()))
+            .collect();
+        Ok(ValidationReport::default().with_results(results))
     }
 
     pub fn conforms(&self) -> bool {
@@ -97,13 +98,16 @@ impl Default for ValidationReport {
 }
 
 impl PartialEq for ValidationReport {
-    // TODO: Are we sure that this way to compare validation report results is OK?
-    // Comparing only the len() seems weak??
     fn eq(&self, other: &Self) -> bool {
+        // if the number of results is different, the reports are not equal
         if self.results.len() != other.results.len() {
             return false;
         }
-        true
+        // once we have that the size of the results is the same, we can tell
+        // if all the results of this report are in the other report. Hence,
+        // if all the results are in the other report, and the size of the
+        // results is the same, the reports are equal
+        self.results.iter().all(|r| other.results.contains(r))
     }
 }
 

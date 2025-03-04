@@ -1,58 +1,31 @@
-use crate::constraints::constraint_error::ConstraintError;
-use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
-use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
-use crate::focus_nodes::FocusNodes;
-use crate::helpers::constraint::validate_with;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::FocusNodeIteration;
-use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::HasValue;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
-use srdf::Rdf;
 use srdf::Sparql;
-use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
+use crate::constraints::SparqlValidator;
+use crate::constraints::Validator;
+use crate::engine::Engine;
+use crate::focus_nodes::FocusNodes;
+use crate::helpers::constraint::validate_with;
+use crate::validate_error::ValidateError;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::FocusNodeIteration;
+use crate::value_nodes::ValueNodes;
+
+impl<Q: Query, E: Engine<Q>> Validator<Q, E> for HasValue<Q> {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &S,
-        _: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        component: &CompiledComponent<Q>,
+        shape: &CompiledShape<Q>,
+        _store: &Q,
+        value_nodes: &ValueNodes<Q>,
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
         let has_value =
-            |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
+            |targets: &FocusNodes<Q>| Ok(!targets.iter().any(|value| value == self.value()));
         validate_with(component, shape, value_nodes, FocusNodeIteration, has_value)
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for HasValue<S> {
-    fn validate_native(
-        &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
-    }
-}
-
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for HasValue<S> {
-    fn validate_sparql(
-        &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
-    }
-}
+impl<S: Sparql + Query> SparqlValidator<S> for HasValue<S> {}

@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use srdf::TermKind;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum NodeKind {
     Iri,
@@ -21,5 +23,25 @@ impl Display for NodeKind {
             NodeKind::IRIOrLiteral => crate::SH_IRI_OR_LITERAL.as_named_node(),
         };
         write!(f, "{}", node)
+    }
+}
+
+impl PartialEq<TermKind> for NodeKind {
+    fn eq(&self, other: &TermKind) -> bool {
+        matches!(
+            (self, other),
+            (NodeKind::Iri, TermKind::Iri)
+                | (NodeKind::Literal, TermKind::Literal)
+                | (NodeKind::BlankNode, TermKind::BlankNode)
+                | (
+                    NodeKind::BlankNodeOrIri,
+                    TermKind::BlankNode | TermKind::Iri
+                )
+                | (
+                    NodeKind::BlankNodeOrLiteral,
+                    TermKind::BlankNode | TermKind::Literal
+                )
+                | (NodeKind::IRIOrLiteral, TermKind::Iri | TermKind::Literal)
+        )
     }
 }

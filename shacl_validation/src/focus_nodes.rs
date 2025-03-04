@@ -29,12 +29,6 @@ impl<S: Rdf> Clone for FocusNodes<S> {
     }
 }
 
-impl<S: Rdf> Default for FocusNodes<S> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
 impl<S: Rdf> IntoIterator for FocusNodes<S> {
     type Item = S::Term;
     type IntoIter = std::collections::hash_set::IntoIter<S::Term>;

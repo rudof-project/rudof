@@ -4,53 +4,53 @@ use srdf::Object;
 use srdf::Rdf;
 use srdf::Sparql;
 
-use crate::constraints::constraint_error::ConstraintError;
+use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-fn apply<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
-    value_nodes: &ValueNodes<S>,
+fn apply<R: Rdf, I: IterationStrategy<R>>(
+    component: &CompiledComponent<R>,
+    shape: &CompiledShape<R>,
+    value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
-    evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+    evaluator: impl Fn(&I::Item) -> Result<bool, ValidateError>,
+) -> Result<Vec<ValidationResult>, ValidateError> {
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    let focus = focus_node.clone().into();
+                    let focus_node = focus_node.clone().into();
                     let component = Object::iri(component.into());
                     let severity = shape.severity().clone().into();
                     let source = Some(shape.id().clone().into());
                     return Some(
-                        ValidationResult::new(focus, component, severity).with_source(source),
+                        ValidationResult::new(focus_node, component, severity).with_source(source),
                     );
                 }
             }
             None
         })
-        .collect();
+        .collect(); // TODO: could this be removed?
 
     Ok(results)
 }
 
-pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
-    value_nodes: &ValueNodes<S>,
+pub fn validate_with<R: Rdf, I: IterationStrategy<R>>(
+    component: &CompiledComponent<R>,
+    shape: &CompiledShape<R>,
+    value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
-    evaluator: impl Fn(&I::Item) -> bool,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+    evaluator: impl Fn(&I::Item) -> Result<bool, ValidateError>,
+) -> Result<Vec<ValidationResult>, ValidateError> {
     apply(
         component,
         shape,
         value_nodes,
         iteration_strategy,
-        |item: &I::Item| Ok(evaluator(item)),
+        |item: &I::Item| evaluator(item),
     )
 }
 
@@ -60,7 +60,7 @@ pub fn validate_ask_with<S: Sparql>(
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidateError> {
     apply(
         component,
         shape,
@@ -68,7 +68,7 @@ pub fn validate_ask_with<S: Sparql>(
         ValueNodeIteration,
         |value_node| match store.query_ask(&eval_query(value_node)) {
             Ok(ask) => Ok(!ask),
-            Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
+            Err(_) => todo!(),
         },
     )
 }

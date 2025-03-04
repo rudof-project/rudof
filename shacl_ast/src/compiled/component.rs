@@ -1,3 +1,8 @@
+use iri_s::IriS;
+use node_kind::NodeKind;
+use srdf::lang::Lang;
+use srdf::Rdf;
+
 use crate::component::Component;
 use crate::Schema;
 use crate::*;
@@ -8,44 +13,39 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 use super::convert_value;
 use super::shape::CompiledShape;
-use iri_s::iri;
-use iri_s::IriS;
-use node_kind::NodeKind;
-use srdf::lang::Lang;
-use srdf::Rdf;
 
-#[derive(Debug)]
-pub enum CompiledComponent<S: Rdf> {
-    Class(Class<S>),
-    Datatype(Datatype<S>),
+#[derive(Clone, Debug)]
+pub enum CompiledComponent<R: Rdf> {
+    Class(Class<R>),
+    Datatype(Datatype<R>),
     NodeKind(Nodekind),
     MinCount(MinCount),
     MaxCount(MaxCount),
-    MinExclusive(MinExclusive<S>),
-    MaxExclusive(MaxExclusive<S>),
-    MinInclusive(MinInclusive<S>),
-    MaxInclusive(MaxInclusive<S>),
+    MinExclusive(MinExclusive<R>),
+    MaxExclusive(MaxExclusive<R>),
+    MinInclusive(MinInclusive<R>),
+    MaxInclusive(MaxInclusive<R>),
     MinLength(MinLength),
     MaxLength(MaxLength),
     Pattern(Pattern),
     UniqueLang(UniqueLang),
     LanguageIn(LanguageIn),
-    Equals(Equals<S>),
-    Disjoint(Disjoint<S>),
-    LessThan(LessThan<S>),
-    LessThanOrEquals(LessThanOrEquals<S>),
-    Or(Or<S>),
-    And(And<S>),
-    Not(Not<S>),
-    Xone(Xone<S>),
-    Closed(Closed<S>),
-    Node(Node<S>),
-    HasValue(HasValue<S>),
-    In(In<S>),
-    QualifiedValueShape(QualifiedValueShape<S>),
+    Equals(Equals<R>),
+    Disjoint(Disjoint<R>),
+    LessThan(LessThan<R>),
+    LessThanOrEquals(LessThanOrEquals<R>),
+    Or(Or<R>),
+    And(And<R>),
+    Not(Not<R>),
+    Xone(Xone<R>),
+    Closed(Closed<R>),
+    Node(Node<R>),
+    HasValue(HasValue<R>),
+    In(In<R>),
+    QualifiedValueShape(QualifiedValueShape<R>),
 }
 
-impl<S: Rdf> CompiledComponent<S> {
+impl<R: Rdf> CompiledComponent<R> {
     pub fn compile(component: Component, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
@@ -53,29 +53,29 @@ impl<S: Rdf> CompiledComponent<S> {
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref::<R>(iri_ref)?;
                 CompiledComponent::Datatype(Datatype::new(iri_ref))
             }
             Component::NodeKind(node_kind) => CompiledComponent::NodeKind(Nodekind::new(node_kind)),
             Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
             Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
             Component::MinExclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
+                let literal: R::Literal = literal.clone().into();
                 let term = literal.into();
                 CompiledComponent::MinExclusive(MinExclusive::new(term))
             }
             Component::MaxExclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
+                let literal: R::Literal = literal.clone().into();
                 let term = literal.into();
                 CompiledComponent::MaxExclusive(MaxExclusive::new(term))
             }
             Component::MinInclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
+                let literal: R::Literal = literal.clone().into();
                 let term = literal.into();
                 CompiledComponent::MinInclusive(MinInclusive::new(term))
             }
             Component::MaxInclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
+                let literal: R::Literal = literal.clone().into();
                 let term = literal.into();
                 CompiledComponent::MaxInclusive(MaxInclusive::new(term))
             }
@@ -89,33 +89,33 @@ impl<S: Rdf> CompiledComponent<S> {
                 CompiledComponent::LanguageIn(LanguageIn::new(langs))
             }
             Component::Equals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref::<R>(iri_ref)?;
                 CompiledComponent::Equals(Equals::new(iri_ref))
             }
             Component::Disjoint(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref::<R>(iri_ref)?;
                 CompiledComponent::Disjoint(Disjoint::new(iri_ref))
             }
             Component::LessThan(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref::<R>(iri_ref)?;
                 CompiledComponent::LessThan(LessThan::new(iri_ref))
             }
             Component::LessThanOrEquals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref::<R>(iri_ref)?;
                 CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(iri_ref))
             }
             Component::Or { shapes } => {
-                CompiledComponent::Or(Or::new(compile_shapes::<S>(shapes, schema)?))
+                CompiledComponent::Or(Or::new(compile_shapes::<R>(shapes, schema)?))
             }
             Component::And { shapes } => {
-                CompiledComponent::And(And::new(compile_shapes::<S>(shapes, schema)?))
+                CompiledComponent::And(And::new(compile_shapes::<R>(shapes, schema)?))
             }
             Component::Not { shape } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<R>(shape, schema)?;
                 CompiledComponent::Not(Not::new(shape))
             }
             Component::Xone { shapes } => {
-                CompiledComponent::Xone(Xone::new(compile_shapes::<S>(shapes, schema)?))
+                CompiledComponent::Xone(Xone::new(compile_shapes::<R>(shapes, schema)?))
             }
             Component::Closed {
                 is_closed,
@@ -123,22 +123,22 @@ impl<S: Rdf> CompiledComponent<S> {
             } => {
                 let properties = ignored_properties
                     .into_iter()
-                    .map(|prop| convert_iri_ref::<S>(prop))
+                    .map(|prop| convert_iri_ref::<R>(prop))
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::Closed(Closed::new(is_closed, properties))
             }
             Component::Node { shape } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<R>(shape, schema)?;
                 CompiledComponent::Node(Node::new(shape))
             }
             Component::HasValue { value } => {
-                let term = convert_value::<S>(value)?;
+                let term = convert_value::<R>(value)?;
                 CompiledComponent::HasValue(HasValue::new(term))
             }
             Component::In { values } => {
                 let terms = values
                     .into_iter()
-                    .map(|value| convert_value::<S>(value))
+                    .map(|value| convert_value::<R>(value))
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::In(In::new(terms))
             }
@@ -148,7 +148,7 @@ impl<S: Rdf> CompiledComponent<S> {
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
             } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<R>(shape, schema)?;
                 CompiledComponent::QualifiedValueShape(QualifiedValueShape::new(
                     shape,
                     qualified_min_count,
@@ -168,7 +168,7 @@ impl<S: Rdf> CompiledComponent<S> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MaxCount {
     max_count: usize,
 }
@@ -192,7 +192,7 @@ impl MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MinCount {
     min_count: usize,
 }
@@ -213,17 +213,17 @@ impl MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-#[derive(Debug)]
-pub struct And<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Clone, Debug)]
+pub struct And<R: Rdf> {
+    shapes: Vec<CompiledShape<R>>,
 }
 
-impl<S: Rdf> And<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl<R: Rdf> And<R> {
+    pub fn new(shapes: Vec<CompiledShape<R>>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<R>> {
         &self.shapes
     }
 }
@@ -232,17 +232,17 @@ impl<S: Rdf> And<S> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-#[derive(Debug)]
-pub struct Not<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Clone, Debug)]
+pub struct Not<R: Rdf> {
+    shape: CompiledShape<R>,
 }
 
-impl<S: Rdf> Not<S> {
-    pub fn new(shape: CompiledShape<S>) -> Self {
+impl<R: Rdf> Not<R> {
+    pub fn new(shape: CompiledShape<R>) -> Self {
         Not { shape }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape<R> {
         &self.shape
     }
 }
@@ -253,17 +253,17 @@ impl<S: Rdf> Not<S> {
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 
-#[derive(Debug)]
-pub struct Or<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Clone, Debug)]
+pub struct Or<R: Rdf> {
+    shapes: Vec<CompiledShape<R>>,
 }
 
-impl<S: Rdf> Or<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl<R: Rdf> Or<R> {
+    pub fn new(shapes: Vec<CompiledShape<R>>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<R>> {
         &self.shapes
     }
 }
@@ -273,17 +273,17 @@ impl<S: Rdf> Or<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-#[derive(Debug)]
-pub struct Xone<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Clone, Debug)]
+pub struct Xone<R: Rdf> {
+    shapes: Vec<CompiledShape<R>>,
 }
 
-impl<S: Rdf> Xone<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl<R: Rdf> Xone<R> {
+    pub fn new(shapes: Vec<CompiledShape<R>>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape<R>> {
         &self.shapes
     }
 }
@@ -299,14 +299,14 @@ impl<S: Rdf> Xone<S> {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
-#[derive(Debug)]
-pub struct Closed<S: Rdf> {
+#[derive(Clone, Debug)]
+pub struct Closed<R: Rdf> {
     is_closed: bool,
-    ignored_properties: Vec<S::IRI>,
+    ignored_properties: Vec<R::IRI>,
 }
 
-impl<S: Rdf> Closed<S> {
-    pub fn new(is_closed: bool, ignored_properties: Vec<S::IRI>) -> Self {
+impl<R: Rdf> Closed<R> {
+    pub fn new(is_closed: bool, ignored_properties: Vec<R::IRI>) -> Self {
         Closed {
             is_closed,
             ignored_properties,
@@ -317,7 +317,7 @@ impl<S: Rdf> Closed<S> {
         self.is_closed
     }
 
-    pub fn ignored_properties(&self) -> &Vec<S::IRI> {
+    pub fn ignored_properties(&self) -> &Vec<R::IRI> {
         &self.ignored_properties
     }
 }
@@ -326,17 +326,17 @@ impl<S: Rdf> Closed<S> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-#[derive(Debug)]
-pub struct HasValue<S: Rdf> {
-    value: S::Term,
+#[derive(Clone, Debug)]
+pub struct HasValue<R: Rdf> {
+    value: R::Term,
 }
 
-impl<S: Rdf> HasValue<S> {
-    pub fn new(value: S::Term) -> Self {
+impl<R: Rdf> HasValue<R> {
+    pub fn new(value: R::Term) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &S::Term {
+    pub fn value(&self) -> &R::Term {
         &self.value
     }
 }
@@ -345,17 +345,17 @@ impl<S: Rdf> HasValue<S> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[derive(Debug)]
-pub struct In<S: Rdf> {
-    values: Vec<S::Term>,
+#[derive(Clone, Debug)]
+pub struct In<R: Rdf> {
+    values: Vec<R::Term>,
 }
 
-impl<S: Rdf> In<S> {
-    pub fn new(values: Vec<S::Term>) -> Self {
+impl<R: Rdf> In<R> {
+    pub fn new(values: Vec<R::Term>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<S::Term> {
+    pub fn values(&self) -> &Vec<R::Term> {
         &self.values
     }
 }
@@ -365,17 +365,17 @@ impl<S: Rdf> In<S> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-#[derive(Debug)]
-pub struct Disjoint<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Clone, Debug)]
+pub struct Disjoint<R: Rdf> {
+    iri_ref: R::IRI,
 }
 
-impl<S: Rdf> Disjoint<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
+impl<R: Rdf> Disjoint<R> {
+    pub fn new(iri_ref: R::IRI) -> Self {
         Disjoint { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
+    pub fn iri_ref(&self) -> &R::IRI {
         &self.iri_ref
     }
 }
@@ -385,17 +385,17 @@ impl<S: Rdf> Disjoint<S> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-#[derive(Debug)]
-pub struct Equals<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Clone, Debug)]
+pub struct Equals<R: Rdf> {
+    iri_ref: R::IRI,
 }
 
-impl<S: Rdf> Equals<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
+impl<R: Rdf> Equals<R> {
+    pub fn new(iri_ref: R::IRI) -> Self {
         Equals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
+    pub fn iri_ref(&self) -> &R::IRI {
         &self.iri_ref
     }
 }
@@ -407,17 +407,17 @@ impl<S: Rdf> Equals<S> {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-#[derive(Debug)]
-pub struct LessThanOrEquals<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Clone, Debug)]
+pub struct LessThanOrEquals<R: Rdf> {
+    iri_ref: R::IRI,
 }
 
-impl<S: Rdf> LessThanOrEquals<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
+impl<R: Rdf> LessThanOrEquals<R> {
+    pub fn new(iri_ref: R::IRI) -> Self {
         LessThanOrEquals { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
+    pub fn iri_ref(&self) -> &R::IRI {
         &self.iri_ref
     }
 }
@@ -427,17 +427,17 @@ impl<S: Rdf> LessThanOrEquals<S> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-#[derive(Debug)]
-pub struct LessThan<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Clone, Debug)]
+pub struct LessThan<R: Rdf> {
+    iri_ref: R::IRI,
 }
 
-impl<S: Rdf> LessThan<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
+impl<R: Rdf> LessThan<R> {
+    pub fn new(iri_ref: R::IRI) -> Self {
         LessThan { iri_ref }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
+    pub fn iri_ref(&self) -> &R::IRI {
         &self.iri_ref
     }
 }
@@ -446,17 +446,17 @@ impl<S: Rdf> LessThan<S> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[derive(Debug)]
-pub struct Node<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Clone, Debug)]
+pub struct Node<R: Rdf> {
+    shape: CompiledShape<R>,
 }
 
-impl<S: Rdf> Node<S> {
-    pub fn new(shape: CompiledShape<S>) -> Self {
+impl<R: Rdf> Node<R> {
+    pub fn new(shape: CompiledShape<R>) -> Self {
         Node { shape }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape<R> {
         &self.shape
     }
 }
@@ -469,17 +469,17 @@ impl<S: Rdf> Node<S> {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-#[derive(Debug)]
-pub struct QualifiedValueShape<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Clone, Debug)]
+pub struct QualifiedValueShape<R: Rdf> {
+    shape: CompiledShape<R>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
 }
 
-impl<S: Rdf> QualifiedValueShape<S> {
+impl<R: Rdf> QualifiedValueShape<R> {
     pub fn new(
-        shape: CompiledShape<S>,
+        shape: CompiledShape<R>,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
@@ -492,7 +492,7 @@ impl<S: Rdf> QualifiedValueShape<S> {
         }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape<R> {
         &self.shape
     }
 
@@ -513,7 +513,7 @@ impl<S: Rdf> QualifiedValueShape<S> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LanguageIn {
     langs: Vec<Lang>,
 }
@@ -533,7 +533,7 @@ impl LanguageIn {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MaxLength {
     max_length: isize,
 }
@@ -553,7 +553,7 @@ impl MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MinLength {
     min_length: isize,
 }
@@ -572,7 +572,7 @@ impl MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -596,7 +596,7 @@ impl Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -615,17 +615,17 @@ impl UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
-pub struct Class<S: Rdf> {
-    class_rule: S::Term,
+#[derive(Clone, Debug)]
+pub struct Class<R: Rdf> {
+    class_rule: R::Term,
 }
 
-impl<S: Rdf> Class<S> {
-    pub fn new(class_rule: S::Term) -> Self {
+impl<R: Rdf> Class<R> {
+    pub fn new(class_rule: R::Term) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &S::Term {
+    pub fn class_rule(&self) -> &R::Term {
         &self.class_rule
     }
 }
@@ -634,17 +634,17 @@ impl<S: Rdf> Class<S> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
-pub struct Datatype<S: Rdf> {
-    datatype: S::IRI,
+#[derive(Clone, Debug)]
+pub struct Datatype<R: Rdf> {
+    datatype: R::IRI,
 }
 
-impl<S: Rdf> Datatype<S> {
-    pub fn new(datatype: S::IRI) -> Self {
+impl<R: Rdf> Datatype<R> {
+    pub fn new(datatype: R::IRI) -> Self {
         Datatype { datatype }
     }
 
-    pub fn datatype(&self) -> &S::IRI {
+    pub fn datatype(&self) -> &R::IRI {
         &self.datatype
     }
 }
@@ -653,7 +653,7 @@ impl<S: Rdf> Datatype<S> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -669,111 +669,111 @@ impl Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MaxExclusive<S: Rdf> {
-    max_exclusive: S::Term,
+#[derive(Clone, Debug)]
+pub struct MaxExclusive<R: Rdf> {
+    max_exclusive: R::Term,
 }
 
-impl<S: Rdf> MaxExclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<R: Rdf> MaxExclusive<R> {
+    pub fn new(literal: R::Term) -> Self {
         MaxExclusive {
             max_exclusive: literal,
         }
     }
 
-    pub fn max_exclusive(&self) -> &S::Term {
+    pub fn max_exclusive(&self) -> &R::Term {
         &self.max_exclusive
     }
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MaxInclusive<S: Rdf> {
-    max_inclusive: S::Term,
+#[derive(Clone, Debug)]
+pub struct MaxInclusive<R: Rdf> {
+    max_inclusive: R::Term,
 }
 
-impl<S: Rdf> MaxInclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<R: Rdf> MaxInclusive<R> {
+    pub fn new(literal: R::Term) -> Self {
         MaxInclusive {
             max_inclusive: literal,
         }
     }
 
-    pub fn max_inclusive(&self) -> &S::Term {
+    pub fn max_inclusive(&self) -> &R::Term {
         &self.max_inclusive
     }
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MinExclusive<S: Rdf> {
-    min_exclusive: S::Term,
+#[derive(Clone, Debug)]
+pub struct MinExclusive<R: Rdf> {
+    min_exclusive: R::Term,
 }
 
-impl<S: Rdf> MinExclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<R: Rdf> MinExclusive<R> {
+    pub fn new(literal: R::Term) -> Self {
         MinExclusive {
             min_exclusive: literal,
         }
     }
 
-    pub fn min_exclusive(&self) -> &S::Term {
+    pub fn min_exclusive(&self) -> &R::Term {
         &self.min_exclusive
     }
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MinInclusive<S: Rdf> {
-    min_inclusive: S::Term,
+#[derive(Clone, Debug)]
+pub struct MinInclusive<R: Rdf> {
+    min_inclusive: R::Term,
 }
 
-impl<S: Rdf> MinInclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<R: Rdf> MinInclusive<R> {
+    pub fn new(literal: R::Term) -> Self {
         MinInclusive {
             min_inclusive: literal,
         }
     }
 
-    pub fn min_inclusive(&self) -> &S::Term {
+    pub fn min_inclusive(&self) -> &R::Term {
         &self.min_inclusive
     }
 }
 
-impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
-    fn from(value: &CompiledComponent<S>) -> Self {
-        match value {
-            CompiledComponent::Class(_) => iri!(SH_CLASS_STR),
-            CompiledComponent::Datatype(_) => iri!(SH_DATATYPE_STR),
-            CompiledComponent::NodeKind(_) => iri!(SH_IRI_STR),
-            CompiledComponent::MinCount(_) => iri!(SH_MIN_COUNT_STR),
-            CompiledComponent::MaxCount(_) => iri!(SH_MAX_COUNT_STR),
-            CompiledComponent::MinExclusive(_) => iri!(SH_MIN_EXCLUSIVE_STR),
-            CompiledComponent::MaxExclusive(_) => iri!(SH_MAX_EXCLUSIVE_STR),
-            CompiledComponent::MinInclusive(_) => iri!(SH_MIN_INCLUSIVE_STR),
-            CompiledComponent::MaxInclusive(_) => iri!(SH_MAX_INCLUSIVE_STR),
-            CompiledComponent::MinLength(_) => iri!(SH_MIN_LENGTH_STR),
-            CompiledComponent::MaxLength(_) => iri!(SH_MAX_LENGTH_STR),
-            CompiledComponent::Pattern { .. } => iri!(SH_PATTERN_STR),
-            CompiledComponent::UniqueLang(_) => iri!(SH_UNIQUE_LANG_STR),
-            CompiledComponent::LanguageIn { .. } => iri!(SH_LANGUAGE_IN_STR),
-            CompiledComponent::Equals(_) => iri!(SH_EQUALS_STR),
-            CompiledComponent::Disjoint(_) => iri!(SH_DISJOINT_STR),
-            CompiledComponent::LessThan(_) => iri!(SH_LESS_THAN_STR),
+/// Serialize this into ContraintComponent IriS
+impl<R: Rdf> From<&CompiledComponent<R>> for IriS {
+    fn from(value: &CompiledComponent<R>) -> Self {
+        let iri_str = match value {
+            CompiledComponent::Class(_) => SH_CLASS_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Datatype(_) => SH_DATATYPE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::NodeKind(_) => SH_NODE_KIND_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MinCount(_) => SH_MIN_COUNT_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MaxCount(_) => SH_MAX_COUNT_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MinExclusive(_) => SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MaxExclusive(_) => SH_MAX_EXCLUSIVE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MinInclusive(_) => SH_MIN_INCLUSIVE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MaxInclusive(_) => SH_MAX_INCLUSIVE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MinLength(_) => SH_MIN_LENGTH_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::MaxLength(_) => SH_MAX_LENGTH_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Pattern(_) => SH_PATTERN_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::UniqueLang(_) => SH_UNIQUE_LANG_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::LanguageIn(_) => SH_LANGUAGE_IN_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Equals(_) => SH_EQUALS_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Disjoint(_) => SH_DISJOINT_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::LessThan(_) => SH_LESS_THAN_CONSTRAINT_COMPONENT_STR,
             CompiledComponent::LessThanOrEquals(_) => {
-                iri!(SH_LESS_THAN_OR_EQUALS_STR)
+                SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT_STR
             }
-            CompiledComponent::Or { .. } => iri!(SH_OR_STR),
-            CompiledComponent::And { .. } => iri!(SH_AND_STR),
-            CompiledComponent::Not { .. } => iri!(SH_NOT_STR),
-            CompiledComponent::Xone { .. } => iri!(SH_XONE_STR),
-            CompiledComponent::Closed { .. } => iri!(SH_CLOSED_STR),
-            CompiledComponent::Node { .. } => iri!(SH_NODE_STR),
-            CompiledComponent::HasValue { .. } => iri!(SH_HAS_VALUE_STR),
-            CompiledComponent::In { .. } => iri!(SH_IN_STR),
-            CompiledComponent::QualifiedValueShape { .. } => {
-                iri!(SH_QUALIFIED_VALUE_SHAPE_STR)
-            }
-        }
+            CompiledComponent::Or(_) => SH_OR_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::And(_) => SH_AND_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Not(_) => SH_NOT_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Xone(_) => SH_XONE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Closed(_) => SH_CLOSED_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::Node(_) => SH_NODE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::HasValue(_) => SH_HAS_VALUE_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::In(_) => SH_IN_CONSTRAINT_COMPONENT_STR,
+            CompiledComponent::QualifiedValueShape(_) => todo!(),
+        };
+        IriS::new_unchecked(iri_str)
     }
 }

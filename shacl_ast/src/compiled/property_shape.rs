@@ -13,7 +13,7 @@ use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CompiledPropertyShape<S: Rdf> {
     id: S::Term,
     path: SHACLPath,

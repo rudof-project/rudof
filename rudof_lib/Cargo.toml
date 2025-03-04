@@ -30,3 +30,4 @@ thiserror = "1.0"
 serde_json.workspace = true
 serde_yml = "0.0.12"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+clap.workspace = true

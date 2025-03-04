@@ -1,8 +1,8 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
+use clap::ValueEnum;
 use iri_s::IriS;
 use shacl_ast::{ShaclParser, ShaclWriter};
-use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
-use shacl_validation::store::graph::Graph;
+use shacl_validation::shacl_processor::{DefaultShaclProcessor, SparqlShaclProcessor};
 
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
@@ -21,7 +21,6 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
-pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
@@ -33,6 +32,12 @@ pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
 pub use sparql_service::RdfData;
+
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq)]
+pub enum ShaclValidationMode {
+    Native,
+    Sparql,
+}
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
@@ -469,10 +474,12 @@ impl Rudof {
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
     pub fn validate_shacl(
         &mut self,
-        mode: &ShaclValidationMode,
         shapes_graph_source: &ShapesGraphSource,
+        mode: ShaclValidationMode,
     ) -> Result<ValidationReport> {
-        let (compiled_schema, shacl_schema) = match shapes_graph_source {
+        let data = self.rdf_data.clone();
+
+        let (schema, original_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
                 let ast_schema = self.shacl_schema.as_ref().unwrap();
                 let compiled_schema = ast_schema.clone().to_owned().try_into().map_err(|e| {
@@ -494,14 +501,17 @@ impl Rudof {
                 Ok((compiled_schema, ast_schema))
             }
         }?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
-        let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
-            RudofError::SHACLValidationError {
-                error: format!("{e}"),
-                schema: Box::new(shacl_schema),
-            }
+
+        // TODO: fix the error thing...
+        let report = match mode {
+            ShaclValidationMode::Native => DefaultShaclProcessor::new(data).validate(&schema),
+            ShaclValidationMode::Sparql => SparqlShaclProcessor::new(data).validate(&schema),
+        }
+        .map_err(|e| RudofError::SHACLValidationError {
+            error: format!("{e}"),
+            schema: Box::new(original_schema),
         })?;
-        Ok(result)
+        Ok(report)
     }
 
     /// Validate RDF data using ShEx
@@ -692,7 +702,6 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
 mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
-    use shacl_validation::shacl_processor::ShaclValidationMode;
     use shapemap::ShapeMapFormat;
     use shex_ast::{compiled::shape_label::ShapeLabel, Node};
     use shex_validation::ShExFormat;
@@ -793,8 +802,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                crate::ShaclValidationMode::Native,
             )
             .unwrap();
         assert!(result.results().is_empty())
@@ -838,8 +847,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentSchema,
+                crate::ShaclValidationMode::Native,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -873,8 +882,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                crate::ShaclValidationMode::Native,
             )
             .unwrap();
         assert!(!result.conforms())
@@ -908,8 +917,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
                 &crate::ShapesGraphSource::CurrentData,
+                crate::ShaclValidationMode::Native,
             )
             .unwrap();
         assert!(result.conforms())

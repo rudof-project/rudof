@@ -9,50 +9,43 @@ use srdf::Triple;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 
-use super::Engine;
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::srdf::get_objects_for;
-use crate::helpers::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use std::fmt::Debug;
+
+use super::Engine;
 
 pub struct NativeEngine;
 
-impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
+impl<Q: Query> Engine<Q> for NativeEngine {
     fn evaluate(
-        &self,
-        store: &S,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
-        value_nodes: &ValueNodes<S>,
+        store: &Q,
+        shape: &CompiledShape<Q>,
+        component: &CompiledComponent<Q>,
+        value_nodes: &ValueNodes<Q>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_native(component, shape, store, value_nodes)?)
+        validator.validate(component, shape, store, value_nodes)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(_: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if node.is_blank_node() {
-            Err(ValidateError::TargetNodeBlankNode)
-        } else {
-            Ok(FocusNodes::new(std::iter::once(node.clone())))
+            return Err(ValidateError::TargetNodeBlankNode);
         }
+        Ok(FocusNodes::new(std::iter::once(node.clone())))
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        // TODO: this should not be necessary, check in others triples_matching calls
-        let rdf_type: S::IRI = RDF_TYPE.clone().into();
-
         let focus_nodes = store
-            .triples_matching(Any, rdf_type, class.clone())
+            .triples_matching(Any, RDF_TYPE.clone(), class.clone())
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
@@ -60,25 +53,16 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::new(focus_nodes))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_subject_of(store: &Q, predicate: &Q::IRI) -> Result<FocusNodes<Q>, ValidateError> {
         let subjects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
-        let focus_nodes = FocusNodes::new(subjects);
-        Ok(focus_nodes)
+        Ok(FocusNodes::new(subjects))
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_object_of(store: &Q, predicate: &Q::IRI) -> Result<FocusNodes<Q>, ValidateError> {
         let objects = store
             .triples_with_predicate(predicate.clone())
             .map_err(|_| ValidateError::SRDF)?
@@ -86,105 +70,92 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::new(objects))
     }
 
-    fn implicit_target_class(
-        &self,
-        store: &S,
-        subject: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
+    fn implicit_target_class(store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
+        let classes = store
+            .triples_matching(Any, RDF_TYPE.clone(), class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
 
-        let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
-            .into_iter()
-            .flat_map(move |subclass| {
-                get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
-                    .into_iter()
-                    .flatten()
-            });
+        let subclasses = store
+            .triples_matching(Any, RDFS_SUBCLASS_OF.clone(), class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .flat_map(|triple| store.triples_matching(Any, RDF_TYPE.clone(), triple.into_subject()))
+            .flatten()
+            .map(Triple::into_subject)
+            .map(Into::into);
 
-        Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
+        Ok(FocusNodes::new(classes.into_iter().chain(subclasses)))
     }
 
     fn predicate(
-        &self,
-        store: &S,
-        _: &CompiledPropertyShape<S>,
-        predicate: &S::IRI,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Ok(FocusNodes::new(
-            get_objects_for(store, focus_node, predicate)?.into_iter(),
-        ))
+        store: &Q,
+        _: &CompiledPropertyShape<Q>,
+        predicate: &Q::IRI,
+        focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        let focus_node: Q::Subject = focus_node
+            .clone()
+            .try_into()
+            .map_err(|_| ValidateError::ExpectedSubject(focus_node.to_string()))?;
+        let values = store
+            .triples_matching(focus_node, predicate.clone(), Any)
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_object);
+        Ok(FocusNodes::new(values.into_iter()))
     }
 
     fn alternative(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "alternative".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("alternative path"))
     }
 
     fn sequence(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _paths: &[SHACLPath],
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "sequence".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("sequence path"))
     }
 
     fn inverse(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "inverse".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("inverse path"))
     }
 
     fn zero_or_more(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_more".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("zero or more path"))
     }
 
     fn one_or_more(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "one_or_more".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("one or more path"))
     }
 
     fn zero_or_one(
-        &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _store: &Q,
+        _shape: &CompiledPropertyShape<Q>,
         _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_one".to_string(),
-        })
+        _focus_node: &Q::Term,
+    ) -> Result<FocusNodes<Q>, ValidateError> {
+        Err(ValidateError::NotImplemented("zero or one path"))
     }
 }

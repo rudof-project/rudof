@@ -44,10 +44,12 @@ impl Validator {
     }
 
     /// validate a node against a shape label
-    pub fn validate_node_shape<S>(&mut self, node: &Node, shape: &ShapeLabel, rdf: &S) -> Result<()>
-    where
-        S: Query,
-    {
+    pub fn validate_node_shape<Q: Query>(
+        &mut self,
+        node: &Node,
+        shape: &ShapeLabel,
+        rdf: &Q,
+    ) -> Result<()> {
         let idx = self.get_idx(shape)?;
         self.runner.add_pending(node.clone(), idx);
         debug!("Before while loop: ${}@{}", node, idx);
@@ -64,19 +66,13 @@ impl Validator {
             })
     }
 
-    pub fn validate_shapemap<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()>
-    where
-        S: Query,
-    {
+    pub fn validate_shapemap<Q: Query>(&mut self, shapemap: &QueryShapeMap, rdf: &Q) -> Result<()> {
         self.fill_pending(shapemap, rdf)?;
         self.loop_validating(rdf)?;
         Ok(())
     }
 
-    fn fill_pending<S>(&mut self, shapemap: &QueryShapeMap, rdf: &S) -> Result<()>
-    where
-        S: Query,
-    {
+    fn fill_pending<Q: Query>(&mut self, shapemap: &QueryShapeMap, rdf: &Q) -> Result<()> {
         for (node_value, label) in shapemap.iter_node_shape(rdf) {
             let idx = self.get_shape_expr_label(label)?;
             let node = self.node_from_object_value(node_value, rdf)?;
@@ -85,10 +81,7 @@ impl Validator {
         Ok(())
     }
 
-    fn node_from_object_value<S>(&mut self, value: &ObjectValue, rdf: &S) -> Result<Node>
-    where
-        S: Query,
-    {
+    fn node_from_object_value<Q: Query>(&mut self, value: &ObjectValue, rdf: &Q) -> Result<Node> {
         match value {
             ObjectValue::IriRef(IriRef::Iri(iri)) => Ok(Node::iri(iri.clone())),
             ObjectValue::IriRef(IriRef::Prefixed { prefix, local }) => {
@@ -99,10 +92,7 @@ impl Validator {
         }
     }
 
-    fn loop_validating<S>(&mut self, rdf: &S) -> Result<()>
-    where
-        S: Query,
-    {
+    fn loop_validating<Q: Query>(&mut self, rdf: &Q) -> Result<()> {
         while self.runner.no_end_steps() && self.runner.more_pending() {
             self.runner.new_step();
             let atom = self.runner.pop_pending().unwrap();
@@ -122,14 +112,11 @@ impl Validator {
         Ok(())
     }
 
-    pub fn check_node_atom<S>(
+    pub fn check_node_atom<Q: Query>(
         &mut self,
         atom: &Atom,
-        rdf: &S,
-    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-    where
-        S: Query,
-    {
+        rdf: &Q,
+    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>> {
         let (node, idx) = atom.get_value();
         let se = find_shape_idx(idx, &self.schema);
         match atom {

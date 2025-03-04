@@ -800,6 +800,21 @@ where
     })
 }
 
+pub fn property_values_bool<R: FocusRDF>(
+    property: &IriS,
+) -> impl RDFNodeParse<R, Output = Vec<bool>> {
+    property_values(property).flat_map(|values| {
+        let bools: Vec<_> = values
+            .iter()
+            .flat_map(|t| {
+                let i = term_to_bool::<R>(t)?;
+                Ok::<bool, RDFParseError>(i)
+            })
+            .collect();
+        Ok(bools)
+    })
+}
+
 /// Return the IRI values of `property` for the focus node
 ///
 /// If some value is not an IRI it fails, if there is no value returns an empty set
@@ -1113,6 +1128,21 @@ where
             term: format!("{term}"),
         })?;
     Ok(n)
+}
+
+fn term_to_bool<R: Rdf>(term: &R::Term) -> Result<bool, RDFParseError> {
+    let literal: R::Literal =
+        term.clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
+    let boolean = literal
+        .as_bool()
+        .ok_or_else(|| RDFParseError::ExpectedBoolean {
+            term: format!("{term}"),
+        })?;
+    Ok(boolean)
 }
 
 fn term_to_iri<R>(term: &R::Term) -> Result<IriS, RDFParseError>
