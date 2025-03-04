@@ -77,6 +77,54 @@ pub const SH_TEXT_STR: &str = concatcp!(SH_STR, "text");
 pub const SH_UNIQUE_LANG_STR: &str = concatcp!(SH_STR, "uniqueLang");
 pub const SH_XONE_STR: &str = concatcp!(SH_STR, "xone");
 pub const SH_SOURCE_CONSTRAINT_STR: &str = concatcp!(SH_STR, "sourceConstraint");
+pub const SH_CLASS_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "ClassConstraintComponent");
+pub const SH_DATATYPE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "DatatypeConstraintComponent");
+pub const SH_NODE_KIND_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "NodeKindConstraintComponent");
+pub const SH_MIN_COUNT_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MinCountConstraintComponent");
+pub const SH_MAX_COUNT_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MaxCountConstraintComponent");
+pub const SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MinExclusiveConstraintComponent");
+pub const SH_MAX_EXCLUSIVE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MaxExclusiveConstraintComponent");
+pub const SH_MIN_INCLUSIVE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MinInclusiveConstraintComponent");
+pub const SH_MAX_INCLUSIVE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MaxInclusiveConstraintComponent");
+pub const SH_MIN_LENGTH_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MinLengthConstraintComponent");
+pub const SH_MAX_LENGTH_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "MaxLengthConstraintComponent");
+pub const SH_PATTERN_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "PatternConstraintComponent");
+pub const SH_LANGUAGE_IN_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "LanguageInConstraintComponent");
+pub const SH_UNIQUE_LANG_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "UniqueLangConstraintComponent");
+pub const SH_EQUALS_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "EqualsConstraintComponent");
+pub const SH_DISJOINT_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "DisjointConstraintComponent");
+pub const SH_HAS_VALUE_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "HasValueConstraintComponent");
+pub const SH_IN_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "InConstraintComponent");
+pub const SH_LESS_THAN_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "LessThanConstraintComponent");
+pub const SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "LessThanOrEqualsConstraintComponent");
+pub const SH_NOT_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "NotConstraintComponent");
+pub const SH_OR_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "OrConstraintComponent");
+pub const SH_AND_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "AndConstraintComponent");
+pub const SH_XONE_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "XoneConstraintComponent");
+pub const SH_NODE_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "NodeConstraintComponent");
+pub const SH_PROPERTY_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "PropertyShapeComponent");
+pub const SH_QUALIFIED_MIN_COUNT_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "QualifiedMinCountConstraintComponent");
+pub const SH_QUALIFIED_MAX_COUNT_CONSTRAINT_COMPONENT_STR: &str =
+    concatcp!(SH_STR, "QualifiedMaxCountConstraintComponent");
+pub const SH_CLOSED_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "ClosedConstraintComponent");
 
 lazy_static! {
     pub static ref SH: IriS = IriS::new_unchecked(SH_STR);
@@ -157,4 +205,62 @@ lazy_static! {
     pub static ref SH_UNIQUE_LANG: IriS = IriS::new_unchecked(SH_UNIQUE_LANG_STR);
     pub static ref SH_XONE: IriS = IriS::new_unchecked(SH_XONE_STR);
     pub static ref SH_SOURCE_CONSTRAINT: IriS = IriS::new_unchecked(SH_SOURCE_CONSTRAINT_STR);
+    pub static ref SH_CLASS_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_CLASS_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_DATATYPE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_DATATYPE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_NODE_KIND_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_NODE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MIN_COUNT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MIN_COUNT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MAX_COUNT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MAX_COUNT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MAX_EXCLUSIVE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MAX_EXCLUSIVE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MIN_INCLUSIVE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MIN_INCLUSIVE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MAX_INCLUSIVE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MAX_INCLUSIVE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MIN_LENGTH_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_AND_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_MAX_LENGTH_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_MAX_LENGTH_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_PATTERN_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_PATTERN_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_LANGUAGE_IN_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_AND_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_UNIQUE_LANG_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_UNIQUE_LANG_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_EQUALS_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_EQUALS_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_DISJOINT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_DISJOINT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_HAS_VALUE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_HAS_VALUE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_IN_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_IN_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_LESS_THAN_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_LESS_THAN_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_NOT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_NOT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_OR_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_OR_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_AND_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_AND_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_XONE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_XONE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_NODE_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_NODE_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_PROPERTY_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_PROPERTY_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_QUALIFIED_MIN_COUNT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_QUALIFIED_MIN_COUNT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_QUALIFIED_MAX_COUNT_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_QUALIFIED_MAX_COUNT_CONSTRAINT_COMPONENT_STR);
+    pub static ref SH_CLOSED_CONSTRAINT_COMPONENT: IriS =
+        IriS::new_unchecked(SH_CLOSED_CONSTRAINT_COMPONENT_STR);
 }
