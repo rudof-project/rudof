@@ -7,15 +7,18 @@ const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/validati
 
 #[test]
 fn shared_data() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "shared-data");test::<NativeEngine>(path)
+    let path = format!("{}/{}.ttl", PATH, "shared-data");
+    test::<NativeEngine>(path)
 }
 
 #[test]
 fn shared_shapes() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "shared-shapes");test::<NativeEngine>(path)
+    let path = format!("{}/{}.ttl", PATH, "shared-shapes");
+    test::<NativeEngine>(path)
 }
 
 #[test]
 fn shared() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "shared");test::<NativeEngine>(path)
+    let path = format!("{}/{}.ttl", PATH, "shared");
+    test::<NativeEngine>(path)
 }
