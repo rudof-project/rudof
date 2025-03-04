@@ -7,7 +7,4 @@ pub enum ConstraintError {
 
     #[error("Query error: {}", ._0)]
     Query(String),
-
-    #[error("Expected IRI but found {term}")]
-    ExpectedIri { term: String },
 }
