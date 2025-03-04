@@ -46,8 +46,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Class<Q> {
                         || store
                             .triples_matching(subject, RDFS_SUBCLASS_OF.clone(), Any)
                             .unwrap() // TODO: check this unwrap
-                            .find(|triple| triple.obj() == self.class_rule())
-                            .is_some()
+                            .any(|triple| triple.obj() == self.class_rule())
                 });
 
             !is_class_valid
