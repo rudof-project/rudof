@@ -69,7 +69,7 @@ impl ValidationReport {
     pub fn parse<Q: Query>(store: &Q, subject: Q::Term) -> Result<Self, ReportError> {
         let results = get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())?
             .iter()
-            .flat_map(|result| ValidationResult::parse(store, &result))
+            .flat_map(|result| ValidationResult::parse(store, result))
             .collect();
         Ok(ValidationReport::default().with_results(results))
     }
