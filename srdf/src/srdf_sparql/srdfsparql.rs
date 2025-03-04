@@ -224,7 +224,7 @@ impl Query for SRDFSparql {
                 };
 
                 let predicate: Self::IRI = match predicate.value() {
-                    Some(p) => p.try_into().unwrap(),
+                    Some(p) => p,
                     None => solution
                         .find_solution(1)
                         .and_then(|pred| pred.clone().try_into().ok())
