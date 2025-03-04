@@ -29,20 +29,20 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxLength {
         let max_length = |value_node: &Q::Term| {
             if value_node.is_blank_node() {
                 true
-            } else if value_node.is_iri() {
-                let iri: Q::IRI = match value_node.clone().try_into() {
-                    Ok(iri) => iri,
-                    Err(_) => todo!(),
-                };
-                iri.as_str().len() > self.max_length() as usize
-            } else if value_node.is_literal() {
-                let literal: Q::Literal = match value_node.clone().try_into() {
-                    Ok(literal) => literal,
-                    Err(_) => todo!(),
-                };
-                literal.lexical_form().len() > self.max_length() as usize
             } else {
-                todo!()
+                let string_length = value_node
+                    .clone()
+                    .try_into()
+                    .map(|iri: Q::IRI| iri.as_str().len())
+                    .or_else(|_| {
+                        value_node
+                            .clone()
+                            .try_into()
+                            .map(|literal: Q::Literal| literal.lexical_form().len())
+                    })
+                    .unwrap_or_else(|_| unreachable!());
+
+                string_length > self.max_length() as usize
             }
         };
 
