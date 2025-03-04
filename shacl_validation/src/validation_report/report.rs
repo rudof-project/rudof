@@ -2,9 +2,9 @@ use std::fmt::{Debug, Display};
 
 use colored::*;
 use prefixmap::PrefixMap;
-use srdf::{Object, Query};
-
-use crate::helpers::srdf::get_objects_for;
+use shacl_ast::SH_RESULT;
+use srdf::matcher::Any;
+use srdf::{Object, Query, Triple};
 
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
@@ -66,10 +66,15 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<Q: Query>(store: &Q, subject: Q::Term) -> Result<Self, ReportError> {
-        let results = get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())?
-            .iter()
-            .flat_map(|result| ValidationResult::parse(store, result))
+    pub fn parse<Q: Query>(store: &Q, report: Q::Term) -> Result<Self, ReportError> {
+        let report: Q::Subject = report
+            .clone()
+            .try_into()
+            .map_err(|_| ReportError::ExpectedSubject)?;
+        let results = store
+            .triples_matching(report, SH_RESULT.clone(), Any)
+            .map_err(|_| ReportError::Query)?
+            .flat_map(|triple| ValidationResult::parse(store, triple.obj()))
             .collect();
         Ok(ValidationReport::default().with_results(results))
     }

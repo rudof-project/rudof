@@ -3,12 +3,15 @@ use thiserror::Error;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::helper_error::SPARQLError;
-use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
+    #[error("Expected a Subject but found a term: {_0}")]
+    ExpectedSubject(String),
+
     #[error("Error during the SPARQL operation")]
     SRDF,
+
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,
     #[error("TargetClass should be an IRI")]
@@ -27,8 +30,6 @@ pub enum ValidateError {
     ImplicitClassNotFound,
     #[error("The provided mode is not supported for the {} structure", ._0)]
     UnsupportedMode(String),
-    #[error(transparent)]
-    SrdfHelper(#[from] SRDFError),
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
 }

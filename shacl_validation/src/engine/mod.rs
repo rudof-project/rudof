@@ -49,7 +49,7 @@ pub trait Engine<R: Rdf> {
 
     fn target_object_of(store: &R, predicate: &R::IRI) -> Result<FocusNodes<R>, ValidateError>;
 
-    fn implicit_target_class(store: &R, shape: &R::Term) -> Result<FocusNodes<R>, ValidateError>;
+    fn implicit_target_class(store: &R, class: &R::Term) -> Result<FocusNodes<R>, ValidateError>;
 
     fn path(
         store: &R,

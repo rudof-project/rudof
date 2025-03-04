@@ -11,8 +11,6 @@ use srdf::RDF_TYPE;
 
 use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::srdf::get_objects_for;
-use crate::helpers::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -36,10 +34,9 @@ impl<Q: Query> Engine<Q> for NativeEngine {
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(_: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
         if node.is_blank_node() {
-            Err(ValidateError::TargetNodeBlankNode)
-        } else {
-            Ok(FocusNodes::new(std::iter::once(node.clone())))
+            return Err(ValidateError::TargetNodeBlankNode);
         }
+        Ok(FocusNodes::new(std::iter::once(node.clone())))
     }
 
     fn target_class(store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
@@ -47,11 +44,8 @@ impl<Q: Query> Engine<Q> for NativeEngine {
             return Err(ValidateError::TargetClassNotIri);
         }
 
-        // TODO: this should not be necessary, check in others triples_matching calls
-        let rdf_type: Q::IRI = RDF_TYPE.clone().into();
-
         let focus_nodes = store
-            .triples_matching(Any, rdf_type, class.clone())
+            .triples_matching(Any, RDF_TYPE.clone(), class.clone())
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
@@ -76,18 +70,22 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         Ok(FocusNodes::new(objects))
     }
 
-    fn implicit_target_class(store: &Q, subject: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
-        let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
+    fn implicit_target_class(store: &Q, class: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {
+        let classes = store
+            .triples_matching(Any, RDF_TYPE.clone(), class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_subject)
+            .map(Into::into);
 
-        let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
-            .into_iter()
-            .flat_map(move |subclass| {
-                get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
-                    .into_iter()
-                    .flatten()
-            });
+        let subclasses = store
+            .triples_matching(Any, RDFS_SUBCLASS_OF.clone(), class.clone())
+            .map_err(|_| ValidateError::SRDF)?
+            .flat_map(|triple| store.triples_matching(Any, RDF_TYPE.clone(), triple.into_subject()))
+            .flatten()
+            .map(Triple::into_subject)
+            .map(Into::into);
 
-        Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
+        Ok(FocusNodes::new(classes.into_iter().chain(subclasses)))
     }
 
     fn predicate(
@@ -96,7 +94,14 @@ impl<Q: Query> Engine<Q> for NativeEngine {
         predicate: &Q::IRI,
         focus_node: &Q::Term,
     ) -> Result<FocusNodes<Q>, ValidateError> {
-        let values = get_objects_for(store, focus_node, predicate)?;
+        let focus_node: Q::Subject = focus_node
+            .clone()
+            .try_into()
+            .map_err(|_| ValidateError::ExpectedSubject(focus_node.to_string()))?;
+        let values = store
+            .triples_matching(focus_node, predicate.clone(), Any)
+            .map_err(|_| ValidateError::SRDF)?
+            .map(Triple::into_object);
         Ok(FocusNodes::new(values.into_iter()))
     }
 

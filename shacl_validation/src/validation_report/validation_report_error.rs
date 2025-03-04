@@ -1,19 +1,25 @@
 use thiserror::Error;
 
-use crate::helpers::helper_error::SRDFError;
-
 #[derive(Error, Debug)]
 pub enum ReportError {
-    #[error("Error parsing the ValidationReport, {}", _0)]
-    Srdf(#[from] SRDFError),
+    #[error("Error parsing the Subject, expected a Subject but found a Term")]
+    ExpectedSubject,
+
+    #[error("Error querying the store when parsing the ValidationReport")]
+    Query,
+
     #[error(transparent)]
     Result(#[from] ResultError),
 }
 
 #[derive(Error, Debug)]
 pub enum ResultError {
-    #[error("Error parsing the ValidationResult, the {} field is missing", _0)]
-    MissingRequiredField(String),
-    #[error("Error parsing the ValidationResult, {}", _0)]
-    Srdf(#[from] SRDFError),
+    #[error("Error parsing the Subject, expected a Subject but found a Term")]
+    ExpectedSubject,
+
+    #[error("Error querying the store when parsing the ValidationReport")]
+    Query,
+
+    #[error("Error parsing the ValidationResult, the required  field {_0} is missing")]
+    MissingField(&'static str),
 }

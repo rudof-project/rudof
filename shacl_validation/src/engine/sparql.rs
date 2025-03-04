@@ -102,7 +102,7 @@ impl<S: Sparql + Query> Engine<S> for SparqlEngine {
         })
     }
 
-    fn implicit_target_class(_store: &S, _shape: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn implicit_target_class(_store: &S, _class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),
         })

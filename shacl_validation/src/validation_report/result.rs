@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 
 use shacl_ast::*;
-use srdf::{Object, Query, RDFNode};
-
-use crate::helpers::srdf::get_object_for;
+use srdf::{matcher::Any, Object, Query, RDFNode, Triple};
 
 use super::validation_report_error::ResultError;
 
@@ -81,43 +79,67 @@ impl ValidationResult {
         store: &Q,
         validation_result: &Q::Term,
     ) -> Result<Self, ResultError> {
-        // 1. First, we must start processing the required fields. In case some
-        //    don't appear, an error message must be raised
-        let focus_node =
-            match get_object_for(store, validation_result, &SH_FOCUS_NODE.clone().into())? {
-                Some(focus_node) => focus_node,
-                None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
-            };
-        let severity =
-            match get_object_for(store, validation_result, &SH_RESULT_SEVERITY.clone().into())? {
-                Some(severity) => severity,
-                None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
-            };
-        let constraint_component = match get_object_for(
-            store,
-            validation_result,
-            &SH_SOURCE_CONSTRAINT_COMPONENT.clone().into(),
-        )? {
-            Some(constraint_component) => constraint_component,
-            None => {
-                return Err(ResultError::MissingRequiredField(
-                    "SourceConstraintComponent".to_owned(),
-                ))
-            }
-        };
+        // 0. First, we must start by converting the validation result to a subject
+        let result: Q::Subject = validation_result
+            .clone()
+            .try_into()
+            .map_err(|_| ResultError::ExpectedSubject)?;
 
-        // 2. Second, we must process the optional fields
-        let path = get_object_for(store, validation_result, &SH_RESULT_PATH.clone().into())?;
-        let source = get_object_for(store, validation_result, &SH_SOURCE_SHAPE.clone().into())?;
-        let value = get_object_for(store, validation_result, &SH_VALUE.clone().into())?;
+        // 1. Second, we must start processing the required fields. In case some
+        //    don't appear, an error message must be raised
+        let focus_node = store
+            .triples_matching(result.clone(), SH_FOCUS_NODE.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .ok_or(ResultError::MissingField("FocusNode"))?
+            .into_object()
+            .into(); // convert to Object
+
+        let severity = store
+            .triples_matching(result.clone(), SH_RESULT_SEVERITY.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .ok_or(ResultError::MissingField("Severity"))?
+            .into_object()
+            .into(); // convert to Object
+
+        let constraint_component = store
+            .triples_matching(result.clone(), SH_SOURCE_CONSTRAINT_COMPONENT.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .ok_or(ResultError::MissingField("SourceConstraintComponent"))?
+            .into_object()
+            .into(); // convert to Object
+
+        // 2. Third, we must process the optional fields
+        let path = store
+            .triples_matching(result.clone(), SH_RESULT_PATH.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .map(Triple::into_object)
+            .map(Into::into); // convert to Object
+
+        let source = store
+            .triples_matching(result.clone(), SH_SOURCE_SHAPE.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .map(Triple::into_object)
+            .map(Into::into); // convert to Object
+
+        let value = store
+            .triples_matching(result, SH_VALUE.clone(), Any)
+            .map_err(|_| ResultError::Query)?
+            .next()
+            .map(Triple::into_object)
+            .map(Into::into); // convert to Object
 
         // 3. Lastly we build the ValidationResult
-        Ok(
-            ValidationResult::new(focus_node, constraint_component, severity)
-                .with_path(path)
-                .with_source(source)
-                .with_value(value),
-        )
+        let validation_result = ValidationResult::new(focus_node, constraint_component, severity)
+            .with_path(path)
+            .with_source(source)
+            .with_value(value);
+
+        Ok(validation_result)
     }
 }
 
