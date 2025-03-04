@@ -7,7 +7,7 @@ use crate::helpers::srdf::get_object_for;
 
 use super::validation_report_error::ResultError;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct ValidationResult {
     focus_node: RDFNode,           // required
     path: Option<RDFNode>,         // optional
@@ -16,7 +16,7 @@ pub struct ValidationResult {
     constraint_component: RDFNode, // required
     details: Option<Vec<RDFNode>>, // optional
     message: Option<RDFNode>,      // optional
-    severity: RDFNode,             // required (TODO: Replace by Severity?)
+    severity: RDFNode,             // required
 }
 
 impl ValidationResult {
@@ -118,5 +118,14 @@ impl ValidationResult {
                 .with_source(source)
                 .with_value(value),
         )
+    }
+}
+
+impl PartialEq for ValidationResult {
+    fn eq(&self, other: &Self) -> bool {
+        // we check for the equality of the required fields
+        self.focus_node == other.focus_node
+            && self.constraint_component == other.constraint_component
+            && self.severity == other.severity
     }
 }

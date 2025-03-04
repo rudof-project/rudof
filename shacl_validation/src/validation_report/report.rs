@@ -67,10 +67,10 @@ impl ValidationReport {
 
 impl ValidationReport {
     pub fn parse<Q: Query>(store: &Q, subject: Q::Term) -> Result<Self, ReportError> {
-        let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
-            results.push(ValidationResult::parse(store, &result)?);
-        }
+        let results = get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())?
+            .iter()
+            .flat_map(|result| ValidationResult::parse(store, &result))
+            .collect();
         Ok(ValidationReport::default().with_results(results))
     }
 
@@ -93,13 +93,16 @@ impl Default for ValidationReport {
 }
 
 impl PartialEq for ValidationReport {
-    // TODO: Are we sure that this way to compare validation report results is OK?
-    // Comparing only the len() seems weak??
     fn eq(&self, other: &Self) -> bool {
+        // if the number of results is different, the reports are not equal
         if self.results.len() != other.results.len() {
             return false;
         }
-        true
+        // once we have that the size of the results is the same, we can tell
+        // if all the results of this report are in the other report. Hence,
+        // if all the results are in the other report, and the size of the
+        // results is the same, the reports are equal
+        self.results.iter().all(|r| other.results.contains(r))
     }
 }
 
