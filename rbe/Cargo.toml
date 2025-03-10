@@ -14,7 +14,7 @@ thiserror = "1"
 hashbag = { version = "0.1.11"}
 serde.workspace = true
 serde_json = { workspace = true }
-serde_yml = "0.0.12"
+serde_yaml_ng = "0.10"
 itertools = "0.13"
 indexmap = { version = "2"}
 tracing = { workspace = true }

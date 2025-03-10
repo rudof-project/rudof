@@ -26,7 +26,7 @@ shex_validation.workspace = true
 shacl_validation.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
-serde_yml = "0.0.12"
+serde_yaml_ng = "0.10"
 chrono = "0.4.38"
 
 spargebra = "0.3.0-alpha.5"

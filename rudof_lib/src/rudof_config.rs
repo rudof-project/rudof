@@ -55,7 +55,7 @@ impl RudofConfig {
             error: e,
         })?;
         let config: RudofConfig =
-            serde_yml::from_reader(f).map_err(|e| RudofError::RudofConfigYamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| RudofError::RudofConfigYamlError {
                 path: path_name.clone(),
                 error: e,
             })?;

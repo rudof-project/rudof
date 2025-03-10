@@ -20,7 +20,7 @@ impl ShapemapConfigMain {
             error: e.to_string(),
         })?;
         let config: ShapemapConfigMain =
-            serde_yml::from_reader(f).map_err(|e| ShapemapConfigError::YamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| ShapemapConfigError::YamlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;

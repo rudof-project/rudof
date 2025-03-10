@@ -26,7 +26,7 @@ impl ShaclConfig {
         })?;
 
         let config: ShaclConfig =
-            serde_yml::from_reader(f).map_err(|e| ShaclConfigError::YamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| ShaclConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -48,6 +48,6 @@ pub enum ShaclConfigError {
     #[error("Reading SHACL config YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 }

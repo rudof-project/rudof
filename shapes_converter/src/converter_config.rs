@@ -27,7 +27,7 @@ impl ConverterConfig {
                 error: e,
             }
         })?;
-        let config: ConverterConfig = serde_yml::from_reader(f).map_err(|e| {
+        let config: ConverterConfig = serde_yaml_ng::from_reader(f).map_err(|e| {
             ConverterError::ConverterConfigFromYAMLError {
                 path: path_name.clone(),
                 error: e,

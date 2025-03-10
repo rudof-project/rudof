@@ -53,7 +53,7 @@ impl RdfDataConfig {
         })?;
 
         let config: RdfDataConfig =
-            serde_yml::from_reader(f).map_err(|e| RdfDataConfigError::YamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| RdfDataConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -132,7 +132,7 @@ pub enum RdfDataConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 
     #[error("Converting to IRI the string {str}. Error: {error}")]

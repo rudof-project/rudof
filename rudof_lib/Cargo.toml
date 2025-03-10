@@ -28,5 +28,5 @@ dctap.workspace = true
 serde.workspace = true
 thiserror = "1.0"
 serde_json.workspace = true
-serde_yml = "0.0.12"
+serde_yaml_ng = "0.10"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }

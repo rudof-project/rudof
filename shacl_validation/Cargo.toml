@@ -28,7 +28,7 @@ indoc = "2"                      # needed for the definition of SPARQL queries
 # oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the stores )
 clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
 serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-serde_yml = { workspace = true }                   # needed for the config thing
+serde_yaml_ng = { workspace = true }                   # needed for the config thing
 colored = { workspace = true }
 
 [dev-dependencies]

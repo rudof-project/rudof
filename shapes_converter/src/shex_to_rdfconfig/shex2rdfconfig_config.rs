@@ -14,7 +14,7 @@ impl ShEx2RdfConfigConfig {
                 error: e,
             }
         })?;
-        serde_yml::from_str::<ShEx2RdfConfigConfig>(&config_str).map_err(|e| {
+        serde_yaml_ng::from_str::<ShEx2RdfConfigConfig>(&config_str).map_err(|e| {
             ShEx2SparqlConfigError::YamlError {
                 path_name: file_name.to_string(),
                 error: e,
@@ -31,6 +31,6 @@ pub enum ShEx2RdfConfigConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 }

@@ -12,6 +12,6 @@ pub enum ConverterError {
     #[error("Error reading config file from path {path}: {error}")]
     ConverterConfigFromYAMLError {
         path: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 }

@@ -34,7 +34,7 @@ mod tests {
              open: false
              match_result: !Pass
             "#};
-        let rbe_test: RbeTest = serde_yml::from_str(str).unwrap();
+        let rbe_test: RbeTest = serde_yaml_ng::from_str(str).unwrap();
         assert_eq!(rbe_test.run(), RbeTestResult::passed("basic".to_string()))
     }
 
@@ -54,7 +54,7 @@ mod tests {
         let ts = vec![rbe_test];
         let mut rbe_tests = RbeTests::default();
         rbe_tests.with_tests(ts);
-        let serialized = serde_yml::to_string(&rbe_tests).unwrap();
+        let serialized = serde_yaml_ng::to_string(&rbe_tests).unwrap();
         println!("---\n{serialized}");
         assert!(!serialized.is_empty());
     }
