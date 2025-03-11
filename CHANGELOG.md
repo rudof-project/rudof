@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+## [v0.1.60] - 2025-11-03
+
 - Changed dependency from [serde_yml](https://doc.serdeyml.com/serde_yml/index.html) to [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) according to #278
 - Changed Iri trait to add Ord constraint so IRIs can be ordered solving issue #276
 
