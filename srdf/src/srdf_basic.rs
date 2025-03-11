@@ -104,7 +104,7 @@ impl Matcher<OxSubject> for OxSubject {
     }
 }
 
-pub trait Iri: Debug + Display + Hash + Eq + Clone {
+pub trait Iri: Debug + Display + Hash + Eq + Ord + Clone {
     fn as_str(&self) -> &str;
 }
 

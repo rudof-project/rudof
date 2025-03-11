@@ -1195,7 +1195,9 @@ where
                     }
                 };
                 writeln!(writer, "{}", rdf.qualify_subject(&subject))?;
-                for pred in map.keys() {
+                let mut preds: Vec<_> = map.keys().collect();
+                preds.sort();
+                for pred in preds {
                     writeln!(writer, " -{}-> ", rdf.qualify_iri(pred))?;
                     if let Some(objs) = map.get(pred) {
                         for o in objs {

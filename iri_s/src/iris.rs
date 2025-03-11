@@ -14,7 +14,7 @@ use url::Url;
 
 use crate::IriSError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IriS {
     iri: NamedNode,
 }
