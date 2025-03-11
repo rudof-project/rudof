@@ -70,6 +70,7 @@ pub trait Query: Rdf {
         Ok(results)
     }
 
+    /// get all outgoing arcs from a subject
     fn outgoing_arcs(&self, subject: Self::Subject) -> Result<OutgoingArcs<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
         for triple in self.triples_with_subject(subject.clone())? {
