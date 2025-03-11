@@ -26,7 +26,7 @@ prefixmap.workspace = true
 shapes_converter.workspace = true
 dctap.workspace = true
 serde.workspace = true
-thiserror = "1.0"
+thiserror = "2.0"
 serde_json.workspace = true
 serde_yaml_ng = "0.10"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }

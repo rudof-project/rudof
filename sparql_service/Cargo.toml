@@ -23,7 +23,7 @@ thiserror = "1"
 lazy_static = "1"
 serde.workspace = true
 serde_yaml_ng = "0.10"
-itertools = "0.13"
+itertools = "0.14"
 iri_s.workspace = true
 prefixmap.workspace = true
 srdf = { workspace = true, features = [ "rdf-star"] }

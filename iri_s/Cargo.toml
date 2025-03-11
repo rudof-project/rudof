@@ -17,5 +17,5 @@ oxrdf = { version = "0.2.0-alpha.5" }
 oxiri = "0.2.3-alpha.1"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde.workspace = true
-thiserror = "1.0.0"
+thiserror = "2.0"
 url = { workspace = true }

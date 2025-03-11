@@ -19,8 +19,8 @@ rdf-star = [
 srdf.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
-thiserror = "1.0"
+thiserror = "2.0"
 lazy_static = "1"
 const_format = "0.2"
-itertools = "0.13"
+itertools = "0.14"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
