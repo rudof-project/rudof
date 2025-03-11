@@ -44,11 +44,12 @@ impl ValidatorConfig {
                 error: e.to_string(),
             }
         })?;
-        let config: ValidatorConfig =
-            serde_yml::from_reader(f).map_err(|e| ValidatorError::ValidatorConfigYamlError {
+        let config: ValidatorConfig = serde_yaml_ng::from_reader(f).map_err(|e| {
+            ValidatorError::ValidatorConfigYamlError {
                 path: path_name.clone(),
                 error: e.to_string(),
-            })?;
+            }
+        })?;
         Ok(config)
     }
 

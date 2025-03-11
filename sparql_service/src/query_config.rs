@@ -28,7 +28,7 @@ impl QueryConfig {
         })?;
 
         let config: QueryConfig =
-            serde_yml::from_reader(f).map_err(|e| QueryConfigError::YamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| QueryConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -50,6 +50,6 @@ pub enum QueryConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 }

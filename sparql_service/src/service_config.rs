@@ -27,7 +27,7 @@ impl ServiceConfig {
         })?;
 
         let config: ServiceConfig =
-            serde_yml::from_reader(f).map_err(|e| ServiceConfigError::YamlError {
+            serde_yaml_ng::from_reader(f).map_err(|e| ServiceConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -49,6 +49,6 @@ pub enum ServiceConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 }

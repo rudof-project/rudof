@@ -13,7 +13,7 @@ pub enum RudofError {
     #[error("Error reading config file from path {path}: {error}")]
     RudofConfigYamlError {
         path: String,
-        error: serde_yml::Error,
+        error: serde_yaml_ng::Error,
     },
 
     #[error("Error running query {str}: {error}")]

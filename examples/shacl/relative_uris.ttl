@@ -12,6 +12,8 @@
     sh:property [
         sh:path schema:name ;
         rdfs:label "name" ;
+        sh:minCount 1 ;
+        sh:maxCount 3 ;
     ] ;
     sh:property [
         sh:path schema:license ;

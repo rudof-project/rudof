@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+- Changed dependency from [serde_yml](https://doc.serdeyml.com/serde_yml/index.html) to [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) according to #278
+
 ## [v0.1.59] - 2025-01-01
 
 - Fixes bug in feature added to solve issue #227 for local files which are relative that it didn't generate an absolute IRI. Now it does.

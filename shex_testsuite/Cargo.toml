@@ -18,7 +18,7 @@ shex_compact.workspace = true
 shex_validation.workspace = true
 serde.workspace = true
 serde_json = { workspace = true }
-serde_yml = "0.0.12"
+serde_yaml_ng = "0.10"
 anyhow = "1.0"
 thiserror = "1.0"
 clap.workspace = true
