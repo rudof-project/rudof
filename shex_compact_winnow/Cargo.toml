@@ -8,8 +8,8 @@ iri_s = { workspace = true }
 srdf = { workspace = true }
 prefixmap = { workspace = true }
 shapemap = { workspace = true }
-thiserror = "1"
-colored = "2"
+thiserror = "2"
+colored = "3"
 rust_decimal = "1.32"
 pretty = "0.12.3"
 

@@ -20,5 +20,5 @@ crate-type = ["cdylib"]
 rudof_lib = { workspace = true }
 
 [dependencies.pyo3]
-version = "0.22.0"
+version = "0.24.0"
 features = ["abi3-py37", "extension-module"]

@@ -22,14 +22,14 @@ iri_s.workspace = true
 prefixmap.workspace = true
 async-trait = "0.1.68"
 serde.workspace = true
-serde_yaml_ng = "0.10"
+serde_yaml_ng.workspace = true
 
-thiserror = "1"
+thiserror.workspace = true
 rust_decimal = "1.32"
 rust_decimal_macros = "1.32"
 const_format = "0.2"
 lazy_static = "1"
-itertools = "0.14"
+itertools.workspace = true
 
 oxttl = { version = "0.1.0-alpha.6" }
 oxrdfio = { version = "0.1.0-alpha.5" }

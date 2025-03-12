@@ -68,7 +68,7 @@ sparql_service = { version = "0.1.37", path = "./sparql_service" }
 # External dependencies
 anyhow = "1.0"
 clap = { version = "4.2.1", features = ["derive"] }
-colored = "2"
+colored = "3"
 indexmap = "2.1"
 oxrdf = "0.2.0-alpha.5"
 regex = "1.10.4"
@@ -81,3 +81,5 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.2.2"
+itertools = "0.14"
+lazy_static = "1"

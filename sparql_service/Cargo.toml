@@ -19,11 +19,11 @@ rdf-star = [
 
 [dependencies]
 const_format = "0.2"
-thiserror = "1"
-lazy_static = "1"
+thiserror.workspace = true
+lazy_static.workspace = true
 serde.workspace = true
-serde_yaml_ng = "0.10"
-itertools = "0.14"
+serde_yaml_ng.workspace = true
+itertools.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
 srdf = { workspace = true, features = [ "rdf-star"] }
