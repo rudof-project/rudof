@@ -1,6 +1,6 @@
-use std::{io, path::Path};
-
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::{io, path::Path};
 use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
@@ -20,13 +20,19 @@ impl ShaclConfig {
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShaclConfig, ShaclConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| ShaclConfigError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-
+        let mut f =
+            std::fs::File::open(path).map_err(|e| ShaclConfigError::ReadingConfigError {
+                path_name: path_name.clone(),
+                error: e,
+            })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ShaclConfigError::ReadingConfigError {
+                path_name: path_name.clone(),
+                error: e,
+            })?;
         let config: ShaclConfig =
-            serde_yaml_ng::from_reader(f).map_err(|e| ShaclConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -48,6 +54,6 @@ pub enum ShaclConfigError {
     #[error("Reading SHACL config YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml_ng::Error,
+        error: toml::de::Error,
     },
 }

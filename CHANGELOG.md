@@ -2,6 +2,9 @@
 
 ## Current changes without release yet
 
+- Changed dependency from [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) to [toml](https://docs.rs/toml/latest/toml/)
+]
+
 ## [v0.1.60] - 2025-11-03
 
 - Changed dependency from [serde_yml](https://doc.serdeyml.com/serde_yml/index.html) to [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) according to #278

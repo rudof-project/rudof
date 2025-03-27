@@ -22,7 +22,7 @@ iri_s.workspace = true
 prefixmap.workspace = true
 async-trait = "0.1.68"
 serde.workspace = true
-serde_yaml_ng.workspace = true
+toml.workspace = true
 
 thiserror.workspace = true
 rust_decimal = "1.32"

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use dctap::TapConfig;
 use serde::{Deserialize, Serialize};
 use shapes_converter::{
@@ -8,6 +6,8 @@ use shapes_converter::{
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::path::Path;
 
 use crate::RudofError;
 
@@ -50,12 +50,20 @@ impl RudofConfig {
     /// Obtain a DCTapConfig from a path file in YAML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RudofConfig, RudofError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| RudofError::RudofConfigFromPathError {
-            path: path_name.clone(),
-            error: e,
-        })?;
+        let mut f =
+            std::fs::File::open(path).map_err(|e| RudofError::RudofConfigFromPathError {
+                path: path_name.clone(),
+                error: e,
+            })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| RudofError::RudofConfigFromPathError {
+                path: path_name.clone(),
+                error: e,
+            })?;
+
         let config: RudofConfig =
-            serde_yaml_ng::from_reader(f).map_err(|e| RudofError::RudofConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigYamlError {
                 path: path_name.clone(),
                 error: e,
             })?;

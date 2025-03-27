@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use iri_s::{IriS, IriSError};
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -51,9 +52,12 @@ impl RdfDataConfig {
             path_name: path_name.clone(),
             error: e,
         })?;
-
+        let s = read_string(f).map_err(|e| RdfDataConfigError::ReadingConfigError {
+            path_name: path_name.clone(),
+            error: e,
+        })?;
         let config: RdfDataConfig =
-            serde_yaml_ng::from_reader(f).map_err(|e| RdfDataConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| RdfDataConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -132,9 +136,15 @@ pub enum RdfDataConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml_ng::Error,
+        error: toml::de::Error,
     },
 
     #[error("Converting to IRI the string {str}. Error: {error}")]
     ConvertingIriEndpoint { error: String, str: String },
+}
+
+fn read_string<R: Read>(mut reader: R) -> io::Result<String> {
+    let mut buf = String::new();
+    reader.read_to_string(&mut buf)?;
+    Ok(buf)
 }
