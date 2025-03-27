@@ -80,7 +80,7 @@ Options:
 
 ## DCTAP Configuration file
 
-The parameter `--config-file` (`-c` in short form) can be used to pass a configuration file in YAML format.
+The parameter `--config-file` (`-c` in short form) can be used to pass a configuration file in [TOML](https://toml.io/) format.
 
 The fields that it can contain are:
 
@@ -91,18 +91,24 @@ The fields that it can contain are:
 
 The following fields are experimental and may be changed:
 
-- property_placeholders: Table that can be used to generate values for some keys. When the processor finds a cell with some of those keys, it generates a value according to the placeholder resolver indicated. At this moment, `rudof` supports the placeholder resolver `!Stem` which means that it will replace the key by the corresponding stem value. For example, if the property placeholder has the entry `x` with the placeholder resolver of type `!Stem` and the value `stem: "Pending"`, when a cell contains `x:User`, the generated value will be: `pending:User`.
-- empty_property_placeholder: Indicates how to generate aa value for a row whose property ID is empty. The value is a placeholder resolver similar to the values in `property_placeholders`.
+- property_placeholders: Table that can be used to generate values for some keys. When the processor finds a cell with some of those keys, it generates a value according to the placeholder resolver indicated.
+At this moment, `rudof` supports the placeholder resolver `Stem` which means that it will replace the key by the corresponding stem value.
+For example, if the property placeholder has the entry `x` with the placeholder resolver of type `Stem` and the value `stem = "Pending"`,
+when a cell contains `x:User`, the generated value will be: `pending:User`.
 
-The following YAML file can be an example:
+- empty_property_placeholder: Indicates how to generate a value for a row whose property ID is empty.
+The value is a placeholder resolver similar to the values in `property_placeholders`.
 
-```yaml
-dctap:
-  delimiter: ','
-  picklist_delimiter: ' '
-  property_placeholders:
-    x: !Stem
-      stem: "pending:"
-  empty_property_placeholder:
-    stem: "empty:"    
+The following TOML file can be an example:
+
+```toml
+[dctap]
+delimiter = ","
+picklist_delimiter = " "
+
+[property_placeholders.x.Stem]
+stem = "pending"
+        
+[empty_property_placeholder.Stem]
+stem = "empty"
 ```

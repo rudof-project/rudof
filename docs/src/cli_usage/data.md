@@ -77,7 +77,7 @@ rudof data user.ttl simple.ttl -r rdfxml -o output.rdf
 
 ## RDF Config file
 
-The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in YAML format.
+The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in [TOML](https://toml.io/) format.
 
 The fields that it can contain are:
 

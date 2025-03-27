@@ -54,7 +54,7 @@ pub enum ValidatorError {
     ValidatorConfigFromPathError { path: String, error: String },
 
     #[error("Error reading config file from path {path}: {error}")]
-    ValidatorConfigYamlError { path: String, error: String },
+    ValidatorConfigTomlError { path: String, error: String },
 
     #[error("Adding non conformant {node}@{label} error: {error}")]
     AddingNonConformantError {

@@ -1496,7 +1496,7 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
         Some(config_path) => match RudofConfig::from_path(config_path) {
             Ok(c) => Ok(c),
             Err(e) => Err(anyhow!(
-                "Error obtaining Data config from {}: {e}",
+                "Error obtaining Rudof config from {}\nError: {e}",
                 config_path.display()
             )),
         },

@@ -32,7 +32,7 @@ impl ShaclConfig {
                 error: e,
             })?;
         let config: ShaclConfig =
-            toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::TomlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -51,8 +51,8 @@ pub enum ShaclConfigError {
     #[error("Reading SHACL Config path {path_name:?} error: {error:?}")]
     ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading SHACL config YAML from {path_name:?}. Error: {error:?}")]
-    YamlError {
+    #[error("Reading SHACL config TOML from {path_name:?}. Error: {error:?}")]
+    TomlError {
         path_name: String,
         error: toml::de::Error,
     },

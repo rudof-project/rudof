@@ -35,7 +35,7 @@ impl ConverterConfig {
             })?;
 
         let config: ConverterConfig = toml::from_str(s.as_str()).map_err(|e| {
-            ConverterError::ConverterConfigFromYAMLError {
+            ConverterError::ConverterConfigFromTomlError {
                 path: path_name.clone(),
                 error: e,
             }

@@ -35,7 +35,7 @@ impl Default for ValidatorConfig {
 }
 
 impl ValidatorConfig {
-    /// Obtain a `ValidatorConfig` from a path file in YAML format
+    /// Obtain a `ValidatorConfig` from a path file in TOML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ValidatorConfig, ValidatorError> {
         let path_name = path.as_ref().display().to_string();
         let mut f = std::fs::File::open(path).map_err(|e| {
@@ -52,7 +52,7 @@ impl ValidatorConfig {
             })?;
 
         let config: ValidatorConfig =
-            toml::from_str(s.as_str()).map_err(|e| ValidatorError::ValidatorConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| ValidatorError::ValidatorConfigTomlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;

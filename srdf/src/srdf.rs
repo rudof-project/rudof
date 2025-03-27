@@ -10,7 +10,8 @@ pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;
 pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
-/// This trait contains functions to handle Simple RDF graphs, which are basically to get the neighbourhood of RDF nodes
+/// This trait contains functions to handle basic navigation in RDF graphs,
+/// with methods that can get triples and the neighbourhood of RDF nodes
 pub trait Query: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 

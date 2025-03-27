@@ -8,6 +8,7 @@ use sparql_service::ServiceConfig;
 use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::RudofError;
 
@@ -47,7 +48,7 @@ impl RudofConfig {
         self
     }
 
-    /// Obtain a DCTapConfig from a path file in YAML
+    /// Obtain a RudofConfig from a path file in TOML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RudofConfig, RudofError> {
         let path_name = path.as_ref().display().to_string();
         let mut f =
@@ -63,7 +64,7 @@ impl RudofConfig {
             })?;
 
         let config: RudofConfig =
-            toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigTomlError {
                 path: path_name.clone(),
                 error: e,
             })?;
@@ -140,5 +141,49 @@ impl RudofConfig {
             None => true,
             Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
         }
+    }
+}
+
+impl FromStr for RudofConfig {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {}", e))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use iri_s::iri;
+
+    use super::*;
+
+    #[test]
+    fn test_rudof_config() {
+        let s = r#"[tap2shex]
+base_iri = "http://example.org/"
+
+[tap2shex.prefixmap]
+dct = "http://purl.org/dc/terms/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+foaf = "http://xmlns.com/foaf/0.1/"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+sdo = "https://schema.org/"
+ex = "http://example.org/"
+"#;
+        let config = RudofConfig::from_str(s).unwrap();
+        assert_eq!(
+            config.tap2shex_config().base_iri.unwrap(),
+            iri!("http://example.org/")
+        );
+        assert_eq!(
+            config
+                .tap2shex_config()
+                .prefixmap()
+                .find("sdo")
+                .unwrap()
+                .clone(),
+            iri!("https://schema.org/")
+        );
     }
 }

@@ -44,7 +44,7 @@ pub enum TapError {
     TapConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    TapConfigYamlError {
+    TapConfigTomlError {
         path: String,
         error: toml::de::Error,
     },

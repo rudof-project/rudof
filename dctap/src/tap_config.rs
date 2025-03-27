@@ -1,6 +1,7 @@
 use crate::{PlaceholderResolver, TapError};
 use serde::{Deserialize, Serialize};
 use std::io::Read;
+use std::str::FromStr;
 use std::{collections::HashMap, path::Path};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
@@ -9,7 +10,7 @@ pub struct DCTapConfig {
 }
 
 impl DCTapConfig {
-    /// Obtain a DCTapConfig from a path file in YAML
+    /// Obtain a DCTapConfig from a path file in TOML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<DCTapConfig, TapError> {
         let path_name = path.as_ref().display().to_string();
         let mut f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
@@ -23,7 +24,7 @@ impl DCTapConfig {
                 error: e,
             })?;
         let config: DCTapConfig =
-            toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigTomlError {
                 path: path_name.clone(),
                 error: e,
             })?;
@@ -66,7 +67,7 @@ pub struct TapConfig {
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    property_placeholders: HashMap<String, PlaceholderResolver>,
+    property_placeholders: Option<HashMap<String, PlaceholderResolver>>,
 
     /// Indicates how to generate a value for a row whose property ID is empty.
     ///
@@ -107,7 +108,7 @@ impl TapConfig {
         mut self,
         property_place_holders: HashMap<String, PlaceholderResolver>,
     ) -> Self {
-        self.property_placeholders = property_place_holders;
+        self.property_placeholders = Some(property_place_holders);
         self
     }
 
@@ -125,7 +126,10 @@ impl TapConfig {
         if str.is_empty() {
             self.empty_property_placeholder.clone()
         } else {
-            self.property_placeholders.get(str).cloned()
+            match &self.property_placeholders {
+                Some(ph) => ph.get(str).cloned(),
+                None => None,
+            }
         }
     }
 
@@ -134,9 +138,17 @@ impl TapConfig {
     }
 }
 
+impl FromStr for TapConfig {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        toml::from_str(s).map_err(|e| format!("Failed to parse TapConfig: {}", e))
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, str::FromStr};
     // use tracing::debug;
     // use tracing_test::traced_test;
 
@@ -154,12 +166,49 @@ mod tests {
         let config = TapConfig::default()
             .with_property_placeholders(ph)
             .with_empty_property_placeholder(resolver.clone());
-        // let yaml = serde_yml::to_string(&config).unwrap();
-        // debug!("YAML\n{yaml}");
         assert_eq!(
             config.get_property_placeholder("nalt"),
             Some(resolver.clone())
         );
         assert_eq!(config.get_property_placeholder(""), Some(resolver.clone()))
+    }
+
+    #[test]
+    fn test_tap_config_delimiter() {
+        let s = r#"[dctap]
+delimiter = ","
+picklist_delimiter = " "
+"#;
+        let config = TapConfig::from_str(s).unwrap();
+        assert_eq!(config.delimiter(), b',');
+    }
+
+    #[test]
+    fn test_tap_config_property_placeholder() {
+        let s = r#"[dctap]
+        delimiter = ","
+
+        [property_placeholders.y.Stem]
+        stem = "pending2"
+        
+        [property_placeholders.x.Stem]
+        stem = "pending"
+        
+        [empty_property_placeholder.Stem]
+        stem = "empty"
+"#;
+        let config = TapConfig::from_str(s).unwrap();
+        /*let mut property_placeholders = HashMap::new();
+        property_placeholders.insert("x".to_string(), PlaceholderResolver::stem("pending"));
+        property_placeholders.insert("y".to_string(), PlaceholderResolver::stem("pending2"));
+        let config = TapConfig::default()
+            .with_property_placeholders(property_placeholders)
+            .with_empty_property_placeholder(PlaceholderResolver::stem("empty")); */
+        assert_eq!(
+            config.get_property_placeholder("x").unwrap(),
+            PlaceholderResolver::stem("pending")
+        );
+        // let str = toml::to_string_pretty(&config).unwrap();
+        // assert_eq!(str, "what?".to_string());
     }
 }

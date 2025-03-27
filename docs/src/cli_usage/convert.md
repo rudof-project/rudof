@@ -48,24 +48,25 @@ curl -o simple.shex https://raw.githubusercontent.com/rudof-project/rudof/refs/h
 
 Configuration files can be used to pass additional parameters to the conversion process.
 In the Github repository, an example configuration file is provided.
-Note that those are YAML files.
+Note that those are TOML files.
 
 ```sh
-curl -o config.yml https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/dctap/book_converter_config.yml
+curl -o config.toml https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/examples/dctap/book_converter_config.toml
 ```
 
 Whose contents are described below.
 
-```yaml
-tap2shex:
-  base_iri: "http://example.org/"
-  prefixmap:
-    dct: "http://purl.org/dc/terms/"
-    rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    foaf: "http://xmlns.com/foaf/0.1/"
-    xsd: "http://www.w3.org/2001/XMLSchema#"
-    sdo: "https://schema.org/"
-    ex: "http://example.org/"
+```toml
+[tap2shex]
+base_iri = "http://example.org/"
+
+[tap2shex.prefixmap]
+dct = "http://purl.org/dc/terms/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+foaf = "http://xmlns.com/foaf/0.1/"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+sdo = "https://schema.org/"
+ex = "http://example.org/"
 ```
 
 ## From DCTAP
@@ -126,11 +127,11 @@ rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex
 
 ### Specifying base IRI to handle relative IRIs
 
-If the RDF data contains relative IRIs, it is necessary to resolve them by specifying a base IRI. It can be done by providing a base declaration in the `rdf_data` entry of the configuration file. For example, assuming the configuration file contains `examples/config/data_config.yaml`
+If the RDF data contains relative IRIs, it is necessary to resolve them by specifying a base IRI. It can be done by providing a base declaration in the `rdf_data` entry of the configuration file. For example, assuming the configuration file contains `examples/config/data_config.toml`
 
-```yaml
-rdf_data:
-  base: http://example.org/
+```toml
+[rdf_data]
+base = "http://example.org/"
 ```
 
 it is possible to specify the conversion as:

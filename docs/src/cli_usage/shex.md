@@ -172,7 +172,7 @@ Options:
 
 ## ShEx configuration file
 
-The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in YAML format.
+The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in TOML format.
 
 The fields that it can contain are:
 
@@ -180,13 +180,13 @@ The fields that it can contain are:
 - show_extends (Boolean value): If enabled it shows information about imported schemas
 - show_shapes (Boolean value): If enabled it shows information about the shapes in the schema
 - shex_format (shexc|shexj|turtle|ntriples,rdfxml|trig|n3|nquads|...): Default ShEx format (it can be overrided with the `--schema-format` option)
-- rdf_config_shex: (YAML record): Configuration in case the format is RDF, following the structure of RDF config files.
+- rdf_config_shex: (TOML record): Configuration in case the format is RDF, following the structure of RDF config files.
 
-The following YAML file can be an example:
+The following TOML file can be an example:
 
-```yaml
-shex:
-  show_extends: true
-  show_imports: true
-  shex_format: shexc
+```toml
+[shex]
+show_extends = true
+show_imports = true
+shex_format = shexc
 ```

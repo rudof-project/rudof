@@ -11,7 +11,7 @@ pub enum RudofError {
     RudofConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    RudofConfigYamlError {
+    RudofConfigTomlError {
         path: String,
         error: toml::de::Error,
     },

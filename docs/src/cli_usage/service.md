@@ -44,7 +44,7 @@ Options:
 
 ## Service config file
 
-The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in YAML format.
+The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in TOML format.
 
 The fields that it can contain are:
 

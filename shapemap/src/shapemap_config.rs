@@ -28,7 +28,7 @@ impl ShapemapConfigMain {
             })?;
 
         let config: ShapemapConfigMain =
-            toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::TomlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;
@@ -115,5 +115,5 @@ pub enum ShapemapConfigError {
     FromFileError { file: String, error: String },
 
     #[error("Error reading config file from path {path}: {error}")]
-    YamlError { path: String, error: String },
+    TomlError { path: String, error: String },
 }

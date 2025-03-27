@@ -32,7 +32,7 @@ impl QueryConfig {
                 error: e,
             })?;
         let config: QueryConfig =
-            toml::from_str(s.as_str()).map_err(|e| QueryConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| QueryConfigError::TomlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -51,8 +51,8 @@ pub enum QueryConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
-    YamlError {
+    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
+    TomlError {
         path_name: String,
         error: toml::de::Error,
     },
