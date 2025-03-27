@@ -1,8 +1,7 @@
-use std::{collections::HashMap, path::Path};
-
-use serde::{Deserialize, Serialize};
-
 use crate::{PlaceholderResolver, TapError};
+use serde::{Deserialize, Serialize};
+use std::io::Read;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct DCTapConfig {
@@ -13,12 +12,18 @@ impl DCTapConfig {
     /// Obtain a DCTapConfig from a path file in YAML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<DCTapConfig, TapError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
+        let mut f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
             path: path_name.clone(),
             error: e,
         })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| TapError::TapConfigFromPathError {
+                path: path_name.clone(),
+                error: e,
+            })?;
         let config: DCTapConfig =
-            serde_yaml_ng::from_reader(f).map_err(|e| TapError::TapConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigYamlError {
                 path: path_name.clone(),
                 error: e,
             })?;

@@ -1,8 +1,8 @@
-use std::path::Path;
-
 use serde::{Deserialize, Serialize};
 use shapemap::ShapemapConfig;
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::path::Path;
 
 use crate::{ShExConfig, ValidatorError, MAX_STEPS};
 
@@ -38,18 +38,24 @@ impl ValidatorConfig {
     /// Obtain a `ValidatorConfig` from a path file in YAML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ValidatorConfig, ValidatorError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| {
+        let mut f = std::fs::File::open(path).map_err(|e| {
             ValidatorError::ValidatorConfigFromPathError {
                 path: path_name.clone(),
                 error: e.to_string(),
             }
         })?;
-        let config: ValidatorConfig = serde_yaml_ng::from_reader(f).map_err(|e| {
-            ValidatorError::ValidatorConfigYamlError {
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ValidatorError::ValidatorConfigFromPathError {
                 path: path_name.clone(),
                 error: e.to_string(),
-            }
-        })?;
+            })?;
+
+        let config: ValidatorConfig =
+            toml::from_str(s.as_str()).map_err(|e| ValidatorError::ValidatorConfigYamlError {
+                path: path_name.clone(),
+                error: e.to_string(),
+            })?;
         Ok(config)
     }
 

@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::{io, path::Path};
 
 use thiserror::Error;
@@ -21,13 +22,20 @@ impl ServiceConfig {
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ServiceConfig, ServiceConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| ServiceConfigError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
+        let mut f =
+            std::fs::File::open(path).map_err(|e| ServiceConfigError::ReadingConfigError {
+                path_name: path_name.clone(),
+                error: e,
+            })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ServiceConfigError::ReadingConfigError {
+                path_name: path_name.clone(),
+                error: e,
+            })?;
 
         let config: ServiceConfig =
-            serde_yaml_ng::from_reader(f).map_err(|e| ServiceConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ServiceConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
@@ -49,6 +57,6 @@ pub enum ServiceConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml_ng::Error,
+        error: toml::de::Error,
     },
 }

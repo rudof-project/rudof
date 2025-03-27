@@ -89,7 +89,7 @@ impl ShEx2HtmlConfig {
                 error: e,
             }
         })?;
-        serde_yaml_ng::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
+        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
             ShEx2HtmlConfigError::YamlError {
                 path_name: file_name.to_string(),
                 error: e,
@@ -113,6 +113,6 @@ pub enum ShEx2HtmlConfigError {
     #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
     YamlError {
         path_name: String,
-        error: serde_yaml_ng::Error,
+        error: toml::de::Error,
     },
 }

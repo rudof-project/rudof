@@ -1,0 +1,292 @@
+
+[[tests]]
+# /a/ = a
+name = "a_1_1_with_a_1_pass"
+bag = [ [ "a", 1 ] ]
+open = false
+match_result = "Pass"
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = 1
+
+[[tests]]
+name = "a_1_1_with_a_2_fail"
+bag = [ [ "a", 2 ] ]
+open = false
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = 1
+
+[[tests]]
+name = "a_1_3_with_a_2_pass"
+bag = [ [ "a", 2 ] ]
+open = false
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = 3
+
+[[tests]]
+name = "a_1_1_with_b_1_fail"
+bag = [ [ "b", 1 ] ]
+open = false
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = 1
+
+[[tests]]
+name = "a_1_u_with_a_1_pass"
+bag = [ [ "a", 1 ] ]
+open = true
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = -1
+
+[[tests]]
+name = "a_1_u_with_a_1_b_1_pass"
+bag = [ [ "a", 1 ], [ "b", 1 ] ]
+open = true
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = -1
+
+[[tests]]
+name = "a_1_u_with_a_1_b_1_closed_fail"
+bag = [ [ "a", 1 ], [ "b", 1 ] ]
+open = false
+match_result = ""
+
+  [tests.rbe]
+  value = "a"
+
+    [tests.rbe.card]
+    min = 1
+    max = -1
+
+[[tests]]
+name = "b_plus_with_a_1_b_1_open_pass"
+bag = [ [ "a", 1 ], [ "b", 1 ] ]
+open = true
+match_result = ""
+
+  [tests.rbe]
+  value = "b"
+
+    [tests.rbe.card]
+    min = 1
+    max = -1
+
+[[tests]]
+name = "a_1_1_b_2_3_with_a_1_b_1_open_fail"
+bag = [ [ "a", 1 ], [ "b", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 2
+  max = 3
+
+[[tests]]
+name = "a_1_1_b_2_3_with_a_1_b_2_open_pass"
+bag = [ [ "a", 1 ], [ "b", 2 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 2
+  max = 3
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_a_1_open_pass"
+bag = [ [ "a", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_b_1_open_pass"
+bag = [ [ "b", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_c_1_open_fail"
+bag = [ [ "c", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_a_1_b_1_open_fail"
+bag = [ [ "a", 1 ], [ "b", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_a_1_c_1_open_pass"
+bag = [ [ "a", 1 ], [ "c", 1 ] ]
+open = true
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_or_b_1_1_with_a_1_c_1_closed_fail"
+bag = [ [ "a", 1 ], [ "c", 1 ] ]
+open = false
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests]]
+name = "a_1_1_and_b_1_1_and_c_0_1_with_a_1_c_1_b_1_closed_pass"
+bag = [ [ "a", 1 ], [ "c", 1 ], [ "b", 1 ] ]
+open = false
+match_result = ""
+
+[[tests.rbe.values]]
+value = "a"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "b"
+
+  [tests.rbe.values.card]
+  min = 1
+  max = 1
+
+[[tests.rbe.values]]
+value = "c"
+
+  [tests.rbe.values.card]
+  min = 0
+  max = 1

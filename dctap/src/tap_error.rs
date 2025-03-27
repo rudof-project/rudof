@@ -46,7 +46,7 @@ pub enum TapError {
     #[error("Error reading config file from path {path}: {error}")]
     TapConfigYamlError {
         path: String,
-        error: serde_yaml_ng::Error,
+        error: toml::de::Error,
     },
 
     #[error("Reading Excel file from {path}: {error}")]

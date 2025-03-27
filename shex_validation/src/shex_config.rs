@@ -1,8 +1,8 @@
-use std::path::Path;
-
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::path::Path;
 use thiserror::Error;
 
 use crate::ShExFormat;
@@ -21,12 +21,18 @@ impl ShExConfigMain {
     /// Obtain a `ShExConfigMain` from a path file in YAML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShExConfigMain, ShExConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| ShExConfigError::FromPathError {
+        let mut f = std::fs::File::open(path).map_err(|e| ShExConfigError::FromPathError {
             path: path_name.clone(),
             error: e.to_string(),
         })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ShExConfigError::FromPathError {
+                path: path_name.clone(),
+                error: e.to_string(),
+            })?;
         let config: ShExConfigMain =
-            serde_yaml_ng::from_reader(f).map_err(|e| ShExConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ShExConfigError::YamlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;
