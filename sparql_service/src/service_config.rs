@@ -35,7 +35,7 @@ impl ServiceConfig {
             })?;
 
         let config: ServiceConfig =
-            toml::from_str(&mut s).map_err(|e| ServiceConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ServiceConfigError::YamlError {
                 path_name: path_name.to_string(),
                 error: e,
             })?;
