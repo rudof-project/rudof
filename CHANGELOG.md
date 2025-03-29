@@ -2,10 +2,12 @@
 
 ## Current changes without release yet
 
-- Changed dependency from [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) to [toml](https://docs.rs/toml/latest/toml/)
-]
+## [v0.1.62] - 2025-03-29
 
-## [v0.1.60] - 2025-11-03
+- Changed dependency from [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) to [toml](https://docs.rs/toml/latest/toml/)
+- Removed dependency in rbe_tests from serde_yaml_ng to use plain JSON for the test_suite
+
+## [v0.1.60] - 2025-03-11
 
 - Changed dependency from [serde_yml](https://doc.serdeyml.com/serde_yml/index.html) to [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) according to #278
 - Changed Iri trait to add Ord constraint so IRIs can be ordered solving issue #276

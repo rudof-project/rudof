@@ -456,7 +456,7 @@ Options:
   -m, --manifest <Manifest FILE (.jsonld)>
           Name of Manifest file [default: shex_testsuite/shexTest/validation/manifest.jsonld]
   -c, --config <Config file>
-          [default: shex_testsuite/config.yml]
+          [default: shex_testsuite/config.toml]
   -x, --run_mode <MANIFEST_RUN_MODE>
           [default: collect-errors] [possible values: collect-errors, fail-first-error]
   -f, --manifest_mode <MANIFEST_MODE>

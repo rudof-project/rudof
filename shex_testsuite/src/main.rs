@@ -33,7 +33,7 @@ struct Cli {
         short = 'c',
         long = "config",
         value_name = "Config file",
-        default_value = "shex_testsuite/config.yml"
+        default_value = "shex_testsuite/config.toml"
     )]
     config: String,
 

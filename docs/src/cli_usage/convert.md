@@ -87,7 +87,7 @@ For example, instead of the basic *prefix map*, we can use custom *prefix map* d
 Refer to the [Configuration files](#configuration-files) section.
 
 ```sh
-rudof convert -s book.csv -m dctap -x shex -f csv -c config.yml
+rudof convert -s book.csv -m dctap -x shex -f csv -c config.toml
 ```
 
 ### From DCTAP to UML
@@ -137,7 +137,7 @@ base = "http://example.org/"
 it is possible to specify the conversion as:
 
 ```sh
-rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex -c examples/config/data_config.yml
+rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex -c examples/config/data_config.toml
 ```
 
 ## From ShEx

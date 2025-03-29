@@ -1,0 +1,528 @@
+{
+    "tests": [
+        {
+            "name": "a_1_1_with_a_1_pass",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": 1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": false,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_with_a_2_fail",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": 1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    2
+                ]
+            ],
+            "open": false,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_3_with_a_2_pass",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": 3
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    2
+                ]
+            ],
+            "open": false,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_with_b_1_fail",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": 1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "b",
+                    1
+                ]
+            ],
+            "open": false,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_u_with_a_1_pass",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": -1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_u_with_a_1_b_1_pass",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": -1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ],
+                [
+                    "b",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_u_with_a_1_b_1_closed_fail",
+            "rbe": {
+                "Symbol": {
+                    "value": "a",
+                    "card": {
+                        "min": 1,
+                        "max": -1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "b",
+                    1
+                ],
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": false,
+            "match_result": "Fail"
+        },
+        {
+            "name": "b_plus_with_a_1_b_1_open_pass",
+            "rbe": {
+                "Symbol": {
+                    "value": "b",
+                    "card": {
+                        "min": 1,
+                        "max": -1
+                    }
+                }
+            },
+            "bag": [
+                [
+                    "b",
+                    1
+                ],
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_b_2_3_with_a_1_b_1_open_fail",
+            "rbe": {
+                "And": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 2,
+                                    "max": 3
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ],
+                [
+                    "b",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_1_b_2_3_with_a_1_b_2_open_pass",
+            "rbe": {
+                "And": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 2,
+                                    "max": 3
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ],
+                [
+                    "b",
+                    2
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_a_1_open_pass",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_b_1_open_pass",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "b",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_c_1_open_fail",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "c",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_a_1_b_1_open_fail",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "b",
+                    1
+                ],
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_a_1_c_1_open_pass",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ],
+                [
+                    "c",
+                    1
+                ]
+            ],
+            "open": true,
+            "match_result": "Pass"
+        },
+        {
+            "name": "a_1_1_or_b_1_1_with_a_1_c_1_closed_fail",
+            "rbe": {
+                "Or": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "a",
+                    1
+                ],
+                [
+                    "c",
+                    1
+                ]
+            ],
+            "open": false,
+            "match_result": "Fail"
+        },
+        {
+            "name": "a_1_1_and_b_1_1_and_c_0_1_with_a_1_c_1_b_1_closed_pass",
+            "rbe": {
+                "And": {
+                    "values": [
+                        {
+                            "Symbol": {
+                                "value": "a",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "b",
+                                "card": {
+                                    "min": 1,
+                                    "max": 1
+                                }
+                            }
+                        },
+                        {
+                            "Symbol": {
+                                "value": "c",
+                                "card": {
+                                    "min": 0,
+                                    "max": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "bag": [
+                [
+                    "c",
+                    1
+                ],
+                [
+                    "b",
+                    1
+                ],
+                [
+                    "a",
+                    1
+                ]
+            ],
+            "open": false,
+            "match_result": "Pass"
+        }
+    ]
+}

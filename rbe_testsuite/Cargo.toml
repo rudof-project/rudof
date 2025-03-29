@@ -8,11 +8,12 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-rbe = { workspace = true }
+rbe.workspace = true
 serde.workspace = true
-anyhow = "1.0.27"
-serde_yaml_ng = "0.10"
-tracing = { workspace = true }
+anyhow.workspace = true
+tracing.workspace = true 
 
 [dev-dependencies]
 indoc = "2"
+serde_json.workspace = true
+pretty_assertions = "1.4.1"
