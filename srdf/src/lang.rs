@@ -16,9 +16,12 @@ impl Lang {
     }
 
     pub fn new_unchecked(lang: impl Into<String>) -> Lang {
-        Lang {
-            lang: oxilangtag::LanguageTag::parse_and_normalize(&lang.into()).unwrap(),
-        }
+        let str: String = lang.into();
+        let lang = match oxilangtag::LanguageTag::parse_and_normalize(str.as_str()) {
+            Ok(lang) => lang,
+            Err(e) => panic!("Invalid language tag {str}: {e}"),
+        };
+        Lang { lang }
     }
 }
 
