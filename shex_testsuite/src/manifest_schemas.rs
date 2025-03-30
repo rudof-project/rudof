@@ -205,8 +205,9 @@ impl SchemasEntry {
             let base_iri = IriS::new_unchecked(base_url.as_str());
             let mut shexc_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
 
-            // We remove base and prefixmap for comparisons
+            // We remove base, prefixmap and source_iri for comparisons
             shexc_schema_parsed = shexc_schema_parsed.with_base(None).with_prefixmap(None);
+            shexc_schema_parsed.with_source_iri(&IriS::new_unchecked(""));
             if schema_parsed == shexc_schema_parsed {
                 debug!("Schema JSON parsed == Schema ShExC parsed");
                 Ok(())
