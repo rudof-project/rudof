@@ -23,5 +23,6 @@ regex = "1.10"
 serde_json.workspace = true
 const_format = "0.2"
 tracing.workspace = true
+petgraph = "0.8"
 
 [dev-dependencies]

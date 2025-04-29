@@ -1,11 +1,12 @@
 pub mod annotation;
-pub mod compiled_schema_error;
+pub mod dependency_graph;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod object_value;
 pub mod preds;
 pub mod schema;
 pub mod schema_ir;
+pub mod schema_ir_error;
 pub mod schema_json_compiler;
 pub mod sem_act;
 pub mod shape;

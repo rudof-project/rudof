@@ -33,3 +33,9 @@ impl Display for ShapeLabelIdx {
         }
     }
 }
+
+impl From<usize> for ShapeLabelIdx {
+    fn from(idx: usize) -> Self {
+        ShapeLabelIdx(idx)
+    }
+}

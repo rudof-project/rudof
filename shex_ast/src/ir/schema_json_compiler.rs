@@ -784,9 +784,7 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::BNode, _) => Err(SchemaIRError::NodeKindBNode { node: node.clone() }),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (ast::NodeKind::Literal, _) => {
-            Err(SchemaIRError::NodeKindLiteral { node: node.clone() })
-        }
+        (ast::NodeKind::Literal, _) => Err(SchemaIRError::NodeKindLiteral { node: node.clone() }),
         (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
         (ast::NodeKind::NonLiteral, _) => {

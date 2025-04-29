@@ -7,6 +7,7 @@ use prefixmap::{IriRef, PrefixMap};
 use std::collections::HashMap;
 use std::fmt::Display;
 
+use super::dependency_graph::DependencyGraph;
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 
@@ -16,17 +17,19 @@ type Result<A> = std::result::Result<A, SchemaIRError>;
 pub struct SchemaIR {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
-    shape_label_counter: ShapeLabelIdx,
+    shape_label_counter: usize,
     prefixmap: PrefixMap,
+    dep_graph: DependencyGraph,
 }
 
 impl SchemaIR {
     pub fn new() -> SchemaIR {
         SchemaIR {
             shape_labels_map: HashMap::new(),
-            shape_label_counter: ShapeLabelIdx::default(),
+            shape_label_counter: 0,
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
+            dep_graph: DependencyGraph::default(),
         }
     }
 
@@ -39,10 +42,10 @@ impl SchemaIR {
     }
 
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
-        let idx = self.shape_label_counter;
+        let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_labels_map.insert(shape_label.clone(), idx);
         self.shapes.insert(idx, (shape_label.clone(), se));
-        self.shape_label_counter.incr()
+        self.shape_label_counter += 1;
     }
 
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
