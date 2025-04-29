@@ -1,5 +1,5 @@
 use crate::{
-    ast::Schema as SchemaJson, compiled::schema_json_compiler::SchemaJsonCompiler, CResult,
+    ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, CResult,
     CompiledSchemaError, ShapeExprLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;

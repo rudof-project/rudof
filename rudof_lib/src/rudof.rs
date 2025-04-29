@@ -6,7 +6,7 @@ use shacl_validation::store::graph::Graph;
 
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
-use shex_ast::compiled::compiled_schema::CompiledSchema;
+use shex_ast::ir::compiled_schema::CompiledSchema;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use srdf::Sparql;
@@ -694,7 +694,7 @@ mod tests {
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
     use shapemap::ShapeMapFormat;
-    use shex_ast::{compiled::shape_label::ShapeLabel, Node};
+    use shex_ast::{ir::shape_label::ShapeLabel, Node};
     use shex_validation::ShExFormat;
 
     use crate::RudofConfig;

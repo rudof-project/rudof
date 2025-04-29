@@ -5,7 +5,7 @@ use crate::ShapemapConfig;
 use crate::ShapemapError;
 use crate::ValidationStatus;
 use prefixmap::PrefixMap;
-use shex_ast::{compiled::shape_label::ShapeLabel, Node};
+use shex_ast::{ir::shape_label::ShapeLabel, Node};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Display;

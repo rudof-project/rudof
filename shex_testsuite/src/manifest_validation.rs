@@ -5,11 +5,9 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::compiled::compiled_schema::CompiledSchema;
-use shex_ast::compiled::shape_label::ShapeLabel;
-use shex_ast::{
-    ast::Schema as SchemaJson, compiled::schema_json_compiler::SchemaJsonCompiler, Node,
-};
+use shex_ast::ir::compiled_schema::CompiledSchema;
+use shex_ast::ir::shape_label::ShapeLabel;
+use shex_ast::{ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, Node};
 use shex_validation::Validator;
 use shex_validation::{ResultValue, ValidatorConfig};
 use srdf::literal::Literal;

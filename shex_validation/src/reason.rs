@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use shex_ast::{
-    compiled::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
+    ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
     Node,
 };
 

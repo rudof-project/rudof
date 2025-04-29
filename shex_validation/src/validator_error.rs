@@ -2,9 +2,9 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use shex_ast::compiled::preds::Preds;
-use shex_ast::compiled::shape_expr::ShapeExpr;
-use shex_ast::{compiled::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
+use shex_ast::ir::preds::Preds;
+use shex_ast::ir::shape_expr::ShapeExpr;
+use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
 use srdf::Object;
 use thiserror::Error;
 

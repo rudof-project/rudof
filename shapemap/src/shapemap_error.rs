@@ -1,4 +1,4 @@
-use shex_ast::{compiled::shape_label::ShapeLabel, Node};
+use shex_ast::{ir::shape_label::ShapeLabel, Node};
 use thiserror::Error;
 
 use crate::ValidationStatus;

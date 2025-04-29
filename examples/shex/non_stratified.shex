@@ -1,0 +1,6 @@
+prefix :       <http://example.org/> 
+
+# Non-stratified schema
+:S {
+    :p NOT @:S + 
+}
