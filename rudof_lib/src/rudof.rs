@@ -6,7 +6,7 @@ use shacl_validation::store::graph::Graph;
 
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
-use shex_ast::ir::compiled_schema::CompiledSchema;
+use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use srdf::Sparql;
@@ -450,7 +450,7 @@ impl Rudof {
             }
         }?;
         self.shex_schema = Some(schema_json.clone());
-        let mut schema = CompiledSchema::new();
+        let mut schema = SchemaIR::new();
         schema
             .from_schema_json(&schema_json)
             .map_err(|e| RudofError::CompilingSchemaError {

@@ -1,6 +1,6 @@
 use crate::ir::annotation::Annotation;
-use crate::ir::compiled_schema::CompiledSchema;
 use crate::ir::object_value::ObjectValue;
+use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
@@ -8,7 +8,7 @@ use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::ShapeExprLabel;
-use crate::{ast, ast::Schema as SchemaJson, CompiledSchemaError, ShapeLabelIdx};
+use crate::{ast, ast::Schema as SchemaJson, SchemaIRError, ShapeLabelIdx};
 use crate::{CResult, Cond, Node, Pred};
 use iri_s::IriS;
 use lazy_static::lazy_static;
@@ -43,7 +43,7 @@ impl SchemaJsonCompiler {
     pub fn compile(
         &mut self,
         schema_json: &SchemaJson,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         debug!("Compiling schema_json: {compiled_schema:?}");
         compiled_schema.set_prefixmap(schema_json.prefixmap());
@@ -55,7 +55,7 @@ impl SchemaJsonCompiler {
     pub fn collect_shape_labels(
         &mut self,
         schema_json: &SchemaJson,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         match &schema_json.shapes() {
             None => Ok(()),
@@ -73,7 +73,7 @@ impl SchemaJsonCompiler {
     pub fn collect_shape_exprs(
         &mut self,
         schema_json: &SchemaJson,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         match &schema_json.shapes() {
             None => Ok(()),
@@ -102,7 +102,7 @@ impl SchemaJsonCompiler {
     fn get_shape_label_idx(
         &self,
         id: &ShapeExprLabel,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeLabelIdx> {
         let label = self.shape_expr_label_to_shape_label(id)?;
         compiled_schema.get_shape_label_idx(&label)
@@ -112,7 +112,7 @@ impl SchemaJsonCompiler {
         &self,
         sd: &ast::ShapeDecl,
         idx: &ShapeLabelIdx,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeExpr> {
         self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)
     }
@@ -120,7 +120,7 @@ impl SchemaJsonCompiler {
     fn ref2idx(
         &self,
         sref: &ast::ShapeExprLabel,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeLabelIdx> {
         let idx = self.get_shape_label_idx(sref, compiled_schema)?;
         Ok(idx)
@@ -130,7 +130,7 @@ impl SchemaJsonCompiler {
         &self,
         se: &ast::ShapeExpr,
         idx: &ShapeLabelIdx,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeExpr> {
         match se {
             ast::ShapeExpr::Ref(se_ref) => {
@@ -289,7 +289,7 @@ impl SchemaJsonCompiler {
     fn triple_expr2rbe(
         &self,
         triple_expr: &ast::TripleExpr,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
@@ -343,7 +343,7 @@ impl SchemaJsonCompiler {
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            ast::TripleExpr::TripleExprRef(r) => Err(CompiledSchemaError::Todo {
+            ast::TripleExpr::TripleExprRef(r) => Err(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             }),
         }
@@ -352,7 +352,7 @@ impl SchemaJsonCompiler {
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
         match predicate {
             IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
-            IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::Internal {
+            IriRef::Prefixed { prefix, local } => Err(SchemaIRError::Internal {
                 msg: format!(
                     "Cannot convert prefixed {prefix}:{local} to predicate without context"
                 ),
@@ -384,7 +384,7 @@ impl SchemaJsonCompiler {
 
     fn cnv_min(&self, min: &Option<i32>) -> CResult<Min> {
         match min {
-            Some(min) if *min < 0 => Err(CompiledSchemaError::MinLessZero { min: *min }),
+            Some(min) if *min < 0 => Err(SchemaIRError::MinLessZero { min: *min }),
             Some(min) => Ok(Min::from(*min)),
             None => Ok(Min::from(1)),
         }
@@ -393,7 +393,7 @@ impl SchemaJsonCompiler {
     fn cnv_max(&self, max: &Option<i32>) -> CResult<Max> {
         match *max {
             Some(-1) => Ok(Max::Unbounded),
-            Some(max) if max < -1 => Err(CompiledSchemaError::MaxIncorrect { max }),
+            Some(max) if max < -1 => Err(SchemaIRError::MaxIncorrect { max }),
             Some(max) => Ok(Max::from(max)),
             None => Ok(Max::from(1)),
         }
@@ -402,7 +402,7 @@ impl SchemaJsonCompiler {
     fn value_expr2match_cond(
         &self,
         ve: &Option<Box<ast::ShapeExpr>>,
-        compiled_schema: &mut CompiledSchema,
+        compiled_schema: &mut SchemaIR,
     ) -> CResult<Cond> {
         if let Some(se) = ve.as_deref() {
             match se {
@@ -432,7 +432,7 @@ impl SchemaJsonCompiler {
     fn shape_expr2match_cond(
         &self,
         _se: schema_json::ShapeExpr,
-        _compiled_schema: &mut CompiledSchema,
+        _compiled_schema: &mut SchemaIR,
     ) -> CResult<Cond> {
         todo("shape_expr2match_cond")
     }*/
@@ -625,7 +625,7 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-        IriRef::Prefixed { prefix, local } => Err(CompiledSchemaError::IriRef2ShapeLabelError {
+        IriRef::Prefixed { prefix, local } => Err(SchemaIRError::IriRef2ShapeLabelError {
             prefix: prefix.clone(),
             local: local.clone(),
         }),
@@ -780,17 +780,17 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
         (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::Iri, _) => Err(CompiledSchemaError::NodeKindIri { node: node.clone() }),
+        (ast::NodeKind::Iri, _) => Err(SchemaIRError::NodeKindIri { node: node.clone() }),
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::BNode, _) => Err(CompiledSchemaError::NodeKindBNode { node: node.clone() }),
+        (ast::NodeKind::BNode, _) => Err(SchemaIRError::NodeKindBNode { node: node.clone() }),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
         (ast::NodeKind::Literal, _) => {
-            Err(CompiledSchemaError::NodeKindLiteral { node: node.clone() })
+            Err(SchemaIRError::NodeKindLiteral { node: node.clone() })
         }
         (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
         (ast::NodeKind::NonLiteral, _) => {
-            Err(CompiledSchemaError::NodeKindNonLiteral { node: node.clone() })
+            Err(SchemaIRError::NodeKindNonLiteral { node: node.clone() })
         }
     }
 }
@@ -814,7 +814,7 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
             if dt == datatype {
                 Ok(())
             } else {
-                Err(CompiledSchemaError::DatatypeDontMatch {
+                Err(SchemaIRError::DatatypeDontMatch {
                     expected: dt.clone(),
                     found: datatype.clone(),
                     lexical_form: lexical_form.clone(),
@@ -831,7 +831,7 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 Ok(())
             } else {
                 debug!("datatype cond fails: {}!={}", dt, *XSD_STRING);
-                Err(CompiledSchemaError::DatatypeDontMatchString {
+                Err(SchemaIRError::DatatypeDontMatchString {
                     expected: dt.clone(),
                     lexical_form: lexical_form.clone(),
                 })
@@ -844,13 +844,13 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
             if *dt == *RDF_LANG_STRING {
                 Ok(())
             } else {
-                Err(CompiledSchemaError::DatatypeDontMatchLangString {
+                Err(SchemaIRError::DatatypeDontMatchLangString {
                     lexical_form: lexical_form.clone(),
                     lang: Box::new(lang.clone()),
                 })
             }
         }
-        _ => Err(CompiledSchemaError::DatatypeNoLiteral {
+        _ => Err(SchemaIRError::DatatypeNoLiteral {
             expected: Box::new(dt.clone()),
             node: Box::new(node.clone()),
         }),
@@ -863,7 +863,7 @@ fn check_node_length(node: &Node, len: usize) -> CResult<()> {
     if node_length == len {
         Ok(())
     } else {
-        Err(CompiledSchemaError::LengthError {
+        Err(SchemaIRError::LengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
@@ -877,7 +877,7 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
     if node_length >= len {
         Ok(())
     } else {
-        Err(CompiledSchemaError::MinLengthError {
+        Err(SchemaIRError::MinLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
@@ -891,7 +891,7 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
     if node_length <= len {
         Ok(())
     } else {
-        Err(CompiledSchemaError::MaxLengthError {
+        Err(SchemaIRError::MaxLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
@@ -906,14 +906,14 @@ fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
         if node_number.less_than(min) {
             Ok(())
         } else {
-            Err(CompiledSchemaError::MinInclusiveError {
+            Err(SchemaIRError::MinInclusiveError {
                 expected: min.clone(),
                 found: node_number,
                 node: format!("{node}"),
             })
         }
     } else {
-        Err(CompiledSchemaError::NonNumeric {
+        Err(SchemaIRError::NonNumeric {
             node: format!("{node}"),
         })
     }
@@ -925,15 +925,15 @@ fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
 }*/
 
 fn todo<A>(str: &str) -> CResult<A> {
-    Err(CompiledSchemaError::Todo {
+    Err(SchemaIRError::Todo {
         msg: str.to_string(),
     })
 }
 
-fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, CompiledSchemaError> {
+fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, SchemaIRError> {
     match iri {
         IriRef::Iri(iri) => Ok(iri.clone()),
-        _ => Err(CompiledSchemaError::Internal {
+        _ => Err(SchemaIRError::Internal {
             msg: format!("Cannot convert {iri} to Iri"),
         }),
     }

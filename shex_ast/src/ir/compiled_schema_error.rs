@@ -9,7 +9,7 @@ use crate::{ast, Node};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
-pub enum CompiledSchemaError {
+pub enum SchemaIRError {
     #[error("Parsing {str:?} as IRI")]
     Str2IriError { str: String },
 

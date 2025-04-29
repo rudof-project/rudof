@@ -1,4 +1,4 @@
-use shex_ast::CompiledSchemaError;
+use shex_ast::SchemaIRError;
 use std::fmt::Debug;
 use thiserror::Error;
 
@@ -18,7 +18,7 @@ where
     FromJsonStr { str: String, err: String },
 
     #[error("Compiling schema: {error:?}")]
-    CompilingSchema { error: CompiledSchemaError },
+    CompilingSchema { error: SchemaIRError },
 
     #[error("SRDF Error {error:?}")]
     SRDFError { error: String },
@@ -41,11 +41,11 @@ where
     }
 }
 
-impl<'a, SL> From<CompiledSchemaError> for ValidationError<'a, SL>
+impl<'a, SL> From<SchemaIRError> for ValidationError<'a, SL>
 where
     SL: Debug,
 {
-    fn from(ce: CompiledSchemaError) -> Self {
+    fn from(ce: SchemaIRError) -> Self {
         ValidationError::CompilingSchema { error: ce }
     }
 }

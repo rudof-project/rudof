@@ -1,6 +1,6 @@
 use crate::{
     ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, CResult,
-    CompiledSchemaError, ShapeExprLabel, ShapeLabelIdx,
+    SchemaIRError, ShapeExprLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -10,19 +10,19 @@ use std::fmt::Display;
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 
-type Result<A> = std::result::Result<A, CompiledSchemaError>;
+type Result<A> = std::result::Result<A, SchemaIRError>;
 
 #[derive(Debug, Default)]
-pub struct CompiledSchema {
+pub struct SchemaIR {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
     shape_label_counter: ShapeLabelIdx,
     prefixmap: PrefixMap,
 }
 
-impl CompiledSchema {
-    pub fn new() -> CompiledSchema {
-        CompiledSchema {
+impl SchemaIR {
+    pub fn new() -> SchemaIR {
+        SchemaIR {
             shape_labels_map: HashMap::new(),
             shape_label_counter: ShapeLabelIdx::default(),
             shapes: HashMap::new(),
@@ -64,18 +64,18 @@ impl CompiledSchema {
             ShapeExprLabel::IriRef { value } => match value {
                 IriRef::Iri(iri) => {
                     let label = ShapeLabel::iri(iri.clone());
-                    Ok::<ShapeLabel, CompiledSchemaError>(label)
+                    Ok::<ShapeLabel, SchemaIRError>(label)
                 }
                 IriRef::Prefixed { prefix, local } => {
                     let iri =
                         self.prefixmap
                             .resolve_prefix_local(prefix, local)
-                            .map_err(|err| CompiledSchemaError::PrefixedNotFound {
+                            .map_err(|err| SchemaIRError::PrefixedNotFound {
                                 prefix: prefix.clone(),
                                 local: local.clone(),
                                 err: Box::new(err),
                             })?;
-                    Ok::<ShapeLabel, CompiledSchemaError>(ShapeLabel::iri(iri))
+                    Ok::<ShapeLabel, SchemaIRError>(ShapeLabel::iri(iri))
                 }
             },
             ShapeExprLabel::BNode { value } => {
@@ -86,7 +86,7 @@ impl CompiledSchema {
         }?;
         match self.shape_labels_map.get(&shape_label) {
             Some(idx) => Ok(*idx),
-            None => Err(CompiledSchemaError::LabelNotFound { shape_label }),
+            None => Err(SchemaIRError::LabelNotFound { shape_label }),
         }
     }
 
@@ -113,7 +113,7 @@ impl CompiledSchema {
         .map(|(label, idx)| match self.shapes.get(idx) {
             Some(se) => (label, se),
             None => {
-                panic!("CompiledSchema: Internal Error obtaining shapes. Unknown idx: {idx:?}")
+                panic!("SchemaIR: Internal Error obtaining shapes. Unknown idx: {idx:?}")
             }
         })*/
         self.shapes.values()
@@ -148,7 +148,7 @@ impl CompiledSchema {
     pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {
         match self.shape_labels_map.get(shape_label) {
             Some(shape_label_idx) => Ok(*shape_label_idx),
-            None => Err(CompiledSchemaError::ShapeLabelNotFound {
+            None => Err(SchemaIRError::ShapeLabelNotFound {
                 shape_label: shape_label.clone(),
             }),
         }
@@ -167,7 +167,7 @@ impl CompiledSchema {
     }
 }
 
-impl Display for CompiledSchema {
+impl Display for SchemaIR {
     fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         for (label, se) in self.shapes() {
             let error_idx = ShapeLabelIdx::error();
@@ -180,7 +180,7 @@ impl Display for CompiledSchema {
 
 #[cfg(test)]
 mod tests {
-    use super::CompiledSchema;
+    use super::SchemaIR;
     use crate::ast::Schema as SchemaJson;
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut compiled_schema = CompiledSchema::new();
+        let mut compiled_schema = SchemaIR::new();
         compiled_schema.from_schema_json(&schema_json).unwrap();
         //        let shape = compiled_schema.get
     }
@@ -228,7 +228,7 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut compiled_schema = CompiledSchema::new();
+        let mut compiled_schema = SchemaIR::new();
         compiled_schema.from_schema_json(schema_json).unwrap();
         let s1 = ShapeLabel::Iri(IriS::new("http://a.example/S1").unwrap());
         let p1 = IriS::new("http://a.example/p1").unwrap();

@@ -20,7 +20,7 @@ pub enum ValidatorError {
     ConversionObjectIri { object: Object },
 
     #[error("Compiling schema: {error}")]
-    CompiledSchemaError { error: String },
+    SchemaIRError { error: String },
 
     #[error("Shapemap error: {error}")]
     ShapeMapError { error: String },

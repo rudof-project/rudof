@@ -9,7 +9,7 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
 #[derive(Debug)]
-pub struct CompiledSchema<S: Rdf> {
+pub struct SchemaIR<S: Rdf> {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
     shapes: HashMap<S::Term, CompiledShape<S>>,
@@ -17,13 +17,13 @@ pub struct CompiledSchema<S: Rdf> {
     base: Option<S::IRI>,
 }
 
-impl<S: Rdf> CompiledSchema<S> {
+impl<S: Rdf> SchemaIR<S> {
     pub fn new(
         shapes: HashMap<S::Term, CompiledShape<S>>,
         prefixmap: PrefixMap,
         base: Option<S::IRI>,
-    ) -> CompiledSchema<S> {
-        CompiledSchema {
+    ) -> SchemaIR<S> {
+        SchemaIR {
             shapes,
             prefixmap,
             base,
@@ -54,7 +54,7 @@ impl<S: Rdf> CompiledSchema<S> {
     }
 }
 
-impl<S: Rdf> TryFrom<Schema> for CompiledSchema<S> {
+impl<S: Rdf> TryFrom<Schema> for SchemaIR<S> {
     type Error = CompiledShaclError;
 
     fn try_from(schema: Schema) -> Result<Self, Self::Error> {
@@ -70,7 +70,7 @@ impl<S: Rdf> TryFrom<Schema> for CompiledSchema<S> {
 
         let base = schema.base().map(Into::into);
 
-        Ok(CompiledSchema::new(shapes, prefixmap, base))
+        Ok(SchemaIR::new(shapes, prefixmap, base))
     }
 }
 
@@ -84,7 +84,7 @@ mod tests {
 
     use crate::ShaclParser;
 
-    use super::CompiledSchema;
+    use super::SchemaIR;
 
     const SCHEMA: &str = r#"
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -122,7 +122,7 @@ mod tests {
             ] .
     "#;
 
-    fn load_schema(shacl_schema: &str) -> CompiledSchema<SRDFGraph> {
+    fn load_schema(shacl_schema: &str) -> SchemaIR<SRDFGraph> {
         let reader = Cursor::new(shacl_schema);
         let rdf_format = RDFFormat::Turtle;
         let base = None;

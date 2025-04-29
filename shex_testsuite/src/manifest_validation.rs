@@ -5,7 +5,7 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::ir::compiled_schema::CompiledSchema;
+use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::{ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, Node};
 use shex_validation::Validator;
@@ -191,7 +191,7 @@ impl ValidationEntry {
         debug!("Shape: {}", shape);
 
         let mut compiler = SchemaJsonCompiler::new();
-        let mut compiled_schema = CompiledSchema::new();
+        let mut compiled_schema = SchemaIR::new();
         compiler
             .compile(&schema, &mut compiled_schema)
             .map_err(Box::new)?;

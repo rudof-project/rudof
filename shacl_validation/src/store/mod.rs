@@ -1,4 +1,4 @@
-use shacl_ast::compiled::schema::CompiledSchema;
+use shacl_ast::compiled::schema::SchemaIR;
 use shacl_ast::ShaclParser;
 use srdf::RDFFormat;
 use srdf::Rdf;
@@ -22,7 +22,7 @@ impl ShaclDataManager {
         reader: R,
         rdf_format: RDFFormat,
         base: Option<&str>,
-    ) -> Result<CompiledSchema<S>, ValidateError> {
+    ) -> Result<SchemaIR<S>, ValidateError> {
         let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())?;
 
         match ShaclParser::new(rdf).parse() {

@@ -17,7 +17,7 @@ pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;
 
-type CResult<T> = Result<T, CompiledSchemaError>;
+type CResult<T> = Result<T, SchemaIRError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;
 
 #[cfg(test)]

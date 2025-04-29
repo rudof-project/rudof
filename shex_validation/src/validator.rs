@@ -12,7 +12,7 @@ use serde_json::Value;
 use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::ResultShapeMap;
 use shapemap::ValidationStatus;
-use shex_ast::ir::compiled_schema::CompiledSchema;
+use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::object_value::ObjectValue;
@@ -27,12 +27,12 @@ type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug)]
 pub struct Validator {
-    schema: CompiledSchema,
+    schema: SchemaIR,
     runner: Engine,
 }
 
 impl Validator {
-    pub fn new(schema: CompiledSchema, config: &ValidatorConfig) -> Validator {
+    pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Validator {
         Validator {
             schema,
             runner: Engine::new(config),
@@ -232,7 +232,7 @@ impl Validator {
     }
 }
 
-fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a CompiledSchema) -> &'a ShapeExpr {
+fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a ShapeExpr {
     let (_label, se) = schema.find_shape_idx(idx).unwrap();
     se
 }
