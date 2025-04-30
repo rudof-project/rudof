@@ -3,7 +3,7 @@ use std::fmt::Display;
 use rbe::Ref;
 use serde::Serialize;
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Serialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Serialize)]
 pub struct ShapeLabelIdx(usize);
 
 impl Default for ShapeLabelIdx {
