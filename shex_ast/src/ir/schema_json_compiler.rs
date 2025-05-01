@@ -145,7 +145,8 @@ impl SchemaJsonCompiler {
                 }
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal OR".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal OR with some se".to_string(),
                 };
 
                 Ok(ShapeExpr::ShapeOr {
@@ -161,7 +162,8 @@ impl SchemaJsonCompiler {
                 }
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal AND".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal AND with some se".to_string(),
                 };
                 Ok(ShapeExpr::ShapeAnd {
                     exprs: cnv,
@@ -172,7 +174,8 @@ impl SchemaJsonCompiler {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal NOT".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal NOT with some shape expr".to_string(),
                 };
                 Ok(ShapeExpr::ShapeNot {
                     expr: Box::new(se),
@@ -194,7 +197,8 @@ impl SchemaJsonCompiler {
 
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal with sshape expr:".to_string(),
                 };
 
                 let shape = Shape::new(
@@ -222,7 +226,8 @@ impl SchemaJsonCompiler {
                 )?;
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal NodeConstraint".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal NodeConstraint with some shape expr".to_string(),
                 };
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
@@ -420,7 +425,20 @@ impl SchemaJsonCompiler {
                 ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
-                ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
+                ast::ShapeExpr::ShapeNot { shape_expr } => {
+                    // let e = shape_expr2match_cond(&shape_expr.as_ref(), compiled_schema)?;
+                    let idx = compiled_schema.new_index();
+                    let se = self.compile_shape_expr(&shape_expr.se, &idx, compiled_schema)?;
+                    let cond = MatchCond::single(
+                        SingleCond::new()
+                            .with_name(format!("not{idx}").as_str())
+                            .with_cond(move |value: &Node| {
+                                let result = Pending::from_pair(value.clone(), idx);
+                                Ok(result)
+                            }),
+                    );
+                    Ok(MatchCond::Not(Box::new(cond)))
+                }
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {

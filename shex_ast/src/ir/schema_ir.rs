@@ -7,19 +7,18 @@ use prefixmap::{IriRef, PrefixMap};
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use super::dependency_graph::DependencyGraph;
+use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 
 type Result<A> = std::result::Result<A, SchemaIRError>;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SchemaIR {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
-    shapes: HashMap<ShapeLabelIdx, (ShapeLabel, ShapeExpr)>,
+    shapes: HashMap<ShapeLabelIdx, (Option<ShapeLabel>, ShapeExpr)>,
     shape_label_counter: usize,
     prefixmap: PrefixMap,
-    dep_graph: DependencyGraph,
 }
 
 impl SchemaIR {
@@ -29,7 +28,6 @@ impl SchemaIR {
             shape_label_counter: 0,
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
-            dep_graph: DependencyGraph::default(),
         }
     }
 
@@ -44,7 +42,7 @@ impl SchemaIR {
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_labels_map.insert(shape_label.clone(), idx);
-        self.shapes.insert(idx, (shape_label.clone(), se));
+        self.shapes.insert(idx, (Some(shape_label.clone()), se));
         self.shape_label_counter += 1;
     }
 
@@ -102,23 +100,28 @@ impl SchemaIR {
         self.shape_labels_map.get(label)
     }
 
-    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&(ShapeLabel, ShapeExpr)> {
+    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&(Option<ShapeLabel>, ShapeExpr)> {
         self.shapes.get(idx)
+    }
+
+    pub fn shape_label_from_idx(&self, idx: &ShapeLabelIdx) -> Option<&ShapeLabel> {
+        self.shapes
+            .get(idx)
+            .and_then(|(label, _se)| label.as_ref())
+            .or_else(|| None)
+    }
+
+    pub fn new_index(&mut self) -> ShapeLabelIdx {
+        let idx = ShapeLabelIdx::from(self.shape_label_counter);
+        self.shape_label_counter += 1;
+        idx
     }
 
     pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
         self.shape_labels_map.keys().collect()
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(ShapeLabel, ShapeExpr)> {
-        /*self.shape_labels_map
-        .iter()
-        .map(|(label, idx)| match self.shapes.get(idx) {
-            Some(se) => (label, se),
-            None => {
-                panic!("SchemaIR: Internal Error obtaining shapes. Unknown idx: {idx:?}")
-            }
-        })*/
+    pub fn shapes(&self) -> impl Iterator<Item = &(Option<ShapeLabel>, ShapeExpr)> {
         self.shapes.values()
     }
 
@@ -168,14 +171,61 @@ impl SchemaIR {
             ShapeLabel::Start => "START".to_string(),
         }
     }
+
+    pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
+        let dep_graph = self.dependency_graph();
+        dep_graph.neg_cycles()
+    }
+
+    /// This is used to detect cycles that involve negations in the schema
+    /// A well formed schema should not have any cyclic reference that involve a negation
+    pub fn has_neg_cycle(&self) -> bool {
+        let dep_graph = self.dependency_graph();
+        dep_graph.has_neg_cycle()
+    }
+
+    pub(crate) fn dependency_graph(&self) -> DependencyGraph {
+        let mut dep_graph = DependencyGraph::new();
+        for (idx, (_label, se)) in self.shapes.iter() {
+            se.add_edges(*idx, &mut dep_graph, PosNeg::pos());
+        }
+        dep_graph
+    }
+
+    pub fn dependencies(&self) -> Vec<(ShapeLabel, PosNeg, ShapeLabel)> {
+        let mut deps = Vec::new();
+        for (source, posneg, target) in self.dependency_graph().all_edges() {
+            match (
+                self.shape_label_from_idx(&source),
+                self.shape_label_from_idx(&target),
+            ) {
+                (Some(source_label), Some(target_label)) => {
+                    deps.push((source_label.clone(), posneg, target_label.clone()));
+                }
+                _ => {
+                    // We ignore dependencies with betwee shapes that have no labels
+                }
+            }
+        }
+        deps
+    }
 }
 
 impl Display for SchemaIR {
     fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         for (label, se) in self.shapes() {
             let error_idx = ShapeLabelIdx::error();
-            let idx = self.shape_labels_map.get(label).unwrap_or(&error_idx);
-            writeln!(dest, "{idx}@{label} -> {se:?}")?;
+            match label {
+                Some(label) => {
+                    let label = self.show_label(label);
+                    writeln!(dest, "{label} -> {se:?}")?;
+                }
+                None => {
+                    writeln!(dest, "None -> {se:?}")?;
+                }
+            }
+            // let idx = self.shape_labels_map.get(label).unwrap_or(&error_idx);
+            // writeln!(dest, "{idx}@{label} -> {se:?}")?;
         }
         Ok(())
     }

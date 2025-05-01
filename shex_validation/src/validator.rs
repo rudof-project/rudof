@@ -32,11 +32,19 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Validator {
-        Validator {
+    pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
+        if config.check_negation_requirement.unwrap_or(true) {
+            if schema.has_neg_cycle() {
+                let neg_cycles = schema.neg_cycles();
+                return Err(ValidatorError::NegCycleError {
+                    neg_cycles: neg_cycles.clone(),
+                });
+            }
+        }
+        Ok(Validator {
             schema,
             runner: Engine::new(config),
-        }
+        })
     }
 
     pub fn reset_result_map(&mut self) {
@@ -169,7 +177,10 @@ impl Validator {
 
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
         let (label, _se) = self.schema.find_shape_idx(idx).unwrap();
-        Ok(label)
+        match label {
+            Some(label) => Ok(label),
+            None => Err(ValidatorError::NotFoundShapeLabelWithIndex { idx: *idx }),
+        }
     }
 
     pub fn result_map(&self, maybe_nodes_prefixmap: Option<PrefixMap>) -> Result<ResultShapeMap> {

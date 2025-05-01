@@ -37,6 +37,9 @@ pub enum RudofError {
     #[error("ShEx Validator undefined. Before trying to validate with ShEx, a ShEx validator must be initialized in rudof")]
     ShExValidatorUndefined {},
 
+    #[error("ShEx validation creation error. Schema:\n{schema}\nError: {error} ")]
+    ShExValidatorCreationError { schema: String, error: String },
+
     #[error(
         "ShEx validation error. Query map: {query_map}\nSchema:\n{schema}\nData:\n{rdf_data}\nError: {error} "
     )]

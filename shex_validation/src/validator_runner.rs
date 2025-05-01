@@ -53,7 +53,6 @@ impl Engine {
             checked: IndexSet::new(),
             processing: IndexSet::new(),
             pending: IndexSet::new(),
-            //rules: Vec::new(),
             alternative_match_iterators: Vec::new(),
             config: config.clone(),
             step_counter: 0,

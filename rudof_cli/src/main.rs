@@ -111,6 +111,7 @@ fn main() -> Result<()> {
             schema,
             schema_format,
             result_schema_format,
+            show_dependencies,
             output,
             show_time,
             show_statistics,
@@ -119,9 +120,14 @@ fn main() -> Result<()> {
             config,
         }) => {
             let config = get_config(config)?;
-            /*if let Some(flag) = show_statistics {
-                config.set_show_extends(*flag);
-            }*/
+            if let Some(show_dependencies) = show_dependencies {
+                config
+                    .shex_config()
+                    .with_show_dependencies(*show_dependencies);
+            }
+            if let Some(flag) = show_statistics {
+                config.shex_config().set_show_extends(*flag);
+            }
             let show_time = (*show_time).unwrap_or_default();
             run_shex(
                 schema,
@@ -452,6 +458,7 @@ fn run_shex(
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
+
     parse_shex_schema_rudof(&mut rudof, input, schema_format, config)?;
     show_schema_rudof(&rudof, result_schema_format, writer, color)?;
     if show_time {
@@ -481,6 +488,15 @@ fn run_shex(
                 ShapeExprLabel::Start => "Start".to_string(),
             };
             writeln!(io::stderr(), "{label} from {iri}")?
+        }
+    }
+    if config.show_dependencies() {
+        if let Some(shex_ir) = rudof.get_shex_ir() {
+            for (source, posneg, target) in shex_ir.dependencies() {
+                writeln!(io::stderr(), "{}-{}->{}", source, posneg, target)?;
+            }
+        } else {
+            bail!("Internal error: No ShEx schema read")
         }
     }
     Ok(())
@@ -1405,6 +1421,15 @@ fn parse_shex_schema_rudof(
     let shex_config = config.shex_config();
     let base = base_convert(&shex_config.base);
     rudof.read_shex(reader, &schema_format, base)?;
+    println!("Schema read...");
+    if config.shex_config().check_well_formed() {
+        println!("Checking well formedness...");
+        let shex_ir = rudof.get_shex_ir().unwrap();
+        if shex_ir.has_neg_cycle() {
+            let neg_cycles = shex_ir.neg_cycles();
+            bail!("Schema contains negative cycles: {neg_cycles:?}");
+        }
+    }
     Ok(())
 }
 

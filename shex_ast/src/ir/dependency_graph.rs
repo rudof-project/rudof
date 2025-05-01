@@ -15,16 +15,16 @@ impl DependencyGraph {
         Self::default()
     }
 
+    pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
+        self.graph.add_edge(from, to, pos_neg);
+    }
+
     pub fn add_pos_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
-        let f = self.graph.add_node(from);
-        let t = self.graph.add_node(to);
-        self.graph.add_edge(f, t, PosNeg::pos());
+        self.graph.add_edge(from, to, PosNeg::pos());
     }
 
     pub fn add_neg_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
-        let f = self.graph.add_node(from);
-        let t = self.graph.add_node(to);
-        self.graph.add_edge(f, t, PosNeg::neg());
+        self.graph.add_edge(from, to, PosNeg::neg());
     }
 
     pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
@@ -55,6 +55,15 @@ impl DependencyGraph {
         }
         result
     }
+
+    pub fn has_neg_cycle(&self) -> bool {
+        let neg_cycles = self.neg_cycles();
+        !neg_cycles.is_empty()
+    }
+
+    pub fn all_edges(&self) -> DependencyGraphIter {
+        DependencyGraphIter { inner: &self.graph }
+    }
 }
 
 impl Display for DependencyGraph {
@@ -67,8 +76,22 @@ impl Display for DependencyGraph {
     }
 }
 
-#[derive(Debug, Default)]
-pub(crate) enum PosNeg {
+pub struct DependencyGraphIter<'a> {
+    inner: &'a petgraph::graphmap::GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
+}
+impl Iterator for DependencyGraphIter<'_> {
+    type Item = (ShapeLabelIdx, PosNeg, ShapeLabelIdx);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .all_edges()
+            .next()
+            .map(|(from, to, posneg)| (from, *posneg, to))
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum PosNeg {
     #[default]
     Pos,
     Neg,
@@ -90,23 +113,36 @@ impl PosNeg {
     pub fn neg() -> PosNeg {
         PosNeg::Neg
     }
+
+    pub fn change(&self) -> PosNeg {
+        match self {
+            PosNeg::Pos => PosNeg::Neg,
+            PosNeg::Neg => PosNeg::Pos,
+        }
+    }
+}
+
+impl Display for PosNeg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PosNeg::Pos => write!(f, "[+]"),
+            PosNeg::Neg => write!(f, "[-]"),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
 
-    /*#[test]
+    #[test]
     fn test_neg_cycle_no() {
         use super::*;
 
         let mut graph = DependencyGraph::new();
         graph.add_pos_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1));
         graph.add_pos_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0));
-        println!("Graph: {}", graph);
-        let neg_cycles = graph.neg_cycles();
-        println!("Neg cycles: {:?}", neg_cycles);
-        assert!(neg_cycles.is_empty());
-    } */
+        assert!(!graph.has_neg_cycle());
+    }
 
     #[test]
     fn test_neg_cycle_yes() {
@@ -115,9 +151,6 @@ mod tests {
         let mut graph = DependencyGraph::new();
         graph.add_pos_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1));
         graph.add_neg_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0));
-        println!("Graph: {}", graph);
-        let neg_cycles = graph.neg_cycles();
-        println!("Neg cycles: {:?}", neg_cycles);
-        assert!(neg_cycles.is_empty());
+        assert!(graph.has_neg_cycle());
     }
 }

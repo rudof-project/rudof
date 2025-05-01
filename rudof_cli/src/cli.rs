@@ -105,6 +105,12 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
+            long = "show-dependencies",
+            value_name = "Show dependencies between shapes"
+        )]
+        show_dependencies: Option<bool>,
+
+        #[arg(
             long = "force-overwrite",
             value_name = "Force overwrite mode",
             default_value_t = false

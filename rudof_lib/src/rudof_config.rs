@@ -97,6 +97,10 @@ impl RudofConfig {
         self.shex_config().show_shapes.unwrap_or(true)
     }
 
+    pub fn show_dependencies(&self) -> bool {
+        self.shex_config().show_dependencies.unwrap_or(false)
+    }
+
     pub fn rdf_data_config(&self) -> RdfDataConfig {
         self.rdf_data.clone().unwrap_or_default()
     }
