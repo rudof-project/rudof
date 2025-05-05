@@ -490,14 +490,25 @@ fn run_shex(
             writeln!(io::stderr(), "{label} from {iri}")?
         }
     }
+    if config.show_ir() {
+        writeln!(io::stdout(), "\nIR:")?;
+        if let Some(shex_ir) = rudof.get_shex_ir() {
+            writeln!(io::stdout(), "ShEx IR:")?;
+            writeln!(io::stdout(), "{shex_ir}")?;
+        } else {
+            bail!("Internal error: No ShEx schema read")
+        }
+    }
     if config.show_dependencies() {
+        writeln!(io::stdout(), "\nDependencies:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
             for (source, posneg, target) in shex_ir.dependencies() {
-                writeln!(io::stderr(), "{}-{}->{}", source, posneg, target)?;
+                writeln!(io::stdout(), "{}-{}->{}", source, posneg, target)?;
             }
         } else {
             bail!("Internal error: No ShEx schema read")
         }
+        writeln!(io::stdout(), "---end dependencies\n")?;
     }
     Ok(())
 }

@@ -3,6 +3,7 @@ use indexmap::IndexSet;
 use itertools::*;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
 
@@ -321,6 +322,31 @@ where
     R: Ref,
 {
     table.component_key.get(c).unwrap().clone()
+}
+
+impl<K, V, R> Display for RbeTable<K, V, R>
+where
+    K: Key + Display,
+    V: Value + Display,
+    R: Ref + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "RBE: {}\n", self.rbe)?;
+        write!(f, "Keys:\n")?;
+        for (k, c) in self.key_components.iter() {
+            write!(f, " {k} -> [")?;
+            for c in c.iter() {
+                write!(f, " {c}")?;
+            }
+            write!(f, " ]\n")?;
+        }
+        write!(f, "Components: \n")?;
+        for (c, cond) in self.component_cond.iter() {
+            let k = self.component_key.get(c).unwrap();
+            write!(f, " {c} -> {k} {cond}\n")?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

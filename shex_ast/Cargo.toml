@@ -15,6 +15,7 @@ iri_s.workspace = true
 rbe.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
+itertools.workspace = true
 void = "1"
 thiserror = "2.0"
 lazy_static = "1"

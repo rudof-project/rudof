@@ -90,6 +90,9 @@ pub struct ShExConfig {
     /// Show dependencies
     pub show_dependencies: Option<bool>,
 
+    /// Show ShEx Schema Internal Representation
+    pub show_ir: Option<bool>,
+
     /// Default ShEx format
     pub shex_format: Option<ShExFormat>,
 
@@ -109,7 +112,8 @@ impl Default for ShExConfig {
             show_extends: Some(true),
             show_imports: Some(true),
             show_shapes: Some(true),
-            show_dependencies: Some(false),
+            show_dependencies: Some(true),
+            show_ir: Some(true),
             check_well_formed: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),

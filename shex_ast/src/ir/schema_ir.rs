@@ -114,6 +114,7 @@ impl SchemaIR {
     pub fn new_index(&mut self) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_label_counter += 1;
+        self.shapes.insert(idx, (None, ShapeExpr::Empty));
         idx
     }
 
@@ -186,7 +187,8 @@ impl SchemaIR {
 
     pub(crate) fn dependency_graph(&self) -> DependencyGraph {
         let mut dep_graph = DependencyGraph::new();
-        for (idx, (_label, se)) in self.shapes.iter() {
+        for (idx, (label, se)) in self.shapes.iter() {
+            println!("Searching for dependencies of {idx}, {label:?} {se:?}");
             se.add_edges(*idx, &mut dep_graph, PosNeg::pos());
         }
         dep_graph
@@ -203,30 +205,32 @@ impl SchemaIR {
                     deps.push((source_label.clone(), posneg, target_label.clone()));
                 }
                 _ => {
-                    // We ignore dependencies with betwee shapes that have no labels
+                    // We ignore dependencies between shapes that have no labels
                 }
             }
         }
+        println!("Dependencies: {deps:?}");
         deps
     }
 }
 
 impl Display for SchemaIR {
     fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        for (label, se) in self.shapes() {
-            let error_idx = ShapeLabelIdx::error();
-            match label {
-                Some(label) => {
-                    let label = self.show_label(label);
-                    writeln!(dest, "{label} -> {se:?}")?;
-                }
-                None => {
-                    writeln!(dest, "None -> {se:?}")?;
-                }
-            }
-            // let idx = self.shape_labels_map.get(label).unwrap_or(&error_idx);
-            // writeln!(dest, "{idx}@{label} -> {se:?}")?;
+        writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
+        writeln!(dest, "Labels to indexes:")?;
+        for (label, idx) in self.shape_labels_map.iter() {
+            let label = self.show_label(label);
+            writeln!(dest, "{label} -> {idx}")?;
         }
+        writeln!(dest, "Indexes to Shape Expressions:")?;
+        for (idx, (maybe_label, se)) in self.shapes.iter() {
+            let label_str = match maybe_label {
+                None => "".to_string(),
+                Some(label) => format!("{}@", self.show_label(label)),
+            };
+            writeln!(dest, "{idx} -> {label_str}{se}")?;
+        }
+        writeln!(dest, "---end of schema IR")?;
         Ok(())
     }
 }

@@ -19,13 +19,14 @@ impl DependencyGraph {
         self.graph.add_edge(from, to, pos_neg);
     }
 
+    /*
     pub fn add_pos_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
         self.graph.add_edge(from, to, PosNeg::pos());
     }
 
     pub fn add_neg_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
         self.graph.add_edge(from, to, PosNeg::neg());
-    }
+    } */
 
     pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
         let mut result = Vec::new();
@@ -139,8 +140,8 @@ mod tests {
         use super::*;
 
         let mut graph = DependencyGraph::new();
-        graph.add_pos_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1));
-        graph.add_pos_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0));
+        graph.add_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1), PosNeg::Pos);
+        graph.add_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0), PosNeg::Pos);
         assert!(!graph.has_neg_cycle());
     }
 
@@ -149,8 +150,8 @@ mod tests {
         use super::*;
 
         let mut graph = DependencyGraph::new();
-        graph.add_pos_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1));
-        graph.add_neg_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0));
+        graph.add_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1), PosNeg::Pos);
+        graph.add_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0), PosNeg::Neg);
         assert!(graph.has_neg_cycle());
     }
 }

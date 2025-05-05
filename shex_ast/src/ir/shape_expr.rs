@@ -56,7 +56,7 @@ impl ShapeExpr {
                 expr.add_edges(source, graph, pos_neg.change());
             }
             ShapeExpr::NodeConstraint(_) => {}
-            ShapeExpr::Shape(_) => {}
+            ShapeExpr::Shape(s) => s.add_edges(source, graph, pos_neg),
             ShapeExpr::External {} => {}
             ShapeExpr::Ref { idx } => {
                 graph.add_edge(source, *idx, pos_neg);
@@ -75,7 +75,7 @@ impl Display for ShapeExpr {
             ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),
             ShapeExpr::Shape(shape) => write!(f, "{shape}"),
             ShapeExpr::External {} => write!(f, "External"),
-            ShapeExpr::Ref { .. } => todo!(),
+            ShapeExpr::Ref { idx } => write!(f, "Ref({idx})"),
             ShapeExpr::Empty => write!(f, "<Empty>"),
         }
     }
