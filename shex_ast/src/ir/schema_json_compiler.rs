@@ -438,6 +438,7 @@ impl SchemaJsonCompiler {
                         expr: Box::new(se),
                         display,
                     };
+                    println!("ValueExprNOT: Replacing {new_idx} with {not_se}");
                     compiled_schema.replace_shape(&new_idx, not_se);
                     Ok(mk_cond_ref(new_idx))
                 }
@@ -564,14 +565,13 @@ fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::single(
-        SingleCond::new()
-            .with_name(format!("@{idx}").as_str())
-            .with_cond(move |value: &Node| {
-                let result = Pending::from_pair(value.clone(), idx);
-                Ok(result)
-            }),
-    )
+    MatchCond::ref_(idx.clone())
+    /*SingleCond::new()
+    .with_name(format!("@{idx}").as_str())
+    .with_cond(move |value: &Node| {
+        let result = Pending::from_pair(value.clone(), idx);
+        Ok(result)
+    }),*/
 }
 
 fn mk_cond_datatype(datatype: &IriRef) -> Cond {

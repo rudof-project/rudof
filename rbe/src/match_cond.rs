@@ -36,6 +36,10 @@ where
         MatchCond::Single(SingleCond::new().with_name("empty"))
     }
 
+    pub fn ref_(r: R) -> MatchCond<K, V, R> {
+        MatchCond::Ref(r)
+    }
+
     pub fn matches(&self, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         match self {
             MatchCond::Single(single) => single.matches(value),
