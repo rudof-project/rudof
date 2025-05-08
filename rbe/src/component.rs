@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Display;
 
+/// A wrapper around a usize to represent a component in the RBE table.
+/// This is used to identify components in the RBE table and is used as a key in the
+/// `RbeTable` struct.
 #[derive(PartialEq, Eq, Hash, Default, Serialize, Deserialize, Clone, Copy)]
 pub struct Component(usize);
 

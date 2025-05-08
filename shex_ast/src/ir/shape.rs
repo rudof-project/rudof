@@ -55,7 +55,14 @@ impl Shape {
 
     pub fn add_edges(&self, source: ShapeLabelIdx, graph: &mut DependencyGraph, pos_neg: PosNeg) {
         println!("Adding edges for shape: {}", self.rbe_table);
-        // todo!()
+        for (_component, _pred, cond) in self.rbe_table.components() {
+            match cond {
+                rbe::MatchCond::Single(_single_cond) => {}
+                rbe::MatchCond::And(_match_conds) => {}
+                // rbe::MatchCond::Or(match_conds) => {},
+                rbe::MatchCond::Ref(r) => graph.add_edge(source, r, pos_neg),
+            }
+        }
     }
 }
 

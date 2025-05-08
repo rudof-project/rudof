@@ -16,9 +16,10 @@ where
     R: Ref,
 {
     Single(SingleCond<K, V, R>),
+    Ref(R),
     And(Vec<MatchCond<K, V, R>>),
-    Or(Vec<MatchCond<K, V, R>>),
-    Not(Box<MatchCond<K, V, R>>),
+    // Or(Vec<MatchCond<K, V, R>>),
+    // Not(Box<MatchCond<K, V, R>>),
 }
 
 impl<K, V, R> MatchCond<K, V, R>
@@ -38,11 +39,12 @@ where
     pub fn matches(&self, value: &V) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         match self {
             MatchCond::Single(single) => single.matches(value),
-            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
+            MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
+            /*MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
                 let new_pending = c.matches(value)?;
                 current.merge(new_pending);
                 Ok(current)
-            }),
+            }), */
             _ => {
                 todo!()
             }
@@ -73,17 +75,20 @@ where
                 write!(f, "{sc}")?;
                 Ok(())
             }
+            MatchCond::Ref(r) => {
+                write!(f, "@{r}")?;
+                Ok(())
+            }
             MatchCond::And(cs) => {
                 write!(f, "And(")?;
                 cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
-            }
-            MatchCond::Or(cs) => {
-                write!(f, "Or")?;
-                cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
-                write!(f, ")")
-            }
-            MatchCond::Not(c) => write!(f, "Not({c})"),
+            } /* MatchCond::Or(cs) => {
+                  write!(f, "Or")?;
+                  cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
+                  write!(f, ")")
+              }
+              MatchCond::Not(c) => write!(f, "Not({c})"),*/
         }
     }
 }

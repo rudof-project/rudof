@@ -80,8 +80,8 @@ impl SchemaJsonCompiler {
             Some(sds) => {
                 for sd in sds {
                     let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
-                    let _se = self.compile_shape_decl(sd, &idx, compiled_schema)?;
-                    // compiled_schema.replace_shape(&idx, se)
+                    let se = self.compile_shape_decl(sd, &idx, compiled_schema)?;
+                    compiled_schema.replace_shape(&idx, se)
                 }
                 Ok(())
             }
@@ -231,8 +231,8 @@ impl SchemaJsonCompiler {
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
-        compiled_schema.replace_shape(idx, result.clone());
-        println!("Replacing {idx} with {result}");
+        //compiled_schema.replace_shape(idx, result.clone());
+        // println!("Replacing {idx} with {result}");
         Ok(result)
     }
 
@@ -428,10 +428,18 @@ impl SchemaJsonCompiler {
                 ast::ShapeExpr::ShapeNot { shape_expr } => {
                     println!("Compiling ShapeNot for shape expr: {shape_expr:?}");
                     let new_idx = compiled_schema.new_index();
-                    self.compile_shape_expr(&shape_expr.se, &new_idx, compiled_schema)?;
-                    println!("Compiling negation for idx: {new_idx}");
-                    let cond = mk_cond_ref(new_idx);
-                    Ok(MatchCond::Not(Box::new(cond)))
+                    let se = self.compile_shape_expr(&shape_expr.se, &new_idx, compiled_schema)?;
+                    let display = match compiled_schema.find_shape_idx(&new_idx) {
+                        None => "internal NOT".to_string(),
+                        Some((Some(label), _)) => compiled_schema.show_label(label),
+                        Some((None, _)) => "internal NOT with some shape expr".to_string(),
+                    };
+                    let not_se = ShapeExpr::ShapeNot {
+                        expr: Box::new(se),
+                        display,
+                    };
+                    compiled_schema.replace_shape(&new_idx, not_se);
+                    Ok(mk_cond_ref(new_idx))
                 }
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }

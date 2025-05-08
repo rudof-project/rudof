@@ -6,7 +6,7 @@ use petgraph::graphmap::GraphMap;
 use petgraph::visit::EdgeRef;
 
 #[derive(Debug, Default)]
-pub(crate) struct DependencyGraph {
+pub struct DependencyGraph {
     graph: GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
 }
 
@@ -18,15 +18,6 @@ impl DependencyGraph {
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
         self.graph.add_edge(from, to, pos_neg);
     }
-
-    /*
-    pub fn add_pos_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
-        self.graph.add_edge(from, to, PosNeg::pos());
-    }
-
-    pub fn add_neg_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
-        self.graph.add_edge(from, to, PosNeg::neg());
-    } */
 
     pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
         let mut result = Vec::new();
@@ -63,7 +54,9 @@ impl DependencyGraph {
     }
 
     pub fn all_edges(&self) -> DependencyGraphIter {
-        DependencyGraphIter { inner: &self.graph }
+        DependencyGraphIter {
+            inner: self.graph.all_edges(),
+        }
     }
 }
 
@@ -77,15 +70,16 @@ impl Display for DependencyGraph {
     }
 }
 
+/// Iterator over the edges of the dependency graph.
+/// The iterator yields tuples of the form (from, posneg, to).
 pub struct DependencyGraphIter<'a> {
-    inner: &'a petgraph::graphmap::GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
+    inner: petgraph::graphmap::AllEdges<'a, ShapeLabelIdx, PosNeg, petgraph::Directed>,
 }
-impl Iterator for DependencyGraphIter<'_> {
+impl<'a> Iterator for DependencyGraphIter<'a> {
     type Item = (ShapeLabelIdx, PosNeg, ShapeLabelIdx);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
-            .all_edges()
             .next()
             .map(|(from, to, posneg)| (from, *posneg, to))
     }
