@@ -198,6 +198,14 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Compact
+        )]
+        result_format: ResultFormat,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
@@ -273,6 +281,14 @@ pub enum Command {
         endpoint: Option<String>,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Turtle
+        )]
+        result_format: ResultFormat,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
@@ -344,6 +360,14 @@ pub enum Command {
         output: Option<PathBuf>,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = DataFormat::Turtle
+        )]
+        result_format: DataFormat,
+
+        #[arg(
             long = "force-overwrite",
             value_name = "Force overwrite mode",
             default_value_t = false
@@ -380,19 +404,19 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
-            short = 'o',
-            long = "output-file",
-            value_name = "Output file name, default = terminal"
-        )]
-        output: Option<PathBuf>,
-
-        #[arg(
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
             default_value_t = DataFormat::Turtle
         )]
         result_format: DataFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
@@ -825,6 +849,34 @@ pub enum DataFormat {
     TriG,
     N3,
     NQuads,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
+    Compact,
+    Json,
+}
+
+impl Display for ResultFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultFormat::Turtle => write!(dest, "turtle"),
+            ResultFormat::NTriples => write!(dest, "ntriples"),
+            ResultFormat::RDFXML => write!(dest, "rdfxml"),
+            ResultFormat::TriG => write!(dest, "trig"),
+            ResultFormat::N3 => write!(dest, "n3"),
+            ResultFormat::NQuads => write!(dest, "nquads"),
+            ResultFormat::Compact => write!(dest, "compact"),
+            ResultFormat::Json => write!(dest, "json"),
+        }
+    }
 }
 
 pub trait MimeType {

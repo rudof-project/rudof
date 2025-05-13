@@ -7,7 +7,6 @@ use shacl_validation::store::graph::Graph;
 use shapemap::{NodeSelector, ShapeSelector};
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
-use shex_ast::ir::schema_json_compiler::SchemaJsonCompiler;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use srdf::Sparql;
@@ -470,7 +469,7 @@ impl Rudof {
             ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
                 RudofError::ShExValidatorCreationError {
                     error: format!("{e}"),
-                    schema: format!("{:?}", schema_json),
+                    schema: format!("{}", schema_json),
                 }
             })?;
         self.shex_validator = Some(validator);

@@ -18,8 +18,8 @@ use anyhow::*;
 use clap::Parser;
 use cli::{
     Cli, Command, DCTapFormat, DCTapResultFormat, DataFormat, InputConvertMode, MimeType,
-    OutputConvertMode, RDFReaderMode, ResultQueryFormat, ResultServiceFormat, ShowNodeMode,
-    ValidationMode,
+    OutputConvertMode, RDFReaderMode, ResultFormat, ResultQueryFormat, ResultServiceFormat,
+    ShowNodeMode, ValidationMode,
 };
 use dctap::DCTAPFormat;
 use iri_s::IriS;
@@ -28,7 +28,7 @@ use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
-use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
+use shapemap::{NodeSelector, ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
 use shex_ast::object_value::ObjectValue;
@@ -154,6 +154,7 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             shacl_validation_mode,
+            result_format,
             output,
             config,
             force_overwrite,
@@ -172,6 +173,7 @@ fn main() -> Result<()> {
                     shapemap,
                     shapemap_format,
                     cli.debug,
+                    result_format,
                     output,
                     &config,
                     *force_overwrite,
@@ -211,6 +213,7 @@ fn main() -> Result<()> {
             shape,
             shapemap,
             shapemap_format,
+            result_format,
             output,
             config,
             force_overwrite,
@@ -228,6 +231,7 @@ fn main() -> Result<()> {
                 shapemap,
                 shapemap_format,
                 cli.debug,
+                result_format,
                 output,
                 &config,
                 *force_overwrite,
@@ -241,6 +245,7 @@ fn main() -> Result<()> {
             reader_mode,
             endpoint,
             mode,
+            result_format,
             output,
             force_overwrite,
             config,
@@ -580,13 +585,14 @@ fn run_validate_shex(
     shapemap: &Option<InputSpec>,
     shapemap_format: &CliShapeMapFormat,
     _debug: u8,
+    result_format: &ResultFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     if let Some(schema) = schema {
         let mut rudof = Rudof::new(config);
-        let (mut writer, _color) = get_writer(output, force_overwrite)?;
+        let (writer, _color) = get_writer(output, force_overwrite)?;
         let schema_format = schema_format.unwrap_or_default();
         let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
         let schema_format = match schema_format {
@@ -626,11 +632,36 @@ fn run_validate_shex(
             }
         };
         let result = rudof.validate_shex()?;
-        writeln!(writer, "Result:\n{}", result)?;
+        // writeln!(writer, "Result:\n{}", result)?;
+        write_result(writer, &result_format, result)?;
         Ok(())
     } else {
         bail!("No ShEx schema specified")
     }
+}
+
+fn write_result(
+    mut writer: Box<dyn Write + 'static>,
+    format: &ResultFormat,
+    result: ResultShapeMap,
+) -> Result<()> {
+    match format {
+        ResultFormat::Turtle => todo!(),
+        ResultFormat::NTriples => todo!(),
+        ResultFormat::RDFXML => todo!(),
+        ResultFormat::TriG => todo!(),
+        ResultFormat::N3 => todo!(),
+        ResultFormat::NQuads => todo!(),
+        ResultFormat::Compact => {
+            writeln!(writer, "Result:\n{}", result)?;
+        }
+        ResultFormat::Json => {
+            let str = serde_json::to_string_pretty(&result)
+                .context("Error converting Result to JSON: {result}")?;
+            writeln!(writer, "{str}")?;
+        }
+    }
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]

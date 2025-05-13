@@ -12,7 +12,7 @@ use thiserror::Error;
 pub enum ValidatorError {
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
-        neg_cycles: Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>>,
+        neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
     },
 
     #[error("SRDF Error: {error}")]

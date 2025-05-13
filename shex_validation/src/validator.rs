@@ -36,8 +36,35 @@ impl Validator {
         if config.check_negation_requirement.unwrap_or(true) {
             if schema.has_neg_cycle() {
                 let neg_cycles = schema.neg_cycles();
+                let mut neg_cycles_displayed = Vec::new();
+                for cycle in neg_cycles.iter() {
+                    let mut cycle_displayed = Vec::new();
+                    for (source, target, shapes) in cycle.iter() {
+                        let source_str = if let Some(label) = schema.shape_label_from_idx(source) {
+                            schema.show_label(label)
+                        } else {
+                            format!("internal_{source}")
+                        };
+                        let target_str = if let Some(label) = schema.shape_label_from_idx(target) {
+                            schema.show_label(label)
+                        } else {
+                            format!("internal_{target}")
+                        };
+                        let mut shapes_str = Vec::new(); 
+                        for shape in shapes.iter() {
+                            let shape_str = if let Some(label) = schema.shape_label_from_idx(shape) {
+                                schema.show_label(label)
+                            } else {
+                                format!("internal_{shape}")
+                            };
+                            shapes_str.push(shape_str);
+                        }
+                        cycle_displayed.push((source_str, target_str, shapes_str));
+                    }
+                    neg_cycles_displayed.push(cycle_displayed);
+                }
                 return Err(ValidatorError::NegCycleError {
-                    neg_cycles: neg_cycles.clone(),
+                    neg_cycles: neg_cycles_displayed,
                 });
             }
         }

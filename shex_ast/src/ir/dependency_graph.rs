@@ -23,7 +23,6 @@ impl DependencyGraph {
         let mut result = Vec::new();
         let scc = petgraph::algo::tarjan_scc(&self.graph);
         for component in &scc {
-            println!("Component: {:?}", component);
             let mut neg_cycle = Vec::new();
             for node in component.iter().as_slice() {
                 let edges = self

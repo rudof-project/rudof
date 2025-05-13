@@ -59,7 +59,6 @@ impl ShapeExpr {
             ShapeExpr::Shape(s) => s.add_edges(source, graph, pos_neg),
             ShapeExpr::External {} => {}
             ShapeExpr::Ref { idx } => {
-                println!("Adding edge from {} to {} {}", source, idx, pos_neg);
                 graph.add_edge(source, *idx, pos_neg);
             }
             ShapeExpr::Empty => {}

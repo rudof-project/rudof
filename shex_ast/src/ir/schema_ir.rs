@@ -188,7 +188,6 @@ impl SchemaIR {
     pub(crate) fn dependency_graph(&self) -> DependencyGraph {
         let mut dep_graph = DependencyGraph::new();
         for (idx, (label, se)) in self.shapes.iter() {
-            println!("Searching for dependencies of {idx}, {label:?} {se:?}");
             se.add_edges(*idx, &mut dep_graph, PosNeg::pos());
         }
         dep_graph

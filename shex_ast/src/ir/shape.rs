@@ -53,18 +53,22 @@ impl Shape {
         self.closed
     }
 
+    pub fn show_short(&self) -> String {
+        let closed = if self.closed { "CLOSED" } else { "" };
+        let extra = if self.extra.is_empty() {
+            "".to_string()
+        } else {
+            format!("EXTRA [{}]", self.extra.iter().join(" "))
+        };
+        format!("Shape {closed}{extra}")
+    }
+
     pub fn add_edges(&self, source: ShapeLabelIdx, graph: &mut DependencyGraph, pos_neg: PosNeg) {
-        println!("Adding edges from source: {} to shape: {}", source, self);
         for (_component, _pred, cond) in self.rbe_table.components() {
-            println!("Component cond: {:?}", cond);
             match cond {
                 rbe::MatchCond::Single(_single_cond) => {}
                 rbe::MatchCond::And(_match_conds) => {}
-                // rbe::MatchCond::Or(match_conds) => {},
-                rbe::MatchCond::Ref(r) => {
-                    println!("Adding edge from {} to {} {}", source, r, pos_neg);
-                    graph.add_edge(source, r, pos_neg)
-                }
+                rbe::MatchCond::Ref(r) => graph.add_edge(source, r, pos_neg),
             }
         }
     }
