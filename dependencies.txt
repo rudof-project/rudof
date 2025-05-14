@@ -1,0 +1,724 @@
+rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
+├── anyhow v1.0.95
+├── clap v4.5.23
+│   ├── clap_builder v4.5.23
+│   │   ├── anstream v0.6.18
+│   │   │   ├── anstyle v1.0.10
+│   │   │   ├── anstyle-parse v0.2.6
+│   │   │   │   └── utf8parse v0.2.2
+│   │   │   ├── anstyle-query v1.1.2
+│   │   │   ├── colorchoice v1.0.3
+│   │   │   ├── is_terminal_polyfill v1.70.1
+│   │   │   └── utf8parse v0.2.2
+│   │   ├── anstyle v1.0.10
+│   │   ├── clap_lex v0.7.4
+│   │   ├── strsim v0.11.1
+│   │   ├── terminal_size v0.4.2
+│   │   │   └── rustix v1.0.2
+│   │   │       ├── bitflags v2.6.0
+│   │   │       └── linux-raw-sys v0.9.2
+│   │   ├── unicase v2.8.1
+│   │   └── unicode-width v0.2.0
+│   └── clap_derive v4.5.18 (proc-macro)
+│       ├── heck v0.5.0
+│       ├── proc-macro2 v1.0.92
+│       │   └── unicode-ident v1.0.14
+│       ├── quote v1.0.38
+│       │   └── proc-macro2 v1.0.92 (*)
+│       └── syn v2.0.92
+│           ├── proc-macro2 v1.0.92 (*)
+│           ├── quote v1.0.38 (*)
+│           └── unicode-ident v1.0.14
+├── clientele v0.2.5
+│   ├── argfile v0.2.1
+│   │   ├── fs-err v2.11.0
+│   │   │   [build-dependencies]
+│   │   │   └── autocfg v1.4.0
+│   │   └── os_str_bytes v7.1.0
+│   │       └── memchr v2.7.4
+│   ├── camino v1.1.9
+│   │   └── serde v1.0.217
+│   │       └── serde_derive v1.0.217 (proc-macro)
+│   │           ├── proc-macro2 v1.0.92 (*)
+│   │           ├── quote v1.0.38 (*)
+│   │           └── syn v2.0.92 (*)
+│   ├── clap v4.5.23 (*)
+│   ├── dirs v5.0.1
+│   │   └── dirs-sys v0.4.1
+│   │       ├── libc v0.2.169
+│   │       └── option-ext v0.2.0
+│   ├── dogma v0.1.1
+│   │   └── stability v0.2.1 (proc-macro)
+│   │       ├── quote v1.0.38 (*)
+│   │       └── syn v2.0.92 (*)
+│   ├── dotenvy v0.15.7
+│   ├── duration-str v0.11.3
+│   │   ├── rust_decimal v1.36.0
+│   │   │   ├── arrayvec v0.7.6
+│   │   │   ├── num-traits v0.2.19
+│   │   │   │   [build-dependencies]
+│   │   │   │   └── autocfg v1.4.0
+│   │   │   └── serde v1.0.217 (*)
+│   │   ├── thiserror v2.0.12
+│   │   │   └── thiserror-impl v2.0.12 (proc-macro)
+│   │   │       ├── proc-macro2 v1.0.92 (*)
+│   │   │       ├── quote v1.0.38 (*)
+│   │   │       └── syn v2.0.92 (*)
+│   │   └── winnow v0.6.20
+│   ├── rustversion v1.0.20 (proc-macro)
+│   ├── tracing v0.1.41
+│   │   ├── pin-project-lite v0.2.15
+│   │   ├── tracing-attributes v0.1.28 (proc-macro)
+│   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   ├── quote v1.0.38 (*)
+│   │   │   └── syn v2.0.92 (*)
+│   │   └── tracing-core v0.1.33
+│   │       └── once_cell v1.20.2
+│   ├── ubyte v0.10.4
+│   └── wild v2.2.1
+├── dctap v0.1.63 (/home/labra/src/rust/rudof/dctap)
+│   ├── calamine v0.27.0
+│   │   ├── atoi_simd v0.16.0
+│   │   ├── byteorder v1.5.0
+│   │   ├── codepage v0.1.2
+│   │   │   └── encoding_rs v0.8.35
+│   │   │       └── cfg-if v1.0.0
+│   │   ├── encoding_rs v0.8.35 (*)
+│   │   ├── fast-float2 v0.2.3
+│   │   ├── log v0.4.22
+│   │   ├── quick-xml v0.37.1
+│   │   │   ├── encoding_rs v0.8.35 (*)
+│   │   │   └── memchr v2.7.4
+│   │   ├── serde v1.0.217 (*)
+│   │   └── zip v2.5.0
+│   │       ├── crc32fast v1.4.2
+│   │       │   └── cfg-if v1.0.0
+│   │       ├── flate2 v1.0.35
+│   │       │   ├── crc32fast v1.4.2 (*)
+│   │       │   └── miniz_oxide v0.8.2
+│   │       │       └── adler2 v2.0.0
+│   │       ├── indexmap v2.7.0
+│   │       │   ├── equivalent v1.0.1
+│   │       │   ├── hashbrown v0.15.2
+│   │       │   │   ├── allocator-api2 v0.2.21
+│   │       │   │   ├── equivalent v1.0.1
+│   │       │   │   └── foldhash v0.1.5
+│   │       │   └── serde v1.0.217 (*)
+│   │       ├── memchr v2.7.4
+│   │       └── zopfli v0.8.1
+│   │           ├── bumpalo v3.16.0
+│   │           ├── crc32fast v1.4.2 (*)
+│   │           ├── lockfree-object-pool v0.1.6
+│   │           ├── log v0.4.22
+│   │           ├── once_cell v1.20.2
+│   │           └── simd-adler32 v0.3.7
+│   ├── csv v1.3.1
+│   │   ├── csv-core v0.1.11
+│   │   │   └── memchr v2.7.4
+│   │   ├── itoa v1.0.14
+│   │   ├── ryu v1.0.18
+│   │   └── serde v1.0.217 (*)
+│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s)
+│   │   ├── oxiri v0.2.9
+│   │   ├── oxrdf v0.2.3
+│   │   │   ├── oxilangtag v0.1.5
+│   │   │   │   └── serde v1.0.217 (*)
+│   │   │   ├── oxiri v0.2.9
+│   │   │   ├── oxsdatatypes v0.2.1
+│   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   ├── rand v0.8.5
+│   │   │   │   ├── libc v0.2.169
+│   │   │   │   ├── rand_chacha v0.3.1
+│   │   │   │   │   ├── ppv-lite86 v0.2.20
+│   │   │   │   │   │   └── zerocopy v0.7.35
+│   │   │   │   │   │       ├── byteorder v1.5.0
+│   │   │   │   │   │       └── zerocopy-derive v0.7.35 (proc-macro)
+│   │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │           ├── quote v1.0.38 (*)
+│   │   │   │   │   │           └── syn v2.0.92 (*)
+│   │   │   │   │   └── rand_core v0.6.4
+│   │   │   │   │       └── getrandom v0.2.15
+│   │   │   │   │           ├── cfg-if v1.0.0
+│   │   │   │   │           └── libc v0.2.169
+│   │   │   │   └── rand_core v0.6.4 (*)
+│   │   │   └── thiserror v2.0.12 (*)
+│   │   ├── reqwest v0.12.11
+│   │   │   ├── base64 v0.22.1
+│   │   │   ├── bytes v1.9.0
+│   │   │   ├── encoding_rs v0.8.35 (*)
+│   │   │   ├── futures-channel v0.3.31
+│   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   └── futures-sink v0.3.31
+│   │   │   ├── futures-core v0.3.31
+│   │   │   ├── futures-util v0.3.31
+│   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   ├── futures-io v0.3.31
+│   │   │   │   ├── futures-sink v0.3.31
+│   │   │   │   ├── futures-task v0.3.31
+│   │   │   │   ├── memchr v2.7.4
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   ├── pin-utils v0.1.0
+│   │   │   │   └── slab v0.4.9
+│   │   │   │       [build-dependencies]
+│   │   │   │       └── autocfg v1.4.0
+│   │   │   ├── h2 v0.4.7
+│   │   │   │   ├── atomic-waker v1.1.2
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── fnv v1.0.7
+│   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   ├── futures-sink v0.3.31
+│   │   │   │   ├── http v1.2.0
+│   │   │   │   │   ├── bytes v1.9.0
+│   │   │   │   │   ├── fnv v1.0.7
+│   │   │   │   │   └── itoa v1.0.14
+│   │   │   │   ├── indexmap v2.7.0 (*)
+│   │   │   │   ├── slab v0.4.9 (*)
+│   │   │   │   ├── tokio v1.42.0
+│   │   │   │   │   ├── bytes v1.9.0
+│   │   │   │   │   ├── libc v0.2.169
+│   │   │   │   │   ├── mio v1.0.3
+│   │   │   │   │   │   └── libc v0.2.169
+│   │   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   │   └── socket2 v0.5.8
+│   │   │   │   │       └── libc v0.2.169
+│   │   │   │   ├── tokio-util v0.7.13
+│   │   │   │   │   ├── bytes v1.9.0
+│   │   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   │   ├── futures-sink v0.3.31
+│   │   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   │   └── tracing v0.1.41 (*)
+│   │   │   ├── http v1.2.0 (*)
+│   │   │   ├── http-body v1.0.1
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   └── http v1.2.0 (*)
+│   │   │   ├── http-body-util v0.1.2
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   ├── http v1.2.0 (*)
+│   │   │   │   ├── http-body v1.0.1 (*)
+│   │   │   │   └── pin-project-lite v0.2.15
+│   │   │   ├── hyper v1.5.2
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── futures-channel v0.3.31 (*)
+│   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   ├── h2 v0.4.7 (*)
+│   │   │   │   ├── http v1.2.0 (*)
+│   │   │   │   ├── http-body v1.0.1 (*)
+│   │   │   │   ├── httparse v1.9.5
+│   │   │   │   ├── itoa v1.0.14
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   ├── smallvec v1.13.2
+│   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   └── want v0.3.1
+│   │   │   │       └── try-lock v0.2.5
+│   │   │   ├── hyper-tls v0.6.0
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── http-body-util v0.1.2 (*)
+│   │   │   │   ├── hyper v1.5.2 (*)
+│   │   │   │   ├── hyper-util v0.1.10
+│   │   │   │   │   ├── bytes v1.9.0
+│   │   │   │   │   ├── futures-channel v0.3.31 (*)
+│   │   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   │   ├── http v1.2.0 (*)
+│   │   │   │   │   ├── http-body v1.0.1 (*)
+│   │   │   │   │   ├── hyper v1.5.2 (*)
+│   │   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   │   ├── socket2 v0.5.8 (*)
+│   │   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   │   └── tracing v0.1.41 (*)
+│   │   │   │   ├── native-tls v0.2.12
+│   │   │   │   │   ├── log v0.4.22
+│   │   │   │   │   ├── openssl v0.10.68
+│   │   │   │   │   │   ├── bitflags v2.6.0
+│   │   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   │   ├── foreign-types v0.3.2
+│   │   │   │   │   │   │   └── foreign-types-shared v0.1.1
+│   │   │   │   │   │   ├── libc v0.2.169
+│   │   │   │   │   │   ├── once_cell v1.20.2
+│   │   │   │   │   │   ├── openssl-macros v0.1.1 (proc-macro)
+│   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │   │   │   │   └── openssl-sys v0.9.104
+│   │   │   │   │   │       └── libc v0.2.169
+│   │   │   │   │   │       [build-dependencies]
+│   │   │   │   │   │       ├── cc v1.2.6
+│   │   │   │   │   │       │   └── shlex v1.3.0
+│   │   │   │   │   │       ├── pkg-config v0.3.31
+│   │   │   │   │   │       └── vcpkg v0.2.15
+│   │   │   │   │   ├── openssl-probe v0.1.5
+│   │   │   │   │   └── openssl-sys v0.9.104 (*)
+│   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   ├── tokio-native-tls v0.3.1
+│   │   │   │   │   ├── native-tls v0.2.12 (*)
+│   │   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   │   └── tower-service v0.3.3
+│   │   │   ├── hyper-util v0.1.10 (*)
+│   │   │   ├── ipnet v2.10.1
+│   │   │   ├── log v0.4.22
+│   │   │   ├── mime v0.3.17
+│   │   │   ├── native-tls v0.2.12 (*)
+│   │   │   ├── once_cell v1.20.2
+│   │   │   ├── percent-encoding v2.3.1
+│   │   │   ├── pin-project-lite v0.2.15
+│   │   │   ├── rustls-pemfile v2.2.0
+│   │   │   │   └── rustls-pki-types v1.10.1
+│   │   │   ├── serde v1.0.217 (*)
+│   │   │   ├── serde_json v1.0.134
+│   │   │   │   ├── itoa v1.0.14
+│   │   │   │   ├── memchr v2.7.4
+│   │   │   │   ├── ryu v1.0.18
+│   │   │   │   └── serde v1.0.217 (*)
+│   │   │   ├── serde_urlencoded v0.7.1
+│   │   │   │   ├── form_urlencoded v1.2.1
+│   │   │   │   │   └── percent-encoding v2.3.1
+│   │   │   │   ├── itoa v1.0.14
+│   │   │   │   ├── ryu v1.0.18
+│   │   │   │   └── serde v1.0.217 (*)
+│   │   │   ├── sync_wrapper v1.0.2
+│   │   │   │   └── futures-core v0.3.31
+│   │   │   ├── tokio v1.42.0 (*)
+│   │   │   ├── tokio-native-tls v0.3.1 (*)
+│   │   │   ├── tower v0.5.2
+│   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   ├── sync_wrapper v1.0.2 (*)
+│   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   ├── tower-layer v0.3.3
+│   │   │   │   └── tower-service v0.3.3
+│   │   │   ├── tower-service v0.3.3
+│   │   │   └── url v2.5.4
+│   │   │       ├── form_urlencoded v1.2.1 (*)
+│   │   │       ├── idna v1.0.3
+│   │   │       │   ├── idna_adapter v1.2.0
+│   │   │       │   │   ├── icu_normalizer v1.5.0
+│   │   │       │   │   │   ├── displaydoc v0.2.5 (proc-macro)
+│   │   │       │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │   └── syn v2.0.92 (*)
+│   │   │       │   │   │   ├── icu_collections v1.5.0
+│   │   │       │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   ├── yoke v0.7.5
+│   │   │       │   │   │   │   │   ├── stable_deref_trait v1.2.0
+│   │   │       │   │   │   │   │   ├── yoke-derive v0.7.5 (proc-macro)
+│   │   │       │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │   │   │   ├── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   │   └── synstructure v0.13.1
+│   │   │       │   │   │   │   │   │       ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │   │   │       ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │   │   │       └── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   └── zerofrom v0.1.5
+│   │   │       │   │   │   │   │       └── zerofrom-derive v0.1.5 (proc-macro)
+│   │   │       │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │   │           ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │   │           ├── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │           └── synstructure v0.13.1 (*)
+│   │   │       │   │   │   │   ├── zerofrom v0.1.5 (*)
+│   │   │       │   │   │   │   └── zerovec v0.10.4
+│   │   │       │   │   │   │       ├── yoke v0.7.5 (*)
+│   │   │       │   │   │   │       ├── zerofrom v0.1.5 (*)
+│   │   │       │   │   │   │       └── zerovec-derive v0.10.3 (proc-macro)
+│   │   │       │   │   │   │           ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │           ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │           └── syn v2.0.92 (*)
+│   │   │       │   │   │   ├── icu_normalizer_data v1.5.0
+│   │   │       │   │   │   ├── icu_properties v1.5.1
+│   │   │       │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   ├── icu_collections v1.5.0 (*)
+│   │   │       │   │   │   │   ├── icu_locid_transform v1.5.0
+│   │   │       │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   │   ├── icu_locid v1.5.0
+│   │   │       │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   │   │   ├── litemap v0.7.4
+│   │   │       │   │   │   │   │   │   ├── tinystr v0.7.6
+│   │   │       │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   │   │   │   │   ├── writeable v0.5.5
+│   │   │       │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   │   │   │   ├── icu_locid_transform_data v1.5.0
+│   │   │       │   │   │   │   │   ├── icu_provider v1.5.0
+│   │   │       │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │       │   │   │   │   │   │   ├── icu_locid v1.5.0 (*)
+│   │   │       │   │   │   │   │   │   ├── icu_provider_macros v1.5.0 (proc-macro)
+│   │   │       │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │       │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │       │   │   │   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   │   ├── stable_deref_trait v1.2.0
+│   │   │       │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │       │   │   │   │   │   │   ├── writeable v0.5.5
+│   │   │       │   │   │   │   │   │   ├── yoke v0.7.5 (*)
+│   │   │       │   │   │   │   │   │   ├── zerofrom v0.1.5 (*)
+│   │   │       │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │       │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   │   │   ├── icu_properties_data v1.5.0
+│   │   │       │   │   │   │   ├── icu_provider v1.5.0 (*)
+│   │   │       │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │       │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   │   ├── icu_provider v1.5.0 (*)
+│   │   │       │   │   │   ├── smallvec v1.13.2
+│   │   │       │   │   │   ├── utf16_iter v1.0.5
+│   │   │       │   │   │   ├── utf8_iter v1.0.4
+│   │   │       │   │   │   ├── write16 v1.0.0
+│   │   │       │   │   │   └── zerovec v0.10.4 (*)
+│   │   │       │   │   └── icu_properties v1.5.1 (*)
+│   │   │       │   ├── smallvec v1.13.2
+│   │   │       │   └── utf8_iter v1.0.4
+│   │   │       └── percent-encoding v2.3.1
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── thiserror v2.0.12 (*)
+│   │   └── url v2.5.4 (*)
+│   ├── itertools v0.14.0
+│   │   └── either v1.13.0
+│   ├── serde v1.0.217 (*)
+│   ├── serde_json v1.0.134 (*)
+│   ├── thiserror v2.0.12 (*)
+│   ├── toml v0.8.19
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── serde_spanned v0.6.8
+│   │   │   └── serde v1.0.217 (*)
+│   │   ├── toml_datetime v0.6.8
+│   │   │   └── serde v1.0.217 (*)
+│   │   └── toml_edit v0.22.22
+│   │       ├── indexmap v2.7.0 (*)
+│   │       ├── serde v1.0.217 (*)
+│   │       ├── serde_spanned v0.6.8 (*)
+│   │       ├── toml_datetime v0.6.8 (*)
+│   │       └── winnow v0.6.20
+│   └── tracing v0.1.41 (*)
+├── either v1.13.0
+├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+├── oxrdf v0.2.3 (*)
+├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap)
+│   ├── colored v3.0.0
+│   ├── indexmap v2.7.0 (*)
+│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   ├── serde v1.0.217 (*)
+│   └── thiserror v2.0.12 (*)
+├── regex v1.11.1
+│   ├── aho-corasick v1.1.3
+│   │   └── memchr v2.7.4
+│   ├── memchr v2.7.4
+│   ├── regex-automata v0.4.9
+│   │   ├── aho-corasick v1.1.3 (*)
+│   │   ├── memchr v2.7.4
+│   │   └── regex-syntax v0.8.5
+│   └── regex-syntax v0.8.5
+├── reqwest v0.12.11 (*)
+├── rudof_lib v0.1.63 (/home/labra/src/rust/rudof/rudof_lib)
+│   ├── dctap v0.1.63 (/home/labra/src/rust/rudof/dctap) (*)
+│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   ├── oxrdf v0.2.3 (*)
+│   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   ├── serde v1.0.217 (*)
+│   ├── serde_json v1.0.134 (*)
+│   ├── shacl_ast v0.1.63 (/home/labra/src/rust/rudof/shacl_ast)
+│   │   ├── const_format v0.2.34
+│   │   │   └── const_format_proc_macros v0.2.34 (proc-macro)
+│   │   │       ├── proc-macro2 v1.0.92 (*)
+│   │   │       ├── quote v1.0.38 (*)
+│   │   │       └── unicode-xid v0.2.6
+│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── itertools v0.14.0 (*)
+│   │   ├── lazy_static v1.5.0
+│   │   ├── oxrdf v0.2.3 (*)
+│   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf)
+│   │   │   ├── async-trait v0.1.83 (proc-macro)
+│   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   └── syn v2.0.92 (*)
+│   │   │   ├── colored v3.0.0
+│   │   │   ├── const_format v0.2.34 (*)
+│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── itertools v0.14.0 (*)
+│   │   │   ├── lazy_static v1.5.0
+│   │   │   ├── oxilangtag v0.1.5 (*)
+│   │   │   ├── oxiri v0.2.9
+│   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   ├── oxrdfio v0.1.4
+│   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   ├── oxrdfxml v0.1.4
+│   │   │   │   │   ├── oxilangtag v0.1.5 (*)
+│   │   │   │   │   ├── oxiri v0.2.9
+│   │   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   │   ├── quick-xml v0.37.1 (*)
+│   │   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   │   ├── oxttl v0.1.4
+│   │   │   │   │   ├── memchr v2.7.4
+│   │   │   │   │   ├── oxilangtag v0.1.5 (*)
+│   │   │   │   │   ├── oxiri v0.2.9
+│   │   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   ├── oxrdfxml v0.1.4 (*)
+│   │   │   ├── oxsdatatypes v0.2.1 (*)
+│   │   │   ├── oxttl v0.1.4 (*)
+│   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   │   ├── regex v1.11.1 (*)
+│   │   │   ├── reqwest v0.12.11 (*)
+│   │   │   ├── rust_decimal v1.36.0 (*)
+│   │   │   ├── rust_decimal_macros v1.36.0 (proc-macro)
+│   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   └── rust_decimal v1.36.0
+│   │   │   │       ├── arrayvec v0.7.6
+│   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   ├── serde v1.0.217 (*)
+│   │   │   ├── sparesults v0.2.3
+│   │   │   │   ├── json-event-parser v0.2.0
+│   │   │   │   ├── memchr v2.7.4
+│   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   ├── quick-xml v0.37.1 (*)
+│   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   ├── toml v0.8.19 (*)
+│   │   │   ├── tracing v0.1.41 (*)
+│   │   │   └── url v2.5.4 (*)
+│   │   └── thiserror v2.0.12 (*)
+│   ├── shacl_validation v0.1.63 (/home/labra/src/rust/rudof/shacl_validation)
+│   │   ├── clap v4.5.23 (*)
+│   │   ├── colored v3.0.0
+│   │   ├── const_format v0.2.34 (*)
+│   │   ├── indoc v2.0.5 (proc-macro)
+│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── lazy_static v1.5.0
+│   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── shacl_ast v0.1.63 (/home/labra/src/rust/rudof/shacl_ast) (*)
+│   │   ├── sparql_service v0.1.60 (/home/labra/src/rust/rudof/sparql_service)
+│   │   │   ├── colored v3.0.0
+│   │   │   ├── const_format v0.2.34 (*)
+│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── itertools v0.14.0 (*)
+│   │   │   ├── lazy_static v1.5.0
+│   │   │   ├── oxigraph v0.4.5
+│   │   │   │   ├── dashmap v6.1.0
+│   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   ├── crossbeam-utils v0.8.21
+│   │   │   │   │   ├── hashbrown v0.14.5
+│   │   │   │   │   ├── lock_api v0.4.12
+│   │   │   │   │   │   └── scopeguard v1.2.0
+│   │   │   │   │   │   [build-dependencies]
+│   │   │   │   │   │   └── autocfg v1.4.0
+│   │   │   │   │   ├── once_cell v1.20.2
+│   │   │   │   │   └── parking_lot_core v0.9.10
+│   │   │   │   │       ├── cfg-if v1.0.0
+│   │   │   │   │       ├── libc v0.2.169
+│   │   │   │   │       └── smallvec v1.13.2
+│   │   │   │   ├── digest v0.10.7
+│   │   │   │   │   ├── block-buffer v0.10.4
+│   │   │   │   │   │   └── generic-array v0.14.7
+│   │   │   │   │   │       └── typenum v1.17.0
+│   │   │   │   │   │       [build-dependencies]
+│   │   │   │   │   │       └── version_check v0.9.5
+│   │   │   │   │   └── crypto-common v0.1.6
+│   │   │   │   │       ├── generic-array v0.14.7 (*)
+│   │   │   │   │       └── typenum v1.17.0
+│   │   │   │   ├── hex v0.4.3
+│   │   │   │   ├── json-event-parser v0.2.0
+│   │   │   │   ├── libc v0.2.169
+│   │   │   │   ├── md-5 v0.10.6
+│   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   └── digest v0.10.7 (*)
+│   │   │   │   ├── oxilangtag v0.1.5 (*)
+│   │   │   │   ├── oxiri v0.2.9
+│   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   ├── oxrdfio v0.1.4 (*)
+│   │   │   │   ├── oxsdatatypes v0.2.1 (*)
+│   │   │   │   ├── rand v0.8.5 (*)
+│   │   │   │   ├── regex v1.11.1 (*)
+│   │   │   │   ├── rustc-hash v2.1.0
+│   │   │   │   ├── sha1 v0.10.6
+│   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   ├── cpufeatures v0.2.16
+│   │   │   │   │   └── digest v0.10.7 (*)
+│   │   │   │   ├── sha2 v0.10.8
+│   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   ├── cpufeatures v0.2.16
+│   │   │   │   │   └── digest v0.10.7 (*)
+│   │   │   │   ├── siphasher v1.0.1
+│   │   │   │   ├── sparesults v0.2.3 (*)
+│   │   │   │   ├── spargebra v0.3.3
+│   │   │   │   │   ├── oxilangtag v0.1.5 (*)
+│   │   │   │   │   ├── oxiri v0.2.9
+│   │   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   │   ├── peg v0.8.4
+│   │   │   │   │   │   ├── peg-macros v0.8.4 (proc-macro)
+│   │   │   │   │   │   │   ├── peg-runtime v0.8.3
+│   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   └── quote v1.0.38 (*)
+│   │   │   │   │   │   └── peg-runtime v0.8.3
+│   │   │   │   │   ├── rand v0.8.5 (*)
+│   │   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   │   ├── sparopt v0.1.3
+│   │   │   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   │   │   ├── rand v0.8.5 (*)
+│   │   │   │   │   └── spargebra v0.3.3 (*)
+│   │   │   │   └── thiserror v2.0.12 (*)
+│   │   │   ├── oxrdf v0.2.3 (*)
+│   │   │   ├── oxrdfio v0.1.4 (*)
+│   │   │   ├── oxsdatatypes v0.2.1 (*)
+│   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   │   ├── rust_decimal v1.36.0 (*)
+│   │   │   ├── serde v1.0.217 (*)
+│   │   │   ├── sparesults v0.2.3 (*)
+│   │   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   └── toml v0.8.19 (*)
+│   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   ├── thiserror v2.0.12 (*)
+│   │   └── toml v0.8.19 (*)
+│   ├── shapemap v0.1.63 (/home/labra/src/rust/rudof/shapemap)
+│   │   ├── colored v3.0.0
+│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── serde_json v1.0.134 (*)
+│   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast)
+│   │   │   ├── const_format v0.2.34 (*)
+│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── itertools v0.14.0 (*)
+│   │   │   ├── lazy_static v1.5.0
+│   │   │   ├── petgraph v0.8.1
+│   │   │   │   ├── fixedbitset v0.5.7
+│   │   │   │   ├── hashbrown v0.15.2 (*)
+│   │   │   │   └── indexmap v2.7.0 (*)
+│   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   │   ├── rbe v0.1.63 (/home/labra/src/rust/rudof/rbe)
+│   │   │   │   ├── hashbag v0.1.12
+│   │   │   │   ├── indexmap v2.7.0 (*)
+│   │   │   │   ├── itertools v0.14.0 (*)
+│   │   │   │   ├── serde v1.0.217 (*)
+│   │   │   │   ├── serde_json v1.0.134 (*)
+│   │   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   │   ├── toml v0.8.19 (*)
+│   │   │   │   └── tracing v0.1.41 (*)
+│   │   │   ├── regex v1.11.1 (*)
+│   │   │   ├── rust_decimal v1.36.0 (*)
+│   │   │   ├── serde v1.0.217 (*)
+│   │   │   ├── serde_json v1.0.134 (*)
+│   │   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   ├── tracing v0.1.41 (*)
+│   │   │   └── void v1.0.2
+│   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   ├── thiserror v2.0.12 (*)
+│   │   └── toml v0.8.19 (*)
+│   ├── shapes_converter v0.1.60 (/home/labra/src/rust/rudof/shapes_converter)
+│   │   ├── chrono v0.4.39
+│   │   │   ├── iana-time-zone v0.1.61
+│   │   │   └── num-traits v0.2.19 (*)
+│   │   ├── dctap v0.1.63 (/home/labra/src/rust/rudof/dctap) (*)
+│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── minijinja v2.5.0
+│   │   │   ├── memo-map v0.3.3
+│   │   │   ├── self_cell v1.1.0
+│   │   │   └── serde v1.0.217 (*)
+│   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── shacl_ast v0.1.63 (/home/labra/src/rust/rudof/shacl_ast) (*)
+│   │   ├── shacl_validation v0.1.63 (/home/labra/src/rust/rudof/shacl_validation) (*)
+│   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
+│   │   ├── shex_compact v0.1.63 (/home/labra/src/rust/rudof/shex_compact)
+│   │   │   ├── colored v3.0.0
+│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── lazy-regex v3.4.1
+│   │   │   │   ├── lazy-regex-proc_macros v3.4.1 (proc-macro)
+│   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   │   ├── regex v1.11.1 (*)
+│   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │   │   ├── once_cell v1.20.2
+│   │   │   │   └── regex v1.11.1 (*)
+│   │   │   ├── nom v7.1.3
+│   │   │   │   ├── memchr v2.7.4
+│   │   │   │   └── minimal-lexical v0.2.1
+│   │   │   ├── nom_locate v4.2.0
+│   │   │   │   ├── bytecount v0.6.8
+│   │   │   │   ├── memchr v2.7.4
+│   │   │   │   └── nom v7.1.3 (*)
+│   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   │   ├── pretty v0.12.3
+│   │   │   │   ├── arrayvec v0.5.2
+│   │   │   │   ├── typed-arena v2.0.2
+│   │   │   │   └── unicode-width v0.1.14
+│   │   │   ├── regex v1.11.1 (*)
+│   │   │   ├── rust_decimal v1.36.0 (*)
+│   │   │   ├── shapemap v0.1.63 (/home/labra/src/rust/rudof/shapemap) (*)
+│   │   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
+│   │   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   └── tracing v0.1.41 (*)
+│   │   ├── shex_validation v0.1.63 (/home/labra/src/rust/rudof/shex_validation)
+│   │   │   ├── either v1.13.0
+│   │   │   ├── indexmap v2.7.0 (*)
+│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
+│   │   │   ├── rbe v0.1.63 (/home/labra/src/rust/rudof/rbe) (*)
+│   │   │   ├── serde v1.0.217 (*)
+│   │   │   ├── serde_json v1.0.134 (*)
+│   │   │   ├── shapemap v0.1.63 (/home/labra/src/rust/rudof/shapemap) (*)
+│   │   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
+│   │   │   ├── shex_compact v0.1.63 (/home/labra/src/rust/rudof/shex_compact) (*)
+│   │   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   │   ├── thiserror v2.0.12 (*)
+│   │   │   ├── toml v0.8.19 (*)
+│   │   │   ├── tracing v0.1.41 (*)
+│   │   │   └── url v2.5.4 (*)
+│   │   ├── spargebra v0.3.3 (*)
+│   │   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   │   ├── tempfile v3.14.0
+│   │   │   ├── cfg-if v1.0.0
+│   │   │   ├── fastrand v2.3.0
+│   │   │   ├── once_cell v1.20.2
+│   │   │   └── rustix v0.38.42
+│   │   │       ├── bitflags v2.6.0
+│   │   │       └── linux-raw-sys v0.4.14
+│   │   ├── thiserror v2.0.12 (*)
+│   │   ├── toml v0.8.19 (*)
+│   │   └── tracing v0.1.41 (*)
+│   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
+│   ├── shex_compact v0.1.63 (/home/labra/src/rust/rudof/shex_compact) (*)
+│   ├── shex_validation v0.1.63 (/home/labra/src/rust/rudof/shex_validation) (*)
+│   ├── sparql_service v0.1.60 (/home/labra/src/rust/rudof/sparql_service) (*)
+│   ├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+│   ├── thiserror v2.0.12 (*)
+│   └── toml v0.8.19 (*)
+├── serde v1.0.217 (*)
+├── serde_json v1.0.134 (*)
+├── shacl_ast v0.1.63 (/home/labra/src/rust/rudof/shacl_ast) (*)
+├── shacl_validation v0.1.63 (/home/labra/src/rust/rudof/shacl_validation) (*)
+├── shapemap v0.1.63 (/home/labra/src/rust/rudof/shapemap) (*)
+├── shapes_converter v0.1.60 (/home/labra/src/rust/rudof/shapes_converter) (*)
+├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
+├── sparql_service v0.1.60 (/home/labra/src/rust/rudof/sparql_service) (*)
+├── srdf v0.1.63 (/home/labra/src/rust/rudof/srdf) (*)
+├── supports-color v3.0.2
+│   └── is_ci v1.2.0
+├── thiserror v2.0.12 (*)
+├── tracing v0.1.41 (*)
+├── tracing-subscriber v0.3.19
+│   ├── matchers v0.1.0
+│   │   └── regex-automata v0.1.10
+│   │       └── regex-syntax v0.6.29
+│   ├── nu-ansi-term v0.46.0
+│   │   └── overload v0.1.1
+│   ├── once_cell v1.20.2
+│   ├── regex v1.11.1 (*)
+│   ├── sharded-slab v0.1.7
+│   │   └── lazy_static v1.5.0
+│   ├── smallvec v1.13.2
+│   ├── thread_local v1.1.8
+│   │   ├── cfg-if v1.0.0
+│   │   └── once_cell v1.20.2
+│   ├── tracing v0.1.41 (*)
+│   ├── tracing-core v0.1.33 (*)
+│   └── tracing-log v0.2.0
+│       ├── log v0.4.22
+│       ├── once_cell v1.20.2
+│       └── tracing-core v0.1.33 (*)
+└── url v2.5.4 (*)
