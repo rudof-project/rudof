@@ -1,6 +1,6 @@
 [package]
 name = "shex_testsuite"
-version = "0.1.62"
+version = "0.1.63"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_testsuite"
