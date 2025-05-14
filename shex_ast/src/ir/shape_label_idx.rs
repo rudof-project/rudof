@@ -3,14 +3,8 @@ use std::fmt::Display;
 use rbe::Ref;
 use serde::Serialize;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Serialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Default, Serialize)]
 pub struct ShapeLabelIdx(usize);
-
-impl Default for ShapeLabelIdx {
-    fn default() -> Self {
-        ShapeLabelIdx(0)
-    }
-}
 
 impl Ref for ShapeLabelIdx {}
 

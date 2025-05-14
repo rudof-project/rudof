@@ -33,40 +33,38 @@ pub struct Validator {
 
 impl Validator {
     pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
-        if config.check_negation_requirement.unwrap_or(true) {
-            if schema.has_neg_cycle() {
-                let neg_cycles = schema.neg_cycles();
-                let mut neg_cycles_displayed = Vec::new();
-                for cycle in neg_cycles.iter() {
-                    let mut cycle_displayed = Vec::new();
-                    for (source, target, shapes) in cycle.iter() {
-                        let source_str = if let Some(label) = schema.shape_label_from_idx(source) {
+        if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
+            let neg_cycles = schema.neg_cycles();
+            let mut neg_cycles_displayed = Vec::new();
+            for cycle in neg_cycles.iter() {
+                let mut cycle_displayed = Vec::new();
+                for (source, target, shapes) in cycle.iter() {
+                    let source_str = if let Some(label) = schema.shape_label_from_idx(source) {
+                        schema.show_label(label)
+                    } else {
+                        format!("internal_{source}")
+                    };
+                    let target_str = if let Some(label) = schema.shape_label_from_idx(target) {
+                        schema.show_label(label)
+                    } else {
+                        format!("internal_{target}")
+                    };
+                    let mut shapes_str = Vec::new();
+                    for shape in shapes.iter() {
+                        let shape_str = if let Some(label) = schema.shape_label_from_idx(shape) {
                             schema.show_label(label)
                         } else {
-                            format!("internal_{source}")
+                            format!("internal_{shape}")
                         };
-                        let target_str = if let Some(label) = schema.shape_label_from_idx(target) {
-                            schema.show_label(label)
-                        } else {
-                            format!("internal_{target}")
-                        };
-                        let mut shapes_str = Vec::new(); 
-                        for shape in shapes.iter() {
-                            let shape_str = if let Some(label) = schema.shape_label_from_idx(shape) {
-                                schema.show_label(label)
-                            } else {
-                                format!("internal_{shape}")
-                            };
-                            shapes_str.push(shape_str);
-                        }
-                        cycle_displayed.push((source_str, target_str, shapes_str));
+                        shapes_str.push(shape_str);
                     }
-                    neg_cycles_displayed.push(cycle_displayed);
+                    cycle_displayed.push((source_str, target_str, shapes_str));
                 }
-                return Err(ValidatorError::NegCycleError {
-                    neg_cycles: neg_cycles_displayed,
-                });
+                neg_cycles_displayed.push(cycle_displayed);
             }
+            return Err(ValidatorError::NegCycleError {
+                neg_cycles: neg_cycles_displayed,
+            });
         }
         Ok(Validator {
             schema,
@@ -288,9 +286,9 @@ fn json_errors(_errors: &[ValidatorError]) -> Value {
     vs.into()
 }
 
-fn json_reasons(_reasons: &[Reason]) -> Value {
-    let vs = vec!["todo", "reasons"];
-    vs.into()
+fn json_reasons(reasons: &[Reason]) -> Value {
+    let value = Value::Array(reasons.iter().map(|reason| reason.as_json()).collect());
+    value
 }
 
 fn show_reasons(reasons: &[Reason]) -> String {

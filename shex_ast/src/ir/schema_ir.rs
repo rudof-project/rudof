@@ -108,7 +108,7 @@ impl SchemaIR {
         self.shapes
             .get(idx)
             .and_then(|(label, _se)| label.as_ref())
-            .or_else(|| None)
+            .or(None)
     }
 
     pub fn new_index(&mut self) -> ShapeLabelIdx {
@@ -187,7 +187,7 @@ impl SchemaIR {
 
     pub(crate) fn dependency_graph(&self) -> DependencyGraph {
         let mut dep_graph = DependencyGraph::new();
-        for (idx, (label, se)) in self.shapes.iter() {
+        for (idx, (_label, se)) in self.shapes.iter() {
             se.add_edges(*idx, &mut dep_graph, PosNeg::pos());
         }
         dep_graph

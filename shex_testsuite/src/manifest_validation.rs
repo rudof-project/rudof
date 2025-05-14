@@ -195,7 +195,7 @@ impl ValidationEntry {
         compiler
             .compile(&schema, &mut compiled_schema)
             .map_err(Box::new)?;
-        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default());
+        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())?;
         validator.validate_node_shape(&node, &shape, &graph)?;
         let type_ = parse_type(&self.type_)?;
         let result = validator.get_result(&node, &shape)?;

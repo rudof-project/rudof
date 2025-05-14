@@ -1,6 +1,5 @@
 use colored::*;
 use serde::Serialize;
-use serde::Serializer;
 use srdf::Object;
 
 use crate::ShapemapConfig;
@@ -268,14 +267,13 @@ impl Display for ResultShapeMap {
     }
 }
 
-struct ResultSerializer {
-    node: Node,
-    shape: ShapeLabel,
-    status: ValidationStatus,
-    app_info: String,
+struct ResultSerializer<'a> {
+    node: &'a Node,
+    shape: &'a ShapeLabel,
+    status: &'a ValidationStatus,
 }
 
-impl Serialize for ResultSerializer {
+impl Serialize for ResultSerializer<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -283,8 +281,9 @@ impl Serialize for ResultSerializer {
         let mut map = serializer.serialize_map(Some(4))?;
         map.serialize_entry("node", &self.node.to_string())?;
         map.serialize_entry("shape", &self.shape.to_string())?;
-        map.serialize_entry("status", &self.status.to_string())?;
-        map.serialize_entry("appInfo", &self.app_info)?;
+        map.serialize_entry("status", &self.status.code())?;
+        map.serialize_entry("appInfo", &self.status.app_info())?;
+        map.serialize_entry("reason", &self.status.reason())?;
         map.end()
     }
 }
@@ -297,10 +296,9 @@ impl Serialize for ResultShapeMap {
         let mut seq = serializer.serialize_seq(Some(self.result.len()))?;
         for (node, shape, status) in self.iter() {
             let result_aux = ResultSerializer {
-                node: node.clone(),
-                shape: shape.clone(),
-                status: status.clone(),
-                app_info: format!("Pending"),
+                node,
+                shape,
+                status,
             };
             seq.serialize_element(&result_aux)?;
         }

@@ -32,10 +32,10 @@ impl DependencyGraph {
                     if component.contains(&edge.target()) && edge.weight().is_neg() {
                         let mut shapes = Vec::new();
                         for node in component.iter() {
-                            shapes.push(node.clone());
+                            shapes.push(*node);
                         }
                         let target = edge.target();
-                        neg_cycle.push((node.clone(), target, shapes));
+                        neg_cycle.push((*node, target, shapes));
                         break;
                     }
                 }
@@ -74,7 +74,7 @@ impl Display for DependencyGraph {
 pub struct DependencyGraphIter<'a> {
     inner: petgraph::graphmap::AllEdges<'a, ShapeLabelIdx, PosNeg, petgraph::Directed>,
 }
-impl<'a> Iterator for DependencyGraphIter<'a> {
+impl Iterator for DependencyGraphIter<'_> {
     type Item = (ShapeLabelIdx, PosNeg, ShapeLabelIdx);
 
     fn next(&mut self) -> Option<Self::Item> {

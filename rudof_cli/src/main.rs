@@ -633,7 +633,7 @@ fn run_validate_shex(
         };
         let result = rudof.validate_shex()?;
         // writeln!(writer, "Result:\n{}", result)?;
-        write_result(writer, &result_format, result)?;
+        write_result(writer, result_format, result)?;
         Ok(())
     } else {
         bail!("No ShEx schema specified")

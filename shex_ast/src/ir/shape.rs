@@ -85,7 +85,7 @@ impl Display for Shape {
         let preds = if self.preds.is_empty() {
             "".to_string()
         } else {
-            format!("{}", self.preds.iter().join(","))
+            self.preds.iter().join(",")
         };
         write!(f, "Shape {closed}{extra} ")?;
         writeln!(f, "Preds: {}", preds)?;

@@ -42,6 +42,48 @@ impl ValidationStatus {
     pub fn pending() -> ValidationStatus {
         ValidationStatus::Pending
     }
+
+    pub fn code(&self) -> String {
+        match self {
+            ValidationStatus::Conformant(_) => "conformant".to_string(),
+            ValidationStatus::NonConformant(_) => "nonconformant".to_string(),
+            ValidationStatus::Pending => "pending".to_string(),
+            ValidationStatus::Inconsistent(_, _) => "inconsistent".to_string(),
+        }
+    }
+
+    pub fn app_info(&self) -> Value {
+        match self {
+            ValidationStatus::Conformant(conformant_info) => conformant_info.app_info.clone(),
+            ValidationStatus::NonConformant(non_conformant_info) => {
+                non_conformant_info.app_info.clone()
+            }
+            ValidationStatus::Pending => serde_json::json!({ "status": "pending" }),
+            ValidationStatus::Inconsistent(conformant, non_conformant) => {
+                serde_json::json!({
+                    "status": "inconsistent",
+                    "conformant": conformant.app_info,
+                    "non_conformant": non_conformant.app_info
+                })
+            }
+        }
+    }
+
+    pub fn reason(&self) -> String {
+        match self {
+            ValidationStatus::Conformant(conformant_info) => conformant_info.reason.clone(),
+            ValidationStatus::NonConformant(non_conformant_info) => {
+                non_conformant_info.reason.clone()
+            }
+            ValidationStatus::Pending => "Pending".to_string(),
+            ValidationStatus::Inconsistent(conformant, non_conformant) => {
+                format!(
+                    "Conformant: {}, Non-conformant: {}",
+                    conformant.reason, non_conformant.reason
+                )
+            }
+        }
+    }
 }
 
 impl Display for ValidationStatus {

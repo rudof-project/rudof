@@ -131,7 +131,7 @@ where
     pub fn components(&self) -> ComponentsIter<K, V, R> {
         ComponentsIter {
             current: 0,
-            table: &self,
+            table: self,
         }
     }
 }
@@ -392,19 +392,19 @@ where
     R: Ref + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RBE: {}\n", self.rbe)?;
-        write!(f, "Keys:\n")?;
+        writeln!(f, "RBE: {}", self.rbe)?;
+        writeln!(f, "Keys:")?;
         for (k, c) in self.key_components.iter() {
             write!(f, " {k} -> [")?;
             for c in c.iter() {
                 write!(f, " {c}")?;
             }
-            write!(f, " ]\n")?;
+            writeln!(f, " ]")?;
         }
-        write!(f, "Components: \n")?;
+        writeln!(f, "Components:")?;
         for (c, cond) in self.component_cond.iter() {
             let k = self.component_key.get(c).unwrap();
-            write!(f, " {c} -> {k} {cond}\n")?;
+            writeln!(f, " {c} -> {k} {cond}")?;
         }
         Ok(())
     }

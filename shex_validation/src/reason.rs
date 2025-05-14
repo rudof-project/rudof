@@ -28,3 +28,31 @@ impl Display for Reason {
         }
     }
 }
+
+impl Reason {
+    pub fn as_json(&self) -> serde_json::Value {
+        match self {
+            Reason::NodeConstraintPassed { node, nc } => {
+                serde_json::json!({
+                    "type": "NodeConstraintPassed",
+                    "node": node.to_string(),
+                    "constraint": nc.to_string()
+                })
+            }
+            Reason::ShapeAndPassed { node, se } => {
+                serde_json::json!({
+                    "type": "ShapeAndPassed",
+                    "node": node.to_string(),
+                    "shape_expr": se.to_string()
+                })
+            }
+            Reason::ShapePassed { node, shape } => {
+                serde_json::json!({
+                    "type": "ShapePassed",
+                    "node": node.to_string(),
+                    "shape": shape.to_string()
+                })
+            }
+        }
+    }
+}

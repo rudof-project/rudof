@@ -174,24 +174,15 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     }
 
     fn as_integer(&self) -> Option<isize> {
-        match self.lexical_form().parse() {
-            Ok(n) => Some(n),
-            _ => None,
-        }
+        self.lexical_form().parse().ok()
     }
 
     fn as_double(&self) -> Option<f64> {
-        match self.lexical_form().parse() {
-            Ok(n) => Some(n),
-            _ => None,
-        }
+        self.lexical_form().parse().ok()
     }
 
     fn as_decimal(&self) -> Option<Decimal> {
-        match self.lexical_form().parse() {
-            Ok(n) => Some(n),
-            _ => None,
-        }
+        self.lexical_form().parse().ok()
     }
 
     fn as_literal(&self) -> SRDFLiteral {

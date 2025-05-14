@@ -563,7 +563,7 @@ fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::ref_(idx.clone())
+    MatchCond::ref_(idx)
 }
 
 fn mk_cond_datatype(datatype: &IriRef) -> Cond {
