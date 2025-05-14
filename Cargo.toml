@@ -25,9 +25,9 @@ exclude = ["shex_compact_winnow"]
 
 default-members = [
     "rudof_cli",
-    "shacl_ast",
+    # "shacl_ast",
     # "shacl_validation",
-    "srdf",
+    # "srdf",
 ]
 
 [workspace.package]
