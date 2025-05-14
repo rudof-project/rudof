@@ -1,6 +1,6 @@
 [package]
 name = "prefixmap"
-version = "0.1.60"
+version = "0.1.61"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/prefixmap"
@@ -10,8 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { workspace = true }
+iri_s.workspace = true
 indexmap = { version = "2", features = ["serde"] }
-thiserror = "2"
-colored = "3"
+thiserror.workspace = true
+colored.workspace = true
 serde.workspace = true
