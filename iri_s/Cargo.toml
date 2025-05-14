@@ -1,6 +1,6 @@
 [package]
 name = "iri_s"
-version = "0.1.60"
+version = "0.1.61"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/iri_s"
@@ -15,7 +15,7 @@ rdf-star = [ "oxrdf/rdf-star" ]
 [dependencies]
 oxrdf = { version = "0.2.0-alpha.5" }
 oxiri = "0.2.3-alpha.1"
-reqwest = { version = "0.12", features = ["blocking", "json"] }
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
 serde.workspace = true
 thiserror = "2.0"
 url = { workspace = true }

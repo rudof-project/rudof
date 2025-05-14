@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.65] - 2025-05-14
+
+- Set reqwest dependency on rustls to disable openssl which gives several problems
+
 ## [v0.1.64] - 2025-05-14
 
 - Added check on recursion with negative cycles in ShEx
