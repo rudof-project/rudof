@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [v0.1.63] - 2025-05-14
+
+- Added check on recursion with negative cycles in ShEx
+- Added different result formats in ShEx like JSON
+
 ## [v0.1.62] - 2025-03-29
 
 - Changed dependency from [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) to [toml](https://docs.rs/toml/latest/toml/)
