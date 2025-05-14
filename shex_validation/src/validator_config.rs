@@ -21,6 +21,8 @@ pub struct ValidatorConfig {
 
     /// Configuration of Shapemaps
     pub shapemap: Option<ShapemapConfig>,
+
+    pub check_negation_requirement: Option<bool>,
 }
 
 impl Default for ValidatorConfig {
@@ -30,6 +32,7 @@ impl Default for ValidatorConfig {
             rdf_data: Some(RdfDataConfig::default()),
             shex: Some(ShExConfig::default()),
             shapemap: Some(ShapemapConfig::default()),
+            check_negation_requirement: Some(true),
         }
     }
 }

@@ -50,7 +50,7 @@ pub use crate::shex_parser_error::*;
 
 // type Result<A> = std::result::Result<A, ParseError>;
 
-// Some definitions borrowed from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
+// Some definitions were inspired from [Nemo](https://github.com/knowsys/nemo/blob/main/nemo/src/io/parser/types.rs)
 
 pub(crate) type IRes<'a, T> = IResult<Span<'a>, T, LocatedParseError>;
 

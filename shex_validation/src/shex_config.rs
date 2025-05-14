@@ -87,8 +87,17 @@ pub struct ShExConfig {
     /// Show information about shapes
     pub show_shapes: Option<bool>,
 
+    /// Show dependencies
+    pub show_dependencies: Option<bool>,
+
+    /// Show ShEx Schema Internal Representation
+    pub show_ir: Option<bool>,
+
     /// Default ShEx format
     pub shex_format: Option<ShExFormat>,
+
+    /// Check if schema is well formed
+    pub check_well_formed: Option<bool>,
 
     /// Information about RDF data config which is used for Schemas represented in RDF
     pub rdf_config_shex: Option<RdfDataConfig>,
@@ -103,6 +112,9 @@ impl Default for ShExConfig {
             show_extends: Some(true),
             show_imports: Some(true),
             show_shapes: Some(true),
+            show_dependencies: Some(true),
+            show_ir: Some(true),
+            check_well_formed: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),
             base: Some(IriS::new_unchecked("base://")),
@@ -116,6 +128,10 @@ impl ShExConfig {
             None => RdfDataConfig::default(),
             Some(c) => c.clone(),
         }
+    }
+
+    pub fn check_well_formed(&self) -> bool {
+        self.check_well_formed.unwrap_or(true)
     }
 
     pub fn with_show_extends(mut self, flag: bool) -> Self {
@@ -134,6 +150,11 @@ impl ShExConfig {
 
     pub fn with_show_shapes(mut self, flag: bool) -> Self {
         self.show_shapes = Some(flag);
+        self
+    }
+
+    pub fn with_show_dependencies(mut self, flag: bool) -> Self {
+        self.show_dependencies = Some(flag);
         self
     }
 }

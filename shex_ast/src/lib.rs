@@ -11,8 +11,9 @@ pub mod pred;
 pub mod shexr;
 
 pub use ast::*;
-pub use ir::compiled_schema_error::*;
+pub use ir::schema_ir_error::*;
 pub use ir::shape_label_idx::*;
+
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;

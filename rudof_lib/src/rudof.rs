@@ -39,8 +39,9 @@ pub use sparql_service::RdfData;
 pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
-    shex_schema: Option<ShExSchema>,
     shacl_schema: Option<ShaclSchema>, // TODO: Should we store a compiled schema to avoid compiling it for each validation request?
+    shex_schema: Option<ShExSchema>,
+    shex_schema_ir: Option<SchemaIR>,
     resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
@@ -56,6 +57,7 @@ impl Rudof {
         Rudof {
             config: config.clone(),
             shex_schema: None,
+            shex_schema_ir: None,
             shacl_schema: None,
             resolved_shex_schema: None,
             shex_validator: None,
@@ -113,6 +115,11 @@ impl Rudof {
     /// Get the current ShEx Schema
     pub fn get_shex(&self) -> Option<&ShExSchema> {
         self.shex_schema.as_ref()
+    }
+
+    /// Get the current ShEx Schema Internal Representation
+    pub fn get_shex_ir(&self) -> Option<&SchemaIR> {
+        self.shex_schema_ir.as_ref()
     }
 
     /// Get the current DCTAP
@@ -456,7 +463,16 @@ impl Rudof {
             .map_err(|e| RudofError::CompilingSchemaError {
                 error: format!("{e}"),
             })?;
-        self.shex_validator = Some(ShExValidator::new(schema, &self.config.validator_config()));
+        self.shex_schema_ir = Some(schema.clone());
+
+        let validator =
+            ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
+                RudofError::ShExValidatorCreationError {
+                    error: format!("{e}"),
+                    schema: format!("{}", schema_json),
+                }
+            })?;
+        self.shex_validator = Some(validator);
         Ok(())
     }
 

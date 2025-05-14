@@ -15,6 +15,7 @@ iri_s.workspace = true
 rbe.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
+itertools.workspace = true
 void = "1"
 thiserror = "2.0"
 lazy_static = "1"
@@ -23,5 +24,6 @@ regex = "1.10"
 serde_json.workspace = true
 const_format = "0.2"
 tracing.workspace = true
+petgraph = "0.8"
 
 [dev-dependencies]

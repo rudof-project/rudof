@@ -18,8 +18,8 @@ use anyhow::*;
 use clap::Parser;
 use cli::{
     Cli, Command, DCTapFormat, DCTapResultFormat, DataFormat, InputConvertMode, MimeType,
-    OutputConvertMode, RDFReaderMode, ResultQueryFormat, ResultServiceFormat, ShowNodeMode,
-    ValidationMode,
+    OutputConvertMode, RDFReaderMode, ResultFormat, ResultQueryFormat, ResultServiceFormat,
+    ShowNodeMode, ValidationMode,
 };
 use dctap::DCTAPFormat;
 use iri_s::IriS;
@@ -28,7 +28,7 @@ use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
-use shapemap::{NodeSelector, ShapeMapFormat as ShapemapFormat, ShapeSelector};
+use shapemap::{NodeSelector, ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
 use shex_ast::object_value::ObjectValue;
@@ -111,6 +111,7 @@ fn main() -> Result<()> {
             schema,
             schema_format,
             result_schema_format,
+            show_dependencies,
             output,
             show_time,
             show_statistics,
@@ -119,9 +120,14 @@ fn main() -> Result<()> {
             config,
         }) => {
             let config = get_config(config)?;
-            /*if let Some(flag) = show_statistics {
-                config.set_show_extends(*flag);
-            }*/
+            if let Some(show_dependencies) = show_dependencies {
+                config
+                    .shex_config()
+                    .with_show_dependencies(*show_dependencies);
+            }
+            if let Some(flag) = show_statistics {
+                config.shex_config().set_show_extends(*flag);
+            }
             let show_time = (*show_time).unwrap_or_default();
             run_shex(
                 schema,
@@ -148,6 +154,7 @@ fn main() -> Result<()> {
             shapemap_format,
             max_steps,
             shacl_validation_mode,
+            result_format,
             output,
             config,
             force_overwrite,
@@ -166,6 +173,7 @@ fn main() -> Result<()> {
                     shapemap,
                     shapemap_format,
                     cli.debug,
+                    result_format,
                     output,
                     &config,
                     *force_overwrite,
@@ -205,6 +213,7 @@ fn main() -> Result<()> {
             shape,
             shapemap,
             shapemap_format,
+            result_format,
             output,
             config,
             force_overwrite,
@@ -222,6 +231,7 @@ fn main() -> Result<()> {
                 shapemap,
                 shapemap_format,
                 cli.debug,
+                result_format,
                 output,
                 &config,
                 *force_overwrite,
@@ -235,6 +245,7 @@ fn main() -> Result<()> {
             reader_mode,
             endpoint,
             mode,
+            result_format,
             output,
             force_overwrite,
             config,
@@ -452,6 +463,7 @@ fn run_shex(
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
+
     parse_shex_schema_rudof(&mut rudof, input, schema_format, config)?;
     show_schema_rudof(&rudof, result_schema_format, writer, color)?;
     if show_time {
@@ -482,6 +494,26 @@ fn run_shex(
             };
             writeln!(io::stderr(), "{label} from {iri}")?
         }
+    }
+    if config.show_ir() {
+        writeln!(io::stdout(), "\nIR:")?;
+        if let Some(shex_ir) = rudof.get_shex_ir() {
+            writeln!(io::stdout(), "ShEx IR:")?;
+            writeln!(io::stdout(), "{shex_ir}")?;
+        } else {
+            bail!("Internal error: No ShEx schema read")
+        }
+    }
+    if config.show_dependencies() {
+        writeln!(io::stdout(), "\nDependencies:")?;
+        if let Some(shex_ir) = rudof.get_shex_ir() {
+            for (source, posneg, target) in shex_ir.dependencies() {
+                writeln!(io::stdout(), "{}-{}->{}", source, posneg, target)?;
+            }
+        } else {
+            bail!("Internal error: No ShEx schema read")
+        }
+        writeln!(io::stdout(), "---end dependencies\n")?;
     }
     Ok(())
 }
@@ -553,13 +585,14 @@ fn run_validate_shex(
     shapemap: &Option<InputSpec>,
     shapemap_format: &CliShapeMapFormat,
     _debug: u8,
+    result_format: &ResultFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
     if let Some(schema) = schema {
         let mut rudof = Rudof::new(config);
-        let (mut writer, _color) = get_writer(output, force_overwrite)?;
+        let (writer, _color) = get_writer(output, force_overwrite)?;
         let schema_format = schema_format.unwrap_or_default();
         let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
         let schema_format = match schema_format {
@@ -599,11 +632,36 @@ fn run_validate_shex(
             }
         };
         let result = rudof.validate_shex()?;
-        writeln!(writer, "Result:\n{}", result)?;
+        // writeln!(writer, "Result:\n{}", result)?;
+        write_result(writer, result_format, result)?;
         Ok(())
     } else {
         bail!("No ShEx schema specified")
     }
+}
+
+fn write_result(
+    mut writer: Box<dyn Write + 'static>,
+    format: &ResultFormat,
+    result: ResultShapeMap,
+) -> Result<()> {
+    match format {
+        ResultFormat::Turtle => todo!(),
+        ResultFormat::NTriples => todo!(),
+        ResultFormat::RDFXML => todo!(),
+        ResultFormat::TriG => todo!(),
+        ResultFormat::N3 => todo!(),
+        ResultFormat::NQuads => todo!(),
+        ResultFormat::Compact => {
+            writeln!(writer, "Result:\n{}", result)?;
+        }
+        ResultFormat::Json => {
+            let str = serde_json::to_string_pretty(&result)
+                .context("Error converting Result to JSON: {result}")?;
+            writeln!(writer, "{str}")?;
+        }
+    }
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1405,6 +1463,15 @@ fn parse_shex_schema_rudof(
     let shex_config = config.shex_config();
     let base = base_convert(&shex_config.base);
     rudof.read_shex(reader, &schema_format, base)?;
+    println!("Schema read...");
+    if config.shex_config().check_well_formed() {
+        println!("Checking well formedness...");
+        let shex_ir = rudof.get_shex_ir().unwrap();
+        if shex_ir.has_neg_cycle() {
+            let neg_cycles = shex_ir.neg_cycles();
+            bail!("Schema contains negative cycles: {neg_cycles:?}");
+        }
+    }
     Ok(())
 }
 

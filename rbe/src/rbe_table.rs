@@ -3,6 +3,7 @@ use indexmap::IndexSet;
 use itertools::*;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
 
@@ -27,11 +28,20 @@ where
     V: Value,
     R: Ref,
 {
+    // A regular bag expression of components
     rbe: Rbe<Component>,
+
+    // Each key is associated with a set of components
     key_components: IndexMap<K, IndexSet<Component>>,
+
+    // TODO: Unify in a single table component_cond and component_key
     component_cond: IndexMap<Component, MatchCond<K, V, R>>,
     component_key: HashMap<Component, K>,
+
+    // Indicates if the RBE is open or closed
     open: bool,
+
+    // Counter for the number of components
     component_counter: usize,
 }
 
@@ -116,6 +126,58 @@ where
                 // controlled: self.controlled.clone()
             }))
         }
+    }
+
+    pub fn components(&self) -> ComponentsIter<K, V, R> {
+        ComponentsIter {
+            current: 0,
+            table: self,
+        }
+    }
+}
+
+pub struct ComponentsIter<'a, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    current: usize,
+    table: &'a RbeTable<K, V, R>,
+}
+
+impl<K, V, R> Iterator for ComponentsIter<'_, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    type Item = (Component, K, MatchCond<K, V, R>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current < self.table.component_counter {
+            let c = Component::from(self.current);
+            let cond = self.table.component_cond.get(&c).unwrap().clone();
+            let key = self.table.component_key.get(&c).unwrap().clone();
+            self.current += 1;
+            Some((c, key, cond))
+        } else {
+            None
+        }
+    }
+}
+
+impl<K, V, R> Debug for ComponentsIter<'_, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentsIter")
+            .field("current", &self.current)
+            .field("table", &self.table)
+            .finish()
     }
 }
 
@@ -321,6 +383,31 @@ where
     R: Ref,
 {
     table.component_key.get(c).unwrap().clone()
+}
+
+impl<K, V, R> Display for RbeTable<K, V, R>
+where
+    K: Key + Display,
+    V: Value + Display,
+    R: Ref + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "RBE: {}", self.rbe)?;
+        writeln!(f, "Keys:")?;
+        for (k, c) in self.key_components.iter() {
+            write!(f, " {k} -> [")?;
+            for c in c.iter() {
+                write!(f, " {c}")?;
+            }
+            writeln!(f, " ]")?;
+        }
+        writeln!(f, "Components:")?;
+        for (c, cond) in self.component_cond.iter() {
+            let k = self.component_key.get(c).unwrap();
+            writeln!(f, " {c} -> {k} {cond}")?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

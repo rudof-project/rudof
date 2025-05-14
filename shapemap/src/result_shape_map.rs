@@ -1,10 +1,12 @@
 use colored::*;
+use serde::Serialize;
 use srdf::Object;
 
 use crate::ShapemapConfig;
 use crate::ShapemapError;
 use crate::ValidationStatus;
 use prefixmap::PrefixMap;
+use serde::ser::{SerializeMap, SerializeSeq};
 use shex_ast::{ir::shape_label::ShapeLabel, Node};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -15,6 +17,7 @@ use std::fmt::Formatter;
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct ResultShapeMap {
     result: HashMap<Node, HashMap<ShapeLabel, ValidationStatus>>,
+
     config: ShapemapConfig,
 }
 
@@ -261,5 +264,44 @@ impl Display for ResultShapeMap {
             }
         }
         Ok(())
+    }
+}
+
+struct ResultSerializer<'a> {
+    node: &'a Node,
+    shape: &'a ShapeLabel,
+    status: &'a ValidationStatus,
+}
+
+impl Serialize for ResultSerializer<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(4))?;
+        map.serialize_entry("node", &self.node.to_string())?;
+        map.serialize_entry("shape", &self.shape.to_string())?;
+        map.serialize_entry("status", &self.status.code())?;
+        map.serialize_entry("appInfo", &self.status.app_info())?;
+        map.serialize_entry("reason", &self.status.reason())?;
+        map.end()
+    }
+}
+
+impl Serialize for ResultShapeMap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.result.len()))?;
+        for (node, shape, status) in self.iter() {
+            let result_aux = ResultSerializer {
+                node,
+                shape,
+                status,
+            };
+            seq.serialize_element(&result_aux)?;
+        }
+        seq.end()
     }
 }

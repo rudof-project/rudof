@@ -10,11 +10,19 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Negation cycle error: {neg_cycles:?}")]
+    NegCycleError {
+        neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
+    },
+
     #[error("SRDF Error: {error}")]
     SRDFError { error: String },
 
     #[error("Not found shape label {shape}")]
     NotFoundShapeLabel { shape: ShapeLabel },
+
+    #[error("Not found shape label with index {idx}")]
+    NotFoundShapeLabelWithIndex { idx: ShapeLabelIdx },
 
     #[error("Error converting object to iri: {object}")]
     ConversionObjectIri { object: Object },

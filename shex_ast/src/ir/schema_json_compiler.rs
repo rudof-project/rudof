@@ -132,10 +132,11 @@ impl SchemaJsonCompiler {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeExpr> {
-        match se {
+        let result: ShapeExpr = match se {
             ast::ShapeExpr::Ref(se_ref) => {
-                let idx = self.ref2idx(se_ref, compiled_schema)?;
-                Ok(ShapeExpr::Ref { idx })
+                let new_idx = self.ref2idx(se_ref, compiled_schema)?;
+                let se: ShapeExpr = ShapeExpr::Ref { idx: new_idx };
+                Ok::<ShapeExpr, SchemaIRError>(se)
             }
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
@@ -145,7 +146,8 @@ impl SchemaJsonCompiler {
                 }
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal OR".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal OR with some se".to_string(),
                 };
 
                 Ok(ShapeExpr::ShapeOr {
@@ -161,7 +163,8 @@ impl SchemaJsonCompiler {
                 }
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal AND".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal AND with some se".to_string(),
                 };
                 Ok(ShapeExpr::ShapeAnd {
                     exprs: cnv,
@@ -172,7 +175,8 @@ impl SchemaJsonCompiler {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal NOT".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal NOT with some shape expr".to_string(),
                 };
                 Ok(ShapeExpr::ShapeNot {
                     expr: Box::new(se),
@@ -194,7 +198,8 @@ impl SchemaJsonCompiler {
 
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal with shape expr:".to_string(),
                 };
 
                 let shape = Shape::new(
@@ -209,10 +214,6 @@ impl SchemaJsonCompiler {
                 Ok(ShapeExpr::Shape(shape))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
-                // let node_kind_cnv: Option<NodeKind> = cnv_opt(&nc.node_kind(), cnv_node_kind)?;
-                // let datatype_cnv = cnv_opt(&nc.datatype(), cnv_iri_ref)?;
-                // let xs_facet_cnv = cnv_opt_vec(&nc.xs_facet(), cnv_xs_facet)?;
-                // let values_cnv = cnv_opt_vec(&nc.values(), cnv_value)?;
                 let cond = Self::cnv_node_constraint(
                     self,
                     &nc.node_kind(),
@@ -222,13 +223,17 @@ impl SchemaJsonCompiler {
                 )?;
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal NodeConstraint".to_string(),
-                    Some((label, _)) => compiled_schema.show_label(label),
+                    Some((Some(label), _)) => compiled_schema.show_label(label),
+                    Some((None, _)) => "internal NodeConstraint with some shape expr".to_string(),
                 };
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
-        }
+        }?;
+        //compiled_schema.replace_shape(idx, result.clone());
+        // println!("Replacing {idx} with {result}");
+        Ok(result)
     }
 
     fn cnv_node_constraint(
@@ -420,7 +425,21 @@ impl SchemaJsonCompiler {
                 ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
                 ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
                 ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
-                ast::ShapeExpr::ShapeNot { .. } => todo("value_expr2match_cond: ShapeNot"),
+                ast::ShapeExpr::ShapeNot { shape_expr } => {
+                    let new_idx = compiled_schema.new_index();
+                    let se = self.compile_shape_expr(&shape_expr.se, &new_idx, compiled_schema)?;
+                    let display = match compiled_schema.find_shape_idx(&new_idx) {
+                        None => "internal NOT".to_string(),
+                        Some((Some(label), _)) => compiled_schema.show_label(label),
+                        Some((None, _)) => "internal NOT with some shape expr".to_string(),
+                    };
+                    let not_se = ShapeExpr::ShapeNot {
+                        expr: Box::new(se),
+                        display,
+                    };
+                    compiled_schema.replace_shape(&new_idx, not_se);
+                    Ok(mk_cond_ref(new_idx))
+                }
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
@@ -544,21 +563,14 @@ fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
 }
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
-    MatchCond::single(
-        SingleCond::new()
-            .with_name(format!("@{idx}").as_str())
-            .with_cond(move |value: &Node| {
-                let result = Pending::from_pair(value.clone(), idx);
-                Ok(result)
-            }),
-    )
+    MatchCond::ref_(idx)
 }
 
 fn mk_cond_datatype(datatype: &IriRef) -> Cond {
     let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype{dt}").as_str())
+            .with_name(format!("datatype({dt})").as_str())
             .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
                 Ok(_) => Ok(Pending::new()),
                 Err(err) => Err(RbeError::MsgError {
@@ -571,7 +583,7 @@ fn mk_cond_datatype(datatype: &IriRef) -> Cond {
 fn mk_cond_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("length{len}").as_str())
+            .with_name(format!("length({len})").as_str())
             .with_cond(move |value: &Node| match check_node_length(value, len) {
                 Ok(_) => Ok(Pending::new()),
                 Err(err) => Err(RbeError::MsgError {
@@ -584,7 +596,7 @@ fn mk_cond_length(len: usize) -> Cond {
 fn mk_cond_min_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("minLength{len}").as_str())
+            .with_name(format!("minLength({len})").as_str())
             .with_cond(
                 move |value: &Node| match check_node_min_length(value, len) {
                     Ok(_) => Ok(Pending::new()),
@@ -597,7 +609,7 @@ fn mk_cond_min_length(len: usize) -> Cond {
 }
 
 fn mk_cond_max_length(len: usize) -> Cond {
-    MatchCond::simple(format!("maxLength{len}").as_str(), move |value: &Node| {
+    MatchCond::simple(format!("maxLength({len})").as_str(), move |value: &Node| {
         match check_node_max_length(value, len) {
             Ok(_) => Ok(Pending::new()),
             Err(err) => Err(RbeError::MsgError {
@@ -610,7 +622,7 @@ fn mk_cond_max_length(len: usize) -> Cond {
 fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("nodekind{nodekind}").as_str())
+            .with_name(format!("nodekind({nodekind})").as_str())
             .with_cond(
                 move |value: &Node| match check_node_node_kind(value, &nodekind) {
                     Ok(_) => Ok(Pending::empty()),
@@ -784,9 +796,7 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::BNode, _) => Err(SchemaIRError::NodeKindBNode { node: node.clone() }),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (ast::NodeKind::Literal, _) => {
-            Err(SchemaIRError::NodeKindLiteral { node: node.clone() })
-        }
+        (ast::NodeKind::Literal, _) => Err(SchemaIRError::NodeKindLiteral { node: node.clone() }),
         (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
         (ast::NodeKind::NonLiteral, _) => {
