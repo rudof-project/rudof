@@ -114,7 +114,7 @@ jobs:
         if: github.event_name == 'release'
 
   deb:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3

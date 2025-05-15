@@ -15,7 +15,7 @@ rdf-star = [ "oxrdf/rdf-star" ]
 [dependencies]
 oxrdf = { version = "0.2.0-alpha.5" }
 oxiri = "0.2.3-alpha.1"
-reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 serde.workspace = true
 thiserror = "2.0"
 url = { workspace = true }

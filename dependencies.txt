@@ -118,7 +118,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   ├── itoa v1.0.14
 │   │   ├── ryu v1.0.18
 │   │   └── serde v1.0.217 (*)
-│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s)
+│   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s)
 │   │   ├── oxiri v0.2.9
 │   │   ├── oxrdf v0.2.3
 │   │   │   ├── oxilangtag v0.1.5
@@ -212,9 +212,9 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   ├── tokio v1.42.0 (*)
 │   │   │   │   └── want v0.3.1
 │   │   │   │       └── try-lock v0.2.5
-│   │   │   ├── hyper-tls v0.6.0
-│   │   │   │   ├── bytes v1.9.0
-│   │   │   │   ├── http-body-util v0.1.2 (*)
+│   │   │   ├── hyper-rustls v0.27.5
+│   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   ├── http v1.2.0 (*)
 │   │   │   │   ├── hyper v1.5.2 (*)
 │   │   │   │   ├── hyper-util v0.1.10
 │   │   │   │   │   ├── bytes v1.9.0
@@ -228,6 +228,37 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   │   ├── tokio v1.42.0 (*)
 │   │   │   │   │   ├── tower-service v0.3.3
 │   │   │   │   │   └── tracing v0.1.41 (*)
+│   │   │   │   ├── rustls v0.23.20
+│   │   │   │   │   ├── once_cell v1.20.2
+│   │   │   │   │   ├── ring v0.17.8
+│   │   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   │   ├── getrandom v0.2.15 (*)
+│   │   │   │   │   │   ├── spin v0.9.8
+│   │   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   │   │   [build-dependencies]
+│   │   │   │   │   │   └── cc v1.2.6
+│   │   │   │   │   │       └── shlex v1.3.0
+│   │   │   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   │   │   ├── rustls-webpki v0.102.8
+│   │   │   │   │   │   ├── ring v0.17.8 (*)
+│   │   │   │   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   │   ├── subtle v2.6.1
+│   │   │   │   │   └── zeroize v1.8.1
+│   │   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   ├── tokio-rustls v0.26.1
+│   │   │   │   │   ├── rustls v0.23.20 (*)
+│   │   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   └── webpki-roots v0.26.11
+│   │   │   │       └── webpki-roots v1.0.0
+│   │   │   │           └── rustls-pki-types v1.10.1
+│   │   │   ├── hyper-tls v0.6.0
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── http-body-util v0.1.2 (*)
+│   │   │   │   ├── hyper v1.5.2 (*)
+│   │   │   │   ├── hyper-util v0.1.10 (*)
 │   │   │   │   ├── native-tls v0.2.12
 │   │   │   │   │   ├── log v0.4.22
 │   │   │   │   │   ├── openssl v0.10.68
@@ -244,8 +275,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   │   │   └── openssl-sys v0.9.104
 │   │   │   │   │   │       └── libc v0.2.169
 │   │   │   │   │   │       [build-dependencies]
-│   │   │   │   │   │       ├── cc v1.2.6
-│   │   │   │   │   │       │   └── shlex v1.3.0
+│   │   │   │   │   │       ├── cc v1.2.6 (*)
 │   │   │   │   │   │       ├── pkg-config v0.3.31
 │   │   │   │   │   │       └── vcpkg v0.2.15
 │   │   │   │   │   ├── openssl-probe v0.1.5
@@ -263,8 +293,10 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   ├── once_cell v1.20.2
 │   │   │   ├── percent-encoding v2.3.1
 │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   ├── rustls v0.23.20 (*)
 │   │   │   ├── rustls-pemfile v2.2.0
 │   │   │   │   └── rustls-pki-types v1.10.1
+│   │   │   ├── rustls-pki-types v1.10.1
 │   │   │   ├── serde v1.0.217 (*)
 │   │   │   ├── serde_json v1.0.134
 │   │   │   │   ├── itoa v1.0.14
@@ -281,6 +313,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   └── futures-core v0.3.31
 │   │   │   ├── tokio v1.42.0 (*)
 │   │   │   ├── tokio-native-tls v0.3.1 (*)
+│   │   │   ├── tokio-rustls v0.26.1 (*)
 │   │   │   ├── tower v0.5.2
 │   │   │   │   ├── futures-core v0.3.31
 │   │   │   │   ├── futures-util v0.3.31 (*)
@@ -290,85 +323,86 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   ├── tower-layer v0.3.3
 │   │   │   │   └── tower-service v0.3.3
 │   │   │   ├── tower-service v0.3.3
-│   │   │   └── url v2.5.4
-│   │   │       ├── form_urlencoded v1.2.1 (*)
-│   │   │       ├── idna v1.0.3
-│   │   │       │   ├── idna_adapter v1.2.0
-│   │   │       │   │   ├── icu_normalizer v1.5.0
-│   │   │       │   │   │   ├── displaydoc v0.2.5 (proc-macro)
-│   │   │       │   │   │   │   ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   └── syn v2.0.92 (*)
-│   │   │       │   │   │   ├── icu_collections v1.5.0
-│   │   │       │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   ├── yoke v0.7.5
-│   │   │       │   │   │   │   │   ├── stable_deref_trait v1.2.0
-│   │   │       │   │   │   │   │   ├── yoke-derive v0.7.5 (proc-macro)
-│   │   │       │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │   ├── syn v2.0.92 (*)
-│   │   │       │   │   │   │   │   │   └── synstructure v0.13.1
-│   │   │       │   │   │   │   │   │       ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │   │   │       ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │       └── syn v2.0.92 (*)
-│   │   │       │   │   │   │   │   └── zerofrom v0.1.5
-│   │   │       │   │   │   │   │       └── zerofrom-derive v0.1.5 (proc-macro)
-│   │   │       │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │   │           ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │           ├── syn v2.0.92 (*)
-│   │   │       │   │   │   │   │           └── synstructure v0.13.1 (*)
-│   │   │       │   │   │   │   ├── zerofrom v0.1.5 (*)
-│   │   │       │   │   │   │   └── zerovec v0.10.4
-│   │   │       │   │   │   │       ├── yoke v0.7.5 (*)
-│   │   │       │   │   │   │       ├── zerofrom v0.1.5 (*)
-│   │   │       │   │   │   │       └── zerovec-derive v0.10.3 (proc-macro)
-│   │   │       │   │   │   │           ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │           ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │           └── syn v2.0.92 (*)
-│   │   │       │   │   │   ├── icu_normalizer_data v1.5.0
-│   │   │       │   │   │   ├── icu_properties v1.5.1
-│   │   │       │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   ├── icu_collections v1.5.0 (*)
-│   │   │       │   │   │   │   ├── icu_locid_transform v1.5.0
-│   │   │       │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   │   ├── icu_locid v1.5.0
-│   │   │       │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   │   │   ├── litemap v0.7.4
-│   │   │       │   │   │   │   │   │   ├── tinystr v0.7.6
-│   │   │       │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   │   │   │   │   ├── writeable v0.5.5
-│   │   │       │   │   │   │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   │   │   │   ├── icu_locid_transform_data v1.5.0
-│   │   │       │   │   │   │   │   ├── icu_provider v1.5.0
-│   │   │       │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
-│   │   │       │   │   │   │   │   │   ├── icu_locid v1.5.0 (*)
-│   │   │       │   │   │   │   │   │   ├── icu_provider_macros v1.5.0 (proc-macro)
-│   │   │       │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
-│   │   │       │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │   │   └── syn v2.0.92 (*)
-│   │   │       │   │   │   │   │   │   ├── stable_deref_trait v1.2.0
-│   │   │       │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
-│   │   │       │   │   │   │   │   │   ├── writeable v0.5.5
-│   │   │       │   │   │   │   │   │   ├── yoke v0.7.5 (*)
-│   │   │       │   │   │   │   │   │   ├── zerofrom v0.1.5 (*)
-│   │   │       │   │   │   │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   │   │   │   ├── tinystr v0.7.6 (*)
-│   │   │       │   │   │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   │   │   ├── icu_properties_data v1.5.0
-│   │   │       │   │   │   │   ├── icu_provider v1.5.0 (*)
-│   │   │       │   │   │   │   ├── tinystr v0.7.6 (*)
-│   │   │       │   │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   │   ├── icu_provider v1.5.0 (*)
-│   │   │       │   │   │   ├── smallvec v1.13.2
-│   │   │       │   │   │   ├── utf16_iter v1.0.5
-│   │   │       │   │   │   ├── utf8_iter v1.0.4
-│   │   │       │   │   │   ├── write16 v1.0.0
-│   │   │       │   │   │   └── zerovec v0.10.4 (*)
-│   │   │       │   │   └── icu_properties v1.5.1 (*)
-│   │   │       │   ├── smallvec v1.13.2
-│   │   │       │   └── utf8_iter v1.0.4
-│   │   │       └── percent-encoding v2.3.1
+│   │   │   ├── url v2.5.4
+│   │   │   │   ├── form_urlencoded v1.2.1 (*)
+│   │   │   │   ├── idna v1.0.3
+│   │   │   │   │   ├── idna_adapter v1.2.0
+│   │   │   │   │   │   ├── icu_normalizer v1.5.0
+│   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro)
+│   │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │   │   │   │   │   ├── icu_collections v1.5.0
+│   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   ├── yoke v0.7.5
+│   │   │   │   │   │   │   │   │   ├── stable_deref_trait v1.2.0
+│   │   │   │   │   │   │   │   │   ├── yoke-derive v0.7.5 (proc-macro)
+│   │   │   │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │   │   │   ├── syn v2.0.92 (*)
+│   │   │   │   │   │   │   │   │   │   └── synstructure v0.13.1
+│   │   │   │   │   │   │   │   │   │       ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │   │   │       ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │   │   │       └── syn v2.0.92 (*)
+│   │   │   │   │   │   │   │   │   └── zerofrom v0.1.5
+│   │   │   │   │   │   │   │   │       └── zerofrom-derive v0.1.5 (proc-macro)
+│   │   │   │   │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │   │           ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │   │           ├── syn v2.0.92 (*)
+│   │   │   │   │   │   │   │   │           └── synstructure v0.13.1 (*)
+│   │   │   │   │   │   │   │   ├── zerofrom v0.1.5 (*)
+│   │   │   │   │   │   │   │   └── zerovec v0.10.4
+│   │   │   │   │   │   │   │       ├── yoke v0.7.5 (*)
+│   │   │   │   │   │   │   │       ├── zerofrom v0.1.5 (*)
+│   │   │   │   │   │   │   │       └── zerovec-derive v0.10.3 (proc-macro)
+│   │   │   │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │           ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │           └── syn v2.0.92 (*)
+│   │   │   │   │   │   │   ├── icu_normalizer_data v1.5.0
+│   │   │   │   │   │   │   ├── icu_properties v1.5.1
+│   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   ├── icu_collections v1.5.0 (*)
+│   │   │   │   │   │   │   │   ├── icu_locid_transform v1.5.0
+│   │   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   │   ├── icu_locid v1.5.0
+│   │   │   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   │   │   ├── litemap v0.7.4
+│   │   │   │   │   │   │   │   │   │   ├── tinystr v0.7.6
+│   │   │   │   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   │   │   │   │   ├── writeable v0.5.5
+│   │   │   │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   │   │   │   ├── icu_locid_transform_data v1.5.0
+│   │   │   │   │   │   │   │   │   ├── icu_provider v1.5.0
+│   │   │   │   │   │   │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
+│   │   │   │   │   │   │   │   │   │   ├── icu_locid v1.5.0 (*)
+│   │   │   │   │   │   │   │   │   │   ├── icu_provider_macros v1.5.0 (proc-macro)
+│   │   │   │   │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
+│   │   │   │   │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
+│   │   │   │   │   │   │   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │   │   │   │   │   │   │   │   ├── stable_deref_trait v1.2.0
+│   │   │   │   │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │   │   │   │   │   │   │   │   ├── writeable v0.5.5
+│   │   │   │   │   │   │   │   │   │   ├── yoke v0.7.5 (*)
+│   │   │   │   │   │   │   │   │   │   ├── zerofrom v0.1.5 (*)
+│   │   │   │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   │   │   ├── icu_properties_data v1.5.0
+│   │   │   │   │   │   │   │   ├── icu_provider v1.5.0 (*)
+│   │   │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
+│   │   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   │   ├── icu_provider v1.5.0 (*)
+│   │   │   │   │   │   │   ├── smallvec v1.13.2
+│   │   │   │   │   │   │   ├── utf16_iter v1.0.5
+│   │   │   │   │   │   │   ├── utf8_iter v1.0.4
+│   │   │   │   │   │   │   ├── write16 v1.0.0
+│   │   │   │   │   │   │   └── zerovec v0.10.4 (*)
+│   │   │   │   │   │   └── icu_properties v1.5.1 (*)
+│   │   │   │   │   ├── smallvec v1.13.2
+│   │   │   │   │   └── utf8_iter v1.0.4
+│   │   │   │   └── percent-encoding v2.3.1
+│   │   │   └── webpki-roots v0.26.11 (*)
 │   │   ├── serde v1.0.217 (*)
 │   │   ├── thiserror v2.0.12 (*)
 │   │   └── url v2.5.4 (*)
@@ -391,12 +425,12 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │       └── winnow v0.6.20
 │   └── tracing v0.1.41 (*)
 ├── either v1.13.0
-├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 ├── oxrdf v0.2.3 (*)
 ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap)
 │   ├── colored v3.0.0
 │   ├── indexmap v2.7.0 (*)
-│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   ├── serde v1.0.217 (*)
 │   └── thiserror v2.0.12 (*)
 ├── regex v1.11.1
@@ -411,7 +445,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 ├── reqwest v0.12.11 (*)
 ├── rudof_lib v0.1.63 (/home/labra/src/rust/rudof/rudof_lib)
 │   ├── dctap v0.1.63 (/home/labra/src/rust/rudof/dctap) (*)
-│   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   ├── oxrdf v0.2.3 (*)
 │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
 │   ├── serde v1.0.217 (*)
@@ -422,7 +456,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │       ├── proc-macro2 v1.0.92 (*)
 │   │   │       ├── quote v1.0.38 (*)
 │   │   │       └── unicode-xid v0.2.6
-│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   ├── itertools v0.14.0 (*)
 │   │   ├── lazy_static v1.5.0
 │   │   ├── oxrdf v0.2.3 (*)
@@ -434,7 +468,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   │   └── syn v2.0.92 (*)
 │   │   │   ├── colored v3.0.0
 │   │   │   ├── const_format v0.2.34 (*)
-│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   │   ├── itertools v0.14.0 (*)
 │   │   │   ├── lazy_static v1.5.0
 │   │   │   ├── oxilangtag v0.1.5 (*)
@@ -484,7 +518,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   ├── colored v3.0.0
 │   │   ├── const_format v0.2.34 (*)
 │   │   ├── indoc v2.0.5 (proc-macro)
-│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   ├── lazy_static v1.5.0
 │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
 │   │   ├── serde v1.0.217 (*)
@@ -492,7 +526,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   ├── sparql_service v0.1.60 (/home/labra/src/rust/rudof/sparql_service)
 │   │   │   ├── colored v3.0.0
 │   │   │   ├── const_format v0.2.34 (*)
-│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   │   ├── itertools v0.14.0 (*)
 │   │   │   ├── lazy_static v1.5.0
 │   │   │   ├── oxigraph v0.4.5
@@ -574,13 +608,13 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   └── toml v0.8.19 (*)
 │   ├── shapemap v0.1.63 (/home/labra/src/rust/rudof/shapemap)
 │   │   ├── colored v3.0.0
-│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
 │   │   ├── serde v1.0.217 (*)
 │   │   ├── serde_json v1.0.134 (*)
 │   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast)
 │   │   │   ├── const_format v0.2.34 (*)
-│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   │   ├── itertools v0.14.0 (*)
 │   │   │   ├── lazy_static v1.5.0
 │   │   │   ├── petgraph v0.8.1
@@ -613,7 +647,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   │   ├── iana-time-zone v0.1.61
 │   │   │   └── num-traits v0.2.19 (*)
 │   │   ├── dctap v0.1.63 (/home/labra/src/rust/rudof/dctap) (*)
-│   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   ├── minijinja v2.5.0
 │   │   │   ├── memo-map v0.3.3
 │   │   │   ├── self_cell v1.1.0
@@ -625,7 +659,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   ├── shex_ast v0.1.63 (/home/labra/src/rust/rudof/shex_ast) (*)
 │   │   ├── shex_compact v0.1.63 (/home/labra/src/rust/rudof/shex_compact)
 │   │   │   ├── colored v3.0.0
-│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   │   ├── lazy-regex v3.4.1
 │   │   │   │   ├── lazy-regex-proc_macros v3.4.1 (proc-macro)
 │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
@@ -656,7 +690,7 @@ rudof_cli v0.1.63 (/home/labra/src/rust/rudof/rudof_cli)
 │   │   ├── shex_validation v0.1.63 (/home/labra/src/rust/rudof/shex_validation)
 │   │   │   ├── either v1.13.0
 │   │   │   ├── indexmap v2.7.0 (*)
-│   │   │   ├── iri_s v0.1.60 (/home/labra/src/rust/rudof/iri_s) (*)
+│   │   │   ├── iri_s v0.1.66 (/home/labra/src/rust/rudof/iri_s) (*)
 │   │   │   ├── prefixmap v0.1.64 (/home/labra/src/rust/rudof/prefixmap) (*)
 │   │   │   ├── rbe v0.1.63 (/home/labra/src/rust/rudof/rbe) (*)
 │   │   │   ├── serde v1.0.217 (*)
