@@ -5,12 +5,36 @@ use shex_ast::{
     Node,
 };
 
+use crate::ValidatorErrors;
+
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]
 pub enum Reason {
-    NodeConstraintPassed { node: Node, nc: NodeConstraint },
-    ShapeAndPassed { node: Node, se: ShapeExpr },
-    ShapePassed { node: Node, shape: Shape },
+    NodeConstraintPassed {
+        node: Node,
+        nc: NodeConstraint,
+    },
+    ShapeAndPassed {
+        node: Node,
+        se: ShapeExpr,
+        reasons: Vec<Vec<Reason>>,
+    },
+    ShapeOrPassed {
+        node: Node,
+        shape_expr: ShapeExpr,
+        reasons: Reasons,
+    },
+    ShapeNotPassed {
+        node: Node,
+        shape_expr: ShapeExpr,
+
+        // Errors that are evidences that the negation passess
+        errors_evidences: ValidatorErrors,
+    },
+    ShapePassed {
+        node: Node,
+        shape: Shape,
+    },
 }
 
 impl Display for Reason {
@@ -19,12 +43,36 @@ impl Display for Reason {
             Reason::NodeConstraintPassed { node, nc } => {
                 write!(f, "Node constraint passed. Node: {node}, Constraint: {nc}",)
             }
-            Reason::ShapeAndPassed { node, se } => {
-                write!(f, "AND passed. Node {node}, and: {se}")
+            Reason::ShapeAndPassed { node, se, reasons } => {
+                write!(f, "AND passed. Node {node}, and: {se}, reasons:")?;
+                for reason in reasons {
+                    write!(f, "[")?;
+                    for r in reason {
+                        write!(f, "{r}, ")?;
+                    }
+                    write!(f, "], ")?;
+                }
+                Ok(())
             }
             Reason::ShapePassed { node, shape } => {
                 write!(f, "Shape passed. Node {node}, shape: {shape}")
             }
+            Reason::ShapeOrPassed {
+                node,
+                shape_expr,
+                reasons,
+            } => write!(
+                f,
+                "Shape OR passed. Node {node}, shape: {shape_expr}, reasons: {reasons}"
+            ),
+            Reason::ShapeNotPassed {
+                node,
+                shape_expr,
+                errors_evidences,
+            } => write!(
+                f,
+                "Shape NOT passed. Node {node}, shape: {shape_expr}, errors: {errors_evidences}"
+            ),
         }
     }
 }
@@ -39,11 +87,14 @@ impl Reason {
                     "constraint": nc.to_string()
                 })
             }
-            Reason::ShapeAndPassed { node, se } => {
+            Reason::ShapeAndPassed { node, se, reasons } => {
                 serde_json::json!({
                     "type": "ShapeAndPassed",
                     "node": node.to_string(),
-                    "shape_expr": se.to_string()
+                    "shape_expr": se.to_string(),
+                    "reasons": reasons.iter().map(|r| {
+                        r.iter().map(|reason| reason.as_json()).collect::<Vec<_>>()
+                    }).collect::<Vec<_>>()
                 })
             }
             Reason::ShapePassed { node, shape } => {
@@ -53,6 +104,54 @@ impl Reason {
                     "shape": shape.to_string()
                 })
             }
+            Reason::ShapeOrPassed {
+                node,
+                shape_expr,
+                reasons: _,
+            } => {
+                serde_json::json!({
+                    "type": "ShapeOrPassed",
+                    "node": node.to_string(),
+                    "shape_expr": shape_expr.to_string(),
+                    /*"reasons": reasons.iter().map(|reason| {
+                        reason.as_json()
+                    }).collect::<Vec<_>>()*/
+                })
+            }
+            Reason::ShapeNotPassed {
+                node,
+                shape_expr,
+                errors_evidences: _,
+            } => {
+                serde_json::json!({
+                    "type": "ShapeNotPassed",
+                    "node": node.to_string(),
+                    "shape_expr": shape_expr.to_string(),
+                    /*"errors_evidences": errors_evidences.iter().map(|reason| {
+                        reason.as_json()
+                    }).collect::<Vec<_>>() */
+                })
+            }
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Reasons {
+    reasons: Vec<Reason>,
+}
+
+impl Reasons {
+    pub fn new(reasons: Vec<Reason>) -> Reasons {
+        Reasons { reasons }
+    }
+}
+
+impl Display for Reasons {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for reason in self.reasons.iter() {
+            writeln!(f, "  {reason}")?;
+        }
+        Ok(())
     }
 }

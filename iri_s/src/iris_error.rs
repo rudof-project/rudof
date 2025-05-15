@@ -1,10 +1,11 @@
+use serde::Serialize;
 // use oxiri::Iri;
 // use oxrdf::IriParseError;
 use thiserror::Error;
 
 use crate::IriS;
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
     #[error("Error parsing {str} as IRI: {err}")]
     IriParseError { str: String, err: String },

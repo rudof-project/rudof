@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::Pred;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Preds {
     pub values: Vec<Pred>,
 }

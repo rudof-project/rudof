@@ -1,8 +1,9 @@
 use iri_s::IriS;
 use rbe::Key;
+use serde::Serialize;
 use std::fmt::Display;
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Clone, Serialize)]
 pub struct Pred {
     iri: IriS,
 }

@@ -2,11 +2,14 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
+use serde::Serialize;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
 use srdf::Object;
 use thiserror::Error;
+
+use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
@@ -56,6 +59,22 @@ pub enum ValidatorError {
         shape_expr: ShapeExpr,
         node: Node,
         errors: ValidatorErrors,
+    },
+
+    #[error("OR error: shape expression {shape_expr} failed for node {node}: all branches failed")]
+    ShapeOrError {
+        shape_expr: ShapeExpr,
+        node: Node,
+        errors: Vec<(ShapeExpr, ValidatorErrors)>,
+    },
+
+    #[error(
+        "Shape Not error: failed for node {node} because it passed {shape_expr} with {reasons}"
+    )]
+    ShapeNotError {
+        shape_expr: ShapeExpr,
+        node: Node,
+        reasons: Reasons,
     },
 
     #[error("Error reading config file from path {path}: {error}")]

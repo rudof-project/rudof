@@ -66,9 +66,10 @@ impl Validator {
                 neg_cycles: neg_cycles_displayed,
             });
         }
+        let engine = Engine::new(config);
         Ok(Validator {
-            schema,
-            runner: Engine::new(config),
+            schema: schema,
+            runner: engine.clone(),
         })
     }
 

@@ -1,8 +1,9 @@
 use crate::PrefixMap;
 use iri_s::IriSError;
+use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone)]
+#[derive(Debug, Error, Clone, Serialize)]
 pub enum PrefixMapError {
     #[error(transparent)]
     IriSError(#[from] IriSError),

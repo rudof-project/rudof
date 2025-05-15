@@ -199,7 +199,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MatchTableIter<K, V, R>
 where
     K: Key,
@@ -234,7 +234,7 @@ where
 
 type State<K, V, R> = MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IterCartesianProduct<K, V, R>
 where
     K: Key,
@@ -305,7 +305,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EmptyIter<K, V, R>
 where
     K: Key,
