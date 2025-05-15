@@ -22,3 +22,6 @@ tracing.workspace = true
 
 [dev-dependencies]
 tracing-test = "0.2.5"
+
+[patch.crates-io]
+calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0" }
