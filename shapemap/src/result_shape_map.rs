@@ -12,6 +12,8 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::io::Error;
+use std::io::Write;
 
 /// Contains a map of the results obtained after applying ShEx validation
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -206,6 +208,47 @@ impl ResultShapeMap {
                 .iter()
                 .map(move |(shape, status)| (node, shape, status))
         })
+    }
+
+    pub fn show_minimal(&self, mut writer: Box<dyn Write + 'static>) -> Result<(), Error> {
+        for (node, label, status) in self.iter() {
+            let node_label = format!(
+                "{}@{}",
+                show_node(node, &self.nodes_prefixmap()),
+                show_shapelabel(label, &self.shapes_prefixmap())
+            );
+            match status {
+                ValidationStatus::Conformant(_conformant_info) => {
+                    let node_label = match self.ok_color() {
+                        None => ColoredString::from(node_label),
+                        Some(color) => node_label.color(color),
+                    };
+                    writeln!(writer, "{node_label} -> OK")?;
+                }
+                ValidationStatus::NonConformant(_non_conformant_info) => {
+                    let node_label = match self.fail_color() {
+                        None => ColoredString::from(node_label),
+                        Some(color) => node_label.color(color),
+                    };
+                    writeln!(writer, "{node_label} -> Fail")?;
+                }
+                ValidationStatus::Pending => {
+                    let node_label = match self.pending_color() {
+                        None => ColoredString::from(node_label),
+                        Some(color) => node_label.color(color),
+                    };
+                    writeln!(writer, "{node_label} -> Pending")?
+                }
+                ValidationStatus::Inconsistent(_conformant, _inconformant) => {
+                    let node_label = match self.pending_color() {
+                        None => ColoredString::from(node_label),
+                        Some(color) => node_label.color(color),
+                    };
+                    writeln!(writer, "{node_label} -> Inconsistent")?
+                }
+            }
+        }
+        Ok(())
     }
 }
 

@@ -174,13 +174,11 @@ impl Engine {
     }
 
     pub fn add_pending(&mut self, n: Node, s: ShapeLabelIdx) {
-        // self.result_map.add_pending(n, s);
         let pos_atom = PosAtom::new((n, s));
         self.pending.insert(Atom::pos(&pos_atom));
     }
 
     pub fn pop_pending(&mut self) -> Option<Atom> {
-        // self.result_map.pop_pending()
         self.pending.pop()
     }
 

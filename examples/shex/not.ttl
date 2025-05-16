@@ -1,3 +1,4 @@
 prefix : <http://example.org/>
 
-:S { :p . } OR [ :ok1 :ok2 ]
+:ok1 :p "other" .
+:ko1 :p 1 .

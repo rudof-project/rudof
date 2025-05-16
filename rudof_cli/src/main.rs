@@ -653,7 +653,8 @@ fn write_result(
         ResultFormat::N3 => todo!(),
         ResultFormat::NQuads => todo!(),
         ResultFormat::Compact => {
-            writeln!(writer, "Result:\n{}", result)?;
+            writeln!(writer, "Result:")?;
+            result.show_minimal(writer)?;
         }
         ResultFormat::Json => {
             let str = serde_json::to_string_pretty(&result)

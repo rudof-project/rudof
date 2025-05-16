@@ -101,6 +101,24 @@ And run:
 sudo dpkg -i target/debian/rudof_0.0.11-1_amd64.deb
 ```
 
+### Alternative for Linux
+
+To create a binary for Linux with debug information:
+
+```sh
+cargo build --target x86_64-unknown-linux-gnu
+```
+
+The binary will be created in: `target/x86_64-unknown-linux-gnu/debug/rudof`
+
+If you want a release binary which is more optimized, you can run:
+
+```sh
+cargo build --target x86_64-unknown-linux-gnu
+```
+
+In this case, the binary will be `target/x86_64-unknown-linux-gnu/release/rudof`
+
 ## Docker
 
 The library is also published as a Docker image
