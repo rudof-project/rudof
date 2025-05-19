@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
-use serde::Serialize;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
@@ -103,6 +102,9 @@ pub enum ValidatorError {
         label: String,
         error: String,
     },
+
+    #[error("Shape not found for index {idx}")]
+    ShapeExprNotFound { idx: ShapeLabelIdx },
 }
 
 #[derive(Debug, Clone)]

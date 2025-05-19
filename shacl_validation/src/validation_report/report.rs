@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use colored::*;
 use prefixmap::PrefixMap;
-use srdf::{Object, Query};
+use srdf::{Object, Query, Rdf, SRDFBuilder};
 
 use crate::helpers::srdf::get_objects_for;
 
@@ -81,6 +81,69 @@ impl ValidationReport {
     pub fn conforms(&self) -> bool {
         self.results.is_empty()
     }
+
+    pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF) -> Result<(), ReportError>
+    where
+        RDF: SRDFBuilder + Sized,
+    {
+        rdf_writer.add_prefix("sh", &shacl_ast::SH).map_err(|e| {
+            ReportError::ValidationReportError {
+                msg: format!("Error adding prefix to RDF: {e}"),
+            }
+        })?;
+        let report_node = rdf_writer
+            .add_bnode()
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error creating bnode: {e}"),
+            })?
+            .into();
+        rdf_writer
+            .add_type(&report_node, shacl_ast::SH_VALIDATION_REPORT.clone().into())
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error type ValidationReport to bnode: {e}"),
+            })?;
+
+        let conforms: <RDF as Rdf>::IRI = shacl_ast::SH_CONFORMS.clone().into();
+        let sh_result: <RDF as Rdf>::IRI = shacl_ast::SH_RESULT.clone().into();
+        if self.results.is_empty() {
+            let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
+            rdf_writer
+                .add_triple(&report_node, &conforms, &rdf_true)
+                .map_err(|e| ReportError::ValidationReportError {
+                    msg: format!("Error adding conforms to bnode: {e}"),
+                })?;
+            return Ok(());
+        } else {
+            let rdf_false: <RDF as Rdf>::Term = Object::boolean(false).into();
+            rdf_writer
+                .add_triple(&report_node, &conforms, &rdf_false)
+                .map_err(|e| ReportError::ValidationReportError {
+                    msg: format!("Error adding conforms to bnode: {e}"),
+                })?;
+            for result in self.results.iter() {
+                let result_node: <RDF as Rdf>::BNode =
+                    rdf_writer
+                        .add_bnode()
+                        .map_err(|e| ReportError::ValidationReportError {
+                            msg: format!("Error creating bnode: {e}"),
+                        })?;
+                let result_node_term: <RDF as Rdf>::Term = result_node.into();
+                rdf_writer
+                    .add_triple(&report_node, &sh_result, &result_node_term.clone())
+                    .map_err(|e| ReportError::ValidationReportError {
+                        msg: format!("Error adding conforms to bnode: {e}"),
+                    })?;
+                let result_node_subject: <RDF as Rdf>::Subject =
+                    <RDF as Rdf>::Subject::try_from(result_node_term).map_err(|_e| {
+                        ReportError::ValidationReportError {
+                            msg: format!("Cannot convert subject to term"),
+                        }
+                    })?;
+                result.to_rdf(rdf_writer, result_node_subject)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Default for ValidationReport {
@@ -97,8 +160,8 @@ impl Default for ValidationReport {
 }
 
 impl PartialEq for ValidationReport {
-    // TODO: Are we sure that this way to compare validation report results is OK?
-    // Comparing only the len() seems weak??
+    // TODO: This way to compare validation report results is wrong
+    // Comparing only the len() is very weak
     fn eq(&self, other: &Self) -> bool {
         if self.results.len() != other.results.len() {
             return false;
@@ -142,10 +205,12 @@ impl Display for ValidationReport {
             for result in self.results.iter() {
                 writeln!(
                     f,
-                    "Focus node {}, Component: {}, severity: {}",
-                    show_node(result.focus_node(), &self.nodes_prefixmap),
-                    show_component(result.component(), &shacl_prefixmap),
-                    show_severity(result.severity(), &shacl_prefixmap)
+                    "Focus node {}, Component: {},{}{} severity: {}",
+                    show_object(result.focus_node(), &self.nodes_prefixmap),
+                    show_object(result.component(), &shacl_prefixmap),
+                    show_object_opt("source", result.source(), &shacl_prefixmap),
+                    show_object_opt("value", result.value(), &shacl_prefixmap),
+                    show_object(result.severity(), &shacl_prefixmap)
                 )?;
             }
             Ok(())
@@ -153,26 +218,19 @@ impl Display for ValidationReport {
     }
 }
 
-fn show_node(node: &Object, prefixmap: &PrefixMap) -> String {
-    match node {
-        Object::Iri(iri_s) => prefixmap.qualify(iri_s),
-        Object::BlankNode(node) => format!("_:{node}"),
-        Object::Literal(literal) => format!("{literal}"),
-    }
-}
-
-fn show_component(component: &Object, shacl_prefixmap: &PrefixMap) -> String {
-    match component {
+fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
+    match object {
         Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
         Object::BlankNode(node) => format!("_:{node}"),
         Object::Literal(literal) => format!("{literal}"),
     }
 }
 
-fn show_severity(severity: &Object, shacl_prefixmap: &PrefixMap) -> String {
-    match severity {
-        Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
-        Object::BlankNode(node) => format!("_:{node}"),
-        Object::Literal(literal) => format!("{literal}"),
+fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
+    match object {
+        None => String::new(),
+        Some(Object::Iri(iri_s)) => shacl_prefixmap.qualify(iri_s),
+        Some(Object::BlankNode(node)) => format!(" {msg}: _:{node}, "),
+        Some(Object::Literal(literal)) => format!(" {msg}: {literal}, "),
     }
 }

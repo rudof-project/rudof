@@ -46,6 +46,7 @@ pub struct Rudof {
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
     dctap: Option<DCTAP>,
+    shex_results: Option<ResultShapeMap>,
 }
 
 // TODO: We added this declaration so PyRudof can contain Rudof and be Send as required by PyO3
@@ -64,6 +65,7 @@ impl Rudof {
             rdf_data: RdfData::new(),
             shapemap: None,
             dctap: None,
+            shex_results: None,
         }
     }
 
@@ -315,9 +317,10 @@ impl Rudof {
     /// The action is necessary to start a fresh validation
     pub fn reset_validation_results(&mut self) {
         // TODO: We could add another operation to reset only the current validation results keeping the compiled schema
-        if let Some(ref mut validator) = &mut self.shex_validator {
+        /*if let Some(ref mut validator) = &mut self.shex_validator {
             validator.reset_result_map()
-        }
+        }*/
+        self.shex_results = None
     }
 
     /// Resets the current validator
@@ -521,7 +524,7 @@ impl Rudof {
     }
 
     /// Validate RDF data using ShEx
-    /// It uses a ShEx validator which is current ShEx schema and the current ShapeMap that should
+    /// It uses a ShEx validator which has a corrent ShEx schema and the current ShapeMap
     pub fn validate_shex(&mut self) -> Result<ResultShapeMap> {
         let schema_str = format!("{:?}", self.shex_validator);
         match self.shex_validator {
@@ -529,20 +532,19 @@ impl Rudof {
             Some(ref mut validator) => match &self.shapemap {
                 None => Err(RudofError::NoShapeMap { schema: schema_str }),
                 Some(shapemap) => {
-                    validator
-                        .validate_shapemap(shapemap, &self.rdf_data)
+                    let schema = validator.schema().clone();
+                    let result = validator
+                        .validate_shapemap(
+                            shapemap,
+                            &self.rdf_data,
+                            &schema,
+                            &Some(self.rdf_data.prefixmap_in_memory()),
+                            &None, // TODO!! Get schema prefix map
+                        )
                         .map_err(|e| RudofError::ShExValidatorError {
                             schema: schema_str.clone(),
                             rdf_data: format!("{:?}", self.rdf_data),
                             query_map: format!("{shapemap:?}"),
-                            error: format!("{e}"),
-                        })?;
-                    let result = &validator
-                        .result_map(Some(self.rdf_data.prefixmap_in_memory()))
-                        .map_err(|e| RudofError::ShExValidatorObtainingResultMapError {
-                            schema: schema_str,
-                            rdf_data: format!("{:?}", self.rdf_data),
-                            shapemap: format!("{shapemap:?}"),
                             error: format!("{e}"),
                         })?;
                     Ok(result.clone())

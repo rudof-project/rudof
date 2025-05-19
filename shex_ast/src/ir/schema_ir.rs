@@ -60,7 +60,7 @@ impl SchemaIR {
         Ok(())
     }
 
-    pub fn find_ref(&mut self, se_ref: &ShapeExprLabel) -> CResult<ShapeLabelIdx> {
+    pub fn find_ref(&self, se_ref: &ShapeExprLabel) -> CResult<ShapeLabelIdx> {
         let shape_label = match se_ref {
             ShapeExprLabel::IriRef { value } => match value {
                 IriRef::Iri(iri) => {

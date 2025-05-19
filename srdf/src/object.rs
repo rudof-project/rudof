@@ -45,6 +45,10 @@ impl Object {
             Object::Literal(lit) => lit.numeric_value(),
         }
     }
+
+    pub fn boolean(b: bool) -> Object {
+        Object::Literal(Literal::boolean(b))
+    }
 }
 
 impl From<IriS> for Object {

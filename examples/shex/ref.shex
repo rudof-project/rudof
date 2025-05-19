@@ -1,0 +1,5 @@
+prefix : <http://example.org/>
+
+# :S @:T
+:T { :p @:U }
+:U [ 1 2 ]

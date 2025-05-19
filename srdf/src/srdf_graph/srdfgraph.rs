@@ -355,6 +355,10 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
+    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
+        Ok(OxBlankNode::default())
+    }
+
     fn add_triple(
         &mut self,
         subj: &Self::Subject,
@@ -377,7 +381,7 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
-    fn add_type(&mut self, node: &Self::Term, r#type: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, node: &Self::Subject, r#type: Self::Term) -> Result<(), Self::Err> {
         let subject: Self::Subject =
             node.clone()
                 .try_into()

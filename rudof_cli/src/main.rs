@@ -28,13 +28,14 @@ use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
+use shacl_validation::validation_report::report::ValidationReport;
 use shapemap::{NodeSelector, ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{RdfData, ServiceDescription};
-use srdf::{Query, QuerySolution, RDFFormat, ReaderMode, VarName};
+use srdf::{Query, QuerySolution, RDFFormat, ReaderMode, SRDFGraph, VarName};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
@@ -44,7 +45,6 @@ use std::str::FromStr;
 use std::time::Instant;
 use supports_color::Stream;
 use tracing::debug;
-
 pub mod cli;
 pub mod input_convert_format;
 pub mod input_spec;
@@ -195,6 +195,7 @@ fn main() -> Result<()> {
                         reader_mode,
                         *shacl_validation_mode,
                         cli.debug,
+                        result_format,
                         output,
                         &config,
                         *force_overwrite,
@@ -260,6 +261,7 @@ fn main() -> Result<()> {
                 reader_mode,
                 *mode,
                 cli.debug,
+                result_format,
                 output,
                 &config,
                 *force_overwrite,
@@ -632,15 +634,44 @@ fn run_validate_shex(
             }
         };
         let result = rudof.validate_shex()?;
-        // writeln!(writer, "Result:\n{}", result)?;
-        write_result(writer, result_format, result)?;
+        write_result_shapemap(writer, result_format, result)?;
         Ok(())
     } else {
         bail!("No ShEx schema specified")
     }
 }
 
-fn write_result(
+fn write_validation_report(
+    mut writer: Box<dyn Write + 'static>,
+    format: &ResultFormat,
+    report: ValidationReport,
+) -> Result<()> {
+    match format {
+        ResultFormat::Turtle => {
+            use crate::srdf::SRDFBuilder;
+            let mut rdf_writer = SRDFGraph::new();
+            report.to_rdf(&mut rdf_writer)?;
+            rdf_writer.serialize(&RDFFormat::Turtle, &mut writer)?;
+        }
+        ResultFormat::NTriples => todo!(),
+        ResultFormat::RDFXML => todo!(),
+        ResultFormat::TriG => todo!(),
+        ResultFormat::N3 => todo!(),
+        ResultFormat::NQuads => todo!(),
+        ResultFormat::Compact => {
+            writeln!(writer, "Validation report: {report}")?;
+        }
+        ResultFormat::Json => {
+            todo!()
+            /*let str = serde_json::to_string_pretty(&report)
+                .context("Error converting Result to JSON: {result}")?;
+            writeln!(writer, "{str}")?;*/
+        }
+    }
+    Ok(())
+}
+
+fn write_result_shapemap(
     mut writer: Box<dyn Write + 'static>,
     format: &ResultFormat,
     result: ResultShapeMap,
@@ -675,14 +706,15 @@ fn run_validate_shacl(
     reader_mode: &RDFReaderMode,
     mode: ShaclValidationMode,
     _debug: u8,
+    result_format: &ResultFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let (writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let result = if let Some(schema) = schema {
+    let validation_report = if let Some(schema) = schema {
         let reader_mode = reader_mode_convert(*reader_mode);
         let shapes_format = shapes_format.unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
@@ -691,7 +723,8 @@ fn run_validate_shacl(
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
     }?;
 
-    writeln!(writer, "Result:\n{}", result)?;
+    write_validation_report(writer, result_format, validation_report)?;
+
     Ok(())
 }
 

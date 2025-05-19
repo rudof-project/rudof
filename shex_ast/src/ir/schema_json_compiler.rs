@@ -767,15 +767,7 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
             let iri = cnv_iri_ref(ir)?;
             Ok(ObjectValue::IriRef(iri))
         }
-        ast::ObjectValue::Literal(n) => {
-            println!("Not implemented yet: Literal({n})");
-            todo!()
-        } /*ast::ObjectValue::ObjectLiteral {
-              value, language, ..
-          } => Ok(ObjectValue::ObjectLiteral {
-              value: value.to_string(),
-              language: language.clone(),
-          })*/
+        ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
     }
 }
 

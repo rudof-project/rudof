@@ -181,18 +181,15 @@ impl PropertyShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id.clone().into(), SH_PROPERTY_SHAPE.clone().into())?;
+        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_type(&id, SH_PROPERTY_SHAPE.clone().into())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_NAME.clone().into(),
-                &literal.into(),
-            )
+            rdf.add_triple(&id, &SH_NAME.clone().into(), &literal.into())
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -200,11 +197,7 @@ impl PropertyShape {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_DESCRIPTION.clone().into(),
-                &literal.into(),
-            )
+            rdf.add_triple(&id, &SH_DESCRIPTION.clone().into(), &literal.into())
         })?;
 
         if let Some(order) = self.order.clone() {
@@ -216,27 +209,15 @@ impl PropertyShape {
                     i.into()
                 }
             };
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_ORDER.clone().into(),
-                &literal.into(),
-            )?;
+            rdf.add_triple(&id, &SH_ORDER.clone().into(), &literal.into())?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_GROUP.clone().into(),
-                &group.clone().into(),
-            )?;
+            rdf.add_triple(&id, &SH_GROUP.clone().into(), &group.clone().into())?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_PATH.clone().into(),
-                &pred.clone().into(),
-            )?;
+            rdf.add_triple(&id, &SH_PATH.clone().into(), &pred.clone().into())?;
         } else {
             unimplemented!()
         }
@@ -252,11 +233,7 @@ impl PropertyShape {
         if self.deactivated {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_DEACTIVATED.clone().into(),
-                &literal.into(),
-            )?;
+            rdf.add_triple(&id, &SH_DEACTIVATED.clone().into(), &literal.into())?;
         }
 
         if let Some(severity) = &self.severity {
@@ -267,11 +244,7 @@ impl PropertyShape {
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_SEVERITY.clone().into(),
-                &pred.clone().into(),
-            )?;
+            rdf.add_triple(&id, &SH_SEVERITY.clone().into(), &pred.clone().into())?;
         }
 
         Ok(())

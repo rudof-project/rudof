@@ -1,16 +1,12 @@
 use std::fmt::Display;
 
 use iri_s::IriS;
-use srdf::{lang::Lang, literal::Literal, Object};
+use srdf::{literal::Literal, Object};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {
     IriRef(IriS),
-    ObjectLiteral {
-        value: String,
-        language: Option<Lang>,
-        // type_: Option<String>,
-    },
+    ObjectLiteral(Literal),
 }
 
 impl ObjectValue {
@@ -20,15 +16,12 @@ impl ObjectValue {
                 Object::Iri(iri) => iri == iri_expected,
                 _ => false,
             },
-            ObjectValue::ObjectLiteral { value, language } => match object {
-                Object::Literal(lit) => match lit {
-                    Literal::StringLiteral { lexical_form, lang } => {
-                        value == lexical_form && language == lang
-                    }
-                    Literal::DatatypeLiteral { .. } => todo!(),
-                    Literal::BooleanLiteral(_) => todo!(),
-                    Literal::NumericLiteral(_) => todo!(),
-                },
+            ObjectValue::ObjectLiteral(literal_expected) => match object {
+                Object::Literal(lit) => {
+                    // We compare lexical forms and datatypes because some parsed literals are not optimized as primitive literals (like integers)
+                    literal_expected.datatype() == lit.datatype()
+                        && literal_expected.lexical_form() == lit.lexical_form()
+                }
                 _ => false,
             },
         }
@@ -42,15 +35,8 @@ impl Display for ObjectValue {
                 write!(f, "{iri}")?;
                 Ok(())
             }
-            ObjectValue::ObjectLiteral { value, language } => {
-                write!(f, "\"{value}\"")?;
-                match language {
-                    None => Ok(()),
-                    Some(lang) => {
-                        write!(f, "@{lang}")?;
-                        Ok(())
-                    }
-                }
+            ObjectValue::ObjectLiteral(lit) => {
+                write!(f, "{lit}")
             }
         }
     }

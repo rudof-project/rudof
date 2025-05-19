@@ -1516,7 +1516,7 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
                 let (i, maybe_value) = opt(alt((
                     map(lang_tag, |lang| Literal::lang_str(&str, lang)),
                     map(preceded(token("^^"), datatype_iri), |datatype| {
-                        Literal::datatype(&str, &datatype)
+                        Literal::lit_datatype(&str, &datatype)
                     }),
                 )))(i)?;
                 let value = match maybe_value {

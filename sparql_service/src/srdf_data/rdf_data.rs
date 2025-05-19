@@ -382,7 +382,7 @@ impl SRDFBuilder for RdfData {
         todo!()
     }
 
-    fn add_type(&mut self, _node: &Self::Term, _type_: Self::Term) -> Result<(), Self::Err> {
+    fn add_type(&mut self, _node: &Self::Subject, _type_: Self::Term) -> Result<(), Self::Err> {
         todo!()
     }
 
@@ -401,5 +401,15 @@ impl SRDFBuilder for RdfData {
             writeln!(writer, "Endpoint {}", endpoint.iri())?;
         }
         Ok(())
+    }
+
+    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
+        match self.graph {
+            Some(ref mut graph) => {
+                let bnode = graph.add_bnode()?;
+                Ok(bnode)
+            }
+            None => Err(RdfDataError::BNodeNoGraph),
+        }
     }
 }

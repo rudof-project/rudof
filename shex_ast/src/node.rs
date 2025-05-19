@@ -1,6 +1,7 @@
 use iri_s::IriS;
 use rbe::Value;
 use serde::Serialize;
+use srdf::literal::Literal;
 use srdf::numeric_literal::NumericLiteral;
 use srdf::Object;
 use std::fmt::Display;
@@ -32,6 +33,12 @@ impl Node {
 
     pub fn as_object(&self) -> &Object {
         &self.node
+    }
+
+    pub fn literal(lit: Literal) -> Node {
+        Node {
+            node: Object::literal(lit),
+        }
     }
 }
 

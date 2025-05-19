@@ -43,7 +43,7 @@ impl ObjectValue {
     }
 
     pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
-        ObjectValue::Literal(Literal::datatype(lexical_form, datatype))
+        ObjectValue::Literal(Literal::lit_datatype(lexical_form, datatype))
     }
 
     pub fn lexical_form(&self) -> String {

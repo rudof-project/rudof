@@ -2,7 +2,6 @@ use crate::atom;
 use crate::validator_error::*;
 use crate::Reason;
 use crate::Reasons;
-use crate::ResultValue;
 use crate::ValidatorConfig;
 use either::Either;
 use indexmap::IndexSet;
@@ -24,8 +23,8 @@ use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
-type NegAtom = atom::NegAtom<(Node, ShapeLabelIdx)>;
-type PosAtom = atom::PosAtom<(Node, ShapeLabelIdx)>;
+type NegAtom = (Node, ShapeLabelIdx);
+type PosAtom = (Node, ShapeLabelIdx);
 // type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 
@@ -130,7 +129,7 @@ impl Engine {
         self.processing.contains(atom)
     }
 
-    pub(crate) fn get_result(&self, atom: &Atom) -> ResultValue {
+    /*pub(crate) fn get_result(&self, atom: &Atom) -> ResultValue {
         if self.checked.contains(atom) {
             ResultValue::Ok
         } else if self.checked.contains(&atom.negated()) {
@@ -142,19 +141,19 @@ impl Engine {
         } else {
             ResultValue::Unknown
         }
-    }
+    }*/
 
     pub fn new_step(&mut self) {
         self.step_counter += 1;
     }
 
     pub fn add_ok(&mut self, n: Node, s: ShapeLabelIdx) {
-        let pa = PosAtom::new((n, s));
+        let pa = (n, s);
         self.checked.insert(Atom::pos(&pa));
     }
 
     pub fn add_failed(&mut self, n: Node, s: ShapeLabelIdx, err: ValidatorError) {
-        let atom = NegAtom::new((n, s));
+        let atom = (n, s);
         self.checked.insert(Atom::neg(&atom));
         match self.errors.entry(atom) {
             Entry::Occupied(mut es) => es.get_mut().push(err),
@@ -164,7 +163,7 @@ impl Engine {
         }
     }
 
-    pub fn get_shape_expr(&self, idx: ShapeLabelIdx) -> &ShapeExpr {
+    pub fn get_shape_expr(&self, _idx: ShapeLabelIdx) -> &ShapeExpr {
         // self.config.get_shape_expr(idx)
         todo!()
     }
@@ -174,7 +173,7 @@ impl Engine {
     }
 
     pub fn add_pending(&mut self, n: Node, s: ShapeLabelIdx) {
-        let pos_atom = PosAtom::new((n, s));
+        let pos_atom = (n, s);
         self.pending.insert(Atom::pos(&pos_atom));
     }
 
@@ -213,12 +212,13 @@ impl Engine {
         node: &Node,
         se: &ShapeExpr,
         rdf: &S,
+        schema: &SchemaIR,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
         S: Query,
     {
         debug!(
-            "Step {}. Checking node {node:?} with shape_expr: {se:?}",
+            "Step {}. Checking node {node} with shape_expr: {se}",
             self.step_counter
         );
         match se {
@@ -234,14 +234,20 @@ impl Engine {
                 Err(err) => Ok(Either::Left(vec![ValidatorError::RbeError(err)])),
             },
             ShapeExpr::Ref { idx } => {
-                let se = self.get_shape_expr(*idx);
-                // self.check_node_shape_expr(node, se, rdf)
-                todo!()
+                // TODO: Should we remove the next
+                self.add_pending(node.clone(), *idx);
+                if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
+                    self.check_node_shape_expr(node, se, rdf, schema)
+                } else {
+                    Ok(Either::Left(vec![ValidatorError::ShapeExprNotFound {
+                        idx: *idx,
+                    }]))
+                }
             }
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 let mut reasons_collection = Vec::new();
                 for e in exprs {
-                    let result = self.check_node_shape_expr(node, e, rdf)?;
+                    let result = self.check_node_shape_expr(node, e, rdf, schema)?;
                     match result {
                         Either::Left(errors) => {
                             return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
@@ -262,7 +268,7 @@ impl Engine {
                 }]))
             }
             ShapeExpr::ShapeNot { expr, .. } => {
-                let result = self.check_node_shape_expr(node, expr, rdf)?;
+                let result = self.check_node_shape_expr(node, expr, rdf, schema)?;
                 match result {
                     Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
                         node: node.clone(),
@@ -281,7 +287,7 @@ impl Engine {
             ShapeExpr::ShapeOr { exprs, .. } => {
                 let mut errors_collection = Vec::new();
                 for e in exprs {
-                    let result = self.check_node_shape_expr(node, e, rdf)?;
+                    let result = self.check_node_shape_expr(node, e, rdf, schema)?;
                     match result {
                         Either::Left(errors) => {
                             errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
@@ -348,7 +354,7 @@ impl Engine {
                     debug!("Found result, iteration {iter_count}");
                     for (p, v) in pending_values.iter() {
                         debug!("Step {counter}: Value in pending: {p}/{v}");
-                        let pos_atom = PosAtom::new(((*p).clone(), *v));
+                        let pos_atom = ((*p).clone(), *v);
                         let atom = Atom::pos(&pos_atom);
                         if self.is_processing(&atom) {
                             let pred = p.clone();

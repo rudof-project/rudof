@@ -48,4 +48,7 @@ pub enum RdfDataError {
         #[from]
         err: EvaluationError,
     },
+
+    #[error("Trying to create a BNode on RDF data without a graph")]
+    BNodeNoGraph,
 }

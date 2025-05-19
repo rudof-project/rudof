@@ -36,7 +36,7 @@ impl Literal {
         Literal::NumericLiteral(NumericLiteral::decimal(d))
     }
 
-    pub fn datatype(lexical_form: &str, datatype: &IriRef) -> Literal {
+    pub fn lit_datatype(lexical_form: &str, datatype: &IriRef) -> Literal {
         Literal::DatatypeLiteral {
             lexical_form: lexical_form.to_owned(),
             datatype: datatype.clone(),
@@ -68,6 +68,36 @@ impl Literal {
             Literal::NumericLiteral(nl) => nl.lexical_form(),
             Literal::BooleanLiteral(true) => "true".to_string(),
             Literal::BooleanLiteral(false) => "false".to_string(),
+        }
+    }
+
+    pub fn datatype(&self) -> IriRef {
+        match self {
+            Literal::DatatypeLiteral { datatype, .. } => datatype.clone(),
+            Literal::StringLiteral {
+                lexical_form: _,
+                lang: None,
+            } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#string",
+            )),
+            Literal::StringLiteral {
+                lexical_form: _,
+                lang: Some(_),
+            } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+            )),
+            Literal::NumericLiteral(NumericLiteral::Integer(_)) => IriRef::iri(
+                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer"),
+            ),
+            Literal::NumericLiteral(NumericLiteral::Decimal(_)) => IriRef::iri(
+                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal"),
+            ),
+            Literal::NumericLiteral(NumericLiteral::Double(_)) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#double",
+            )),
+            Literal::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#boolean",
+            )),
         }
     }
 
@@ -157,7 +187,7 @@ impl From<oxrdf::Literal> for Literal {
             (s, None, Some(language)) => Literal::lang_str(&s, Lang::new_unchecked(&language)),
             (value, Some(dtype), None) => {
                 let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                Literal::datatype(&value, &datatype)
+                Literal::lit_datatype(&value, &datatype)
             }
             _ => todo!(),
         }

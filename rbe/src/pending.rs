@@ -1,5 +1,5 @@
 use indexmap::{map::Entry, IndexMap, IndexSet};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 /// Indicates a map of values `V` that depend on some references `R`
@@ -177,6 +177,24 @@ where
                 Some(r) => Some((v, r)),
             },
         }
+    }
+}
+
+impl<V, R> Display for Pending<V, R>
+where
+    V: Hash + Eq + Debug + Display,
+    R: Hash + Eq + Debug + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pending {{")?;
+        for (v, r) in self.pending_map.iter() {
+            write!(f, "{}@", v)?;
+            for r in r.iter() {
+                write!(f, "{} ", r)?;
+            }
+            write!(f, "| ")?;
+        }
+        write!(f, "}}")
     }
 }
 

@@ -27,7 +27,7 @@ pub trait SRDFBuilder: Query {
         obj: &Self::Term,
     ) -> Result<(), Self::Err>;
 
-    /// Removes an RDf triple to the current RDF graph
+    /// Removes an RDF triple to the current RDF graph
     fn remove_triple(
         &mut self,
         subj: &Self::Subject,
@@ -36,7 +36,10 @@ pub trait SRDFBuilder: Query {
     ) -> Result<(), Self::Err>;
 
     /// Adds an `rdf:type` declaration to the current RDF graph
-    fn add_type(&mut self, node: &Self::Term, type_: Self::Term) -> Result<(), Self::Err>;
+    fn add_type(&mut self, node: &Self::Subject, type_: Self::Term) -> Result<(), Self::Err>;
+
+    /// Adds an Blank node to the RDF graph and get the node identifier
+    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err>;
 
     /// Serialize the current graph to a Write implementation
     fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err>;

@@ -1,7 +1,7 @@
-use super::validation_report_error::ResultError;
+use super::validation_report_error::{ReportError, ResultError};
 use crate::helpers::srdf::get_object_for;
 use shacl_ast::*;
-use srdf::{Object, Query, RDFNode};
+use srdf::{Object, Query, RDFNode, SRDFBuilder};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,6 +60,10 @@ impl ValidationResult {
         self.source.as_ref()
     }
 
+    pub fn value(&self) -> Option<&Object> {
+        self.value.as_ref()
+    }
+
     pub fn focus_node(&self) -> &Object {
         &self.focus_node
     }
@@ -115,5 +119,36 @@ impl ValidationResult {
                 .with_source(source)
                 .with_value(value),
         )
+    }
+
+    pub fn to_rdf<RDF>(
+        &self,
+        rdf_writer: &mut RDF,
+        report_node: RDF::Subject,
+    ) -> Result<(), ReportError>
+    where
+        RDF: SRDFBuilder + Sized,
+    {
+        rdf_writer
+            .add_type(&report_node, SH_VALIDATION_RESULT.clone().into())
+            .map_err(|e| ReportError::ValidationReportError { msg: e.to_string() })?;
+        rdf_writer
+            .add_triple(
+                &report_node,
+                &SH_FOCUS_NODE.clone().into(),
+                &self.focus_node.clone().into(),
+            )
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error adding focus node to validation result: {e}"),
+            })?;
+        if let Some(source) = &self.source {
+            let source_term: RDF::Term = source.clone().into();
+            rdf_writer
+                .add_triple(&report_node, &SH_SOURCE_SHAPE.clone().into(), &source_term)
+                .map_err(|e| ReportError::ValidationReportError {
+                    msg: format!("Error adding source to validation result: {e}"),
+                })?;
+        }
+        Ok(())
     }
 }

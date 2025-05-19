@@ -353,19 +353,19 @@ pub enum Command {
         mode: ShaclValidationMode,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Compact
+        )]
+        result_format: ResultFormat,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
-
-        #[arg(
-            short = 'r',
-            long = "result-format",
-            value_name = "Ouput result format",
-            default_value_t = DataFormat::Turtle
-        )]
-        result_format: DataFormat,
 
         #[arg(
             long = "force-overwrite",

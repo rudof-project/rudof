@@ -114,7 +114,7 @@ where
                 .iter()
                 .zip(0..)
                 .map(|(candidate, n)| {
-                    debug!("Candidate {n}: {candidate:?}");
+                    debug!("Candidate {n}: {}", show_candidate(candidate));
                 })
                 .collect();
             let mp = candidates.into_iter().multi_cartesian_product();
@@ -220,14 +220,8 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            MatchTableIter::Empty(ref mut e) => {
-                debug!("MatchTableIter::Empty");
-                e.next()
-            }
-            MatchTableIter::NonEmpty(ref mut cp) => {
-                debug!("MatchTableIter::NonEmpty");
-                cp.next()
-            }
+            MatchTableIter::Empty(ref mut e) => e.next(),
+            MatchTableIter::NonEmpty(ref mut cp) => cp.next(),
         }
     }
 }
@@ -258,7 +252,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
-        debug!("state in IterCartesianProduct {:?}", self.state);
+        // debug!("state in IterCartesianProduct {:?}", self.state);
         match next_state {
             None => {
                 if self.is_first {
@@ -278,8 +272,9 @@ where
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            debug!("Condition passed: {cond} with value: {v}");
+                            debug!("Condition passed: {cond} with value: {v}, new pending: {new_pending}");
                             pending.merge(new_pending);
+                            debug!("Pending merged: {pending}");
                         }
                         Err(err) => {
                             debug!("Failed condition: {cond} with value: {v}");
@@ -287,7 +282,7 @@ where
                         }
                     }
                 }
-                debug!("Pending after checking conditions: {pending:?}");
+                debug!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
@@ -408,6 +403,19 @@ where
         }
         Ok(())
     }
+}
+
+fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
+where
+    K: Key + Display,
+    V: Value + Display,
+    R: Ref + Display,
+{
+    candidate
+        .iter()
+        .map(|(k, v, c, cond)| format!("({k} {v})@{c} {cond}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 #[cfg(test)]

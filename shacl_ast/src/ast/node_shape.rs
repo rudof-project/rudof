@@ -100,18 +100,15 @@ impl NodeShape {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_type(&self.id.clone().into(), SH_NODE_SHAPE.clone().into())?;
+        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_type(&id, SH_NODE_SHAPE.clone().into())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_NAME.clone().into(),
-                &literal.into(),
-            )
+            rdf.add_triple(&id, &SH_NAME.clone().into(), &literal.into())
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -119,11 +116,7 @@ impl NodeShape {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_DESCRIPTION.clone().into(),
-                &literal.into(),
-            )
+            rdf.add_triple(&id, &SH_DESCRIPTION.clone().into(), &literal.into())
         })?;
 
         self.components
@@ -136,7 +129,7 @@ impl NodeShape {
 
         self.property_shapes.iter().try_for_each(|property_shape| {
             rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
+                &id,
                 &SH_PROPERTY.clone().into(),
                 &property_shape.clone().into(),
             )
@@ -145,19 +138,11 @@ impl NodeShape {
         if self.deactivated {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_DEACTIVATED.clone().into(),
-                &literal.into(),
-            )?;
+            rdf.add_triple(&id, &SH_DEACTIVATED.clone().into(), &literal.into())?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_GROUP.clone().into(),
-                &group.clone().into(),
-            )?;
+            rdf.add_triple(&id, &SH_GROUP.clone().into(), &group.clone().into())?;
         }
 
         if let Some(severity) = &self.severity {
@@ -168,21 +153,13 @@ impl NodeShape {
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_SEVERITY.clone().into(),
-                &pred.clone().into(),
-            )?;
+            rdf.add_triple(&id, &SH_SEVERITY.clone().into(), &pred.clone().into())?;
         }
 
         if self.closed {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(
-                &self.id.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_CLOSED.clone().into(),
-                &literal.into(),
-            )?;
+            rdf.add_triple(&id, &SH_CLOSED.clone().into(), &literal.into())?;
         }
 
         Ok(())
