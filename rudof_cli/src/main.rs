@@ -1542,9 +1542,7 @@ fn shacl_format_convert(shacl_format: &cli::ShaclFormat) -> Result<ShaclFormat> 
         cli::ShaclFormat::TriG => Ok(ShaclFormat::TriG),
         cli::ShaclFormat::N3 => Ok(ShaclFormat::N3),
         cli::ShaclFormat::NQuads => Ok(ShaclFormat::NQuads),
-        cli::ShaclFormat::Internal => {
-            bail!("Cannot convert internal SHACL format to RDF data format")
-        }
+        cli::ShaclFormat::Internal => Ok(ShaclFormat::Internal),
     }
 }
 

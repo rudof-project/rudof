@@ -16,6 +16,7 @@ pub trait Validate<S: Rdf> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
@@ -25,7 +26,15 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
+        println!(
+            "Shape.validate with shape {} and source shape: {}",
+            self.id(),
+            source_shape
+                .map(|s| format!("{}", s.id()))
+                .unwrap_or_else(|| "None".to_string())
+        );
         // 0. skipping if it is deactivated
         if *self.is_deactivated() {
             return Ok(Vec::default());
@@ -53,10 +62,10 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         //    nested PropertyShapes. The thing is that the validation needs to
         //    occur over the focus_nodes that have been computed for the current
         //    shape
-        let property_shapes_validation_results = self
-            .property_shapes()
-            .iter()
-            .flat_map(|shape| shape.validate(store, runner, Some(&focus_nodes)));
+        let property_shapes_validation_results =
+            self.property_shapes().iter().flat_map(|prop_shape| {
+                prop_shape.validate(store, runner, Some(&focus_nodes), Some(self))
+            });
 
         // 5.
         let validation_results = component_validation_results

@@ -21,6 +21,7 @@ pub trait Validator<S: Rdf + Debug> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -31,6 +32,7 @@ pub trait NativeValidator<S: Query> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -41,6 +43,7 @@ pub trait SparqlValidator<S: Sparql + Debug> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 

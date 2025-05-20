@@ -27,6 +27,7 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         validate_with(component, shape, value_nodes, FocusNodeIteration, max_count)
@@ -40,8 +41,16 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
@@ -52,7 +61,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

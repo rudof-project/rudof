@@ -27,7 +27,9 @@ impl<S: Rdf + Debug> Validator<S> for MinCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        println!("Validating minCount with shape {}", shape.id());
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
             return Ok(Default::default());
@@ -44,8 +46,17 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        println!("Validate native minCount with shape: {}", shape.id());
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
@@ -56,7 +67,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinCount {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

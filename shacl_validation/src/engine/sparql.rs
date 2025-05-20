@@ -24,9 +24,10 @@ impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let validator = component.deref();
-        Ok(validator.validate_sparql(component, shape, store, value_nodes)?)
+        Ok(validator.validate_sparql(component, shape, store, value_nodes, source_shape)?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

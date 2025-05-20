@@ -30,7 +30,9 @@ impl<S: Rdf + Debug> Validator<S> for Node<S> {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-            let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
+            let inner_results =
+                self.shape()
+                    .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));
             inner_results.is_err() || !inner_results.unwrap().is_empty()
         };
 

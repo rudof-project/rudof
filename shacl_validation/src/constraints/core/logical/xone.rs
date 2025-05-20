@@ -34,7 +34,7 @@ impl<S: Rdf + Debug> Validator<S> for Xone<S> {
                 .iter()
                 .filter(|shape| {
                     let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes)) {
+                    match shape.validate(store, &engine, Some(&focus_nodes), Some(shape)) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }

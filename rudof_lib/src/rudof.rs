@@ -286,7 +286,7 @@ impl Rudof {
         if let Some(shacl) = &self.shacl_schema {
             match format {
                 ShaclFormat::Internal => {
-                    write!(writer, "{shacl:?}").map_err(|e| RudofError::SerializingSHACLInternal {
+                    write!(writer, "{shacl}").map_err(|e| RudofError::SerializingSHACLInternal {
                         error: format!("{e}"),
                     })
                 }

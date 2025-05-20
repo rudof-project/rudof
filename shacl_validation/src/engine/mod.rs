@@ -20,6 +20,7 @@ pub trait Engine<S: Rdf> {
         shape: &CompiledShape<S>,
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(
