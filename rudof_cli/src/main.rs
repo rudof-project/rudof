@@ -647,28 +647,36 @@ fn write_validation_report(
     report: ValidationReport,
 ) -> Result<()> {
     match format {
-        ResultFormat::Turtle => {
-            use crate::srdf::SRDFBuilder;
-            let mut rdf_writer = SRDFGraph::new();
-            report.to_rdf(&mut rdf_writer)?;
-            rdf_writer.serialize(&RDFFormat::Turtle, &mut writer)?;
-        }
-        ResultFormat::NTriples => todo!(),
-        ResultFormat::RDFXML => todo!(),
-        ResultFormat::TriG => todo!(),
-        ResultFormat::N3 => todo!(),
-        ResultFormat::NQuads => todo!(),
         ResultFormat::Compact => {
             writeln!(writer, "Validation report: {report}")?;
         }
         ResultFormat::Json => {
-            todo!()
+            bail!("Generation of JSON for SHACl validation report is not implemented yet")
             /*let str = serde_json::to_string_pretty(&report)
                 .context("Error converting Result to JSON: {result}")?;
             writeln!(writer, "{str}")?;*/
         }
+        _ => {
+            use crate::srdf::SRDFBuilder;
+            let mut rdf_writer = SRDFGraph::new();
+            report.to_rdf(&mut rdf_writer)?;
+            let rdf_format = result_format_to_rdf_format(format)?;
+            rdf_writer.serialize(&rdf_format, &mut writer)?;
+        }
     }
     Ok(())
+}
+
+fn result_format_to_rdf_format(result_format: &ResultFormat) -> Result<RDFFormat> {
+    match result_format {
+        ResultFormat::Turtle => Ok(RDFFormat::Turtle),
+        ResultFormat::NTriples => Ok(RDFFormat::NTriples),
+        ResultFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        ResultFormat::TriG => Ok(RDFFormat::TriG),
+        ResultFormat::N3 => Ok(RDFFormat::N3),
+        ResultFormat::NQuads => Ok(RDFFormat::NQuads),
+        _ => bail!("Unsupported result format {result_format}"),
+    }
 }
 
 fn write_result_shapemap(
