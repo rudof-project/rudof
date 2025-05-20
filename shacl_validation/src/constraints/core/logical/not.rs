@@ -27,7 +27,7 @@ impl<S: Rdf + Debug> Validator<S> for Not<S> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let not = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));

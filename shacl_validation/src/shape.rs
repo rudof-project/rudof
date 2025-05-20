@@ -52,10 +52,9 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner);
 
         // 3.
-        let component_validation_results = self
-            .components()
-            .iter()
-            .flat_map(move |component| runner.evaluate(store, self, component, &value_nodes));
+        let component_validation_results = self.components().iter().flat_map(move |component| {
+            runner.evaluate(store, self, component, &value_nodes, source_shape)
+        });
 
         // 4. After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those

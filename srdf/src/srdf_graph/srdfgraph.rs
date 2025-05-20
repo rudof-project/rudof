@@ -26,6 +26,7 @@ pub struct SRDFGraph {
     graph: Graph,
     pm: PrefixMap,
     base: Option<IriS>,
+    bnode_counter: usize,
 }
 
 impl SRDFGraph {
@@ -356,7 +357,13 @@ impl SRDFBuilder for SRDFGraph {
     }
 
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
-        Ok(OxBlankNode::default())
+        self.bnode_counter += 1;
+        match self.bnode_counter.try_into() {
+            Ok(bn) => Ok(OxBlankNode::new_from_unique_id(bn)),
+            Err(_) => Err(SRDFGraphError::BlankNodeId {
+                msg: format!("Error converting {} to usize", self.bnode_counter),
+            }),
+        }
     }
 
     fn add_triple(
@@ -382,12 +389,7 @@ impl SRDFBuilder for SRDFGraph {
     }
 
     fn add_type(&mut self, node: &Self::Subject, r#type: Self::Term) -> Result<(), Self::Err> {
-        let subject: Self::Subject =
-            node.clone()
-                .try_into()
-                .map_err(|_| SRDFGraphError::UnexepectedNodeType {
-                    node: node.to_string(),
-                })?;
+        let subject: Self::Subject = node.clone();
         let triple = OxTriple::new(subject, rdf_type(), r#type.clone());
         self.graph.insert(&triple);
         Ok(())
@@ -399,6 +401,7 @@ impl SRDFBuilder for SRDFGraph {
             graph: Graph::new(),
             pm: PrefixMap::new(),
             base: None,
+            bnode_counter: 0,
         }
     }
 

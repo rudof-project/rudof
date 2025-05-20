@@ -43,7 +43,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new<'a>(config: &ValidatorConfig) -> Engine {
+    pub fn new(config: &ValidatorConfig) -> Engine {
         Engine {
             checked: IndexSet::new(),
             processing: IndexSet::new(),

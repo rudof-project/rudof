@@ -25,6 +25,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if value_node.is_literal() {
@@ -55,6 +56,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 

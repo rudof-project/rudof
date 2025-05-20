@@ -29,7 +29,7 @@ impl<S: Rdf + Debug> Validator<S> for Or<S> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let or = |value_node: &S::Term| {
             self.shapes()

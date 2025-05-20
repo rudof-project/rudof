@@ -23,6 +23,7 @@ impl<S: Rdf + Debug> Validator<S> for Closed<S> {
         _store: &S,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Closed".to_string()))
     }
@@ -35,8 +36,16 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Closed<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
@@ -47,7 +56,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Closed<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

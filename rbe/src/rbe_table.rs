@@ -405,6 +405,7 @@ where
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
 where
     K: Key + Display,

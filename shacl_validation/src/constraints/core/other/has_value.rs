@@ -26,6 +26,7 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
@@ -40,8 +41,16 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for HasValue<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
@@ -52,7 +61,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for HasValue<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

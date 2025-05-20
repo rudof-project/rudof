@@ -141,6 +141,37 @@ impl ValidationResult {
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding focus node to validation result: {e}"),
             })?;
+        rdf_writer
+            .add_triple(
+                &report_node,
+                &SH_SOURCE_CONSTRAINT_COMPONENT.clone().into(),
+                &self.constraint_component.clone().into(),
+            )
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error adding source constraint component to validation result: {e}"),
+            })?;
+        rdf_writer
+            .add_triple(
+                &report_node,
+                &SH_RESULT_SEVERITY.clone().into(),
+                &self.severity.clone().into(),
+            )
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error adding severity to validation result: {e}"),
+            })?;
+        let message = match self.message {
+            Some(ref message) => message.clone(),
+            None => Object::str("No message"),
+        };
+        rdf_writer
+            .add_triple(
+                &report_node,
+                &SH_RESULT_MESSAGE.clone().into(),
+                &message.into(),
+            )
+            .map_err(|e| ReportError::ValidationReportError {
+                msg: format!("Error result message to validation result: {e}"),
+            })?;
         if let Some(source) = &self.source {
             let source_term: RDF::Term = source.clone().into();
             rdf_writer
@@ -149,6 +180,7 @@ impl ValidationResult {
                     msg: format!("Error adding source to validation result: {e}"),
                 })?;
         }
+
         Ok(())
     }
 }

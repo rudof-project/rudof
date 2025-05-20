@@ -25,6 +25,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
@@ -60,6 +61,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 

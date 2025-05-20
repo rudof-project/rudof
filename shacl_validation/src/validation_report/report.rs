@@ -136,7 +136,7 @@ impl ValidationReport {
                 let result_node_subject: <RDF as Rdf>::Subject =
                     <RDF as Rdf>::Subject::try_from(result_node_term).map_err(|_e| {
                         ReportError::ValidationReportError {
-                            msg: format!("Cannot convert subject to term"),
+                            msg: "Cannot convert subject to term".to_string(),
                         }
                     })?;
                 result.to_rdf(rdf_writer, result_node_subject)?;
@@ -208,7 +208,7 @@ impl Display for ValidationReport {
                     "Focus node {}, Component: {},{}{} severity: {}",
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
-                    show_object_opt("source", result.source(), &shacl_prefixmap),
+                    show_object_opt("source shape", result.source(), &shacl_prefixmap),
                     show_object_opt("value", result.value(), &shacl_prefixmap),
                     show_object(result.severity(), &shacl_prefixmap)
                 )?;

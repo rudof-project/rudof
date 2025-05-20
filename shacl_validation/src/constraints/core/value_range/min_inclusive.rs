@@ -19,6 +19,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("MinInclusive".to_string()))
     }
@@ -31,6 +32,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_inclusive_value = self.min_inclusive().clone();
 

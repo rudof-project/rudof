@@ -24,6 +24,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -62,6 +63,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxLength {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();
 

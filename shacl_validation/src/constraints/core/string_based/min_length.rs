@@ -24,6 +24,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         _: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -62,6 +63,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 

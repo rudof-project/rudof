@@ -17,6 +17,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Disjoint<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }
@@ -29,6 +30,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Disjoint<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }

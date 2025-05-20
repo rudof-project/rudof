@@ -24,6 +24,7 @@ impl<S: Rdf + Debug> Validator<S> for In<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
         validate_with(component, shape, value_nodes, ValueNodeIteration, r#in)
@@ -37,8 +38,16 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for In<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
@@ -49,7 +58,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for In<S> {
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
+        source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

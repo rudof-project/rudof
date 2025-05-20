@@ -31,6 +31,10 @@ impl Object {
         Object::Literal(lit)
     }
 
+    pub fn str(str: &str) -> Object {
+        Object::Literal(Literal::str(str))
+    }
+
     pub fn length(&self) -> usize {
         match self {
             Object::Iri(iri) => iri.as_str().len(),

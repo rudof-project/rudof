@@ -17,6 +17,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "LessThanOrEquals".to_string(),
@@ -31,6 +32,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
         _shape: &CompiledShape<S>,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "LessThanOrEquals".to_string(),

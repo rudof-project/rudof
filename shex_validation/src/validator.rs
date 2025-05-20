@@ -66,7 +66,7 @@ impl Validator {
         }
         // let engine = Engine::new(config);
         Ok(Validator {
-            schema: schema,
+            schema,
             config: config.clone(),
         })
     }
@@ -97,8 +97,7 @@ impl Validator {
         engine.add_pending(node.clone(), idx);
         debug!("Before while loop: ${}@{}", node, idx);
         self.loop_validating(&mut engine, rdf, schema)?;
-        let result =
-            self.result_map(&mut engine, &maybe_nodes_prefixmap, &maybe_shapes_prefixmap)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
         Ok(result)
     }
 
@@ -129,8 +128,7 @@ impl Validator {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
         self.loop_validating(&mut engine, rdf, schema)?;
-        let result =
-            self.result_map(&mut engine, &maybe_nodes_prefixmap, &maybe_shapes_prefixmap)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
         Ok(result)
     }
 
@@ -258,11 +256,11 @@ impl Validator {
     ) -> Result<ResultShapeMap> {
         let mut result = match (maybe_nodes_prefixmap, maybe_shapes_prefixmap) {
             (None, None) => ResultShapeMap::new(),
-            (Some(npm), None) => ResultShapeMap::new().with_nodes_prefixmap(&npm),
-            (None, Some(spm)) => ResultShapeMap::new().with_shapes_prefixmap(&spm),
+            (Some(npm), None) => ResultShapeMap::new().with_nodes_prefixmap(npm),
+            (None, Some(spm)) => ResultShapeMap::new().with_shapes_prefixmap(spm),
             (Some(npm), Some(spm)) => ResultShapeMap::new()
-                .with_nodes_prefixmap(&npm)
-                .with_shapes_prefixmap(&spm),
+                .with_nodes_prefixmap(npm)
+                .with_shapes_prefixmap(spm),
         };
         for atom in &engine.checked() {
             let (node, idx) = atom.get_value();
