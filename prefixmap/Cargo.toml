@@ -1,6 +1,6 @@
 [package]
 name = "prefixmap"
-version = "0.1.67"
+version = "0.1.68"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/prefixmap"
