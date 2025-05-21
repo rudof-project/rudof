@@ -101,14 +101,14 @@ impl NodeShape {
         RDF: SRDFBuilder,
     {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(&id, SH_NODE_SHAPE.clone().into())?;
+        rdf.add_type(id.clone(), SH_NODE_SHAPE.clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(&id, &SH_NAME.clone().into(), &literal.into())
+            rdf.add_triple(id.clone(), SH_NAME.clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -116,7 +116,7 @@ impl NodeShape {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(&id, &SH_DESCRIPTION.clone().into(), &literal.into())
+            rdf.add_triple(id.clone(), SH_DESCRIPTION.clone(), literal)
         })?;
 
         self.components
@@ -128,21 +128,17 @@ impl NodeShape {
             .try_for_each(|target| target.write(&self.id, rdf))?;
 
         self.property_shapes.iter().try_for_each(|property_shape| {
-            rdf.add_triple(
-                &id,
-                &SH_PROPERTY.clone().into(),
-                &property_shape.clone().into(),
-            )
+            rdf.add_triple(id.clone(), SH_PROPERTY.clone(), property_shape.clone())
         })?;
 
         if self.deactivated {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(&id, &SH_DEACTIVATED.clone().into(), &literal.into())?;
+            rdf.add_triple(id.clone(), SH_DEACTIVATED.clone(), literal)?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(&id, &SH_GROUP.clone().into(), &group.clone().into())?;
+            rdf.add_triple(id.clone(), SH_GROUP.clone(), group.clone())?;
         }
 
         if let Some(severity) = &self.severity {
@@ -153,13 +149,13 @@ impl NodeShape {
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(&id, &SH_SEVERITY.clone().into(), &pred.clone().into())?;
+            rdf.add_triple(id.clone(), SH_SEVERITY.clone(), pred.clone())?;
         }
 
         if self.closed {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(&id, &SH_CLOSED.clone().into(), &literal.into())?;
+            rdf.add_triple(id.clone(), SH_CLOSED.clone(), literal)?;
         }
 
         Ok(())

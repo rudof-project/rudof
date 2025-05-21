@@ -297,11 +297,8 @@ impl Component {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_triple(
-            &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-            &iri!(predicate).into(),
-            value,
-        )
+        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_triple(node, iri!(predicate), value.clone())
     }
 }
 

@@ -19,33 +19,28 @@ impl Target {
     where
         RDF: SRDFBuilder,
     {
+        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
-            Self::TargetNode(target_rdf_node) => rdf.add_triple(
-                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_TARGET_NODE.clone().into(),
-                &target_rdf_node.clone().into(),
-            ),
-            Self::TargetClass(target_rdf_node) => rdf.add_triple(
-                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_TARGET_CLASS.clone().into(),
-                &target_rdf_node.clone().into(),
-            ),
+            Self::TargetNode(target_rdf_node) => {
+                rdf.add_triple(node, SH_TARGET_NODE.clone(), target_rdf_node.clone())
+            }
+            Self::TargetClass(target_rdf_node) => {
+                rdf.add_triple(node, SH_TARGET_CLASS.clone(), target_rdf_node.clone())
+            }
             Self::TargetSubjectsOf(iri_ref) => rdf.add_triple(
-                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_TARGET_CLASS.clone().into(),
-                &iri_ref.get_iri().unwrap().clone().into(),
+                node,
+                SH_TARGET_CLASS.clone(),
+                iri_ref.get_iri().unwrap().clone(),
             ),
             Self::TargetObjectsOf(iri_ref) => rdf.add_triple(
-                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-                &SH_TARGET_CLASS.clone().into(),
-                &iri_ref.get_iri().unwrap().clone().into(),
+                node,
+                SH_TARGET_CLASS.clone(),
+                iri_ref.get_iri().unwrap().clone(),
             ),
             // TODO: check if this is fine
-            Self::TargetImplicitClass(target_rdf_node) => rdf.add_triple(
-                &rdf_node.clone().try_into().map_err(|_| unreachable!())?,
-                &RDF_TYPE.clone().into(),
-                &target_rdf_node.clone().into(),
-            ),
+            Self::TargetImplicitClass(target_rdf_node) => {
+                rdf.add_triple(node, RDF_TYPE.clone(), target_rdf_node.clone())
+            }
         }
     }
 }

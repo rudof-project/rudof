@@ -130,31 +130,31 @@ impl ValidationResult {
         RDF: SRDFBuilder + Sized,
     {
         rdf_writer
-            .add_type(&report_node, SH_VALIDATION_RESULT.clone().into())
+            .add_type(report_node.clone(), SH_VALIDATION_RESULT.clone())
             .map_err(|e| ReportError::ValidationReportError { msg: e.to_string() })?;
         rdf_writer
             .add_triple(
-                &report_node,
-                &SH_FOCUS_NODE.clone().into(),
-                &self.focus_node.clone().into(),
+                report_node.clone(),
+                SH_FOCUS_NODE.clone(),
+                self.focus_node.clone(),
             )
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding focus node to validation result: {e}"),
             })?;
         rdf_writer
             .add_triple(
-                &report_node,
-                &SH_SOURCE_CONSTRAINT_COMPONENT.clone().into(),
-                &self.constraint_component.clone().into(),
+                report_node.clone(),
+                SH_SOURCE_CONSTRAINT_COMPONENT.clone(),
+                self.constraint_component.clone(),
             )
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding source constraint component to validation result: {e}"),
             })?;
         rdf_writer
             .add_triple(
-                &report_node,
-                &SH_RESULT_SEVERITY.clone().into(),
-                &self.severity.clone().into(),
+                report_node.clone(),
+                SH_RESULT_SEVERITY.clone(),
+                self.severity.clone(),
             )
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding severity to validation result: {e}"),
@@ -164,18 +164,14 @@ impl ValidationResult {
             None => Object::str("No message"),
         };
         rdf_writer
-            .add_triple(
-                &report_node,
-                &SH_RESULT_MESSAGE.clone().into(),
-                &message.into(),
-            )
+            .add_triple(report_node.clone(), SH_RESULT_MESSAGE.clone(), message)
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error result message to validation result: {e}"),
             })?;
         if let Some(source) = &self.source {
             let source_term: RDF::Term = source.clone().into();
             rdf_writer
-                .add_triple(&report_node, &SH_SOURCE_SHAPE.clone().into(), &source_term)
+                .add_triple(report_node.clone(), SH_SOURCE_SHAPE.clone(), source_term)
                 .map_err(|e| ReportError::ValidationReportError {
                     msg: format!("Error adding source to validation result: {e}"),
                 })?;

@@ -364,25 +364,29 @@ impl SRDFBuilder for RdfData {
         todo!()
     }
 
-    fn add_triple(
-        &mut self,
-        _subj: &Self::Subject,
-        _pred: &Self::IRI,
-        _obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
+    fn add_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
         todo!()
     }
 
-    fn remove_triple(
-        &mut self,
-        _subj: &Self::Subject,
-        _pred: &Self::IRI,
-        _obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
+    fn remove_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
         todo!()
     }
 
-    fn add_type(&mut self, _node: &Self::Subject, _type_: Self::Term) -> Result<(), Self::Err> {
+    fn add_type<S, T>(&mut self, _node: S, _type_: T) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        T: Into<Self::Term>,
+    {
         todo!()
     }
 

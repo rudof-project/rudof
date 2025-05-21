@@ -20,23 +20,24 @@ pub trait SRDFBuilder: Query {
     fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err>;
 
     /// Adds an RDF triple to the current RDF graph
-    fn add_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err>;
+    fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>;
 
     /// Removes an RDF triple to the current RDF graph
-    fn remove_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err>;
+    fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>;
 
     /// Adds an `rdf:type` declaration to the current RDF graph
-    fn add_type(&mut self, node: &Self::Subject, type_: Self::Term) -> Result<(), Self::Err>;
+    fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        T: Into<Self::Term>;
 
     /// Adds an Blank node to the RDF graph and get the node identifier
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err>;

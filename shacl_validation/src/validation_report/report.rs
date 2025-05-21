@@ -91,14 +91,14 @@ impl ValidationReport {
                 msg: format!("Error adding prefix to RDF: {e}"),
             }
         })?;
-        let report_node = rdf_writer
+        let report_node: RDF::Subject = rdf_writer
             .add_bnode()
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error creating bnode: {e}"),
             })?
             .into();
         rdf_writer
-            .add_type(&report_node, shacl_ast::SH_VALIDATION_REPORT.clone().into())
+            .add_type(report_node.clone(), shacl_ast::SH_VALIDATION_REPORT.clone())
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
@@ -108,7 +108,7 @@ impl ValidationReport {
         if self.results.is_empty() {
             let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
             rdf_writer
-                .add_triple(&report_node, &conforms, &rdf_true)
+                .add_triple(report_node.clone(), conforms, rdf_true)
                 .map_err(|e| ReportError::ValidationReportError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
@@ -116,7 +116,7 @@ impl ValidationReport {
         } else {
             let rdf_false: <RDF as Rdf>::Term = Object::boolean(false).into();
             rdf_writer
-                .add_triple(&report_node, &conforms, &rdf_false)
+                .add_triple(report_node.clone(), conforms, rdf_false)
                 .map_err(|e| ReportError::ValidationReportError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
@@ -129,7 +129,11 @@ impl ValidationReport {
                         })?;
                 let result_node_term: <RDF as Rdf>::Term = result_node.into();
                 rdf_writer
-                    .add_triple(&report_node, &sh_result, &result_node_term.clone())
+                    .add_triple(
+                        report_node.clone(),
+                        sh_result.clone(),
+                        result_node_term.clone(),
+                    )
                     .map_err(|e| ReportError::ValidationReportError {
                         msg: format!("Error adding conforms to bnode: {e}"),
                     })?;

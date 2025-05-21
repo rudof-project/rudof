@@ -366,31 +366,36 @@ impl SRDFBuilder for SRDFGraph {
         }
     }
 
-    fn add_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
-        let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+    fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
+        let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
         self.graph.insert(&triple);
         Ok(())
     }
 
-    fn remove_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
-        let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+    fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
+        let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
         self.graph.remove(&triple);
         Ok(())
     }
 
-    fn add_type(&mut self, node: &Self::Subject, r#type: Self::Term) -> Result<(), Self::Err> {
-        let subject: Self::Subject = node.clone();
-        let triple = OxTriple::new(subject, rdf_type(), r#type.clone());
+    fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        T: Into<Self::Term>,
+    {
+        let subject: Self::Subject = node.into();
+        let type_: Self::Term = type_.into();
+        let triple = OxTriple::new(subject, rdf_type(), type_.clone());
         self.graph.insert(&triple);
         Ok(())
     }
@@ -669,7 +674,7 @@ mod tests {
         let knows = OxNamedNode::new_unchecked("http://example.org/knows");
         let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
 
-        graph.add_triple(&alice, &knows, &bob).unwrap();
+        graph.add_triple(alice, knows, bob).unwrap();
 
         assert_eq!(graph.len(), 1);
     }
