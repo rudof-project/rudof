@@ -7,6 +7,7 @@ use oxrdf::BlankNode as OxBlankNode;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::Subject as OxSubject;
+use oxrdf::SubjectRef;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 use prefixmap::PrefixMap;
@@ -94,6 +95,17 @@ impl Subject for OxSubject {
             OxSubject::BlankNode(_) => TermKind::BlankNode,
             #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => TermKind::Triple,
+        }
+    }
+}
+
+impl Subject for SubjectRef<'_> {
+    fn kind(&self) -> TermKind {
+        match self {
+            SubjectRef::NamedNode(_) => TermKind::Iri,
+            SubjectRef::BlankNode(_) => TermKind::BlankNode,
+            #[cfg(feature = "rdf-star")]
+            SubjectRef::Triple(_) => TermKind::Triple,
         }
     }
 }

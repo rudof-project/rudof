@@ -181,8 +181,8 @@ impl PropertyShape {
     where
         RDF: SRDFBuilder,
     {
-        let id: RDF::Subject = self.id.try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(&id, &SH_PROPERTY_SHAPE.clone())?;
+        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_type(id.clone(), SH_PROPERTY_SHAPE.clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
