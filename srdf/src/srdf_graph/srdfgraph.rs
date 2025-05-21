@@ -15,7 +15,8 @@ use tracing::debug;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
+    NamedNodeRef, Quad, Subject as OxSubject, SubjectRef, Term as OxTerm, TermRef,
+    Triple as OxTriple, TripleRef,
 };
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{prefixmap::*, PrefixMapError};
@@ -174,6 +175,25 @@ impl SRDFGraph {
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {
         OxNamedNode::new_unchecked(iri.as_str())
+    }
+
+    pub fn add_triple_ref<'a, S, P, O>(
+        &mut self,
+        subj: S,
+        pred: P,
+        obj: O,
+    ) -> Result<(), SRDFGraphError>
+    where
+        S: Into<SubjectRef<'a>>,
+        P: Into<NamedNodeRef<'a>>,
+        O: Into<TermRef<'a>>,
+    {
+        let subj: SubjectRef<'a> = subj.into();
+        let pred: NamedNodeRef<'a> = pred.into();
+        let obj: TermRef<'a> = obj.into();
+        let triple = TripleRef::new(subj, pred, obj);
+        self.graph.insert(triple);
+        Ok(())
     }
 
     pub fn merge_from_path<P: AsRef<Path>>(
@@ -861,5 +881,15 @@ mod tests {
         let graph = SRDFGraph::default();
         let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
         assert_eq!(iri().parse(&x, graph).unwrap(), x)
+    }
+
+    #[test]
+    fn test_add_triple_ref() {
+        let mut graph = SRDFGraph::default();
+        let s = OxNamedNode::new_unchecked("http://example.org/x");
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let o = OxNamedNode::new_unchecked("http://example.org/y");
+        graph.add_triple_ref(&s, &p, &o).unwrap();
+        assert_eq!(graph.len(), 1);
     }
 }
