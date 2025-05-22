@@ -103,10 +103,10 @@ impl ValidationReport {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
 
-        let conforms: <RDF as Rdf>::IRI = shacl_ast::SH_CONFORMS.clone().into();
-        let sh_result: <RDF as Rdf>::IRI = shacl_ast::SH_RESULT.clone().into();
+        let conforms: <RDF as Rdf>::IRI = shacl_ast::SH_CONFORMS.clone();
+        let sh_result: <RDF as Rdf>::IRI = shacl_ast::SH_RESULT.clone();
         if self.results.is_empty() {
-            let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
+            let rdf_true = Object::boolean(true);
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_true)
                 .map_err(|e| ReportError::ValidationReportError {
@@ -114,7 +114,7 @@ impl ValidationReport {
                 })?;
             return Ok(());
         } else {
-            let rdf_false: <RDF as Rdf>::Term = Object::boolean(false).into();
+            let rdf_false = Object::boolean(false);
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_false)
                 .map_err(|e| ReportError::ValidationReportError {
