@@ -8,6 +8,16 @@ pub struct Pred {
     iri: IriS,
 }
 
+impl Pred {
+    pub fn new(iri: IriS) -> Self {
+        Pred { iri }
+    }
+
+    pub fn iri(&self) -> &IriS {
+        &self.iri
+    }
+}
+
 impl Display for Pred {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.iri)

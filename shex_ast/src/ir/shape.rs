@@ -4,30 +4,31 @@ use super::{
     sem_act::SemAct,
 };
 use crate::{Node, Pred, ShapeLabelIdx};
-use iri_s::IriS;
 use itertools::Itertools;
 use rbe::RbeTable;
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {
     closed: bool,
-    extra: Vec<IriS>,
+    extra: Vec<Pred>,
     rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
     sem_acts: Vec<SemAct>,
     annotations: Vec<Annotation>,
-    preds: Vec<IriS>,
+    preds: Vec<Pred>,
+    references: HashMap<Pred, Vec<ShapeLabelIdx>>,
     display: String,
 }
 
 impl Shape {
     pub fn new(
         closed: bool,
-        extra: Vec<IriS>,
+        extra: Vec<Pred>,
         rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
-        preds: Vec<IriS>,
+        preds: Vec<Pred>,
+        references: HashMap<Pred, Vec<ShapeLabelIdx>>,
         display: String,
     ) -> Self {
         Shape {
@@ -37,12 +38,17 @@ impl Shape {
             sem_acts,
             annotations,
             preds,
+            references,
             display,
         }
     }
 
-    pub fn preds(&self) -> Vec<IriS> {
+    pub fn preds(&self) -> Vec<Pred> {
         self.preds.clone()
+    }
+
+    pub fn references(&self) -> &HashMap<Pred, Vec<ShapeLabelIdx>> {
+        &self.references
     }
 
     pub fn rbe_table(&self) -> &RbeTable<Pred, Node, ShapeLabelIdx> {

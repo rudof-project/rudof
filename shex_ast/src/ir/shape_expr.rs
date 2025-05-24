@@ -3,8 +3,8 @@ use super::{
     node_constraint::NodeConstraint,
     shape::Shape,
 };
-use crate::ShapeLabelIdx;
-use std::fmt::Display;
+use crate::{Pred, ShapeLabelIdx};
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ShapeExpr {
@@ -32,6 +32,25 @@ pub enum ShapeExpr {
 impl ShapeExpr {
     pub fn mk_ref(idx: ShapeLabelIdx) -> ShapeExpr {
         ShapeExpr::Ref { idx }
+    }
+
+    pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        match self {
+            ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().flat_map(|e| e.references()).collect(),
+            ShapeExpr::ShapeAnd { exprs, .. } => {
+                exprs.iter().flat_map(|e| e.references()).collect()
+            }
+            ShapeExpr::ShapeNot { expr, .. } => expr.references(),
+            ShapeExpr::NodeConstraint(nc) => HashMap::new(),
+            ShapeExpr::Shape(s) => s.references(),
+            ShapeExpr::External {} => HashMap::new(),
+            ShapeExpr::Ref { idx } => {
+                let mut map = HashMap::new();
+                map.insert(Pred::default(), vec![*idx]);
+                map
+            }
+            ShapeExpr::Empty => HashMap::new(),
+        }
     }
 
     /// Adds PosNeg edges to the dependency graph.

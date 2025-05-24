@@ -207,6 +207,22 @@ impl Engine {
         }
     }
 
+    pub(crate) fn dep(
+        &self,
+        node: &Node,
+        label: &ShapeLabelIdx,
+    ) -> impl Iterator<Item = &(Node, ShapeLabelIdx)> {
+        // Search all pairs (node', label') in the shape expr referenced by label such that there is a triple constraint (pred, ref)
+        // and the neighbours of node are (pred, node')
+        std::iter::empty::<&(Node, ShapeLabelIdx)>()
+    }
+
+    /*     pub(crate) fn prove(&self, node: &Node, label: &ShapeLabelIdx, hyp: &Hyp) -> bool {
+        // Implements algorithm presented in page 14 of this paper:
+        // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
+        todo!()
+    } */
+
     pub(crate) fn check_node_shape_expr<S>(
         &mut self,
         node: &Node,

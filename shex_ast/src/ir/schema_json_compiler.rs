@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
@@ -195,6 +197,7 @@ impl SchemaJsonCompiler {
                     }
                 };
                 let preds = Self::get_preds_shape(shape);
+                let references = self.get_references_shape(shape, compiled_schema);
 
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal".to_string(),
@@ -209,6 +212,7 @@ impl SchemaJsonCompiler {
                     Self::cnv_sem_acts(&shape.sem_acts),
                     Self::cnv_annotations(&shape.annotations),
                     preds,
+                    references,
                     display,
                 );
                 Ok(ShapeExpr::Shape(shape))
@@ -260,12 +264,12 @@ impl SchemaJsonCompiler {
         }
     }
 
-    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
+    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<Pred>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
                 let nm = cnv_iri_ref(iri)?;
-                vs.push(nm);
+                vs.push(Pred::new(nm));
             }
             Ok(vs)
         } else {
@@ -456,14 +460,14 @@ impl SchemaJsonCompiler {
         todo("shape_expr2match_cond")
     }*/
 
-    fn get_preds_shape(shape: &ast::Shape) -> Vec<IriS> {
+    fn get_preds_shape(shape: &ast::Shape) -> Vec<Pred> {
         match shape.triple_expr() {
             None => Vec::new(),
             Some(te) => Self::get_preds_triple_expr(&te),
         }
     }
 
-    fn get_preds_triple_expr(te: &ast::TripleExpr) -> Vec<IriS> {
+    fn get_preds_triple_expr(te: &ast::TripleExpr) -> Vec<Pred> {
         match te {
             ast::TripleExpr::EachOf { expressions, .. } => expressions
                 .iter()
@@ -475,7 +479,60 @@ impl SchemaJsonCompiler {
                 .collect(),
             ast::TripleExpr::TripleConstraint { predicate, .. } => {
                 let pred = iri_ref2iri_s(predicate);
-                vec![pred]
+                vec![Pred::new(pred)]
+            }
+            ast::TripleExpr::TripleExprRef(_) => todo!(),
+        }
+    }
+
+    fn get_references_shape(
+        &self,
+        shape: &ast::Shape,
+        schema: &SchemaIR,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        match shape.triple_expr() {
+            None => HashMap::new(),
+            Some(te) => self.get_references_triple_expr(&te, schema),
+        }
+    }
+
+    fn get_references_triple_expr(
+        &self,
+        te: &ast::TripleExpr,
+        schema: &SchemaIR,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        match te {
+            ast::TripleExpr::EachOf { expressions, .. } => expressions
+                .iter()
+                .flat_map(|te| self.get_references_triple_expr(&te.te, schema))
+                .collect(),
+            ast::TripleExpr::OneOf { expressions, .. } => expressions
+                .iter()
+                .flat_map(|te| self.get_references_triple_expr(&te.te, schema))
+                .collect(),
+            ast::TripleExpr::TripleConstraint {
+                predicate,
+                value_expr,
+                ..
+            } => {
+                let pred = iri_ref2iri_s(predicate);
+                match value_expr {
+                    Some(ve) => match ve.as_ref() {
+                        ast::ShapeExpr::Ref(sref) => {
+                            let label = self
+                                .shape_expr_label_to_shape_label(sref)
+                                .expect(format!("Convert shape label to IR label {sref}").as_str());
+                            let idx = schema.get_shape_label_idx(&label).expect(
+                                format!("Failed to get shape label index for {label}").as_str(),
+                            );
+                            let mut map = HashMap::new();
+                            map.insert(Pred::new(pred), vec![idx]);
+                            map
+                        }
+                        _ => HashMap::new(),
+                    },
+                    None => HashMap::new(),
+                }
             }
             ast::TripleExpr::TripleExprRef(_) => todo!(),
         }

@@ -1,10 +1,11 @@
+use crate::Pred;
 use crate::{
     ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, CResult,
     SchemaIRError, ShapeExprLabel, ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 use super::dependency_graph::{DependencyGraph, PosNeg};
@@ -124,6 +125,45 @@ impl SchemaIR {
 
     pub fn shapes(&self) -> impl Iterator<Item = &(Option<ShapeLabel>, ShapeExpr)> {
         self.shapes.values()
+    }
+
+    // Returns a map of predicates to shape label indices that reference the given index
+    pub fn references(&self, idx: &ShapeLabelIdx) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        let visited = HashSet::new();
+        self.references_visited(idx, visited)
+    }
+
+    //
+    pub fn references_visited(
+        &self,
+        idx: &ShapeLabelIdx,
+        mut visited: HashSet<ShapeLabelIdx>,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        if let Some((_label, shape_expr)) = self.find_shape_idx(idx) {
+            match shape_expr {
+                ShapeExpr::ShapeOr { exprs, .. } => {
+                    exprs.iter().flat_map(|e| e.references()).collect()
+                }
+                ShapeExpr::ShapeAnd { exprs, .. } => {
+                    exprs.iter().flat_map(|e| e.references()).collect()
+                }
+                ShapeExpr::ShapeNot { expr, .. } => expr.references(),
+                ShapeExpr::NodeConstraint(nc) => HashMap::new(),
+                ShapeExpr::Shape(s) => s.references().clone(),
+                ShapeExpr::External {} => HashMap::new(),
+                ShapeExpr::Ref { idx } => {
+                    if visited.contains(idx) {
+                        // If we have already visited this index, we return an empty map to avoid infinite recursion
+                        return HashMap::new();
+                    }
+                    visited.insert(*idx);
+                    self.references_visited(idx, visited)
+                }
+                ShapeExpr::Empty => HashMap::new(),
+            }
+        } else {
+            HashMap::new()
+        }
     }
 
     #[allow(dead_code)]
