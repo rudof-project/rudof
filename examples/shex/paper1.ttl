@@ -1,0 +1,11 @@
+prefix : <http://example.org/> 
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:n1 :a :n2 .
+:n1 :b 4 .
+
+:n2 :c :n3 .
+:n3 :c :n2 .
+
+:n4 :a :n2  .
+:n4 :b "hi" .

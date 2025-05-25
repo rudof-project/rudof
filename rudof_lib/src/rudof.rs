@@ -534,7 +534,7 @@ impl Rudof {
                 Some(shapemap) => {
                     let schema = validator.schema().clone();
                     let result = validator
-                        .validate_shapemap(
+                        .validate_shapemap2(
                             shapemap,
                             &self.rdf_data,
                             &schema,

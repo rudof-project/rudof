@@ -132,6 +132,24 @@ impl Validator {
         Ok(result)
     }
 
+    pub fn validate_shapemap2<S>(
+        &self,
+        shapemap: &QueryShapeMap,
+        rdf: &S,
+        schema: &SchemaIR,
+        maybe_nodes_prefixmap: &Option<PrefixMap>,
+        maybe_shapes_prefixmap: &Option<PrefixMap>,
+    ) -> Result<ResultShapeMap>
+    where
+        S: Query,
+    {
+        let mut engine = Engine::new(&self.config);
+        self.fill_pending(&mut engine, shapemap, rdf, schema)?;
+        engine.validate_pending(rdf, schema)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
+        Ok(result)
+    }
+
     fn fill_pending<S>(
         &self,
         engine: &mut Engine,
@@ -207,29 +225,6 @@ impl Validator {
             }
         }
     }
-
-    /* This method should be internal as it exposes the engine
-    pub fn get_result(
-        &self,
-        engine: &mut Engine,
-        node: &Node,
-        shape: &ShapeLabel,
-    ) -> Result<ResultValue> {
-        if let Some(idx) = self.schema.find_shape_label_idx(shape) {
-            let pos_atom = (node.clone(), *idx);
-            let atom = Atom::pos(&pos_atom);
-            Ok(engine.get_result(&atom))
-        } else {
-            Err(ValidatorError::NotFoundShapeLabel {
-                shape: shape.clone(),
-            })
-        }
-    } */
-
-    /*pub fn with_max_steps(mut self, max_steps: usize) -> Self {
-        self.runner.set_max_steps(max_steps);
-        self
-    }*/
 
     fn get_idx(&self, shape: &ShapeLabel) -> Result<ShapeLabelIdx> {
         match self.schema.find_label(shape) {

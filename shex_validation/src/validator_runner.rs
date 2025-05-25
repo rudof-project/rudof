@@ -69,6 +69,28 @@ impl Engine {
         self.processing.swap_remove(atom);
     }
 
+    pub(crate) fn validate_pending(&mut self, rdf: &impl Query, schema: &SchemaIR) -> Result<()> {
+        while let Some(atom) = self.pop_pending() {
+            match atom.clone() {
+                Atom::Pos((node, idx)) => {
+                    let mut hyp = Vec::new();
+                    match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
+                        true => {
+                            self.add_checked_pos(atom, Vec::new());
+                        }
+                        false => {
+                            self.add_checked_neg(atom, Vec::new());
+                        }
+                    }
+                }
+                Atom::Neg((node, idx)) => {
+                    todo!()
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn add_checked_pos(&mut self, atom: Atom, reasons: Vec<Reason>) {
         let new_atom = atom.clone();
         match atom {
@@ -83,14 +105,14 @@ impl Engine {
     }
 
     pub(crate) fn add_checked_neg(&mut self, atom: Atom, errors: Vec<ValidatorError>) {
-        let new_atom = atom.clone();
-        match atom {
+        match atom.clone() {
             Atom::Neg(na) => {
-                self.checked.insert(new_atom);
+                self.checked.insert(atom);
                 self.add_errors(na, errors)
             }
-            Atom::Pos(_na) => {
-                todo!()
+            Atom::Pos(na) => {
+                self.checked.insert(atom.negated());
+                self.add_errors(na, errors)
             }
         }
     }
@@ -291,7 +313,64 @@ impl Engine {
         rdf: &impl Query,
         typing: HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<bool> {
-        Ok(true)
+        match se {
+            ShapeExpr::ShapeOr { exprs, display } => todo!(),
+            ShapeExpr::ShapeAnd { exprs, display } => todo!(),
+            ShapeExpr::ShapeNot { expr, .. } => {
+                let result = self.check_node_shape_expr2(node, expr, schema, rdf, typing)?;
+                if result {
+                    Ok(false) // ShapeNot is false if the inner shape is true
+                } else {
+                    Ok(true) // ShapeNot is true if the inner shape is false
+                }
+            }
+            ShapeExpr::NodeConstraint(nc) => {
+                match nc.cond().matches(node) {
+                    Ok(_pending) => {
+                        // TODO: Add pending to pending nodes
+                        // I think this is not needed because node constraints will not generate pending nodes
+                        Ok(true)
+                    }
+                    Err(err) => Ok(false),
+                }
+            }
+            ShapeExpr::Shape(shape) => self.check_node_shape2(node, shape, schema, rdf, typing),
+            ShapeExpr::External {} => todo!(),
+            ShapeExpr::Ref { idx } => {
+                if typing.contains(&(node.clone(), *idx)) {
+                    // If the node is already in the typing, we can return true
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
+            ShapeExpr::Empty => Ok(true),
+        }
+    }
+
+    pub(crate) fn check_node_shape2(
+        &self,
+        node: &Node,
+        shape: &Shape,
+        _schema: &SchemaIR,
+        rdf: &impl Query,
+        _typing: HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<bool> {
+        let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
+        if shape.is_closed() && !remainder.is_empty() {
+            debug!("Closed shape with remainder preds: {remainder:?}");
+            Ok(false)
+        } else {
+            debug!("Neighs of {node}: {values:?}");
+            let result_iter = shape.rbe_table().matches(values)?;
+            for result in result_iter {
+                match result {
+                    Ok(_) => return Ok(true),
+                    Err(_) => {}
+                }
+            }
+            Ok(false)
+        }
     }
 
     pub(crate) fn check_node_shape_expr<S>(

@@ -1,0 +1,7 @@
+prefix : <http://example.org/> 
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:L1 NOT @:L2 
+:L2 { :a @:L3; :b xsd:string }
+:L3 { :c @:L4 }
+:L4 { :c @:L3 }
