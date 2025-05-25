@@ -13,6 +13,12 @@ impl Pred {
         Pred { iri }
     }
 
+    pub fn new_unchecked(str: &str) -> Self {
+        Pred {
+            iri: IriS::new_unchecked(str),
+        }
+    }
+
     pub fn iri(&self) -> &IriS {
         &self.iri
     }

@@ -6,7 +6,6 @@ use crate::ValidatorConfig;
 use either::Either;
 use indexmap::IndexSet;
 use iri_s::iri;
-use iri_s::IriS;
 use rbe::MatchTableIter;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
@@ -19,6 +18,7 @@ use srdf::Iri as _;
 use srdf::{Object, Query};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -210,18 +210,89 @@ impl Engine {
     pub(crate) fn dep(
         &self,
         node: &Node,
-        label: &ShapeLabelIdx,
-    ) -> impl Iterator<Item = &(Node, ShapeLabelIdx)> {
-        // Search all pairs (node', label') in the shape expr referenced by label such that there is a triple constraint (pred, ref)
+        idx: &ShapeLabelIdx,
+        schema: &SchemaIR,
+        rdf: &impl Query,
+    ) -> Result<HashSet<(Node, ShapeLabelIdx)>> {
+        // Search all pairs (node', idx') in the shape expr referenced by idx such that there is a triple constraint (pred, ref)
         // and the neighbours of node are (pred, node')
-        std::iter::empty::<&(Node, ShapeLabelIdx)>()
+        if let Some((_label, se)) = schema.find_shape_idx(idx) {
+            let references = se.references();
+            let preds = references
+                .keys()
+                .map(|pred| pred.clone())
+                .collect::<Vec<_>>();
+            let (neighs, _remainder) = self.neighs(node, preds, rdf)?;
+            let mut dep = HashSet::new();
+            for (pred, neigh_node) in neighs {
+                if let Some(idx_list) = references.get(&pred) {
+                    for idx in idx_list {
+                        dep.insert((neigh_node.clone(), *idx));
+                    }
+                } else {
+                    debug!("No references found for predicate {pred}");
+                }
+            }
+            Ok(dep)
+        } else {
+            Err(ValidatorError::ShapeExprNotFound { idx: *idx })
+        }
     }
 
-    /*     pub(crate) fn prove(&self, node: &Node, label: &ShapeLabelIdx, hyp: &Hyp) -> bool {
+    pub(crate) fn prove(
+        &self,
+        node: &Node,
+        label: &ShapeLabelIdx,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
+        schema: &SchemaIR,
+        rdf: &impl Query,
+    ) -> Result<bool> {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        todo!()
-    } */
+        hyp.push((node.clone(), *label));
+        let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> = hyp
+            .iter()
+            .map(|(n, l)| (n.clone(), *l))
+            .collect::<HashSet<_>>();
+        let mut matched = HashSet::new();
+        let candidates = self.dep(node, label, schema, rdf)?;
+        let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
+        for (n1, l1) in cleaned_candidates {
+            if self.prove(&n1, &l1, hyp, schema, rdf)? {
+                matched.insert((n1.clone(), l1));
+            }
+        }
+        let typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
+        let result = self.check_node_idx(node, label, schema, rdf, typing)?;
+        hyp.pop();
+        Ok(result)
+    }
+
+    pub(crate) fn check_node_idx(
+        &self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        schema: &SchemaIR,
+        rdf: &impl Query,
+        typing: HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<bool> {
+        if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
+            self.check_node_shape_expr2(node, se, schema, rdf, typing)
+        } else {
+            Err(ValidatorError::ShapeExprNotFound { idx: *idx })
+        }
+    }
+
+    pub(crate) fn check_node_shape_expr2(
+        &self,
+        node: &Node,
+        se: &ShapeExpr,
+        schema: &SchemaIR,
+        rdf: &impl Query,
+        typing: HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<bool> {
+        Ok(true)
+    }
 
     pub(crate) fn check_node_shape_expr<S>(
         &mut self,
@@ -427,12 +498,12 @@ impl Engine {
         Node::from(term.clone().into())
     }
 
-    fn neighs<S>(&self, node: &Node, preds: Vec<IriS>, rdf: &S) -> Result<Neighs>
+    fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
         S: Query,
     {
         let node = self.get_rdf_node(node, rdf);
-        let list: Vec<_> = preds.iter().map(|pred| pred.clone().into()).collect();
+        let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
         if let Ok(subject) = node.try_into() {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)

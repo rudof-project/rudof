@@ -1,4 +1,5 @@
 pub mod annotation;
+pub mod ast2ir;
 pub mod dependency_graph;
 pub mod node_constraint;
 pub mod node_kind;
@@ -7,7 +8,6 @@ pub mod preds;
 pub mod schema;
 pub mod schema_ir;
 pub mod schema_ir_error;
-pub mod schema_json_compiler;
 pub mod sem_act;
 pub mod shape;
 pub mod shape_expr;

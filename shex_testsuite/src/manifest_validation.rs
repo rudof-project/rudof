@@ -7,7 +7,7 @@ use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::{ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, Node};
+use shex_ast::{ast::Schema as SchemaJson, ir::ast2ir::AST2IR, Node};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
 use srdf::literal::Literal;
@@ -190,7 +190,7 @@ impl ValidationEntry {
         let shape = parse_maybe_shape(&self.action.shape)?;
         debug!("Shape: {}", shape);
 
-        let mut compiler = SchemaJsonCompiler::new();
+        let mut compiler = AST2IR::new();
         let mut compiled_schema = SchemaIR::new();
         compiler
             .compile(&schema, &mut compiled_schema)

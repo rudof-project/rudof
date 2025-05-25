@@ -1,6 +1,7 @@
 use iri_s::{IriS, IriSError};
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
+use thiserror::Error;
 
 use crate::BNode;
 
@@ -33,6 +34,30 @@ impl Display for ShapeLabel {
             ShapeLabel::Start => write!(dest, "Start"),
         }
     }
+}
+
+impl TryFrom<&str> for ShapeLabel {
+    type Error = ShapeLabelError;
+
+    #[allow(irrefutable_let_patterns)]
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        if s == "Start" {
+            Ok(ShapeLabel::Start)
+        } else if let Ok(iri) = IriS::from_str(s) {
+            Ok(ShapeLabel::Iri(iri))
+        } else if let Ok(bnode) = BNode::try_from(s) {
+            Ok(ShapeLabel::BNode(bnode))
+        } else {
+            Err(ShapeLabelError::InvalidStr(s.to_string()))
+        }
+    }
+}
+
+#[derive(Error, Debug, Clone)]
+
+pub enum ShapeLabelError {
+    #[error("Invalid ShapeLabel string: {0}")]
+    InvalidStr(String),
 }
 
 impl Serialize for ShapeLabel {

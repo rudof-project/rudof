@@ -36,13 +36,27 @@ impl ShapeExpr {
 
     pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
-            ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().flat_map(|e| e.references()).collect(),
+            ShapeExpr::ShapeOr { exprs, .. } => {
+                exprs.into_iter().fold(HashMap::new(), |mut acc, expr| {
+                    let refs = expr.references();
+                    for (pred, idxs) in refs {
+                        acc.entry(pred).or_default().extend(idxs);
+                    }
+                    acc
+                })
+            }
             ShapeExpr::ShapeAnd { exprs, .. } => {
-                exprs.iter().flat_map(|e| e.references()).collect()
+                exprs.into_iter().fold(HashMap::new(), |mut acc, expr| {
+                    let refs = expr.references();
+                    for (pred, idxs) in refs {
+                        acc.entry(pred).or_default().extend(idxs);
+                    }
+                    acc
+                })
             }
             ShapeExpr::ShapeNot { expr, .. } => expr.references(),
-            ShapeExpr::NodeConstraint(nc) => HashMap::new(),
-            ShapeExpr::Shape(s) => s.references(),
+            ShapeExpr::NodeConstraint(_nc) => HashMap::new(),
+            ShapeExpr::Shape(s) => s.references().clone(),
             ShapeExpr::External {} => HashMap::new(),
             ShapeExpr::Ref { idx } => {
                 let mut map = HashMap::new();

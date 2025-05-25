@@ -33,11 +33,12 @@ lazy_static! {
 }
 
 #[derive(Debug, Default)]
-pub struct SchemaJsonCompiler {
+/// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
+pub struct AST2IR {
     shape_decls_counter: usize,
 }
 
-impl SchemaJsonCompiler {
+impl AST2IR {
     pub fn new() -> Self {
         Self::default()
     }
@@ -502,14 +503,24 @@ impl SchemaJsonCompiler {
         schema: &SchemaIR,
     ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match te {
-            ast::TripleExpr::EachOf { expressions, .. } => expressions
-                .iter()
-                .flat_map(|te| self.get_references_triple_expr(&te.te, schema))
-                .collect(),
-            ast::TripleExpr::OneOf { expressions, .. } => expressions
-                .iter()
-                .flat_map(|te| self.get_references_triple_expr(&te.te, schema))
-                .collect(),
+            ast::TripleExpr::EachOf { expressions, .. } => {
+                expressions.into_iter().fold(HashMap::new(), |mut acc, te| {
+                    let refs = self.get_references_triple_expr(&te.te, schema);
+                    for (pred, idxs) in refs {
+                        acc.entry(pred).or_default().extend(idxs);
+                    }
+                    acc
+                })
+            }
+            ast::TripleExpr::OneOf { expressions, .. } => {
+                expressions.into_iter().fold(HashMap::new(), |mut acc, te| {
+                    let refs = self.get_references_triple_expr(&te.te, schema);
+                    for (pred, idxs) in refs {
+                        acc.entry(pred).or_default().extend(idxs);
+                    }
+                    acc
+                })
+            }
             ast::TripleExpr::TripleConstraint {
                 predicate,
                 value_expr,

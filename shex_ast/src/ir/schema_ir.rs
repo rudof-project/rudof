@@ -1,7 +1,7 @@
 use crate::Pred;
 use crate::{
-    ast::Schema as SchemaJson, ir::schema_json_compiler::SchemaJsonCompiler, CResult,
-    SchemaIRError, ShapeExprLabel, ShapeLabelIdx,
+    ast::Schema as SchemaJson, ir::ast2ir::AST2IR, CResult, SchemaIRError, ShapeExprLabel,
+    ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -56,7 +56,7 @@ impl SchemaIR {
     }
 
     pub fn from_schema_json(&mut self, schema_json: &SchemaJson) -> Result<()> {
-        let mut schema_json_compiler = SchemaJsonCompiler::new();
+        let mut schema_json_compiler = AST2IR::new();
         schema_json_compiler.compile(schema_json, self)?;
         Ok(())
     }
@@ -141,16 +141,6 @@ impl SchemaIR {
     ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         if let Some((_label, shape_expr)) = self.find_shape_idx(idx) {
             match shape_expr {
-                ShapeExpr::ShapeOr { exprs, .. } => {
-                    exprs.iter().flat_map(|e| e.references()).collect()
-                }
-                ShapeExpr::ShapeAnd { exprs, .. } => {
-                    exprs.iter().flat_map(|e| e.references()).collect()
-                }
-                ShapeExpr::ShapeNot { expr, .. } => expr.references(),
-                ShapeExpr::NodeConstraint(nc) => HashMap::new(),
-                ShapeExpr::Shape(s) => s.references().clone(),
-                ShapeExpr::External {} => HashMap::new(),
                 ShapeExpr::Ref { idx } => {
                     if visited.contains(idx) {
                         // If we have already visited this index, we return an empty map to avoid infinite recursion
@@ -159,7 +149,7 @@ impl SchemaIR {
                     visited.insert(*idx);
                     self.references_visited(idx, visited)
                 }
-                ShapeExpr::Empty => HashMap::new(),
+                _ => shape_expr.references(),
             }
         } else {
             HashMap::new()
@@ -276,8 +266,12 @@ impl Display for SchemaIR {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
+    use iri_s::iri;
+
     use super::SchemaIR;
-    use crate::ast::Schema as SchemaJson;
+    use crate::{ast::Schema as SchemaJson, ir::shape_label::ShapeLabel, Pred, ShapeLabelIdx};
 
     #[test]
     fn test_find_component() {
@@ -299,9 +293,141 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut compiled_schema = SchemaIR::new();
-        compiled_schema.from_schema_json(&schema_json).unwrap();
-        //        let shape = compiled_schema.get
+        let mut ir = SchemaIR::new();
+        ir.from_schema_json(&schema_json).unwrap();
+        println!("Schema IR: {ir}");
+        let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
+        let s1 = ir
+            .shape_label_from_idx(&ir.get_shape_label_idx(&s1_label).unwrap())
+            .unwrap();
+        assert_eq!(s1, &s1_label);
+    }
+
+    #[test]
+    fn test_ir_references() {
+        let str = r#"{ "type": "Schema",
+            "shapes": [{
+        "type": "ShapeDecl",
+        "id": "http://example.org/S",
+        "shapeExpr": {
+            "type": "Shape",
+            "expression": {
+            "type": "EachOf",
+            "expressions": [{
+              "type": "TripleConstraint",
+              "predicate": "http://example.org/p",
+              "valueExpr": "http://example.org/T"
+            },
+            {
+              "type": "TripleConstraint",
+              "predicate": "http://example.org/p",
+              "valueExpr": "http://example.org/U"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/T",
+      "shapeExpr": {
+        "type": "Shape"
+      }
+    },
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/U",
+      "shapeExpr": {
+        "type": "Shape"
+      }
+    }
+  ],
+  "@context": "http://www.w3.org/ns/shex.jsonld"
+}"#;
+        let schema: SchemaJson = serde_json::from_str(str).unwrap();
+        let mut ir = SchemaIR::new();
+        ir.from_schema_json(&schema).unwrap();
+        println!("Schema IR: {ir}");
+        let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
+        let idx = ir.get_shape_label_idx(&s).unwrap();
+        let references = ir.references(&idx);
+        let expected: HashMap<Pred, Vec<ShapeLabelIdx>> = vec![(
+            Pred::new_unchecked("http://example.org/p"),
+            vec![
+                ShapeLabelIdx::from(1), // T
+                ShapeLabelIdx::from(2), // U
+            ],
+        )]
+        .into_iter()
+        .collect();
+        assert_eq!(references, expected);
+    }
+
+    #[test]
+    fn test_ir_references_and() {
+        let str = r#"{
+  "type": "Schema",
+  "shapes": [
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/S",
+      "shapeExpr": {
+        "type": "ShapeAnd",
+        "shapeExprs": [
+          {
+            "type": "Shape",
+            "expression": {
+              "type": "TripleConstraint",
+              "predicate": "http://example.org/p",
+              "valueExpr": "http://example.org/T"
+            }
+          },
+          {
+            "type": "Shape",
+            "expression": {
+              "type": "TripleConstraint",
+              "predicate": "http://example.org/p",
+              "valueExpr": "http://example.org/U"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/T",
+      "shapeExpr": {
+        "type": "Shape"
+      }
+    },
+    {
+      "type": "ShapeDecl",
+      "id": "http://example.org/U",
+      "shapeExpr": {
+        "type": "Shape"
+      }
+    }
+  ],
+  "@context": "http://www.w3.org/ns/shex.jsonld"
+}"#;
+        let schema: SchemaJson = serde_json::from_str(str).unwrap();
+        let mut ir = SchemaIR::new();
+        ir.from_schema_json(&schema).unwrap();
+        let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
+        let idx = ir.get_shape_label_idx(&s).unwrap();
+        println!("Schema IR: {ir}");
+        println!("Idx: {idx}");
+        let references = ir.references(&idx);
+        let expected: HashMap<Pred, Vec<ShapeLabelIdx>> = vec![(
+            Pred::new_unchecked("http://example.org/p"),
+            vec![
+                ShapeLabelIdx::from(1), // T
+                ShapeLabelIdx::from(2), // U
+            ],
+        )]
+        .into_iter()
+        .collect();
+        assert_eq!(references, expected);
     }
 
     /*#[test]
