@@ -83,7 +83,7 @@ impl Engine {
                         }
                     }
                 }
-                Atom::Neg((node, idx)) => {
+                Atom::Neg((_node, _idx)) => {
                     todo!()
                 }
             }
@@ -240,10 +240,7 @@ impl Engine {
         // and the neighbours of node are (pred, node')
         if let Some((_label, se)) = schema.find_shape_idx(idx) {
             let references = se.references();
-            let preds = references
-                .keys()
-                .map(|pred| pred.clone())
-                .collect::<Vec<_>>();
+            let preds = references.keys().cloned().collect::<Vec<_>>();
             let (neighs, _remainder) = self.neighs(node, preds, rdf)?;
             let mut dep = HashSet::new();
             for (pred, neigh_node) in neighs {
@@ -284,8 +281,8 @@ impl Engine {
                 matched.insert((n1.clone(), l1));
             }
         }
-        let typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
-        let result = self.check_node_idx(node, label, schema, rdf, typing)?;
+        let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
+        let result = self.check_node_idx(node, label, schema, rdf, &mut typing)?;
         hyp.pop();
         Ok(result)
     }
@@ -296,28 +293,56 @@ impl Engine {
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
         rdf: &impl Query,
-        typing: HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<bool> {
         if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
-            self.check_node_shape_expr2(node, se, schema, rdf, typing)
+            self.check_node_shape_expr(node, se, schema, rdf, typing)
         } else {
             Err(ValidatorError::ShapeExprNotFound { idx: *idx })
         }
     }
 
-    pub(crate) fn check_node_shape_expr2(
+    pub(crate) fn check_node_shape_expr(
         &self,
         node: &Node,
         se: &ShapeExpr,
         schema: &SchemaIR,
         rdf: &impl Query,
-        typing: HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<bool> {
         match se {
-            ShapeExpr::ShapeOr { exprs, display } => todo!(),
-            ShapeExpr::ShapeAnd { exprs, display } => todo!(),
+            ShapeExpr::ShapeAnd { exprs, .. } => {
+                // let mut reasons_collection = Vec::new();
+                for e in exprs {
+                    let result = self.check_node_shape_expr(node, e, schema, rdf, typing)?;
+                    match result {
+                        false => {
+                            return Ok(false);
+                        }
+                        true => {
+                            // reasons_collection.push(reasons);
+                        }
+                    }
+                }
+                Ok(true)
+            }
+            ShapeExpr::ShapeOr { exprs, .. } => {
+                // let mut errors_collection = Vec::new();
+                for e in exprs {
+                    let result = self.check_node_shape_expr(node, e, schema, rdf, typing)?;
+                    match result {
+                        false => {
+                            // errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
+                        }
+                        true => {
+                            return Ok(true);
+                        }
+                    }
+                }
+                Ok(false)
+            }
             ShapeExpr::ShapeNot { expr, .. } => {
-                let result = self.check_node_shape_expr2(node, expr, schema, rdf, typing)?;
+                let result = self.check_node_shape_expr(node, expr, schema, rdf, typing)?;
                 if result {
                     Ok(false) // ShapeNot is false if the inner shape is true
                 } else {
@@ -331,11 +356,14 @@ impl Engine {
                         // I think this is not needed because node constraints will not generate pending nodes
                         Ok(true)
                     }
-                    Err(err) => Ok(false),
+                    Err(_err) => Ok(false),
                 }
             }
-            ShapeExpr::Shape(shape) => self.check_node_shape2(node, shape, schema, rdf, typing),
-            ShapeExpr::External {} => todo!(),
+            ShapeExpr::Shape(shape) => self.check_node_shape(node, shape, schema, rdf, typing),
+            ShapeExpr::External {} => {
+                debug!("External shape expression encountered for node {node} with shape {se}");
+                Ok(true)
+            }
             ShapeExpr::Ref { idx } => {
                 if typing.contains(&(node.clone(), *idx)) {
                     // If the node is already in the typing, we can return true
@@ -348,13 +376,13 @@ impl Engine {
         }
     }
 
-    pub(crate) fn check_node_shape2(
+    pub(crate) fn check_node_shape(
         &self,
         node: &Node,
         shape: &Shape,
         _schema: &SchemaIR,
         rdf: &impl Query,
-        _typing: HashSet<(Node, ShapeLabelIdx)>,
+        _typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<bool> {
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
@@ -364,16 +392,15 @@ impl Engine {
             debug!("Neighs of {node}: {values:?}");
             let result_iter = shape.rbe_table().matches(values)?;
             for result in result_iter {
-                match result {
-                    Ok(_) => return Ok(true),
-                    Err(_) => {}
+                if result.is_ok() {
+                    return Ok(true);
                 }
             }
             Ok(false)
         }
     }
 
-    pub(crate) fn check_node_shape_expr<S>(
+    pub(crate) fn check_node_shape_expr_old<S>(
         &mut self,
         node: &Node,
         se: &ShapeExpr,
@@ -403,7 +430,7 @@ impl Engine {
                 // TODO: Should we remove the next
                 self.add_pending(node.clone(), *idx);
                 if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
-                    self.check_node_shape_expr(node, se, rdf, schema)
+                    self.check_node_shape_expr_old(node, se, rdf, schema)
                 } else {
                     Ok(Either::Left(vec![ValidatorError::ShapeExprNotFound {
                         idx: *idx,
@@ -413,7 +440,7 @@ impl Engine {
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 let mut reasons_collection = Vec::new();
                 for e in exprs {
-                    let result = self.check_node_shape_expr(node, e, rdf, schema)?;
+                    let result = self.check_node_shape_expr_old(node, e, rdf, schema)?;
                     match result {
                         Either::Left(errors) => {
                             return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
@@ -434,7 +461,7 @@ impl Engine {
                 }]))
             }
             ShapeExpr::ShapeNot { expr, .. } => {
-                let result = self.check_node_shape_expr(node, expr, rdf, schema)?;
+                let result = self.check_node_shape_expr_old(node, expr, rdf, schema)?;
                 match result {
                     Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
                         node: node.clone(),
@@ -453,7 +480,7 @@ impl Engine {
             ShapeExpr::ShapeOr { exprs, .. } => {
                 let mut errors_collection = Vec::new();
                 for e in exprs {
-                    let result = self.check_node_shape_expr(node, e, rdf, schema)?;
+                    let result = self.check_node_shape_expr_old(node, e, rdf, schema)?;
                     match result {
                         Either::Left(errors) => {
                             errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
@@ -473,13 +500,13 @@ impl Engine {
                     errors: errors_collection.clone(),
                 }]))
             }
-            ShapeExpr::Shape(shape) => self.check_node_shape(node, shape, rdf),
+            ShapeExpr::Shape(shape) => self.check_node_shape_old(node, shape, rdf),
             ShapeExpr::Empty => Ok(Either::Right(Vec::new())),
             ShapeExpr::External {} => Ok(Either::Right(Vec::new())),
         }
     }
 
-    fn check_node_shape<S>(
+    fn check_node_shape_old<S>(
         &mut self,
         node: &Node,
         shape: &Shape,
@@ -492,16 +519,7 @@ impl Engine {
         if shape.is_closed() && !remainder.is_empty() {
             let errs = vec![ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(remainder),
-                declared: Preds::new(
-                    shape
-                        .preds()
-                        .iter()
-                        .map(|iri| {
-                            let new_iri = iri.clone();
-                            Pred::from(new_iri)
-                        })
-                        .collect(),
-                ),
+                declared: Preds::new(shape.preds().into_iter().collect()),
             }];
             return Ok(Either::Left(errs));
         };

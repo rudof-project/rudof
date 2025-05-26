@@ -21,6 +21,7 @@ pub struct Shape {
 }
 
 impl Shape {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         closed: bool,
         extra: Vec<Pred>,

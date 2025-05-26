@@ -218,7 +218,7 @@ impl Validator {
         let (node, idx) = atom.get_value();
         let se = find_shape_idx(idx, &self.schema);
         match atom {
-            Atom::Pos { .. } => engine.check_node_shape_expr(node, se, rdf, schema),
+            Atom::Pos { .. } => engine.check_node_shape_expr_old(node, se, rdf, schema),
             Atom::Neg { .. } => {
                 // Check if a node doesn't conform to a shape expr
                 todo!()

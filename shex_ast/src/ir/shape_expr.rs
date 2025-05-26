@@ -37,7 +37,7 @@ impl ShapeExpr {
     pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => {
-                exprs.into_iter().fold(HashMap::new(), |mut acc, expr| {
+                exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                     let refs = expr.references();
                     for (pred, idxs) in refs {
                         acc.entry(pred).or_default().extend(idxs);
@@ -46,7 +46,7 @@ impl ShapeExpr {
                 })
             }
             ShapeExpr::ShapeAnd { exprs, .. } => {
-                exprs.into_iter().fold(HashMap::new(), |mut acc, expr| {
+                exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                     let refs = expr.references();
                     for (pred, idxs) in refs {
                         acc.entry(pred).or_default().extend(idxs);

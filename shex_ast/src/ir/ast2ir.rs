@@ -504,7 +504,7 @@ impl AST2IR {
     ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match te {
             ast::TripleExpr::EachOf { expressions, .. } => {
-                expressions.into_iter().fold(HashMap::new(), |mut acc, te| {
+                expressions.iter().fold(HashMap::new(), |mut acc, te| {
                     let refs = self.get_references_triple_expr(&te.te, schema);
                     for (pred, idxs) in refs {
                         acc.entry(pred).or_default().extend(idxs);
@@ -513,7 +513,7 @@ impl AST2IR {
                 })
             }
             ast::TripleExpr::OneOf { expressions, .. } => {
-                expressions.into_iter().fold(HashMap::new(), |mut acc, te| {
+                expressions.iter().fold(HashMap::new(), |mut acc, te| {
                     let refs = self.get_references_triple_expr(&te.te, schema);
                     for (pred, idxs) in refs {
                         acc.entry(pred).or_default().extend(idxs);
@@ -530,12 +530,14 @@ impl AST2IR {
                 match value_expr {
                     Some(ve) => match ve.as_ref() {
                         ast::ShapeExpr::Ref(sref) => {
-                            let label = self
-                                .shape_expr_label_to_shape_label(sref)
-                                .expect(format!("Convert shape label to IR label {sref}").as_str());
-                            let idx = schema.get_shape_label_idx(&label).expect(
-                                format!("Failed to get shape label index for {label}").as_str(),
-                            );
+                            let label =
+                                self.shape_expr_label_to_shape_label(sref)
+                                    .unwrap_or_else(|_| {
+                                        panic!("Convert shape label to IR label {sref}")
+                                    });
+                            let idx = schema.get_shape_label_idx(&label).unwrap_or_else(|_| {
+                                panic!("Failed to get shape label index for {label}")
+                            });
                             let mut map = HashMap::new();
                             map.insert(Pred::new(pred), vec![idx]);
                             map
