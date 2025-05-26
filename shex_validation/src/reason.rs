@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use shex_ast::{
     ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
-    Node,
+    Node, ShapeLabelIdx,
 };
 
 use crate::ValidatorErrors;
@@ -19,6 +19,12 @@ pub enum Reason {
         se: ShapeExpr,
         reasons: Vec<Vec<Reason>>,
     },
+    EmptyPassed {
+        node: Node,
+    },
+    ExternalPassed {
+        node: Node,
+    },
     ShapeOrPassed {
         node: Node,
         shape_expr: ShapeExpr,
@@ -34,6 +40,10 @@ pub enum Reason {
     ShapePassed {
         node: Node,
         shape: Shape,
+    },
+    ShapeRefPassed {
+        node: Node,
+        idx: ShapeLabelIdx,
     },
 }
 
@@ -73,6 +83,11 @@ impl Display for Reason {
                 f,
                 "Shape NOT passed. Node {node}, shape: {shape_expr}, errors: {errors_evidences}"
             ),
+            Reason::ExternalPassed { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::EmptyPassed { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::ShapeRefPassed { node, idx } => {
+                write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
+            }
         }
     }
 }
@@ -110,13 +125,13 @@ impl Reason {
                 reasons: _,
             } => {
                 serde_json::json!({
-                    "type": "ShapeOrPassed",
-                    "node": node.to_string(),
-                    "shape_expr": shape_expr.to_string(),
-                    /*"reasons": reasons.iter().map(|reason| {
-                        reason.as_json()
-                    }).collect::<Vec<_>>()*/
-                })
+                        "type": "ShapeOrPassed",
+                        "node": node.to_string(),
+                        "shape_expr": shape_expr.to_string(),
+                        /*"reasons": reasons.iter().map(|reason| {
+                    reason.as_json()
+                }).collect::<Vec<_>>()*/
+                    })
             }
             Reason::ShapeNotPassed {
                 node,
@@ -124,12 +139,29 @@ impl Reason {
                 errors_evidences: _,
             } => {
                 serde_json::json!({
-                    "type": "ShapeNotPassed",
+                        "type": "ShapeNotPassed",
+                        "node": node.to_string(),
+                        "shape_expr": shape_expr.to_string(),
+                        /*"errors_evidences": errors_evidences.iter().map(|reason| {
+                    reason.as_json()
+                }).collect::<Vec<_>>() */
+                    })
+            }
+            Reason::ExternalPassed { node } => serde_json::json!({
+                "type": "ExternalPassed",
+                "node": node.to_string()
+            }),
+            Reason::EmptyPassed { node } => {
+                serde_json::json!({
+                    "type": "EmptyPassed",
+                    "node": node.to_string()
+                })
+            }
+            Reason::ShapeRefPassed { node, idx } => {
+                serde_json::json!({
+                    "type": "ShapeRefPassed",
                     "node": node.to_string(),
-                    "shape_expr": shape_expr.to_string(),
-                    /*"errors_evidences": errors_evidences.iter().map(|reason| {
-                        reason.as_json()
-                    }).collect::<Vec<_>>() */
+                    "idx": idx.to_string()
                 })
             }
         }

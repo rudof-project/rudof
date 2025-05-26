@@ -3,6 +3,7 @@ use std::fmt::Display;
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
 use shex_ast::ir::preds::Preds;
+use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
 use srdf::Object;
@@ -105,6 +106,12 @@ pub enum ValidatorError {
 
     #[error("Shape not found for index {idx}")]
     ShapeExprNotFound { idx: ShapeLabelIdx },
+
+    #[error("Shape fails for node {node} with shape {shape}")]
+    ShapeFails { node: Node, shape: Shape },
+
+    #[error("ShapeRef fails for node {node} with idx: {idx}")]
+    ShapeRefFailed { node: Node, idx: ShapeLabelIdx },
 }
 
 #[derive(Debug, Clone)]
