@@ -2,6 +2,11 @@
 
 ## Current changes without release yet
 
+## [v0.1.70] - 2025-05-26
+
+- Added implementation of ShEx validator that follows the [paper](https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/)
+- There is [a problem](https://github.com/rudof-project/rudof/issues/291) with calamine's dependency from DCTAP which doesn't allow us to publish in crates.io. We are waiting for calamine to publish an official release because it seems the patch only works to build the system, but prevents us to publish to crates.
+
 ## [v0.1.65] - 2025-05-14
 
 - Set reqwest dependency on rustls to disable openssl which gives several problems
