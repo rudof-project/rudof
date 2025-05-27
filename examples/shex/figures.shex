@@ -1,0 +1,37 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:Coord {
+ :x xsd:decimal ;
+ :y xsd:decimal
+}
+
+:Attribute {
+  :name xsd:string ;
+  :value .
+}
+
+:Colour extends @:Attribute {
+  :scope xsd:string 
+} AND {
+  :name ["colour"]
+}
+
+abstract :Figure {
+  :coord @:Coord
+}
+
+:Circle extends @:Figure {
+  :attr @:Radius
+}
+
+:Radius extends @:Attribute {} AND {
+  :name ["radius"] ;
+  :value xsd:decimal
+}
+
+:ColouredFigure extends @:Figure {
+  :attr @:Colour
+}
+
+:ColouredCircle extends @:Circle extends @:ColouredFigure { }

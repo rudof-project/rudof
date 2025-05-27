@@ -16,6 +16,7 @@ pub struct Shape {
     sem_acts: Vec<SemAct>,
     annotations: Vec<Annotation>,
     preds: Vec<Pred>,
+    extends: Vec<ShapeLabelIdx>,
     references: HashMap<Pred, Vec<ShapeLabelIdx>>,
     display: String,
 }
@@ -29,6 +30,7 @@ impl Shape {
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
         preds: Vec<Pred>,
+        extends: Vec<ShapeLabelIdx>,
         references: HashMap<Pred, Vec<ShapeLabelIdx>>,
         display: String,
     ) -> Self {
@@ -39,6 +41,7 @@ impl Shape {
             sem_acts,
             annotations,
             preds,
+            extends,
             references,
             display,
         }
@@ -83,6 +86,14 @@ impl Shape {
 
 impl Display for Shape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let extends = if self.extends.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "EXTENDS [{}]",
+                self.extends.iter().map(|e| e.to_string()).join(" ")
+            )
+        };
         let closed = if self.closed { "CLOSED" } else { "" };
         let extra = if self.extra.is_empty() {
             "".to_string()
@@ -94,7 +105,7 @@ impl Display for Shape {
         } else {
             self.preds.iter().join(",")
         };
-        write!(f, "Shape {closed}{extra} ")?;
+        write!(f, "Shape {extends}{closed}{extra} ")?;
         writeln!(f, "Preds: {}", preds)?;
         writeln!(f, "{}", self.rbe_table)?;
         Ok(())

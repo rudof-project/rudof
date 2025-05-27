@@ -1,0 +1,24 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:a1 :name  "radius"  ;
+    :value 10.1      .
+
+:a2 :value "#FF0000" ;
+    :scope "fill"    ;
+    :name  "colour"  .
+
+:r1 :attr  :a1, :a2  ;
+    :coord :c1       .
+
+:c1 :x     2.0       ;
+    :y     4.0       .
+
+:r2 :attr  :a3       ;
+    :coord :c2       .
+
+:a3 :name  "radius"  ;
+    :value 7.2       .
+
+:c2 :x     0.2       ;
+    :y     -2.3      .

@@ -453,7 +453,10 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             })
         } else {
-            tracing::debug!("Neighs of {node}: {values:?}");
+            tracing::debug!(
+                "Neighs of {node}: {}",
+                values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+            );
             let result_iter = shape.rbe_table().matches(values)?;
             let mut errors = Vec::new();
             for result in result_iter {

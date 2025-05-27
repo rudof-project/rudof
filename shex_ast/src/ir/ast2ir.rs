@@ -202,6 +202,11 @@ impl AST2IR {
                 };
                 let preds = Self::get_preds_shape(shape);
                 let references = self.get_references_shape(shape, compiled_schema);
+                let extends = shape
+                    .extends()
+                    .iter()
+                    .map(|s| self.ref2idx(s, compiled_schema))
+                    .collect::<CResult<Vec<_>>>()?;
 
                 let display = match compiled_schema.find_shape_idx(idx) {
                     None => "internal".to_string(),
@@ -216,6 +221,7 @@ impl AST2IR {
                     Self::cnv_sem_acts(&shape.sem_acts),
                     Self::cnv_annotations(&shape.annotations),
                     preds,
+                    extends,
                     references,
                     display,
                 );
