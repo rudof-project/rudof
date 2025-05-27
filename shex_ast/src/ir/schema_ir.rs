@@ -254,10 +254,10 @@ impl Display for SchemaIR {
         writeln!(dest, "Indexes to Shape Expressions:")?;
         for (idx, (maybe_label, se)) in self.shapes.iter() {
             let label_str = match maybe_label {
-                None => "".to_string(),
-                Some(label) => format!("{}@", self.show_label(label)),
+                None => "No label =".to_string(),
+                Some(label) => format!("{} = ", self.show_label(label)),
             };
-            writeln!(dest, "{idx} -> {label_str}{se}")?;
+            writeln!(dest, "{idx} -> {label_str}|{se}")?;
         }
         writeln!(dest, "---end of schema IR")?;
         Ok(())

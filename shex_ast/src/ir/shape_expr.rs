@@ -34,6 +34,25 @@ impl ShapeExpr {
         ShapeExpr::Ref { idx }
     }
 
+    pub fn direct_references(&self) -> Vec<ShapeLabelIdx> {
+        match self {
+            ShapeExpr::ShapeOr { exprs, .. } => exprs
+                .iter()
+                .flat_map(|expr| expr.direct_references())
+                .collect(),
+            ShapeExpr::ShapeAnd { exprs, .. } => exprs
+                .iter()
+                .flat_map(|expr| expr.direct_references())
+                .collect(),
+            ShapeExpr::ShapeNot { expr, .. } => expr.direct_references(),
+            ShapeExpr::NodeConstraint(_) => vec![],
+            ShapeExpr::Shape(_s) => vec![],
+            ShapeExpr::External {} => vec![],
+            ShapeExpr::Ref { idx } => vec![*idx],
+            ShapeExpr::Empty => vec![],
+        }
+    }
+
     pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => {
@@ -102,13 +121,29 @@ impl ShapeExpr {
 impl Display for ShapeExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ShapeExpr::ShapeOr { display, .. } => write!(f, "{display}"),
-            ShapeExpr::ShapeAnd { display, .. } => write!(f, "{display}"),
-            ShapeExpr::ShapeNot { display, .. } => write!(f, "{display}"),
-            ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),
+            ShapeExpr::ShapeOr { exprs, .. } => write!(
+                f,
+                "{}",
+                exprs
+                    .iter()
+                    .map(|e| format!("{e}"))
+                    .collect::<Vec<_>>()
+                    .join(" OR ")
+            ),
+            ShapeExpr::ShapeAnd { exprs, .. } => write!(
+                f,
+                "{}",
+                exprs
+                    .iter()
+                    .map(|e| format!("{e}"))
+                    .collect::<Vec<_>>()
+                    .join(" AND ")
+            ),
+            ShapeExpr::ShapeNot { expr, .. } => write!(f, "NOT {expr}"),
+            ShapeExpr::NodeConstraint(nc) => write!(f, "Node constraint: {nc}"),
             ShapeExpr::Shape(shape) => write!(f, "{shape}"),
             ShapeExpr::External {} => write!(f, "External"),
-            ShapeExpr::Ref { idx } => write!(f, "Ref({idx})"),
+            ShapeExpr::Ref { idx } => write!(f, "@{idx}"),
             ShapeExpr::Empty => write!(f, "<Empty>"),
         }
     }

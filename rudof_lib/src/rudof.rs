@@ -720,6 +720,41 @@ mod tests {
     use super::Rudof;
 
     #[test]
+    fn test_single_shex() {
+        let data = r#"
+        prefix : <http://example/>
+        :x :p 1 .
+        "#;
+        let shex = r#"
+        prefix : <http://example/>
+        :S @:T 
+        :T { :p @:U }
+        :U [ 2 ]
+        "#;
+        let shapemap = r#":x@:S"#;
+        let mut rudof = Rudof::new(&RudofConfig::default());
+        rudof
+            .read_data(
+                data.as_bytes(),
+                &srdf::RDFFormat::Turtle,
+                None,
+                &srdf::ReaderMode::Strict,
+            )
+            .unwrap();
+
+        rudof
+            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
+            .unwrap();
+        rudof
+            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .unwrap();
+        let result = rudof.validate_shex().unwrap();
+        let node = Node::iri(iri!("http://example/x"));
+        let shape = ShapeLabel::iri(iri!("http://example/S"));
+        assert!(result.get_info(&node, &shape).unwrap().is_conformant())
+    }
+
+    #[test]
     fn test_shex_validation_ok() {
         let data = r#"<http://example/x> <http://example/p> 23 ."#;
         let shex = r#"<http://example/S> { <http://example/p> . }"#;

@@ -48,7 +48,7 @@ impl AST2IR {
         schema_json: &SchemaJson,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
-        debug!("Compiling schema_json: {compiled_schema:?}");
+        // debug!("Compiling schema_json: {compiled_schema:?}");
         compiled_schema.set_prefixmap(schema_json.prefixmap());
         self.collect_shape_labels(schema_json, compiled_schema)?;
         self.collect_shape_exprs(schema_json, compiled_schema)?;
@@ -159,6 +159,7 @@ impl AST2IR {
                 })
             }
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
+                // tracing::debug!("Compiling ShapeAnd with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
@@ -169,10 +170,12 @@ impl AST2IR {
                     Some((Some(label), _)) => compiled_schema.show_label(label),
                     Some((None, _)) => "internal AND with some se".to_string(),
                 };
-                Ok(ShapeExpr::ShapeAnd {
+                let result = ShapeExpr::ShapeAnd {
                     exprs: cnv,
                     display,
-                })
+                };
+                // tracing::debug!("ShapeAnd result: {result:?}");
+                Ok(result)
             }
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;

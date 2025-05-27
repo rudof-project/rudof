@@ -34,7 +34,7 @@ impl ShExParser<'_> {
         let mut parser = ShExParser {
             shex_statement_iterator: StatementIterator::new(Span::new(src))?,
         };
-        let mut shapes_counter = 0;
+        // let mut shapes_counter = 0;
         for s in parser.shex_statement_iterator.by_ref() {
             match s? {
                 ShExStatement::BaseDecl { iri } => {
@@ -56,8 +56,8 @@ impl ShExParser<'_> {
                 } => {
                     let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                     let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                    shapes_counter += 1;
-                    tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
+                    // shapes_counter += 1;
+                    // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);
                 }
                 ShExStatement::StartActions { actions } => {

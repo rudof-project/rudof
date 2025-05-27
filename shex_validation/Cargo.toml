@@ -24,6 +24,7 @@ thiserror = "2.0"
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
+itertools.workspace = true
 indexmap = { version = "2" }
 either = "1"
 toml = "0.8"

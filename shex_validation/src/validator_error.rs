@@ -13,6 +13,10 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Failed pending: RBE passed, but pending references failed")]
+    FailedPending {
+        failed_pending: Vec<(Node, ShapeLabelIdx)>,
+    },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
         neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
@@ -108,7 +112,11 @@ pub enum ValidatorError {
     ShapeExprNotFound { idx: ShapeLabelIdx },
 
     #[error("Shape fails for node {node} with shape {shape}")]
-    ShapeFails { node: Node, shape: Shape },
+    ShapeFails {
+        node: Node,
+        shape: Shape,
+        errors: Vec<ValidatorError>,
+    },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Node, idx: ShapeLabelIdx },
