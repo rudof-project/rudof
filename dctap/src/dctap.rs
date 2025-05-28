@@ -1,4 +1,10 @@
-use crate::{tap_config::TapConfig, tap_error::TapError, TapReader, TapReaderBuilder, TapShape};
+use crate::{
+    tap_config::TapConfig,
+    tap_error::TapError,
+    // TapReader,
+    TapReaderBuilder,
+    TapShape,
+};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
 use tracing::{debug, info};
@@ -57,7 +63,7 @@ impl DCTap {
         Ok(dctap)
     }
 
-    pub fn from_excel<P: AsRef<Path>>(
+    /*pub fn from_excel<P: AsRef<Path>>(
         path: P,
         sheet_name: Option<&str>,
         config: &TapConfig,
@@ -71,7 +77,7 @@ impl DCTap {
             dctap.add_shape(&shape)
         }
         Ok(dctap)
-    }
+    }*/
 
     pub fn shapes(&self) -> impl Iterator<Item = &TapShape> {
         self.shapes.iter()

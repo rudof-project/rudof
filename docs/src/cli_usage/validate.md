@@ -43,3 +43,16 @@ Options:
   -h, --help
           Print help
 ```
+
+## Tip: Changing the shapemap in the input
+
+A typical scenario validating RDF with ShEx is to use the same ShEx schema and the same RDF data but trying different shapemaps. 
+Providing those different shapemap attempts in a file can be boring. One possibility is to use the '-' for the shapemap and `rudof` will expect that the shapemap comes from the stdin. 
+
+For example:
+
+```sh
+rudof validate -s examples/simple.shex examples/simple.ttl -m -
+```
+
+will expect that the shapemap comes from stdin. Once it is typed followed by CTRL-D, the system will ouput the result of the validation.

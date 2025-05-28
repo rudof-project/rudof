@@ -2,6 +2,10 @@
 
 ## Current changes without release yet
 
+## [v0.1.71] - 2025-05-28
+
+- Disabled Xlsx support given the problem with Calamine in order to publish Python version of rudof
+
 ## [v0.1.70] - 2025-05-26
 
 - Added implementation of ShEx validator that follows the [paper](https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/)

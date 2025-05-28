@@ -40,9 +40,7 @@ pub enum RudofError {
     #[error("Error creating schema for ShEx validation. Schema:\n{schema}\nError: {error} ")]
     ShExValidatorCreationError { schema: String, error: String },
 
-    #[error(
-        "ShEx validation error. Query map: {query_map}\nSchema:\n{schema}\nData:\n{rdf_data}\nError: {error} "
-    )]
+    #[error("ShEx validation error: {error} ")]
     ShExValidatorError {
         schema: String,
         rdf_data: String,

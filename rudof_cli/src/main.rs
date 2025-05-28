@@ -1538,6 +1538,9 @@ fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &DCTapFormat) -> Re
             }
             InputSpec::Stdin => bail!("Can not read Excel file from stdin"),
             InputSpec::Url(_) => bail!("Not implemented reading Excel files from URIs yet"),
+            InputSpec::Str(_) => {
+                bail!("Not implemented reading Excel files from strings yet")
+            }
         },
     }
 }

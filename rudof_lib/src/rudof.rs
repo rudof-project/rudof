@@ -385,28 +385,27 @@ impl Rudof {
     /// - `format` indicates the DCTAP format
     pub fn read_dctap_path<P: AsRef<Path>>(&mut self, path: P, format: &DCTAPFormat) -> Result<()> {
         let path_name = path.as_ref().display().to_string();
-        let dctap =
-            match format {
-                DCTAPFormat::CSV => {
-                    let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| {
-                        RudofError::DCTAPReaderCSV {
-                            path: path_name,
-                            error: format!("{e}"),
-                        }
-                    })?;
-                    Ok(dctap)
-                }
-                DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
-                    let path_buf = path.as_ref().to_path_buf();
-                    let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config())
-                        .map_err(|e| RudofError::DCTAPReaderPathXLS {
-                            path: path_name,
-                            error: format!("{e}"),
-                            format: format!("{format:?}"),
-                        })?;
-                    Ok(dctap)
-                }
-            }?;
+        let dctap = match format {
+            DCTAPFormat::CSV => {
+                let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| {
+                    RudofError::DCTAPReaderCSV {
+                        path: path_name,
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(dctap)
+            } /*DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+            let path_buf = path.as_ref().to_path_buf();
+            let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config())
+            .map_err(|e| RudofError::DCTAPReaderPathXLS {
+            path: path_name,
+            error: format!("{e}"),
+            format: format!("{format:?}"),
+            })?;
+            Ok(dctap)
+            }*/
+            _ => todo!(),
+        }?;
         self.dctap = Some(dctap);
         Ok(())
     }

@@ -20,6 +20,7 @@ use url::Url;
 pub enum InputSpec {
     Path(PathBuf),
     Stdin,
+    Str(String),
     Url(UrlSpec),
 }
 
@@ -29,6 +30,7 @@ impl Display for InputSpec {
             InputSpec::Path(path_buf) => write!(f, "Path: {}", path_buf.display()),
             InputSpec::Stdin => write!(f, "Stdin"),
             InputSpec::Url(url_spec) => write!(f, "Url: {url_spec}"),
+            InputSpec::Str(s) => write!(f, "String: {}", s),
         }
     }
 }
@@ -52,6 +54,7 @@ impl InputSpec {
                 Ok(IriS::new_unchecked(url.as_str()))
             }
             InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
+            InputSpec::Str(_s) => Ok(IriS::new_unchecked("file://str")),
             InputSpec::Url(url) => Ok(IriS::new_unchecked(url.to_string().as_str())),
         }
     }
@@ -94,6 +97,9 @@ impl InputSpec {
                 let reader = BufReader::new(resp);
                 Ok(Either::Right(Either::Right(reader)))
             }
+            InputSpec::Str(_s) => {
+                todo!("Handle string input spec")
+            }
         }
     }
 
@@ -114,6 +120,7 @@ impl InputSpec {
             }
             InputSpec::Stdin => Ok("stdin://".to_string()),
             InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
+            InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
 }

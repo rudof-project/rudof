@@ -6,6 +6,8 @@
 
 # `rudof` commands
 
+`rudof` supports the following commands:
+
 - [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)
