@@ -14,7 +14,9 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.12 ]
-        target: [ x86_64, aarch64 ]
+        target: [ x86_64, 
+                  # aarch64 
+                ]
 
     steps:
       - uses: actions/checkout@v4
