@@ -23,8 +23,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Fix openssl regression
-        run: cargo update openssl-src --precise 300.5.0+3.5.0
+#      - name: Fix openssl regression
+#        run: cargo update openssl-src --precise 300.5.0+3.5.0
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
