@@ -1,7 +1,8 @@
-shapeId,shapeLabel,propertyId,propertyLabel,valueShape, valueDatatype, valueConstraint, valueConstraintType
-Person,PersonLabel,knows,knows property, @Person,,
-,,rdf:type,instance of,,,male other,picklist,
-,,name,name of person,,xsd:string,
-,,worksFor, works for, @Company,,
-,,,,,
-Company,,founder, founder person, @Person,,
+shapeId,propertyId,valueShape, valueDatatype, valueConstraint, mandatory, repeatable
+Person,name,,xsd:string,,true,false
+,birthDate,,xsd:date,,false,false
+,gender,,,male female other,false,false
+,knows, Person,,,false,true
+,worksFor, Company,,,false,true
+,,,,
+Company,founder, Person,,,false,false

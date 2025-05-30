@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.30"
+version = "0.1.60"
 documentation = "https://rudof-project.github.io/rudof/"
 readme = "README.md"
 license.workspace = true
@@ -17,15 +17,7 @@ name = "pyrudof"
 crate-type = ["cdylib"]
 
 [dependencies]
-srdf = { workspace = true }
-shacl_ast = { workspace = true }
-shacl_validation = { workspace = true }
-dctap = { workspace = true }
-shapes_converter = { workspace = true }
-shex_ast = { workspace = true }
-shex_compact = { workspace = true }
-
-openssl = { version = "0.10", features = ["vendored"] }
+rudof_lib = { workspace = true }
 
 [dependencies.pyo3]
 version = "0.22.0"

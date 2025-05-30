@@ -10,8 +10,8 @@ pub enum ConverterError {
     ConverterConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    ConverterConfigFromYAMLError {
+    ConverterConfigFromTomlError {
         path: String,
-        error: serde_yml::Error,
+        error: toml::de::Error,
     },
 }

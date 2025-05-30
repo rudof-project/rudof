@@ -1,0 +1,5 @@
+prefix : <http://example.org/>
+
+:S @:T AND { :p [ 2 3 ] }
+:T { :p @:U }
+:U [ 1 2 ]

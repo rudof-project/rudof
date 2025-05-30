@@ -1,14 +1,14 @@
-use std::path::Path;
-
-use serde_derive::{Deserialize, Serialize};
+use iri_s::IriS;
+use serde::{Deserialize, Serialize};
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::path::Path;
 use thiserror::Error;
 
 use crate::ShExFormat;
 
 /// ShEx configuration on main
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
-
 pub struct ShExConfigMain {
     /// Show information about time
     pub show_time: Option<bool>,
@@ -18,15 +18,21 @@ pub struct ShExConfigMain {
 }
 
 impl ShExConfigMain {
-    /// Obtain a `ShExConfigMain` from a path file in YAML format
+    /// Obtain a `ShExConfigMain` from a path file in TOML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShExConfigMain, ShExConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| ShExConfigError::FromPathError {
+        let mut f = std::fs::File::open(path).map_err(|e| ShExConfigError::FromPathError {
             path: path_name.clone(),
             error: e.to_string(),
         })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ShExConfigError::FromPathError {
+                path: path_name.clone(),
+                error: e.to_string(),
+            })?;
         let config: ShExConfigMain =
-            serde_yml::from_reader(f).map_err(|e| ShExConfigError::YamlError {
+            toml::from_str(s.as_str()).map_err(|e| ShExConfigError::TomlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;
@@ -81,11 +87,23 @@ pub struct ShExConfig {
     /// Show information about shapes
     pub show_shapes: Option<bool>,
 
+    /// Show dependencies
+    pub show_dependencies: Option<bool>,
+
+    /// Show ShEx Schema Internal Representation
+    pub show_ir: Option<bool>,
+
     /// Default ShEx format
     pub shex_format: Option<ShExFormat>,
 
+    /// Check if schema is well formed
+    pub check_well_formed: Option<bool>,
+
     /// Information about RDF data config which is used for Schemas represented in RDF
     pub rdf_config_shex: Option<RdfDataConfig>,
+
+    /// Default IRI to resolve relative IRIs
+    pub base: Option<IriS>,
 }
 
 impl Default for ShExConfig {
@@ -94,8 +112,12 @@ impl Default for ShExConfig {
             show_extends: Some(true),
             show_imports: Some(true),
             show_shapes: Some(true),
+            show_dependencies: Some(true),
+            show_ir: Some(true),
+            check_well_formed: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),
+            base: Some(IriS::new_unchecked("base://")),
         }
     }
 }
@@ -106,6 +128,10 @@ impl ShExConfig {
             None => RdfDataConfig::default(),
             Some(c) => c.clone(),
         }
+    }
+
+    pub fn check_well_formed(&self) -> bool {
+        self.check_well_formed.unwrap_or(true)
     }
 
     pub fn with_show_extends(mut self, flag: bool) -> Self {
@@ -126,6 +152,11 @@ impl ShExConfig {
         self.show_shapes = Some(flag);
         self
     }
+
+    pub fn with_show_dependencies(mut self, flag: bool) -> Self {
+        self.show_dependencies = Some(flag);
+        self
+    }
 }
 
 #[derive(Error, Debug, Clone)]
@@ -134,5 +165,5 @@ pub enum ShExConfigError {
     FromPathError { path: String, error: String },
 
     #[error("Error reading config file from path {path}: {error}")]
-    YamlError { path: String, error: String },
+    TomlError { path: String, error: String },
 }

@@ -1,6 +1,6 @@
 [package]
 name = "shex_testsuite"
-version = "0.1.30"
+version = "0.1.70"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_testsuite"
@@ -10,20 +10,18 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
-srdf = { workspace = true }
-shex_ast = { workspace = true }
-shex_compact = { workspace = true }
-shex_validation = { workspace = true }
-serde = { version = "1.0", features = ["derive"] }
+iri_s.workspace = true
+prefixmap.workspace = true
+shapemap.workspace = true
+srdf.workspace = true
+shex_ast.workspace = true
+shex_compact.workspace = true
+shex_validation.workspace = true
+serde.workspace = true
 serde_json = { workspace = true }
-serde_yml = "0.0.12"
+toml = "0.8"
 anyhow = "1.0"
-thiserror = "1.0"
-void = "1"
-clap = { workspace = true }
-oxrdf = "0.2.0-alpha.2"
-oxiri = "0.2.3-alpha.1"
-url = "2.4"
-tracing = { workspace = true }
+thiserror = "2.0"
+clap.workspace = true
+url.workspace = true
+tracing.workspace = true

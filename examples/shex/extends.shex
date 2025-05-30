@@ -1,0 +1,10 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:B {
+  :p [ 1 ]
+}
+
+:S extends @:B {
+  :p [ 2 ]
+}

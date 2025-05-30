@@ -1,33 +1,25 @@
+use crate::async_srdf::AsyncSRDF;
+use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use tracing::debug;
-// use log::debug;
-use crate::async_srdf::AsyncSRDF;
-use crate::literal::Literal;
-use crate::numeric_literal::NumericLiteral;
-use crate::{FocusRDF, RDFFormat, SRDFBasic, SRDFBuilder, Triple as STriple, RDF_TYPE_STR, SRDF};
-use oxiri::Iri;
 use oxrdfio::{RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
-use rust_decimal::Decimal;
-use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{self, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use tracing::debug;
 
-use crate::lang::Lang;
 use crate::srdfgraph_error::SRDFGraphError;
-use crate::Object;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    Quad, Subject as OxSubject, Term as OxTerm, Triple as OxTriple, TripleRef,
+    NamedNodeRef, Quad, Subject as OxSubject, SubjectRef, Term as OxTerm, TermRef,
+    Triple as OxTriple, TripleRef,
 };
-use oxsdatatypes::Decimal as OxDecimal;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{prefixmap::*, IriRef, PrefixMapError};
+use prefixmap::{prefixmap::*, PrefixMapError};
 
 #[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
@@ -35,6 +27,7 @@ pub struct SRDFGraph {
     graph: Graph,
     pm: PrefixMap,
     base: Option<IriS>,
+    bnode_counter: usize,
 }
 
 impl SRDFGraph {
@@ -57,18 +50,18 @@ impl SRDFGraph {
         self.graph.is_empty()
     }
 
-    pub fn merge_from_reader<R: BufRead>(
+    pub fn merge_from_reader<R: io::Read>(
         &mut self,
         read: R,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         match format {
             RDFFormat::Turtle => {
                 let turtle_parser = match base {
                     None => TurtleParser::new(),
-                    Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
+                    Some(iri) => TurtleParser::new().with_base_iri(iri)?,
                 };
                 // let mut graph = Graph::default();
                 let mut reader = turtle_parser.for_reader(read);
@@ -79,7 +72,7 @@ impl SRDFGraph {
                 self.base = match (&self.base, base) {
                     (None, None) => None,
                     (Some(b), None) => Some(b.clone()),
-                    (_, Some(b)) => Some(IriS::new_unchecked(b.as_str())),
+                    (_, Some(b)) => Some(IriS::new_unchecked(b)),
                 };
                 let pm = PrefixMap::from_hashmap(&prefixes)?;
                 self.merge_prefixes(pm)?;
@@ -144,34 +137,16 @@ impl SRDFGraph {
         Ok(())
     }
 
-    pub fn from_reader<R: BufRead>(
+    pub fn from_reader<R: io::Read>(
         read: R,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut srdf_graph = SRDFGraph::new();
+
         srdf_graph.merge_from_reader(read, format, base, reader_mode)?;
         Ok(srdf_graph)
-        /*  TODO: check format and use oxrdfio...
-        let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(ref iri) => TurtleParser::new().with_base_iri(iri.as_str())?,
-        };
-        let mut graph = Graph::default();
-        let mut reader = turtle_parser.parse_read(read);
-        for triple_result in reader.by_ref() {
-            graph.insert(triple_result?.as_ref());
-        }
-        let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
-        let base = base.map(|iri| IriS::new_unchecked(iri.as_str()));
-        let pm = PrefixMap::from_hashmap(&prefixes)?;
-        Ok(SRDFGraph {
-            focus: None,
-            graph,
-            pm,
-            base,
-        })*/
     }
 
     pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
@@ -192,7 +167,7 @@ impl SRDFGraph {
     pub fn from_str(
         data: &str,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
@@ -202,11 +177,30 @@ impl SRDFGraph {
         OxNamedNode::new_unchecked(iri.as_str())
     }
 
+    pub fn add_triple_ref<'a, S, P, O>(
+        &mut self,
+        subj: S,
+        pred: P,
+        obj: O,
+    ) -> Result<(), SRDFGraphError>
+    where
+        S: Into<SubjectRef<'a>>,
+        P: Into<NamedNodeRef<'a>>,
+        O: Into<TermRef<'a>>,
+    {
+        let subj: SubjectRef<'a> = subj.into();
+        let pred: NamedNodeRef<'a> = pred.into();
+        let obj: TermRef<'a> = obj.into();
+        let triple = TripleRef::new(subj, pred, obj);
+        self.graph.insert(triple);
+        Ok(())
+    }
+
     pub fn merge_from_path<P: AsRef<Path>>(
         &mut self,
         path: P,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), SRDFGraphError> {
         let path_name = path.as_ref().display();
@@ -222,7 +216,7 @@ impl SRDFGraph {
     pub fn from_path<P: AsRef<Path>>(
         path: P,
         format: &RDFFormat,
-        base: Option<Iri<String>>,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let path_name = path.as_ref().display();
@@ -242,7 +236,7 @@ impl SRDFGraph {
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(base);
         attempt.push(data);
-        let base = Some(Iri::parse("base:://".to_owned()).unwrap());
+        let base = Some("base:://");
         let data_path = &attempt;
         let graph = Self::from_path(data_path, format, base, reader_mode)?;
         Ok(graph)
@@ -253,141 +247,14 @@ impl SRDFGraph {
     }
 }
 
-impl SRDFBasic for SRDFGraph {
+impl Rdf for SRDFGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
+    type Triple = OxTriple;
     type Err = SRDFGraphError;
-
-    fn subject_as_iri(subject: &OxSubject) -> Option<OxNamedNode> {
-        match subject {
-            OxSubject::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-    fn subject_as_bnode(subject: &OxSubject) -> Option<OxBlankNode> {
-        match subject {
-            OxSubject::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-    fn subject_is_iri(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::NamedNode(_))
-    }
-    fn subject_is_bnode(subject: &OxSubject) -> bool {
-        matches!(subject, OxSubject::BlankNode(_))
-    }
-
-    fn term_as_iri(object: &OxTerm) -> Option<OxNamedNode> {
-        match object {
-            OxTerm::NamedNode(n) => Some(n.clone()),
-            _ => None,
-        }
-    }
-    fn term_as_bnode(object: &OxTerm) -> Option<OxBlankNode> {
-        match object {
-            OxTerm::BlankNode(b) => Some(b.clone()),
-            _ => None,
-        }
-    }
-
-    fn term_as_literal(object: &OxTerm) -> Option<OxLiteral> {
-        match object {
-            OxTerm::Literal(l) => Some(l.clone()),
-            _ => None,
-        }
-    }
-
-    fn term_is_iri(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::NamedNode(_))
-    }
-    fn term_is_bnode(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::BlankNode(_))
-    }
-
-    fn term_is_literal(object: &OxTerm) -> bool {
-        matches!(object, OxTerm::Literal(_))
-    }
-
-    fn subject_as_term(subject: &Self::Subject) -> Self::Term {
-        match subject {
-            OxSubject::NamedNode(n) => OxTerm::NamedNode(n.clone()),
-            OxSubject::BlankNode(b) => OxTerm::BlankNode(b.clone()),
-            #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
-        }
-    }
-
-    fn term_as_subject(object: &Self::Term) -> Option<Self::Subject> {
-        match object {
-            OxTerm::NamedNode(n) => Some(OxSubject::NamedNode(n.clone())),
-            OxTerm::BlankNode(b) => Some(OxSubject::BlankNode(b.clone())),
-            _ => None,
-        }
-    }
-
-    fn lexical_form(literal: &OxLiteral) -> &str {
-        literal.value()
-    }
-
-    fn lang(literal: &OxLiteral) -> Option<String> {
-        literal.language().map(|s| s.to_string())
-    }
-
-    fn datatype(literal: &OxLiteral) -> OxNamedNode {
-        literal.datatype().into_owned()
-    }
-
-    fn iri_s2iri(iri_s: &IriS) -> OxNamedNode {
-        iri_s.as_named_node().clone()
-    }
-
-    fn iri_as_term(iri: OxNamedNode) -> OxTerm {
-        OxTerm::NamedNode(iri)
-    }
-
-    fn iri_as_subject(iri: OxNamedNode) -> OxSubject {
-        OxSubject::NamedNode(iri)
-    }
-
-    fn iri2iri_s(iri: &OxNamedNode) -> IriS {
-        IriS::from_named_node(iri)
-    }
-
-    fn term_s2term(term: &OxTerm) -> Self::Term {
-        term.clone()
-    }
-
-    fn term_as_object(term: &OxTerm) -> Object {
-        match term {
-            OxTerm::BlankNode(bn) => Object::BlankNode(bn.as_str().to_string()),
-            OxTerm::Literal(lit) => {
-                let lit = lit.to_owned();
-                match lit.destruct() {
-                    (s, None, None) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: None,
-                    }),
-                    (s, None, Some(lang)) => Object::Literal(Literal::StringLiteral {
-                        lexical_form: s,
-                        lang: Some(Lang::new(lang.as_str())),
-                    }),
-                    (s, Some(datatype), _) => {
-                        let iri_s = Self::iri2iri_s(&datatype);
-                        Object::Literal(Literal::DatatypeLiteral {
-                            lexical_form: s,
-                            datatype: IriRef::Iri(iri_s),
-                        })
-                    }
-                }
-            }
-            OxTerm::NamedNode(iri) => Object::Iri(Self::iri2iri_s(iri)),
-            #[cfg(feature = "rdf-star")]
-            OxTerm::Triple(_) => unimplemented!(),
-        }
-    }
 
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         let iri = self.pm.resolve_prefix_local(prefix, local)?;
@@ -421,182 +288,11 @@ impl SRDFBasic for SRDFGraph {
     fn prefixmap(&self) -> Option<prefixmap::PrefixMap> {
         Some(self.pm.clone())
     }
-
-    fn bnode_id2bnode(id: &str) -> Self::BNode {
-        OxBlankNode::new_unchecked(id)
-    }
-
-    fn bnode_as_term(bnode: Self::BNode) -> Self::Term {
-        OxTerm::BlankNode(bnode)
-    }
-
-    fn object_as_term(obj: &Object) -> Self::Term {
-        match obj {
-            Object::Iri(iri) => Self::iri_s2term(iri),
-            Object::BlankNode(bn) => Self::bnode_id2term(bn),
-            Object::Literal(lit) => {
-                let literal: OxLiteral = match lit {
-                    Literal::StringLiteral { lexical_form, lang } => match lang {
-                        Some(lang) => OxLiteral::new_language_tagged_literal_unchecked(
-                            lexical_form,
-                            lang.to_string(),
-                        ),
-                        None => OxLiteral::new_simple_literal(lexical_form),
-                    },
-                    Literal::DatatypeLiteral {
-                        lexical_form,
-                        datatype,
-                    } => OxLiteral::new_typed_literal(lexical_form, cnv_iri_ref(datatype)),
-                    Literal::NumericLiteral(n) => match n {
-                        NumericLiteral::Integer(n) => {
-                            let n: i128 = *n as i128;
-                            OxLiteral::from(n)
-                        }
-                        NumericLiteral::Decimal(d) => {
-                            let decimal = cnv_decimal(d);
-                            OxLiteral::from(decimal)
-                        }
-                        NumericLiteral::Double(d) => OxLiteral::from(*d),
-                    },
-                    Literal::BooleanLiteral(b) => OxLiteral::from(*b),
-                };
-                OxTerm::Literal(literal)
-            }
-        }
-    }
-
-    fn bnode_as_subject(bnode: Self::BNode) -> Self::Subject {
-        OxSubject::BlankNode(bnode)
-    }
 }
 
-fn cnv_iri_ref(iri_ref: &IriRef) -> OxNamedNode {
-    OxNamedNode::new_unchecked(iri_ref.to_string())
-}
-
-fn cnv_decimal(_d: &Decimal) -> OxDecimal {
-    todo!()
-}
-
-impl SRDF for SRDFGraph {
-    fn predicates_for_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashSet<Self::IRI>, Self::Err> {
-        let mut ps = HashSet::new();
-        for triple in self.graph.triples_for_subject(subject) {
-            let pred = triple.predicate.into_owned();
-            ps.insert(pred);
-        }
-        Ok(ps)
-    }
-
-    fn objects_for_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        pred: &Self::IRI,
-    ) -> Result<HashSet<Self::Term>, Self::Err> {
-        let predicate = pred.as_ref();
-        let mut result = HashSet::new();
-        for o in self.graph.objects_for_subject_predicate(subject, predicate) {
-            result.insert(o.into_owned());
-        }
-        Ok(result)
-    }
-
-    fn subjects_with_predicate_object(
-        &self,
-        pred: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<HashSet<Self::Subject>, Self::Err> {
-        let mut result = HashSet::new();
-        for subj in self
-            .graph
-            .subjects_for_predicate_object(pred.as_ref(), object.as_ref())
-        {
-            result.insert(subj.into_owned());
-        }
-        Ok(result)
-    }
-
-    fn outgoing_arcs(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Term>>, Self::Err> {
-        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
-        for triple in self.graph.triples_for_subject(subject) {
-            let pred = triple.predicate.into_owned();
-            let term = triple.object.into_owned();
-            match results.entry(pred) {
-                Entry::Occupied(mut vs) => {
-                    vs.get_mut().insert(term.clone());
-                }
-                Entry::Vacant(vacant) => {
-                    vacant.insert(HashSet::from([term.clone()]));
-                }
-            }
-        }
-        Ok(results)
-    }
-
-    fn incoming_arcs(
-        &self,
-        object: &Self::Term,
-    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>, Self::Err> {
-        let mut results: HashMap<Self::IRI, HashSet<Self::Subject>> = HashMap::new();
-        for triple in self.graph.triples_for_object(object) {
-            let pred = triple.predicate.into_owned();
-            let subj = triple.subject.into_owned();
-            match results.entry(pred) {
-                Entry::Occupied(mut vs) => {
-                    vs.get_mut().insert(subj.clone());
-                }
-                Entry::Vacant(vacant) => {
-                    vacant.insert(HashSet::from([subj.clone()]));
-                }
-            }
-        }
-        Ok(results)
-    }
-
-    fn outgoing_arcs_from_list(
-        &self,
-        subject: &Self::Subject,
-        preds: &[Self::IRI],
-    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>), Self::Err> {
-        let mut results: HashMap<Self::IRI, HashSet<Self::Term>> = HashMap::new();
-        let mut remainder = Vec::new();
-        for triple in self.graph.triples_for_subject(subject) {
-            let pred = triple.predicate.into_owned();
-            let term = triple.object.into_owned();
-            if preds.contains(&pred) {
-                match results.entry(pred) {
-                    Entry::Occupied(mut vs) => {
-                        vs.get_mut().insert(term.clone());
-                    }
-                    Entry::Vacant(vacant) => {
-                        vacant.insert(HashSet::from([term.clone()]));
-                    }
-                }
-            } else {
-                remainder.push(pred)
-            }
-        }
-        Ok((results, remainder))
-    }
-
-    fn triples_with_predicate(
-        &self,
-        pred: &Self::IRI,
-    ) -> Result<Vec<crate::Triple<Self>>, Self::Err> {
-        let mut result = Vec::new();
-        for triple in self.graph.triples_for_predicate(pred) {
-            let subj = triple.subject.into_owned();
-            let pred = triple.predicate.into_owned();
-            let obj = triple.object.into_owned();
-            result.push(STriple::new(subj, pred, obj))
-        }
-        Ok(result)
+impl Query for SRDFGraph {
+    fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        Ok(self.graph.iter().map(TripleRef::into_owned))
     }
 }
 
@@ -680,39 +376,48 @@ impl SRDFBuilder for SRDFGraph {
         Ok(())
     }
 
-    fn add_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
-        let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
+        self.bnode_counter += 1;
+        match self.bnode_counter.try_into() {
+            Ok(bn) => Ok(OxBlankNode::new_from_unique_id(bn)),
+            Err(_) => Err(SRDFGraphError::BlankNodeId {
+                msg: format!("Error converting {} to usize", self.bnode_counter),
+            }),
+        }
+    }
+
+    fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
+        let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
         self.graph.insert(&triple);
         Ok(())
     }
 
-    fn remove_triple(
-        &mut self,
-        subj: &Self::Subject,
-        pred: &Self::IRI,
-        obj: &Self::Term,
-    ) -> Result<(), Self::Err> {
-        let triple = OxTriple::new(subj.clone(), pred.clone(), obj.clone());
+    fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        P: Into<Self::IRI>,
+        O: Into<Self::Term>,
+    {
+        let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
         self.graph.remove(&triple);
         Ok(())
     }
 
-    fn add_type(&mut self, node: &crate::RDFNode, r#type: Self::Term) -> Result<(), Self::Err> {
-        match Self::object_as_subject(node) {
-            Some(subj) => {
-                let triple = OxTriple::new(subj, rdf_type(), r#type.clone());
-                self.graph.insert(&triple);
-                Ok(())
-            }
-            None => {
-                panic!("Error adding type to {node} because it can't be converted to a subject")
-            }
-        }
+    fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
+    where
+        S: Into<Self::Subject>,
+        T: Into<Self::Term>,
+    {
+        let subject: Self::Subject = node.into();
+        let type_: Self::Term = type_.into();
+        let triple = OxTriple::new(subject, rdf_type(), type_.clone());
+        self.graph.insert(&triple);
+        Ok(())
     }
 
     fn empty() -> Self {
@@ -721,10 +426,11 @@ impl SRDFBuilder for SRDFGraph {
             graph: Graph::new(),
             pm: PrefixMap::new(),
             base: None,
+            bnode_counter: 0,
         }
     }
 
-    fn serialize<W: Write>(&self, format: RDFFormat, write: &mut W) -> Result<(), Self::Err> {
+    fn serialize<W: Write>(&self, format: &RDFFormat, write: &mut W) -> Result<(), Self::Err> {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
@@ -740,7 +446,7 @@ impl SRDFBuilder for SRDFGraph {
     }
 }
 
-fn cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
+fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,
@@ -753,308 +459,6 @@ fn cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
 
 fn rdf_type() -> OxNamedNode {
     OxNamedNode::new_unchecked(RDF_TYPE_STR)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{int, srdf, SRDFGraph, SRDF};
-    use iri_s::iri;
-
-    #[tokio::test]
-    async fn parse_get_predicates() {
-        use crate::srdfgraph::AsyncSRDF;
-
-        let s = r#"PREFIX : <http://example.org/>
-            PREFIX schema: <https://schema.org/>
-
-            :alice schema:name "Alice" ;
-                   schema:knows :bob, :carol ;
-                   :age  23 .
-         "#;
-        let parsed_graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
-        let knows = OxNamedNode::new_unchecked("https://schema.org/knows");
-        let bag_preds = parsed_graph.get_predicates_subject(&alice).await.unwrap();
-        assert!(bag_preds.contains(&knows));
-        let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
-        let alice_knows =
-            AsyncSRDF::get_objects_for_subject_predicate(&parsed_graph, &alice, &knows)
-                .await
-                .unwrap();
-        assert!(alice_knows.contains(&bob));
-    }
-
-    #[test]
-    fn test_outgoing_arcs() {
-        let s = r#"prefix : <http://example.org/>
-        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-        :x :p [ :p 1 ].
-        "#;
-
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
-        let term = terms.iter().next().unwrap().clone();
-        let subject = <SRDFGraph as SRDFBasic>::term_as_subject(&term).unwrap();
-        let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
-        assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
-    }
-
-    #[test]
-    fn test_outgoing_arcs_bnode() {
-        let s = r#"prefix : <http://example.org/>
-        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-        :x :p [ :p 1 ].
-        "#;
-
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = <SRDFGraph as SRDFBasic>::iri_s2subject(&iri!("http://example.org/x"));
-        let p = <SRDFGraph as SRDFBasic>::iri_s2iri(&iri!("http://example.org/p"));
-        let terms = srdf::SRDF::objects_for_subject_predicate(&graph, &x, &p).unwrap();
-        let term = terms.iter().next().unwrap().clone();
-        let bnode = <SRDFGraph as SRDFBasic>::term_as_bnode(&term).unwrap();
-        let subject = <SRDFGraph as SRDFBasic>::bnode_id2subject(bnode.as_str());
-        let outgoing = graph.outgoing_arcs(&subject).unwrap();
-        let one = <SRDFGraph as SRDFBasic>::object_as_term(&Object::Literal(int!(1)));
-        assert_eq!(outgoing.get(&p), Some(&HashSet::from([one])))
-    }
-
-    #[test]
-    fn test_parser() {
-        use crate::{ok, rdf_parser, RDFNodeParse};
-        rdf_parser! {
-            fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
-            where [
-                A: Clone
-            ] { ok(&value.clone()) }
-        }
-        let s = r#"prefix : <http://example.org/>"#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = iri!("http://example.org/x");
-        assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
-    }
-
-    #[test]
-    fn test_parser_property_integers() {
-        use crate::{property_integers, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p 1, 2, 3, 2 .
-        "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let mut parser = property_integers(&p);
-        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
-    }
-
-    #[test]
-    fn test_parser_then_mut() {
-        use crate::{ok, property_integers, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p 1, 2, 3 .
-        "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let mut parser = property_integers(&p).then_mut(move |ns| {
-            ns.extend(vec![4, 5]);
-            ok(ns)
-        });
-        assert_eq!(
-            parser.parse(&x, graph).unwrap(),
-            HashSet::from([1, 2, 3, 4, 5])
-        )
-    }
-
-    #[test]
-    fn test_parser_or() {
-        use crate::{property_bool, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p 1, 2 ;
-             :q true .
-        "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let q = iri!("http://example.org/q");
-        let mut parser = property_bool(&p).or(property_bool(&q));
-        assert!(parser.parse(&x, graph).unwrap())
-    }
-
-    #[test]
-    fn test_parser_or_enum_1() {
-        #[derive(Debug, PartialEq)]
-        enum A {
-            Int(isize),
-            Bool(bool),
-        }
-        use crate::{property_bool, property_integer, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p 1 .
-        "#;
-        let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let parser_a_bool = property_bool(&p).map(A::Bool);
-        let parser_a_int = property_integer(&p).map(A::Int);
-        let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
-    }
-
-    #[test]
-    fn test_parser_or_enum_2() {
-        #[derive(Debug, PartialEq)]
-        enum A {
-            Int(isize),
-            Bool(bool),
-        }
-        use crate::{property_bool, property_integer, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p true .
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let parser_a_bool = property_bool(&p).map(A::Bool);
-        let parser_a_int = property_integer(&p).map(A::Int);
-        let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
-    }
-
-    #[test]
-    fn test_parser_and() {
-        use crate::{property_bool, property_integer, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p true ;
-             :q 1    .
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let q = iri!("http://example.org/q");
-        let mut parser = property_bool(&p).and(property_integer(&q));
-        assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
-    }
-
-    #[test]
-    fn test_parser_map() {
-        use crate::{property_integer, RDFNodeParse};
-        let s = r#"prefix : <http://example.org/>
-          :x :p 1 .
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        let mut parser = property_integer(&p).map(|n| n + 1);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 2)
-    }
-
-    #[test]
-    fn test_parser_and_then() {
-        use crate::{property_string, RDFNodeParse, RDFParseError};
-        let s = r#"prefix : <http://example.org/>
-          :x :p "1" .
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-        struct IntConversionError(String);
-        fn cnv_int(s: String) -> Result<isize, IntConversionError> {
-            s.parse().map_err(|_| IntConversionError(s))
-        }
-
-        impl From<IntConversionError> for RDFParseError {
-            fn from(error: IntConversionError) -> RDFParseError {
-                RDFParseError::Custom {
-                    msg: format!("Int conversion error: {}", error.0),
-                }
-            }
-        }
-
-        let mut parser = property_string(&p).and_then(cnv_int);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    }
-
-    #[test]
-    fn test_parser_flat_map() {
-        use crate::{property_string, PResult, RDFNodeParse, RDFParseError};
-        let s = r#"prefix : <http://example.org/>
-          :x :p "1" .
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let p = iri!("http://example.org/p");
-
-        fn cnv_int(s: String) -> PResult<isize> {
-            s.parse().map_err(|_| RDFParseError::Custom {
-                msg: format!("Error converting {s}"),
-            })
-        }
-
-        let mut parser = property_string(&p).flat_map(cnv_int);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    }
-
-    #[test]
-    fn test_rdf_parser_macro() {
-        use crate::SRDFGraph;
-        use crate::{rdf_parser, satisfy, RDFNodeParse, SRDFBasic};
-        use iri_s::iri;
-
-        rdf_parser! {
-              fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
-              where [
-              ] {
-               let name = format!("is_{term}");
-               satisfy(|t| { t == *term }, name.as_str())
-              }
-        }
-
-        let s = r#"prefix : <http://example.org/>
-                   :x :p 1.
-        "#;
-        let graph =
-            SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-        let x = iri!("http://example.org/x");
-        let term = <SRDFGraph as SRDFBasic>::iri_s2term(&x);
-        let mut parser = is_term(&term);
-        let result = parser.parse(&x, graph);
-        assert!(result.is_ok())
-    }
-}
-
-#[test]
-fn test_rdf_list() {
-    use crate::SRDFGraph;
-    use crate::{property_value, rdf_list, set_focus, RDFNodeParse};
-    use iri_s::iri;
-
-    let s = r#"prefix : <http://example.org/>
-               :x :p (1 2).
-    "#;
-    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    let x = iri!("http://example.org/x");
-    let p = iri!("http://example.org/p");
-    let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
-    let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
-    assert_eq!(
-        result,
-        vec![
-            OxTerm::from(OxLiteral::from(1)),
-            OxTerm::from(OxLiteral::from(2))
-        ]
-    )
 }
 
 fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
@@ -1081,28 +485,411 @@ impl ReaderMode {
     }
 }
 
-#[test]
-fn test_not() {
-    use crate::SRDFGraph;
-    use crate::{not, property_value, RDFNodeParse};
-    use iri_s::iri;
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
 
-    let s = r#"prefix : <http://example.org/>
-               :x :p 1 .
+    use iri_s::IriS;
+    use oxrdf::Literal as OxLiteral;
+    use oxrdf::NamedNode as OxNamedNode;
+    use oxrdf::Subject as OxSubject;
+    use oxrdf::Term as OxTerm;
+
+    use crate::iri;
+    use crate::matcher::Any;
+    use crate::not;
+    use crate::ok;
+    use crate::property_bool;
+    use crate::property_integer;
+    use crate::property_integers;
+    use crate::property_string;
+    use crate::property_value;
+    use crate::rdf_list;
+    use crate::rdf_parser;
+    use crate::satisfy;
+    use crate::set_focus;
+    use crate::PResult;
+    use crate::Query as _;
+    use crate::RDFFormat;
+    use crate::RDFNodeParse as _;
+    use crate::RDFParseError;
+    use crate::SRDFBuilder;
+    use crate::Triple;
+
+    use super::ReaderMode;
+    use super::SRDFGraph;
+
+    const DUMMY_GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+        :y :p "String" .
+        :y :q 2 .
+        :z :r 3 .
+        :x :s 4 .
     "#;
-    let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
-    let x = iri!("http://example.org/x");
-    let q = iri!("http://example.org/q");
-    assert!(not(property_value(&q)).parse(&x, graph).is_ok())
-}
 
-#[test]
-fn test_iri() {
-    use crate::SRDFGraph;
-    use crate::{iri, RDFNodeParse};
-    use iri_s::iri;
+    const DUMMY_GRAPH_1: &str = r#"
+        prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        :x :p [ :p 1 ] .
+    "#;
 
-    let graph = SRDFGraph::new();
-    let x = iri!("http://example.org/x");
-    assert_eq!(iri().parse(&x, graph).unwrap(), x)
+    const DUMMY_GRAPH_2: &str = r#"
+        prefix : <http://example.org/>
+        :x :p (1 2) .
+    "#;
+
+    const DUMMY_GRAPH_3: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2, 3, 2 .
+    "#;
+
+    const DUMMY_GRAPH_4: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2, 3 .
+    "#;
+
+    const DUMMY_GRAPH_5: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1, 2 ;
+        :q true .
+    "#;
+
+    const DUMMY_GRAPH_6: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+    "#;
+
+    const DUMMY_GRAPH_7: &str = r#"
+        prefix : <http://example.org/>
+        :x :p true .
+    "#;
+
+    const DUMMY_GRAPH_8: &str = r#"
+        prefix : <http://example.org/>
+        :x :p true ;
+        :q 1    .
+    "#;
+
+    const DUMMY_GRAPH_9: &str = r#"
+        prefix : <http://example.org/>
+        :x :p 1 .
+    "#;
+
+    const DUMMY_GRAPH_10: &str = r#"
+        prefix : <http://example.org/>
+        :x :p "1" .
+    "#;
+
+    #[derive(Debug, PartialEq)]
+    enum A {
+        Int(isize),
+        Bool(bool),
+    }
+
+    fn graph_from_str(s: &str) -> SRDFGraph {
+        SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    }
+
+    #[test]
+    fn test_triples_matching_subject_predicate_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(x, p, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_subject_and_predicate() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let triples = graph.triples_matching(x, p, Any).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_subject_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(x, Any, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_predicate_and_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(Any, p, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_triples_matching_subject() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let triples = graph.triples_matching(x, Any, Any).unwrap();
+        assert_eq!(triples.count(), 2)
+    }
+
+    #[test]
+    fn test_triples_matching_predicate() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let triples = graph.triples_matching(Any, p, Any).unwrap();
+        assert_eq!(triples.count(), 2)
+    }
+
+    #[test]
+    fn test_triples_matching_object() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let one: OxTerm = OxLiteral::from(1).into();
+        let triples = graph.triples_matching(Any, Any, one).unwrap();
+        assert_eq!(triples.count(), 1)
+    }
+
+    #[test]
+    fn test_incoming_arcs() {
+        let graph = graph_from_str(DUMMY_GRAPH);
+        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+        let actual = graph.incoming_arcs(one).unwrap();
+        let expected = HashSet::from([x]);
+        assert_eq!(actual.get(&p), Some(&expected))
+    }
+
+    #[test]
+    fn test_outgoing_arcs() {
+        let graph = graph_from_str(DUMMY_GRAPH_1);
+
+        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let one: OxTerm = OxLiteral::from(1).into();
+
+        let subject = graph
+            .triples_matching(x, p.clone(), Any)
+            .unwrap()
+            .map(Triple::into_object)
+            .next()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let actual = graph.outgoing_arcs(subject).unwrap();
+        let expected = HashSet::from([one]);
+
+        assert_eq!(actual.get(&p), Some(&expected))
+    }
+
+    #[test]
+    fn test_add_triple() {
+        let mut graph = SRDFGraph::default();
+
+        let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
+        let knows = OxNamedNode::new_unchecked("http://example.org/knows");
+        let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
+
+        graph.add_triple(alice, knows, bob).unwrap();
+
+        assert_eq!(graph.len(), 1);
+    }
+
+    #[test]
+    fn test_rdf_list() {
+        let graph = graph_from_str(DUMMY_GRAPH_2);
+
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+
+        let mut parser = property_value(&p).then(move |obj| set_focus(&obj).with(rdf_list()));
+        let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                OxTerm::from(OxLiteral::from(1)),
+                OxTerm::from(OxLiteral::from(2))
+            ]
+        )
+    }
+
+    #[test]
+    fn test_parser() {
+        rdf_parser! {
+            fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
+            where [
+                A: Clone
+            ] { ok(&value.clone()) }
+        }
+        let graph = graph_from_str("prefix : <http://example.org/>");
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
+    }
+
+    #[test]
+    fn test_parser_property_integers() {
+        let graph = graph_from_str(DUMMY_GRAPH_3);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let mut parser = property_integers(&p);
+        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
+    }
+
+    #[test]
+    fn test_parser_then_mut() {
+        let graph = graph_from_str(DUMMY_GRAPH_4);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+
+        let mut parser = property_integers(&p).then_mut(move |ns| {
+            ns.extend(vec![4, 5]);
+            ok(ns)
+        });
+
+        assert_eq!(
+            parser.parse(&x, graph).unwrap(),
+            HashSet::from([1, 2, 3, 4, 5])
+        )
+    }
+
+    #[test]
+    fn test_parser_or() {
+        let graph = graph_from_str(DUMMY_GRAPH_5);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        let mut parser = property_bool(&p).or(property_bool(&q));
+        assert!(parser.parse(&x, graph).unwrap())
+    }
+
+    #[test]
+    fn test_parser_or_enum_1() {
+        let graph = graph_from_str(DUMMY_GRAPH_6);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let parser_a_bool = property_bool(&p).map(A::Bool);
+        let parser_a_int = property_integer(&p).map(A::Int);
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
+    }
+
+    #[test]
+    fn test_parser_or_enum_2() {
+        let graph = graph_from_str(DUMMY_GRAPH_7);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let parser_a_bool = property_bool(&p).map(A::Bool);
+        let parser_a_int = property_integer(&p).map(A::Int);
+        let mut parser = parser_a_int.or(parser_a_bool);
+        assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
+    }
+
+    #[test]
+    fn test_parser_and() {
+        let graph = graph_from_str(DUMMY_GRAPH_8);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        let mut parser = property_bool(&p).and(property_integer(&q));
+        assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
+    }
+
+    #[test]
+    fn test_parser_map() {
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let mut parser = property_integer(&p).map(|n| n + 1);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 2)
+    }
+
+    #[test]
+    fn test_parser_and_then() {
+        let graph = graph_from_str(DUMMY_GRAPH_10);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+
+        struct IntConversionError(String);
+
+        fn cnv_int(s: String) -> Result<isize, IntConversionError> {
+            s.parse().map_err(|_| IntConversionError(s))
+        }
+
+        impl From<IntConversionError> for RDFParseError {
+            fn from(error: IntConversionError) -> RDFParseError {
+                RDFParseError::Custom {
+                    msg: format!("Int conversion error: {}", error.0),
+                }
+            }
+        }
+
+        let mut parser = property_string(&p).and_then(cnv_int);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
+    }
+
+    #[test]
+    fn test_parser_flat_map() {
+        let graph = graph_from_str(DUMMY_GRAPH_10);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+
+        fn cnv_int(s: String) -> PResult<isize> {
+            s.parse().map_err(|_| RDFParseError::Custom {
+                msg: format!("Error converting {s}"),
+            })
+        }
+
+        let mut parser = property_string(&p).flat_map(cnv_int);
+        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
+    }
+
+    #[test]
+    fn test_rdf_parser_macro() {
+        rdf_parser! {
+              fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
+              where [
+              ] {
+                let name = format!("is_{term}");
+                satisfy(|t| { t == *term }, name.as_str())
+              }
+        }
+
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
+        let iri_s = IriS::from_named_node(&x);
+        let term = x.clone().into();
+        let mut parser = is_term(&term);
+        let result = parser.parse(&iri_s, graph);
+        assert!(result.is_ok())
+    }
+
+    #[test]
+    fn test_not() {
+        let graph = graph_from_str(DUMMY_GRAPH_9);
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        assert!(not(property_value(&q)).parse(&x, graph).is_ok())
+    }
+
+    #[test]
+    fn test_iri() {
+        let graph = SRDFGraph::default();
+        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
+        assert_eq!(iri().parse(&x, graph).unwrap(), x)
+    }
+
+    #[test]
+    fn test_add_triple_ref() {
+        let mut graph = SRDFGraph::default();
+        let s = OxNamedNode::new_unchecked("http://example.org/x");
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let o = OxNamedNode::new_unchecked("http://example.org/y");
+        graph.add_triple_ref(&s, &p, &o).unwrap();
+        assert_eq!(graph.len(), 1);
+    }
 }

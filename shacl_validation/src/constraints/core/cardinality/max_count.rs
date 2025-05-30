@@ -1,9 +1,10 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
+use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -18,7 +19,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic> Validator<S> for MaxCount {
+impl<S: Rdf + Debug> Validator<S> for MaxCount {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -26,32 +27,49 @@ impl<S: SRDFBasic> Validator<S> for MaxCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        _source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         validate_with(component, shape, value_nodes, FocusNodeIteration, max_count)
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for MaxCount {
+impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for MaxCount {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

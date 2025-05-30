@@ -54,14 +54,14 @@ impl Serialize for Min {
     where
         S: Serializer,
     {
-        let value = self.value as u128;
-        serializer.serialize_u128(value)
+        let value = self.value as u64;
+        serializer.serialize_u64(value)
     }
 }
 
 struct MinVisitor;
 
-impl<'de> Visitor<'de> for MinVisitor {
+impl Visitor<'_> for MinVisitor {
     type Value = Min;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

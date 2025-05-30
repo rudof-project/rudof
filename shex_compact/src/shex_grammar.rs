@@ -36,7 +36,7 @@ use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE_STR};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
-pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "shex_statement",
         map_error(
@@ -107,7 +107,7 @@ fn directive(i: Span) -> IRes<ShExStatement> {
 }
 
 /// `[3] baseDecl ::= "BASE" IRIREF`
-fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "base_decl",
         map_error(
@@ -121,7 +121,7 @@ fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 }
 
 /// [4] `prefixDecl ::= "PREFIX" PNAME_NS IRIREF`
-fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "prefix_decl",
         map_error(
@@ -147,7 +147,7 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
 }
 
 /// `[4½] importDecl ::= "IMPORT" IRIREF`
-fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "import_decl",
         map_error(
@@ -168,7 +168,7 @@ fn not_start_action(i: Span) -> IRes<ShExStatement> {
 }
 */
 /// `[6] start ::= "start" '=' inlineShapeExpression`
-fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     map_error(
         move |i| {
             let (i, (_, _, _, _, se)) = tuple((
@@ -196,7 +196,7 @@ fn statement(i: Span) -> IRes<ShExStatement> {
 }
 */
 /// `[9] shapeExprDecl ::= shapeExprLabel (shapeExpression | "EXTERNAL")`
-fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement> {
+fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "shape_expr_decl",
         map_error(
@@ -1254,11 +1254,11 @@ fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
   }
 }*/
 
-fn tilde<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+fn tilde<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     move |i| token_tws("~")(i)
 }
 
-fn dash<'a>() -> impl FnMut(Span<'a>) -> IRes<Span<'a>> {
+fn dash<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     move |i| token_tws("-")(i)
 }
 
@@ -1325,11 +1325,12 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                     tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
                     ValueSetValue::LanguageStem {
-                        stem: Lang::new(""),
+                        // TODO: why is this empty?
+                        stem: Lang::new_unchecked(""),
                     }
                 } else {
                     ValueSetValue::LanguageStemRange {
-                        stem: LangOrWildcard::Lang(Lang::new("")),
+                        stem: LangOrWildcard::Lang(Lang::new_unchecked("")),
                         exclusions: Some(exclusions),
                     }
                 };
@@ -1515,7 +1516,7 @@ fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
                 let (i, maybe_value) = opt(alt((
                     map(lang_tag, |lang| Literal::lang_str(&str, lang)),
                     map(preceded(token("^^"), datatype_iri), |datatype| {
-                        Literal::datatype(&str, &datatype)
+                        Literal::lit_datatype(&str, &datatype)
                     }),
                 )))(i)?;
                 let value = match maybe_value {
@@ -1621,7 +1622,7 @@ pub fn hex_refactor(input: Span) -> IRes<Span> {
 }
 
 use nom::Slice;
-pub fn re_find<'a>(re: &'a Lazy<Regex>) -> impl Fn(Span<'a>) -> IRes<Span<'a>> {
+pub fn re_find<'a>(re: &'a Lazy<Regex>) -> impl Fn(Span<'a>) -> IRes<'a, Span<'a>> {
     move |i| {
         let str = i.fragment();
         if let Some(m) = re.find(str) {
@@ -1682,7 +1683,7 @@ fn lang_tag(i: Span) -> IRes<Lang> {
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),
     )(i)?;
-    Ok((i, Lang::new(lang_str.fragment())))
+    Ok((i, Lang::new_unchecked(*lang_str.fragment())))
 }
 
 /// `[61] predicate ::= iri | RDF_TYPE`
@@ -2391,7 +2392,7 @@ fn in_range(c: char, lower: u32, upper: u32) -> bool {
 }
 
 /// Take one character if it fits the function
-fn one_if<'a, F: Fn(char) -> bool>(f: F) -> impl Fn(Span<'a>) -> IRes<Span<'a>> {
+fn one_if<'a, F: Fn(char) -> bool>(f: F) -> impl Fn(Span<'a>) -> IRes<'a, Span<'a>> {
     move |i| {
         if let Some(c) = i.chars().next() {
             if f(c) {

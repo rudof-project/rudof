@@ -1,9 +1,12 @@
+use std::fmt::Display;
+
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
-use srdf::SRDF;
+use srdf::Query;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct QueryShapeMap {
     associations: Vec<Association>,
     nodes_prefixmap: PrefixMap,
@@ -45,10 +48,20 @@ impl QueryShapeMap {
     pub fn iter_node_shape<'a, S>(
         &'a self,
         rdf: &'a S,
-    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)> + 'a
+    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
     where
-        S: SRDF,
+        S: Query,
     {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
+    }
+}
+
+impl Display for QueryShapeMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
+        )
     }
 }

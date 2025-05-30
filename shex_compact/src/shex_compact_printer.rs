@@ -10,7 +10,7 @@ use shex_ast::{
     ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
 use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
-use std::{borrow::Cow, marker::PhantomData};
+use std::{borrow::Cow, io, marker::PhantomData};
 
 use crate::pp_object_value;
 
@@ -81,6 +81,7 @@ impl ShExFormatter {
         self
     }
 
+    /// Changes the formatter to avoid showing colors
     pub fn without_colors(self) -> ShExFormatter {
         self.with_keyword_color(None)
             .with_localname_color(None)
@@ -98,6 +99,21 @@ impl ShExFormatter {
         printer = printer.with_qualify_prefix_color(self.prefix_color);
         printer = printer.with_qualify_semicolon_color(self.semicolon_color);
         printer.pretty_print()
+    }
+
+    pub fn write_schema<W: std::io::Write>(
+        &self,
+        schema: &Schema,
+        writer: &mut W,
+    ) -> Result<(), std::io::Error> {
+        let arena = Arena::<()>::new();
+        let mut printer = ShExCompactPrinter::new(schema, &arena);
+        printer = printer.with_keyword_color(self.keyword_color);
+        printer = printer.with_string_color(self.string_color);
+        printer = printer.with_qualify_localname_color(self.localname_color);
+        printer = printer.with_qualify_prefix_color(self.prefix_color);
+        printer = printer.with_qualify_semicolon_color(self.semicolon_color);
+        printer.pretty_print_write(writer)
     }
 }
 
@@ -182,9 +198,16 @@ where
         self
     }
 
+    /// Pretty print to a String
     pub fn pretty_print(&self) -> String {
         let doc = self.pp_schema();
         doc.pretty(self.width).to_string()
+    }
+
+    /// Writes a ShEx schema to a `std::io::Write` object
+    pub fn pretty_print_write<W: io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+        let doc = self.pp_schema();
+        doc.render(self.width, writer)
     }
 
     fn pp_schema(&self) -> DocBuilder<'a, Arena<'a, A>, A> {

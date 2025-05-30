@@ -91,7 +91,7 @@ impl Serialize for Max {
 
 struct MaxVisitor;
 
-impl<'de> Visitor<'de> for MaxVisitor {
+impl Visitor<'_> for MaxVisitor {
     type Value = Max;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

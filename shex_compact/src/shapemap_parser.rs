@@ -21,7 +21,7 @@ pub struct ShapeMapParser<'a> {
     shapemap_statement_iterator: ShapeMapStatementIterator<'a>,
 }
 
-impl<'a> ShapeMapParser<'a> {
+impl ShapeMapParser<'_> {
     /// Parse a ShapeMap that uses [ShapeMap compact syntax](https://shexspec.github.io/shape-map/#grammar)
     ///
     pub fn parse(
@@ -47,7 +47,7 @@ impl<'a> ShapeMapParser<'a> {
                         node_selector,
                         shape_selector,
                     } => {
-                        tracing::debug!("Association {node_selector:?}@{shape_selector:?}");
+                        // tracing::debug!("Association {node_selector:?}@{shape_selector:?}");
                         query_shapemap.add_association(node_selector, shape_selector);
                     }
                 }
@@ -82,10 +82,16 @@ impl<'a> ShapeMapParser<'a> {
         let span = Span::new(str);
         let (_, ns) = node_selector()(span).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
-                msg: format!("Incomplete input: needed {s:?}"),
+                msg: format!("Incomplete input parsing node selector {str}: needed {s:?}"),
             },
-            Err::Error(e) => ParseError::NomError { err: Box::new(e) },
-            Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
+            Err::Error(e) => ParseError::NodeSelectorNomError {
+                str: str.to_string(),
+                err: Box::new(e),
+            },
+            Err::Failure(f) => ParseError::NodeSelectorNomError {
+                str: str.to_string(),
+                err: Box::new(f),
+            },
         })?;
         Ok(ns)
     }
@@ -108,7 +114,7 @@ struct ShapeMapStatementIterator<'a> {
     done: bool,
 }
 
-impl<'a> ShapeMapStatementIterator<'a> {
+impl ShapeMapStatementIterator<'_> {
     pub fn new(src: Span) -> Result<ShapeMapStatementIterator> {
         match tws0(src) {
             Ok((left, _)) => Ok(ShapeMapStatementIterator {
@@ -123,7 +129,7 @@ impl<'a> ShapeMapStatementIterator<'a> {
     }
 }
 
-impl<'a> Iterator for ShapeMapStatementIterator<'a> {
+impl Iterator for ShapeMapStatementIterator<'_> {
     type Item = Result<Vec<ShapeMapStatement>>;
 
     fn next(&mut self) -> Option<Self::Item> {

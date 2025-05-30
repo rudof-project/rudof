@@ -1,0 +1,3 @@
+prefix : <http://example.org/>
+
+:S { :p . } OR [ :ok1 :ok2 ]

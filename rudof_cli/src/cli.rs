@@ -13,8 +13,8 @@ use std::{fmt::Formatter, path::PathBuf};
 // #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
-    long_about = r#"
- A tool to process and validate RDF data using shapes, and convert between different RDF data models"#
+    long_about = "\
+A tool to process and validate RDF data using shapes, and convert between different RDF data models"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -28,8 +28,8 @@ pub struct Cli {
 pub enum Command {
     /// Show information about ShEx ShapeMaps
     Shapemap {
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: PathBuf,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: InputSpec,
 
         #[arg(
             short = 'f',
@@ -105,6 +105,12 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
+            long = "show-dependencies",
+            value_name = "Show dependencies between shapes"
+        )]
+        show_dependencies: Option<bool>,
+
+        #[arg(
             long = "force-overwrite",
             value_name = "Force overwrite mode",
             default_value_t = false
@@ -128,18 +134,13 @@ pub enum Command {
         validation_mode: ValidationMode,
 
         #[arg(short = 's', long = "schema", value_name = "Schema file name")]
-        schema: InputSpec,
+        schema: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "schema-format",
-            value_name = "Schema format",
-            default_value_t = ShExFormat::ShExC
-        )]
-        schema_format: ShExFormat,
+        #[arg(short = 'f', long = "schema-format", value_name = "Schema format")]
+        schema_format: Option<ShExFormat>,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: Option<PathBuf>,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",
@@ -197,6 +198,14 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Compact
+        )]
+        result_format: ResultFormat,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
@@ -209,6 +218,10 @@ pub enum Command {
             default_value_t = false
         )]
         force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        config: Option<PathBuf>,
     },
 
     /// Validate RDF using ShEx schemas
@@ -221,18 +234,13 @@ pub enum Command {
             long = "schema",
             value_name = "Schema file name, URI or -"
         )]
-        schema: InputSpec,
+        schema: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "schema-format",
-            value_name = "Schema format",
-            default_value_t = ShExFormat::ShExC
-        )]
-        schema_format: ShExFormat,
+        #[arg(short = 'f', long = "schema-format", value_name = "Schema format")]
+        schema_format: Option<ShExFormat>,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap file name")]
-        shapemap: Option<PathBuf>,
+        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",
@@ -273,6 +281,14 @@ pub enum Command {
         endpoint: Option<String>,
 
         #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Turtle
+        )]
+        result_format: ResultFormat,
+
+        #[arg(
             short = 'o',
             long = "output-file",
             value_name = "Output file name, default = terminal"
@@ -299,17 +315,12 @@ pub enum Command {
         #[arg(
             short = 's',
             long = "shapes",
-            value_name = "Shapes graph: file, URI or -"
+            value_name = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
         )]
-        shapes: InputSpec,
+        shapes: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "shapes-format",
-            value_name = "Shapes file format",
-            default_value_t = ShaclFormat::Turtle
-        )]
-        shapes_format: ShaclFormat,
+        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        shapes_format: Option<ShaclFormat>,
 
         #[arg(
             short = 't',
@@ -340,6 +351,14 @@ pub enum Command {
             value_enum
         )]
         mode: ShaclValidationMode,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Ouput result format",
+            default_value_t = ResultFormat::Compact
+        )]
+        result_format: ResultFormat,
 
         #[arg(
             short = 'o',
@@ -385,19 +404,19 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         #[arg(
-            short = 'o',
-            long = "output-file",
-            value_name = "Output file name, default = terminal"
-        )]
-        output: Option<PathBuf>,
-
-        #[arg(
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
             default_value_t = DataFormat::Turtle
         )]
         result_format: DataFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
         #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
@@ -755,11 +774,12 @@ impl Display for ShowNodeMode {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ShExFormat {
     Internal,
     Simple,
+    #[default]
     ShExC,
     ShExJ,
     Turtle,
@@ -768,6 +788,23 @@ pub enum ShExFormat {
     TriG,
     N3,
     NQuads,
+}
+
+impl MimeType for ShExFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            ShExFormat::Internal => "text/turtle".to_string(),
+            ShExFormat::Simple => "text/turtle".to_string(),
+            ShExFormat::ShExC => "text/shex".to_string(),
+            ShExFormat::ShExJ => "application/json".to_string(),
+            ShExFormat::Turtle => "text/turtle".to_string(),
+            ShExFormat::NTriples => "application/n-triples".to_string(),
+            ShExFormat::RDFXML => "application/rdf+xml".to_string(),
+            ShExFormat::TriG => "application/trig".to_string(),
+            ShExFormat::N3 => "text/n3".to_string(),
+            ShExFormat::NQuads => "application/n-quads".to_string(),
+        }
+    }
 }
 
 impl Display for ShExFormat {
@@ -814,6 +851,51 @@ pub enum DataFormat {
     NQuads,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum ResultFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
+    Compact,
+    Json,
+}
+
+impl Display for ResultFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ResultFormat::Turtle => write!(dest, "turtle"),
+            ResultFormat::NTriples => write!(dest, "ntriples"),
+            ResultFormat::RDFXML => write!(dest, "rdfxml"),
+            ResultFormat::TriG => write!(dest, "trig"),
+            ResultFormat::N3 => write!(dest, "n3"),
+            ResultFormat::NQuads => write!(dest, "nquads"),
+            ResultFormat::Compact => write!(dest, "compact"),
+            ResultFormat::Json => write!(dest, "json"),
+        }
+    }
+}
+
+pub trait MimeType {
+    fn mime_type(&self) -> String;
+}
+
+impl MimeType for DataFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            DataFormat::Turtle => "text/turtle".to_string(),
+            DataFormat::NTriples => "application/n-triples".to_string(),
+            DataFormat::RDFXML => "application/rdf+xml".to_string(),
+            DataFormat::TriG => "application/trig".to_string(),
+            DataFormat::N3 => "text/n3".to_string(),
+            DataFormat::NQuads => "application/n-quads".to_string(),
+        }
+    }
+}
+
 impl From<DataFormat> for RDFFormat {
     fn from(val: DataFormat) -> Self {
         match val {
@@ -840,16 +922,31 @@ impl Display for DataFormat {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ShaclFormat {
     Internal,
+    #[default]
     Turtle,
     NTriples,
     RDFXML,
     TriG,
     N3,
     NQuads,
+}
+
+impl MimeType for ShaclFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            ShaclFormat::Turtle => "text/turtle".to_string(),
+            ShaclFormat::NTriples => "application/n-triples".to_string(),
+            ShaclFormat::RDFXML => "application/rdf+xml".to_string(),
+            ShaclFormat::TriG => "application/trig".to_string(),
+            ShaclFormat::N3 => "text/n3".to_string(),
+            ShaclFormat::NQuads => "application/n-quads".to_string(),
+            ShaclFormat::Internal => "text/turtle".to_string(),
+        }
+    }
 }
 
 impl Display for ShaclFormat {

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct DatatypeId {

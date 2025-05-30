@@ -1,4 +1,5 @@
 use iri_s::IriS;
+// use nom::AsBytes;
 use nom::Err;
 use prefixmap::Deref;
 use shex_ast::Schema;
@@ -24,7 +25,7 @@ pub struct ShExParser<'a> {
     // done: bool,
 }
 
-impl<'a> ShExParser<'a> {
+impl ShExParser<'_> {
     /// Parse a ShEx schema that uses [ShEx compact syntax](https://shex.io/shex-semantics/index.html#shexc)
     ///
     /// `base` is an optional IRI that acts as the base for relative IRIs
@@ -33,7 +34,7 @@ impl<'a> ShExParser<'a> {
         let mut parser = ShExParser {
             shex_statement_iterator: StatementIterator::new(Span::new(src))?,
         };
-        let mut shapes_counter = 0;
+        // let mut shapes_counter = 0;
         for s in parser.shex_statement_iterator.by_ref() {
             match s? {
                 ShExStatement::BaseDecl { iri } => {
@@ -55,8 +56,8 @@ impl<'a> ShExParser<'a> {
                 } => {
                     let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
                     let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
-                    shapes_counter += 1;
-                    tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
+                    // shapes_counter += 1;
+                    // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);
                 }
                 ShExStatement::StartActions { actions } => {
@@ -73,10 +74,13 @@ impl<'a> ShExParser<'a> {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(rdr: &mut R, base: Option<IriS>) -> Result<Schema> {
-        let mut str = String::new();
-        rdr.read_to_string(&mut str)?;
-        Self::parse(&str, base)
+    pub fn from_reader<R: io::Read>(mut reader: R, base: Option<IriS>) -> Result<Schema> {
+        let mut v = Vec::new();
+        reader.read_to_end(&mut v)?;
+        let s = String::from_utf8(v).map_err(|e| ParseError::Utf8Error {
+            error: format!("{e}"),
+        })?;
+        Self::parse(s.as_str(), base)
     }
 }
 
@@ -85,7 +89,7 @@ struct StatementIterator<'a> {
     done: bool,
 }
 
-impl<'a> StatementIterator<'a> {
+impl StatementIterator<'_> {
     pub fn new(src: Span) -> Result<StatementIterator> {
         match tws0(src) {
             Ok((left, _)) => Ok(StatementIterator {

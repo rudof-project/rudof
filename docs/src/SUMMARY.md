@@ -1,25 +1,40 @@
-- [Overview](./overview.md)
-
 # General
 
+- [Overview](./overview.md)
 - [Installation](./general/installation.md)
 - [Getting started](./general/getting-started.md)
 
-# Using `rudof`
+# `rudof` commands
 
-- [RDF](./using-rudof/rdf.md)
-- [SPARQL](./using-rudof/sparql.md)
-- [DCTAP](./using-rudof/dctap.md)
-- [ShEx](./using-rudof/shex.md)
-- [SHACL](./using-rudof/shacl.md)
-  - [RDF data validation using SHACL](./using-rudof/shacl-validation.md)
-- [Conversion between RDF Data modelling technologies](./using-rudof/data-model-conversion.md)
+`rudof` supports the following commands:
 
-# For developers
+- [node](./cli_usage/node.md)
+- [data](./cli_usage/data.md)
+- [query](./cli_usage/sparql.md)
+- [dctap](./cli_usage/dctap.md)
+- [shex](./cli_usage/shex.md)
+- [shacl](./cli_usage/shacl.md)
+- [shapemap](./cli_usage/shapemap.md)
+- [service](./cli_usage/service.md)
+- [shex-validate](./cli_usage/shex_validate.md)
+- [shacl-validate](./cli_usage/shacl_validate.md)
+- [validate](./cli_usage/validate.md)
+- [convert](./cli_usage/convert.md)
 
-# Developing `rudof`
+# `rudof` as a library
 
-# References
+- [Docs](./library/docs.md)
+- [Processing RDF](./library/rdf_processing.md)
+- [Parsing RDF](./library/parsing_processing.md)
+- [Python-bindings](./library/python.md)
+
+# `rudof` internals
+
+- [Scope of the project](./internals/scope.md)
+- [Architecture](./internals/architecture.md)
+- [ADRs](./internals/ADRs.md)
+
+# More information
 
 - [Benchmarks](./references/benchmarks.md)
-- [About](./references/about.md)
+- [FAQ](./references/faq.md)

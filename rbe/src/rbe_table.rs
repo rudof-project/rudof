@@ -3,6 +3,7 @@ use indexmap::IndexSet;
 use itertools::*;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
 
@@ -27,11 +28,20 @@ where
     V: Value,
     R: Ref,
 {
+    // A regular bag expression of components
     rbe: Rbe<Component>,
+
+    // Each key is associated with a set of components
     key_components: IndexMap<K, IndexSet<Component>>,
+
+    // TODO: Unify in a single table component_cond and component_key
     component_cond: IndexMap<Component, MatchCond<K, V, R>>,
     component_key: HashMap<Component, K>,
+
+    // Indicates if the RBE is open or closed
     open: bool,
+
+    // Counter for the number of components
     component_counter: usize,
 }
 
@@ -104,7 +114,7 @@ where
                 .iter()
                 .zip(0..)
                 .map(|(candidate, n)| {
-                    debug!("Candidate {n}: {candidate:?}");
+                    debug!("Candidate {n}: {}", show_candidate(candidate));
                 })
                 .collect();
             let mp = candidates.into_iter().multi_cartesian_product();
@@ -116,6 +126,58 @@ where
                 // controlled: self.controlled.clone()
             }))
         }
+    }
+
+    pub fn components(&self) -> ComponentsIter<K, V, R> {
+        ComponentsIter {
+            current: 0,
+            table: self,
+        }
+    }
+}
+
+pub struct ComponentsIter<'a, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    current: usize,
+    table: &'a RbeTable<K, V, R>,
+}
+
+impl<K, V, R> Iterator for ComponentsIter<'_, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    type Item = (Component, K, MatchCond<K, V, R>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current < self.table.component_counter {
+            let c = Component::from(self.current);
+            let cond = self.table.component_cond.get(&c).unwrap().clone();
+            let key = self.table.component_key.get(&c).unwrap().clone();
+            self.current += 1;
+            Some((c, key, cond))
+        } else {
+            None
+        }
+    }
+}
+
+impl<K, V, R> Debug for ComponentsIter<'_, K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentsIter")
+            .field("current", &self.current)
+            .field("table", &self.table)
+            .finish()
     }
 }
 
@@ -137,7 +199,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MatchTableIter<K, V, R>
 where
     K: Key,
@@ -158,21 +220,15 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            MatchTableIter::Empty(ref mut e) => {
-                debug!("MatchTableIter::Empty");
-                e.next()
-            }
-            MatchTableIter::NonEmpty(ref mut cp) => {
-                debug!("MatchTableIter::NonEmpty");
-                cp.next()
-            }
+            MatchTableIter::Empty(ref mut e) => e.next(),
+            MatchTableIter::NonEmpty(ref mut cp) => cp.next(),
         }
     }
 }
 
 type State<K, V, R> = MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IterCartesianProduct<K, V, R>
 where
     K: Key,
@@ -196,7 +252,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
-        debug!("state in IterCartesianProduct {:?}", self.state);
+        // debug!("state in IterCartesianProduct {:?}", self.state);
         match next_state {
             None => {
                 if self.is_first {
@@ -216,8 +272,9 @@ where
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            debug!("Condition passed: {cond} with value: {v}");
+                            debug!("Condition passed: {cond} with value: {v}, new pending: {new_pending}");
                             pending.merge(new_pending);
+                            debug!("Pending merged: {pending}");
                         }
                         Err(err) => {
                             debug!("Failed condition: {cond} with value: {v}");
@@ -225,7 +282,7 @@ where
                         }
                     }
                 }
-                debug!("Pending after checking conditions: {pending:?}");
+                debug!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
@@ -243,7 +300,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EmptyIter<K, V, R>
 where
     K: Key,
@@ -321,6 +378,45 @@ where
     R: Ref,
 {
     table.component_key.get(c).unwrap().clone()
+}
+
+impl<K, V, R> Display for RbeTable<K, V, R>
+where
+    K: Key + Display,
+    V: Value + Display,
+    R: Ref + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "RBE: {}", self.rbe)?;
+        writeln!(f, "Keys:")?;
+        for (k, c) in self.key_components.iter() {
+            write!(f, " {k} -> [")?;
+            for c in c.iter() {
+                write!(f, " {c}")?;
+            }
+            writeln!(f, " ]")?;
+        }
+        writeln!(f, "Components:")?;
+        for (c, cond) in self.component_cond.iter() {
+            let k = self.component_key.get(c).unwrap();
+            writeln!(f, " {c} -> {k} {cond}")?;
+        }
+        Ok(())
+    }
+}
+
+#[allow(clippy::type_complexity)]
+fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
+where
+    K: Key + Display,
+    V: Value + Display,
+    R: Ref + Display,
+{
+    candidate
+        .iter()
+        .map(|(k, v, c, cond)| format!("({k} {v})@{c} {cond}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 #[cfg(test)]

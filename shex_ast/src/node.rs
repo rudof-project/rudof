@@ -1,9 +1,10 @@
-use std::fmt::Display;
-
 use iri_s::IriS;
 use rbe::Value;
+use serde::Serialize;
+use srdf::literal::Literal;
 use srdf::numeric_literal::NumericLiteral;
 use srdf::Object;
+use std::fmt::Display;
 
 impl Value for Node {}
 
@@ -33,6 +34,12 @@ impl Node {
     pub fn as_object(&self) -> &Object {
         &self.node
     }
+
+    pub fn literal(lit: Literal) -> Node {
+        Node {
+            node: Object::literal(lit),
+        }
+    }
 }
 
 impl Display for Node {
@@ -50,5 +57,14 @@ impl From<Object> for Node {
 impl From<IriS> for Node {
     fn from(iri: IriS) -> Self {
         Node { node: iri.into() }
+    }
+}
+
+impl Serialize for Node {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.node.serialize(serializer)
     }
 }

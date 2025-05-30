@@ -1,6 +1,6 @@
-use std::{path::Path, str::FromStr};
+use std::path::Path;
 
-use oxiri::Iri;
+use sparql_service::RdfData;
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 
 use crate::validate_error::ValidateError;
@@ -8,11 +8,23 @@ use crate::validate_error::ValidateError;
 use super::Store;
 
 pub struct Graph {
-    store: SRDFGraph,
+    store: RdfData,
+}
+
+impl Default for Graph {
+    fn default() -> Self {
+        Self {
+            store: RdfData::new(),
+        }
+    }
 }
 
 impl Graph {
-    pub fn new(
+    pub fn new() -> Graph {
+        Graph::default()
+    }
+
+    pub fn from_path(
         path: &Path,
         rdf_format: RDFFormat,
         base: Option<&str>,
@@ -20,23 +32,29 @@ impl Graph {
         match SRDFGraph::from_path(
             path,
             &rdf_format,
-            match base {
-                Some(base) => match Iri::from_str(base) {
-                    Ok(iri) => Some(iri),
-                    Err(_) => todo!(),
-                },
-                None => None,
-            },
+            base,
             &ReaderMode::default(), // TODO: this should be revisited
         ) {
-            Ok(store) => Ok(Self { store }),
+            Ok(store) => Ok(Self {
+                store: RdfData::from_graph(store)?,
+            }),
             Err(error) => Err(ValidateError::Graph(error)),
         }
     }
+
+    pub fn from_graph(graph: SRDFGraph) -> Result<Graph, ValidateError> {
+        Ok(Graph {
+            store: RdfData::from_graph(graph)?,
+        })
+    }
+
+    pub fn from_data(data: RdfData) -> Graph {
+        Graph { store: data }
+    }
 }
 
-impl Store<SRDFGraph> for Graph {
-    fn store(&self) -> &SRDFGraph {
+impl Store<RdfData> for Graph {
+    fn store(&self) -> &RdfData {
         &self.store
     }
 }

@@ -6,16 +6,16 @@ use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
-use super::convert_lang;
 use super::convert_value;
 use super::shape::CompiledShape;
 use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
-use srdf::RDFNode;
-use srdf::SRDFBasic;
+use srdf::lang::Lang;
+use srdf::Rdf;
 
-pub enum CompiledComponent<S: SRDFBasic> {
+#[derive(Debug)]
+pub enum CompiledComponent<S: Rdf> {
     Class(Class<S>),
     Datatype(Datatype<S>),
     NodeKind(Nodekind),
@@ -29,7 +29,7 @@ pub enum CompiledComponent<S: SRDFBasic> {
     MaxLength(MaxLength),
     Pattern(Pattern),
     UniqueLang(UniqueLang),
-    LanguageIn(LanguageIn<S>),
+    LanguageIn(LanguageIn),
     Equals(Equals<S>),
     Disjoint(Disjoint<S>),
     LessThan(LessThan<S>),
@@ -45,11 +45,11 @@ pub enum CompiledComponent<S: SRDFBasic> {
     QualifiedValueShape(QualifiedValueShape<S>),
 }
 
-impl<S: SRDFBasic> CompiledComponent<S> {
+impl<S: Rdf> CompiledComponent<S> {
     pub fn compile(component: Component, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
-                let class_rule = S::object_as_term(&object);
+                let class_rule = object.into();
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
@@ -60,19 +60,23 @@ impl<S: SRDFBasic> CompiledComponent<S> {
             Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
             Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
             Component::MinExclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MinExclusive(MinExclusive::new(term))
             }
             Component::MaxExclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MaxExclusive(MaxExclusive::new(term))
             }
             Component::MinInclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MinInclusive(MinInclusive::new(term))
             }
             Component::MaxInclusive(literal) => {
-                let term = S::object_as_term(&RDFNode::literal(literal));
+                let literal: S::Literal = literal.clone().into();
+                let term = literal.into();
                 CompiledComponent::MaxInclusive(MaxInclusive::new(term))
             }
             Component::MinLength(length) => CompiledComponent::MinLength(MinLength::new(length)),
@@ -82,11 +86,7 @@ impl<S: SRDFBasic> CompiledComponent<S> {
             }
             Component::UniqueLang(lang) => CompiledComponent::UniqueLang(UniqueLang::new(lang)),
             Component::LanguageIn { langs } => {
-                let literals = langs
-                    .into_iter()
-                    .map(|lang| convert_lang::<S>(lang))
-                    .collect::<Result<Vec<_>, _>>()?;
-                CompiledComponent::LanguageIn(LanguageIn::new(literals))
+                CompiledComponent::LanguageIn(LanguageIn::new(langs))
             }
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref::<S>(iri_ref)?;
@@ -168,6 +168,7 @@ impl<S: SRDFBasic> CompiledComponent<S> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
+#[derive(Debug)]
 pub struct MaxCount {
     max_count: usize,
 }
@@ -191,6 +192,7 @@ impl MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
+#[derive(Debug)]
 pub struct MinCount {
     min_count: usize,
 }
@@ -211,11 +213,12 @@ impl MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-pub struct And<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct And<S: Rdf> {
     shapes: Vec<CompiledShape<S>>,
 }
 
-impl<S: SRDFBasic> And<S> {
+impl<S: Rdf> And<S> {
     pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         And { shapes }
     }
@@ -229,11 +232,12 @@ impl<S: SRDFBasic> And<S> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-pub struct Not<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Not<S: Rdf> {
     shape: CompiledShape<S>,
 }
 
-impl<S: SRDFBasic> Not<S> {
+impl<S: Rdf> Not<S> {
     pub fn new(shape: CompiledShape<S>) -> Self {
         Not { shape }
     }
@@ -248,11 +252,13 @@ impl<S: SRDFBasic> Not<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-pub struct Or<S: SRDFBasic> {
+
+#[derive(Debug)]
+pub struct Or<S: Rdf> {
     shapes: Vec<CompiledShape<S>>,
 }
 
-impl<S: SRDFBasic> Or<S> {
+impl<S: Rdf> Or<S> {
     pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         Or { shapes }
     }
@@ -267,11 +273,12 @@ impl<S: SRDFBasic> Or<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-pub struct Xone<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Xone<S: Rdf> {
     shapes: Vec<CompiledShape<S>>,
 }
 
-impl<S: SRDFBasic> Xone<S> {
+impl<S: Rdf> Xone<S> {
     pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
         Xone { shapes }
     }
@@ -292,12 +299,13 @@ impl<S: SRDFBasic> Xone<S> {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
-pub struct Closed<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Closed<S: Rdf> {
     is_closed: bool,
     ignored_properties: Vec<S::IRI>,
 }
 
-impl<S: SRDFBasic> Closed<S> {
+impl<S: Rdf> Closed<S> {
     pub fn new(is_closed: bool, ignored_properties: Vec<S::IRI>) -> Self {
         Closed {
             is_closed,
@@ -318,11 +326,12 @@ impl<S: SRDFBasic> Closed<S> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-pub struct HasValue<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct HasValue<S: Rdf> {
     value: S::Term,
 }
 
-impl<S: SRDFBasic> HasValue<S> {
+impl<S: Rdf> HasValue<S> {
     pub fn new(value: S::Term) -> Self {
         HasValue { value }
     }
@@ -336,11 +345,12 @@ impl<S: SRDFBasic> HasValue<S> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-pub struct In<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct In<S: Rdf> {
     values: Vec<S::Term>,
 }
 
-impl<S: SRDFBasic> In<S> {
+impl<S: Rdf> In<S> {
     pub fn new(values: Vec<S::Term>) -> Self {
         In { values }
     }
@@ -355,11 +365,12 @@ impl<S: SRDFBasic> In<S> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-pub struct Disjoint<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Disjoint<S: Rdf> {
     iri_ref: S::IRI,
 }
 
-impl<S: SRDFBasic> Disjoint<S> {
+impl<S: Rdf> Disjoint<S> {
     pub fn new(iri_ref: S::IRI) -> Self {
         Disjoint { iri_ref }
     }
@@ -374,11 +385,12 @@ impl<S: SRDFBasic> Disjoint<S> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-pub struct Equals<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Equals<S: Rdf> {
     iri_ref: S::IRI,
 }
 
-impl<S: SRDFBasic> Equals<S> {
+impl<S: Rdf> Equals<S> {
     pub fn new(iri_ref: S::IRI) -> Self {
         Equals { iri_ref }
     }
@@ -395,11 +407,12 @@ impl<S: SRDFBasic> Equals<S> {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-pub struct LessThanOrEquals<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct LessThanOrEquals<S: Rdf> {
     iri_ref: S::IRI,
 }
 
-impl<S: SRDFBasic> LessThanOrEquals<S> {
+impl<S: Rdf> LessThanOrEquals<S> {
     pub fn new(iri_ref: S::IRI) -> Self {
         LessThanOrEquals { iri_ref }
     }
@@ -414,11 +427,12 @@ impl<S: SRDFBasic> LessThanOrEquals<S> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-pub struct LessThan<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct LessThan<S: Rdf> {
     iri_ref: S::IRI,
 }
 
-impl<S: SRDFBasic> LessThan<S> {
+impl<S: Rdf> LessThan<S> {
     pub fn new(iri_ref: S::IRI) -> Self {
         LessThan { iri_ref }
     }
@@ -432,11 +446,12 @@ impl<S: SRDFBasic> LessThan<S> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-pub struct Node<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Node<S: Rdf> {
     shape: CompiledShape<S>,
 }
 
-impl<S: SRDFBasic> Node<S> {
+impl<S: Rdf> Node<S> {
     pub fn new(shape: CompiledShape<S>) -> Self {
         Node { shape }
     }
@@ -454,14 +469,15 @@ impl<S: SRDFBasic> Node<S> {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-pub struct QualifiedValueShape<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct QualifiedValueShape<S: Rdf> {
     shape: CompiledShape<S>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
 }
 
-impl<S: SRDFBasic> QualifiedValueShape<S> {
+impl<S: Rdf> QualifiedValueShape<S> {
     pub fn new(
         shape: CompiledShape<S>,
         qualified_min_count: Option<isize>,
@@ -497,16 +513,17 @@ impl<S: SRDFBasic> QualifiedValueShape<S> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-pub struct LanguageIn<S: SRDFBasic> {
-    langs: Vec<S::Literal>,
+#[derive(Debug)]
+pub struct LanguageIn {
+    langs: Vec<Lang>,
 }
 
-impl<S: SRDFBasic> LanguageIn<S> {
-    pub fn new(langs: Vec<S::Literal>) -> Self {
+impl LanguageIn {
+    pub fn new(langs: Vec<Lang>) -> Self {
         LanguageIn { langs }
     }
 
-    pub fn langs(&self) -> &Vec<S::Literal> {
+    pub fn langs(&self) -> &Vec<Lang> {
         &self.langs
     }
 }
@@ -516,6 +533,7 @@ impl<S: SRDFBasic> LanguageIn<S> {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
+#[derive(Debug)]
 pub struct MaxLength {
     max_length: isize,
 }
@@ -535,6 +553,7 @@ impl MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
+#[derive(Debug)]
 pub struct MinLength {
     min_length: isize,
 }
@@ -553,6 +572,7 @@ impl MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
+#[derive(Debug)]
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -576,6 +596,7 @@ impl Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
+#[derive(Debug)]
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -594,11 +615,12 @@ impl UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-pub struct Class<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Class<S: Rdf> {
     class_rule: S::Term,
 }
 
-impl<S: SRDFBasic> Class<S> {
+impl<S: Rdf> Class<S> {
     pub fn new(class_rule: S::Term) -> Self {
         Class { class_rule }
     }
@@ -612,11 +634,12 @@ impl<S: SRDFBasic> Class<S> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-pub struct Datatype<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct Datatype<S: Rdf> {
     datatype: S::IRI,
 }
 
-impl<S: SRDFBasic> Datatype<S> {
+impl<S: Rdf> Datatype<S> {
     pub fn new(datatype: S::IRI) -> Self {
         Datatype { datatype }
     }
@@ -630,6 +653,7 @@ impl<S: SRDFBasic> Datatype<S> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
+#[derive(Debug)]
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -645,11 +669,12 @@ impl Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-pub struct MaxExclusive<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct MaxExclusive<S: Rdf> {
     max_exclusive: S::Term,
 }
 
-impl<S: SRDFBasic> MaxExclusive<S> {
+impl<S: Rdf> MaxExclusive<S> {
     pub fn new(literal: S::Term) -> Self {
         MaxExclusive {
             max_exclusive: literal,
@@ -662,11 +687,12 @@ impl<S: SRDFBasic> MaxExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-pub struct MaxInclusive<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct MaxInclusive<S: Rdf> {
     max_inclusive: S::Term,
 }
 
-impl<S: SRDFBasic> MaxInclusive<S> {
+impl<S: Rdf> MaxInclusive<S> {
     pub fn new(literal: S::Term) -> Self {
         MaxInclusive {
             max_inclusive: literal,
@@ -679,11 +705,12 @@ impl<S: SRDFBasic> MaxInclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-pub struct MinExclusive<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct MinExclusive<S: Rdf> {
     min_exclusive: S::Term,
 }
 
-impl<S: SRDFBasic> MinExclusive<S> {
+impl<S: Rdf> MinExclusive<S> {
     pub fn new(literal: S::Term) -> Self {
         MinExclusive {
             min_exclusive: literal,
@@ -696,11 +723,12 @@ impl<S: SRDFBasic> MinExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-pub struct MinInclusive<S: SRDFBasic> {
+#[derive(Debug)]
+pub struct MinInclusive<S: Rdf> {
     min_inclusive: S::Term,
 }
 
-impl<S: SRDFBasic> MinInclusive<S> {
+impl<S: Rdf> MinInclusive<S> {
     pub fn new(literal: S::Term) -> Self {
         MinInclusive {
             min_inclusive: literal,
@@ -712,7 +740,7 @@ impl<S: SRDFBasic> MinInclusive<S> {
     }
 }
 
-impl<S: SRDFBasic> From<&CompiledComponent<S>> for IriS {
+impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
     fn from(value: &CompiledComponent<S>) -> Self {
         match value {
             CompiledComponent::Class(_) => iri!(SH_CLASS_STR),

@@ -29,7 +29,7 @@ jobs:
       - name: Build the release version of `rudof` for the x86 architecture
         run: cargo build --release
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_linux_gnu
           path: target/release/${{ vars.BINARY_NAME }}
@@ -61,12 +61,12 @@ jobs:
       - name: Build the release version of `rudof` for the aarch64 architecture
         run: cargo build --release --target aarch64-apple-darwin
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_apple
           path: target/release/${{ vars.BINARY_NAME }}
       - name: Upload the generated Artifact for it to be stored in its corresponding release (aarch64)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ vars.BINARY_NAME }}_aarch64_apple
           path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
@@ -100,7 +100,7 @@ jobs:
       - name: Build the release version of `rudof` for the x86 architecture
         run: cargo build --release
       - name: Upload the generated Artifact for it to be stored in its corresponding release (x86)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ vars.BINARY_NAME }}_x86_64_windows_msvc
           path: target/release/${{ vars.BINARY_NAME }}.exe
@@ -123,7 +123,7 @@ jobs:
     - name: Build the .deb file using cargo deb
       run: cargo deb
     - name: Upload the .deb Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ vars.BINARY_NAME }}
         path: target/debian/*.deb

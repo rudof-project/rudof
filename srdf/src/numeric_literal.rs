@@ -141,7 +141,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
     {
         struct NumericLiteralVisitor;
 
-        impl<'de> Visitor<'de> for NumericLiteralVisitor {
+        impl Visitor<'_> for NumericLiteralVisitor {
             type Value = NumericLiteral;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

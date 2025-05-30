@@ -2,8 +2,7 @@ use std::{fmt::Display, result};
 
 use iri_s::IriS;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
-use serde::Serializer;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use prefixmap::{Deref, DerefError, IriRef};
@@ -37,7 +36,7 @@ impl Literal {
         Literal::NumericLiteral(NumericLiteral::decimal(d))
     }
 
-    pub fn datatype(lexical_form: &str, datatype: &IriRef) -> Literal {
+    pub fn lit_datatype(lexical_form: &str, datatype: &IriRef) -> Literal {
         Literal::DatatypeLiteral {
             lexical_form: lexical_form.to_owned(),
             datatype: datatype.clone(),
@@ -69,6 +68,36 @@ impl Literal {
             Literal::NumericLiteral(nl) => nl.lexical_form(),
             Literal::BooleanLiteral(true) => "true".to_string(),
             Literal::BooleanLiteral(false) => "false".to_string(),
+        }
+    }
+
+    pub fn datatype(&self) -> IriRef {
+        match self {
+            Literal::DatatypeLiteral { datatype, .. } => datatype.clone(),
+            Literal::StringLiteral {
+                lexical_form: _,
+                lang: None,
+            } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#string",
+            )),
+            Literal::StringLiteral {
+                lexical_form: _,
+                lang: Some(_),
+            } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+            )),
+            Literal::NumericLiteral(NumericLiteral::Integer(_)) => IriRef::iri(
+                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer"),
+            ),
+            Literal::NumericLiteral(NumericLiteral::Decimal(_)) => IriRef::iri(
+                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal"),
+            ),
+            Literal::NumericLiteral(NumericLiteral::Double(_)) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#double",
+            )),
+            Literal::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#boolean",
+            )),
         }
     }
 
@@ -151,10 +180,23 @@ impl Deref for Literal {
     }
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<oxrdf::Literal> for Literal {
-    fn into(self) -> oxrdf::Literal {
-        match self {
+impl From<oxrdf::Literal> for Literal {
+    fn from(value: oxrdf::Literal) -> Self {
+        match value.destruct() {
+            (s, None, None) => Literal::str(&s),
+            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new_unchecked(&language)),
+            (value, Some(dtype), None) => {
+                let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                Literal::lit_datatype(&value, &datatype)
+            }
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<Literal> for oxrdf::Literal {
+    fn from(value: Literal) -> Self {
+        match value {
             Literal::StringLiteral { lexical_form, lang } => match lang {
                 Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(
                     lexical_form,
@@ -181,19 +223,6 @@ impl Into<oxrdf::Literal> for Literal {
                 NumericLiteral::Double(double) => double.into(),
             },
             Literal::BooleanLiteral(bool) => bool.into(),
-        }
-    }
-}
-
-impl From<oxrdf::Literal> for Literal {
-    fn from(value: oxrdf::Literal) -> Self {
-        match value.destruct() {
-            (s, None, None) => Literal::str(&s),
-            (s, None, Some(language)) => Literal::lang_str(&s, Lang::new(&language)),
-            (value, Some(dtype), None) => {
-                Literal::datatype(&value, &IriRef::iri(IriS::new_unchecked(dtype.as_str())))
-            }
-            _ => todo!(),
         }
     }
 }

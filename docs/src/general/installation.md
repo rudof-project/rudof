@@ -18,7 +18,8 @@ chmod +x rudof
 
 ### Windows
 
-In the case a Windows-based operating system, refer to the [download page](https://github.com/rudof-project/rudof/releases/latest), where you will find the latest pre-compiled binary available ready to be download.
+You can download the Windows binary from the [releases](https://github.com/rudof-project/rudof/releases/latest) page.
+
 As in the case of Linux, the name of the file will be something like `rudof_vX.X.X_x86_64_windows_msvc.exe`, where `vX.X.X` corresponds to the version to be installed.
 In systems whose version is Windows 10 and above, one can run the following snippet:
 
@@ -31,12 +32,19 @@ curl -o rudof.exe https://github.com/rudof-project/rudof/releases/download/vX.X.
 ### Mac
 
 As in the two previous cases, the MacOS binaries are available at the [download page](https://github.com/rudof-project/rudof/releases/latest).
+
 However, in the case of this operating system, two different executables are provided; namely, `rudof_vX.X.X_x86_64_apple` for Intel-based machines, and `rudof_vX.X.X_aarch64_apple` for the new M chips.
 
 > Remember to change the `vX.X.X` thing to the corresponding version, and the `<<platform>>` tag to the corresponding platform.
 
 ```sh
 curl -o rudof https://github.com/rudof-project/rudof/releases/download/vX.X.X/rudof_vX.X.X_<<platform>>_apple.exe
+```
+
+Once downloaded, you have to change the permissions of the file as:
+
+```sh
+chmod +x rudof_vX.X.X_<<platform>>_apple
 ```
 
 ## Using a Package Manager

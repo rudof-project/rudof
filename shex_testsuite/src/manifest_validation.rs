@@ -5,13 +5,11 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::compiled::compiled_schema::CompiledSchema;
-use shex_ast::compiled::shape_label::ShapeLabel;
-use shex_ast::{
-    ast::Schema as SchemaJson, compiled::schema_json_compiler::SchemaJsonCompiler, Node,
-};
+use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::shape_label::ShapeLabel;
+use shex_ast::{ast::Schema as SchemaJson, ir::ast2ir::AST2IR, Node};
 use shex_validation::Validator;
-use shex_validation::{ResultValue, ValidatorConfig};
+use shex_validation::ValidatorConfig;
 use srdf::literal::Literal;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::Object;
@@ -192,29 +190,31 @@ impl ValidationEntry {
         let shape = parse_maybe_shape(&self.action.shape)?;
         debug!("Shape: {}", shape);
 
-        let mut compiler = SchemaJsonCompiler::new();
-        let mut compiled_schema = CompiledSchema::new();
+        let mut compiler = AST2IR::new();
+        let mut compiled_schema = SchemaIR::new();
         compiler
             .compile(&schema, &mut compiled_schema)
             .map_err(Box::new)?;
-        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default());
-        validator.validate_node_shape(&node, &shape, &graph)?;
+        let schema = compiled_schema.clone();
+        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())?;
+
+        let result = validator.validate_node_shape(&node, &shape, &graph, &schema, &None, &None)?;
         let type_ = parse_type(&self.type_)?;
-        let result = validator.get_result(&node, &shape)?;
-        match (type_, &result) {
-            (Validation, ResultValue::Ok) => Ok(()),
+        let status = result.get_info(&node, &shape).unwrap();
+        match (type_, status.is_conformant()) {
+            (Validation, true) => Ok(()),
             (Validation, _) => {
                 debug!("Expected OK but failed {}", &self.name);
                 Err(ManifestError::ExpectedOkButObtained {
-                    value: result.clone(),
+                    value: status,
                     entry: self.name.clone(),
                 })
             }
-            (Failure, ResultValue::Failed) => Ok(()),
+            (Failure, false) => Ok(()),
             (Failure, _) => {
                 debug!("Expected Failure but passed {}", &self.name);
                 Err(ManifestError::ExpectedFailureButObtained {
-                    value: result.clone(),
+                    value: status.clone(),
                     entry: self.name.clone(),
                 })
             }
@@ -252,7 +252,7 @@ fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
         }
         Focus::Typed(str, str_type) => {
             let datatype = IriS::from_str(str_type.as_str())?;
-            Ok(Object::Literal(Literal::datatype(str, &IriRef::Iri(datatype))).into())
+            Ok(Object::Literal(Literal::lit_datatype(str, &IriRef::Iri(datatype))).into())
         }
     }
 }

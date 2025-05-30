@@ -1,10 +1,3 @@
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::Node;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
-
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
@@ -18,8 +11,15 @@ use crate::shape::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
+use shacl_ast::compiled::component::CompiledComponent;
+use shacl_ast::compiled::component::Node;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
+use std::fmt::Debug;
 
-impl<S: SRDFBasic> Validator<S> for Node<S> {
+impl<S: Rdf + Debug> Validator<S> for Node<S> {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -27,10 +27,13 @@ impl<S: SRDFBasic> Validator<S> for Node<S> {
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        _source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-            let inner_results = self.shape().validate(store, &engine, Some(&focus_nodes));
+            let inner_results =
+                self.shape()
+                    .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));
             inner_results.is_err() || !inner_results.unwrap().is_empty()
         };
 
@@ -38,26 +41,42 @@ impl<S: SRDFBasic> Validator<S> for Node<S> {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for Node<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for Node<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for Node<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Node<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

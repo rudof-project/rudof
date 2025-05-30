@@ -43,7 +43,7 @@ impl ObjectValue {
     }
 
     pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
-        ObjectValue::Literal(Literal::datatype(lexical_form, datatype))
+        ObjectValue::Literal(Literal::lit_datatype(lexical_form, datatype))
     }
 
     pub fn lexical_form(&self) -> String {
@@ -120,9 +120,8 @@ impl Serialize for ObjectValue {
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
             ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
-                match lang {
-                    Some(lan) => map.serialize_entry("language", lan.value().as_str())?,
-                    None => {}
+                if let Some(lan) = lang {
+                    map.serialize_entry("language", &Some(lan))?;
                 }
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
@@ -191,7 +190,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -316,7 +315,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form: v,
-                                lang: Some(Lang::new(&lang)),
+                                lang: Some(Lang::new_unchecked(&lang)),
                             })),
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
@@ -326,7 +325,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         Some(lexical_form) => match language {
                             Some(language) => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form,
-                                lang: Some(Lang::new(&language)),
+                                lang: Some(Lang::new_unchecked(&language)),
                             })),
                             None => Ok(ObjectValue::Literal(Literal::StringLiteral {
                                 lexical_form,

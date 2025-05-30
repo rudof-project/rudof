@@ -8,6 +8,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SRDFGraphError {
+    #[error("Parsing base iri {str}: error: {error}")]
+    BaseParseError { str: String, error: String },
+
+    #[error("Blank node generation id: {msg}")]
+    BlankNodeId { msg: String },
+
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError { path_name: String, error: io::Error },
 
@@ -46,4 +52,7 @@ pub enum SRDFGraphError {
         #[from]
         err: PrefixMapError,
     },
+
+    #[error("Unexepected node type: {node}")]
+    UnexepectedNodeType { node: String },
 }

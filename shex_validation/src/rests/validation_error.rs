@@ -1,7 +1,6 @@
-use shex_ast::CompiledSchemaError;
+use shex_ast::SchemaIRError;
 use std::fmt::Debug;
 use thiserror::Error;
-use tokio::task::JoinError;
 
 use crate::CardinalityError;
 
@@ -19,8 +18,7 @@ where
     FromJsonStr { str: String, err: String },
 
     #[error("Compiling schema: {error:?}")]
-    CompilingSchema { error: CompiledSchemaError },
-
+    CompilingSchema { error: SchemaIRError },
 
     #[error("SRDF Error {error:?}")]
     SRDFError { error: String },
@@ -28,25 +26,26 @@ where
     #[error("Cardinality error: {ce:?}")]
     CardinalityError { ce: CardinalityError },
 
+    #[cfg(not(target_family = "wasm"))]
     #[error("JoinError: {je:?}")]
-    JoinError { je: JoinError },
-
+    JoinError { je: tokio::task::JoinError },
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl<'a, SL> From<JoinError> for ValidationError<'a, SL>
 where
     SL: Debug,
 {
     fn from(je: JoinError) -> Self {
-        ValidationError::JoinError { je: je }
+        ValidationError::JoinError { je }
     }
 }
 
-impl<'a, SL> From<CompiledSchemaError> for ValidationError<'a, SL>
+impl<'a, SL> From<SchemaIRError> for ValidationError<'a, SL>
 where
     SL: Debug,
 {
-    fn from(ce: CompiledSchemaError) -> Self {
+    fn from(ce: SchemaIRError) -> Self {
         ValidationError::CompilingSchema { error: ce }
     }
 }

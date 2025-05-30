@@ -1,0 +1,6 @@
+show_time = true
+
+[shex]
+show_imports = true
+show_shapes = true
+show_extends = true

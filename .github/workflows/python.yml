@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.12 ]
-        target: [ x86_64, x64, aarch64, armv7 ]
+        target: [ x86_64, aarch64 ]
 
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +22,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: x64
 
-      - name: Fix openssl regression
-        run: cargo update openssl-src --precise 300.3.1+3.3.1
-
+#      - name: Fix openssl regression
+#        run: cargo update openssl-src --precise 300.5.0+3.5.0
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -48,7 +46,7 @@ jobs:
                 fi
             else
                 # If we're running on debian-based system.
-                apt update -y && apt-get install -y libssl-dev openssl pkg-config
+                apt update -y && apt-get install -y --fix-missing libssl-dev openssl pkg-config
             fi
 
       - name: Upload wheels
@@ -70,7 +68,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.target }}
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -91,7 +88,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.12 ]
-        target: [ x64 ]
+        target: [ x86_64, aarch64 ]
 
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +96,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.target }}
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1

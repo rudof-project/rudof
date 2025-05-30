@@ -1,0 +1,7 @@
+prefix : <http://example.org/>
+
+:ok1 :other 1 .
+:ok2 :p 1 .
+:ok3 :p 3 .
+:ko1 :other 2 .
+:other :p :ko2 .

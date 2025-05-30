@@ -1,7 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
+use srdf::Object;
+use srdf::Rdf;
+use srdf::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
@@ -9,28 +10,25 @@ use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
+fn apply<S: Rdf, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    return Some(ValidationResult::new(
-                        focus_node.to_owned(),
-                        None, // TODO: path
-                        None, // TODO: item
-                        Some(shape.id().to_owned()),
-                        S::iri_s2term(&component.into()),
-                        None, // TODO: details
-                        None, // TODO: message
-                        shape.severity(),
-                    ));
+                    let focus = focus_node.clone().into();
+                    let component = Object::iri(component.into());
+                    let severity = shape.severity().clone().into();
+                    let source = Some(shape.id().clone().into());
+                    return Some(
+                        ValidationResult::new(focus, component, severity).with_source(source),
+                    );
                 }
             }
             None
@@ -40,13 +38,13 @@ fn apply<S: SRDFBasic, I: IterationStrategy<S>>(
     Ok(results)
 }
 
-pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
+pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,
@@ -56,13 +54,13 @@ pub fn validate_with<S: SRDFBasic, I: IterationStrategy<S>>(
     )
 }
 
-pub fn validate_ask_with<S: QuerySRDF>(
+pub fn validate_ask_with<S: Sparql>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
-) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
         shape,

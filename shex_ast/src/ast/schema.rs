@@ -2,10 +2,10 @@ use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::ShapeExprLabel;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
-use serde_derive::{Deserialize, Serialize};
-use std::fs;
-use std::io::BufRead;
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 use tracing::debug;
 
 use super::{IriOrStr, SemAct, ShapeDecl, ShapeExpr};
@@ -191,13 +191,13 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn from_reader<R: BufRead>(rdr: R) -> Result<Schema, SchemaJsonError> {
-        serde_json::from_reader::<R, Schema>(rdr).map_err(|e| {
+    pub fn from_reader<R: io::Read>(rdr: R) -> Result<Schema, SchemaJsonError> {
+        let schema = serde_json::from_reader::<R, Schema>(rdr).map_err(|e| {
             SchemaJsonError::JsonErrorFromReader {
                 error: e.to_string(),
             }
         })?;
-        todo!()
+        Ok(schema)
     }
 
     pub fn parse_schema_name(schema_name: &String, base: &Path) -> Result<Schema, SchemaJsonError> {
@@ -275,6 +275,17 @@ impl Schema {
 impl Default for Schema {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Display for Schema {
+    // TODO: Improve
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
+        )
     }
 }
 

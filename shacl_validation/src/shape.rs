@@ -1,33 +1,42 @@
-use shacl_ast::compiled::node_shape::CompiledNodeShape;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::SRDFBasic;
-
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use shacl_ast::compiled::node_shape::CompiledNodeShape;
+use shacl_ast::compiled::property_shape::CompiledPropertyShape;
+use shacl_ast::compiled::shape::CompiledShape;
+use srdf::Rdf;
+use std::fmt::Debug;
 
-pub trait Validate<S: SRDFBasic> {
+/// Validate RDF data using SHACL
+pub trait Validate<S: Rdf> {
     fn validate(
         &self,
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError>;
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
-impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
+impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
     fn validate(
         &self,
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-    ) -> Result<Vec<ValidationResult<S>>, ValidateError> {
-        // 0.
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ValidateError> {
+        println!(
+            "Shape.validate with shape {} and source shape: {}",
+            self.id(),
+            source_shape
+                .map(|s| format!("{}", s.id()))
+                .unwrap_or_else(|| "None".to_string())
+        );
+        // 0. skipping if it is deactivated
         if *self.is_deactivated() {
-            // skipping because it is deactivated
             return Ok(Vec::default());
         }
 
@@ -43,20 +52,19 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner);
 
         // 3.
-        let component_validation_results = self
-            .components()
-            .iter()
-            .flat_map(move |component| runner.evaluate(store, self, component, &value_nodes));
+        let component_validation_results = self.components().iter().flat_map(move |component| {
+            runner.evaluate(store, self, component, &value_nodes, source_shape)
+        });
 
         // 4. After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
         //    nested PropertyShapes. The thing is that the validation needs to
         //    occur over the focus_nodes that have been computed for the current
         //    shape
-        let property_shapes_validation_results = self
-            .property_shapes()
-            .iter()
-            .flat_map(|shape| shape.validate(store, runner, Some(&focus_nodes)));
+        let property_shapes_validation_results =
+            self.property_shapes().iter().flat_map(|prop_shape| {
+                prop_shape.validate(store, runner, Some(&focus_nodes), Some(self))
+            });
 
         // 5.
         let validation_results = component_validation_results
@@ -68,19 +76,19 @@ impl<S: SRDFBasic> Validate<S> for CompiledShape<S> {
     }
 }
 
-pub trait FocusNodesOps<S: SRDFBasic> {
+pub trait FocusNodesOps<S: Rdf> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S>;
 }
 
-impl<S: SRDFBasic> FocusNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> FocusNodesOps<S> for CompiledShape<S> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
-            .focus_nodes(store, self, self.targets())
-            .expect("Failed to retrieve focus nodes") // TODO: expect?
+            .focus_nodes(store, self.targets())
+            .expect("Failed to retrieve focus nodes")
     }
 }
 
-pub trait ValueNodesOps<S: SRDFBasic> {
+pub trait ValueNodesOps<S: Rdf> {
     fn value_nodes(
         &self,
         store: &S,
@@ -89,7 +97,7 @@ pub trait ValueNodesOps<S: SRDFBasic> {
     ) -> ValueNodes<S>;
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledShape<S> {
     fn value_nodes(
         &self,
         store: &S,
@@ -103,7 +111,7 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledShape<S> {
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape<S> {
     fn value_nodes(&self, _: &S, focus_nodes: &FocusNodes<S>, _: &dyn Engine<S>) -> ValueNodes<S> {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
@@ -115,7 +123,7 @@ impl<S: SRDFBasic> ValueNodesOps<S> for CompiledNodeShape<S> {
     }
 }
 
-impl<S: SRDFBasic> ValueNodesOps<S> for CompiledPropertyShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledPropertyShape<S> {
     fn value_nodes(
         &self,
         store: &S,

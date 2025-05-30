@@ -5,19 +5,20 @@
 
 // #![deny(rust_2018_idioms)]
 pub mod ast;
-pub mod compiled;
+pub mod ir;
 pub mod node;
 pub mod pred;
 pub mod shexr;
 
 pub use ast::*;
-pub use compiled::compiled_schema_error::*;
-pub use compiled::shape_label_idx::*;
+pub use ir::schema_ir_error::*;
+pub use ir::shape_label_idx::*;
+
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;
 
-type CResult<T> = Result<T, CompiledSchemaError>;
+type CResult<T> = Result<T, SchemaIRError>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;
 
 #[cfg(test)]

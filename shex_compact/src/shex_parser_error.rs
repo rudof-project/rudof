@@ -13,6 +13,12 @@ pub enum ParseError {
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
+    #[error("Parsing node selector for string: {str}: {err}")]
+    NodeSelectorNomError {
+        err: Box<LocatedParseError>,
+        str: String,
+    },
+
     #[error(transparent)]
     IOError {
         #[from]
@@ -218,6 +224,9 @@ pub enum ParseError {
 
     #[error("Failed regular expression, str: {str} doesn't match: {re}")]
     RegexFailed { re: String, str: String },
+
+    #[error("Utf8 error: {error}")]
+    Utf8Error { error: String },
 }
 
 impl ParseError {

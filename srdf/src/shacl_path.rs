@@ -1,11 +1,11 @@
-use std::fmt::Display;
-
 use iri_s::IriS;
+use serde::Serialize;
+use std::fmt::Display;
 
 /// SHACL paths follow the [SHACL property paths spec](https://www.w3.org/TR/shacl/#property-paths)
 /// which are a subset of SPARQL property paths
 ///
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum SHACLPath {
     Predicate { pred: IriS },
     Alternative { paths: Vec<SHACLPath> },
@@ -19,6 +19,13 @@ pub enum SHACLPath {
 impl SHACLPath {
     pub fn iri(pred: IriS) -> Self {
         SHACLPath::Predicate { pred }
+    }
+
+    pub fn pred(&self) -> Option<&IriS> {
+        match self {
+            SHACLPath::Predicate { pred } => Some(pred),
+            _ => None,
+        }
     }
 }
 

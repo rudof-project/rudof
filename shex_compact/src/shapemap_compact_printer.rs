@@ -51,6 +51,20 @@ impl ShapemapFormatter {
         printer = printer.with_qualify_semicolon_color(self.qualify_semicolon_color);
         printer.pretty_print()
     }
+
+    pub fn write_shapemap<W: std::io::Write>(
+        &self,
+        shapemap: &QueryShapeMap,
+        writer: &mut W,
+    ) -> Result<(), std::io::Error> {
+        let arena = Arena::<()>::new();
+        let mut printer = ShapemapCompactPrinter::new(shapemap, &arena);
+        printer = printer.with_keyword_color(self.keyword_color);
+        printer = printer.with_qualify_localname_color(self.qualify_localname_color);
+        printer = printer.with_qualify_prefix_color(self.qualify_prefix_color);
+        printer = printer.with_qualify_semicolon_color(self.qualify_semicolon_color);
+        printer.pretty_print_write(writer)
+    }
 }
 
 impl Default for ShapemapFormatter {
@@ -131,6 +145,14 @@ where
         self.nodes_prefixmap = self.nodes_prefixmap.with_qualify_localname_color(color);
         self.shapes_prefixmap = self.shapes_prefixmap.with_qualify_localname_color(color);
         self
+    }
+
+    pub fn pretty_print_write<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), std::io::Error> {
+        let doc = self.pp_shapemap();
+        doc.render(self.width, writer)
     }
 
     pub fn pretty_print(&self) -> String {

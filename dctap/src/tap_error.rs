@@ -1,6 +1,6 @@
 use std::{io, result};
 
-use calamine::XlsxError;
+// use calamine::XlsxError;
 use csv::{Position, StringRecord};
 use thiserror::Error;
 
@@ -44,30 +44,27 @@ pub enum TapError {
     TapConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    TapConfigYamlError {
+    TapConfigTomlError {
         path: String,
-        error: serde_yml::Error,
+        error: toml::de::Error,
     },
 
     #[error("Reading Excel file from {path}: {error}")]
     ReadingExcelError { path: String, error: io::Error },
 
-    #[error(transparent)]
+    /*    #[error(transparent)]
     XlsxError {
         #[from]
         error: XlsxError,
-    },
-
+    }, */
     #[error("No headers found in Excel file: {path}")]
     NoHeadersExcel { path: String },
 
-    #[error("Cannot open work_book {path}: {error}")]
-    OpeningWorkbook { path: String, error: XlsxError },
-
+    /*     #[error("Cannot open work_book {path}: {error}")]
+    OpeningWorkbook { path: String, error: XlsxError }, */
     #[error("Sheet not found in {path} when looking for first sheet")]
     Sheet0NotFound { path: String },
-
-    #[error("Error obtaining sheet 0 from {path}. Error: {error}")]
+    /*     #[error("Error obtaining sheet 0 from {path}. Error: {error}")]
     Sheet0Error { path: String, error: XlsxError },
 
     #[error("Error processing sheet {sheet_name} from {path}. Error: {error}")]
@@ -75,5 +72,5 @@ pub enum TapError {
         path: String,
         sheet_name: String,
         error: XlsxError,
-    },
+    }, */
 }

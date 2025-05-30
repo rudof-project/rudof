@@ -1,12 +1,11 @@
+use crate::{NodeSelector, ShapeSelector};
+use serde::Serialize;
+use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
+use srdf::Query;
 use std::iter::once;
 
-use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
-use srdf::SRDF;
-
-use crate::{NodeSelector, ShapeSelector};
-
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct Association {
     pub node_selector: NodeSelector,
     pub shape_selector: ShapeSelector,
@@ -25,7 +24,7 @@ impl Association {
         rdf: &S,
     ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)>
     where
-        S: SRDF,
+        S: Query,
     {
         self.node_selector.iter_node(rdf).flat_map(move |node| {
             self.shape_selector

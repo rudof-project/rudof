@@ -1,0 +1,112 @@
+use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
+use shacl_ast::{ShaclParser, ShaclWriter};
+use shacl_validation::shacl_processor::GraphValidation;
+use shacl_validation::shacl_processor::ShaclProcessor;
+use shacl_validation::shacl_processor::ShaclValidationMode;
+use shacl_validation::store::ShaclDataManager;
+use srdf::{RDFFormat, SRDFGraph};
+use std::ffi::OsStr;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufWriter;
+use std::path::Path;
+use std::str::FromStr;
+
+#[pymodule]
+pub fn shacl(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(validate, module)?)?;
+    Ok(())
+}
+
+#[pyfunction]
+#[pyo3(signature = (input, output))]
+pub fn parse(input: &str, output: &str, py: Python<'_>) -> PyResult<()> {
+    py.allow_threads(|| {
+        let input = Path::new(input);
+        let input_format = obtain_format(input.extension())?;
+
+        let graph =
+            match SRDFGraph::from_path(input, &input_format, None, &srdf::ReaderMode::Strict) {
+                Ok(graph) => graph,
+                Err(error) => return Err(PyValueError::new_err(error.to_string())),
+            };
+
+        let schema = match ShaclParser::new(graph).parse() {
+            Ok(schema) => schema,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
+        let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+
+        if let Err(error) = shacl_writer.write(&schema) {
+            return Err(PyValueError::new_err(error.to_string()));
+        }
+
+        let output = Path::new(output);
+        let output_format = obtain_format(output.extension())?;
+
+        let mut writer = match File::create(output) {
+            Ok(file) => BufWriter::new(file),
+            Err(_) => return Err(PyValueError::new_err("Output file could not be created")),
+        };
+
+        if let Err(error) = shacl_writer.serialize(output_format, &mut writer) {
+            return Err(PyValueError::new_err(error.to_string()));
+        }
+
+        Ok(())
+    })
+}
+
+#[pyfunction]
+#[pyo3(signature = (data, shapes))]
+pub fn validate(data: &str, shapes: &str, py: Python<'_>) -> PyResult<()> {
+    py.allow_threads(|| {
+        let data = Path::new(data);
+        let data_format = obtain_format(data.extension())?;
+
+        let shapes_path = Path::new(shapes);
+
+        // TODO: Consider if it is a good idea to assume a format matches a extension...
+        let shapes_format = obtain_format(shapes_path.extension())?;
+        let file = File::open(shapes).unwrap_or_else(|_| panic!("Unable to open file: {shapes}"));
+        let reader = BufReader::new(file);
+
+        let schema = match ShaclDataManager::load(reader, shapes_format, None) {
+            Ok(schema) => schema,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
+        let validator = match GraphValidation::from_path(
+            data,
+            data_format,
+            None,
+            ShaclValidationMode::Native,
+        ) {
+            Ok(validator) => validator,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
+        let _ = match validator.validate(&schema) {
+            Ok(report) => report,
+            Err(error) => return Err(PyValueError::new_err(error.to_string())),
+        };
+
+        Ok(())
+    })
+}
+
+fn obtain_format(extension: Option<&OsStr>) -> PyResult<RDFFormat> {
+    match extension {
+        None => Err(PyValueError::new_err("No ouput format is provided")),
+        Some(os_str) => match os_str.to_str() {
+            Some(str) => match RDFFormat::from_str(str) {
+                Ok(format) => Ok(format),
+                Err(error) => Err(PyValueError::new_err(error.to_string())),
+            },
+            None => Err(PyValueError::new_err("{os_str} is not supported")),
+        },
+    }
+}

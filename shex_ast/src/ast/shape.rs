@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::{Deref, DerefError, IriRef};
@@ -91,6 +91,13 @@ impl Shape {
 
     pub fn triple_expr(&self) -> Option<TripleExpr> {
         self.expression.as_ref().map(|tew| tew.te.clone())
+    }
+
+    pub fn extends(&self) -> Vec<&ShapeExprLabel> {
+        match &self.extends {
+            None => Vec::new(),
+            Some(extends) => extends.iter().collect(),
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 use iri_s::IriSError;
-use shex_ast::{ast::SchemaJsonError, CompiledSchemaError, Schema};
+use shapemap::ValidationStatus;
+use shex_ast::{ast::SchemaJsonError, Schema, SchemaIRError};
 use shex_compact::ParseError;
-use shex_validation::{ResultValue, ValidatorError};
+use shex_validation::ValidatorError;
 use srdf::srdf_graph::SRDFGraphError;
 use std::{ffi::OsString, io};
 use thiserror::Error;
@@ -45,7 +46,7 @@ pub enum ManifestError {
     ParseError(#[from] ParseError),
 
     #[error(transparent)]
-    CompiledSchemaError(#[from] Box<CompiledSchemaError>),
+    SchemaIRError(#[from] Box<SchemaIRError>),
 
     #[error(transparent)]
     IriError(#[from] IriSError),
@@ -57,10 +58,16 @@ pub enum ManifestError {
     ParsingValidationType { value: String },
 
     #[error("Expected faiure but obtained {value} for {entry}")]
-    ExpectedFailureButObtained { value: ResultValue, entry: String },
+    ExpectedFailureButObtained {
+        value: ValidationStatus,
+        entry: String,
+    },
 
     #[error("Expected OK but obtained {value} for {entry}")]
-    ExpectedOkButObtained { value: ResultValue, entry: String },
+    ExpectedOkButObtained {
+        value: ValidationStatus,
+        entry: String,
+    },
 
     #[error("Schema parsed is different to schema serialized after parsing\nSchema parsed from JSON\n{schema_parsed:?}\nSchema serialized after parsing:\n{schema_parsed_after_serialization:?}\nSchema serialized: {schema_serialized}\nSchema serialized after: {schema_serialized_after}")]
     SchemasDifferent {

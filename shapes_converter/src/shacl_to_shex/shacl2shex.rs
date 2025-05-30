@@ -91,47 +91,53 @@ impl Shacl2ShEx {
         }
         let is_closed = None; // TODO: Check real value
         let extra = None; // TODO: Check if we could find a way to obtain extras in SHACL ?
-        let te = if exprs.is_empty() {
+        let mut te = if exprs.is_empty() {
             None
         } else {
             Some(TripleExpr::each_of(exprs))
         };
-        let target_class_expr = self.convert_target_decls(shape.targets(), schema)?;
-        let ter = match (te, target_class_expr) {
-            (None, None) => None,
-            (None, Some(t)) => Some(t),
-            (Some(t), None) => Some(t),
-            (Some(t1), Some(t2)) => Some(self.merge_triple_exprs(&t1, &t2)),
-        };
-        let shape = ShExShape::new(is_closed, extra, ter);
+        if self.config.add_target_class() {
+            let target_class_expr = self.convert_target_decls(shape.targets(), schema)?;
+            te = match (te, target_class_expr) {
+                (None, None) => None,
+                (None, Some(t)) => Some(t),
+                (Some(t), None) => Some(t),
+                (Some(t1), Some(t2)) => Some(self.merge_triple_exprs(&t1, &t2)),
+            };
+        }
+        let shape = ShExShape::new(is_closed, extra, te);
         Ok(ShapeExpr::shape(shape))
     }
 
+    /// Collect targetClass declarations and add a rdf:type constraint for each
     pub fn convert_target_decls(
         &self,
         targets: &Vec<Target>,
         schema: &ShaclSchema,
     ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
-        let mut tes = Vec::new();
+        let mut values = Vec::new();
         for target in targets {
-            let te = self.target2triple_constraint(target, schema)?;
-            match te {
-                None => (),
-                Some(te) => tes.push(te),
+            if let Some(value) = self.target2value_set_value(target, schema)? {
+                values.push(value);
             }
         }
-        if tes.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(TripleExpr::each_of(tes)))
-        }
+        let value_cls = ShapeExpr::node_constraint(NodeConstraint::new().with_values(values));
+        let tc = TripleExpr::triple_constraint(
+            None,
+            None,
+            IriRef::iri(IriS::rdf_type()),
+            Some(value_cls),
+            None,
+            None,
+        );
+        Ok(Some(tc))
     }
 
-    pub fn target2triple_constraint(
+    pub fn target2value_set_value(
         &self,
         target: &Target,
         _schema: &ShaclSchema,
-    ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
+    ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
             Target::TargetNode(_) => Ok(None),
             Target::TargetClass(cls) => {
@@ -146,21 +152,11 @@ impl Shacl2ShEx {
                         literal: lit.clone(),
                     }),
                 }?;
-                let value_cls = ShapeExpr::node_constraint(
-                    NodeConstraint::new().with_values(vec![value_set_value]),
-                );
-                let tc = TripleExpr::triple_constraint(
-                    None,
-                    None,
-                    IriRef::iri(IriS::rdf_type()),
-                    Some(value_cls),
-                    None,
-                    None,
-                );
-                Ok(Some(tc))
+                Ok(Some(value_set_value))
             }
             Target::TargetSubjectsOf(_) => Ok(None),
             Target::TargetObjectsOf(_) => Ok(None),
+            Target::TargetImplicitClass(_) => Ok(None),
         }
     }
 

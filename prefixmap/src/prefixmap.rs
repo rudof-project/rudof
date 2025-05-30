@@ -2,27 +2,32 @@ use colored::*;
 use indexmap::map::Iter;
 use indexmap::IndexMap;
 use iri_s::*;
-// use serde::{Deserializer, Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{IriRef, PrefixMapError};
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
+/// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
+    /// Proper prefix map associations of an alias `String` to an `IriS`
     pub map: IndexMap<String, IriS>,
 
+    /// Color of prefix aliases when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_prefix_color: Option<Color>,
 
+    /// Color of local names when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_localname_color: Option<Color>,
 
+    /// Color of semicolon when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_semicolon_color: Option<Color>,
 
+    /// Whether to generate hyperlink when qualifying an IRI
     #[serde(skip)]
     hyperlink: bool,
 }
@@ -187,6 +192,8 @@ impl PrefixMap {
     }
 
     /// Qualifies an IRI against a prefix map
+    ///
+    /// If it can't qualify the IRI, it returns the iri between `<` and `>`
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -209,6 +216,39 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
+        if let Some(qualified) = self.qualify_optional(iri) {
+            qualified
+        } else {
+            format!("<{iri}>")
+        }
+    }
+
+    /// Qualifies an IRI against a prefix map
+    ///
+    /// If it can't qualify the IRI, returns None
+    ///
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use prefixmap::PrefixMap;
+    /// # use prefixmap::PrefixMapError;
+    /// # use iri_s::*;
+    /// # use std::str::FromStr;
+    /// let pm = PrefixMap::from_hashmap(
+    ///   &HashMap::from([
+    ///     ("", "http://example.org/"),
+    ///     ("schema", "http://schema.org/")])
+    /// )?;
+    /// let a = IriS::from_str("http://example.org/a")?;
+    /// assert_eq!(pm.qualify(&a), Some(":a"));
+    ///
+    /// let knows = IriS::from_str("http://schema.org/knows")?;
+    /// assert_eq!(pm.qualify(&knows), Some("schema:knows"));
+    ///
+    /// let other = IriS::from_str("http://other.org/foo")?;
+    /// assert_eq!(pm.qualify(&other), None);
+    /// # Ok::<(), PrefixMapError>(())
+    /// ```
+    pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
         let mut founds: Vec<_> = self
             .map
             .iter()
@@ -232,22 +272,21 @@ impl PrefixMap {
                 Some(color) => ":".color(color),
                 None => ColoredString::from(":"),
             };
-            format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored)
+            Some(format!(
+                "{}{}{}",
+                prefix_colored, semicolon_colored, rest_colored
+            ))
         } else {
-            format!("<{iri}>")
+            None
         };
         if self.hyperlink {
-            format!(
-                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
-                iri.as_str(),
-                str
-            )
+            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s.as_str(), s))
         } else {
             str
         }
     }
 
-    /// Qualifies an IRI against a prefix map
+    /// Qualifies an IRI against a prefix map returning the length of the qualified string
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -360,14 +399,13 @@ impl PrefixMap {
     pub fn basic() -> PrefixMap {
         PrefixMap::from_hashmap(&HashMap::from([
             ("", "http://example.org/"),
-            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+            ("dc", "http://purl.org/dc/elements/1.1/"),
             ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
             ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
-            ("dc", "http://purl.org/dc/elements/1.1/"),
+            ("sh", "http://www.w3.org/ns/shacl#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ]))
         .unwrap()
-        // .without_default_colors()
-        // .with_hyperlink(true)
     }
 
     /// Default Wikidata prefixmap

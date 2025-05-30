@@ -15,10 +15,10 @@ pub enum ConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
-    YamlError {
+    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
+    TomlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: toml::de::Error,
     },
 }
 
@@ -29,7 +29,7 @@ impl Config {
                 path_name: file_name.to_string(),
                 error: e,
             })?;
-        serde_yml::from_str::<Config>(&config_str).map_err(|e| ConfigError::YamlError {
+        toml::from_str::<Config>(&config_str).map_err(|e| ConfigError::TomlError {
             path_name: file_name.to_string(),
             error: e,
         })

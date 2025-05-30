@@ -1,24 +1,25 @@
 use std::collections::HashSet;
 
-use srdf::QuerySRDF;
+use srdf::Sparql;
 
 use super::helper_error::SPARQLError;
 
-pub fn select<S: QuerySRDF>(
+pub fn select<S: Sparql>(
     store: &S,
-    query: String,
+    query_str: String,
     index: &str,
 ) -> Result<HashSet<S::Term>, SPARQLError> {
     let mut ans = HashSet::new();
-    let query = match store.query_select(&query) {
+    let query = match store.query_select(&query_str) {
         Ok(ans) => ans,
-        Err(_) => return Err(SPARQLError::Query),
+        Err(e) => {
+            return Err(SPARQLError::Query {
+                query: query_str.to_string(),
+                error: format!("{e}"),
+            })
+        }
     };
-    for solution in query.into_iter() {
-        let solution = match solution {
-            Ok(ans) => ans,
-            Err(_) => return Err(SPARQLError::Query),
-        };
+    for solution in query.iter() {
         if let Some(solution) = solution.find_solution(index) {
             ans.insert(solution.to_owned());
         }

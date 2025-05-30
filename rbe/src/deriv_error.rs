@@ -1,8 +1,7 @@
 use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::hash::Hash;

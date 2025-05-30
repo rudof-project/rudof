@@ -14,11 +14,12 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinCount;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
+use std::fmt::Debug;
 
-impl<S: SRDFBasic> Validator<S> for MinCount {
+impl<S: Rdf + Debug> Validator<S> for MinCount {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -26,7 +27,9 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        _source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        println!("Validating minCount with shape {}", shape.id());
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
             return Ok(Default::default());
@@ -36,26 +39,43 @@ impl<S: SRDFBasic> Validator<S> for MinCount {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for MinCount {
+impl<S: Query + Debug + 'static> NativeValidator<S> for MinCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        println!("Validate native minCount with shape: {}", shape.id());
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for MinCount {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

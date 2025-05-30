@@ -33,7 +33,7 @@ pub use crate::node_type::*;
 pub use crate::placeholder_resolver::*;
 pub use crate::prefix_cc::*;
 pub use crate::property_id::*;
-pub use crate::reader_range::*;
+// pub use crate::reader_range::*;
 pub use crate::shape_id::*;
 pub use crate::tap_config::*;
 pub use crate::tap_error::*;

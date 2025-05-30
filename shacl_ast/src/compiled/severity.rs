@@ -1,6 +1,7 @@
 use iri_s::iri;
 use iri_s::IriS;
-use srdf::SRDFBasic;
+use srdf::Iri as _;
+use srdf::Rdf;
 
 use crate::severity::Severity;
 use crate::*;
@@ -8,15 +9,15 @@ use crate::*;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 
-#[derive(Hash, PartialEq, Eq)]
-pub enum CompiledSeverity<S: SRDFBasic> {
+#[derive(Hash, PartialEq, Eq, Debug)]
+pub enum CompiledSeverity<S: Rdf> {
     Violation,
     Warning,
     Info,
     Generic(S::IRI),
 }
 
-impl<S: SRDFBasic> CompiledSeverity<S> {
+impl<S: Rdf> CompiledSeverity<S> {
     pub fn compile(severity: Option<Severity>) -> Result<Option<Self>, CompiledShaclError> {
         let ans = match severity {
             Some(severity) => {
@@ -37,13 +38,16 @@ impl<S: SRDFBasic> CompiledSeverity<S> {
     }
 }
 
-impl<S: SRDFBasic> From<&CompiledSeverity<S>> for IriS {
+impl<S: Rdf> From<&CompiledSeverity<S>> for IriS {
     fn from(value: &CompiledSeverity<S>) -> Self {
         match value {
             CompiledSeverity::Violation => iri!(SH_VIOLATION_STR),
             CompiledSeverity::Warning => iri!(SH_WARNING_STR),
             CompiledSeverity::Info => iri!(SH_INFO_STR),
-            CompiledSeverity::Generic(iri) => S::iri2iri_s(iri),
+            CompiledSeverity::Generic(iri) => {
+                let iri_string = iri.as_str();
+                iri!(iri_string)
+            }
         }
     }
 }

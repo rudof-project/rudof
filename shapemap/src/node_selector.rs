@@ -1,14 +1,15 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
+use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, Node};
 use srdf::literal::Literal;
 use srdf::shacl_path::SHACLPath;
-use srdf::SRDF;
+use srdf::Query;
 use thiserror::Error;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum NodeSelector {
     Node(ObjectValue),
     TriplePattern {
@@ -49,7 +50,7 @@ impl NodeSelector {
 
     pub fn iter_node<S>(&self, _rdf: &S) -> impl Iterator<Item = &ObjectValue>
     where
-        S: SRDF,
+        S: Query,
     {
         match self {
             NodeSelector::Node(value) => std::iter::once(value),
@@ -64,7 +65,7 @@ pub enum NodeSelectorError {}
 impl NodeSelect for NodeSelector {
     fn select<S>(&self, _rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
     where
-        S: SRDF,
+        S: Query,
     {
         match self {
             NodeSelector::Node(_node) => {
@@ -87,7 +88,7 @@ impl NodeSelect for NodeSelector {
         }
     }
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 
 pub enum Pattern {
     Node(Node),
@@ -99,5 +100,5 @@ pub enum Pattern {
 trait NodeSelect {
     fn select<S>(&self, rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
     where
-        S: SRDF;
+        S: Query;
 }

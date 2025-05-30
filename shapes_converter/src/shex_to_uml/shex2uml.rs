@@ -427,8 +427,10 @@ pub enum ImageFormat {
     PNG,
 }
 
+#[derive(Debug, Clone, Default)]
 pub enum UmlGenerationMode {
     /// Show all nodes
+    #[default]
     AllNodes,
 
     /// Show only the neighbours of a node
@@ -440,8 +442,8 @@ impl UmlGenerationMode {
         UmlGenerationMode::AllNodes
     }
 
-    pub fn neighs(str: &str) -> UmlGenerationMode {
-        UmlGenerationMode::Neighs(str.to_string())
+    pub fn neighs(node: &str) -> UmlGenerationMode {
+        UmlGenerationMode::Neighs(node.to_string())
     }
 }
 

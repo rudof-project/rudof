@@ -1,7 +1,8 @@
-use std::path::Path;
-
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
+use shapemap::ShapemapConfig;
 use srdf::RdfDataConfig;
+use std::io::Read;
+use std::path::Path;
 
 use crate::{ShExConfig, ValidatorError, MAX_STEPS};
 
@@ -13,34 +14,48 @@ pub struct ValidatorConfig {
     pub max_steps: usize,
 
     /// Configuration of RDF data readers
-    pub data_config: Option<RdfDataConfig>,
+    pub rdf_data: Option<RdfDataConfig>,
 
     /// Configuration of ShEx schemas
-    pub shex_config: Option<ShExConfig>,
+    pub shex: Option<ShExConfig>,
+
+    /// Configuration of Shapemaps
+    pub shapemap: Option<ShapemapConfig>,
+
+    pub check_negation_requirement: Option<bool>,
 }
 
 impl Default for ValidatorConfig {
     fn default() -> Self {
         Self {
             max_steps: MAX_STEPS,
-            data_config: Some(RdfDataConfig::default()),
-            shex_config: Some(ShExConfig::default()),
+            rdf_data: Some(RdfDataConfig::default()),
+            shex: Some(ShExConfig::default()),
+            shapemap: Some(ShapemapConfig::default()),
+            check_negation_requirement: Some(true),
         }
     }
 }
 
 impl ValidatorConfig {
-    /// Obtain a `ValidatorConfig` from a path file in YAML format
+    /// Obtain a `ValidatorConfig` from a path file in TOML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ValidatorConfig, ValidatorError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| {
+        let mut f = std::fs::File::open(path).map_err(|e| {
             ValidatorError::ValidatorConfigFromPathError {
                 path: path_name.clone(),
                 error: e.to_string(),
             }
         })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| ValidatorError::ValidatorConfigFromPathError {
+                path: path_name.clone(),
+                error: e.to_string(),
+            })?;
+
         let config: ValidatorConfig =
-            serde_yml::from_reader(f).map_err(|e| ValidatorError::ValidatorConfigYamlError {
+            toml::from_str(s.as_str()).map_err(|e| ValidatorError::ValidatorConfigTomlError {
                 path: path_name.clone(),
                 error: e.to_string(),
             })?;
@@ -55,9 +70,23 @@ impl ValidatorConfig {
         self.max_steps
     }
 
+    pub fn rdf_data_config(&self) -> RdfDataConfig {
+        match &self.rdf_data {
+            None => RdfDataConfig::default(),
+            Some(sc) => sc.clone(),
+        }
+    }
+
     pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex_config {
+        match &self.shex {
             None => ShExConfig::default(),
+            Some(sc) => sc.clone(),
+        }
+    }
+
+    pub fn shapemap_config(&self) -> ShapemapConfig {
+        match &self.shapemap {
+            None => ShapemapConfig::default(),
             Some(sc) => sc.clone(),
         }
     }

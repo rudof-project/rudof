@@ -9,9 +9,8 @@ use crate::{
 };
 use iri_s::{iri, IriS};
 use itertools::Itertools;
-use oxrdf::{Literal as OxLiteral, NamedNode, Term as OxTerm};
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder, XSD_INTEGER_STR};
+use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -79,7 +78,7 @@ impl Component {
     {
         match self {
             Self::Class(rdf_node) => {
-                Self::write_term(&RDF::object_as_term(rdf_node), SH_CLASS_STR, rdf_node, rdf)?;
+                Self::write_term(&rdf_node.clone().into(), SH_CLASS_STR, rdf_node, rdf)?;
             }
             Self::Datatype(iri) => {
                 Self::write_iri(iri, SH_DATATYPE_STR, rdf_node, rdf)?;
@@ -129,7 +128,7 @@ impl Component {
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
-                        &Literal::str(&lang.value()),
+                        &Literal::str(&lang.to_string()),
                         SH_LANGUAGE_IN_STR,
                         rdf_node,
                         rdf,
@@ -150,20 +149,20 @@ impl Component {
             }
             Self::Or { shapes } => {
                 shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_OR_STR, rdf_node, rdf)
+                    Self::write_term(&shape.clone().into(), SH_OR_STR, rdf_node, rdf)
                 })?;
             }
             Self::And { shapes } => {
                 shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_AND_STR, rdf_node, rdf)
+                    Self::write_term(&shape.clone().into(), SH_AND_STR, rdf_node, rdf)
                 })?;
             }
             Self::Not { shape } => {
-                Self::write_term(&RDF::object_as_term(shape), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_term(&shape.clone().into(), SH_PATTERN_STR, rdf_node, rdf)?;
             }
             Self::Xone { shapes } => {
                 shapes.iter().try_for_each(|shape| {
-                    Self::write_term(&RDF::object_as_term(shape), SH_XONE_STR, rdf_node, rdf)
+                    Self::write_term(&shape.clone().into(), SH_XONE_STR, rdf_node, rdf)
                 })?;
             }
             Self::Closed {
@@ -177,7 +176,7 @@ impl Component {
                 })?;
             }
             Self::Node { shape } => {
-                Self::write_term(&RDF::object_as_term(shape), SH_NODE_STR, rdf_node, rdf)?;
+                Self::write_term(&shape.clone().into(), SH_NODE_STR, rdf_node, rdf)?;
             }
             Self::HasValue { value } => match value {
                 Value::Iri(iri) => {
@@ -210,7 +209,7 @@ impl Component {
                 qualified_value_shapes_disjoint,
             } => {
                 Self::write_term(
-                    &RDF::object_as_term(shape),
+                    &shape.clone().into(),
                     SH_QUALIFIED_VALUE_SHAPE_STR,
                     rdf_node,
                     rdf,
@@ -241,14 +240,9 @@ impl Component {
     where
         RDF: SRDFBuilder,
     {
-        let decimal_type = NamedNode::new(XSD_INTEGER_STR).unwrap();
-
-        let term = OxTerm::Literal(OxLiteral::new_typed_literal(
-            value.to_string(),
-            decimal_type,
-        ));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
+        let value: i128 = value.try_into().unwrap();
+        let literal: RDF::Literal = value.into();
+        Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
     fn write_boolean<RDF>(
@@ -260,9 +254,8 @@ impl Component {
     where
         RDF: SRDFBuilder,
     {
-        let term = OxTerm::Literal(OxLiteral::from(value));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
+        let literal: RDF::Literal = value.into();
+        Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
     fn write_literal<RDF>(
@@ -274,9 +267,8 @@ impl Component {
     where
         RDF: SRDFBuilder,
     {
-        let term = OxTerm::Literal(OxLiteral::new_simple_literal(value.lexical_form()));
-
-        Self::write_term(&RDF::term_s2term(&term), predicate, rdf_node, rdf)
+        let literal: RDF::Literal = value.lexical_form().into();
+        Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
     fn write_iri<RDF>(
@@ -289,7 +281,7 @@ impl Component {
         RDF: SRDFBuilder,
     {
         Self::write_term(
-            &RDF::iri_s2term(&value.get_iri().unwrap()),
+            &value.get_iri().unwrap().clone().into(),
             predicate,
             rdf_node,
             rdf,
@@ -305,11 +297,8 @@ impl Component {
     where
         RDF: SRDFBuilder,
     {
-        rdf.add_triple(
-            &RDF::object_as_subject(rdf_node).unwrap(),
-            &RDF::iri_s2iri(&iri!(predicate)),
-            value,
-        )
+        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_triple(node, iri!(predicate), value.clone())
     }
 }
 

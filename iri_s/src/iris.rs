@@ -1,7 +1,7 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
-use reqwest::header;
-use reqwest::header::USER_AGENT;
+use oxrdf::Subject;
+use oxrdf::Term;
 use serde::de;
 use serde::de::Visitor;
 use serde::Deserialize;
@@ -9,13 +9,12 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
-use std::fs;
 use std::str::FromStr;
 use url::Url;
 
 use crate::IriSError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IriS {
     iri: NamedNode,
 }
@@ -107,7 +106,12 @@ impl IriS {
     /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
     /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     ///
+    #[cfg(not(target_family = "wasm"))]
     pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {
+        use reqwest::header;
+        use reqwest::header::USER_AGENT;
+        use std::fs;
+
         let url = match base {
             Some(base_iri) => {
                 let base =
@@ -120,7 +124,7 @@ impl IriS {
                     .parse(self.iri.as_str())
                     .map_err(|e| IriSError::IriParseErrorWithBase {
                         str: self.iri.as_str().to_string(),
-                        base: Box::new(base),
+                        base: format!("{base}"),
                         error: format!("{e}"),
                     })?
             }
@@ -133,11 +137,13 @@ impl IriS {
             "file" => {
                 let path = url
                     .to_file_path()
-                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.clone() })?;
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath {
+                        url: format!("{url}"),
+                    })?;
                 let path_name = path.to_string_lossy().to_string();
                 let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
                     path: path_name,
-                    url: Box::new(url),
+                    url: format!("{url}"),
                     error: format!("{e}"),
                 })?;
                 Ok(body)
@@ -169,6 +175,13 @@ impl IriS {
                 Ok(body)
             }
         }
+    }
+
+    #[cfg(target_family = "wasm")]
+    pub fn dereference(&self, _base: &Option<IriS>) -> Result<String, IriSError> {
+        return Err(IriSError::ReqwestClientCreation {
+            error: String::from("reqwest is not enabled"),
+        });
     }
 
     /*    pub fn is_absolute(&self) -> bool {
@@ -203,14 +216,25 @@ impl FromStr for IriS {
     }
 }
 
-/*impl TryFrom<&str> for IriS {
-    type Error = IriSError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let iri = NamedNode::new(value)?;
-        Ok(IriS { iri })
+impl From<IriS> for NamedNode {
+    fn from(iri: IriS) -> Self {
+        NamedNode::new_unchecked(iri.as_str())
     }
-}*/
+}
+
+impl From<IriS> for Subject {
+    fn from(value: IriS) -> Self {
+        let named_node: NamedNode = value.into();
+        named_node.into()
+    }
+}
+
+impl From<IriS> for Term {
+    fn from(value: IriS) -> Self {
+        let named_node: NamedNode = value.into();
+        named_node.into()
+    }
+}
 
 impl Default for IriS {
     fn default() -> Self {
@@ -220,7 +244,7 @@ impl Default for IriS {
 
 struct IriVisitor;
 
-impl<'de> Visitor<'de> for IriVisitor {
+impl Visitor<'_> for IriVisitor {
     type Value = IriS;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

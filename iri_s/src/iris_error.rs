@@ -1,11 +1,11 @@
+use serde::Serialize;
 // use oxiri::Iri;
 // use oxrdf::IriParseError;
 use thiserror::Error;
-use url::Url;
 
 use crate::IriS;
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
     #[error("Error parsing {str} as IRI: {err}")]
     IriParseError { str: String, err: String },
@@ -13,7 +13,7 @@ pub enum IriSError {
     #[error("Parsing {str} using base: {base} as IRI. Error: {error}")]
     IriParseErrorWithBase {
         str: String,
-        base: Box<Url>,
+        base: String,
         error: String,
     },
 
@@ -43,12 +43,12 @@ pub enum IriSError {
     ReqwestTextError { error: String },
 
     #[error("trying to obtain a path from file scheme Url: {url}")]
-    ConvertingFileUrlToPath { url: Url },
+    ConvertingFileUrlToPath { url: String },
 
     #[error("Error reading from file {path} obtained from url {url}. Error: {error}")]
     IOErrorFile {
         path: String,
-        url: Box<Url>,
+        url: String,
         error: String,
     },
 }

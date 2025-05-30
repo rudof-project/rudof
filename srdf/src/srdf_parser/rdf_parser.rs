@@ -1,6 +1,9 @@
-use super::rdf_node_parser::*;
 use super::rdf_parser_error::RDFParseError;
-use crate::{FocusRDF, Object, RDF_TYPE, SRDF};
+use super::{rdf_node_parser::*, PResult};
+use crate::matcher::Any;
+use crate::Triple;
+use crate::{FocusRDF, Iri, Query, RDF_TYPE};
+use iri_s::iri;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -8,9 +11,8 @@ use std::collections::HashSet;
 /// The following code is an attempt to define parser combinators where the input is an RDF graph instead of a sequence of characters
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
-
 /// Represents a generic parser of RDF data
-pub trait RDFParse<RDF: SRDF> {
+pub trait RDFParse<RDF: Query> {
     /// The type which is returned if the parser is successful.
     type Output;
 
@@ -38,7 +40,7 @@ where
     }
 
     pub fn iri_unchecked(str: &str) -> RDF::IRI {
-        RDF::iri_s2iri(&IriS::new_unchecked(str))
+        IriS::new_unchecked(str).into()
     }
 
     pub fn set_focus(&mut self, focus: &RDF::Term) {
@@ -46,28 +48,28 @@ where
     }
 
     pub fn set_focus_iri(&mut self, iri: &IriS) {
-        let term = RDF::iri_s2term(iri);
-        self.rdf.set_focus(&term)
+        self.rdf.set_focus(&iri.clone().into())
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
-        RDF::iri_as_term(Self::iri_unchecked(str))
+        Self::iri_unchecked(str).into()
     }
 
     #[inline]
     fn rdf_type() -> RDF::IRI {
-        RDF::iri_s2iri(&RDF_TYPE)
+        RDF_TYPE.clone().into()
     }
 
     pub fn instances_of(
         &self,
         object: &RDF::Term,
-    ) -> Result<impl Iterator<Item = RDF::Subject>, RDFParseError> {
+    ) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
         let values = self
             .rdf
-            .subjects_with_predicate_object(&Self::rdf_type(), object)
-            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?;
-        Ok(values.into_iter())
+            .triples_matching(Any, Self::rdf_type(), object.clone())
+            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
+            .map(Triple::into_subject);
+        Ok(values)
     }
 
     pub fn instance_of(&self, object: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
@@ -109,21 +111,24 @@ where
     }
 
     pub fn term_as_iri(term: &RDF::Term) -> Result<IriS, RDFParseError> {
-        let obj = RDF::term_as_object(term);
-        match obj {
-            Object::Iri(iri) => Ok(iri),
-            Object::BlankNode(bnode) => Err(RDFParseError::ExpectedIRIFoundBNode { bnode }),
-            Object::Literal(lit) => Err(RDFParseError::ExpectedIRIFoundLiteral { lit }),
-        }
+        let iri: RDF::IRI = term
+            .clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedIRI {
+                term: term.to_string(),
+            })?;
+        let iri_string = iri.as_str();
+        Ok(iri!(iri_string))
     }
 
     pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        match RDF::term_as_subject(term) {
-            None => Err(RDFParseError::ExpectedSubject {
+        let subject = term
+            .clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
-            }),
-            Some(subj) => Ok(subj),
-        }
+            })?;
+        Ok(subject)
     }
 
     pub fn parse_list_for_predicate(

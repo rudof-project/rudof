@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use srdf::SRDFBasic;
+use srdf::Rdf;
 
 use crate::focus_nodes::FocusNodes;
 
-pub struct ValueNodes<S: SRDFBasic>(HashMap<S::Term, FocusNodes<S>>);
+pub struct ValueNodes<S: Rdf>(HashMap<S::Term, FocusNodes<S>>);
 
-impl<S: SRDFBasic> ValueNodes<S> {
+impl<S: Rdf> ValueNodes<S> {
     pub fn new(iter: impl Iterator<Item = (S::Term, FocusNodes<S>)>) -> Self {
         Self(HashMap::from_iter(iter))
     }
 }
 
-pub trait IterationStrategy<S: SRDFBasic> {
+pub trait IterationStrategy<S: Rdf> {
     type Item;
 
     fn iterate<'a>(
@@ -23,7 +23,7 @@ pub trait IterationStrategy<S: SRDFBasic> {
 
 pub struct FocusNodeIteration;
 
-impl<S: SRDFBasic> IterationStrategy<S> for FocusNodeIteration {
+impl<S: Rdf> IterationStrategy<S> for FocusNodeIteration {
     type Item = FocusNodes<S>;
 
     fn iterate<'a>(
@@ -36,7 +36,7 @@ impl<S: SRDFBasic> IterationStrategy<S> for FocusNodeIteration {
 
 pub struct ValueNodeIteration;
 
-impl<S: SRDFBasic> IterationStrategy<S> for ValueNodeIteration {
+impl<S: Rdf> IterationStrategy<S> for ValueNodeIteration {
     type Item = S::Term;
 
     fn iterate<'a>(

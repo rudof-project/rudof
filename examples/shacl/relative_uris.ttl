@@ -1,0 +1,22 @@
+@prefix : <#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:Resource a sh:NodeShape ;
+    rdfs:label "Shape of a resource" ;
+    sh:targetClass schema:Person, schema:Event ;
+    sh:property [
+        sh:path schema:name ;
+        rdfs:label "name" ;
+        sh:minCount 1 ;
+        sh:maxCount 3 ;
+    ] ;
+    sh:property [
+        sh:path schema:license ;
+        rdfs:label "license" ;
+    ] .
+

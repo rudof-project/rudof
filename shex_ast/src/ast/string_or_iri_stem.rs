@@ -2,9 +2,7 @@ use std::{result, str::FromStr};
 
 use crate::ast::serde_string_or_struct::*;
 
-use serde::{Serialize as SerializeTrait, Serializer};
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use serde::{Deserialize, Serialize, Serializer};
 use void::Void;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;

@@ -1,6 +1,8 @@
 use crate::shapemap_state::*;
 use std::collections::HashSet;
 
+/// A ShapeMap is based on [shape maps specification](https://shexspec.github.io/shape-map/)
+/// This trait is the more abstract representation of a shape map which is an association of nodes with shapes, whose values are a [ShapeMapState]
 pub trait ShapeMap {
     type NodeIdx;
     type ShapeIdx;

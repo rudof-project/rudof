@@ -1,16 +1,14 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use shex_ast::{IriOrStr, Schema, SchemaJsonError, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use shex_compact::ShExParser;
 use std::collections::{hash_map::Entry, HashMap};
-use tracing::debug;
 use url::Url;
 
 use crate::{ResolveMethod, SchemaWithoutImportsError, ShExFormat};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-
 pub struct SchemaWithoutImports {
     source_schema: Box<Schema>,
 
@@ -205,7 +203,10 @@ pub fn resolve_iri_or_str(
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
+    use tracing::debug;
+
     let current_dir = std::env::current_dir().map_err(|e| SchemaJsonError::CurrentDir {
         error: format!("{e}"),
     })?;
@@ -214,6 +215,13 @@ pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
         .map_err(|_e| SchemaJsonError::LocalFolderIriError { path: current_dir })?;
     debug!("url: {url}");
     Ok(IriS::new_unchecked(url.as_str()))
+}
+
+#[cfg(target_family = "wasm")]
+pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
+    Err(SchemaJsonError::CurrentDir {
+        error: String::from("No local folder on web"),
+    })
 }
 
 pub fn get_schema_from_iri(
@@ -244,6 +252,9 @@ pub fn get_schema_from_iri(
                     error: format!("{e}"),
                 })?;
             Ok(schema)
+        }
+        ShExFormat::Turtle => {
+            todo!()
         }
     }
 }

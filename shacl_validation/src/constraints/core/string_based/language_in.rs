@@ -1,9 +1,12 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::LanguageIn;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::QuerySRDF;
-use srdf::SRDFBasic;
-use srdf::SRDF;
+use srdf::lang::Lang;
+use srdf::Literal;
+use srdf::Query;
+use srdf::Rdf;
+use srdf::Sparql;
+use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
@@ -17,7 +20,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
+impl<S: Rdf + Debug> Validator<S> for LanguageIn {
     fn validate(
         &self,
         component: &CompiledComponent<S>,
@@ -25,12 +28,15 @@ impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
+        _source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
-            if let Some(lang) = S::term_as_literal(value_node) {
-                if self.langs().contains(&lang) {
-                    return false;
-                }
+            if let Ok(literal) = value_node.clone().try_into() {
+                let literal: S::Literal = literal;
+                return match literal.lang() {
+                    Some(lang) => !self.langs().contains(&Lang::new_unchecked(lang)),
+                    None => true,
+                };
             }
             true
         };
@@ -45,26 +51,42 @@ impl<S: SRDFBasic> Validator<S> for LanguageIn<S> {
     }
 }
 
-impl<S: SRDF + 'static> NativeValidator<S> for LanguageIn<S> {
+impl<S: Query + Debug + 'static> NativeValidator<S> for LanguageIn {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, NativeEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            NativeEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }
 
-impl<S: QuerySRDF + 'static> SparqlValidator<S> for LanguageIn<S> {
+impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LanguageIn {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
         store: &S,
         value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult<S>>, ConstraintError> {
-        self.validate(component, shape, store, SparqlEngine, value_nodes)
+        source_shape: Option<&CompiledShape<S>>,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            SparqlEngine,
+            value_nodes,
+            source_shape,
+        )
     }
 }

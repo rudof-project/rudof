@@ -22,6 +22,68 @@ The main contributions of `rudof` are:
 
 `rudof` has been implemented using a modular structure and the different modules are available as Rust crates:
 
+```mermaid
+graph TD;
+ user((Person)) --> rudof_cli;
+ application(application);
+ application -->|Rust| rudof_lib ;
+ application --> |Python| pyrudof ;
+ iri_s --> oxigraph;
+ iri_s --> reqwest ;
+ dctap --> calamine ;
+ dctap --> csv ;
+ sparql_service --> oxigraph ;
+subgraph rudof
+    rudof_lib[<a href='https://crates.io/crates/rudof_lib'>rudof_lib</a>];
+    rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
+    pyrudof[<a href='https://pypi.org/project/pyrudof/'>pyrudof</a>];
+    shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
+    srdf[<a href='https://crates.io/crates/srdf'>srdf</a>];
+    shex_compact[<a href='https://crates.io/crates/shex_compact'>shex_compact</a>];
+    shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
+    shacl_validation[<a href='https://crates.io/crates/shacl_validation'>shacl_validation</a>];
+    shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
+    iri_s[<a href='https://crates.io/crates/iri_s'>iri_s</a>];
+    prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
+    shapemap[<a href='https://crates.io/crates/shapemap'>shapemap</a>];
+    rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
+    shapes_converter[<a href='https://crates.io/crates/shapes_converter'>shapes_converter</a>];
+ dctap[<a href='https://crates.io/crates/dctap'>dctap</a>];
+ sparql_service[<a href='https://crates.io/crates/sparql_service'>sparql_service</a>];
+
+ pyrudof --> rudof_lib ;
+ rudof_cli --> rudof_lib ;
+ shex_ast --> srdf ;
+ shex_compact-->shex_ast;
+ shex_validation-->shex_ast;
+ srdf-->iri_s;
+ shacl_ast-->srdf;
+ shacl_validation-->shacl_ast;
+ shex_validation-->shapemap;
+ shapemap-->prefixmap;
+ shex_ast-->prefixmap;
+ srdf-->prefixmap;
+ shex_validation-->rbe;
+ dctap-->prefixmap;
+ dctap --> iri_s;
+ shapes_converter-->shacl_ast;
+ shapes_converter-->shex_ast;
+ shapes_converter-->dctap;
+ prefixmap --> iri_s ;
+ shex_validation --> shex_compact
+ sparql_service --> iri_s ;
+ rudof_lib --> shex_validation ;
+ rudof_lib --> shacl_validation ;
+ rudof_lib --> shapes_converter ;
+end
+subgraph external dependencies
+ oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
+ calamine[<a href='https://docs.rs/calamine/latest/calamine/'>calamine</a>] ;
+ reqwest[<a href='https://docs.rs/reqwest/latest/reqwest/'>reqwest</a>] ;
+ csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>] 
+end
+```
+
 - [ShEx Validation algorithm](https://docs.rs/shex_validation/).
 - [ShEx Compact syntax parser](https://docs.rs/shex_compact), a ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
 - [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD).
@@ -47,11 +109,29 @@ An incomplete list of projects which are related to `rudof` is the following:
 
 ## Contributors
 
-[List of contributors in Github](https://github.com/rudof-project/rudof/graphs/contributors)
+- [Jose Emilio Labra Gayo](https://labra.weso.es/)
+- [Ángel Iglesias Préstamo](http://angelip2303.github.io/)
+- [Marc-Antoine Arnaud](https://luminvent.com/)
+- [Jonas Smedegaard](http://dr.jones.dk/blog/)
+- [Full list of contributors](https://github.com/rudof-project/rudof/graphs/contributors)
+
+## Funding and sponsors
+
+The project has been partially funded by some grants or institutions like:
+
+- [WESO - WEb Semantics Oviedo](https://www.weso.es/) is the research group at the [University of Oviedo, Spain](https://www.uniovi.es/) where some of the contributors are participating and has driven the main features implemented by `rudof`.
+- [USDA - United States Department of Agriculture](https://www.usda.gov/)
+- [Spanish Research Agency](https://www.aei.gob.es/) through the project ANGLIRU - Applying kNowledge Graphs for research Data Interoperability and Reusability (CODE MCI-21-PID2020-117912RB-C21).
+- [Database Center for Life Science, Japan](https://dbcls.rois.ac.jp/index-en.html) has provided funding for attending several Biohackathons and RDF Summit events where some of the ideas behind `rudof` materialized as well as the logo.
+
+In case you want to help the project, please contact [Jose E. Labra Gayo](https://labra.weso.es/).
 
 ## Supporters and adopters
 
 The following is a list of `rudof` adopters and supporters:
 
 - [WESO (WEb Semantics Oviedo)](http://www.weso.es/). Most of the contributors are part of this research group at the [University of Oviedo](http://www.uniovi.es)
-- [USDA - United States Department of Agriculture](https://www.usda.gov/) has been partially funding part of the project through a Non-Assistance Cooperative Agreement.
+- [USDA - United States Department of Agriculture](https://www.usda.gov/) has been partially funding this project through a Non-Assistance Cooperative Agreement with [WESO](http://www.weso.es/) where `rudof` is used to develop Data Shapes based on the [National Agricultural Library Thesaurus Concept Space](https://lod.nal.usda.gov/en/).
+- [Luminvent](https://luminvent.com/) is using `rudof` to validate RDF using Rust code.
+
+If you are using `rudof` and want to be listed, please contact us or add a Pull Request.

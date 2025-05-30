@@ -2,8 +2,155 @@
 
 ## Current changes without release yet
 
-## [0.1.31] - 2024-08-??
+## [v0.1.71] - 2025-05-28
 
+- Disabled Xlsx support given the problem with Calamine in order to publish Python version of rudof
+
+## [v0.1.70] - 2025-05-26
+
+- Added implementation of ShEx validator that follows the [paper](https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/)
+- There is [a problem](https://github.com/rudof-project/rudof/issues/291) with calamine's dependency from DCTAP which doesn't allow us to publish in crates.io. We are waiting for calamine to publish an official release because it seems the patch only works to build the system, but prevents us to publish to crates.
+
+## [v0.1.65] - 2025-05-14
+
+- Set reqwest dependency on rustls to disable openssl which gives several problems
+
+## [v0.1.64] - 2025-05-14
+
+- Added check on recursion with negative cycles in ShEx
+- Added different result formats in ShEx like JSON
+
+## [v0.1.63] - Skipped
+
+## [v0.1.62] - 2025-03-29
+
+- Changed dependency from [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) to [toml](https://docs.rs/toml/latest/toml/)
+- Removed dependency in rbe_tests from serde_yaml_ng to use plain JSON for the test_suite
+
+## [v0.1.60] - 2025-03-11
+
+- Changed dependency from [serde_yml](https://doc.serdeyml.com/serde_yml/index.html) to [serde_yaml_ng](https://github.com/acatton/serde-yaml-ng) according to #278
+- Changed Iri trait to add Ord constraint so IRIs can be ordered solving issue #276
+
+## [v0.1.59] - 2025-01-01
+
+- Fixes bug in feature added to solve issue #227 for local files which are relative that it didn't generate an absolute IRI. Now it does.
+- Added option to SHACL2ShEx converter to optionally add `rdf:type` declaration for each `sh:targetClass` declaration. Previously, this behaviour was not optional and now it can be disabled.
+- Fixes option to generate `rdf:type` for `sh:targetClass` declarations when there are more than one (previously it generated one rdf:type for each target class, and not it generates a value set).
+
+## [v0.1.58] - 2024-12-31
+
+- Solves issue #227 to automatically generate a base URL from the local file name or URL.
+
+## [v0.1.57] - 2024-11-14
+
+- Simple release to bump a new version that solve a issue with pyrudof in Google Colab
+
+## [v0.1.56] - 2024-11-14
+
+- Added `variables()` and `find` to QuerySolution class in pyrudof
+
+## [v0.1.55] - 2024-11-14
+
+- Added methods to show query solutions in rudof and pyrudof
+
+## [v0.1.54] - 2024-11-13
+
+- Added query to rudof and pyrudof
+
+## [v0.1.53] - 2024-11-13
+
+- Added serialization of RDF data from rudof and pyrudof
+
+## [v0.1.52] - 2024-11-1
+
+- Added `endpoints` to `RdfDataConfig` to contain a list of built-in endpoints
+- Added prefixmap as a parameter to create `SRDFPARQL` endpoints
+- Solved problem when asking information about a node in wikidata endpoint
+- Added `config()` method to obtain `rudof` config
+- Improved `add_endpoint()` in pyrudof to search for the list of built-in endpoints in RDFDataConfig
+
+## [v0.1.51] - 2024-10-31
+
+- Added `read_data_path` to `pyrudof`
+
+## [v0.1.50] - 2024-10-31
+
+- Fix: We repaired some export issues on UmlGenerationMode and the `__repr__` methods which were not properly generated.
+
+## [v0.1.49] - 2024-10-30
+
+- Implemented Display for ShapeMap, ShEx-schema and SHACL-schema
+- Added `__repr__` to ShapeMap, ShExSchema and SHACLSchema
+- Added `update_config` to rudof and pyrudof
+
+## [v0.1.48] - 2024-10-29
+
+- Minor release to force re-publication
+
+## [v0.1.47] - 2024-10-29
+
+- Changed the way that we represent enums in Python to use proper enums with default values
+- Added `read_shacl_str` and `read_shacl_path` to pyrudof
+
+## [v0.1.46] - 2024-10-29
+
+- Added default values to `pyrudof` to allow a more flexible API
+- minor release to include RDFFormat and ReaderMode in export list of `pyrudof`
+
+## [v0.1.45] - 2024-10-29
+
+- Changed the order of parameters in `read_shex_str`, `read_data_str` in `pyrudof`
+- `RDFFormat` added in `pyrudof`
+- `ReaderMode` added in `pyrudof`
+- `reset_all` added in `pyrudof`
+
+## [v0.1.44] - 2024-10-29
+
+- `add_endpoint` added in `rudof_lib` and `pyrudof_lib`
+- `reset_shacl` added in `rudof_lib` and `pyrudof_lib`
+
+## [v0.1.43] - 2024-10-28
+
+Minor release to add DCTAP for pyrudof
+
+## [0.1.40] - 2024-10-28
+
+- Added more features to the rudof_lib like the serialization of ShEx, SHACL and Shapemaps which is also mirrored in the Python bindings.
+- Added shex2uml python bindings
+
+## [0.1.37] - 2024-10-28
+
+- Added more features to the rudof_lib like the serialization of ShEx, SHACL and Shapemaps which is also mirrored in the Python bindings
+
+## [0.1.36] - 2024-10-27
+
+- Python bindings based on rudof_lib to validate ShEx and SHACL
+
+## [0.1.35] - 2024-10-25
+
+- More refactoring on main to depend on rudof_lib for SHACL, issue #201
+- Implemented Display for SHACL Validation report which shows the results with colors
+
+## [0.1.34] - 2024-10-23
+
+-Some refactoring on main to depend on rudof_lib and check if it works
+
+## [0.1.33] - 2024-10-22
+
+- Internal release to just change the README in rudof_lib
+
+## [0.1.32] - 2024-10-22
+
+- Created crate [`rudof_lib`](https://crates.io/crates/rudof_lib) which will act as the main library entry point for `rudof`. In the future, this crate could be called `rudof`.
+- Refactor of main to invoke `rudof_lib`
+- Added [`ResultShapeMap`](https://docs.rs/shapemap/latest/shapemap/result_shape_map/struct.ResultShapeMap.html) as the result of ShEx validation. One improvement is that now the results can appear with colors.
+
+## [0.1.31] - 2024-10-20
+
+- Added more information to docs
+- Implemented more features of Service description
+- Added Accept headers to `InputSpec` so it provides basic content negotiation
 - Added ShExConfig to improve configuration of options that involve ShEx
 - Added literals to shape maps
 - Improved aesthetics of docs #170

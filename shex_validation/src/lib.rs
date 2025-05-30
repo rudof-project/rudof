@@ -1,7 +1,6 @@
 //! ShEx validation
 //!
 //!
-mod result_map;
 mod result_value;
 // mod validation_state;
 pub mod atom;
@@ -19,7 +18,6 @@ pub mod validator_runner;
 
 pub use crate::atom::*;
 pub use crate::reason::*;
-pub use crate::result_map::*;
 pub use crate::result_value::*;
 pub use crate::rule::*;
 pub use crate::schema_without_imports::*;

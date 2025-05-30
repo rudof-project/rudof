@@ -55,11 +55,9 @@ impl ShEx2UmlConfig {
                 path_name: file_name.to_string(),
                 error: e,
             })?;
-        serde_yml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| {
-            ShEx2UmlConfigError::YamlError {
-                path_name: file_name.to_string(),
-                error: e,
-            }
+        toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::TomlError {
+            path_name: file_name.to_string(),
+            error: e,
         })
     }
 
@@ -74,10 +72,10 @@ pub enum ShEx2UmlConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading YAML from {path_name:?}. Error: {error:?}")]
-    YamlError {
+    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
+    TomlError {
         path_name: String,
-        error: serde_yml::Error,
+        error: toml::de::Error,
     },
 
     #[error("Accessing environment variable {var_name}: {error}")]
