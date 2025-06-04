@@ -20,7 +20,7 @@ iri_s = { workspace = true } # needed for defining IriS and vocabs
 prefixmap = { workspace = true }
 shex_compact ={ workspace = true}
 
-
 rand = "0.8"
 rust_decimal = "1.28"
 serde_json = "1.0.129"
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }

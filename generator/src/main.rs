@@ -2,6 +2,8 @@ use std::env;
 use std::process;
 use generator::generator::{Generator, FieldGenerator, GraphGenerator};
 use generator::generator::graph_generator::BasicGraphGenerator;
+use srdf::SRDFBuilder;
+use srdf::RDFFormat;
 
 
 struct DummyFieldGenerator;
@@ -36,6 +38,10 @@ fn main() {
             eprintln!("Error generating entities: {e}");
             process::exit(1);
         });
-   
+
+    // Print the generated SRDFGraph in Turtle format
+    let graph = generator.graph_generator.get_graph();
+    let mut out = std::io::stdout();
+    graph.serialize(&RDFFormat::Turtle, &mut out).unwrap();
 }
 

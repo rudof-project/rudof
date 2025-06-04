@@ -23,15 +23,20 @@ impl<'a> Generator<'a> {
             });
         self.graph_generator.set_shapes(shapes);
     }
-    pub fn generate(&self, num_entities: usize) -> Result<(), String> {
+    pub fn generate(&mut self, num_entities: usize) -> Result<(), String> {
         self.graph_generator.generate(num_entities)
+    }
+
+    pub fn get_graph(&self) -> &srdf::srdf_graph::SRDFGraph {
+        self.graph_generator.get_graph()
     }
 }
 
 
 pub trait GraphGenerator: Send + Sync {
     fn set_shapes(&mut self, shapes: Vec<ShapeDecl>);
-    fn generate(&self, num_entities: usize) -> Result<(), String>;
+    fn generate(&mut self, num_entities: usize) -> Result<(), String>;
+    fn get_graph(&self) -> &srdf::srdf_graph::SRDFGraph;
 }
 
 
