@@ -78,6 +78,9 @@ impl GraphGenerator for BasicGraphGenerator {
         self.set_shapes(shapes);
     }
     fn generate(&mut self, num_entities: usize) -> Result<(), String> {
+
+        //Generating triples for entities based on the shapes in the dependency graph
+
         let num_shapes = self.dep_graph.shapes.len();
         if num_shapes == 0 {
             return Ok(());
@@ -103,6 +106,9 @@ impl GraphGenerator for BasicGraphGenerator {
                 }
             }
         }
+
+        //Generating triples for relations between entities
+
         Ok(())
     }
     fn get_graph(&self) -> &SRDFGraph {
