@@ -46,12 +46,14 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
             }
         };
 
+        let message = format!("MaxLength({}) not satisfied", self.max_length());
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             max_length,
+            &message,
         )
     }
 }
@@ -74,6 +76,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxLength {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MaxLength({}) not satisfied", self.max_length());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

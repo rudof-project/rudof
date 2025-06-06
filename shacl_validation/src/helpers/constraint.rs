@@ -16,6 +16,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
+    message: &str,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
@@ -27,7 +28,9 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
                     let severity = shape.severity().clone().into();
                     let source = Some(shape.id().clone().into());
                     return Some(
-                        ValidationResult::new(focus, component, severity).with_source(source),
+                        ValidationResult::new(focus, component, severity)
+                            .with_source(source)
+                            .with_message(message),
                     );
                 }
             }
@@ -44,6 +47,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
+    message: &str,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -51,6 +55,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
         value_nodes,
         iteration_strategy,
         |item: &I::Item| Ok(evaluator(item)),
+        message,
     )
 }
 
@@ -60,6 +65,7 @@ pub fn validate_ask_with<S: Sparql>(
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
+    message: &str,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -70,5 +76,6 @@ pub fn validate_ask_with<S: Sparql>(
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },
+        message,
     )
 }

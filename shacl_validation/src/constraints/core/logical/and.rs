@@ -44,7 +44,15 @@ impl<S: Rdf + Debug> Validator<S> for And<S> {
                 .not()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, and)
+        let message = format!("And not satisfied");
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            and,
+            message.as_str(),
+        )
     }
 }
 

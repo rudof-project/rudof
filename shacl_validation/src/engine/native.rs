@@ -30,7 +30,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        println!("NativeEngine, evaluate with shape {}", shape.id());
+        tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
         let validator = component.deref();
         Ok(validator.validate_native(component, shape, store, value_nodes, source_shape)?)
     }

@@ -45,7 +45,18 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
             !is_class_valid
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, class)
+        let message = format!(
+            "Class constraint not satisfied for class {}",
+            self.class_rule()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            class,
+            &message,
+        )
     }
 }
 
@@ -69,6 +80,10 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!(
+            "Class constraint not satisfied for class {}",
+            self.class_rule()
+        );
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

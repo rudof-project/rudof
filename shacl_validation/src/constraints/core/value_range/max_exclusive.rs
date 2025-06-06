@@ -43,6 +43,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxExclusive<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MaxExclusive({}) not satisfied", self.max_exclusive());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

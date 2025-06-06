@@ -27,7 +27,18 @@ impl<S: Rdf + Debug> Validator<S> for In<S> {
         _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
-        validate_with(component, shape, value_nodes, ValueNodeIteration, r#in)
+        let message = format!(
+            "In constraint not satisfied. Expected one of: {:?}",
+            self.values()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            r#in,
+            &message,
+        )
     }
 }
 

@@ -30,7 +30,15 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
         _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
-        validate_with(component, shape, value_nodes, FocusNodeIteration, max_count)
+        let message = format!("MaxCount({}) not satisfied", self.max_count());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            max_count,
+            message.as_str(),
+        )
     }
 }
 

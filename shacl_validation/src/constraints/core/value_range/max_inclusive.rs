@@ -43,6 +43,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxInclusive<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MaxInclusive({}) not satisfied", self.max_inclusive());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

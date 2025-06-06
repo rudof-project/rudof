@@ -46,12 +46,14 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
             }
         };
 
+        let message = format!("MinLength({}) not satisfied", self.min_length());
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             min_length,
+            &message,
         )
     }
 }
@@ -74,6 +76,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MinLength({}) not satisfied", min_length_value);
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

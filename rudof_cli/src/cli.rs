@@ -83,8 +83,11 @@ pub enum Command {
         )]
         result_schema_format: ShExFormat,
 
-        #[arg(short = 't', long = "show elapsed time")]
+        #[arg(short = 't', long = "show-time")]
         show_time: Option<bool>,
+
+        #[arg(long = "show-schema")]
+        show_schema: Option<bool>,
 
         #[arg(long = "statistics")]
         show_statistics: Option<bool>,
@@ -109,6 +112,12 @@ pub enum Command {
             value_name = "Show dependencies between shapes"
         )]
         show_dependencies: Option<bool>,
+
+        #[arg(
+            long = "compile",
+            value_name = "Compile Schema to Internal representation"
+        )]
+        compile: Option<bool>,
 
         #[arg(
             long = "force-overwrite",

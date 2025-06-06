@@ -37,7 +37,15 @@ impl<S: Rdf + Debug> Validator<S> for Node<S> {
             inner_results.is_err() || !inner_results.unwrap().is_empty()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, node)
+        let message = format!("Node constraint not satisfied");
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            node,
+            &message,
+        )
     }
 }
 

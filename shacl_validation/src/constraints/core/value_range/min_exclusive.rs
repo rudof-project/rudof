@@ -43,6 +43,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinExclusive<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

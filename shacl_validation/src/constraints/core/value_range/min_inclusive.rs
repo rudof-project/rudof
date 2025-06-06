@@ -43,6 +43,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MinInclusive({}) not satisfied", self.min_inclusive());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

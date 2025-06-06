@@ -41,12 +41,17 @@ impl<S: Rdf + Debug> Validator<S> for LanguageIn {
             true
         };
 
+        let message = format!(
+            "LanguageIn constraint not satisfied. Expected one of: {:?}",
+            self.langs()
+        );
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             language_in,
+            &message,
         )
     }
 }

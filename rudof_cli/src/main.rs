@@ -114,7 +114,9 @@ fn main() -> Result<()> {
             show_dependencies,
             output,
             show_time,
+            show_schema,
             show_statistics,
+            compile,
             force_overwrite,
             reader_mode,
             config,
@@ -135,6 +137,8 @@ fn main() -> Result<()> {
                 result_schema_format,
                 output,
                 show_time,
+                show_schema.unwrap_or_default(),
+                compile.unwrap_or_default(),
                 *force_overwrite,
                 reader_mode,
                 &config,
@@ -458,6 +462,8 @@ fn run_shex(
     result_schema_format: &CliShExFormat,
     output: &Option<PathBuf>,
     show_time: bool,
+    show_schema: bool,
+    compile: bool,
     force_overwrite: bool,
     _reader_mode: &RDFReaderMode,
     config: &RudofConfig,
@@ -467,7 +473,9 @@ fn run_shex(
     let mut rudof = Rudof::new(config);
 
     parse_shex_schema_rudof(&mut rudof, input, schema_format, config)?;
-    show_schema_rudof(&rudof, result_schema_format, writer, color)?;
+    if show_schema {
+        show_schema_rudof(&rudof, result_schema_format, writer, color)?;
+    }
     if show_time {
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
@@ -497,7 +505,7 @@ fn run_shex(
             writeln!(io::stderr(), "{label} from {iri}")?
         }
     }
-    if config.show_ir() {
+    if compile && config.show_ir() {
         writeln!(io::stdout(), "\nIR:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
             writeln!(io::stdout(), "ShEx IR:")?;
@@ -506,7 +514,7 @@ fn run_shex(
             bail!("Internal error: No ShEx schema read")
         }
     }
-    if config.show_dependencies() {
+    if compile && config.show_dependencies() {
         writeln!(io::stdout(), "\nDependencies:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
             for (source, posneg, target) in shex_ir.dependencies() {
@@ -1505,7 +1513,6 @@ fn parse_shex_schema_rudof(
     let shex_config = config.shex_config();
     let base = base_convert(&shex_config.base);
     rudof.read_shex(reader, &schema_format, base)?;
-    println!("Schema read...");
     if config.shex_config().check_well_formed() {
         println!("Checking well formedness...");
         let shex_ir = rudof.get_shex_ir().unwrap();

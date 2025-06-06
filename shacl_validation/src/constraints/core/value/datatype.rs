@@ -37,7 +37,18 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
             true
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, datatype)
+        let message = format!(
+            "Datatype constraint not satisfied. Expected datatype: {}",
+            self.datatype()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            datatype,
+            &message,
+        )
     }
 }
 

@@ -37,7 +37,15 @@ impl<S: Rdf + Debug> Validator<S> for Not<S> {
             inner_results.is_err() || inner_results.unwrap().is_empty()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, not)
+        let message = format!("Not not satisfied");
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            not,
+            message.as_str(),
+        )
     }
 }
 

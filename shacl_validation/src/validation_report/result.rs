@@ -12,7 +12,7 @@ pub struct ValidationResult {
     source: Option<RDFNode>,       // optional
     constraint_component: RDFNode, // required
     details: Option<Vec<RDFNode>>, // optional
-    message: Option<RDFNode>,      // optional
+    message: Option<String>,       // optional
     severity: RDFNode,             // required (TODO: Replace by Severity?)
 }
 
@@ -51,9 +51,13 @@ impl ValidationResult {
         self
     }
 
-    pub fn with_message(mut self, message: Option<Object>) -> Self {
-        self.message = message;
+    pub fn with_message(mut self, message: &str) -> Self {
+        self.message = Some(message.to_string());
         self
+    }
+
+    pub fn message(&self) -> Option<&str> {
+        self.message.as_deref()
     }
 
     pub fn source(&self) -> Option<&Object> {
@@ -160,7 +164,7 @@ impl ValidationResult {
                 msg: format!("Error adding severity to validation result: {e}"),
             })?;
         let message = match self.message {
-            Some(ref message) => message.clone(),
+            Some(ref message) => Object::str(message),
             None => Object::str("No message"),
         };
         rdf_writer

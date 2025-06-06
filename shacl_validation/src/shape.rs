@@ -28,7 +28,7 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        println!(
+        tracing::debug!(
             "Shape.validate with shape {} and source shape: {}",
             self.id(),
             source_shape

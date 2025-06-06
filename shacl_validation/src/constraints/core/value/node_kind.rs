@@ -50,7 +50,18 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
             .not()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, node_kind)
+        let message = format!(
+            "Nodekind constraint not satisfied. Expected node kind: {}",
+            self.node_kind()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            node_kind,
+            &message,
+        )
     }
 }
 
@@ -87,6 +98,10 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!(
+            "Nodekind constraint not satisfied. Expected node kind: {}",
+            self.node_kind()
+        );
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

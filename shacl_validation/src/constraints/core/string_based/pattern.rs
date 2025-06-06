@@ -31,7 +31,15 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
                 todo!()
             }
         };
-        validate_with(component, shape, value_nodes, ValueNodeIteration, pattern)
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            pattern,
+            &message,
+        )
     }
 }
 
@@ -58,6 +66,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
             },
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_ask_with(component, shape, store, value_nodes, query, &message)
     }
 }

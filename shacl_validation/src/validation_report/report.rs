@@ -209,12 +209,13 @@ impl Display for ValidationReport {
             for result in self.results.iter() {
                 writeln!(
                     f,
-                    "Focus node {}, Component: {},{}{} severity: {}",
+                    "{} for node {} \n {} {} {} {}",
+                    show_object(result.severity(), &shacl_prefixmap),
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
+                    result.message().unwrap_or(&""),
                     show_object_opt("source shape", result.source(), &shacl_prefixmap),
                     show_object_opt("value", result.value(), &shacl_prefixmap),
-                    show_object(result.severity(), &shacl_prefixmap)
                 )?;
             }
             Ok(())

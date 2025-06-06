@@ -49,12 +49,14 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
             false
         };
 
+        let message = format!("UniqueLang constraint not satisfied");
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             unique_lang,
+            &message,
         )
     }
 }

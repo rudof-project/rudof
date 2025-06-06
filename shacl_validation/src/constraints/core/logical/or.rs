@@ -48,7 +48,15 @@ impl<S: Rdf + Debug> Validator<S> for Or<S> {
                 .not()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, or)
+        let message = format!("OR not satisfied");
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            or,
+            &message,
+        )
     }
 }
 

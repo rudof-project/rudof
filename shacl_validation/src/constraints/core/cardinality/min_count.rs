@@ -29,13 +29,21 @@ impl<S: Rdf + Debug> Validator<S> for MinCount {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        println!("Validating minCount with shape {}", shape.id());
+        tracing::debug!("Validating minCount with shape {}", shape.id());
         if self.min_count() == 0 {
             // If min_count is 0, then it always passes
             return Ok(Default::default());
         }
         let min_count = |targets: &FocusNodes<S>| targets.len() < self.min_count();
-        validate_with(component, shape, value_nodes, FocusNodeIteration, min_count)
+        let message = format!("MinCount({}) not satisfied", self.min_count());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            min_count,
+            message.as_str(),
+        )
     }
 }
 
@@ -48,7 +56,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinCount {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        println!("Validate native minCount with shape: {}", shape.id());
+        tracing::debug!("Validate native minCount with shape: {}", shape.id());
         self.validate(
             component,
             shape,

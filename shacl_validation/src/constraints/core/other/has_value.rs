@@ -30,7 +30,15 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
-        validate_with(component, shape, value_nodes, FocusNodeIteration, has_value)
+        let message = format!("HasValue({}) not satisfied", self.value());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            FocusNodeIteration,
+            has_value,
+            &message,
+        )
     }
 }
 
