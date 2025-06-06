@@ -14,9 +14,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.12 ]
-        target: [ x86_64, 
-                  # aarch64 
-                ]
+        target: [ x86_64, aarch64 ]
 
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +46,7 @@ jobs:
                 fi
             else
                 # If we're running on debian-based system.
-                apt update -y && apt-get install -y libssl-dev openssl pkg-config
+                apt update -y && apt-get install -y --fix-missing libssl-dev openssl pkg-config
             fi
 
       - name: Upload wheels
