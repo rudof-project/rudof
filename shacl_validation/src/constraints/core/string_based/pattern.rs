@@ -35,7 +35,8 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
             if value_node.is_blank_node() {
                 true
             } else {
-                todo!()
+                let lexical_form = value_node.lexical_form();
+                self.regex().is_match(lexical_form.as_str())
             }
         };
         let message = format!("Pattern({}) not satisfied", self.pattern());

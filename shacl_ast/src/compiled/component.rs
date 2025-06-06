@@ -11,6 +11,7 @@ use super::shape::CompiledShape;
 use iri_s::iri;
 use iri_s::IriS;
 use node_kind::NodeKind;
+use regex::Regex;
 use srdf::lang::Lang;
 use srdf::Rdf;
 
@@ -576,11 +577,21 @@ impl MinLength {
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
+    regex: Regex,
 }
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Self {
-        Pattern { pattern, flags }
+        let regex = if let Some(flags) = &flags {
+            Regex::new(&pattern).expect("Invalid regex pattern")
+        } else {
+            Regex::new(&pattern).expect("Invalid regex pattern")
+        };
+        Pattern {
+            pattern,
+            flags,
+            regex,
+        }
     }
 
     pub fn pattern(&self) -> &String {
@@ -589,6 +600,10 @@ impl Pattern {
 
     pub fn flags(&self) -> &Option<String> {
         &self.flags
+    }
+
+    pub fn regex(&self) -> &Regex {
+        &self.regex
     }
 }
 

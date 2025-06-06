@@ -150,6 +150,8 @@ pub trait Term: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn is_triple(&self) -> bool {
         self.kind() == TermKind::Triple
     }
+
+    fn lexical_form(&self) -> String;
 }
 
 impl Term for OxTerm {
@@ -160,6 +162,15 @@ impl Term for OxTerm {
             OxTerm::Literal(_) => TermKind::Literal,
             #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => TermKind::Triple,
+        }
+    }
+    fn lexical_form(&self) -> String {
+        match self {
+            OxTerm::NamedNode(iri) => iri.as_str().to_string(),
+            OxTerm::BlankNode(bnode) => bnode.as_str().to_string(),
+            OxTerm::Literal(literal) => literal.value().to_string(),
+            #[cfg(feature = "rdf-star")]
+            OxTerm::Triple(triple) => triple.to_string(),
         }
     }
 }
