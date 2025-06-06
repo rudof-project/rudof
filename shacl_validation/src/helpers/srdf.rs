@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{matcher::Any, Query, RDFNode, Triple};
+use srdf::{matcher::Any, Object, Query, RDFNode, SHACLPath, Triple};
 
 use super::helper_error::SRDFError;
 
@@ -57,4 +57,27 @@ pub(crate) fn get_subjects_for<S: Query>(
         .map(Into::into)
         .collect();
     Ok(values)
+}
+
+pub(crate) fn get_path_for<S: Query>(
+    store: &S,
+    subject: &S::Term,
+    predicate: &S::IRI,
+) -> Result<Option<SHACLPath>, SRDFError> {
+    match get_objects_for(store, subject, predicate)?
+        .into_iter()
+        .next()
+    {
+        Some(term) => {
+            let obj: Object = term.into();
+            match obj {
+                Object::Iri(iri_s) => Ok(Some(SHACLPath::iri(iri_s))),
+                Object::BlankNode(_) => todo!(),
+                Object::Literal(literal) => Err(SRDFError::SHACLUnexpectedLiteral {
+                    lit: literal.to_string(),
+                }),
+            }
+        }
+        None => Ok(None),
+    }
 }

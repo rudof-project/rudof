@@ -17,6 +17,7 @@ use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -29,6 +30,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         if !self.unique_lang() {
             return Ok(Default::default());
@@ -57,6 +59,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
             ValueNodeIteration,
             unique_lang,
             &message,
+            maybe_path,
         )
     }
 }
@@ -69,6 +72,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -77,6 +81,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -89,6 +94,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -97,6 +103,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

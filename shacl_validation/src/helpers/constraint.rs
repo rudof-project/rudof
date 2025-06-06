@@ -2,6 +2,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Object;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -17,6 +18,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
     message: &str,
+    maybe_path: Option<SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = iteration_strategy
         .iterate(value_nodes)
@@ -30,7 +32,8 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
                     return Some(
                         ValidationResult::new(focus, component, severity)
                             .with_source(source)
-                            .with_message(message),
+                            .with_message(message)
+                            .with_path(maybe_path.clone()),
                     );
                 }
             }
@@ -48,6 +51,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
     message: &str,
+    maybe_path: Option<SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -56,6 +60,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
         iteration_strategy,
         |item: &I::Item| Ok(evaluator(item)),
         message,
+        maybe_path,
     )
 }
 
@@ -66,6 +71,7 @@ pub fn validate_ask_with<S: Sparql>(
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,
     message: &str,
+    maybe_path: Option<SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply(
         component,
@@ -77,5 +83,6 @@ pub fn validate_ask_with<S: Sparql>(
             Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
         },
         message,
+        maybe_path,
     )
 }

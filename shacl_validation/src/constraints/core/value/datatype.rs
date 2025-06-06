@@ -16,6 +16,7 @@ use srdf::Iri;
 use srdf::Literal as _;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -28,6 +29,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
             let tmp: Result<S::Literal, _> = value_node.clone().try_into();
@@ -48,6 +50,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
             ValueNodeIteration,
             datatype,
             &message,
+            maybe_path,
         )
     }
 }
@@ -60,6 +63,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Datatype<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -68,6 +72,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Datatype<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -80,6 +85,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Datatype<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -88,6 +94,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Datatype<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

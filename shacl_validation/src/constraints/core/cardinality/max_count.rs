@@ -3,6 +3,7 @@ use shacl_ast::compiled::component::MaxCount;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -28,6 +29,7 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         let message = format!("MaxCount({}) not satisfied", self.max_count());
@@ -38,6 +40,7 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
             FocusNodeIteration,
             max_count,
             message.as_str(),
+            maybe_path,
         )
     }
 }
@@ -50,6 +53,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -58,6 +62,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -70,6 +75,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxCount {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -78,6 +84,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxCount {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

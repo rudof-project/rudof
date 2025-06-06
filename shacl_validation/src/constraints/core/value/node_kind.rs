@@ -14,6 +14,7 @@ use shacl_ast::compiled::component::Nodekind;
 use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::node_kind::NodeKind;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 use std::fmt::Debug;
@@ -26,6 +27,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
         _: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
@@ -61,6 +63,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Nodekind {
             ValueNodeIteration,
             node_kind,
             &message,
+            maybe_path,
         )
     }
 }
@@ -73,6 +76,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 
@@ -102,6 +106,14 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Nodekind {
             "Nodekind constraint not satisfied. Expected node kind: {}",
             self.node_kind()
         );
-        validate_ask_with(component, shape, store, value_nodes, query, &message)
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

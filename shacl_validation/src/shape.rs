@@ -53,7 +53,14 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
 
         // 3.
         let component_validation_results = self.components().iter().flat_map(move |component| {
-            runner.evaluate(store, self, component, &value_nodes, source_shape)
+            runner.evaluate(
+                store,
+                self,
+                component,
+                &value_nodes,
+                source_shape,
+                self.path(),
+            )
         });
 
         // 4. After validating the constraints that are defined in the current

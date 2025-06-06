@@ -3,6 +3,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -22,6 +23,7 @@ pub trait Validator<S: Rdf + Debug> {
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -33,6 +35,7 @@ pub trait NativeValidator<S: Query> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -44,6 +47,7 @@ pub trait SparqlValidator<S: Sparql + Debug> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 

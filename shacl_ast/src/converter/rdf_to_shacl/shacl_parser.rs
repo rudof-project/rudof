@@ -2,10 +2,10 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, matcher::Any, not,
-    ok, optional, parse_nodes, property_bool, property_value, property_values, property_values_int,
-    property_values_iri, property_values_non_empty, rdf_list, term, FocusRDF, Iri as _, Literal,
-    PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
-    RDFS_CLASS, RDF_TYPE,
+    ok, optional, parse_nodes, property_bool, property_string, property_value, property_values,
+    property_values_int, property_values_iri, property_values_non_empty, property_values_string,
+    rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode, RDFNodeParse, RDFParseError,
+    RDFParser, Rdf, SHACLPath, Term, Triple, RDFS_CLASS, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -276,7 +276,8 @@ where
         min_length(),
         max_length(),
         has_value(),
-        language_in()
+        language_in(),
+        pattern()
     )
 }
 
@@ -550,6 +551,18 @@ fn language_in<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
     property_values(&SH_LANGUAGE_IN).then(move |node_set| {
         let nodes: Vec<_> = node_set.into_iter().collect();
         parse_nodes(nodes, parse_language_in_values())
+    })
+}
+
+fn pattern<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
+    property_values_string(&SH_PATTERN).flat_map(|strs| match strs.len() {
+        0 => Ok(Vec::new()),
+        1 => {
+            let pattern = strs.get(0).unwrap().clone();
+            let flags = None;
+            Ok(vec![Component::Pattern { pattern, flags }])
+        }
+        _ => todo!(), // Error...
     })
 }
 

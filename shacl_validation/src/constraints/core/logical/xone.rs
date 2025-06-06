@@ -3,6 +3,7 @@ use shacl_ast::compiled::component::Xone;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -29,6 +30,7 @@ impl<S: Rdf + Debug> Validator<S> for Xone<S> {
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let xone = |value_node: &S::Term| {
             self.shapes()
@@ -52,6 +54,7 @@ impl<S: Rdf + Debug> Validator<S> for Xone<S> {
             ValueNodeIteration,
             xone,
             &message,
+            maybe_path,
         )
     }
 }
@@ -64,6 +67,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Xone<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -72,6 +76,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Xone<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -84,6 +89,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Xone<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -92,6 +98,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Xone<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

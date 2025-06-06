@@ -800,6 +800,25 @@ where
     })
 }
 
+/// Return the string values of `property` for the focus node
+///
+/// If some value is not an ``xsd:string` it fails, if there is no value returns an empty set
+pub fn property_values_string<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<String>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let strs: Vec<_> = values
+            .iter()
+            .flat_map(|t| {
+                let i = term_to_string::<RDF>(t)?;
+                Ok::<String, RDFParseError>(i)
+            })
+            .collect();
+        Ok(strs)
+    })
+}
+
 /// Return the IRI values of `property` for the focus node
 ///
 /// If some value is not an IRI it fails, if there is no value returns an empty set

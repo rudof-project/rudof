@@ -33,4 +33,7 @@ pub enum SRDFError {
         predicate: String,
         error: String,
     },
+
+    #[error("Unexpected literal {lit} as a SHACL path")]
+    SHACLUnexpectedLiteral { lit: String },
 }

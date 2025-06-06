@@ -11,6 +11,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Pattern;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 use std::fmt::Debug;
@@ -23,7 +24,13 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
         _: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        println!(
+            "Pattern: {} with flags {}",
+            self.pattern(),
+            self.flags().clone().unwrap_or_default()
+        );
         let pattern = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true
@@ -39,6 +46,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
             ValueNodeIteration,
             pattern,
             &message,
+            maybe_path,
         )
     }
 }
@@ -51,6 +59,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();
@@ -67,6 +76,14 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
         };
 
         let message = format!("Pattern({}) not satisfied", self.pattern());
-        validate_ask_with(component, shape, store, value_nodes, query, &message)
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

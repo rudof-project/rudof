@@ -11,9 +11,9 @@ use crate::value_nodes::ValueNodes;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::In;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
 use srdf::Rdf;
 use srdf::Sparql;
+use srdf::{Query, SHACLPath};
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for In<S> {
@@ -25,6 +25,7 @@ impl<S: Rdf + Debug> Validator<S> for In<S> {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let r#in = |value_node: &S::Term| !self.values().contains(value_node);
         let message = format!(
@@ -38,6 +39,7 @@ impl<S: Rdf + Debug> Validator<S> for In<S> {
             ValueNodeIteration,
             r#in,
             &message,
+            maybe_path,
         )
     }
 }
@@ -50,6 +52,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for In<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -58,6 +61,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for In<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -70,6 +74,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for In<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -78,6 +83,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for In<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

@@ -13,6 +13,7 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 use std::fmt::Debug;
@@ -25,6 +26,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
         _: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -54,6 +56,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
             ValueNodeIteration,
             min_length,
             &message,
+            maybe_path,
         )
     }
 }
@@ -66,6 +69,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 
@@ -77,6 +81,14 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
         };
 
         let message = format!("MinLength({}) not satisfied", min_length_value);
-        validate_ask_with(component, shape, store, value_nodes, query, &message)
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

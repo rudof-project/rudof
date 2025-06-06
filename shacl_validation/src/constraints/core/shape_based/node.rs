@@ -16,6 +16,7 @@ use shacl_ast::compiled::component::Node;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -28,6 +29,7 @@ impl<S: Rdf + Debug> Validator<S> for Node<S> {
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
@@ -45,6 +47,7 @@ impl<S: Rdf + Debug> Validator<S> for Node<S> {
             ValueNodeIteration,
             node,
             &message,
+            maybe_path,
         )
     }
 }
@@ -57,6 +60,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Node<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -65,6 +69,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Node<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -77,6 +82,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Node<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -85,6 +91,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Node<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

@@ -29,10 +29,18 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
         let validator = component.deref();
-        Ok(validator.validate_native(component, shape, store, value_nodes, source_shape)?)
+        Ok(validator.validate_native(
+            component,
+            shape,
+            store,
+            value_nodes,
+            source_shape,
+            maybe_path,
+        )?)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode

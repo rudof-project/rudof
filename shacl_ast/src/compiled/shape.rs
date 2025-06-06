@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::Rdf;
+use srdf::{Rdf, SHACLPath};
 
 use crate::shape::Shape;
 use crate::Schema;
@@ -52,10 +52,10 @@ impl<S: Rdf> CompiledShape<S> {
         }
     }
 
-    pub fn path(&self) -> Option<S::Term> {
+    pub fn path(&self) -> Option<SHACLPath> {
         match self {
             CompiledShape::NodeShape(_) => None,
-            CompiledShape::PropertyShape(_ps) => todo!(),
+            CompiledShape::PropertyShape(ps) => Some(ps.path().clone()),
         }
     }
 

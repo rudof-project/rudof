@@ -12,6 +12,7 @@ use shacl_ast::compiled::component::Class;
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 use srdf::RDFS_SUBCLASS_OF;
@@ -26,6 +27,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if value_node.is_literal() {
@@ -56,6 +58,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
             ValueNodeIteration,
             class,
             &message,
+            maybe_path,
         )
     }
 }
@@ -68,6 +71,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 
@@ -84,6 +88,14 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
             "Class constraint not satisfied for class {}",
             self.class_rule()
         );
-        validate_ask_with(component, shape, store, value_nodes, query, &message)
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

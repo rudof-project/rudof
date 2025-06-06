@@ -21,6 +21,7 @@ pub trait Engine<S: Rdf> {
         component: &CompiledComponent<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(

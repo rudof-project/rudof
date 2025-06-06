@@ -7,6 +7,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Disjoint;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -18,6 +19,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Disjoint<S> {
         _store: &S,
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }
@@ -31,6 +33,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Disjoint<S> {
         _store: &S,
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }

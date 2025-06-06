@@ -9,6 +9,7 @@ use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::MinExclusive;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -20,6 +21,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinExclusive<S> {
         _store: &S,
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("MinExclusive".to_string()))
     }
@@ -33,6 +35,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinExclusive<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive_value = self.min_exclusive().clone();
 
@@ -44,6 +47,14 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinExclusive<S> {
         };
 
         let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
-        validate_ask_with(component, shape, store, value_nodes, query, &message)
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

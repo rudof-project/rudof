@@ -15,6 +15,7 @@ use shacl_ast::compiled::component::HasValue;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -27,6 +28,7 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let has_value =
             |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
@@ -38,6 +40,7 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
             FocusNodeIteration,
             has_value,
             &message,
+            maybe_path,
         )
     }
 }
@@ -50,6 +53,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for HasValue<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -58,6 +62,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for HasValue<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -70,6 +75,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for HasValue<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -78,6 +84,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for HasValue<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

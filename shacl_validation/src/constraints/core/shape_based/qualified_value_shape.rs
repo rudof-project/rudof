@@ -12,6 +12,7 @@ use shacl_ast::compiled::component::QualifiedValueShape;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -24,6 +25,7 @@ impl<S: Rdf + Debug> Validator<S> for QualifiedValueShape<S> {
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(
             "QualifiedValueShape".to_string(),
@@ -39,6 +41,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for QualifiedValueShape<S> {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -47,6 +50,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for QualifiedValueShape<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -59,6 +63,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for QualifiedValueShape<S> 
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -67,6 +72,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for QualifiedValueShape<S> 
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

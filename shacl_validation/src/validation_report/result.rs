@@ -1,13 +1,13 @@
 use super::validation_report_error::{ReportError, ResultError};
-use crate::helpers::srdf::get_object_for;
+use crate::helpers::srdf::*;
 use shacl_ast::*;
-use srdf::{Object, Query, RDFNode, SRDFBuilder};
+use srdf::{Object, Query, RDFNode, SHACLPath, SRDFBuilder};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidationResult {
     focus_node: RDFNode,           // required
-    path: Option<RDFNode>,         // optional
+    path: Option<SHACLPath>,       // optional
     value: Option<RDFNode>,        // optional
     source: Option<RDFNode>,       // optional
     constraint_component: RDFNode, // required
@@ -31,7 +31,7 @@ impl ValidationResult {
         }
     }
 
-    pub fn with_path(mut self, path: Option<Object>) -> Self {
+    pub fn with_path(mut self, path: Option<SHACLPath>) -> Self {
         self.path = path;
         self
     }
@@ -66,6 +66,10 @@ impl ValidationResult {
 
     pub fn value(&self) -> Option<&Object> {
         self.value.as_ref()
+    }
+
+    pub fn path(&self) -> Option<&SHACLPath> {
+        self.path.as_ref()
     }
 
     pub fn focus_node(&self) -> &Object {
@@ -112,7 +116,7 @@ impl ValidationResult {
         };
 
         // 2. Second, we must process the optional fields
-        let path = get_object_for(store, validation_result, &SH_RESULT_PATH.clone().into())?;
+        let path = get_path_for(store, validation_result, &SH_RESULT_PATH.clone().into())?;
         let source = get_object_for(store, validation_result, &SH_SOURCE_SHAPE.clone().into())?;
         let value = get_object_for(store, validation_result, &SH_VALUE.clone().into())?;
 
@@ -180,7 +184,30 @@ impl ValidationResult {
                     msg: format!("Error adding source to validation result: {e}"),
                 })?;
         }
+        if let Some(path) = &self.path {
+            let result_path: RDF::Term = path_to_rdf::<RDF>(path);
+            rdf_writer
+                .add_triple(report_node.clone(), SH_RESULT_PATH.clone(), result_path)
+                .map_err(|e| ReportError::ValidationReportError {
+                    msg: format!("Error adding result path to validation result: {e}"),
+                })?;
+        }
 
         Ok(())
+    }
+}
+
+fn path_to_rdf<RDF>(path: &SHACLPath) -> RDF::Term
+where
+    RDF: Query,
+{
+    match path {
+        SHACLPath::Predicate { pred } => pred.clone().into(),
+        SHACLPath::Alternative { paths: _ } => todo!(),
+        SHACLPath::Sequence { paths: _ } => todo!(),
+        SHACLPath::Inverse { path: _ } => todo!(),
+        SHACLPath::ZeroOrMore { path: _ } => todo!(),
+        SHACLPath::OneOrMore { path: _ } => todo!(),
+        SHACLPath::ZeroOrOne { path: _ } => todo!(),
     }
 }

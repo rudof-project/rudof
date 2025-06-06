@@ -16,6 +16,7 @@ use shacl_ast::compiled::component::MinCount;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Rdf;
+use srdf::SHACLPath;
 use srdf::Sparql;
 use std::fmt::Debug;
 
@@ -28,6 +29,7 @@ impl<S: Rdf + Debug> Validator<S> for MinCount {
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validating minCount with shape {}", shape.id());
         if self.min_count() == 0 {
@@ -43,6 +45,7 @@ impl<S: Rdf + Debug> Validator<S> for MinCount {
             FocusNodeIteration,
             min_count,
             message.as_str(),
+            maybe_path,
         )
     }
 }
@@ -55,6 +58,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinCount {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validate native minCount with shape: {}", shape.id());
         self.validate(
@@ -64,6 +68,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinCount {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
@@ -76,6 +81,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinCount {
         store: &S,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&CompiledShape<S>>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -84,6 +90,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinCount {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
