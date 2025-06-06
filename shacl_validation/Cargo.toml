@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.70"
+version = "0.1.75"
 readme = "README.md"
 license.workspace = true
 authors.workspace = true
