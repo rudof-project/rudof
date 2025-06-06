@@ -7,6 +7,7 @@ use srdf::SRDFBuilder;
 pub struct BasicGraphGenerator {
     pub dep_graph: DependencyGraph,
     pub graph: SRDFGraph,
+    pub generated_entities: std::collections::HashMap<String, Vec<String>>,
 }
 
 
@@ -15,6 +16,7 @@ impl BasicGraphGenerator {
         BasicGraphGenerator {
             dep_graph: DependencyGraph::new(),
             graph: SRDFGraph::default(),
+            generated_entities: std::collections::HashMap::new(),
         }
     }
     pub fn set_shapes(&mut self, shapes: Vec<ShapeDecl>) {
@@ -50,7 +52,7 @@ impl BasicGraphGenerator {
                                 None => false,
                             };
                             if is_shape_ref {
-                                // Do not generate a triple for shape references
+                                // Do not generate a triple for shape references because they are handled separately
                                 return;
                             }
                             let pred = NamedNode::new_unchecked(&predicate.to_string());
@@ -70,6 +72,89 @@ impl BasicGraphGenerator {
         }
         triples
     }
+
+    /// Generate all entities for each shape and store their IRIs
+    pub fn generate_entities(&mut self, num_entities: usize) -> Result<(), String> {
+        let num_shapes = self.dep_graph.shapes.len();
+        if num_shapes == 0 {
+            return Ok(());
+        }
+        let shape_labels: Vec<_> = self.dep_graph.shapes.keys().cloned().collect();
+        let base_entities_per_shape = num_entities / num_shapes;
+        let mut remainder = num_entities % num_shapes;
+        self.generated_entities = std::collections::HashMap::new();
+        for label in shape_labels {
+            let shape = self.dep_graph.shapes.get(&label).unwrap();
+            let mut entities_for_this_shape = base_entities_per_shape;
+            if remainder > 0 {
+                entities_for_this_shape += 1;
+                remainder -= 1;
+            }
+            let mut entity_iris = Vec::new();
+            for i in 1..=entities_for_this_shape {
+                let node_iri = format!("{}-{}", shape.id.to_string(), i);
+                entity_iris.push(node_iri.clone());
+                let triples = self.generate_triples_for_shape(shape, i);
+                for triple in triples {
+                    self.graph.add_triple(
+                        triple.subject.clone(),
+                        triple.predicate.clone(),
+                        triple.object.clone(),
+                    ).map_err(|e| format!("Failed to add triple: {e}"))?;
+                }
+            }
+            self.generated_entities.insert(shape.id.to_string(), entity_iris);
+        }
+        Ok(())
+    }
+
+    /// Generate triples for relations between entities using cardinalities
+    pub fn generate_relations(&mut self) -> Result<(), String> {
+        use oxrdf::{NamedNode, Subject, Term, Triple};
+        for (shape_label, deps) in &self.dep_graph.dependencies {
+            let from_entities = self.generated_entities.get(shape_label).unwrap();
+            for (target_shape, property, min, max) in deps {
+                let to_entities = self.generated_entities.get(target_shape).unwrap();
+                for (idx, from_iri) in from_entities.iter().enumerate() {
+                    let min = min.unwrap_or(1).max(0);
+                    let max = match max {
+                        Some(-1) => to_entities.len() as i32, // unbounded
+                        Some(m) => *m,
+                        None => 1,
+                    };
+                    let max = max.max(min);
+                    let num_links = if min == max {
+                        min
+                    } else {
+                        min + ((idx as i32) % (max - min + 1))
+                    };
+                    let mut chosen = Vec::new();
+                    for offset in 0..num_links {
+                        let target_idx = (idx + offset as usize) % to_entities.len();
+                        chosen.push(&to_entities[target_idx]);
+                    }
+                    for to_iri in chosen {
+                        let triple = Triple::new(
+                            Subject::NamedNode(NamedNode::new_unchecked(from_iri)),
+                            NamedNode::new_unchecked(property),
+                            Term::NamedNode(NamedNode::new_unchecked(to_iri)),
+                        );
+                        self.graph.add_triple(
+                            triple.subject.clone(),
+                            triple.predicate.clone(),
+                            triple.object.clone(),
+                        ).map_err(|e| format!("Failed to add relation triple: {e}"))?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn generate_entities_and_relations(&mut self, num_entities: usize) -> Result<(), String> {
+        self.generate_entities(num_entities)?;
+        self.generate_relations()
+    }
 }
 
 
@@ -78,38 +163,7 @@ impl GraphGenerator for BasicGraphGenerator {
         self.set_shapes(shapes);
     }
     fn generate(&mut self, num_entities: usize) -> Result<(), String> {
-
-        //Generating triples for entities based on the shapes in the dependency graph
-
-        let num_shapes = self.dep_graph.shapes.len();
-        if num_shapes == 0 {
-            return Ok(());
-        }
-        let base_entities_per_shape = num_entities / num_shapes;
-        let mut remainder = num_entities % num_shapes;
-        for shape in self.dep_graph.shapes.values() {
-            // Distribute the remainder: some shapes get one extra entity
-            let mut entities_for_this_shape = base_entities_per_shape;
-            if remainder > 0 {
-                entities_for_this_shape += 1;
-                remainder -= 1;
-            }
-            for i in 1..=entities_for_this_shape {
-                let triples = self.generate_triples_for_shape(shape, i);
-                for triple in triples {
-                    // Add each triple to the SRDFGraph stored in self
-                    self.graph.add_triple(
-                        triple.subject.clone(),
-                        triple.predicate.clone(),
-                        triple.object.clone(),
-                    ).map_err(|e| format!("Failed to add triple: {e}"))?;
-                }
-            }
-        }
-
-        //Generating triples for relations between entities
-
-        Ok(())
+        self.generate_entities_and_relations(num_entities)
     }
     fn get_graph(&self) -> &SRDFGraph {
         &self.graph
