@@ -62,7 +62,7 @@ jobs:
         run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
 
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest -vvv discover
+        run: cd python/tests && python3 -m unittest discover -vvv
 
   windows:
     runs-on: Windows-2022
@@ -97,7 +97,7 @@ jobs:
         run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
 
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest -vvv discover
+        run: cd python/tests && python3 -m unittest discover -vvv
 
   macos:
     runs-on: macos-latest
@@ -132,7 +132,7 @@ jobs:
         run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
 
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest -vvv discover
+        run: cd python/tests && python3 -m unittest discover -vvv
 
   sdist:
     runs-on: ubuntu-latest
@@ -156,7 +156,7 @@ jobs:
         run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
 
       - name: Test Built sdist
-        run: cd python/tests && python3 -m unittest -vvv discover
+        run: cd python/tests && python3 -m unittest discover -vvv
 
   release:
     name: Release
