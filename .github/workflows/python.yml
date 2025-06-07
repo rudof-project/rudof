@@ -100,12 +100,17 @@ jobs:
         run: cd python/tests && python3 -m unittest discover -vvv
 
   macos:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.vm }}
     strategy:
       fail-fast: false
       matrix:
         python-version: [ 3.12 ]
-        target: [ x86_64, aarch64 ]
+        target: [x86_64, aarch64]
+        include:
+          - target: x86_64
+            vm: macos-13
+          - target: aarch64
+            vm: macos-latest
 
     steps:
       - uses: actions/checkout@v4
