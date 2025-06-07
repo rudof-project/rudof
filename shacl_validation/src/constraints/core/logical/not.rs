@@ -39,7 +39,7 @@ impl<S: Rdf + Debug> Validator<S> for Not<S> {
             inner_results.is_err() || inner_results.unwrap().is_empty()
         };
 
-        let message = format!("Not not satisfied");
+        let message = "NOT constraint not satisfied".to_string();
         validate_with(
             component,
             shape,

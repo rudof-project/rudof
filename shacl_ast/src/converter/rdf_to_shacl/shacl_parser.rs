@@ -1,11 +1,13 @@
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use srdf::Literal;
 use srdf::{
-    combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, matcher::Any, not,
-    ok, optional, parse_nodes, property_bool, property_string, property_value, property_values,
-    property_values_int, property_values_iri, property_values_non_empty, property_values_string,
-    rdf_list, term, FocusRDF, Iri as _, Literal, PResult, RDFNode, RDFNodeParse, RDFParseError,
-    RDFParser, Rdf, SHACLPath, Term, Triple, RDFS_CLASS, RDF_TYPE,
+    combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang,
+    literal::Literal as EnumLiteral, matcher::Any, not, ok, optional, parse_nodes, property_bool,
+    property_value, property_values, property_values_int, property_values_iri,
+    property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
+    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
+    Term, Triple, RDFS_CLASS, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -277,7 +279,11 @@ where
         max_length(),
         has_value(),
         language_in(),
-        pattern()
+        pattern(),
+        min_inclusive(),
+        min_exclusive(),
+        max_inclusive(),
+        max_exclusive()
     )
 }
 
@@ -481,6 +487,62 @@ where
         .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
 }
 
+fn min_inclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    property_values_literal(&SH_MIN_INCLUSIVE).map(|ns| {
+        ns.iter()
+            .map(|n: &<RDF as Rdf>::Literal| {
+                let lit: EnumLiteral = n.as_literal();
+                Component::MinInclusive(lit)
+            })
+            .collect()
+    })
+}
+
+fn min_exclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    property_values_literal(&SH_MIN_EXCLUSIVE).map(|ns| {
+        ns.iter()
+            .map(|n: &<RDF as Rdf>::Literal| {
+                let lit: EnumLiteral = n.as_literal();
+                Component::MinExclusive(lit)
+            })
+            .collect()
+    })
+}
+
+fn max_inclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    property_values_literal(&SH_MAX_INCLUSIVE).map(|ns| {
+        ns.iter()
+            .map(|n: &<RDF as Rdf>::Literal| {
+                let lit: EnumLiteral = n.as_literal();
+                Component::MaxInclusive(lit)
+            })
+            .collect()
+    })
+}
+
+fn max_exclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    property_values_literal(&SH_MAX_EXCLUSIVE).map(|ns| {
+        ns.iter()
+            .map(|n: &<RDF as Rdf>::Literal| {
+                let lit: EnumLiteral = n.as_literal();
+                Component::MaxExclusive(lit)
+            })
+            .collect()
+    })
+}
+
 fn max_length<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
@@ -558,7 +620,7 @@ fn pattern<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
     property_values_string(&SH_PATTERN).flat_map(|strs| match strs.len() {
         0 => Ok(Vec::new()),
         1 => {
-            let pattern = strs.get(0).unwrap().clone();
+            let pattern = strs.first().unwrap().clone();
             let flags = None;
             Ok(vec![Component::Pattern { pattern, flags }])
         }

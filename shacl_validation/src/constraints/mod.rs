@@ -15,6 +15,7 @@ pub mod constraint_error;
 pub mod core;
 
 pub trait Validator<S: Rdf + Debug> {
+    #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,
         component: &CompiledComponent<S>,

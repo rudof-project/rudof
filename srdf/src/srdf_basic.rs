@@ -62,6 +62,26 @@ pub trait Rdf: Sized {
 
     /// Resolves a a prefix and a local name and obtains the corresponding full `IriS`
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
+
+    fn numeric_value(&self, term: &Self::Term) -> Option<Decimal> {
+        if term.is_literal() {
+            let literal: Self::Literal = match term.clone().try_into() {
+                Ok(literal) => literal,
+                Err(_) => return None,
+            };
+            literal.as_decimal()
+        } else {
+            None
+        }
+    }
+
+    fn less_than(&self, term1: &Self::Term, term2: &Self::Term) -> bool {
+        if let (Some(val1), Some(val2)) = (self.numeric_value(term1), self.numeric_value(term2)) {
+            val1 < val2
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(PartialEq)]

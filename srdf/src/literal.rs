@@ -5,7 +5,7 @@ use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub enum Literal {
@@ -71,6 +71,35 @@ impl Literal {
         }
     }
 
+    pub fn display_qualified(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        prefixmap: &PrefixMap,
+    ) -> std::fmt::Result {
+        match self {
+            Literal::StringLiteral {
+                lexical_form,
+                lang: None,
+            } => write!(f, "\"{lexical_form}\""),
+            Literal::StringLiteral {
+                lexical_form,
+                lang: Some(lang),
+            } => write!(f, "\"{lexical_form}\"{lang}"),
+            Literal::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => match datatype {
+                IriRef::Iri(iri) => write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri)),
+                IriRef::Prefixed { prefix, local } => {
+                    write!(f, "\"{lexical_form}\"^^{}:{}", prefix, local)
+                }
+            },
+            Literal::NumericLiteral(n) => write!(f, "{}", n),
+            Literal::BooleanLiteral(true) => write!(f, "true"),
+            Literal::BooleanLiteral(false) => write!(f, "false"),
+        }
+    }
+
     pub fn datatype(&self) -> IriRef {
         match self {
             Literal::DatatypeLiteral { datatype, .. } => datatype.clone(),
@@ -123,23 +152,7 @@ impl Default for Literal {
 
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Literal::StringLiteral {
-                lexical_form,
-                lang: None,
-            } => write!(f, "\"{lexical_form}\""),
-            Literal::StringLiteral {
-                lexical_form,
-                lang: Some(lang),
-            } => write!(f, "\"{lexical_form}\"{lang}"),
-            Literal::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => write!(f, "\"{lexical_form}\"^^<{datatype}>"),
-            Literal::NumericLiteral(n) => write!(f, "{}", n),
-            Literal::BooleanLiteral(true) => write!(f, "true"),
-            Literal::BooleanLiteral(false) => write!(f, "false"),
-        }
+        self.display_qualified(f, &PrefixMap::basic())
     }
 }
 

@@ -46,7 +46,7 @@ impl<S: Rdf + Debug> Validator<S> for And<S> {
                 .not()
         };
 
-        let message = format!("And not satisfied");
+        let message = "AND constraing not satisfied".to_string();
         validate_with(
             component,
             shape,

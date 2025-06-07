@@ -4,13 +4,15 @@ prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Pattern a sh:NodeShape ;
-  sh:targetNode :ok, :ko ;
+  sh:targetNode :ok, :ko1, :ko2 ;
   sh:property [
     sh:path :p ;
-    sh:datatype xsd:string ;
-    sh:pattern "^[A-Z|a-z|0-9]{4}$" ;
-  ] .
+    sh:datatype xsd:double ;
+    sh:minInclusive "0.0"^^xsd:double ;
+    sh:minCount 1
+ ] .
 
-:ok :p "Good" .
-:ko :p "Bad" .
+:ok :p "10.5"^^xsd:double .
+:ko1 :p "-5.3"^^xsd:double .
+:ko2 :p "other"^^xsd:double .
  

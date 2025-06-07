@@ -19,6 +19,8 @@ pub trait IterationStrategy<S: Rdf> {
         &'a self,
         value_nodes: &'a ValueNodes<S>,
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a>;
+
+    fn to_value(&self, item: &Self::Item) -> Option<S::Term>;
 }
 
 pub struct FocusNodeIteration;
@@ -31,6 +33,10 @@ impl<S: Rdf> IterationStrategy<S> for FocusNodeIteration {
         value_nodes: &'a ValueNodes<S>,
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a> {
         Box::new(value_nodes.0.iter())
+    }
+
+    fn to_value(&self, _item: &Self::Item) -> Option<S::Term> {
+        None
     }
 }
 
@@ -48,5 +54,9 @@ impl<S: Rdf> IterationStrategy<S> for ValueNodeIteration {
                 .iter()
                 .map(move |value_node| (focus_node, value_node))
         }))
+    }
+
+    fn to_value(&self, item: &Self::Item) -> Option<<S as Rdf>::Term> {
+        Some(item.clone())
     }
 }

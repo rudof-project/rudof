@@ -192,7 +192,14 @@ impl ValidationResult {
                     msg: format!("Error adding result path to validation result: {e}"),
                 })?;
         }
-
+        if let Some(value) = &self.value {
+            let value_term: RDF::Term = value.clone().into();
+            rdf_writer
+                .add_triple(report_node.clone(), SH_VALUE.clone(), value_term)
+                .map_err(|e| ReportError::ValidationReportError {
+                    msg: format!("Error adding value to validation result: {e}"),
+                })?;
+        }
         Ok(())
     }
 }

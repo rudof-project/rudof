@@ -2,7 +2,9 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use shacl_ast::compiled::component::CompiledComponent;
@@ -16,14 +18,24 @@ use std::fmt::Debug;
 impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
     fn validate_native(
         &self,
-        _component: &CompiledComponent<S>,
-        _shape: &CompiledShape<S>,
-        _store: &S,
-        _value_nodes: &ValueNodes<S>,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
+        store: &S,
+        value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
-        _maybe_path: Option<SHACLPath>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented("MinInclusive".to_string()))
+        let min_inclusive = |node: &S::Term| store.less_than(node, self.min_inclusive_value());
+        let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            min_inclusive,
+            &message,
+            maybe_path,
+        )
     }
 }
 
@@ -37,7 +49,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_inclusive_value = self.min_inclusive().clone();
+        let min_inclusive_value = self.min_inclusive_value().clone();
 
         let query = |value_node: &S::Term| {
             formatdoc! {
@@ -46,7 +58,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
             }
         };
 
-        let message = format!("MinInclusive({}) not satisfied", self.min_inclusive());
+        let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
         validate_ask_with(
             component,
             shape,

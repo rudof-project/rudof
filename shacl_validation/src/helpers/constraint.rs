@@ -29,11 +29,13 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
                     let component = Object::iri(component.into());
                     let severity = shape.severity().clone().into();
                     let source = Some(shape.id().clone().into());
+                    let value = iteration_strategy.to_value(item).map(|v| v.into());
                     return Some(
                         ValidationResult::new(focus, component, severity)
                             .with_source(source)
                             .with_message(message)
-                            .with_path(maybe_path.clone()),
+                            .with_path(maybe_path.clone())
+                            .with_value(value),
                     );
                 }
             }

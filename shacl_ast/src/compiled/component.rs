@@ -582,7 +582,7 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Self {
-        let regex = if let Some(flags) = &flags {
+        let regex = if let Some(_flags) = &flags {
             Regex::new(&pattern).expect("Invalid regex pattern")
         } else {
             Regex::new(&pattern).expect("Invalid regex pattern")
@@ -750,7 +750,7 @@ impl<S: Rdf> MinInclusive<S> {
         }
     }
 
-    pub fn min_inclusive(&self) -> &S::Term {
+    pub fn min_inclusive_value(&self) -> &S::Term {
         &self.min_inclusive
     }
 }

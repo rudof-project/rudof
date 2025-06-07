@@ -800,6 +800,27 @@ where
     })
 }
 
+/// Return the literal values of `property` for the focus node
+///
+/// If some value is not a literal it fails, if there is no value returns an empty set
+pub fn property_values_literal<RDF>(
+    property: &IriS,
+) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Literal>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let lits: Vec<_> = values
+            .iter()
+            .flat_map(|t| {
+                let lit: <RDF as Rdf>::Literal = term_to_literal::<RDF>(t)?;
+                Ok::<RDF::Literal, RDFParseError>(lit)
+            })
+            .collect();
+        Ok(lits)
+    })
+}
+
 /// Return the string values of `property` for the focus node
 ///
 /// If some value is not an ``xsd:string` it fails, if there is no value returns an empty set
@@ -1114,6 +1135,19 @@ where
 {
     let ints: HashSet<_> = terms.iter().flat_map(|t| term_to_int::<RDF>(t)).collect();
     Ok(ints)
+}
+
+fn term_to_literal<R>(term: &R::Term) -> Result<R::Literal, RDFParseError>
+where
+    R: Rdf,
+{
+    let literal: R::Literal =
+        term.clone()
+            .try_into()
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
+    Ok(literal)
 }
 
 fn term_to_int<R>(term: &R::Term) -> Result<isize, RDFParseError>

@@ -209,14 +209,14 @@ impl Display for ValidationReport {
             for result in self.results.iter() {
                 writeln!(
                     f,
-                    "{} for node {} \n {} {} {} {} {}",
+                    "{} node: {} {}{}{}{}{}",
                     show_object(result.severity(), &shacl_prefixmap),
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
-                    result.message().unwrap_or(&""),
-                    show_path_opt("path", result.path(), &shacl_prefixmap),
-                    show_object_opt("source shape", result.source(), &shacl_prefixmap),
-                    show_object_opt("value", result.value(), &shacl_prefixmap),
+                    result.message().unwrap_or(""),
+                    show_path_opt("path", result.path(), &self.shapes_prefixmap),
+                    show_object_opt("source shape", result.source(), &self.shapes_prefixmap),
+                    show_object_opt("value", result.value(), &self.nodes_prefixmap),
                 )?;
             }
             Ok(())
@@ -235,16 +235,22 @@ fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
 fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
     match object {
         None => String::new(),
-        Some(Object::Iri(iri_s)) => shacl_prefixmap.qualify(iri_s),
-        Some(Object::BlankNode(node)) => format!(" {msg}: _:{node}, "),
-        Some(Object::Literal(literal)) => format!(" {msg}: {literal}, "),
+        Some(Object::Iri(iri_s)) => {
+            let iri_str = shacl_prefixmap.qualify(iri_s);
+            format!(" {msg}: {iri_str},")
+        }
+        Some(Object::BlankNode(node)) => format!(" {msg}: _:{node},"),
+        Some(Object::Literal(literal)) => format!(" {msg}: {literal},"),
     }
 }
 
 fn show_path_opt(msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
     match object {
         None => String::new(),
-        Some(SHACLPath::Predicate { pred }) => shacl_prefixmap.qualify(pred),
-        Some(path) => format!(" {msg}: _:{path:?}, "),
+        Some(SHACLPath::Predicate { pred }) => {
+            let path = shacl_prefixmap.qualify(pred);
+            format!(" {msg}: {path},")
+        }
+        Some(path) => format!(" {msg}: _:{path:?},"),
     }
 }

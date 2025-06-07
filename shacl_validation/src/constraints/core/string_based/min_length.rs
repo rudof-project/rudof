@@ -23,7 +23,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        _: &S,
+        _store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,

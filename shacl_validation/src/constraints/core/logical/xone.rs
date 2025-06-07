@@ -46,7 +46,7 @@ impl<S: Rdf + Debug> Validator<S> for Xone<S> {
                 .ne(&1usize)
         };
 
-        let message = format!("Xone not satisfied");
+        let message = "Xone not satisfied".to_string();
         validate_with(
             component,
             shape,

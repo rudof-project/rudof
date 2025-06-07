@@ -26,17 +26,12 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        println!(
-            "Pattern: {} with flags {}",
-            self.pattern(),
-            self.flags().clone().unwrap_or_default()
-        );
         let pattern = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true
             } else {
                 let lexical_form = value_node.lexical_form();
-                self.regex().is_match(lexical_form.as_str())
+                !self.regex().is_match(lexical_form.as_str())
             }
         };
         let message = format!("Pattern({}) not satisfied", self.pattern());
