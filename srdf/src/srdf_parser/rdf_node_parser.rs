@@ -8,8 +8,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    matcher::Any, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf, Triple, RDF_FIRST,
-    RDF_NIL_STR, RDF_REST, RDF_TYPE,
+    matcher::Any, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, Triple,
+    RDF_FIRST, RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 use crate::{srdf_basic::Literal as _, Iri as _};
 
@@ -620,6 +620,10 @@ where
         Ok(literal)
     })
 }*/
+
+pub fn object<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Object> {
+    term().flat_map(|ref t: RDF::Term| todo!())
+}
 
 /// Creates a parser that returns the current focus node as a term
 ///

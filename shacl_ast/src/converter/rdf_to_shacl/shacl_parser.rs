@@ -3,8 +3,8 @@ use prefixmap::{IriRef, PrefixMap};
 use srdf::Literal;
 use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang,
-    literal::Literal as EnumLiteral, matcher::Any, not, ok, optional, parse_nodes, property_bool,
-    property_value, property_values, property_values_int, property_values_iri,
+    literal::Literal as EnumLiteral, matcher::Any, not, object, ok, optional, parse_nodes,
+    property_bool, property_value, property_values, property_values_int, property_values_iri,
     property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple, RDFS_CLASS, RDF_TYPE,
@@ -329,8 +329,8 @@ where
     RDF: FocusRDF,
 {
     not(property_values_non_empty(&SH_PATH)).with(
-        term()
-            .then(move |t: RDF::Term| ok(&NodeShape::new(t.into())))
+        object()
+            .then(move |t: RDFNode| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ps| {
                 optional(closed()).flat_map(move |c| {
