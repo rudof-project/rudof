@@ -879,8 +879,9 @@ mod tests {
     #[test]
     fn test_iri() {
         let graph = SRDFGraph::default();
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        assert_eq!(iri().parse(&x, graph).unwrap(), x)
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
+        let x_iri = IriS::from_named_node(&x);
+        assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
     }
 
     #[test]

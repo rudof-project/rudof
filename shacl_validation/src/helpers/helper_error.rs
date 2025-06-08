@@ -9,7 +9,7 @@ pub enum SPARQLError {
 
 #[derive(Error, Debug)]
 pub enum SRDFError {
-    #[error("Error during the SRDF operation")]
+    #[error("Error during the SRDF operation: {error}")]
     Srdf { error: String },
 
     // #[error("Error parsing the IRI")]

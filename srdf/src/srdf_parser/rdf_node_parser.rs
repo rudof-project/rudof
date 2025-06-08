@@ -8,8 +8,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    literal::Literal, matcher::Any, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf,
-    Triple, RDF_FIRST, RDF_NIL_STR, RDF_REST, RDF_TYPE,
+    matcher::Any, rdf_parser, FocusRDF, PResult, Query, RDFParseError, Rdf, Triple, RDF_FIRST,
+    RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
 use crate::{srdf_basic::Literal as _, Iri as _};
 
@@ -608,43 +608,7 @@ where
     }
 }
 
-/// Checks if the focus node is an IRI
-/// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::{SRDFGraph, iri, RDFNodeParse};
-///
-/// let graph = SRDFGraph::new();
-/// let x = iri!("http://example.org/x");
-/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
-/// ```
-pub fn iri<R>() -> impl RDFNodeParse<R, Output = IriS>
-where
-    R: FocusRDF,
-{
-    // TODO: this clone can be removed as it is only necessary because of the error
-    //       and the error can be propagated from the try_into
-    term().flat_map(|t: R::Term| {
-        let iri: R::IRI = t
-            .clone()
-            .try_into()
-            .map_err(|_| RDFParseError::ExpectedIRI {
-                term: format!("{t}"),
-            })?;
-        let iri_string = iri.as_str();
-        Ok(iri!(iri_string))
-    })
-}
-
-/// Checks if the focus node is an IRI
-/// ```
-/// use iri_s::{IriS, iri};
-/// use srdf::{SRDFGraph, iri, RDFNodeParse};
-///
-/// let graph = SRDFGraph::new();
-/// let x = iri!("http://example.org/x");
-/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
-/// ```
-pub fn literal<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Literal> {
+/*pub fn literal<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Literal> {
     term().flat_map(|ref t: RDF::Term| {
         let literal: RDF::Literal =
             t.clone()
@@ -655,7 +619,7 @@ pub fn literal<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Literal> {
         let literal: Literal = literal.as_literal();
         Ok(literal)
     })
-}
+}*/
 
 /// Creates a parser that returns the current focus node as a term
 ///
@@ -688,6 +652,96 @@ where
     }
 }
 
+/// Creates a parser that returns the current focus node as a iri
+///
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::{SRDFGraph, iri, RDFNodeParse};
+///
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
+/// ```
+pub fn iri<RDF>() -> ParseIri<RDF>
+where
+    RDF: FocusRDF,
+{
+    ParseIri {
+        _marker_rdf: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseIri<RDF> {
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for ParseIri<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = RDF::IRI;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::IRI> {
+        match rdf.get_focus() {
+            Some(focus) => {
+                let iri: RDF::IRI =
+                    rdf.term_as_iri(focus)
+                        .map_err(|_| RDFParseError::ExpectedIRI {
+                            term: format!("{focus}"),
+                        })?;
+                Ok(iri)
+            }
+            None => Err(RDFParseError::NoFocusNode),
+        }
+    }
+}
+
+/// Creates a parser that returns the current focus node as a literal
+///
+/// ```
+/// use iri_s::{IriS, iri};
+/// use srdf::{SRDFGraph, iri, RDFNodeParse};
+///
+/// let graph = SRDFGraph::new();
+/// let x = iri!("http://example.org/x");
+/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
+/// ```
+pub fn literal<RDF>() -> ParseLiteral<RDF>
+where
+    RDF: FocusRDF,
+{
+    ParseLiteral {
+        _marker_rdf: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseLiteral<RDF> {
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for ParseLiteral<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = RDF::Literal;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::Literal> {
+        match rdf.get_focus() {
+            Some(focus) => {
+                let iri: RDF::Literal =
+                    rdf.term_as_literal(focus)
+                        .map_err(|_| RDFParseError::ExpectedLiteral {
+                            term: format!("{focus}"),
+                        })?;
+                Ok(iri)
+            }
+            None => Err(RDFParseError::NoFocusNode),
+        }
+    }
+}
+
 /// Parses the RDF list linked from the value of property `prop` at focus node
 ///
 pub fn property_list<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>>
@@ -705,12 +759,10 @@ where
     R: FocusRDF,
 {
     property_value(prop).flat_map(|term: R::Term| {
-        let literal: R::Literal =
-            term.clone()
-                .try_into()
-                .map_err(|_| RDFParseError::ExpectedLiteral {
-                    term: format!("{term}"),
-                })?;
+        let literal: R::Literal = <R::Term as TryInto<R::Literal>>::try_into(term.clone())
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
         literal
             .as_bool()
             .ok_or_else(|| RDFParseError::ExpectedBoolean {
@@ -725,7 +777,7 @@ where
 {
     satisfy(
         |term: &R::Term| {
-            let tmp: Result<R::IRI, _> = term.clone().try_into();
+            let tmp: Result<R::IRI, _> = <R::Term as TryInto<R::IRI>>::try_into(term.clone());
             match tmp {
                 Ok(iri) => iri.as_str() == RDF_NIL_STR,
                 Err(_) => false,
@@ -1059,7 +1111,7 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashMap<RDF::IRI, HashSet<RDF::Term>>> {
         match rdf.get_focus() {
             Some(focus) => {
-                let subj = focus.clone().try_into().map_err(|_| {
+                let subj = rdf.term_as_subject(focus).map_err(|_| {
                     RDFParseError::ExpectedFocusAsSubject {
                         focus: focus.to_string(),
                     }
@@ -1142,11 +1194,11 @@ where
     R: Rdf,
 {
     let literal: R::Literal =
-        term.clone()
-            .try_into()
-            .map_err(|_| RDFParseError::ExpectedLiteral {
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
+            RDFParseError::ExpectedLiteral {
                 term: format!("{term}"),
-            })?;
+            }
+        })?;
     Ok(literal)
 }
 
@@ -1155,11 +1207,11 @@ where
     R: Rdf,
 {
     let literal: R::Literal =
-        term.clone()
-            .try_into()
-            .map_err(|_| RDFParseError::ExpectedLiteral {
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
+            RDFParseError::ExpectedLiteral {
                 term: format!("{term}"),
-            })?;
+            }
+        })?;
     let n = literal
         .as_integer()
         .ok_or_else(|| RDFParseError::ExpectedInteger {
@@ -1172,12 +1224,11 @@ fn term_to_iri<R>(term: &R::Term) -> Result<IriS, RDFParseError>
 where
     R: Rdf,
 {
-    let iri: R::IRI = term
-        .clone() // TODO: this clone could be removed?
-        .try_into()
-        .map_err(|_| RDFParseError::ExpectedIRI {
+    let iri: R::IRI = <R::Term as TryInto<R::IRI>>::try_into(term.clone()).map_err(|_| {
+        RDFParseError::ExpectedIRI {
             term: format!("{term}"),
-        })?;
+        }
+    })?;
     let iri_string = iri.as_str();
     Ok(iri!(iri_string))
 }
@@ -1187,11 +1238,11 @@ where
     R: Rdf,
 {
     let literal: R::Literal =
-        term.clone()
-            .try_into()
-            .map_err(|_| RDFParseError::ExpectedLiteral {
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
+            RDFParseError::ExpectedLiteral {
                 term: format!("{term}"),
-            })?;
+            }
+        })?;
     Ok(literal.lexical_form().to_string())
 }
 
@@ -1241,12 +1292,10 @@ where
     R: FocusRDF,
 {
     get_focus().flat_map(|term: R::Term| {
-        let literal: R::Literal =
-            term.clone()
-                .try_into()
-                .map_err(|_| RDFParseError::ExpectedLiteral {
-                    term: format!("{term}"),
-                })?;
+        let literal: R::Literal = <R::Term as TryInto<R::Literal>>::try_into(term.clone())
+            .map_err(|_| RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            })?;
         let boolean = literal
             .as_bool()
             .ok_or_else(|| RDFParseError::ExpectedInteger {
@@ -1450,7 +1499,7 @@ fn node_is_rdf_nil<R>(node: &R::Term) -> bool
 where
     R: Query,
 {
-    let tmp: Result<R::IRI, _> = node.clone().try_into();
+    let tmp: Result<R::IRI, _> = <R::Term as TryInto<R::IRI>>::try_into(node.clone());
     match tmp {
         Ok(iri) => iri.as_str() == RDF_NIL_STR,
         Err(_) => false,
@@ -1466,7 +1515,7 @@ where
     satisfy(
         // TODO: this clone can be removed
         move |node: &RDF::Term| {
-            let tmp: Result<RDF::IRI, _> = node.clone().try_into();
+            let tmp: Result<RDF::IRI, _> = <RDF::Term as TryInto<RDF::IRI>>::try_into(node.clone());
             match tmp {
                 Ok(iri) => iri.as_str() == expected_iri.as_str(),
                 Err(_) => false,
@@ -1532,11 +1581,11 @@ where
     RDF: FocusRDF,
 {
     apply(term, |term| {
-        let iri: RDF::IRI = term
-            .clone()
-            .try_into()
-            .map_err(|_| RDFParseError::ExpectedIRI {
-                term: format!("{term}"),
+        let iri: RDF::IRI =
+            <RDF::Term as TryInto<RDF::IRI>>::try_into(term.clone()).map_err(|_| {
+                RDFParseError::ExpectedIRI {
+                    term: format!("{term}"),
+                }
             })?;
         let iri_string = iri.as_str();
         Ok(iri!(iri_string))
@@ -1837,12 +1886,11 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         let rdf_type = parse_rdf_type().parse_impl(rdf)?;
         let iri: RDF::IRI =
-            rdf_type
-                .clone()
-                .try_into()
-                .map_err(|_| RDFParseError::ExpectedIRI {
+            <RDF::Term as TryInto<RDF::IRI>>::try_into(rdf_type.clone()).map_err(|_| {
+                RDFParseError::ExpectedIRI {
                     term: format!("{rdf_type}"),
-                })?;
+                }
+            })?;
         let iri_string = iri.as_str();
         match self.values.get_mut(&iri!(iri_string)) {
             Some(p) => p.parse_impl(rdf),

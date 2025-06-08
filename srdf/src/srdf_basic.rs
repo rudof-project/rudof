@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -18,6 +19,7 @@ use crate::lang::Lang;
 use crate::literal::Literal as SRDFLiteral;
 use crate::matcher::Matcher;
 use crate::Object;
+use crate::RDFError;
 
 pub trait Rdf: Sized {
     type Subject: Subject
@@ -37,8 +39,9 @@ pub trait Rdf: Sized {
         + From<Self::Literal>
         + From<IriS>
         + From<Object>
-        + Into<Object>
-        + Matcher<Self::Term>;
+        + TryInto<Object>
+        + Matcher<Self::Term>
+        + PartialEq;
 
     type BNode: BlankNode + TryFrom<Self::Term>;
 
@@ -64,23 +67,52 @@ pub trait Rdf: Sized {
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError>;
 
     fn numeric_value(&self, term: &Self::Term) -> Option<Decimal> {
-        if term.is_literal() {
-            let literal: Self::Literal = match term.clone().try_into() {
-                Ok(literal) => literal,
-                Err(_) => return None,
-            };
-            literal.as_decimal()
-        } else {
-            None
+        let maybe_object: Result<Object, _> = term.clone().try_into();
+        match maybe_object {
+            Ok(object) => object.numeric_value().map(|n| n.as_decimal()),
+            Err(_) => None,
         }
     }
 
-    fn less_than(&self, term1: &Self::Term, term2: &Self::Term) -> bool {
-        if let (Some(val1), Some(val2)) = (self.numeric_value(term1), self.numeric_value(term2)) {
-            val1 < val2
-        } else {
-            false
-        }
+    fn term_as_literal(&self, term: &Self::Term) -> Result<Self::Literal, RDFError> {
+        <Self::Term as TryInto<Self::Literal>>::try_into(term.clone())
+            .map_err(|_| RDFError::ConversionError(format!("Converting term to literal: {term}")))
+    }
+
+    fn term_as_subject(&self, term: &Self::Term) -> Result<Self::Subject, RDFError> {
+        <Self::Term as TryInto<Self::Subject>>::try_into(term.clone())
+            .map_err(|_| RDFError::ConversionError(format!("Converting term to subject: {term}")))
+    }
+
+    fn term_as_iri(&self, term: &Self::Term) -> Result<Self::IRI, RDFError> {
+        <Self::Term as TryInto<Self::IRI>>::try_into(term.clone())
+            .map_err(|_| RDFError::ConversionError(format!("Converting term to iri: {term}")))
+    }
+
+    /// The comparison should be compatible to SPARQL comparison:
+    /// https://www.w3.org/TR/sparql11-query/#OperatorMapping
+
+    fn compare(&self, term1: &Self::Term, term2: &Self::Term) -> Result<Ordering, RDFError> {
+        // TODO: At this moment we convert the terms to object and perform the comparison within objects
+        // This requires to clone but we should be able to optimize this later
+        let obj1: Object = term1.clone().try_into().map_err(|e| {
+            RDFError::ConversionError(format!("Converting term to object: {term1}"))
+        })?;
+        let obj2: Object = term2.clone().try_into().map_err(|e| {
+            RDFError::ConversionError(format!("Converting term to object: {term2}"))
+        })?;
+        obj1.partial_cmp(&obj2)
+            .ok_or_else(|| RDFError::ComparisonError {
+                term1: term1.lexical_form(),
+                term2: term2.lexical_form(),
+            })
+    }
+
+    /// Checks if the first term is equals to the second term
+    /// This equality should be based on the euqlity defined for SPARQL
+    /// https://www.w3.org/TR/sparql11-query/#OperatorMapping
+    fn equals(&self, term1: &Self::Term, term2: &Self::Term) -> bool {
+        term1 == term2
     }
 }
 

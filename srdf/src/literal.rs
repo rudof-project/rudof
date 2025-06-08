@@ -150,6 +150,44 @@ impl Default for Literal {
     }
 }
 
+impl PartialOrd for Literal {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self {
+            Literal::StringLiteral { lexical_form, .. } => match other {
+                Literal::StringLiteral {
+                    lexical_form: other_lexical_form,
+                    ..
+                } => Some(lexical_form.cmp(other_lexical_form)),
+                _ => None,
+            },
+            Literal::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => match other {
+                Literal::DatatypeLiteral {
+                    lexical_form: other_lexical_form,
+                    datatype: other_datatype,
+                } => {
+                    if datatype == other_datatype {
+                        Some(lexical_form.cmp(other_lexical_form))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
+            Literal::NumericLiteral(nl) => match other {
+                Literal::NumericLiteral(other_nl) => nl.partial_cmp(other_nl),
+                _ => None,
+            },
+            Literal::BooleanLiteral(b) => match other {
+                Literal::BooleanLiteral(other_b) => Some(b.cmp(other_b)),
+                _ => None,
+            },
+        }
+    }
+}
+
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.display_qualified(f, &PrefixMap::basic())

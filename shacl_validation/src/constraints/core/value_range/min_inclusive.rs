@@ -25,7 +25,15 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_inclusive = |node: &S::Term| store.less_than(node, self.min_inclusive_value());
+        let min_inclusive = |node: &S::Term| {
+            let ord = store.compare(node, self.min_inclusive_value());
+            println!(
+                "Comparing {:?} with {:?}: {ord:?}",
+                node,
+                self.min_inclusive_value()
+            );
+            ord.map(|o| o.is_lt()).unwrap_or(true)
+        };
         let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
         validate_with(
             component,

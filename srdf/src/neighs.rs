@@ -41,7 +41,7 @@ where
     S: Query,
 {
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
-        match term.try_into() {
+        match rdf.term_as_subject(&term) {
             Ok(subject) => {
                 let subject: S::Subject = subject;
                 let preds: HashSet<S::IRI> = rdf

@@ -222,6 +222,12 @@ impl Display for NumericLiteral {
     }
 }
 
+impl PartialOrd for NumericLiteral {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.as_decimal().partial_cmp(&other.as_decimal()).unwrap())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

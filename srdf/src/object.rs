@@ -1,16 +1,13 @@
-use std::{
-    convert::Infallible,
-    fmt::{Debug, Display},
-};
+use std::fmt::{Debug, Display};
 
-use crate::literal::Literal;
 use crate::numeric_literal::NumericLiteral;
+use crate::{literal::Literal, RDFError};
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
 ///
-/// Note: We plan to support triple terms as in RDF-star in the future
+/// Note: We plan to support triple terms as in RDF-1.2 in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
     Iri(IriS),
@@ -77,8 +74,9 @@ impl From<Object> for oxrdf::Term {
     }
 }
 
-impl From<oxrdf::Term> for Object {
+/*impl From<oxrdf::Term> for Object {
     fn from(value: oxrdf::Term) -> Self {
+        println!("Converting oxrdf::Term to Object: {value:?}");
         match value {
             oxrdf::Term::NamedNode(named_node) => Object::iri(IriS::from_named_node(&named_node)),
             oxrdf::Term::BlankNode(blank_node) => Object::bnode(blank_node.into_string()),
@@ -87,10 +85,28 @@ impl From<oxrdf::Term> for Object {
             oxrdf::Term::Triple(_) => todo!(),
         }
     }
+}*/
+
+impl TryFrom<oxrdf::Term> for Object {
+    // TODO: Change this to a more appropriate error type
+    type Error = RDFError;
+
+    fn try_from(value: oxrdf::Term) -> Result<Self, Self::Error> {
+        match value {
+            oxrdf::Term::NamedNode(named_node) => {
+                Ok(Object::iri(IriS::from_named_node(&named_node)))
+            }
+            oxrdf::Term::BlankNode(blank_node) => Ok(Object::bnode(blank_node.into_string())),
+            oxrdf::Term::Literal(literal) => Ok(Object::literal(literal.into())),
+            #[cfg(feature = "rdf-star")]
+            oxrdf::Term::Triple(_) => todo!(),
+        }
+    }
 }
 
 impl TryFrom<Object> for oxrdf::Subject {
-    type Error = Infallible;
+    // TODO: Change this to a more appropriate error type
+    type Error = RDFError;
 
     fn try_from(value: Object) -> Result<Self, Self::Error> {
         match value {
@@ -123,6 +139,17 @@ impl Debug for Object {
             Object::Iri(iri) => write!(f, "Iri {{{iri:?}}}"),
             Object::BlankNode(bnode) => write!(f, "Bnode{{{bnode:?}}}"),
             Object::Literal(lit) => write!(f, "Literal{{{lit:?}}}"),
+        }
+    }
+}
+
+impl PartialOrd for Object {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (Object::Iri(a), Object::Iri(b)) => a.partial_cmp(b),
+            (Object::BlankNode(a), Object::BlankNode(b)) => a.partial_cmp(b),
+            (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
+            _ => None,
         }
     }
 }

@@ -787,7 +787,7 @@ where
     property_values(&SH_TARGET_CLASS).flat_map(move |ts| {
         let result = ts
             .into_iter()
-            .map(|t: RDF::Term| Target::TargetClass(t.into()))
+            .map(|t: RDF::Term| Target::TargetClass(t.try_into()))
             .collect();
         Ok(result)
     })
