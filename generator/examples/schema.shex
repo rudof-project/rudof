@@ -1,8 +1,25 @@
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
-:Person { :name       xsd:string  ;
-          :birthdate  xsd:date  ? ;
-          :enrolledIn @:Course *
+:Person {
+    :name       xsd:string ;
+    :birthdate  xsd:date ? ;
+    :email      xsd:string + ;
+    :homepage   xsd:anyURI ? ;
+    :worksFor   @:Organization ? ;
+    :enrolledIn @:Course *
 }
-:Course { :name xsd:string }
+
+:Course {
+    :name       xsd:string ;
+    :courseCode xsd:string {1} ;
+    :credits    xsd:decimal ;
+    :taughtBy   @:Person {1,5}
+}
+
+:Organization {
+    :legalName  xsd:string ;
+    :department @:Organization * ;
+    :headcount  xsd:integer ? ;
+    :employs    @:Person *
+}

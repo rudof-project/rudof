@@ -2,18 +2,15 @@ use shex_ast::ast::ShapeDecl;
 
 pub mod graph_generator;
 pub mod dependency_graph;
+pub mod field_generator; // Add field_generator module
 
-
-
-
-pub struct Generator<'a> {
+pub struct Generator {
     pub graph_generator: Box<dyn GraphGenerator>,
-    pub field_generator: &'a dyn FieldGenerator,
 }
 
-impl<'a> Generator<'a> {
-    pub fn new(graph_generator: Box<dyn GraphGenerator>, field_generator: &'a dyn FieldGenerator) -> Self {
-        Self { graph_generator, field_generator }
+impl Generator {
+    pub fn new(graph_generator: Box<dyn GraphGenerator>) -> Self {
+        Self { graph_generator }
     }
     pub fn load(&mut self, shex_path: &str) {
         let shapes = crate::utils::extract_shapes_from_shex_file(shex_path)
@@ -32,15 +29,16 @@ impl<'a> Generator<'a> {
     }
 }
 
-
 pub trait GraphGenerator: Send + Sync {
     fn set_shapes(&mut self, shapes: Vec<ShapeDecl>);
     fn generate(&mut self, num_entities: usize) -> Result<(), String>;
     fn get_graph(&self) -> &srdf::srdf_graph::SRDFGraph;
 }
 
-
-pub trait FieldGenerator: Send + Sync {
-    fn generate_value(&self, predicate: &str, datatype: Option<&str>) -> String;
+// New FieldGenerator trait
+pub trait FieldGeneratorTrait: Send + Sync {
+    fn generate_field(&self, field_type: &str) -> String;
+    // Add a constructor-like method to the trait if needed, or handle instantiation separately.
+    // For now, assuming implementors will have their own `new` or similar.
 }
 

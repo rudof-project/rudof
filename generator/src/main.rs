@@ -1,23 +1,16 @@
 use std::env;
 use std::process;
-use generator::generator::{Generator, FieldGenerator, GraphGenerator};
-use generator::generator::graph_generator::BasicGraphGenerator;
+use generator::generator::{Generator};
+use generator::generator::graph_generator::BasicGraphGeneratorImpl;
+use generator::generator::field_generator::BasicFieldGeneratorImpl;
 use srdf::SRDFBuilder;
 use srdf::RDFFormat;
 
 
-struct DummyFieldGenerator;
-impl FieldGenerator for DummyFieldGenerator {
-    fn generate_value(&self, _predicate: &str, _datatype: Option<&str>) -> String {
-        "\"dummyValue\"".to_string()
-    }
-}
-
-
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        eprintln!("Usage: {} <path-to-shex-file> <number-of-entities>", args[0]);
+    if args.len() != 4 {
+        eprintln!("Usage: {} <path-to-shex-file> <number-of-entities> <output-file-path>", args[0]);
         process::exit(1);
     }
     let shex_path = &args[1];
@@ -28,10 +21,13 @@ fn main() {
             process::exit(1);
         }
     };
+    let output_path = &args[3];
 
-    let graph_generator = Box::new(BasicGraphGenerator::new());
-    let field_generator = DummyFieldGenerator;
-    let mut generator = Generator::new(graph_generator, &field_generator);
+    // Instantiate the concrete BasicFieldGeneratorImpl
+    let field_generator = Box::new(BasicFieldGeneratorImpl::new());
+    // Pass the field_generator to BasicGraphGeneratorImpl::new
+    let graph_generator = Box::new(BasicGraphGeneratorImpl::new(field_generator));
+    let mut generator = Generator::new(graph_generator);
     generator.load(shex_path);
     generator.generate(num_entities)
         .unwrap_or_else(|e| {
@@ -39,9 +35,11 @@ fn main() {
             process::exit(1);
         });
 
-    // Print the generated SRDFGraph in Turtle format
-    let graph = generator.graph_generator.get_graph();
-    let mut out = std::io::stdout();
+    // Save the generated SRDFGraph in Turtle format
+    let graph = generator.get_graph();
+    let triple_count = graph.len();
+    let mut out = std::fs::File::create(output_path).expect("Could not create output file");
     graph.serialize(&RDFFormat::Turtle, &mut out).unwrap();
+    println!("Graph with {num_entities} entities and {triple_count} triples was generated and saved to {output_path}.");
 }
 
