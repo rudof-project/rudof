@@ -622,7 +622,15 @@ where
 }*/
 
 pub fn object<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Object> {
-    term().flat_map(|ref t: RDF::Term| todo!())
+    term().flat_map(|ref t: RDF::Term| {
+        let object: Object =
+            t.clone()
+                .try_into()
+                .map_err(|_| RDFParseError::TermToRDFNodeFailed {
+                    term: t.to_string(),
+                })?;
+        Ok(object)
+    })
 }
 
 /// Creates a parser that returns the current focus node as a term
