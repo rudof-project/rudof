@@ -52,7 +52,7 @@ where
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
-        Self::iri_unchecked(str).into()
+        Self::iri_unchecked(str).into().into()
     }
 
     #[inline]
@@ -110,6 +110,7 @@ where
         Ok(value)
     }
 
+    /*
     pub fn term_as_iri(&self, term: &RDF::Term) -> Result<IriS, RDFParseError> {
         let iri = self
             .term_as_iri(term)
@@ -118,14 +119,14 @@ where
             })?;
         let iri_string = iri.as_str();
         Ok(iri!(iri_string))
-    }
+    } */
 
-    pub fn term_as_subject(&self, term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
+    /*pub fn term_as_subject(&self, term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
         self.term_as_subject(term)
             .map_err(|_| RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
             })
-    }
+    }*/
 
     pub fn parse_list_for_predicate(
         &mut self,

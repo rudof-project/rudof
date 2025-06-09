@@ -4,10 +4,10 @@ use srdf::Literal;
 use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang,
     literal::Literal as EnumLiteral, matcher::Any, not, object, ok, optional, parse_nodes,
-    property_bool, property_value, property_values, property_values_int, property_values_iri,
-    property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
-    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
-    Term, Triple, RDFS_CLASS, RDF_TYPE,
+    property_bool, property_objects, property_value, property_values, property_values_int,
+    property_values_iri, property_values_literal, property_values_non_empty,
+    property_values_string, rdf_list, term, FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse,
+    RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple, RDFS_CLASS, RDF_TYPE,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -120,13 +120,20 @@ where
         candidates.extend(property_shapes_instances);
         candidates.extend(shape_instances);
 
-        let result: Vec<_> = candidates
+        let result: Result<Vec<RDFNode>> = candidates
             .into_iter()
             .map(|subject: RDF::Subject| subject.into())
-            .map(|term: RDF::Term| term.into())
-            .collect();
-
-        Ok(result)
+            .map(|term: RDF::Term| {
+                let term_name = term.to_string();
+                let node: RDFNode =
+                    term.try_into()
+                        .map_err(|e| ShaclParserError::TermToRDFNodeFailed {
+                            term: format!("{term_name}"),
+                        })?;
+                Ok(node)
+            })
+            .collect()?;
+        Ok(result?)
     }
 
     fn get_sh_or_values(&mut self) -> Result<HashSet<RDF::Subject>> {
@@ -135,8 +142,8 @@ where
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Ok(subj) = v.clone().try_into() {
-                    rs.insert(subj);
+                if let Ok(subj) = &self.rdf_parser.rdf.term_as_subject(&v) {
+                    rs.insert(subj.clone());
                 } else {
                     return Err(ShaclParserError::OrValueNoSubject {
                         term: format!("{v}"),
@@ -153,8 +160,8 @@ where
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Ok(subj) = v.clone().try_into() {
-                    rs.insert(subj);
+                if let Ok(subj) = &self.rdf_parser.rdf.term_as_subject(&v) {
+                    rs.insert(subj.clone());
                 } else {
                     return Err(ShaclParserError::XOneValueNoSubject {
                         term: format!("{v}"),
@@ -350,8 +357,13 @@ where
 
 fn property_shapes<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>> {
     property_values(&SH_PROPERTY).flat_map(|ts| {
-        let nodes = ts.into_iter().map(Into::into).collect();
-        Ok(nodes)
+        ts.into_iter()
+            .map(|t: RDF::Term| {
+                let term_name = t.to_string();
+                t.try_into()
+                    .map_err(|_e| RDFParseError::TermToRDFNodeFailed { term: term_name })
+            })
+            .collect()
     })
 }
 
@@ -363,7 +375,7 @@ fn cnv_xone_list<RDF>(ls: Vec<RDF::Term>) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shapes: Vec<_> = ls.into_iter().map(Into::into).collect();
+    let shapes: Vec<_> = ls.into_iter().map(|t| t.try_into()).collect();
     Ok(Component::Xone { shapes })
 }
 
@@ -761,12 +773,14 @@ fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
 where
     RDF: Rdf,
 {
-    let iri: RDF::IRI =
-        term.clone()
-            .try_into()
-            .map_err(|_| ShaclParserError::ExpectedNodeKind {
-                term: format!("{term}"),
-            })?;
+    let term_name = term.to_string();
+    let result_iri: Result<RDF::IRI> =
+        <RDF::Term as TryInto<RDF::IRI>>::try_into(term).map_err(|_| {
+            ShaclParserError::ExpectedNodeKind {
+                term: format!("{term_name}"),
+            }
+        });
+    let iri = result_iri?;
     match iri.as_str() {
         SH_IRI_STR => Ok(NodeKind::Iri),
         SH_LITERAL_STR => Ok(NodeKind::Literal),
@@ -784,11 +798,8 @@ fn targets_class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    property_values(&SH_TARGET_CLASS).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: RDF::Term| Target::TargetClass(t.try_into()))
-            .collect();
+    property_objects(&SH_TARGET_CLASS).flat_map(move |ts| {
+        let result = ts.into_iter().map(|obj| Target::TargetClass(obj)).collect();
         Ok(result)
     })
 }
@@ -797,31 +808,35 @@ fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    property_values(&SH_TARGET_NODE).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: RDF::Term| Target::TargetNode(t.into()))
-            .collect();
+    property_objects(&SH_TARGET_NODE).flat_map(move |ts| {
+        let result = ts.into_iter().map(|o| Target::TargetNode(o)).collect();
         Ok(result)
     })
 }
 
 fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target>> {
-    // TODO: in general this can be improved
     instances_of(&RDFS_CLASS)
         .and(instances_of(&SH_PROPERTY_SHAPE))
         .and(instances_of(&SH_NODE_SHAPE))
         .and(get_focus())
         .flat_map(
             move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
-                let result = class
+                let result: std::result::Result<Vec<Target>, RDFParseError> = class
                     .into_iter()
                     .filter(|t: &R::Subject| property_shapes.contains(t) || node_shapes.contains(t))
                     .map(Into::into)
                     .filter(|t: &R::Term| t.clone() == focus)
-                    .map(|t: R::Term| Target::TargetImplicitClass(t.into()))
+                    .map(|t: R::Term| {
+                        let t_name = t.to_string();
+                        let obj = t
+                            .clone()
+                            .try_into()
+                            .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t_name })?;
+                        Ok(Target::TargetImplicitClass(obj))
+                    })
                     .collect();
-                Ok(result)
+                let ts = result?;
+                Ok(ts)
             },
         )
 }
@@ -844,6 +859,19 @@ fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Targe
             .collect();
         Ok(result)
     })
+}
+
+fn subjects_as_rdf_nodes<R: FocusRDF>(
+    subjects: HashSet<R::Subject>,
+) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
+    subjects
+        .into_iter()
+        .map(|s| {
+            let s_name = s.to_string();
+            s.try_into()
+                .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: s_name })
+        })
+        .collect()
 }
 
 #[cfg(test)]

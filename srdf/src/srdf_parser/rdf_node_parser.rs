@@ -25,7 +25,7 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
     #[inline(always)]
     fn parse(&mut self, node: &IriS, mut rdf: RDF) -> PResult<Self::Output> {
         let iri: RDF::IRI = node.clone().into();
-        let focus = iri.into();
+        let focus: RDF::Term = iri.into().into();
         rdf.set_focus(&focus);
         self.parse_impl(&mut rdf)
     }
@@ -932,6 +932,28 @@ where
         } else {
             Ok(vs)
         }
+    })
+}
+
+/// Returns the values of `property` for the focus node
+///
+/// If there is no value, it returns an empty set
+pub fn property_objects<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<Object>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let rs: Result<HashSet<Object>, RDFParseError> = values
+            .into_iter()
+            .map(|t: RDF::Term| {
+                let obj: Object = t.try_into().map_err(|_| RDFParseError::SRDFError {
+                    err: "Error converting term to object".to_string(),
+                })?;
+                Ok::<Object, RDFParseError>(obj)
+            })
+            .collect();
+        let objects = rs?;
+        Ok(objects)
     })
 }
 

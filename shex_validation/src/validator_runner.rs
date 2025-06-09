@@ -686,11 +686,17 @@ impl Engine {
         Pred::from(iri_s)
     }
 
-    fn cnv_object<S>(&self, term: &S::Term) -> Node
+    fn cnv_object<S>(&self, term: &S::Term) -> Result<Node>
     where
         S: Query,
     {
-        Node::from(term.clone().into())
+        let obj = term
+            .clone()
+            .try_into()
+            .map_err(|_| ValidatorError::TermToRDFNodeFailed {
+                term: format!("{term}"),
+            })?;
+        Ok(Node::from(obj))
     }
 
     fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
@@ -699,7 +705,7 @@ impl Engine {
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
-        if let Ok(subject) = node.try_into() {
+        if let Ok(subject) = rdf.term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
@@ -707,7 +713,7 @@ impl Engine {
             for (pred, values) in outgoing_arcs.into_iter() {
                 for obj in values.into_iter() {
                     let iri = self.cnv_iri::<S>(pred.clone());
-                    let object = self.cnv_object::<S>(&obj);
+                    let object = self.cnv_object::<S>(&obj)?;
                     result.push((iri.clone(), object))
                 }
             }
@@ -736,7 +742,7 @@ impl Engine {
         match node.as_object() {
             Object::Iri(iri_s) => {
                 let iri: S::IRI = iri_s.clone().into();
-                iri.into()
+                iri.into().into()
             }
             Object::BlankNode(id) => {
                 let bnode: S::BNode = BlankNode::new(id);

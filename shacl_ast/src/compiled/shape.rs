@@ -66,13 +66,12 @@ impl<S: Rdf> CompiledShape<S> {
         }
     }
 
-    pub fn severity(&self) -> S::Term {
+    pub fn severity(&self) -> IriS {
         let iri_s: IriS = match self {
             CompiledShape::NodeShape(ns) => ns.severity().into(),
             CompiledShape::PropertyShape(ps) => ps.severity().into(),
         };
-        let iri: S::IRI = iri_s.into(); // TODO: this can be avoided
-        iri.into()
+        iri_s
     }
 }
 

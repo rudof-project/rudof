@@ -10,6 +10,9 @@ pub enum ShaclParserError {
         err: RDFParseError,
     },
 
+    #[error("Error converting Term to RDFNode: {term}")]
+    TermToRDFNodeFailed { term: String },
+
     #[error("Expected RDFNode parsing node shape, found: {term}")]
     ExpectedRDFNodeNodeShape { term: String },
 

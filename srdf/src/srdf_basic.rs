@@ -30,7 +30,7 @@ pub trait Rdf: Sized {
         + TryFrom<Object>
         + Matcher<Self::Subject>;
 
-    type IRI: Iri + From<IriS> + TryFrom<Self::Term> + Matcher<Self::IRI>;
+    type IRI: Iri + From<IriS> + TryFrom<Self::Term> + Matcher<Self::IRI> + Into<IriS>;
 
     type Term: Term
         + From<Self::Subject>

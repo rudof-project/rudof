@@ -13,6 +13,9 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Converting Term to RDFNode failed pending {term}")]
+    TermToRDFNodeFailed { term: String },
+
     #[error("Failed pending: RBE passed, but pending references failed")]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
