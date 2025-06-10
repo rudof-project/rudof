@@ -74,20 +74,65 @@ pub trait Rdf: Sized {
         }
     }
 
-    fn term_as_literal(&self, term: &Self::Term) -> Result<Self::Literal, RDFError> {
+    fn term_as_literal(term: &Self::Term) -> Result<Self::Literal, RDFError> {
         <Self::Term as TryInto<Self::Literal>>::try_into(term.clone())
-            .map_err(|_| RDFError::ConversionError(format!("Converting term to literal: {term}")))
+            .map_err(|_| RDFError::TermAsLiteral{ term: term.to_string() })
     }
 
-    fn term_as_subject(&self, term: &Self::Term) -> Result<Self::Subject, RDFError> {
+    fn term_as_subject(term: &Self::Term) -> Result<Self::Subject, RDFError> {
         <Self::Term as TryInto<Self::Subject>>::try_into(term.clone())
-            .map_err(|_| RDFError::ConversionError(format!("Converting term to subject: {term}")))
+            .map_err(|e| RDFError::TermAsSubject{ term: term.to_string()})
     }
 
-    fn term_as_iri(&self, term: &Self::Term) -> Result<Self::IRI, RDFError> {
-        <Self::Term as TryInto<Self::IRI>>::try_into(term.clone())
-            .map_err(|_| RDFError::ConversionError(format!("Converting term to iri: {term}")))
+    fn subject_as_term(subj: &Self::Subject) -> Self::Term {
+        subj.clone().into()
     }
+
+    fn iris_as_term(iri: &IriS) -> Self::Term {
+        Self::Term::from(Self::IRI::from(iri.clone()))
+    }
+
+    fn term_as_iri(term: &Self::Term) -> Result<Self::IRI, RDFError> {
+        <Self::Term as TryInto<Self::IRI>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsIri{ term: term.to_string() })
+    }
+
+    fn term_as_object(term: &Self::Term) -> Result<Object, RDFError> {
+        <Self::Term as TryInto<Object>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsObject{ 
+                term: format!("Converting term to object: {term}") 
+            })
+    }
+
+    fn subject_as_object(subj: &Self::Subject) -> Result<Object, RDFError> {
+        let term = Self::subject_as_term(subj);
+        <Self::Term as TryInto<Object>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsObject{ 
+                term: format!("Converting subject to object: {term}") 
+            })
+    }
+
+
+    fn subject_as_node(subject: &Self::Subject) -> Result<Object, RDFError> {
+        let term = Self::subject_as_term(subject);
+        let object = Self::term_as_object(&term)?;
+        Ok(object)
+    }
+
+    fn term_as_lang(term: &Self::Term) -> std::result::Result<Lang, RDFError> {
+        if term.is_blank_node() {
+            Err(RDFError::TermAsLang{ term: term.to_string()})
+        } else if let Ok(literal) = Self::term_as_literal(&term) {
+            let lang = Lang::new(literal.lexical_form());
+            match lang {
+                Ok(lang) => Ok(lang),
+                Err(_) => todo!(),
+            }
+        } else {
+            todo!()
+        }
+    }
+    
 
     /// The comparison should be compatible to SPARQL comparison:
     /// https://www.w3.org/TR/sparql11-query/#OperatorMapping
@@ -95,12 +140,8 @@ pub trait Rdf: Sized {
     fn compare(&self, term1: &Self::Term, term2: &Self::Term) -> Result<Ordering, RDFError> {
         // TODO: At this moment we convert the terms to object and perform the comparison within objects
         // This requires to clone but we should be able to optimize this later
-        let obj1: Object = term1.clone().try_into().map_err(|e| {
-            RDFError::ConversionError(format!("Converting term to object: {term1}"))
-        })?;
-        let obj2: Object = term2.clone().try_into().map_err(|e| {
-            RDFError::ConversionError(format!("Converting term to object: {term2}"))
-        })?;
+        let obj1: Object = Self::term_as_object(&term1)?;
+        let obj2: Object = Self::term_as_object(&term2)?;
         obj1.partial_cmp(&obj2)
             .ok_or_else(|| RDFError::ComparisonError {
                 term1: term1.lexical_form(),

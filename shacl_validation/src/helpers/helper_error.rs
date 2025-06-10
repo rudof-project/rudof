@@ -12,8 +12,12 @@ pub enum SRDFError {
     #[error("Error during the SRDF operation: {error}")]
     Srdf { error: String },
 
-    // #[error("Error parsing the IRI")]
-    // IriParse(#[from] IriParseError),
+    #[error("Error during the creation of the SRDFGraph: {0}")]
+    SRDFGraph(#[from] SRDFGraphError),
+
+    #[error("RDFError: {0}")]
+    RDFError(#[from] RDFError),
+
     #[error("Error during the creation of the SRDFGraph")]
     SRDFGraph(#[from] SRDFGraphError),
 

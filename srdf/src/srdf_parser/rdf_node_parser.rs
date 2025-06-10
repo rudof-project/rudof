@@ -621,7 +621,7 @@ where
     })
 }*/
 
-pub fn object<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Object> {
+pub fn term_as_node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Object> {
     term().flat_map(|ref t: RDF::Term| {
         let object: Object =
             t.clone()
@@ -698,7 +698,7 @@ where
         match rdf.get_focus() {
             Some(focus) => {
                 let iri: RDF::IRI =
-                    rdf.term_as_iri(focus)
+                    RDF::term_as_iri(focus)
                         .map_err(|_| RDFParseError::ExpectedIRI {
                             term: format!("{focus}"),
                         })?;
@@ -743,7 +743,7 @@ where
         match rdf.get_focus() {
             Some(focus) => {
                 let iri: RDF::Literal =
-                    rdf.term_as_literal(focus)
+                    RDF::term_as_literal(focus)
                         .map_err(|_| RDFParseError::ExpectedLiteral {
                             term: format!("{focus}"),
                         })?;
@@ -1145,7 +1145,7 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashMap<RDF::IRI, HashSet<RDF::Term>>> {
         match rdf.get_focus() {
             Some(focus) => {
-                let subj = rdf.term_as_subject(focus).map_err(|_| {
+                let subj = RDF::term_as_subject(focus).map_err(|_| {
                     RDFParseError::ExpectedFocusAsSubject {
                         focus: focus.to_string(),
                     }

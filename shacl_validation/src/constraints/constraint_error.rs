@@ -10,4 +10,7 @@ pub enum ConstraintError {
 
     #[error("Expected IRI but found {term}")]
     ExpectedIri { term: String },
+
+    #[error(transparent)]
+    RDFError(#[from] RDFError),
 }

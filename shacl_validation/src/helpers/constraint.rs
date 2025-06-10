@@ -25,11 +25,12 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    let focus = focus_node.clone().into();
-                    let component = Object::iri(component.into());
-                    let severity = shape.severity().clone().into();
-                    let source = Some(shape.id().clone().into());
-                    let value = iteration_strategy.to_value(item).map(|v| v.into());
+                    let focus = S::term_as_object(&focus_node)?;
+                    let component = Object::iri(S::term_as_object(component)?);
+                    let severity = S::term_as_object(&shape.severity())?;
+                    let source = 
+                       Some(S::term_as_object(shape.id().as_ref()).ok()?);
+                    let value = iteration_strategy.to_object(item);
                     return Some(
                         ValidationResult::new(focus, component, severity)
                             .with_source(source)

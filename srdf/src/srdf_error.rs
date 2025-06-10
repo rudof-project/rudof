@@ -2,8 +2,26 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RDFError {
-    #[error("Converting Object to RDF term")]
-    ConversionError(String),
+    #[error("Conversion error {msg}")]
+    ConversionError {msg: String },
+
+    #[error("Converting Object {object} to RDF term")]
+    ObjectAsTerm {object: String },
+
+    #[error("Converting term {term} to IRI")]
+    TermAsIri {term: String },
+
+    #[error("Converting term {term} to Literal")]
+    TermAsLiteral {term: String },
+
+    #[error("Converting Term {term} to Object")]
+    TermAsObject {term: String },
+
+    #[error("Converting term {term} to subject")]
+    TermAsSubject { term: String },
+
+    #[error("Converting Term {term} to Lang")]
+    TermAsLang{ term: String },
 
     #[error("Comparison error: {term1} with {term2}")]
     ComparisonError { term1: String, term2: String },

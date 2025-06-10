@@ -13,7 +13,10 @@ pub(crate) fn get_object_for<S: Query>(
         .into_iter()
         .next()
     {
-        Some(term) => Ok(Some(term.into())),
+        Some(term) => {
+            let obj = S::term_as_object(&term)?;
+            Ok(Some(obj))
+        },
         None => Ok(None),
     }
 }
@@ -23,7 +26,7 @@ pub(crate) fn get_objects_for<S: Query>(
     subject: &S::Term,
     predicate: &S::IRI,
 ) -> Result<HashSet<S::Term>, SRDFError> {
-    let subject: S::Subject = match subject.clone().try_into() {
+    let subject: S::Subject = match S::term_as_subject(subject) {
         Ok(subject) => subject,
         Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
@@ -69,7 +72,7 @@ pub(crate) fn get_path_for<S: Query>(
         .next()
     {
         Some(term) => {
-            let obj: Object = term.into();
+            let obj: Object = S::term_as_object(&term)?;
             match obj {
                 Object::Iri(iri_s) => Ok(Some(SHACLPath::iri(iri_s))),
                 Object::BlankNode(_) => todo!(),

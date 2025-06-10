@@ -76,6 +76,7 @@ impl PropertyShape {
     }
 
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
+
         self.property_shapes = property_shapes;
         self
     }

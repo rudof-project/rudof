@@ -14,6 +14,10 @@ pub enum RDFParseError {
     #[error("Converting Term to RDFNode failed: {term}")]
     TermToRDFNodeFailed { term: String },
 
+    #[error("Converting Subject to RDFNode failed: {subj}")]
+    SubjToRDFNodeFailed { subj: String },
+
+
     #[error("Expected focus node to be integer but found: {term}")]
     ExpectedInteger { term: String },
 

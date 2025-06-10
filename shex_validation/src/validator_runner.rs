@@ -705,7 +705,7 @@ impl Engine {
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
-        if let Ok(subject) = rdf.term_as_subject(&node) {
+        if let Ok(subject) = S::term_as_subject(&node) {
             let (outgoing_arcs, remainder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;

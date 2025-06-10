@@ -21,6 +21,17 @@ pub trait IterationStrategy<S: Rdf> {
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a>;
 
     fn to_value(&self, item: &Self::Item) -> Option<S::Term>;
+
+    fn to_object(&self, item: &Self::Item) -> Option<RDFNode> {
+        match self.to_value(item) {
+            None => None,
+            Some(value) => if let Ok(obj) = S::term_as_object(&value) {
+                Some(obj)
+            } else {
+                None // TODO: Maybe handle the potential error
+            }
+        }
+    }
 }
 
 pub struct FocusNodeIteration;

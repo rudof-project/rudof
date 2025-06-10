@@ -24,7 +24,7 @@ pub trait FocusRDF: Query {
             None => Err(RDFParseError::NoFocusNode),
             Some(term) => {
                 let subject =
-                    self.term_as_subject(term)
+                    Self::term_as_subject(term)
                         .map_err(|_| RDFParseError::ExpectedSubject {
                             node: format!("{term}"),
                         })?;
