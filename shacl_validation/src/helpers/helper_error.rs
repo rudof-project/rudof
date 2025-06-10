@@ -1,4 +1,4 @@
-use srdf::SRDFGraphError;
+use srdf::{SRDFGraphError, RDFError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -17,9 +17,6 @@ pub enum SRDFError {
 
     #[error("RDFError: {0}")]
     RDFError(#[from] RDFError),
-
-    #[error("Error during the creation of the SRDFGraph")]
-    SRDFGraph(#[from] SRDFGraphError),
 
     #[error("Converting term {subject} to subject")]
     SRDFTermAsSubject { subject: String },

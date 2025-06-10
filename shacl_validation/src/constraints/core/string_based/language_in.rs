@@ -33,8 +33,7 @@ impl<S: Rdf + Debug> Validator<S> for LanguageIn {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
-            if let Ok(literal) = value_node.clone().try_into() {
-                let literal: S::Literal = literal;
+            if let Ok(literal) = S::term_as_literal(value_node) {
                 return match literal.lang() {
                     Some(lang) => !self.langs().contains(&Lang::new_unchecked(lang)),
                     None => true,

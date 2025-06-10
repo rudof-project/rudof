@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use srdf::Rdf;
+use srdf::{Rdf, RDFNode};
 
 use crate::focus_nodes::FocusNodes;
 

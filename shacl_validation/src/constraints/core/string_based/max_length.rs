@@ -32,13 +32,13 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxLength {
             if value_node.is_blank_node() {
                 true
             } else if value_node.is_iri() {
-                let iri: S::IRI = match value_node.clone().try_into() {
+                let iri: S::IRI = match S::term_as_iri(value_node) {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
                 iri.as_str().len() > self.max_length() as usize
             } else if value_node.is_literal() {
-                let literal: S::Literal = match value_node.clone().try_into() {
+                let literal: S::Literal = match S::term_as_literal(value_node) {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };

@@ -32,7 +32,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
+            let tmp: Result<S::Literal, _> = S::term_as_literal(&value_node);
             if let Ok(literal) = tmp {
                 return literal.datatype() != self.datatype().as_str();
             }

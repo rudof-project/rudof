@@ -1401,8 +1401,8 @@ where
                     iri_s.into()
                 }
             };
-            let term: S::Term = iri.into();
-            match term.clone().try_into() {
+            let term: S::Term = iri.into().into();
+            match S::term_as_subject(&term) {
                 Ok(subject) => Ok(subject),
                 Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),
             }

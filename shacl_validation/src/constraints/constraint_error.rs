@@ -1,4 +1,5 @@
 use thiserror::Error;
+use srdf::RDFError;
 
 #[derive(Error, Debug)]
 pub enum ConstraintError {
