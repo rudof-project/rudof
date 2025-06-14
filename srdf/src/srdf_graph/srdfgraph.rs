@@ -1,5 +1,5 @@
 use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
+use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -290,7 +290,7 @@ impl Rdf for SRDFGraph {
     }
 }
 
-impl Query for SRDFGraph {
+impl NeighsRDF for SRDFGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
@@ -360,7 +360,7 @@ impl FocusRDF for SRDFGraph {
     }
 }
 
-impl SRDFBuilder for SRDFGraph {
+impl BuildRDF for SRDFGraph {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -509,11 +509,11 @@ mod tests {
     use crate::satisfy;
     use crate::set_focus;
     use crate::PResult;
-    use crate::Query as _;
+    // use crate::Query as _;
+    use crate::BuildRDF;
     use crate::RDFFormat;
     use crate::RDFNodeParse as _;
     use crate::RDFParseError;
-    use crate::SRDFBuilder;
     use crate::Triple;
 
     use super::ReaderMode;

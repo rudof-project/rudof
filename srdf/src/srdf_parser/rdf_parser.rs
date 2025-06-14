@@ -2,7 +2,7 @@ use super::rdf_parser_error::RDFParseError;
 use super::{rdf_node_parser::*, PResult};
 use crate::matcher::Any;
 use crate::Triple;
-use crate::{FocusRDF, Query, RDF_TYPE};
+use crate::{FocusRDF, NeighsRDF, RDF_TYPE};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -11,7 +11,7 @@ use std::collections::HashSet;
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
 /// Represents a generic parser of RDF data
-pub trait RDFParse<RDF: Query> {
+pub trait RDFParse<RDF: NeighsRDF> {
     /// The type which is returned if the parser is successful.
     type Output;
 

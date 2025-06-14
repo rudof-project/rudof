@@ -2,6 +2,19 @@
 
 ## Current changes without release yet
 
+## [v0.1.72] - 2025-06-14
+
+- Created a folder `oxrdf_impl` that contains the implementations for the traits defined at the top level using the `oxrdf` library
+- Renamed internal srdf traits and files. Some conventions, we will prepend `S` to the concrete structs or enums defined by SRDF, so instead of `Literal` we use `SLiteral`, keeping `Literal` for the trait name.
+   - file `srdf_basic.rs` => `rdf.rs`
+   - trait `Query` => `NeighsRDF`
+   - trait `Sparql` => `QueryRDF`
+   - trait `SRDFBuilder` => `BuildRDF`
+   - struct `Literal` => `SLiteral`
+   - struct `Triple` => `STriple`
+   
+
+
 ## [v0.1.71] - 2025-05-28
 
 - Disabled Xlsx support given the problem with Calamine in order to publish Python version of rudof

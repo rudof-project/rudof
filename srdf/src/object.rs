@@ -1,7 +1,8 @@
 use std::fmt::{Debug, Display};
 
+use crate::literal::SLiteral;
 use crate::numeric_literal::NumericLiteral;
-use crate::{literal::Literal, RDFError};
+use crate::RDFError;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub enum Object {
     Iri(IriS),
     BlankNode(String),
-    Literal(Literal),
+    Literal(SLiteral),
 }
 
 impl Object {
@@ -24,12 +25,12 @@ impl Object {
         Object::BlankNode(str)
     }
 
-    pub fn literal(lit: Literal) -> Object {
+    pub fn literal(lit: SLiteral) -> Object {
         Object::Literal(lit)
     }
 
     pub fn str(str: &str) -> Object {
-        Object::Literal(Literal::str(str))
+        Object::Literal(SLiteral::str(str))
     }
 
     pub fn length(&self) -> usize {
@@ -48,7 +49,7 @@ impl Object {
     }
 
     pub fn boolean(b: bool) -> Object {
-        Object::Literal(Literal::boolean(b))
+        Object::Literal(SLiteral::boolean(b))
     }
 }
 
@@ -58,8 +59,8 @@ impl From<IriS> for Object {
     }
 }
 
-impl From<Literal> for Object {
-    fn from(lit: Literal) -> Self {
+impl From<SLiteral> for Object {
+    fn from(lit: SLiteral) -> Self {
         Object::Literal(lit)
     }
 }

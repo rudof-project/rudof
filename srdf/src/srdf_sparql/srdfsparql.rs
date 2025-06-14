@@ -1,6 +1,6 @@
 use crate::matcher::{Any, Matcher};
 use crate::SRDFSparqlError;
-use crate::{AsyncSRDF, Query, QuerySolution, QuerySolutions, Rdf, Sparql, VarName};
+use crate::{AsyncSRDF, NeighsRDF, QueryRDF, QuerySolution, QuerySolutions, Rdf, VarName};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -179,7 +179,7 @@ impl AsyncSRDF for SRDFSparql {
     }
 }
 
-impl Query for SRDFSparql {
+impl NeighsRDF for SRDFSparql {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>> {
         self.triples_matching(Any, Any, Any)
     }
@@ -243,7 +243,7 @@ impl Query for SRDFSparql {
     }
 }
 
-impl Sparql for SRDFSparql {
+impl QueryRDF for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();

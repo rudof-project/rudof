@@ -866,17 +866,6 @@ fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Targe
     })
 }
 
-/*fn subjects_as_rdf_nodes<R: FocusRDF>(
-    rdf: &R,
-    subjects: HashSet<R::Subject>,
-) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
-    subjects
-        .into_iter()
-        .flat_map(|s| rdf.subject_as_node::<R>(&s))            
-        .collect()
-}*/
-
-
 #[cfg(test)]
 mod tests {
     use iri_s::IriS;

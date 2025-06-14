@@ -8,10 +8,10 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    matcher::Any, rdf_parser, FocusRDF, Object, PResult, Query, RDFParseError, Rdf, Triple,
+    matcher::Any, rdf_parser, FocusRDF, NeighsRDF, Object, PResult, RDFParseError, Rdf, Triple,
     RDF_FIRST, RDF_NIL_STR, RDF_REST, RDF_TYPE,
 };
-use crate::{srdf_basic::Literal as _, Iri as _};
+use crate::{Iri as _, Literal as _};
 
 /// By implementing the `RDFNodeParse` trait a type says that it can be used to parse RDF data which have a focus node.
 /// RDF data with a focus node have to implement the [`FocusRDF`] trait.
@@ -698,10 +698,9 @@ where
         match rdf.get_focus() {
             Some(focus) => {
                 let iri: RDF::IRI =
-                    RDF::term_as_iri(focus)
-                        .map_err(|_| RDFParseError::ExpectedIRI {
-                            term: format!("{focus}"),
-                        })?;
+                    RDF::term_as_iri(focus).map_err(|_| RDFParseError::ExpectedIRI {
+                        term: format!("{focus}"),
+                    })?;
                 Ok(iri)
             }
             None => Err(RDFParseError::NoFocusNode),
@@ -743,10 +742,9 @@ where
         match rdf.get_focus() {
             Some(focus) => {
                 let iri: RDF::Literal =
-                    RDF::term_as_literal(focus)
-                        .map_err(|_| RDFParseError::ExpectedLiteral {
-                            term: format!("{focus}"),
-                        })?;
+                    RDF::term_as_literal(focus).map_err(|_| RDFParseError::ExpectedLiteral {
+                        term: format!("{focus}"),
+                    })?;
                 Ok(iri)
             }
             None => Err(RDFParseError::NoFocusNode),
@@ -804,7 +802,7 @@ where
 /// The `predicate_name` argument is useful in case of failure to know which condition has failed
 pub fn satisfy<RDF, P>(predicate: P, predicate_name: &str) -> Satisfy<RDF, P>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
     P: FnMut(&RDF::Term) -> bool,
 {
     Satisfy {
@@ -1006,7 +1004,7 @@ where
 /// It doesn't move the current focus node
 pub fn property_value<RDF>(property: &IriS) -> PropertyValue<RDF>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
 {
     PropertyValue {
         property: property.clone(),
@@ -1014,7 +1012,7 @@ where
     }
 }
 
-pub struct PropertyValue<RDF: Query> {
+pub struct PropertyValue<RDF: NeighsRDF> {
     property: IriS,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -1063,7 +1061,7 @@ where
 /// it shows the neighbourhood of the current node
 pub fn property_value_debug<RDF>(property: &IriS) -> PropertyValueDebug<RDF>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
 {
     PropertyValueDebug {
         property: property.clone().into(),
@@ -1071,7 +1069,7 @@ where
     }
 }
 
-pub struct PropertyValueDebug<RDF: Query> {
+pub struct PropertyValueDebug<RDF: NeighsRDF> {
     property: RDF::IRI,
     _marker_rdf: PhantomData<RDF>,
 }
@@ -1125,14 +1123,14 @@ where
 /// it shows the neighbourhood of the current node
 pub fn neighs<RDF>() -> Neighs<RDF>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
 {
     Neighs {
         _marker_rdf: PhantomData,
     }
 }
 
-pub struct Neighs<RDF: Query> {
+pub struct Neighs<RDF: NeighsRDF> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1361,7 +1359,7 @@ where
 /// ```
 pub fn rdf_list<RDF>() -> RDFList<RDF>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
 {
     RDFList {
         _marker_rdf: PhantomData,
@@ -1432,7 +1430,7 @@ where
     }
 }
 
-pub struct RDFList<RDF: Query> {
+pub struct RDFList<RDF: NeighsRDF> {
     _marker_rdf: PhantomData<RDF>,
 }
 
@@ -1466,7 +1464,7 @@ where
 /// Parses a node as an RDF List applying each element of the list a parser
 pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
 where
-    RDF: Query,
+    RDF: NeighsRDF,
 {
     ParseRDFList { parser }
 }
@@ -1531,7 +1529,7 @@ where
 
 fn node_is_rdf_nil<R>(node: &R::Term) -> bool
 where
-    R: Query,
+    R: NeighsRDF,
 {
     let tmp: Result<R::IRI, _> = <R::Term as TryInto<R::IRI>>::try_into(node.clone());
     match tmp {
@@ -1855,7 +1853,7 @@ where
     }
 }
 
-pub struct SubjectsPropertyValue<RDF: Query> {
+pub struct SubjectsPropertyValue<RDF: NeighsRDF> {
     property: RDF::IRI,
     value: RDF::Term,
     _marker_rdf: PhantomData<RDF>,

@@ -12,7 +12,7 @@ pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
 /// This trait contains functions to handle basic navigation in RDF graphs,
 /// with methods that can get triples and the neighbourhood of RDF nodes
-pub trait Query: Rdf {
+pub trait NeighsRDF: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
     /// Note to implementors: this function needs to retrieve all the triples of
