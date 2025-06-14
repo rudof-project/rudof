@@ -8,7 +8,7 @@ use serde::{
     Deserialize, Serialize, Serializer,
 };
 use srdf::lang::Lang;
-use srdf::literal::Literal;
+use srdf::literal::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
@@ -18,32 +18,32 @@ use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
     IriRef(IriRef),
-    Literal(Literal),
+    Literal(SLiteral),
 }
 
 impl ObjectValue {
     pub fn integer(n: isize) -> ObjectValue {
-        ObjectValue::Literal(Literal::integer(n))
+        ObjectValue::Literal(SLiteral::integer(n))
     }
 
     pub fn double(n: f64) -> ObjectValue {
-        ObjectValue::Literal(Literal::double(n))
+        ObjectValue::Literal(SLiteral::double(n))
     }
 
     pub fn decimal(n: Decimal) -> ObjectValue {
-        ObjectValue::Literal(Literal::decimal(n))
+        ObjectValue::Literal(SLiteral::decimal(n))
     }
 
     pub fn bool(b: bool) -> ObjectValue {
-        ObjectValue::Literal(Literal::boolean(b))
+        ObjectValue::Literal(SLiteral::boolean(b))
     }
 
-    pub fn literal(lit: Literal) -> ObjectValue {
+    pub fn literal(lit: SLiteral) -> ObjectValue {
         ObjectValue::Literal(lit)
     }
 
     pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
-        ObjectValue::Literal(Literal::lit_datatype(lexical_form, datatype))
+        ObjectValue::Literal(SLiteral::lit_datatype(lexical_form, datatype))
     }
 
     pub fn lexical_form(&self) -> String {
@@ -66,7 +66,7 @@ impl ObjectValue {
     }
 
     pub fn str(str: &str) -> Self {
-        ObjectValue::Literal(Literal::str(str))
+        ObjectValue::Literal(SLiteral::str(str))
     }
 }
 
@@ -104,21 +104,21 @@ impl Serialize for ObjectValue {
         S: Serializer,
     {
         match self {
-            ObjectValue::Literal(Literal::BooleanLiteral(value)) => {
+            ObjectValue::Literal(SLiteral::BooleanLiteral(value)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", BOOLEAN_STR)?;
                 let value_str = if *value { "true" } else { "false" };
                 map.serialize_entry("value", value_str)?;
                 map.end()
             }
-            ObjectValue::Literal(Literal::NumericLiteral(num)) => {
+            ObjectValue::Literal(SLiteral::NumericLiteral(num)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", get_type_str(num))?;
                 map.serialize_entry("value", &num.to_string())?;
                 map.end()
             }
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
-            ObjectValue::Literal(Literal::StringLiteral { lexical_form, lang }) => {
+            ObjectValue::Literal(SLiteral::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
                 if let Some(lan) = lang {
                     map.serialize_entry("language", &Some(lan))?;
@@ -126,7 +126,7 @@ impl Serialize for ObjectValue {
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
             }
-            ObjectValue::Literal(Literal::DatatypeLiteral {
+            ObjectValue::Literal(SLiteral::DatatypeLiteral {
                 lexical_form,
                 datatype,
             }) => {
@@ -313,7 +313,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                     },
                     Some(ObjectValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
-                            Some(lang) => Ok(ObjectValue::Literal(Literal::StringLiteral {
+                            Some(lang) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
                                 lexical_form: v,
                                 lang: Some(Lang::new_unchecked(&lang)),
                             })),
@@ -323,11 +323,11 @@ impl<'de> Deserialize<'de> for ObjectValue {
                     },
                     None => match value {
                         Some(lexical_form) => match language {
-                            Some(language) => Ok(ObjectValue::Literal(Literal::StringLiteral {
+                            Some(language) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
                                 lexical_form,
                                 lang: Some(Lang::new_unchecked(&language)),
                             })),
-                            None => Ok(ObjectValue::Literal(Literal::StringLiteral {
+                            None => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
                                 lexical_form,
                                 lang: None,
                             })),

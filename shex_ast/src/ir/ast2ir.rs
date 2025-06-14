@@ -17,7 +17,7 @@ use lazy_static::lazy_static;
 use prefixmap::IriRef;
 use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::literal::Literal;
+use srdf::literal::SLiteral;
 use srdf::Object;
 use tracing::debug;
 
@@ -889,7 +889,7 @@ fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<
 fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
     debug!("check_node_datatype: {node:?} datatype: {dt}");
     match node.as_object() {
-        Object::Literal(Literal::DatatypeLiteral {
+        Object::Literal(SLiteral::DatatypeLiteral {
             ref datatype,
             lexical_form,
         }) => {
@@ -903,7 +903,7 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 })
             }
         }
-        Object::Literal(Literal::StringLiteral {
+        Object::Literal(SLiteral::StringLiteral {
             lexical_form,
             lang: None,
         }) => {
@@ -919,7 +919,7 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 })
             }
         }
-        Object::Literal(Literal::StringLiteral {
+        Object::Literal(SLiteral::StringLiteral {
             lexical_form,
             lang: Some(lang),
         }) => {
