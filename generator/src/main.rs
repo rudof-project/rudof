@@ -39,13 +39,15 @@ fn main() {
             process::exit(1);
         });
     
-    let duration = start_time.elapsed(); // Calculate duration
+    
 
     // Save the generated SRDFGraph in Turtle format
     let graph = generator.get_graph();
     let triple_count = graph.len();
     let mut out = std::fs::File::create(output_path).expect("Could not create output file");
     graph.serialize(&RDFFormat::Turtle, &mut out).unwrap();
+
+    let duration = start_time.elapsed(); // Calculate duration
     println!("Graph with {num_entities} entities and {triple_count} triples was generated in {:?} and saved to {output_path}.", duration); // Updated message
 }
 
