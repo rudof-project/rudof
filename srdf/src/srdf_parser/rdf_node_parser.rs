@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 use crate::{
     matcher::Any, rdf_parser, FocusRDF, NeighsRDF, Object, PResult, RDFParseError, Rdf, Triple,
-    RDF_FIRST, RDF_NIL_STR, RDF_REST, RDF_TYPE,
+    rdf_first, RDF_NIL_STR, rdf_rest, rdf_type,
 };
 use crate::{Iri as _, Literal as _};
 
@@ -1511,8 +1511,8 @@ where
     if node_is_rdf_nil::<RDF>(focus) {
         Ok(Vec::new())
     } else {
-        let value = property_value(&RDF_FIRST).parse_impl(rdf)?;
-        let rest = property_value(&RDF_REST).parse_impl(rdf)?;
+        let value = property_value(rdf_first()).parse_impl(rdf)?;
+        let rest = property_value(rdf_rest()).parse_impl(rdf)?;
         if visited.contains(&rest) {
             Err(RDFParseError::RecursiveRDFList {
                 node: format!("{rest}"),
@@ -1809,14 +1809,14 @@ pub fn instances_of<RDF>(expected: &IriS) -> impl RDFNodeParse<RDF, Output = Vec
 where
     RDF: FocusRDF,
 {
-    subjects_with_property_value::<RDF>(&RDF_TYPE, &expected.clone().into())
+    subjects_with_property_value::<RDF>(rdf_type(), &expected.clone().into())
 }
 
 pub fn parse_rdf_type<RDF>() -> impl RDFNodeParse<RDF, Output = RDF::Term>
 where
     RDF: FocusRDF,
 {
-    property_value(&RDF_TYPE)
+    property_value(rdf_type())
 }
 
 pub fn has_type<RDF>(expected: IriS) -> impl RDFNodeParse<RDF, Output = ()>

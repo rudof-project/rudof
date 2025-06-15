@@ -48,6 +48,30 @@ macro_rules! iri {
     };
 }
 
+/// This macro creates a static variable that is initialized once and can be accessed globally.
+#[macro_export]
+macro_rules! static_once {
+    ($name:ident, $type:ty, $init:expr) => {
+        pub fn $name() -> &'static $type {
+            static ONCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
+            ONCE.get_or_init(|| $init)
+        }
+    };
+}
+
+/// This macro creates a static variable that is initialized once and can be accessed globally.
+#[macro_export]
+macro_rules! iri_once {
+    ($name:ident, $str:expr) => {
+        pub fn $name() -> & 'static IriS {
+            static ONCE: std::sync::OnceLock<IriS> = std::sync::OnceLock::new();
+            ONCE.get_or_init(|| IriS::new_unchecked($str))
+        }
+    };
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -61,8 +85,24 @@ mod tests {
     }
 
     #[test]
-    fn test_macro() {
+    fn test_macro_iri() {
         let iri = iri!("http://example.org/");
         assert_eq!(iri.as_str(), "http://example.org/")
     }
+
+    #[test]
+    fn test_macro_static_once() {
+        static_once!(example, IriS, IriS::new_unchecked("http://example.org/"));
+        let iri = example();
+        assert_eq!(iri.as_str(), "http://example.org/")
+    }
+
+    #[test]
+    fn test_macro_iri_lazy() {
+        iri_once!(example, "http://example.org/");
+        let iri = example();
+        assert_eq!(iri.as_str(), "http://example.org/")
+    }
+
+
 }

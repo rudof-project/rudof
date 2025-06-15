@@ -9,7 +9,7 @@ use shex_ast::{
     NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
     ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
+use srdf::{lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
 
 use crate::pp_object_value;
@@ -507,17 +507,17 @@ where
         }
     }
 
-    fn pp_literal(&self, literal: &Literal) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            Literal::StringLiteral { lexical_form, lang } => {
+            SLiteral::StringLiteral { lexical_form, lang } => {
                 self.pp_string_literal(lexical_form, lang)
             }
-            Literal::DatatypeLiteral {
+            SLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            Literal::NumericLiteral(lit) => self.pp_numeric_literal(lit),
-            Literal::BooleanLiteral(_) => todo!(),
+            SLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            SLiteral::BooleanLiteral(_) => todo!(),
         }
     }
 

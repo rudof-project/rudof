@@ -1,9 +1,9 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 
-use crate::SH_INFO_STR;
-use crate::SH_VIOLATION_STR;
-use crate::SH_WARNING_STR;
+use crate::shacl_vocab::SH_INFO_STR;
+use crate::shacl_vocab::SH_VIOLATION_STR;
+use crate::shacl_vocab::SH_WARNING_STR;
 
 #[derive(Debug, Clone)]
 pub enum Severity {

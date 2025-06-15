@@ -665,7 +665,7 @@ fn write_validation_report(
             writeln!(writer, "{str}")?;*/
         }
         _ => {
-            use crate::srdf::SRDFBuilder;
+            use crate::srdf::BuildRDF;
             let mut rdf_writer = SRDFGraph::new();
             report.to_rdf(&mut rdf_writer)?;
             let rdf_format = result_format_to_rdf_format(format)?;

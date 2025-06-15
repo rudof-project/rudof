@@ -1,4 +1,4 @@
-use srdf::SRDFBuilder;
+use srdf::BuildRDF;
 use std::fmt::Display;
 
 use crate::{node_shape::NodeShape, property_shape::PropertyShape};
@@ -12,7 +12,7 @@ pub enum Shape {
 impl Shape {
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         match self {
             Shape::NodeShape(ns) => {

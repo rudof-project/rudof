@@ -18,7 +18,7 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use srdf::BlankNode;
 use srdf::Iri as _;
-use srdf::{Object, Query};
+use srdf::{Object, NeighsRDF};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -73,7 +73,7 @@ impl Engine {
         self.processing.swap_remove(atom);
     }
 
-    pub(crate) fn validate_pending(&mut self, rdf: &impl Query, schema: &SchemaIR) -> Result<()> {
+    pub(crate) fn validate_pending(&mut self, rdf: &impl NeighsRDF, schema: &SchemaIR) -> Result<()> {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
@@ -238,7 +238,7 @@ impl Engine {
         node: &Node,
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
-        rdf: &impl Query,
+        rdf: &impl NeighsRDF,
     ) -> Result<HashSet<(Node, ShapeLabelIdx)>> {
         if let Some((_label, se)) = schema.find_shape_idx(idx) {
             let mut dep = HashSet::new();
@@ -274,7 +274,7 @@ impl Engine {
         label: &ShapeLabelIdx,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
         schema: &SchemaIR,
-        rdf: &impl Query,
+        rdf: &impl NeighsRDF,
     ) -> Result<ValidationResult> {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
@@ -307,7 +307,7 @@ impl Engine {
         node: &Node,
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
-        rdf: &impl Query,
+        rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
         if let Some((maybe_label, se)) = schema.find_shape_idx(idx) {
@@ -329,7 +329,7 @@ impl Engine {
         node: &Node,
         se: &ShapeExpr,
         schema: &SchemaIR,
-        rdf: &impl Query,
+        rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
         match se {
@@ -441,7 +441,7 @@ impl Engine {
         node: &Node,
         shape: &Shape,
         _schema: &SchemaIR,
-        rdf: &impl Query,
+        rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
         tracing::debug!("Checking node {node} with shape {shape}");
@@ -506,7 +506,7 @@ impl Engine {
         schema: &SchemaIR,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         debug!(
             "Step {}. Checking node {node} with shape_expr: {se}",
@@ -611,7 +611,7 @@ impl Engine {
         rdf: &S,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
@@ -679,7 +679,7 @@ impl Engine {
 
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let iri_string = iri.as_str();
         let iri_s = iri!(iri_string);
@@ -688,7 +688,7 @@ impl Engine {
 
     fn cnv_object<S>(&self, term: &S::Term) -> Result<Node>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let obj = term
             .clone()
@@ -701,7 +701,7 @@ impl Engine {
 
     fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
@@ -730,14 +730,14 @@ impl Engine {
 
     fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
     where
-        S: Query,
+        S: NeighsRDF,
     {
         todo!()
     }
 
     fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
     where
-        S: Query,
+        S: NeighsRDF,
     {
         match node.as_object() {
             Object::Iri(iri_s) => {

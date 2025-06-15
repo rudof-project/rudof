@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::{SH_TARGET_CLASS, SH_TARGET_NODE};
 use prefixmap::IriRef;
-use srdf::{RDFNode, SRDFBuilder, RDF_TYPE};
+use srdf::{RDFNode, BuildRDF, rdf_type};
+use crate::shacl_vocab::{sh_target_class, sh_target_node, sh_target_subjects_of, sh_target_objects_of};
 
 #[derive(Debug, Clone)]
 pub enum Target {
@@ -13,37 +13,38 @@ pub enum Target {
     TargetImplicitClass(RDFNode),
 }
 
+
 impl Target {
-    // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
             Self::TargetNode(target_rdf_node) => {
-                rdf.add_triple(node, SH_TARGET_NODE.clone(), target_rdf_node.clone())
+                rdf.add_triple(node, sh_target_node().clone(), target_rdf_node.clone())
             }
             Self::TargetClass(target_rdf_node) => {
-                rdf.add_triple(node, SH_TARGET_CLASS.clone(), target_rdf_node.clone())
+                rdf.add_triple(node, sh_target_class().clone(), target_rdf_node.clone())
             }
             Self::TargetSubjectsOf(iri_ref) => rdf.add_triple(
                 node,
-                SH_TARGET_CLASS.clone(),
+                sh_target_subjects_of().clone(),
                 iri_ref.get_iri().unwrap().clone(),
             ),
             Self::TargetObjectsOf(iri_ref) => rdf.add_triple(
                 node,
-                SH_TARGET_CLASS.clone(),
+                sh_target_objects_of().clone(),
                 iri_ref.get_iri().unwrap().clone(),
             ),
             // TODO: check if this is fine
             Self::TargetImplicitClass(target_rdf_node) => {
-                rdf.add_triple(node, RDF_TYPE.clone(), target_rdf_node.clone())
+                rdf.add_triple(node, rdf_type().clone(), target_rdf_node.clone())
             }
         }
     }
 }
+
 impl Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -1,19 +1,19 @@
-use crate::{Schema, SH_STR};
+use shacl_ast::{Schema};
 use iri_s::IriS;
-use srdf::{RDFFormat, SRDFBuilder, RDF, XSD};
+use srdf::{RDFFormat, BuildRDF, RDF, XSD};
 use std::io::Write;
 use std::str::FromStr;
 
 pub struct ShaclWriter<RDF>
 where
-    RDF: SRDFBuilder,
+    RDF: BuildRDF,
 {
     rdf: RDF,
 }
 
 impl<RDF> ShaclWriter<RDF>
 where
-    RDF: SRDFBuilder,
+    RDF: BuildRDF,
 {
     pub fn new() -> Self {
         Self { rdf: RDF::empty() }
@@ -23,7 +23,7 @@ where
         let mut prefix_map = schema.prefix_map();
         let _ = prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
         let _ = prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());
-        let _ = prefix_map.insert("sh", &IriS::from_str(SH_STR).unwrap());
+        let _ = prefix_map.insert("sh", sh());
 
         self.rdf.add_prefix_map(prefix_map)?;
         self.rdf.add_base(&schema.base())?;
@@ -42,7 +42,7 @@ where
 
 impl<RDF> Default for ShaclWriter<RDF>
 where
-    RDF: SRDFBuilder,
+    RDF: BuildRDF,
 {
     fn default() -> Self {
         Self::new()

@@ -2,7 +2,7 @@ use super::rdf_parser_error::RDFParseError;
 use super::{rdf_node_parser::*, PResult};
 use crate::matcher::Any;
 use crate::Triple;
-use crate::{FocusRDF, NeighsRDF, RDF_TYPE};
+use crate::{FocusRDF, NeighsRDF, rdf_type};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -54,9 +54,10 @@ where
         Self::iri_unchecked(str).into().into()
     }
 
+
     #[inline]
-    fn rdf_type() -> RDF::IRI {
-        RDF_TYPE.clone().into()
+    fn rdf_type_iri() -> RDF::IRI {
+        rdf_type().clone().into()
     }
 
     pub fn instances_of(
@@ -65,7 +66,7 @@ where
     ) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
         let values = self
             .rdf
-            .triples_matching(Any, Self::rdf_type(), object.clone())
+            .triples_matching(Any, Self::rdf_type_iri(), object.clone())
             .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_subject);
         Ok(values)
@@ -105,7 +106,7 @@ where
     }
 
     pub fn get_rdf_type(&mut self) -> Result<RDF::Term, RDFParseError> {
-        let value = self.predicate_value(&RDF_TYPE)?;
+        let value = self.predicate_value(rdf_type())?;
         Ok(value)
     }
 

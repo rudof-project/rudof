@@ -1,7 +1,7 @@
 use super::validation_report_error::{ReportError, ResultError};
 use crate::helpers::srdf::*;
 use shacl_ast::*;
-use srdf::{Object, Query, RDFNode, SHACLPath, SRDFBuilder};
+use srdf::{Object, Query, RDFNode, SHACLPath, BuildRDF};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -135,7 +135,7 @@ impl ValidationResult {
         report_node: RDF::Subject,
     ) -> Result<(), ReportError>
     where
-        RDF: SRDFBuilder + Sized,
+        RDF: BuildRDF + Sized,
     {
         rdf_writer
             .add_type(report_node.clone(), SH_VALIDATION_RESULT.clone())

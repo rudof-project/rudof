@@ -4,6 +4,8 @@
 
 ## [v0.1.72] - 2025-06-14
 
+- Removed dependency on lazy_static!
+- Added `shacl_rdf` and `shacl_ir` crates
 - Created a folder `oxrdf_impl` that contains the implementations for the traits defined at the top level using the `oxrdf` library
 - Renamed internal srdf traits and files. Some conventions, we will prepend `S` to the concrete structs or enums defined by SRDF, so instead of `Literal` we use `SLiteral`, keeping `Literal` for the trait name.
    - file `srdf_basic.rs` => `rdf.rs`

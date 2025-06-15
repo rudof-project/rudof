@@ -3,7 +3,7 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
 use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
-use srdf::{literal::Literal, numeric_literal::NumericLiteral};
+use srdf::{literal::SLiteral, numeric_literal::NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(
@@ -13,12 +13,12 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(Literal::BooleanLiteral(_value)) => {
+        ObjectValue::Literal(SLiteral::BooleanLiteral(_value)) => {
             todo!()
         }
-        ObjectValue::Literal(Literal::NumericLiteral(num)) => pp_numeric_literal(num, doc),
-        ObjectValue::Literal(Literal::DatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(Literal::StringLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
+        ObjectValue::Literal(SLiteral::DatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::StringLiteral { .. }) => todo!(),
     }
 }
 

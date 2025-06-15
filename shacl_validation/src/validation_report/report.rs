@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use colored::*;
 use prefixmap::PrefixMap;
-use srdf::{Object, Query, Rdf, SHACLPath, SRDFBuilder};
+use srdf::{Object, Query, Rdf, SHACLPath, BuildRDF};
 
 use crate::helpers::srdf::get_objects_for;
 
@@ -84,7 +84,7 @@ impl ValidationReport {
 
     pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF) -> Result<(), ReportError>
     where
-        RDF: SRDFBuilder + Sized,
+        RDF: BuildRDFSized,
     {
         rdf_writer.add_prefix("sh", &shacl_ast::SH).map_err(|e| {
             ReportError::ValidationReportError {
