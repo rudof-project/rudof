@@ -1,4 +1,4 @@
-use crate::ShaclError;
+use shacl_ast::ShaclError;
 use srdf::RDFParseError;
 use thiserror::Error;
 

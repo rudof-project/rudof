@@ -1,4 +1,5 @@
 use shacl_ast::{Schema};
+use shacl_ast::shacl_vocab::sh;
 use iri_s::IriS;
 use srdf::{RDFFormat, BuildRDF, RDF, XSD};
 use std::io::Write;

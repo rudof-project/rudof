@@ -3,9 +3,9 @@ use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::node_shape::CompiledNodeShape;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::node_shape::CompiledNodeShape;
+use shacl_ir::compiled::property_shape::CompiledPropertyShape;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Rdf;
 use std::fmt::Debug;
 

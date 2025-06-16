@@ -4,8 +4,8 @@ use shape::CompiledShape;
 use srdf::Object;
 use srdf::Rdf;
 
-use crate::value::Value;
-use crate::Schema;
+use shacl_ast::value::Value;
+use shacl_ast::Schema;
 
 pub mod compiled_shacl_error;
 pub mod component;

@@ -35,7 +35,8 @@ use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, U
 use shex_ast::object_value::ObjectValue;
 use shex_ast::{ShapeExprLabel, SimpleReprSchema};
 use sparql_service::{RdfData, ServiceDescription};
-use srdf::{Query, QuerySolution, RDFFormat, ReaderMode, SRDFGraph, VarName};
+use srdf::{QuerySolution, RDFFormat, ReaderMode, SRDFGraph, VarName};
+use srdf::NeighsRDF;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
@@ -1276,7 +1277,7 @@ fn show_node_info<S, W: Write>(
     writer: &mut W,
 ) -> Result<()>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
@@ -1352,7 +1353,7 @@ where
 
 fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     let mut vs = Vec::new();
     for s in predicates {
@@ -1390,7 +1391,7 @@ fn run_shapemap(
 
 fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     match node {
         ObjectValue::IriRef(iri_ref) => {

@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use srdf::Rdf;
 
-use crate::node_shape::NodeShape;
-use crate::Schema;
+use shacl_ast::node_shape::NodeShape;
+use shacl_ast::Schema;
 
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;

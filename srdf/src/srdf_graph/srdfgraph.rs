@@ -21,6 +21,7 @@ use oxrdf::{
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{prefixmap::*, PrefixMapError};
 
+
 #[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
@@ -488,7 +489,7 @@ impl ReaderMode {
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-
+    use crate::neighs_rdf::NeighsRDF;
     use iri_s::IriS;
     use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;

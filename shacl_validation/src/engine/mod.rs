@@ -1,7 +1,7 @@
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
-use shacl_ast::compiled::target::CompiledTarget;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::property_shape::CompiledPropertyShape;
+use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::target::CompiledTarget;
 use srdf::Rdf;
 use srdf::SHACLPath;
 

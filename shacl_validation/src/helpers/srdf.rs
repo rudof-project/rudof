@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use srdf::{matcher::Any, Object, Query, RDFNode, SHACLPath, Triple};
+use srdf::{matcher::Any, Object, RDFNode, SHACLPath, Triple, NeighsRDF};
 
 use super::helper_error::SRDFError;
 
-pub(crate) fn get_object_for<S: Query>(
+pub(crate) fn get_object_for<S: NeighsRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -21,7 +21,7 @@ pub(crate) fn get_object_for<S: Query>(
     }
 }
 
-pub(crate) fn get_objects_for<S: Query>(
+pub(crate) fn get_objects_for<S: NeighsRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -46,7 +46,7 @@ pub(crate) fn get_objects_for<S: Query>(
     Ok(triples)
 }
 
-pub(crate) fn get_subjects_for<S: Query>(
+pub(crate) fn get_subjects_for<S: NeighsRDF>(
     store: &S,
     predicate: &S::IRI,
     object: &S::Term,
@@ -62,7 +62,7 @@ pub(crate) fn get_subjects_for<S: Query>(
     Ok(values)
 }
 
-pub(crate) fn get_path_for<S: Query>(
+pub(crate) fn get_path_for<S: NeighsRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,

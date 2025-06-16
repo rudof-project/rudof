@@ -17,7 +17,12 @@ use shacl_ast::{
 use std::fmt::Debug;
 use super::shacl_parser_error::ShaclParserError;
 use shacl_ast::shacl_vocab::{
-    sh, sh_target_subjects_of, sh_target_objects_of, sh_property_shape, sh_node_shape, sh_target_node, sh_node, sh_and, sh_xone, sh_or, sh_pattern, sh_language_in, sh_in, sh_has_value, sh_node_kind, sh_not, sh_target_class, sh_class, sh_datatype, sh_max_length, sh_min_length, sh_max_exclusive, sh_max_inclusive, sh_min_exclusive, sh_min_inclusive, sh_datatype, sh_max_count, sh_min_count, sh_closed,
+    sh_target_subjects_of, sh_target_objects_of, sh_property_shape, 
+    sh_node_shape, sh_target_node, sh_node, sh_and, sh_xone, 
+    sh_or, sh_pattern, sh_language_in, sh_in, sh_has_value, 
+    sh_node_kind, sh_not, sh_target_class, sh_class, 
+    sh_datatype, sh_max_length, sh_min_length, sh_max_exclusive, sh_max_inclusive, sh_min_exclusive, 
+    sh_min_inclusive, sh_max_count, sh_min_count, sh_closed,
 };
 use srdf::{rdf_type, rdfs_class};
 type Result<A> = std::result::Result<A, ShaclParserError>;
@@ -79,13 +84,13 @@ where
         let node_shape_instances: HashSet<_> = self
             .rdf_parser
             .rdf
-            .triples_matching(Any, Self::rdf_type(), Self::sh_node_shape())
+            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_node_shape_iri())
             .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
             .map(Triple::into_subject)
             .collect();
 
         // subjects with property `sh:property`
-        let subjects_property = self.objects_with_predicate(Self::sh_property())?;
+        let subjects_property = self.objects_with_predicate(Self::sh_property_iri())?;
 
         // elements of `sh:or` list
         let sh_or_values = self.get_sh_or_values()?;
@@ -126,7 +131,7 @@ where
 
     fn get_sh_or_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for subject in self.objects_with_predicate(Self::sh_or())? {
+        for subject in self.objects_with_predicate(Self::sh_or_iri())? {
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
@@ -144,7 +149,7 @@ where
 
     fn get_sh_xone_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
-        for subject in self.objects_with_predicate(Self::sh_xone())? {
+        for subject in self.objects_with_predicate(Self::sh_xone_iri())? {
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
@@ -902,7 +907,7 @@ mod tests {
         };
 
         match shape.components().first().unwrap() {
-            crate::component::Component::LanguageIn { langs } => {
+            crate::rdf_to_shacl::shacl_parser::Component::LanguageIn { langs } => {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new_unchecked("en"));
                 assert_eq!(langs[1], Lang::new_unchecked("fr"));

@@ -1,13 +1,13 @@
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::property_shape::CompiledPropertyShape;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::matcher::Any;
-use srdf::Query;
+use srdf::NeighsRDF;
 use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
-use srdf::RDFS_SUBCLASS_OF;
-use srdf::RDF_TYPE;
+use srdf::rdfs_subclass_of;
+use srdf::rdf_type;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
@@ -21,7 +21,7 @@ use std::fmt::Debug;
 
 pub struct NativeEngine;
 
-impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
+impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,
@@ -59,7 +59,7 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         }
 
         // TODO: this should not be necessary, check in others triples_matching calls
-        let rdf_type: S::IRI = RDF_TYPE.clone().into();
+        let rdf_type: S::IRI = rdf_type().clone().into();
 
         let focus_nodes = store
             .triples_matching(Any, rdf_type, class.clone())
@@ -101,12 +101,12 @@ impl<S: Query + Debug + 'static> Engine<S> for NativeEngine {
         store: &S,
         subject: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let targets = get_subjects_for(store, &RDF_TYPE.clone().into(), subject)?;
+        let targets = get_subjects_for(store, &rdf_type().clone().into(), subject)?;
 
-        let subclass_targets = get_subjects_for(store, &RDFS_SUBCLASS_OF.clone().into(), subject)?
+        let subclass_targets = get_subjects_for(store, &rdfs_subclass_of().clone().into(), subject)?
             .into_iter()
             .flat_map(move |subclass| {
-                get_subjects_for(store, &RDF_TYPE.clone().into(), &subclass)
+                get_subjects_for(store, &rdf_type().clone().into(), &subclass)
                     .into_iter()
                     .flatten()
             });

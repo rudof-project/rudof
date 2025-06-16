@@ -7,18 +7,18 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MinLength;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::MinLength;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Iri as _;
 use srdf::Literal as _;
-use srdf::Query;
+use srdf::NeighsRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
+use srdf::QueryRDF;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -61,7 +61,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

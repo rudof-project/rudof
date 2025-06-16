@@ -1,5 +1,5 @@
-use shacl_ast::compiled::schema::SchemaIR;
-use shacl_ast::ShaclParser;
+use shacl_ir::compiled::schema::SchemaIR;
+use shacl_rdf::rdf_to_shacl::ShaclParser;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;

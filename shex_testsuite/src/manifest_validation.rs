@@ -10,7 +10,7 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::{ast::Schema as SchemaJson, ir::ast2ir::AST2IR, Node};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
-use srdf::literal::Literal;
+use srdf::literal::SLiteral;
 use srdf::srdf_graph::SRDFGraph;
 use srdf::Object;
 use srdf::RDFFormat;
@@ -252,7 +252,7 @@ fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
         }
         Focus::Typed(str, str_type) => {
             let datatype = IriS::from_str(str_type.as_str())?;
-            Ok(Object::Literal(Literal::lit_datatype(str, &IriRef::Iri(datatype))).into())
+            Ok(Object::Literal(SLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
         }
     }
 }

@@ -1,6 +1,6 @@
 // use oxiri::IriParseError;
-use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ast::shacl_parser_error::ShaclParserError;
+use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
+use shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError;
 use sparql_service::RdfDataError;
 use srdf::RDFParseError;
 use srdf::SRDFGraphError;

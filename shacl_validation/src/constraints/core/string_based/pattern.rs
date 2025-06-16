@@ -7,16 +7,16 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::Pattern;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::Pattern;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
+use srdf::QueryRDF;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -47,7 +47,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

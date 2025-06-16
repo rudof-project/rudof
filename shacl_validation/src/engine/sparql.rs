@@ -1,11 +1,10 @@
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::property_shape::CompiledPropertyShape;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use srdf::Term;
-
+use srdf::QueryRDF;
 use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
@@ -17,7 +16,7 @@ use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
-impl<S: Sparql + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,

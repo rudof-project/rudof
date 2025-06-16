@@ -6,10 +6,10 @@ use oxrdf::NamedNode;
 use oxrdf::Subject as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::TryFromTermError;
-use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ast::shacl_parser_error::ShaclParserError;
+use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ast::Schema;
-use shacl_ast::ShaclParser;
+use shacl_rdf::shacl_parser_error::ShaclParserError;
+use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_processor::RdfDataValidation;
 use shacl_validation::shacl_processor::ShaclProcessor;
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -22,7 +22,7 @@ use shacl_validation::validation_report::validation_report_error::ReportError;
 use sparql_service::RdfData;
 use sparql_service::RdfDataError;
 use srdf::matcher::Any;
-use srdf::Query;
+use srdf::NeighsRDF;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::Triple;
@@ -94,7 +94,7 @@ impl Manifest {
         if let Some(mut subject) = entry_subject {
             loop {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
-                let rdf_first: NamedNode = srdf::RDF_FIRST.clone().into();
+                let rdf_first: NamedNode = srdf::rdf_first().clone().into();
                 match store
                     .triples_matching(inner_subject.clone(), rdf_first, Any)?
                     .map(Triple::into_object)
@@ -104,7 +104,7 @@ impl Manifest {
                     None => break,
                 };
 
-                let rdf_rest: NamedNode = srdf::RDF_REST.clone().into();
+                let rdf_rest: NamedNode = srdf::rdf_rest().clone().into();
                 subject = match store
                     .triples_matching(inner_subject, rdf_rest, Any)?
                     .map(Triple::into_object)

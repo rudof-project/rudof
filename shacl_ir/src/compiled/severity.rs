@@ -1,10 +1,8 @@
-use iri_s::iri;
 use iri_s::IriS;
-use srdf::Iri as _;
 use srdf::Rdf;
+use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
 
-use crate::severity::Severity;
-use crate::*;
+use shacl_ast::severity::Severity;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
@@ -41,12 +39,11 @@ impl<S: Rdf> CompiledSeverity<S> {
 impl<S: Rdf> From<&CompiledSeverity<S>> for IriS {
     fn from(value: &CompiledSeverity<S>) -> Self {
         match value {
-            CompiledSeverity::Violation => iri!(SH_VIOLATION_STR),
-            CompiledSeverity::Warning => iri!(SH_WARNING_STR),
-            CompiledSeverity::Info => iri!(SH_INFO_STR),
+            CompiledSeverity::Violation => sh_violation().clone(),
+            CompiledSeverity::Warning => sh_warning().clone(),
+            CompiledSeverity::Info => sh_info().clone(),
             CompiledSeverity::Generic(iri) => {
-                let iri_string = iri.as_str();
-                iri!(iri_string)
+                iri.clone().into()
             }
         }
     }

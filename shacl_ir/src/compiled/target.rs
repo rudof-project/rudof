@@ -1,7 +1,5 @@
 use srdf::Rdf;
-
-use crate::target::Target;
-
+use shacl_ast::target::Target;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 

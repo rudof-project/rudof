@@ -3,15 +3,15 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::LessThanOrEquals;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::LessThanOrEquals;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
+use srdf::QueryRDF;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     fn validate_native(
         &self,
         _component: &CompiledComponent<S>,
@@ -27,7 +27,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for LessThanOrEquals<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals<S> {
     fn validate_sparql(
         &self,
         _component: &CompiledComponent<S>,

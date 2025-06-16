@@ -1,8 +1,8 @@
 use iri_s::IriS;
 use srdf::{Rdf, SHACLPath};
 
-use crate::shape::Shape;
-use crate::Schema;
+use shacl_ast::shape::Shape;
+use shacl_ast::Schema;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;

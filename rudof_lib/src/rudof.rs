@@ -1,6 +1,6 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use iri_s::IriS;
-use shacl_ast::{ShaclParser, ShaclWriter};
+use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 
@@ -9,7 +9,6 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
-use srdf::Sparql;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;
@@ -28,6 +27,9 @@ pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as Shape
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
 pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
+use srdf::QueryRDF;
+
+
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shapes_converter::UmlGenerationMode;
@@ -722,7 +724,7 @@ mod tests {
     fn test_single_shex() {
         let data = r#"
         prefix : <http://example/>
-        :x :p 1 .
+        :x :p 2 .
         "#;
         let shex = r#"
         prefix : <http://example/>
