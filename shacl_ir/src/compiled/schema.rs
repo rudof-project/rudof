@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use prefixmap::PrefixMap;
 use srdf::Rdf;
 
-use crate::Schema;
+use shacl_ast::Schema;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
@@ -82,7 +82,7 @@ mod tests {
     use srdf::ReaderMode;
     use srdf::SRDFGraph;
 
-    use crate::ShaclParser;
+    use shacl_rdf::ShaclParser;
 
     use super::SchemaIR;
 

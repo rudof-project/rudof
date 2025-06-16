@@ -1,8 +1,8 @@
 use iri_s::IriS;
 use srdf::{Rdf, SHACLPath};
 
-use crate::shape::Shape;
-use crate::Schema;
+use shacl_ast::shape::Shape;
+use shacl_ast::Schema;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
@@ -66,13 +66,12 @@ impl<S: Rdf> CompiledShape<S> {
         }
     }
 
-    pub fn severity(&self) -> S::Term {
+    pub fn severity(&self) -> IriS {
         let iri_s: IriS = match self {
             CompiledShape::NodeShape(ns) => ns.severity().into(),
             CompiledShape::PropertyShape(ps) => ps.severity().into(),
         };
-        let iri: S::IRI = iri_s.into(); // TODO: this can be avoided
-        iri.into()
+        iri_s
     }
 }
 
@@ -84,7 +83,7 @@ impl<S: Rdf> CompiledShape<S> {
                 CompiledShape::NodeShape(node_shape)
             }
             Shape::PropertyShape(property_shape) => {
-                let property_shape = CompiledPropertyShape::compile(property_shape, schema)?;
+                let property_shape = CompiledPropertyShape::compile(*property_shape, schema)?;
                 CompiledShape::PropertyShape(property_shape)
             }
         };

@@ -7,43 +7,64 @@
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 pub mod async_srdf;
 pub mod bnode;
+pub mod iri;
 pub mod lang;
 pub mod literal;
+pub mod matcher;
 pub mod neighs;
+pub mod neighs_rdf;
 pub mod numeric_literal;
 pub mod object;
-pub mod query_srdf;
+pub mod oxrdf_impl;
+pub mod query_rdf;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
 pub mod shacl_path;
-pub mod srdf;
-pub mod srdf_basic;
 pub mod srdf_builder;
+pub mod srdf_error;
 pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
-// pub mod triple;
-pub mod matcher;
+pub mod subject;
+pub mod term;
+pub mod triple;
 pub mod vocab;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
-pub use crate::query_srdf::*;
+pub use crate::neighs_rdf::*;
+pub use crate::query_rdf::*;
+pub use crate::rdf::*;
 pub use crate::rdf_data_config::*;
-pub use crate::srdf::*;
-pub use crate::srdf_basic::*;
 pub use bnode::*;
+pub use iri::*;
+pub use literal::*;
 pub use object::*;
-pub use rdf::*;
+pub use oxrdf_impl::*;
 pub use rdf_format::*;
 pub use shacl_path::*;
 pub use srdf_builder::*;
+pub use srdf_error::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
 pub use srdf_sparql::*;
-// pub use triple::*;
+pub use subject::*;
+pub use term::*;
+pub use triple::*;
 pub use vocab::*;
+
+/// Concrete representation of RDF nodes, which are equivalent to objects
+pub type RDFNode = Object;
+
+/// Concrete representation of the kind of RDF terms, which can be IRIs, blank nodes, literals or triples
+#[derive(PartialEq)]
+pub enum TermKind {
+    Iri,
+    BlankNode,
+    Literal,
+    Triple,
+}
 
 /// Creates an integer literal
 ///

@@ -12,7 +12,7 @@ pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
 /// This trait contains functions to handle basic navigation in RDF graphs,
 /// with methods that can get triples and the neighbourhood of RDF nodes
-pub trait Query: Rdf {
+pub trait NeighsRDF: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
     /// Note to implementors: this function needs to retrieve all the triples of
@@ -102,4 +102,85 @@ pub trait Query: Rdf {
 
         Ok((results, remainder))
     }
+
+    /*    fn get_subjects_for(
+        &self,
+        predicate: &Self::IRI,
+        object: &Self::Term,
+    ) -> Result<HashSet<Self::Term>, SRDFError> {
+        let values = self
+            .triples_matching(Any, predicate.clone(), object.clone())
+            .map_err(|e| SRDFError::Srdf {
+                error: e.to_string(),
+            })?
+            .map(Triple::into_subject)
+            .map(Into::into)
+            .collect();
+        Ok(values)
+    }
+
+    fn get_path_for(
+        &self,
+        subject: &Self::Term,
+        predicate: &Self::IRI,
+    ) -> Result<Option<SHACLPath>, SRDFError> {
+        match self.get_objects_for(subject, predicate)?
+            .into_iter()
+            .next()
+        {
+            Some(term) => {
+                let obj: Object = Self::term_as_object(&term)?;
+                match obj {
+                    Object::Iri(iri_s) => Ok(Some(SHACLPath::iri(iri_s))),
+                    Object::BlankNode(_) => todo!(),
+                    Object::Literal(literal) => Err(SRDFError::SHACLUnexpectedLiteral {
+                        lit: literal.to_string(),
+                    }),
+                }
+            }
+            None => Ok(None),
+        }
+
+    fn get_object_for(
+            &self,
+            subject: &Self::Term,
+            predicate: &Self::IRI,
+        ) -> Result<Option<RDFNode>, SRDFError> {
+            match self.get_objects_for(subject, predicate)?
+                .into_iter()
+                .next()
+            {
+                Some(term) => {
+                    let obj = Self::term_as_object(&term)?;
+                    Ok(Some(obj))
+                },
+                None => Ok(None),
+            }
+        }
+
+    fn get_objects_for(
+            &self,
+            subject: &Self::Term,
+            predicate: &Self::IRI,
+        ) -> Result<HashSet<Self::Term>, SRDFError> {
+            let subject: Self::Subject = match Self::term_as_subject(subject) {
+                Ok(subject) => subject,
+                Err(_) => {
+                    return Err(SRDFError::SRDFTermAsSubject {
+                        subject: format!("{subject}"),
+                    })
+                }
+            };
+
+            let triples = store
+                .triples_matching(subject, predicate.clone(), Any)
+                .map_err(|e| SRDFError::Srdf {
+                    error: e.to_string(),
+                })?
+                .map(Triple::into_object)
+                .collect();
+
+            Ok(triples)
+        }
+    }      */
 }

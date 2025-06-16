@@ -1,17 +1,21 @@
-use crate::component::Component;
-use crate::Schema;
-use crate::*;
-
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
 use super::convert_value;
 use super::shape::CompiledShape;
-use iri_s::iri;
 use iri_s::IriS;
-use node_kind::NodeKind;
 use regex::Regex;
+use shacl_ast::component::Component;
+use shacl_ast::node_kind::NodeKind;
+use shacl_ast::shacl_vocab::{
+    sh_and, sh_class, sh_closed, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in,
+    sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
+    sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive,
+    sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
+    sh_unique_lang, sh_xone,
+};
+use shacl_ast::Schema;
 use srdf::lang::Lang;
 use srdf::Rdf;
 
@@ -758,37 +762,33 @@ impl<S: Rdf> MinInclusive<S> {
 impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
     fn from(value: &CompiledComponent<S>) -> Self {
         match value {
-            CompiledComponent::Class(_) => iri!(SH_CLASS_STR),
-            CompiledComponent::Datatype(_) => iri!(SH_DATATYPE_STR),
-            CompiledComponent::NodeKind(_) => iri!(SH_IRI_STR),
-            CompiledComponent::MinCount(_) => iri!(SH_MIN_COUNT_STR),
-            CompiledComponent::MaxCount(_) => iri!(SH_MAX_COUNT_STR),
-            CompiledComponent::MinExclusive(_) => iri!(SH_MIN_EXCLUSIVE_STR),
-            CompiledComponent::MaxExclusive(_) => iri!(SH_MAX_EXCLUSIVE_STR),
-            CompiledComponent::MinInclusive(_) => iri!(SH_MIN_INCLUSIVE_STR),
-            CompiledComponent::MaxInclusive(_) => iri!(SH_MAX_INCLUSIVE_STR),
-            CompiledComponent::MinLength(_) => iri!(SH_MIN_LENGTH_STR),
-            CompiledComponent::MaxLength(_) => iri!(SH_MAX_LENGTH_STR),
-            CompiledComponent::Pattern { .. } => iri!(SH_PATTERN_STR),
-            CompiledComponent::UniqueLang(_) => iri!(SH_UNIQUE_LANG_STR),
-            CompiledComponent::LanguageIn { .. } => iri!(SH_LANGUAGE_IN_STR),
-            CompiledComponent::Equals(_) => iri!(SH_EQUALS_STR),
-            CompiledComponent::Disjoint(_) => iri!(SH_DISJOINT_STR),
-            CompiledComponent::LessThan(_) => iri!(SH_LESS_THAN_STR),
-            CompiledComponent::LessThanOrEquals(_) => {
-                iri!(SH_LESS_THAN_OR_EQUALS_STR)
-            }
-            CompiledComponent::Or { .. } => iri!(SH_OR_STR),
-            CompiledComponent::And { .. } => iri!(SH_AND_STR),
-            CompiledComponent::Not { .. } => iri!(SH_NOT_STR),
-            CompiledComponent::Xone { .. } => iri!(SH_XONE_STR),
-            CompiledComponent::Closed { .. } => iri!(SH_CLOSED_STR),
-            CompiledComponent::Node { .. } => iri!(SH_NODE_STR),
-            CompiledComponent::HasValue { .. } => iri!(SH_HAS_VALUE_STR),
-            CompiledComponent::In { .. } => iri!(SH_IN_STR),
-            CompiledComponent::QualifiedValueShape { .. } => {
-                iri!(SH_QUALIFIED_VALUE_SHAPE_STR)
-            }
+            CompiledComponent::Class(_) => sh_class().clone(),
+            CompiledComponent::Datatype(_) => sh_datatype().clone(),
+            CompiledComponent::NodeKind(_) => sh_node_kind().clone(),
+            CompiledComponent::MinCount(_) => sh_min_count().clone(),
+            CompiledComponent::MaxCount(_) => sh_max_count().clone(),
+            CompiledComponent::MinExclusive(_) => sh_min_exclusive().clone(),
+            CompiledComponent::MaxExclusive(_) => sh_max_exclusive().clone(),
+            CompiledComponent::MinInclusive(_) => sh_min_inclusive().clone(),
+            CompiledComponent::MaxInclusive(_) => sh_max_inclusive().clone(),
+            CompiledComponent::MinLength(_) => sh_min_length().clone(),
+            CompiledComponent::MaxLength(_) => sh_max_length().clone(),
+            CompiledComponent::Pattern { .. } => sh_pattern().clone(),
+            CompiledComponent::UniqueLang(_) => sh_unique_lang().clone(),
+            CompiledComponent::LanguageIn { .. } => sh_language_in().clone(),
+            CompiledComponent::Equals(_) => sh_equals().clone(),
+            CompiledComponent::Disjoint(_) => sh_disjoint().clone(),
+            CompiledComponent::LessThan(_) => sh_less_than().clone(),
+            CompiledComponent::LessThanOrEquals(_) => sh_less_than_or_equals().clone(),
+            CompiledComponent::Or { .. } => sh_or().clone(),
+            CompiledComponent::And { .. } => sh_and().clone(),
+            CompiledComponent::Not { .. } => sh_not().clone(),
+            CompiledComponent::Xone { .. } => sh_xone().clone(),
+            CompiledComponent::Closed { .. } => sh_closed().clone(),
+            CompiledComponent::Node { .. } => sh_node().clone(),
+            CompiledComponent::HasValue { .. } => sh_has_value().clone(),
+            CompiledComponent::In { .. } => sh_in().clone(),
+            CompiledComponent::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
         }
     }
 }

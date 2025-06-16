@@ -1,7 +1,6 @@
+use crate::literal::SLiteral;
 use iri_s::IriS;
 use thiserror::Error;
-
-use crate::literal::Literal;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum RDFParseError {
@@ -10,6 +9,12 @@ pub enum RDFParseError {
 
     #[error("Expected focus node to be boolean but found: {term}")]
     ExpectedBoolean { term: String },
+
+    #[error("Converting Term to RDFNode failed: {term}")]
+    TermToRDFNodeFailed { term: String },
+
+    #[error("Converting Subject to RDFNode failed: {subj}")]
+    SubjToRDFNodeFailed { subj: String },
 
     #[error("Expected focus node to be integer but found: {term}")]
     ExpectedInteger { term: String },
@@ -73,7 +78,7 @@ pub enum RDFParseError {
     UnexpectedBNode { term: String },
 
     #[error("Expected IRI but found Literal {lit}")]
-    ExpectedIRIFoundLiteral { lit: Literal },
+    ExpectedIRIFoundLiteral { lit: SLiteral },
 
     #[error("Condition {condition_name} failed for node {node}")]
     NodeDoesntSatisfyCondition {

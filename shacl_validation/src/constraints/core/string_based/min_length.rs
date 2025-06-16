@@ -7,18 +7,18 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MinLength;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::MinLength;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Iri as _;
 use srdf::Literal as _;
-use srdf::Query;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
         component: &CompiledComponent<S>,
@@ -32,13 +32,13 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
             if value_node.is_blank_node() {
                 true
             } else if value_node.is_iri() {
-                let iri: S::IRI = match value_node.clone().try_into() {
+                let iri: S::IRI = match S::term_as_iri(value_node) {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
                 iri.as_str().len() > self.min_length() as usize
             } else if value_node.is_literal() {
-                let literal: S::Literal = match value_node.clone().try_into() {
+                let literal: S::Literal = match S::term_as_literal(value_node) {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
@@ -61,7 +61,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

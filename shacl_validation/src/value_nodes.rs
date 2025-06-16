@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use srdf::Rdf;
+use srdf::{RDFNode, Rdf};
 
 use crate::focus_nodes::FocusNodes;
 
@@ -21,6 +21,13 @@ pub trait IterationStrategy<S: Rdf> {
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a>;
 
     fn to_value(&self, item: &Self::Item) -> Option<S::Term>;
+
+    fn to_object(&self, item: &Self::Item) -> Option<RDFNode> {
+        match self.to_value(item) {
+            None => None,
+            Some(value) => S::term_as_object(&value).ok(),
+        }
+    }
 }
 
 pub struct FocusNodeIteration;

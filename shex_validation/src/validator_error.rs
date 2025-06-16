@@ -13,6 +13,9 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Converting Term to RDFNode failed pending {term}")]
+    TermToRDFNodeFailed { term: String },
+
     #[error("Failed pending: RBE passed, but pending references failed")]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
@@ -60,15 +63,15 @@ pub enum ValidatorError {
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
-        shape_expr: ShapeExpr,
-        node: Node,
+        shape_expr: Box<ShapeExpr>,
+        node: Box<Node>,
         errors: ValidatorErrors,
     },
 
     #[error("OR error: shape expression {shape_expr} failed for node {node}: all branches failed")]
     ShapeOrError {
-        shape_expr: ShapeExpr,
-        node: Node,
+        shape_expr: Box<ShapeExpr>,
+        node: Box<Node>,
         errors: Vec<(ShapeExpr, ValidatorErrors)>,
     },
 
@@ -76,8 +79,8 @@ pub enum ValidatorError {
         "Shape Not error: failed for node {node} because it passed {shape_expr} with {reasons}"
     )]
     ShapeNotError {
-        shape_expr: ShapeExpr,
-        node: Node,
+        shape_expr: Box<ShapeExpr>,
+        node: Box<Node>,
         reasons: Reasons,
     },
 
@@ -113,13 +116,13 @@ pub enum ValidatorError {
 
     #[error("Shape fails for node {node} with shape {shape}")]
     ShapeFails {
-        node: Node,
-        shape: Shape,
+        node: Box<Node>,
+        shape: Box<Shape>,
         errors: Vec<ValidatorError>,
     },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
-    ShapeRefFailed { node: Node, idx: ShapeLabelIdx },
+    ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 #[derive(Debug, Clone)]

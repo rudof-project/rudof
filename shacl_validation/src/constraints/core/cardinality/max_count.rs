@@ -1,10 +1,10 @@
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MaxCount;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::MaxCount;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -45,7 +45,7 @@ impl<S: Rdf + Debug> Validator<S> for MaxCount {
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -67,7 +67,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MaxCount {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MaxCount {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

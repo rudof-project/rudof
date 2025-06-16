@@ -1,13 +1,11 @@
-use std::fmt::{Debug, Display};
-
-use colored::*;
-use prefixmap::PrefixMap;
-use srdf::{Object, Query, Rdf, SHACLPath, SRDFBuilder};
-
-use crate::helpers::srdf::get_objects_for;
-
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
+use crate::helpers::srdf::get_objects_for;
+use colored::*;
+use prefixmap::PrefixMap;
+use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
+use srdf::{BuildRDF, NeighsRDF, Object, Rdf, SHACLPath};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -70,9 +68,9 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<S: Query>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+    pub fn parse<S: NeighsRDF>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &shacl_ast::SH_RESULT.clone().into())? {
+        for result in get_objects_for(store, &subject, &sh_result().clone().into())? {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))
@@ -84,13 +82,13 @@ impl ValidationReport {
 
     pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF) -> Result<(), ReportError>
     where
-        RDF: SRDFBuilder + Sized,
+        RDF: BuildRDF + Sized,
     {
-        rdf_writer.add_prefix("sh", &shacl_ast::SH).map_err(|e| {
-            ReportError::ValidationReportError {
+        rdf_writer
+            .add_prefix("sh", sh())
+            .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding prefix to RDF: {e}"),
-            }
-        })?;
+            })?;
         let report_node: RDF::Subject = rdf_writer
             .add_bnode()
             .map_err(|e| ReportError::ValidationReportError {
@@ -98,13 +96,13 @@ impl ValidationReport {
             })?
             .into();
         rdf_writer
-            .add_type(report_node.clone(), shacl_ast::SH_VALIDATION_REPORT.clone())
+            .add_type(report_node.clone(), sh_validation_report().clone())
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
 
-        let conforms: <RDF as Rdf>::IRI = shacl_ast::SH_CONFORMS.clone().into();
-        let sh_result: <RDF as Rdf>::IRI = shacl_ast::SH_RESULT.clone().into();
+        let conforms: <RDF as Rdf>::IRI = sh_conforms().clone().into();
+        let sh_result: <RDF as Rdf>::IRI = sh_result().clone().into();
         if self.results.is_empty() {
             let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
             rdf_writer

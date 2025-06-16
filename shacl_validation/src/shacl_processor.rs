@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
-use shacl_ast::compiled::schema::SchemaIR;
+use shacl_ir::compiled::schema::SchemaIR;
 use sparql_service::RdfData;
 use srdf::RDFFormat;
 use srdf::Rdf;

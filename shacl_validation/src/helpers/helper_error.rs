@@ -1,4 +1,4 @@
-use srdf::SRDFGraphError;
+use srdf::{RDFError, SRDFGraphError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,13 +9,14 @@ pub enum SPARQLError {
 
 #[derive(Error, Debug)]
 pub enum SRDFError {
-    #[error("Error during the SRDF operation")]
+    #[error("Error during the SRDF operation: {error}")]
     Srdf { error: String },
 
-    // #[error("Error parsing the IRI")]
-    // IriParse(#[from] IriParseError),
-    #[error("Error during the creation of the SRDFGraph")]
+    #[error("Error during the creation of the SRDFGraph: {0}")]
     SRDFGraph(#[from] SRDFGraphError),
+
+    #[error("RDFError: {0}")]
+    RDFError(#[from] RDFError),
 
     #[error("Converting term {subject} to subject")]
     SRDFTermAsSubject { subject: String },

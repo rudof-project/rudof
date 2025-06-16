@@ -33,7 +33,7 @@ use thiserror::Error;
 use lazy_regex::{regex, Lazy};
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral, RDF_TYPE_STR};
+use srdf::{lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral, RDF_TYPE_STR};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
@@ -1438,14 +1438,14 @@ fn percent_code(i: Span) -> IRes<Option<String>> {
 }
 
 /// `[13t] literal ::= rdfLiteral | numericLiteral | booleanLiteral`
-pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
+pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SLiteral> {
     traced(
         "literal",
         map_error(
             move |i| {
                 alt((
                     rdf_literal(),
-                    map(numeric_literal, Literal::NumericLiteral),
+                    map(numeric_literal, SLiteral::NumericLiteral),
                     boolean_literal,
                 ))(i)
             },
@@ -1493,8 +1493,8 @@ fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     )
 }
 
-fn boolean_literal(i: Span) -> IRes<Literal> {
-    map(boolean_value, Literal::boolean)(i)
+fn boolean_literal(i: Span) -> IRes<SLiteral> {
+    map(boolean_value, SLiteral::boolean)(i)
 }
 
 fn boolean_value(i: Span) -> IRes<bool> {
@@ -1507,21 +1507,21 @@ fn boolean_value(i: Span) -> IRes<bool> {
 /// `[65] rdfLiteral ::= langString | string ("^^" datatype)?`
 /// Refactored according to rdfLiteral in Turtle
 /// `rdfLiteral ::= string (LANGTAG | '^^' iri)?`
-fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Literal> {
+fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SLiteral> {
     traced(
         "rdf_literal",
         map_error(
             move |i| {
                 let (i, str) = string()(i)?;
                 let (i, maybe_value) = opt(alt((
-                    map(lang_tag, |lang| Literal::lang_str(&str, lang)),
+                    map(lang_tag, |lang| SLiteral::lang_str(&str, lang)),
                     map(preceded(token("^^"), datatype_iri), |datatype| {
-                        Literal::lit_datatype(&str, &datatype)
+                        SLiteral::lit_datatype(&str, &datatype)
                     }),
                 )))(i)?;
                 let value = match maybe_value {
                     Some(v) => v,
-                    None => Literal::str(&str),
+                    None => SLiteral::str(&str),
                 };
                 Ok((i, value))
             },

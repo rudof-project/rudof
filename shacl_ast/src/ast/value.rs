@@ -2,12 +2,12 @@ use std::fmt::Display;
 
 use iri_s::IriS;
 use prefixmap::IriRef;
-use srdf::literal::Literal;
+use srdf::literal::SLiteral;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value {
     Iri(IriRef),
-    Literal(Literal),
+    Literal(SLiteral),
 }
 
 impl Value {
@@ -15,7 +15,7 @@ impl Value {
         Value::Iri(IriRef::iri(iri))
     }
 
-    pub fn literal(literal: Literal) -> Value {
+    pub fn literal(literal: SLiteral) -> Value {
         Value::Literal(literal)
     }
 }

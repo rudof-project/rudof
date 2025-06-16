@@ -4,8 +4,8 @@ use shape::CompiledShape;
 use srdf::Object;
 use srdf::Rdf;
 
-use crate::value::Value;
-use crate::Schema;
+use shacl_ast::value::Value;
+use shacl_ast::Schema;
 
 pub mod compiled_shacl_error;
 pub mod component;
@@ -48,12 +48,14 @@ fn compile_shapes<S: Rdf>(
 fn convert_value<S: Rdf>(value: Value) -> Result<S::Term, CompiledShaclError> {
     let ans = match value {
         Value::Iri(iri_ref) => {
-            let iri_ref = convert_iri_ref::<S>(iri_ref)?;
-            iri_ref.into()
+            let iri = convert_iri_ref::<S>(iri_ref)?;
+            let term: S::Term = <S::Term as From<S::IRI>>::from(iri);
+            term
         }
         Value::Literal(literal) => {
             let literal: S::Literal = literal.into();
-            literal.into()
+            let term: S::Term = <S::Term as From<S::Literal>>::from(literal);
+            term
         }
     };
     Ok(ans)

@@ -24,6 +24,9 @@ pub enum ShExRError {
 
     #[error("Unexpected value for nodeKind: {iri}")]
     UnexpectedNodeKind { iri: IriS },
+
+    #[error("Expected RDFNode parsing node shape, found: {term}")]
+    TermToRDFNodeFailed { term: String },
 }
 
 #[derive(Debug)]

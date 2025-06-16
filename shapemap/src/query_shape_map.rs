@@ -4,7 +4,7 @@ use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
 use serde::Serialize;
 use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
-use srdf::Query;
+use srdf::NeighsRDF;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct QueryShapeMap {
@@ -50,7 +50,7 @@ impl QueryShapeMap {
         rdf: &'a S,
     ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
     where
-        S: Query,
+        S: NeighsRDF,
     {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
     }

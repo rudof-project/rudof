@@ -7,15 +7,15 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MinInclusive;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::MinInclusive;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -25,7 +25,15 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_inclusive = |node: &S::Term| store.less_than(node, self.min_inclusive_value());
+        let min_inclusive = |node: &S::Term| {
+            let ord = store.compare(node, self.min_inclusive_value());
+            println!(
+                "Comparing {:?} with {:?}: {ord:?}",
+                node,
+                self.min_inclusive_value()
+            );
+            ord.map(|o| o.is_lt()).unwrap_or(true)
+        };
         let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
         validate_with(
             component,
@@ -39,7 +47,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinInclusive<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

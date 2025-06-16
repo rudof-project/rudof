@@ -2,8 +2,7 @@ use super::rdf_parser_error::RDFParseError;
 use super::{rdf_node_parser::*, PResult};
 use crate::matcher::Any;
 use crate::Triple;
-use crate::{FocusRDF, Iri, Query, RDF_TYPE};
-use iri_s::iri;
+use crate::{rdf_type, FocusRDF, NeighsRDF};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -12,7 +11,7 @@ use std::collections::HashSet;
 /// Some parts of this code are inspired by [Combine](https://github.com/Marwes/combine)
 ///
 /// Represents a generic parser of RDF data
-pub trait RDFParse<RDF: Query> {
+pub trait RDFParse<RDF: NeighsRDF> {
     /// The type which is returned if the parser is successful.
     type Output;
 
@@ -52,12 +51,12 @@ where
     }
 
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
-        Self::iri_unchecked(str).into()
+        Self::iri_unchecked(str).into().into()
     }
 
     #[inline]
-    fn rdf_type() -> RDF::IRI {
-        RDF_TYPE.clone().into()
+    fn rdf_type_iri() -> RDF::IRI {
+        rdf_type().clone().into()
     }
 
     pub fn instances_of(
@@ -66,7 +65,7 @@ where
     ) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
         let values = self
             .rdf
-            .triples_matching(Any, Self::rdf_type(), object.clone())
+            .triples_matching(Any, Self::rdf_type_iri(), object.clone())
             .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_subject);
         Ok(values)
@@ -106,30 +105,27 @@ where
     }
 
     pub fn get_rdf_type(&mut self) -> Result<RDF::Term, RDFParseError> {
-        let value = self.predicate_value(&RDF_TYPE)?;
+        let value = self.predicate_value(rdf_type())?;
         Ok(value)
     }
 
-    pub fn term_as_iri(term: &RDF::Term) -> Result<IriS, RDFParseError> {
-        let iri: RDF::IRI = term
-            .clone()
-            .try_into()
+    /*
+    pub fn term_as_iri(&self, term: &RDF::Term) -> Result<IriS, RDFParseError> {
+        let iri = self
+            .term_as_iri(term)
             .map_err(|_| RDFParseError::ExpectedIRI {
                 term: term.to_string(),
             })?;
         let iri_string = iri.as_str();
         Ok(iri!(iri_string))
-    }
+    } */
 
-    pub fn term_as_subject(term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        let subject = term
-            .clone()
-            .try_into()
+    /*pub fn term_as_subject(&self, term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
+        self.term_as_subject(term)
             .map_err(|_| RDFParseError::ExpectedSubject {
                 node: format!("{term}"),
-            })?;
-        Ok(subject)
-    }
+            })
+    }*/
 
     pub fn parse_list_for_predicate(
         &mut self,

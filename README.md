@@ -408,7 +408,7 @@ Options:
       --reader-mode <RDF Reader mode>
           RDF Reader mode [default: strict] [possible values: lax, strict]
   -x, --export-mode <Result mode>
-          [possible values: sparql, shex, uml, html]
+          [possible valueS: QueryRDF, shex, uml, html]
   -h, --help
           Print help
 ```

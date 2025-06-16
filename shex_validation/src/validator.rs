@@ -17,7 +17,7 @@ use shex_ast::object_value::ObjectValue;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
-use srdf::Query;
+use srdf::NeighsRDF;
 use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -90,7 +90,7 @@ impl Validator {
         maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let idx = self.get_idx(shape)?;
         let mut engine = Engine::new(&self.config);
@@ -123,7 +123,7 @@ impl Validator {
         maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
@@ -141,7 +141,7 @@ impl Validator {
         maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
@@ -158,7 +158,7 @@ impl Validator {
         schema: &SchemaIR,
     ) -> Result<()>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         for (node_value, label) in shapemap.iter_node_shape(rdf) {
             let idx = self.get_shape_expr_label(label, schema)?;
@@ -170,7 +170,7 @@ impl Validator {
 
     fn node_from_object_value<S>(&self, value: &ObjectValue, rdf: &S) -> Result<Node>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         match value {
             ObjectValue::IriRef(IriRef::Iri(iri)) => Ok(Node::iri(iri.clone())),
@@ -184,7 +184,7 @@ impl Validator {
 
     fn loop_validating<S>(&self, engine: &mut Engine, rdf: &S, schema: &SchemaIR) -> Result<()>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         while engine.no_end_steps() && engine.more_pending() {
             engine.new_step();
@@ -213,7 +213,7 @@ impl Validator {
         schema: &SchemaIR,
     ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
     where
-        S: Query,
+        S: NeighsRDF,
     {
         let (node, idx) = atom.get_value();
         let se = find_shape_idx(idx, &self.schema);

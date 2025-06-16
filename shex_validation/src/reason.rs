@@ -39,7 +39,7 @@ pub enum Reason {
     },
     ShapePassed {
         node: Node,
-        shape: Shape,
+        shape: Box<Shape>,
     },
     ShapeRefPassed {
         node: Node,

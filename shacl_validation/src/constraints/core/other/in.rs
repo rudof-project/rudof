@@ -8,12 +8,13 @@ use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::In;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::In;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
-use srdf::Sparql;
-use srdf::{Query, SHACLPath};
+use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for In<S> {
@@ -44,7 +45,7 @@ impl<S: Rdf + Debug> Validator<S> for In<S> {
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for In<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for In<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -66,7 +67,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for In<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for In<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for In<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

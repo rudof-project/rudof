@@ -29,7 +29,7 @@ impl ShEx2Sparql {
                 } else {
                     Err(ShEx2SparqlError::ShapeNotFound {
                         iri: shape,
-                        schema: shex.clone(),
+                        schema: Box::new(shex.clone()),
                     })
                 }
             }
@@ -48,12 +48,12 @@ impl ShEx2Sparql {
                             )
                         } else {
                             Err(ShEx2SparqlError::EmptyShapes {
-                                schema: shex.clone(),
+                                schema: Box::new(shex.clone()),
                             })
                         }
                     } else {
                         Err(ShEx2SparqlError::NoShapes {
-                            schema: shex.clone(),
+                            schema: Box::new(shex.clone()),
                         })
                     }
                 }
@@ -104,7 +104,7 @@ fn shape_expr2patterns(
             } else {
                 Err(ShEx2SparqlError::ShapeRefNotFound {
                     sref: sref.clone(),
-                    schema: schema.clone(),
+                    schema: Box::new(schema.clone()),
                 })
             }
         }

@@ -1,9 +1,9 @@
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Object;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::Sparql;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
@@ -23,13 +23,14 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
+            let focus = S::term_as_object(focus_node).ok()?;
+            let component = Object::iri(component.into());
+            let severity = Object::iri(shape.severity());
+            let shape_id = S::term_as_object(shape.id()).ok()?;
+            let source = Some(shape_id);
+            let value = iteration_strategy.to_object(item);
             if let Ok(condition) = evaluator(item) {
                 if condition {
-                    let focus = focus_node.clone().into();
-                    let component = Object::iri(component.into());
-                    let severity = shape.severity().clone().into();
-                    let source = Some(shape.id().clone().into());
-                    let value = iteration_strategy.to_value(item).map(|v| v.into());
                     return Some(
                         ValidationResult::new(focus, component, severity)
                             .with_source(source)
@@ -66,7 +67,7 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     )
 }
 
-pub fn validate_ask_with<S: Sparql>(
+pub fn validate_ask_with<S: QueryRDF>(
     component: &CompiledComponent<S>,
     shape: &CompiledShape<S>,
     store: &S,

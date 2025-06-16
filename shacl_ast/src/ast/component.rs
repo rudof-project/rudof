@@ -1,16 +1,17 @@
-use crate::{
-    node_kind::NodeKind, value::Value, SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR,
-    SH_DISJOINT_STR, SH_EQUALS_STR, SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR,
-    SH_IN_STR, SH_IRI_STR, SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR,
-    SH_MAX_COUNT_STR, SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR,
-    SH_MIN_COUNT_STR, SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR,
-    SH_NOT_STR, SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
+use crate::shacl_vocab::{
+    SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR, SH_DISJOINT_STR, SH_EQUALS_STR,
+    SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR, SH_IN_STR, SH_IRI_STR,
+    SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR, SH_MAX_COUNT_STR,
+    SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR, SH_MIN_COUNT_STR,
+    SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR, SH_NOT_STR,
+    SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
+use crate::{node_kind::NodeKind, value::Value};
 use iri_s::{iri, IriS};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder};
+use srdf::{lang::Lang, literal::SLiteral, BuildRDF, RDFNode};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -20,10 +21,10 @@ pub enum Component {
     NodeKind(NodeKind),
     MinCount(isize),
     MaxCount(isize),
-    MinExclusive(Literal),
-    MaxExclusive(Literal),
-    MinInclusive(Literal),
-    MaxInclusive(Literal),
+    MinExclusive(SLiteral),
+    MaxExclusive(SLiteral),
+    MinInclusive(SLiteral),
+    MaxInclusive(SLiteral),
     MinLength(isize),
     MaxLength(isize),
     Pattern {
@@ -74,7 +75,7 @@ pub enum Component {
 impl Component {
     pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         match self {
             Self::Class(rdf_node) => {
@@ -117,9 +118,9 @@ impl Component {
                 Self::write_integer(*value, SH_MAX_LENGTH_STR, rdf_node, rdf)?;
             }
             Self::Pattern { pattern, flags } => {
-                Self::write_literal(&Literal::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_literal(&SLiteral::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
                 if let Some(flags) = flags {
-                    Self::write_literal(&Literal::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
+                    Self::write_literal(&SLiteral::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
                 }
             }
             Self::UniqueLang(value) => {
@@ -128,7 +129,7 @@ impl Component {
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
-                        &Literal::str(&lang.to_string()),
+                        &SLiteral::str(&lang.to_string()),
                         SH_LANGUAGE_IN_STR,
                         rdf_node,
                         rdf,
@@ -184,7 +185,7 @@ impl Component {
                 }
                 Value::Literal(literal) => {
                     Self::write_literal(
-                        &Literal::str(&literal.to_string()),
+                        &SLiteral::str(&literal.to_string()),
                         SH_HAS_VALUE_STR,
                         rdf_node,
                         rdf,
@@ -195,7 +196,7 @@ impl Component {
                 values.iter().try_for_each(|value| match value {
                     Value::Iri(iri) => Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf),
                     Value::Literal(literal) => Self::write_literal(
-                        &Literal::str(&literal.to_string()),
+                        &SLiteral::str(&literal.to_string()),
                         SH_HAS_VALUE_STR,
                         rdf_node,
                         rdf,
@@ -238,7 +239,7 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let value: i128 = value.try_into().unwrap();
         let literal: RDF::Literal = value.into();
@@ -252,20 +253,20 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let literal: RDF::Literal = value.into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
     fn write_literal<RDF>(
-        value: &Literal,
+        value: &SLiteral,
         predicate: &str,
         rdf_node: &RDFNode,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let literal: RDF::Literal = value.lexical_form().into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
@@ -278,7 +279,7 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         Self::write_term(
             &value.get_iri().unwrap().clone().into(),
@@ -295,7 +296,7 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_triple(node, iri!(predicate), value.clone())

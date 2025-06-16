@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
 use iri_s::IriS;
-use srdf::{literal::Literal, Object};
+use srdf::{literal::SLiteral, Object};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {
     IriRef(IriS),
-    ObjectLiteral(Literal),
+    ObjectLiteral(SLiteral),
 }
 
 impl ObjectValue {

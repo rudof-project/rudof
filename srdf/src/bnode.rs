@@ -1,4 +1,11 @@
-pub trait BNode<'a> {
+use std::fmt::{Debug, Display};
+
+pub trait BlankNode: Debug + Display + PartialEq {
+    fn new(id: impl Into<String>) -> Self;
+    fn id(&self) -> &str;
+}
+
+pub trait BNodeRef<'a> {
     fn label(&self) -> &'a str;
 }
 
@@ -13,7 +20,7 @@ impl<'a> SBNode<'a> {
     }
 }
 
-impl<'a> BNode<'a> for SBNode<'a> {
+impl<'a> BNodeRef<'a> for SBNode<'a> {
     fn label(&self) -> &'a str {
         self.s
     }

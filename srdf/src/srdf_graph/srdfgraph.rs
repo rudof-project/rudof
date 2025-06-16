@@ -1,5 +1,5 @@
 use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
+use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -290,7 +290,7 @@ impl Rdf for SRDFGraph {
     }
 }
 
-impl Query for SRDFGraph {
+impl NeighsRDF for SRDFGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
@@ -360,7 +360,7 @@ impl FocusRDF for SRDFGraph {
     }
 }
 
-impl SRDFBuilder for SRDFGraph {
+impl BuildRDF for SRDFGraph {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -487,13 +487,13 @@ impl ReaderMode {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
+    use crate::neighs_rdf::NeighsRDF;
     use iri_s::IriS;
     use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;
     use oxrdf::Subject as OxSubject;
     use oxrdf::Term as OxTerm;
+    use std::collections::HashSet;
 
     use crate::iri;
     use crate::matcher::Any;
@@ -509,11 +509,11 @@ mod tests {
     use crate::satisfy;
     use crate::set_focus;
     use crate::PResult;
-    use crate::Query as _;
+    // use crate::Query as _;
+    use crate::BuildRDF;
     use crate::RDFFormat;
     use crate::RDFNodeParse as _;
     use crate::RDFParseError;
-    use crate::SRDFBuilder;
     use crate::Triple;
 
     use super::ReaderMode;
@@ -879,8 +879,9 @@ mod tests {
     #[test]
     fn test_iri() {
         let graph = SRDFGraph::default();
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        assert_eq!(iri().parse(&x, graph).unwrap(), x)
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
+        let x_iri = IriS::from_named_node(&x);
+        assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
     }
 
     #[test]

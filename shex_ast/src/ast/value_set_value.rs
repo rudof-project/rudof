@@ -10,7 +10,7 @@ use serde::{
 };
 
 use srdf::lang::Lang;
-use srdf::literal::Literal;
+use srdf::literal::SLiteral;
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 
@@ -54,7 +54,7 @@ impl ValueSetValue {
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(Literal::StringLiteral {
+        let ov = ObjectValue::Literal(SLiteral::StringLiteral {
             lexical_form: value.to_string(),
             lang,
         });
@@ -742,7 +742,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
                             Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
+                                SLiteral::StringLiteral {
                                     lexical_form: v,
                                     lang: Some(Lang::new_unchecked(lang)),
                                 },
@@ -754,13 +754,13 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     None => match value {
                         Some(lexical_form) => match language {
                             Some(language) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
+                                SLiteral::StringLiteral {
                                     lexical_form,
                                     lang: Some(Lang::new_unchecked(language)),
                                 },
                             ))),
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
+                                SLiteral::StringLiteral {
                                     lexical_form,
                                     lang: None,
                                 },

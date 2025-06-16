@@ -1,3 +1,9 @@
+//! SHACL RDF
+//!
+//! Converts between SHACl AST and RDF
+//!
+#![deny(rust_2018_idioms)]
+
 pub mod rdf_to_shacl;
 pub mod shacl_to_rdf;
 

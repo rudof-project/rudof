@@ -21,7 +21,7 @@ pub enum ShapeExpr {
         display: String,
     },
     NodeConstraint(NodeConstraint),
-    Shape(Shape),
+    Shape(Box<Shape>),
     External {},
     Ref {
         idx: ShapeLabelIdx,

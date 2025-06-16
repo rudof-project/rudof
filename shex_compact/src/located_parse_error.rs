@@ -15,7 +15,7 @@ use thiserror::Error;
   format_parse_error_context(.context))]
 pub struct LocatedParseError {
     #[source]
-    pub source: ShExParseError,
+    pub source: Box<ShExParseError>,
     pub line: u32,
     pub column: usize,
     pub fragment: String,

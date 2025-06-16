@@ -204,6 +204,12 @@ impl Serialize for IriS {
     }
 }
 
+impl From<NamedNode> for IriS {
+    fn from(iri: NamedNode) -> Self {
+        IriS { iri }
+    }
+}
+
 impl FromStr for IriS {
     type Err = IriSError;
 

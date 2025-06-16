@@ -53,7 +53,12 @@ where
     }
 
     fn term_to_shape_label(term: &RDF::Term) -> Result<ShapeExprLabel> {
-        let object = term.clone().into();
+        let object = term
+            .clone()
+            .try_into()
+            .map_err(|_| ShExRError::TermToRDFNodeFailed {
+                term: term.to_string(),
+            })?;
         match object {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri)),
             Object::BlankNode(bnode) => Ok(ShapeExprLabel::bnode(BNode::new(bnode.as_str()))),
@@ -292,5 +297,5 @@ fn object_value<RDF>() -> impl RDFNodeParse<RDF, Output = ObjectValue>
 where
     RDF: FocusRDF,
 {
-    iri().map(|ref iri| ObjectValue::IriRef(IriRef::Iri(iri.clone())))
+    iri().map(|iri: RDF::IRI| ObjectValue::IriRef(IriRef::Iri(iri.into())))
 }

@@ -1,9 +1,7 @@
-use srdf::Rdf;
-
-use crate::target::Target;
-
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
+use shacl_ast::target::Target;
+use srdf::Rdf;
 
 #[derive(Debug)]
 pub enum CompiledTarget<S: Rdf> {

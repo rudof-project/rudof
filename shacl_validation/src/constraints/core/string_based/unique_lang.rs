@@ -12,13 +12,13 @@ use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::UniqueLang;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::component::UniqueLang;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for UniqueLang {
@@ -39,7 +39,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
         let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
 
         let unique_lang = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
+            let tmp: Result<S::Literal, _> = S::term_as_literal(value_node);
             if let Ok(lang) = tmp {
                 let lang = lang.clone();
                 let mut langs_borrowed = langs.borrow_mut();
@@ -64,7 +64,7 @@ impl<S: Rdf + Debug> Validator<S> for UniqueLang {
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -86,7 +86,7 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

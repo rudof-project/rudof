@@ -1,13 +1,11 @@
 use std::fmt::Display;
 
-use iri_s::iri;
-use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder};
-
-use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target,
-    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_ORDER, SH_PATH,
-    SH_PROPERTY_SHAPE, SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
+use crate::shacl_vocab::{
+    sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_order, sh_path,
+    sh_property_shape, sh_severity, sh_violation, sh_warning,
 };
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
 
 #[derive(Debug, Clone)]
 pub struct PropertyShape {
@@ -179,17 +177,17 @@ impl PropertyShape {
     // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), SH_PROPERTY_SHAPE.clone())?;
+        rdf.add_type(id.clone(), sh_property_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_NAME.clone(), literal)
+            rdf.add_triple(id.clone(), sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -197,7 +195,7 @@ impl PropertyShape {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_DESCRIPTION.clone(), literal)
+            rdf.add_triple(id.clone(), sh_description().clone(), literal)
         })?;
 
         if let Some(order) = self.order.clone() {
@@ -209,15 +207,15 @@ impl PropertyShape {
                     i.into()
                 }
             };
-            rdf.add_triple(id.clone(), SH_ORDER.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_order().clone(), literal)?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), SH_GROUP.clone(), group.clone())?;
+            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
-            rdf.add_triple(id.clone(), SH_PATH.clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), sh_path().clone(), pred.clone())?;
         } else {
             unimplemented!()
         }
@@ -233,18 +231,18 @@ impl PropertyShape {
         if self.deactivated {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(id.clone(), SH_DEACTIVATED.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_deactivated().clone(), literal)?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Violation => iri!(SH_VIOLATION_STR),
-                Severity::Info => iri!(SH_INFO_STR),
-                Severity::Warning => iri!(SH_WARNING_STR),
-                Severity::Generic(iri) => iri.get_iri().unwrap(),
+                Severity::Violation => sh_violation(),
+                Severity::Info => sh_info(),
+                Severity::Warning => sh_warning(),
+                Severity::Generic(iri) => &iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), SH_SEVERITY.clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
         }
 
         Ok(())

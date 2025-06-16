@@ -11,17 +11,17 @@ use oxrdf::{
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
+use srdf::BuildRDF;
 use srdf::FocusRDF;
-use srdf::Query;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
-use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
-use srdf::Sparql;
 use srdf::VarName;
 use srdf::RDF_TYPE_STR;
 use std::fmt::Debug;
@@ -257,7 +257,7 @@ impl Rdf for RdfData {
     }
 }
 
-impl Sparql for RdfData {
+impl QueryRDF for RdfData {
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
@@ -329,10 +329,10 @@ fn _rdf_type() -> OxNamedNode {
     OxNamedNode::new_unchecked(RDF_TYPE_STR)
 }
 
-impl Query for RdfData {
+impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples).flatten();
-        let graph_triples = self.graph.iter().flat_map(Query::triples).flatten();
+        let endpoints_triples = self.endpoints.iter().flat_map(NeighsRDF::triples).flatten();
+        let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
         Ok(endpoints_triples.chain(graph_triples))
     }
 }
@@ -347,7 +347,7 @@ impl FocusRDF for RdfData {
     }
 }
 
-impl SRDFBuilder for RdfData {
+impl BuildRDF for RdfData {
     fn empty() -> Self {
         todo!()
     }

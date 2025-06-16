@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
 use srdf::Rdf;
-use srdf::SHACLPath;
 
-use crate::property_shape::PropertyShape;
-use crate::Schema;
+use shacl_ast::node_shape::NodeShape;
+use shacl_ast::Schema;
 
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -14,9 +13,8 @@ use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub struct CompiledPropertyShape<S: Rdf> {
+pub struct CompiledNodeShape<S: Rdf> {
     id: S::Term,
-    path: SHACLPath,
     components: Vec<CompiledComponent<S>>,
     targets: Vec<CompiledTarget<S>>,
     property_shapes: Vec<CompiledShape<S>>,
@@ -27,17 +25,13 @@ pub struct CompiledPropertyShape<S: Rdf> {
     severity: Option<CompiledSeverity<S>>,
     // name: MessageMap,
     // description: MessageMap,
-    // order: Option<NumericLiteral>,
-    // group: Option<S::Term>,
-    // source_iri: Option<S::IRI>,
-    // annotations: Vec<(S::IRI, S::Term)>,
+    // group: S::Term,
+    // source_iri: S::IRI,
 }
 
-impl<S: Rdf> CompiledPropertyShape<S> {
-    #[allow(clippy::too_many_arguments)]
+impl<S: Rdf> CompiledNodeShape<S> {
     pub fn new(
         id: S::Term,
-        path: SHACLPath,
         components: Vec<CompiledComponent<S>>,
         targets: Vec<CompiledTarget<S>>,
         property_shapes: Vec<CompiledShape<S>>,
@@ -45,9 +39,8 @@ impl<S: Rdf> CompiledPropertyShape<S> {
         deactivated: bool,
         severity: Option<CompiledSeverity<S>>,
     ) -> Self {
-        CompiledPropertyShape {
+        CompiledNodeShape {
             id,
-            path,
             components,
             targets,
             property_shapes,
@@ -59,14 +52,6 @@ impl<S: Rdf> CompiledPropertyShape<S> {
 
     pub fn id(&self) -> &S::Term {
         &self.id
-    }
-
-    pub fn is_closed(&self) -> &bool {
-        &self.closed
-    }
-
-    pub fn path(&self) -> &SHACLPath {
-        &self.path
     }
 
     pub fn is_deactivated(&self) -> &bool {
@@ -91,12 +76,15 @@ impl<S: Rdf> CompiledPropertyShape<S> {
     pub fn property_shapes(&self) -> &Vec<CompiledShape<S>> {
         &self.property_shapes
     }
+
+    pub fn closed(&self) -> &bool {
+        &self.closed
+    }
 }
 
-impl<S: Rdf> CompiledPropertyShape<S> {
-    pub fn compile(shape: PropertyShape, schema: &Schema) -> Result<Self, CompiledShaclError> {
+impl<S: Rdf> CompiledNodeShape<S> {
+    pub fn compile(shape: Box<NodeShape>, schema: &Schema) -> Result<Self, CompiledShaclError> {
         let id = shape.id().clone().into();
-        let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;
@@ -120,9 +108,8 @@ impl<S: Rdf> CompiledPropertyShape<S> {
             property_shapes.push(shape);
         }
 
-        let compiled_property_shape = CompiledPropertyShape::new(
+        let compiled_node_shape = CompiledNodeShape::new(
             id,
-            path,
             compiled_components,
             targets,
             property_shapes,
@@ -131,6 +118,6 @@ impl<S: Rdf> CompiledPropertyShape<S> {
             severity,
         );
 
-        Ok(compiled_property_shape)
+        Ok(compiled_node_shape)
     }
 }

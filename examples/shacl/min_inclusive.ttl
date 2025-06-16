@@ -4,7 +4,7 @@ prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Pattern a sh:NodeShape ;
-  sh:targetNode :ok, :ko1, :ko2 ;
+  sh:targetNode :ok1, :ok2, :ko1, :ko2, :ko3 ;
   sh:property [
     sh:path :p ;
     sh:datatype xsd:double ;
@@ -12,7 +12,9 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:minCount 1
  ] .
 
-:ok :p "10.5"^^xsd:double .
+:ok1 :p "0"^^xsd:double .
+:ok2 :p "10.5"^^xsd:double .
 :ko1 :p "-5.3"^^xsd:double .
-:ko2 :p "other"^^xsd:double .
+:ko2 :p "other" .
+:ko3 :p "other"^^xsd:double .
  

@@ -1,10 +1,9 @@
-use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target, SH_CLOSED,
-    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_NODE_SHAPE, SH_PROPERTY,
-    SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
+use crate::shacl_vocab::{
+    sh_closed, sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_node_shape,
+    sh_property, sh_severity, sh_violation, sh_warning,
 };
-use iri_s::iri;
-use srdf::{RDFNode, SRDFBuilder};
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use srdf::{BuildRDF, RDFNode};
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]
@@ -98,17 +97,17 @@ impl NodeShape {
     // TODO: this is a bit ugly
     pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), SH_NODE_SHAPE.clone())?;
+        rdf.add_type(id.clone(), sh_node_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_NAME.clone(), literal)
+            rdf.add_triple(id.clone(), sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -116,7 +115,7 @@ impl NodeShape {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_DESCRIPTION.clone(), literal)
+            rdf.add_triple(id.clone(), sh_description().clone(), literal)
         })?;
 
         self.components
@@ -128,34 +127,34 @@ impl NodeShape {
             .try_for_each(|target| target.write(&self.id, rdf))?;
 
         self.property_shapes.iter().try_for_each(|property_shape| {
-            rdf.add_triple(id.clone(), SH_PROPERTY.clone(), property_shape.clone())
+            rdf.add_triple(id.clone(), sh_property().clone(), property_shape.clone())
         })?;
 
         if self.deactivated {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(id.clone(), SH_DEACTIVATED.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_deactivated().clone(), literal)?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), SH_GROUP.clone(), group.clone())?;
+            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Violation => iri!(SH_VIOLATION_STR),
-                Severity::Info => iri!(SH_INFO_STR),
-                Severity::Warning => iri!(SH_WARNING_STR),
+                Severity::Violation => sh_violation().clone(),
+                Severity::Info => sh_info().clone(),
+                Severity::Warning => sh_warning().clone(),
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), SH_SEVERITY.clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
         }
 
         if self.closed {
             let literal: RDF::Literal = "true".to_string().into();
 
-            rdf.add_triple(id.clone(), SH_CLOSED.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_closed().clone(), literal)?;
         }
 
         Ok(())

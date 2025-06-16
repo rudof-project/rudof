@@ -1,10 +1,10 @@
 use std::{collections::HashSet, vec::IntoIter};
 
-use crate::{Query, Triple};
+use crate::{NeighsRDF, Triple};
 
 pub enum Neigh<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     Direct { p: S::IRI, o: S::Term },
     Inverse { s: S::Subject, p: S::IRI },
@@ -12,7 +12,7 @@ where
 
 impl<S> Neigh<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     pub fn direct(pred: S::IRI, object: S::Term) -> Neigh<S> {
         Neigh::Direct { p: pred, o: object }
@@ -30,7 +30,7 @@ where
 // I would like to generate the neighs as an iterator...
 pub struct NeighsIterator<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     _term: S::Term,
     _neigh_iter: IntoIter<Neigh<S>>,
@@ -38,10 +38,10 @@ where
 
 impl<S> NeighsIterator<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     pub fn new(term: S::Term, rdf: S) -> Result<NeighsIterator<S>, S::Err> {
-        match term.try_into() {
+        match S::term_as_subject(&term) {
             Ok(subject) => {
                 let subject: S::Subject = subject;
                 let preds: HashSet<S::IRI> = rdf
@@ -65,7 +65,7 @@ where
 
 impl<S> FromIterator<Neigh<S>> for NeighsIterator<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     fn from_iter<T>(_t: T) -> Self
     where
@@ -77,7 +77,7 @@ where
 
 impl<S> Iterator for NeighsIterator<S>
 where
-    S: Query,
+    S: NeighsRDF,
 {
     type Item = Neigh<S>;
 

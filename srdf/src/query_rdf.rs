@@ -2,11 +2,14 @@ use std::fmt::Display;
 
 use crate::Rdf;
 
-pub trait Sparql: Rdf {
+/// Represents RDF that supports SPARQL-like queries
+pub trait QueryRDF: Rdf {
+    /// SPARQL SELECT query
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>, Self::Err>
     where
         Self: Sized;
 
+    /// SPARQL ASK query    
     fn query_ask(&self, query: &str) -> Result<bool, Self::Err>;
 }
 

@@ -8,18 +8,18 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::Class;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
+use shacl_ir::compiled::component::Class;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::SHACLPath;
-use srdf::Sparql;
 use srdf::Term;
-use srdf::RDFS_SUBCLASS_OF;
-use srdf::RDF_TYPE;
 use std::fmt::Debug;
 
-impl<S: Query + 'static> NativeValidator<S> for Class<S> {
+impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {
     fn validate_native(
         &self,
         component: &CompiledComponent<S>,
@@ -34,12 +34,12 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
                 return true;
             }
 
-            let is_class_valid = get_objects_for(store, value_node, &RDF_TYPE.clone().into())
+            let is_class_valid = get_objects_for(store, value_node, &rdf_type().clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == self.class_rule()
-                        || get_objects_for(store, ctype, &RDFS_SUBCLASS_OF.clone().into())
+                        || get_objects_for(store, ctype, &rdfs_subclass_of().clone().into())
                             .unwrap_or_default()
                             .contains(self.class_rule())
                 });
@@ -63,7 +63,7 @@ impl<S: Query + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
     fn validate_sparql(
         &self,
         component: &CompiledComponent<S>,

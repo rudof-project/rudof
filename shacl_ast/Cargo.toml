@@ -20,7 +20,6 @@ srdf.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
 thiserror = "2.0"
-lazy_static = "1"
 const_format = "0.2"
 itertools = "0.14"
 regex.workspace = true
