@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{matcher::Any, Object, RDFNode, SHACLPath, Triple, NeighsRDF};
+use srdf::{matcher::Any, NeighsRDF, Object, RDFNode, SHACLPath, Triple};
 
 use super::helper_error::SRDFError;
 
@@ -16,7 +16,7 @@ pub(crate) fn get_object_for<S: NeighsRDF>(
         Some(term) => {
             let obj = S::term_as_object(&term)?;
             Ok(Some(obj))
-        },
+        }
         None => Ok(None),
     }
 }

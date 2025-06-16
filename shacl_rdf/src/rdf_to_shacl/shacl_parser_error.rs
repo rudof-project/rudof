@@ -19,7 +19,6 @@ pub enum ShaclParserError {
     #[error("Expected term as subject, found: {term}")]
     ExpectedSubject { term: String },
 
-
     #[error("Expected Value of `sh:or` to be a subject, found: {term}")]
     OrValueNoSubject { term: String },
 

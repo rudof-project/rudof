@@ -1,11 +1,11 @@
-use std::fmt::{Debug, Display};
-use colored::*;
-use prefixmap::PrefixMap;
-use srdf::{Object, NeighsRDF, Rdf, SHACLPath, BuildRDF};
-use crate::helpers::srdf::get_objects_for;
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
-use shacl_ast::shacl_vocab::{sh, sh_result, sh_validation_report, sh_conforms};
+use crate::helpers::srdf::get_objects_for;
+use colored::*;
+use prefixmap::PrefixMap;
+use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
+use srdf::{BuildRDF, NeighsRDF, Object, Rdf, SHACLPath};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -84,11 +84,11 @@ impl ValidationReport {
     where
         RDF: BuildRDF + Sized,
     {
-        rdf_writer.add_prefix("sh", &sh()).map_err(|e| {
-            ReportError::ValidationReportError {
+        rdf_writer
+            .add_prefix("sh", sh())
+            .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding prefix to RDF: {e}"),
-            }
-        })?;
+            })?;
         let report_node: RDF::Subject = rdf_writer
             .add_bnode()
             .map_err(|e| ReportError::ValidationReportError {

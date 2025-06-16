@@ -83,7 +83,7 @@ impl<S: Rdf> CompiledShape<S> {
                 CompiledShape::NodeShape(node_shape)
             }
             Shape::PropertyShape(property_shape) => {
-                let property_shape = CompiledPropertyShape::compile(property_shape, schema)?;
+                let property_shape = CompiledPropertyShape::compile(*property_shape, schema)?;
                 CompiledShape::PropertyShape(property_shape)
             }
         };

@@ -2,7 +2,7 @@ use super::rdf_parser_error::RDFParseError;
 use super::{rdf_node_parser::*, PResult};
 use crate::matcher::Any;
 use crate::Triple;
-use crate::{FocusRDF, NeighsRDF, rdf_type};
+use crate::{rdf_type, FocusRDF, NeighsRDF};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
@@ -53,7 +53,6 @@ where
     pub fn term_iri_unchecked(str: &str) -> RDF::Term {
         Self::iri_unchecked(str).into().into()
     }
-
 
     #[inline]
     fn rdf_type_iri() -> RDF::IRI {

@@ -1,6 +1,6 @@
 use iri_s::IriS;
-use srdf::Rdf;
 use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
+use srdf::Rdf;
 
 use shacl_ast::severity::Severity;
 
@@ -42,9 +42,7 @@ impl<S: Rdf> From<&CompiledSeverity<S>> for IriS {
             CompiledSeverity::Violation => sh_violation().clone(),
             CompiledSeverity::Warning => sh_warning().clone(),
             CompiledSeverity::Info => sh_info().clone(),
-            CompiledSeverity::Generic(iri) => {
-                iri.clone().into()
-            }
+            CompiledSeverity::Generic(iri) => iri.clone().into(),
         }
     }
 }

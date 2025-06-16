@@ -22,4 +22,3 @@ pub enum ShaclFormat {
     N3,
     NQuads,
 }
-

@@ -3,25 +3,25 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum RDFError {
     #[error("Conversion error {msg}")]
-    ConversionError {msg: String },
+    ConversionError { msg: String },
 
     #[error("Converting Object {object} to RDF term")]
-    ObjectAsTerm {object: String },
+    ObjectAsTerm { object: String },
 
     #[error("Converting term {term} to IRI")]
-    TermAsIri {term: String },
+    TermAsIri { term: String },
 
     #[error("Converting term {term} to Literal")]
-    TermAsLiteral {term: String },
+    TermAsLiteral { term: String },
 
     #[error("Converting Term {term} to Object")]
-    TermAsObject {term: String },
+    TermAsObject { term: String },
 
     #[error("Converting term {term} to subject")]
     TermAsSubject { term: String },
 
     #[error("Converting Term {term} to Lang")]
-    TermAsLang{ term: String },
+    TermAsLang { term: String },
 
     #[error("Comparison error: {term1} with {term2}")]
     ComparisonError { term1: String, term2: String },

@@ -41,11 +41,12 @@ impl Cardinality {
     }
 
     pub fn minus(&self, n: usize) -> Cardinality {
-        let min = if self.min.value > n {
+        let min = self.min.value.saturating_sub(n);
+        /*if self.min.value > n {
             self.min.value - n
         } else {
             0
-        };
+        };*/
         Cardinality {
             min: Min {
                 value: cmp::max(min, 0),

@@ -8,8 +8,8 @@ use iri_s::IriS;
 use std::fmt::Debug;
 
 use crate::{
-    matcher::Any, rdf_parser, FocusRDF, NeighsRDF, Object, PResult, RDFParseError, Rdf, Triple,
-    rdf_first, RDF_NIL_STR, rdf_rest, rdf_type,
+    matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, FocusRDF, NeighsRDF, Object, PResult,
+    RDFParseError, Rdf, Triple, RDF_NIL_STR,
 };
 use crate::{Iri as _, Literal as _};
 

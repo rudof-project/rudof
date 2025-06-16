@@ -35,7 +35,7 @@ where
 
 pub struct STriple<R>
 where
-    R: Rdf + ?Sized,
+    R: Rdf,
 {
     subj: R::Subject,
     pred: R::IRI,

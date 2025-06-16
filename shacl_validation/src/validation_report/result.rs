@@ -1,7 +1,10 @@
 use super::validation_report_error::{ReportError, ResultError};
 use crate::helpers::srdf::*;
-use shacl_ast::shacl_vocab::{sh_value, sh_result_path, sh_source_shape, sh_source_constraint_component, sh_focus_node, sh_result_severity, sh_result_message, sh_validation_result};
-use srdf::{Object, NeighsRDF, RDFNode, SHACLPath, BuildRDF};
+use shacl_ast::shacl_vocab::{
+    sh_focus_node, sh_result_message, sh_result_path, sh_result_severity,
+    sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
+};
+use srdf::{BuildRDF, NeighsRDF, Object, RDFNode, SHACLPath};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -97,11 +100,14 @@ impl ValidationResult {
                 Some(focus_node) => focus_node,
                 None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
             };
-        let severity =
-            match get_object_for(store, validation_result, &sh_result_severity().clone().into())? {
-                Some(severity) => severity,
-                None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
-            };
+        let severity = match get_object_for(
+            store,
+            validation_result,
+            &sh_result_severity().clone().into(),
+        )? {
+            Some(severity) => severity,
+            None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
+        };
         let constraint_component = match get_object_for(
             store,
             validation_result,
@@ -121,7 +127,7 @@ impl ValidationResult {
 
         let sh_source_shape_iri: S::IRI = sh_source_shape().clone().into();
         let source = get_object_for(store, validation_result, &sh_source_shape_iri)?;
-        let sh_value_iri: S::IRI = sh_value().clone().into(); 
+        let sh_value_iri: S::IRI = sh_value().clone().into();
         let value = get_object_for(store, validation_result, &sh_value_iri)?;
 
         // 3. Lastly we build the ValidationResult

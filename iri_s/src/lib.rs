@@ -63,14 +63,12 @@ macro_rules! static_once {
 #[macro_export]
 macro_rules! iri_once {
     ($name:ident, $str:expr) => {
-        pub fn $name() -> & 'static IriS {
+        pub fn $name() -> &'static IriS {
             static ONCE: std::sync::OnceLock<IriS> = std::sync::OnceLock::new();
             ONCE.get_or_init(|| IriS::new_unchecked($str))
         }
     };
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -103,6 +101,4 @@ mod tests {
         let iri = example();
         assert_eq!(iri.as_str(), "http://example.org/")
     }
-
-
 }

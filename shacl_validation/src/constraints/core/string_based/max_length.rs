@@ -13,8 +13,8 @@ use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
-use srdf::SHACLPath;
 use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 

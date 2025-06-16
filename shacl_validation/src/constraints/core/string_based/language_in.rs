@@ -4,9 +4,9 @@ use shacl_ir::compiled::shape::CompiledShape;
 use srdf::lang::Lang;
 use srdf::Literal;
 use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::QueryRDF;
 use std::fmt::Debug;
 
 use crate::constraints::constraint_error::ConstraintError;

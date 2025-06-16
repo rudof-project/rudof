@@ -9,13 +9,13 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use shacl_ast::node_kind::NodeKind;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::Nodekind;
 use shacl_ir::compiled::shape::CompiledShape;
-use shacl_ast::node_kind::NodeKind;
 use srdf::NeighsRDF;
-use srdf::SHACLPath;
 use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 

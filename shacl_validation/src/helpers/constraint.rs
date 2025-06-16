@@ -1,9 +1,9 @@
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Object;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::QueryRDF;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
@@ -23,7 +23,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     let results = iteration_strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
-            let focus = S::term_as_object(&focus_node).ok()?;
+            let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
             let severity = Object::iri(shape.severity());
             let shape_id = S::term_as_object(shape.id()).ok()?;

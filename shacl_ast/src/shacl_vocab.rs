@@ -1,5 +1,5 @@
 use const_format::concatcp;
-use iri_s::{IriS, iri_once};
+use iri_s::{iri_once, IriS};
 
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
 pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");
@@ -77,7 +77,6 @@ pub const SH_UNIQUE_LANG_STR: &str = concatcp!(SH_STR, "uniqueLang");
 pub const SH_XONE_STR: &str = concatcp!(SH_STR, "xone");
 pub const SH_SOURCE_CONSTRAINT_STR: &str = concatcp!(SH_STR, "sourceConstraint");
 
-
 iri_once!(sh, SH_STR);
 iri_once!(sh_blanknode, SH_BLANKNODE_STR);
 iri_once!(sh_blank_node_or_iri, SH_BLANK_NODE_OR_IRI_STR);
@@ -134,14 +133,20 @@ iri_once!(sh_property, SH_PROPERTY_STR);
 iri_once!(sh_qualified_min_count, SH_QUALIFIED_MIN_COUNT_STR);
 iri_once!(sh_qualified_max_count, SH_QUALIFIED_MAX_COUNT_STR);
 iri_once!(sh_qualified_value_shape, SH_QUALIFIED_VALUE_SHAPE_STR);
-iri_once!(sh_qualified_value_shapes_disjoint,SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR);
+iri_once!(
+    sh_qualified_value_shapes_disjoint,
+    SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR
+);
 iri_once!(sh_result, SH_RESULT_STR);
 iri_once!(sh_result_path, SH_RESULT_PATH_STR);
 iri_once!(sh_result_severity, SH_RESULT_SEVERITY_STR);
 iri_once!(sh_result_message, SH_RESULT_MESSAGE_STR);
 iri_once!(sh_shapes_graph, SH_SHAPES_GRAPH_STR);
 iri_once!(sh_severity, SH_SEVERITY_STR);
-iri_once!(sh_source_constraint_component,SH_SOURCE_CONSTRAINT_COMPONENT_STR);
+iri_once!(
+    sh_source_constraint_component,
+    SH_SOURCE_CONSTRAINT_COMPONENT_STR
+);
 iri_once!(sh_source_shape, SH_SOURCE_SHAPE_STR);
 iri_once!(sh_value, SH_VALUE_STR);
 iri_once!(sh_target_node, SH_TARGET_NODE_STR);

@@ -251,7 +251,7 @@ impl ParseError {
         };
 
         LocatedParseError {
-            source: self,
+            source: Box::new(self),
             line: position.location_line(),
             column,
             fragment,

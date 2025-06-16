@@ -27,11 +27,7 @@ pub trait Rdf: Sized {
         + TryFrom<Object>
         + Matcher<Self::Subject>;
 
-    type IRI: Iri 
-        + From<IriS> 
-        + TryFrom<Self::Term> 
-        + Matcher<Self::IRI> 
-        + Into<IriS>;
+    type IRI: Iri + From<IriS> + TryFrom<Self::Term> + Matcher<Self::IRI> + Into<IriS>;
 
     type Term: Term
         + From<Self::Subject>
@@ -135,7 +131,7 @@ pub trait Rdf: Sized {
             Err(RDFError::TermAsLang {
                 term: term.to_string(),
             })
-        } else if let Ok(literal) = Self::term_as_literal(&term) {
+        } else if let Ok(literal) = Self::term_as_literal(term) {
             let lang = Lang::new(literal.lexical_form());
             match lang {
                 Ok(lang) => Ok(lang),
@@ -148,12 +144,11 @@ pub trait Rdf: Sized {
 
     /// The comparison should be compatible to SPARQL comparison:
     /// https://www.w3.org/TR/sparql11-query/#OperatorMapping
-
     fn compare(&self, term1: &Self::Term, term2: &Self::Term) -> Result<Ordering, RDFError> {
         // TODO: At this moment we convert the terms to object and perform the comparison within objects
         // This requires to clone but we should be able to optimize this later
-        let obj1: Object = Self::term_as_object(&term1)?;
-        let obj2: Object = Self::term_as_object(&term2)?;
+        let obj1: Object = Self::term_as_object(term1)?;
+        let obj2: Object = Self::term_as_object(term2)?;
         obj1.partial_cmp(&obj2)
             .ok_or_else(|| RDFError::ComparisonError {
                 term1: term1.lexical_form(),

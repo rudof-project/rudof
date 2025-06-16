@@ -75,7 +75,7 @@ impl ResultShapeMap {
         node: Node,
         shape_label: ShapeLabel,
         status: ValidationStatus,
-    ) -> Result<(), ShapemapError> {
+    ) -> Result<(), Box<ShapemapError>> {
         let _cn = node.clone();
         let _sl = shape_label.clone();
         match self.result.entry(node) {
@@ -177,11 +177,11 @@ impl ResultShapeMap {
                                 ),
                             ) => todo!(),
                         };
-                        Ok(())
+                        ok()
                     }
                     Entry::Vacant(v) => {
                         v.insert(status);
-                        Ok(())
+                        ok()
                     }
                 }
             }
@@ -189,10 +189,10 @@ impl ResultShapeMap {
                 let mut map = HashMap::new();
                 map.insert(shape_label, status);
                 v.insert(map);
-                Ok(())
+                ok()
             }
         }?;
-        Ok(())
+        ok()
     }
 
     pub fn get_info(&self, node: &Node, label: &ShapeLabel) -> Option<ValidationStatus> {
@@ -250,6 +250,10 @@ impl ResultShapeMap {
         }
         Ok(())
     }
+}
+
+fn ok() -> Result<(), Box<ShapemapError>> {
+    Ok(())
 }
 
 fn show_node(node: &Node, prefixmap: &PrefixMap) -> String {

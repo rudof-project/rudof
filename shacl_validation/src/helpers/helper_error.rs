@@ -1,4 +1,4 @@
-use srdf::{SRDFGraphError, RDFError};
+use srdf::{RDFError, SRDFGraphError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]

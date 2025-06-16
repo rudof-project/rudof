@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-use srdf::QueryRDF;
 use super::helper_error::SPARQLError;
+use srdf::QueryRDF;
+use std::collections::HashSet;
 
 pub fn select<S: QueryRDF>(
     store: &S,

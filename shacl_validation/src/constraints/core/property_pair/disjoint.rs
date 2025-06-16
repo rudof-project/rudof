@@ -7,8 +7,8 @@ use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::Disjoint;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
-use srdf::SHACLPath;
 use srdf::QueryRDF;
+use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint<S> {

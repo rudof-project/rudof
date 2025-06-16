@@ -2,9 +2,9 @@ use constraint_error::ConstraintError;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::QueryRDF;
 use std::fmt::Debug;
 
 use crate::engine::Engine;

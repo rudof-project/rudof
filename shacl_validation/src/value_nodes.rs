@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use srdf::{Rdf, RDFNode};
+use srdf::{RDFNode, Rdf};
 
 use crate::focus_nodes::FocusNodes;
 
@@ -25,11 +25,7 @@ pub trait IterationStrategy<S: Rdf> {
     fn to_object(&self, item: &Self::Item) -> Option<RDFNode> {
         match self.to_value(item) {
             None => None,
-            Some(value) => if let Ok(obj) = S::term_as_object(&value) {
-                Some(obj)
-            } else {
-                None // TODO: Maybe handle the potential error
-            }
+            Some(value) => S::term_as_object(&value).ok(),
         }
     }
 }

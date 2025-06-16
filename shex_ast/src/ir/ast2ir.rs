@@ -225,7 +225,7 @@ impl AST2IR {
                     references,
                     display,
                 );
-                Ok(ShapeExpr::Shape(shape))
+                Ok(ShapeExpr::Shape(Box::new(shape)))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
                 let cond = Self::cnv_node_constraint(

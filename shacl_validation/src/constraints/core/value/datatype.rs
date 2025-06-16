@@ -15,9 +15,9 @@ use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Iri;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::QueryRDF;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
@@ -32,7 +32,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let datatype = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = S::term_as_literal(&value_node);
+            let tmp: Result<S::Literal, _> = S::term_as_literal(value_node);
             if let Ok(literal) = tmp {
                 return literal.datatype() != self.datatype().as_str();
             }

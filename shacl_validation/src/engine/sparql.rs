@@ -1,10 +1,3 @@
-use indoc::formatdoc;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::property_shape::CompiledPropertyShape;
-use shacl_ir::compiled::shape::CompiledShape;
-use srdf::SHACLPath;
-use srdf::Term;
-use srdf::QueryRDF;
 use super::Engine;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
@@ -12,6 +5,13 @@ use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use indoc::formatdoc;
+use shacl_ir::compiled::component::CompiledComponent;
+use shacl_ir::compiled::property_shape::CompiledPropertyShape;
+use shacl_ir::compiled::shape::CompiledShape;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
+use srdf::Term;
 use std::fmt::Debug;
 
 pub struct SparqlEngine;

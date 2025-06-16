@@ -1,8 +1,10 @@
 use std::fmt::Display;
 
+use crate::shacl_vocab::{
+    sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of,
+};
 use prefixmap::IriRef;
-use srdf::{RDFNode, BuildRDF, rdf_type};
-use crate::shacl_vocab::{sh_target_class, sh_target_node, sh_target_subjects_of, sh_target_objects_of};
+use srdf::{rdf_type, BuildRDF, RDFNode};
 
 #[derive(Debug, Clone)]
 pub enum Target {
@@ -12,7 +14,6 @@ pub enum Target {
     TargetObjectsOf(IriRef),
     TargetImplicitClass(RDFNode),
 }
-
 
 impl Target {
     pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>

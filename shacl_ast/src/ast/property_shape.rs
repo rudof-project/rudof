@@ -1,9 +1,11 @@
 use std::fmt::Display;
 
-use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath, BuildRDF};
-use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target};
-use crate::shacl_vocab::{sh_severity, sh_warning, sh_info, sh_violation, sh_path, sh_deactivated, sh_property_shape, sh_name, sh_description, sh_order, sh_group};
+use crate::shacl_vocab::{
+    sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_order, sh_path,
+    sh_property_shape, sh_severity, sh_violation, sh_warning,
+};
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
 
 #[derive(Debug, Clone)]
 pub struct PropertyShape {
@@ -72,7 +74,6 @@ impl PropertyShape {
     }
 
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
-
         self.property_shapes = property_shapes;
         self
     }

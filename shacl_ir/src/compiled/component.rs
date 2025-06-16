@@ -1,5 +1,3 @@
-use shacl_ast::component::Component;
-use shacl_ast::Schema;
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -7,17 +5,19 @@ use super::convert_iri_ref;
 use super::convert_value;
 use super::shape::CompiledShape;
 use iri_s::IriS;
-use shacl_ast::node_kind::NodeKind;
 use regex::Regex;
+use shacl_ast::component::Component;
+use shacl_ast::node_kind::NodeKind;
+use shacl_ast::shacl_vocab::{
+    sh_and, sh_class, sh_closed, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in,
+    sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
+    sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive,
+    sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
+    sh_unique_lang, sh_xone,
+};
+use shacl_ast::Schema;
 use srdf::lang::Lang;
 use srdf::Rdf;
-use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_closed, sh_datatype, sh_disjoint, sh_equals, sh_has_value,
-    sh_in, sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count,
-    sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive,
-    sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern,
-    sh_qualified_value_shape, sh_unique_lang, sh_xone,
-};
 
 #[derive(Debug)]
 pub enum CompiledComponent<S: Rdf> {
@@ -772,16 +772,14 @@ impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
             CompiledComponent::MinInclusive(_) => sh_min_inclusive().clone(),
             CompiledComponent::MaxInclusive(_) => sh_max_inclusive().clone(),
             CompiledComponent::MinLength(_) => sh_min_length().clone(),
-            CompiledComponent::MaxLength(_) => sh_max_length().clone(),  
+            CompiledComponent::MaxLength(_) => sh_max_length().clone(),
             CompiledComponent::Pattern { .. } => sh_pattern().clone(),
             CompiledComponent::UniqueLang(_) => sh_unique_lang().clone(),
             CompiledComponent::LanguageIn { .. } => sh_language_in().clone(),
             CompiledComponent::Equals(_) => sh_equals().clone(),
             CompiledComponent::Disjoint(_) => sh_disjoint().clone(),
             CompiledComponent::LessThan(_) => sh_less_than().clone(),
-            CompiledComponent::LessThanOrEquals(_) => {
-                sh_less_than_or_equals().clone()
-            }
+            CompiledComponent::LessThanOrEquals(_) => sh_less_than_or_equals().clone(),
             CompiledComponent::Or { .. } => sh_or().clone(),
             CompiledComponent::And { .. } => sh_and().clone(),
             CompiledComponent::Not { .. } => sh_not().clone(),
@@ -790,9 +788,7 @@ impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
             CompiledComponent::Node { .. } => sh_node().clone(),
             CompiledComponent::HasValue { .. } => sh_has_value().clone(),
             CompiledComponent::In { .. } => sh_in().clone(),
-            CompiledComponent::QualifiedValueShape { .. } => {
-                sh_qualified_value_shape().clone()
-            }
+            CompiledComponent::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
         }
     }
 }

@@ -11,8 +11,8 @@ use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::Pattern;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
-use srdf::SHACLPath;
 use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 

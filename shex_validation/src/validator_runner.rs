@@ -18,7 +18,7 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use srdf::BlankNode;
 use srdf::Iri as _;
-use srdf::{Object, NeighsRDF};
+use srdf::{NeighsRDF, Object};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -73,7 +73,11 @@ impl Engine {
         self.processing.swap_remove(atom);
     }
 
-    pub(crate) fn validate_pending(&mut self, rdf: &impl NeighsRDF, schema: &SchemaIR) -> Result<()> {
+    pub(crate) fn validate_pending(
+        &mut self,
+        rdf: &impl NeighsRDF,
+        schema: &SchemaIR,
+    ) -> Result<()> {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
@@ -345,8 +349,8 @@ impl Engine {
                     match result {
                         Either::Left(errors) => {
                             return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
-                                shape_expr: e.clone(),
-                                node: node.clone(),
+                                shape_expr: Box::new(e.clone()),
+                                node: Box::new(node.clone()),
                                 errors: ValidatorErrors::new(errors),
                             }]));
                         }
@@ -379,8 +383,8 @@ impl Engine {
                     }
                 }
                 Ok(Either::Left(vec![ValidatorError::ShapeOrError {
-                    shape_expr: se.clone(),
-                    node: node.clone(),
+                    shape_expr: Box::new(se.clone()),
+                    node: Box::new(node.clone()),
                     errors: errors_collection.clone(),
                 }]))
             }
@@ -394,8 +398,8 @@ impl Engine {
                     }])),
                     Either::Right(reasons) => {
                         Ok(Either::Left(vec![ValidatorError::ShapeNotError {
-                            node: node.clone(),
-                            shape_expr: se.clone(),
+                            node: Box::new(node.clone()),
+                            shape_expr: Box::new(se.clone()),
                             reasons: Reasons::new(reasons),
                         }]))
                     }
@@ -427,7 +431,7 @@ impl Engine {
                     })
                 } else {
                     fail(ValidatorError::ShapeRefFailed {
-                        node: node.clone(),
+                        node: Box::new(node.clone()),
                         idx: *idx,
                     })
                 }
@@ -475,7 +479,7 @@ impl Engine {
                         if failed_pending.is_empty() {
                             return pass(Reason::ShapePassed {
                                 node: node.clone(),
-                                shape: shape.clone(),
+                                shape: Box::new(shape.clone()),
                             });
                         } else {
                             errors.push(ValidatorError::FailedPending {
@@ -491,8 +495,8 @@ impl Engine {
             }
             tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
             fail(ValidatorError::ShapeFails {
-                node: node.clone(),
-                shape: shape.clone(),
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
                 errors,
             })
         }
@@ -542,8 +546,8 @@ impl Engine {
                     match result {
                         Either::Left(errors) => {
                             return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
-                                shape_expr: e.clone(),
-                                node: node.clone(),
+                                shape_expr: Box::new(e.clone()),
+                                node: Box::new(node.clone()),
                                 errors: ValidatorErrors::new(errors),
                             }]));
                         }
@@ -568,8 +572,8 @@ impl Engine {
                     }])),
                     Either::Right(reasons) => {
                         Ok(Either::Left(vec![ValidatorError::ShapeNotError {
-                            node: node.clone(),
-                            shape_expr: se.clone(),
+                            node: Box::new(node.clone()),
+                            shape_expr: Box::new(se.clone()),
                             reasons: Reasons::new(reasons),
                         }]))
                     }
@@ -593,8 +597,8 @@ impl Engine {
                     }
                 }
                 Ok(Either::Left(vec![ValidatorError::ShapeOrError {
-                    shape_expr: se.clone(),
-                    node: node.clone(),
+                    shape_expr: Box::new(se.clone()),
+                    node: Box::new(node.clone()),
                     errors: errors_collection.clone(),
                 }]))
             }
@@ -672,7 +676,7 @@ impl Engine {
         } else {
             Ok(Either::Right(vec![Reason::ShapePassed {
                 node: node.clone(),
-                shape: shape.clone(),
+                shape: Box::new(shape.clone()),
             }]))
         }
     }

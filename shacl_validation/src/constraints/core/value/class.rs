@@ -11,12 +11,12 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component::Class;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::NeighsRDF;
-use srdf::SHACLPath;
-use srdf::QueryRDF;
-use srdf::Term;
-use srdf::rdfs_subclass_of;
 use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
+use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {

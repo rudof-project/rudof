@@ -2,12 +2,12 @@ use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::matcher::Any;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
 use srdf::NeighsRDF;
 use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
-use srdf::rdfs_subclass_of;
-use srdf::rdf_type;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
@@ -103,13 +103,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     ) -> Result<FocusNodes<S>, ValidateError> {
         let targets = get_subjects_for(store, &rdf_type().clone().into(), subject)?;
 
-        let subclass_targets = get_subjects_for(store, &rdfs_subclass_of().clone().into(), subject)?
-            .into_iter()
-            .flat_map(move |subclass| {
-                get_subjects_for(store, &rdf_type().clone().into(), &subclass)
-                    .into_iter()
-                    .flatten()
-            });
+        let subclass_targets =
+            get_subjects_for(store, &rdfs_subclass_of().clone().into(), subject)?
+                .into_iter()
+                .flat_map(move |subclass| {
+                    get_subjects_for(store, &rdf_type().clone().into(), &subclass)
+                        .into_iter()
+                        .flatten()
+                });
 
         Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
     }

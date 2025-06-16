@@ -103,7 +103,7 @@ pub trait NeighsRDF: Rdf {
         Ok((results, remainder))
     }
 
-/*    fn get_subjects_for(
+    /*    fn get_subjects_for(
         &self,
         predicate: &Self::IRI,
         object: &Self::Term,
@@ -157,7 +157,7 @@ pub trait NeighsRDF: Rdf {
                 None => Ok(None),
             }
         }
-        
+
     fn get_objects_for(
             &self,
             subject: &Self::Term,
@@ -171,7 +171,7 @@ pub trait NeighsRDF: Rdf {
                     })
                 }
             };
-        
+
             let triples = store
                 .triples_matching(subject, predicate.clone(), Any)
                 .map_err(|e| SRDFError::Srdf {
@@ -179,8 +179,8 @@ pub trait NeighsRDF: Rdf {
                 })?
                 .map(Triple::into_object)
                 .collect();
-        
+
             Ok(triples)
-        }  
+        }
     }      */
 }

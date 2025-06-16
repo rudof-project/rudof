@@ -5,21 +5,21 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ShEx2SparqlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
-    ShapeNotFound { iri: IriRef, schema: Schema },
+    ShapeNotFound { iri: IriRef, schema: Box<Schema> },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
     ShapeRefNotFound {
         sref: ShapeExprLabel,
-        schema: Schema,
+        schema: Box<Schema>,
     },
 
     #[error("No shapes found in schema to convert to SPARQL. Schema\n{schema:?}")]
-    NoShapes { schema: Schema },
+    NoShapes { schema: Box<Schema> },
 
     #[error(
         "No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}"
     )]
-    EmptyShapes { schema: Schema },
+    EmptyShapes { schema: Box<Schema> },
 
     #[error(transparent)]
     SchemaError {

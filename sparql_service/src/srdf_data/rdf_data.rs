@@ -11,6 +11,7 @@ use oxrdf::{
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
+use srdf::BuildRDF;
 use srdf::FocusRDF;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -19,7 +20,6 @@ use srdf::QuerySolutions;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
-use srdf::BuildRDF;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;

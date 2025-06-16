@@ -1,6 +1,6 @@
 use const_format::concatcp;
-use iri_s::IriS;
 use iri_s::iri_once;
+use iri_s::IriS;
 
 pub const RDF: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 pub const RDFS: &str = "http://www.w3.org/2000/01/rdf-schema#";

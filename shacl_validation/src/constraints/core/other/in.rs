@@ -11,10 +11,10 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::In;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::Rdf;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::{SHACLPath};
+use srdf::Rdf;
+use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: Rdf + Debug> Validator<S> for In<S> {
