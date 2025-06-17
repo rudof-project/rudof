@@ -608,29 +608,43 @@ where
     }
 }
 
-/*pub fn literal<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Literal> {
-    term().flat_map(|ref t: RDF::Term| {
-        let literal: RDF::Literal =
-            t.clone()
-                .try_into()
-                .map_err(|_| RDFParseError::ExpectedLiteral {
-                    term: t.to_string(),
-                })?;
-        let literal: Literal = literal.as_literal();
-        Ok(literal)
-    })
-}*/
+/// Creates a parser that returns the current focus node as an Object
+///
+pub fn object<RDF>() -> ParseObject<RDF>
+where
+    RDF: FocusRDF,
+{
+    ParseObject {
+        _marker_rdf: PhantomData,
+    }
+}
 
-pub fn term_as_node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Object> {
-    term().flat_map(|ref t: RDF::Term| {
-        let object: Object =
-            t.clone()
-                .try_into()
-                .map_err(|_| RDFParseError::TermToRDFNodeFailed {
-                    term: t.to_string(),
-                })?;
-        Ok(object)
-    })
+#[derive(Debug, Clone)]
+pub struct ParseObject<RDF> {
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for ParseObject<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = Object;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Object> {
+        match rdf.get_focus() {
+            Some(focus) => {
+                let object: Object =
+                    focus
+                        .clone()
+                        .try_into()
+                        .map_err(|_| RDFParseError::TermToRDFNodeFailed {
+                            term: focus.to_string(),
+                        })?;
+                Ok(object)
+            }
+            None => Err(RDFParseError::NoFocusNode),
+        }
+    }
 }
 
 /// Creates a parser that returns the current focus node as a term

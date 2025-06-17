@@ -17,8 +17,8 @@ use srdf::{
     combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, literal::SLiteral,
     matcher::Any, not, ok, optional, parse_nodes, property_bool, property_objects, property_value,
     property_values, property_values_int, property_values_iri, property_values_literal,
-    property_values_non_empty, property_values_string, rdf_list, term, term_as_node, FocusRDF,
-    Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term,
+    property_values_non_empty, property_values_string, rdf_list, term, FocusRDF,
+    Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, object,
     Triple,
 };
 use srdf::{rdf_type, rdfs_class};
@@ -293,7 +293,8 @@ where
 {
     optional(has_type(sh_property_shape().clone()))
         .with(
-            id().and(path())
+            object()
+                .and(path())
                 .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
         )
         .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
@@ -327,7 +328,7 @@ where
     RDF: FocusRDF,
 {
     not(property_values_non_empty(sh_path())).with(
-        term_as_node()
+        object()
             .then(move |t: RDFNode| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ps| {
@@ -444,14 +445,6 @@ fn subjects_as_nodes<RDF: Rdf>(
             })
         })
         .collect()
-}
-
-fn id<RDF>() -> impl RDFNodeParse<RDF, Output = RDFNode>
-where
-    RDF: FocusRDF,
-{
-    // term().then(move |t: RDF::Term| ok(&t.into()))
-    term_as_node()
 }
 
 /// Parses the property value of the focus node as a SHACL path
