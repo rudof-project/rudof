@@ -30,6 +30,10 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         self.parse_impl(&mut rdf)
     }
 
+    /// Borrows a parser instead of consuming it.
+    ///
+    /// Used to apply parser combinators on `self` without losing ownership.
+    /// This is useful when you want to chain parsers or apply combinators without consuming the original parser.
     #[inline(always)]
     fn by_ref(&mut self) -> ByRef<'_, Self>
     where
@@ -320,14 +324,19 @@ where
     }
 }
 
-pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
+///  Applies a function `func` on the result of a parser, which may fail with an error.
+///
+pub fn and_then<RDF, P, F, O, E>(parser: P, func: F) -> AndThen<P, F>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> Result<O, E>,
     E: Into<RDFParseError>,
 {
-    AndThen { parser, function }
+    AndThen {
+        parser,
+        function: func,
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -1985,12 +1994,55 @@ where
 
 /// Applies a parser over a list of nodes and returns the list of values
 ///
+/// Moves the focus to each node in the list and applies the parser to it.
+/// Returns a vector of results of each parser
 pub fn parse_nodes<RDF, P>(nodes: Vec<RDF::Term>, parser: P) -> ParserNodes<RDF, P>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
 {
     ParserNodes { nodes, parser }
+}
+
+pub fn parse_property_values<RDF, P>(property: &IriS, parser: P) -> ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+{
+    ParserPropertyValues {
+        property: property.clone(),
+        parser,
+        _marker_rdf: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+{
+    property: IriS,
+    parser: P,
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF, A, P> RDFNodeParse<RDF> for ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = A>,
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        let values = property_values(&self.property).parse_impl(rdf)?;
+        let mut results = Vec::new();
+        for node in values.iter() {
+            rdf.set_focus(node);
+            let value = self.parser.parse_impl(rdf)?;
+            results.push(value)
+        }
+        Ok(results)
+    }
 }
 
 #[derive(Clone)]
