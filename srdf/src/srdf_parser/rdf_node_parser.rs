@@ -1340,6 +1340,70 @@ where
     }
 }
 
+/// Combines the results of parsers that return vectors of values
+///
+pub fn combine_parsers_vec<RDF, P, A>(parsers: Vec<P>) -> CombineParsers<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    CombineParsers { parsers }
+}
+
+pub struct CombineParsers<P> {
+    parsers: Vec<P>,
+}
+
+impl<RDF, P, A> RDFNodeParse<RDF> for CombineParsers<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<A>> {
+        let mut result = Vec::new();
+        for p in self.parsers.iter_mut() {
+            match p.parse_impl(rdf) {
+                Err(e) => return Err(e),
+                Ok(vs) => {
+                    result.extend(vs);
+                }
+            }
+        }
+        Ok(result)
+    }
+}
+
+pub fn opaque<RDF, F, O>(f: F) -> Opaque<F, RDF, O>
+where
+    RDF: FocusRDF,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    Opaque(f, PhantomData)
+}
+
+#[derive(Copy, Clone)]
+pub struct Opaque<F, RDF, O>(F, PhantomData<fn(&mut RDF) -> O>);
+
+impl<RDF, F, O> RDFNodeParse<RDF> for Opaque<F, RDF, O>
+where
+    RDF: FocusRDF,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    type Output = O;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        let mut result = Err(RDFParseError::Custom {
+            msg: "Opaque parser failed".to_string(),
+        });
+        (self.0)(&mut |parser| {
+            result = parser.parse_impl(rdf);
+        });
+        result
+    }
+}
+
 /// Parses a node as a bool
 ///
 pub fn bool<R>() -> impl RDFNodeParse<R, Output = bool>
