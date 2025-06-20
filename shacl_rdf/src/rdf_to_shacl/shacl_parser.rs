@@ -261,7 +261,10 @@ fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    let parsers = vec![
+    // Note: the following code could be replaced by
+    // combine_parsers(min_count(), max_count(),...)
+    // But we found that the compiler takes too much memory when the number of parsers is large
+    combine_parsers_vec(vec![
         min_count(),
         max_count(),
         in_component(),
@@ -282,8 +285,7 @@ where
         min_exclusive(),
         max_inclusive(),
         max_exclusive(),
-    ];
-    combine_parsers_vec(parsers)
+    ])
 }
 
 fn property_shape<'a, RDF>(
@@ -821,14 +823,14 @@ where
     }
 }
 
-fn targets_class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
+fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    property_objects(sh_target_class()).flat_map(move |ts| {
+    opaque!(property_objects(sh_target_class()).flat_map(move |ts| {
         let result = ts.into_iter().map(Target::TargetClass).collect();
         Ok(result)
-    })
+    }))
 }
 
 fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>

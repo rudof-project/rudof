@@ -3,8 +3,8 @@ prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
-:Pattern a sh:NodeShape ;
-  sh:targetNode :ok1, :ok2, :ko1, :ko2, :ko3 ;
+:MinInclusive a sh:NodeShape ;
+  sh:targetClass :Node ;
   sh:property [
     sh:path :p ;
     sh:datatype xsd:double ;
@@ -12,9 +12,9 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:minCount 1
  ] .
 
-:ok1 :p "0"^^xsd:double .
-:ok2 :p "10.5"^^xsd:double .
-:ko1 :p "-5.3"^^xsd:double .
-:ko2 :p "other" .
-:ko3 :p "other"^^xsd:double .
+:ok1 a :Node; :p "0"^^xsd:double .
+:ok2 a :Node; :p "10.5"^^xsd:double .
+:ko1 a :Node; :p "-5.3"^^xsd:double .
+:ko2 a :Node; :p "other" .
+:ko3 a :Node; :p "other"^^xsd:double .
  

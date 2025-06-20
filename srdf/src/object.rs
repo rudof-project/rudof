@@ -98,7 +98,10 @@ impl TryFrom<oxrdf::Term> for Object {
                 Ok(Object::iri(IriS::from_named_node(&named_node)))
             }
             oxrdf::Term::BlankNode(blank_node) => Ok(Object::bnode(blank_node.into_string())),
-            oxrdf::Term::Literal(literal) => Ok(Object::literal(literal.into())),
+            oxrdf::Term::Literal(literal) => {
+                let lit: SLiteral = literal.try_into()?;
+                Ok(Object::literal(lit))
+            }
             #[cfg(feature = "rdf-star")]
             oxrdf::Term::Triple(_) => todo!(),
         }

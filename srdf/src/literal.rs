@@ -7,6 +7,7 @@ use iri_s::IriS;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::RDFError;
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 
@@ -280,16 +281,50 @@ impl Deref for SLiteral {
     }
 }
 
-impl From<oxrdf::Literal> for SLiteral {
-    fn from(value: oxrdf::Literal) -> Self {
+impl TryFrom<oxrdf::Literal> for SLiteral {
+    type Error = RDFError;
+
+    fn try_from(value: oxrdf::Literal) -> Result<Self, Self::Error> {
         match value.destruct() {
-            (s, None, None) => SLiteral::str(&s),
-            (s, None, Some(language)) => SLiteral::lang_str(&s, Lang::new_unchecked(&language)),
+            (s, None, None) => Ok(SLiteral::str(&s)),
+            (s, None, Some(language)) => Ok(SLiteral::lang_str(&s, Lang::new_unchecked(&language))),
             (value, Some(dtype), None) => {
-                let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                SLiteral::lit_datatype(&value, &datatype)
+                let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();
+                let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
+                let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
+                match dtype {
+                    d if d == xsd_double => {
+                        let double_value: f64 =
+                            value.parse().map_err(|_| RDFError::ConversionError {
+                                msg: format!("Failed to parse double from value: {value}"),
+                            })?;
+                        Ok(SLiteral::NumericLiteral(NumericLiteral::double(
+                            double_value,
+                        )))
+                    }
+                    d if d == xsd_decimal => {
+                        let num_value: Decimal =
+                            value.parse().map_err(|_| RDFError::ConversionError {
+                                msg: format!("Failed to parse decimal from value: {value}"),
+                            })?;
+                        Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
+                    }
+                    d if d == xsd_integer => {
+                        let num_value: isize =
+                            value.parse().map_err(|_| RDFError::ConversionError {
+                                msg: format!("Failed to parse integer from value: {value}"),
+                            })?;
+                        Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
+                    }
+                    _ => {
+                        let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                        Ok(SLiteral::lit_datatype(&value, &datatype))
+                    }
+                }
             }
-            _ => todo!(),
+            _ => Err(RDFError::ConversionError {
+                msg: "Unknwon literal value: {value}".to_string(),
+            }),
         }
     }
 }

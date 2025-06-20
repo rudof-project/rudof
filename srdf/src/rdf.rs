@@ -48,7 +48,8 @@ pub trait Rdf: Sized {
         + From<i128>
         + From<f64>
         + TryFrom<Self::Term>
-        + From<SLiteral>;
+        + From<SLiteral>
+        + TryInto<SLiteral>;
 
     type Triple: Triple<Self::Subject, Self::IRI, Self::Term>;
 
@@ -77,6 +78,20 @@ pub trait Rdf: Sized {
                 term: term.to_string(),
             }
         })
+    }
+
+    fn term_as_sliteral(term: &Self::Term) -> Result<SLiteral, RDFError> {
+        let lit = <Self::Term as TryInto<Self::Literal>>::try_into(term.clone()).map_err(|_| {
+            RDFError::TermAsLiteral {
+                term: term.to_string(),
+            }
+        })?;
+        let slit = <Self::Literal as TryInto<SLiteral>>::try_into(lit.clone()).map_err(|_| {
+            RDFError::LiteralAsSLiteral {
+                literal: lit.to_string(),
+            }
+        })?;
+        Ok(slit)
     }
 
     fn term_as_subject(term: &Self::Term) -> Result<Self::Subject, RDFError> {
@@ -149,6 +164,7 @@ pub trait Rdf: Sized {
         // This requires to clone but we should be able to optimize this later
         let obj1: Object = Self::term_as_object(term1)?;
         let obj2: Object = Self::term_as_object(term2)?;
+        println!("Comparing objects: {obj1:?} {obj2:?}");
         obj1.partial_cmp(&obj2)
             .ok_or_else(|| RDFError::ComparisonError {
                 term1: term1.lexical_form(),

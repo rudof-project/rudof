@@ -25,14 +25,12 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_inclusive = |node: &S::Term| {
-            let ord = store.compare(node, self.min_inclusive_value());
-            println!(
-                "Comparing {:?} with {:?}: {ord:?}",
-                node,
-                self.min_inclusive_value()
-            );
-            ord.map(|o| o.is_lt()).unwrap_or(true)
+        let min_inclusive = |node: &S::Term| match S::term_as_sliteral(node) {
+            Ok(lit) => lit
+                .partial_cmp(self.min_inclusive_value())
+                .map(|o| o.is_lt())
+                .unwrap_or(true),
+            Err(_) => true,
         };
         let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
         validate_with(

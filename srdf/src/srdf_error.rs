@@ -14,6 +14,9 @@ pub enum RDFError {
     #[error("Converting term {term} to Literal")]
     TermAsLiteral { term: String },
 
+    #[error("Converting literal {literal} to SLiteral")]
+    LiteralAsSLiteral { literal: String },
+
     #[error("Converting Term {term} to Object")]
     TermAsObject { term: String },
 
@@ -25,4 +28,12 @@ pub enum RDFError {
 
     #[error("Comparison error: {term1} with {term2}")]
     ComparisonError { term1: String, term2: String },
+}
+
+impl RDFError {
+    pub fn msg(str: &str) -> RDFError {
+        RDFError::ConversionError {
+            msg: str.to_owned(),
+        }
+    }
 }

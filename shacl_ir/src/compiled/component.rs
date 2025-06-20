@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -18,6 +20,7 @@ use shacl_ast::shacl_vocab::{
 use shacl_ast::Schema;
 use srdf::lang::Lang;
 use srdf::Rdf;
+use srdf::SLiteral;
 
 #[derive(Debug)]
 pub enum CompiledComponent<S: Rdf> {
@@ -75,9 +78,7 @@ impl<S: Rdf> CompiledComponent<S> {
                 CompiledComponent::MaxExclusive(MaxExclusive::new(term))
             }
             Component::MinInclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
-                let term = literal.into();
-                CompiledComponent::MinInclusive(MinInclusive::new(term))
+                CompiledComponent::MinInclusive(MinInclusive::new(literal))
             }
             Component::MaxInclusive(literal) => {
                 let literal: S::Literal = literal.clone().into();
@@ -743,18 +744,20 @@ impl<S: Rdf> MinExclusive<S> {
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MinInclusive<S: Rdf> {
-    min_inclusive: S::Term,
+pub struct MinInclusive<S> {
+    min_inclusive: SLiteral,
+    _marker: PhantomData<S>,
 }
 
-impl<S: Rdf> MinInclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<S> MinInclusive<S> {
+    pub fn new(literal: SLiteral) -> Self {
         MinInclusive {
             min_inclusive: literal,
+            _marker: PhantomData,
         }
     }
 
-    pub fn min_inclusive_value(&self) -> &S::Term {
+    pub fn min_inclusive_value(&self) -> &SLiteral {
         &self.min_inclusive
     }
 }
