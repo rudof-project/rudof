@@ -11,6 +11,9 @@ pub enum RDFError {
     #[error("Converting term {term} to IRI")]
     TermAsIri { term: String },
 
+    #[error("Converting term {term} to concrete IRI")]
+    TermAsIriS { term: String },
+
     #[error("Converting term {term} to Literal")]
     TermAsLiteral { term: String },
 

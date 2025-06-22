@@ -40,6 +40,8 @@ pub enum ValidateError {
     UnsupportedMode(String),
     #[error(transparent)]
     SrdfHelper(#[from] SRDFError),
+    #[error("TargetClass error: {msg}")]
+    TargetClassError { msg: String },
     #[error("Error during the compilation of the Schema, {}", ._0)] // TODO: move to store
     CompiledShacl(#[from] CompiledShaclError),
     #[error("Not yet implemented: {msg}")]

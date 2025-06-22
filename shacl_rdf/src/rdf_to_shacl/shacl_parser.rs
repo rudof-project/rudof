@@ -12,20 +12,23 @@ use shacl_ast::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,
     property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
 };
+use srdf::Literal;
 use srdf::{
     combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
     lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
-    parse_property_values, property_bool, property_objects, property_value, property_values,
-    property_values_int, property_values_iri, property_values_literal, property_values_non_empty,
-    property_values_string, rdf_list, rdf_parser, term, FocusRDF, Iri as _, PResult, RDFNode,
-    RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
+    parse_property_values, property_bool, property_iris, property_objects, property_value,
+    property_values, property_values_int, property_values_iri, property_values_literal,
+    property_values_non_empty, property_values_string, rdf_list, term, FocusRDF, Iri as _, PResult,
+    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
 };
 use srdf::{rdf_type, rdfs_class, FnOpaque};
-use srdf::{Literal, Opaque};
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
+
+/// Result type for the ShaclParser
 type Result<A> = std::result::Result<A, ShaclParserError>;
 
+/// State used during the parsing process
+/// This is used to keep track of pending shapes to be parsed
 struct State {
     pending: Vec<RDFNode>,
 }
@@ -42,7 +45,7 @@ impl State {
 
 pub struct ShaclParser<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRDF,
 {
     rdf_parser: RDFParser<RDF>,
     shapes: HashMap<RDFNode, Shape>,
@@ -50,7 +53,7 @@ where
 
 impl<RDF> ShaclParser<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRDF,
 {
     pub fn new(rdf: RDF) -> ShaclParser<RDF> {
         ShaclParser {
@@ -827,8 +830,11 @@ fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_objects(sh_target_class()).flat_map(move |ts| {
-        let result = ts.into_iter().map(Target::TargetClass).collect();
+    opaque!(property_iris(sh_target_class()).flat_map(move |ts| {
+        let result = ts
+            .into_iter()
+            .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
+            .collect();
         Ok(result)
     }))
 }

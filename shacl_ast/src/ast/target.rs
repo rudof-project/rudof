@@ -4,11 +4,11 @@ use crate::shacl_vocab::{
     sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of,
 };
 use prefixmap::IriRef;
-use srdf::{rdf_type, BuildRDF, RDFNode};
+use srdf::{rdf_type, rdfs_class, BuildRDF, RDFNode};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Target {
-    TargetNode(RDFNode),
+    TargetNode(RDFNode), // TODO: Shacl12: Extend to Node Expressions
     TargetClass(RDFNode),
     TargetSubjectsOf(IriRef),
     TargetObjectsOf(IriRef),
@@ -16,6 +16,21 @@ pub enum Target {
 }
 
 impl Target {
+    pub fn target_node(node: RDFNode) -> Self {
+        Target::TargetNode(node)
+    }
+    pub fn target_class(node: RDFNode) -> Self {
+        Target::TargetClass(node)
+    }
+    pub fn target_subjects_of(iri_ref: IriRef) -> Self {
+        Target::TargetSubjectsOf(iri_ref)
+    }
+    pub fn target_objects_of(iri_ref: IriRef) -> Self {
+        Target::TargetObjectsOf(iri_ref)
+    }
+    pub fn target_implicit_class(node: RDFNode) -> Self {
+        Target::TargetImplicitClass(node)
+    }
     pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
@@ -25,8 +40,8 @@ impl Target {
             Self::TargetNode(target_rdf_node) => {
                 rdf.add_triple(node, sh_target_node().clone(), target_rdf_node.clone())
             }
-            Self::TargetClass(target_rdf_node) => {
-                rdf.add_triple(node, sh_target_class().clone(), target_rdf_node.clone())
+            Self::TargetClass(node_class) => {
+                rdf.add_triple(node, sh_target_class().clone(), node_class.clone())
             }
             Self::TargetSubjectsOf(iri_ref) => rdf.add_triple(
                 node,
@@ -38,9 +53,10 @@ impl Target {
                 sh_target_objects_of().clone(),
                 iri_ref.get_iri().unwrap().clone(),
             ),
-            // TODO: check if this is fine
-            Self::TargetImplicitClass(target_rdf_node) => {
-                rdf.add_triple(node, rdf_type().clone(), target_rdf_node.clone())
+            // TODO: we have to add rdfs:Class
+            Self::TargetImplicitClass(_class) => {
+                // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
+                rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
             }
         }
     }

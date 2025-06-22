@@ -2,6 +2,8 @@
 
 ## Current changes without release yet
 
+- Added support for (min/max)(in/ex)clusive
+
 ## [v0.1.72] - 2025-06-14
 
 - Removed dependency on lazy_static!

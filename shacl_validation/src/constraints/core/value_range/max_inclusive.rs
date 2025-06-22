@@ -2,7 +2,9 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use shacl_ir::compiled::component::CompiledComponent;
@@ -16,14 +18,30 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive<S> {
     fn validate_native(
         &self,
-        _component: &CompiledComponent<S>,
-        _shape: &CompiledShape<S>,
+        component: &CompiledComponent<S>,
+        shape: &CompiledShape<S>,
         _store: &S,
-        _value_nodes: &ValueNodes<S>,
+        value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
-        _maybe_path: Option<SHACLPath>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented("MaxInclusive".to_string()))
+        let max_inclusive = |node: &S::Term| match S::term_as_sliteral(node) {
+            Ok(lit) => lit
+                .partial_cmp(self.max_inclusive())
+                .map(|o| o.is_gt())
+                .unwrap_or(true),
+            Err(_) => true,
+        };
+        let message = format!("MaxInclusive({}) not satisfied", self.max_inclusive());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            max_inclusive,
+            &message,
+            maybe_path,
+        )
     }
 }
 

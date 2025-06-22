@@ -1,10 +1,11 @@
+use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::matcher::Any;
 use srdf::rdf_type;
 use srdf::rdfs_subclass_of;
 use srdf::NeighsRDF;
+use srdf::RDFNode;
 use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
@@ -43,9 +44,9 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         )?)
     }
 
-    /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
-    /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, _: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    /// https://www.w3.org/TR/shacl/#targetNode
+    fn target_node(&self, _: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+        let node: S::Term = node.clone().into();
         if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
@@ -53,19 +54,15 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         }
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
-        if !class.is_iri() {
-            return Err(ValidateError::TargetClassNotIri);
-        }
-
+    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: this should not be necessary, check in others triples_matching calls
-        let rdf_type: S::IRI = rdf_type().clone().into();
-
+        let cls: S::Term = class.clone().into();
         let focus_nodes = store
-            .triples_matching(Any, rdf_type, class.clone())
-            .map_err(|_| ValidateError::SRDF)?
-            .map(Triple::into_subject)
-            .map(Into::into);
+            .shacl_instances_of(cls)
+            .map_err(|e| ValidateError::TargetClassError {
+                msg: format!("Failed to get instances of class {class}: {e}"),
+            })?
+            .map(|subj| S::subject_as_term(&subj));
 
         Ok(FocusNodes::new(focus_nodes))
     }
@@ -73,10 +70,11 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &S::IRI,
+        predicate: &IriS,
     ) -> Result<FocusNodes<S>, ValidateError> {
+        let pred: S::IRI = predicate.clone().into();
         let subjects = store
-            .triples_with_predicate(predicate.clone())
+            .triples_with_predicate(pred)
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
@@ -87,10 +85,11 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &S::IRI,
+        predicate: &IriS,
     ) -> Result<FocusNodes<S>, ValidateError> {
+        let pred: S::IRI = predicate.clone().into();
         let objects = store
-            .triples_with_predicate(predicate.clone())
+            .triples_with_predicate(pred)
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_object);
         Ok(FocusNodes::new(objects))
@@ -99,12 +98,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn implicit_target_class(
         &self,
         store: &S,
-        subject: &S::Term,
+        subject: &RDFNode,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let targets = get_subjects_for(store, &rdf_type().clone().into(), subject)?;
+        // TODO: Replace by shacl_instances_of
+        let subject: S::Term = subject.clone().into();
+        let targets = get_subjects_for(store, &rdf_type().clone().into(), &subject)?;
 
         let subclass_targets =
-            get_subjects_for(store, &rdfs_subclass_of().clone().into(), subject)?
+            get_subjects_for(store, &rdfs_subclass_of().clone().into(), &subject)?
                 .into_iter()
                 .flat_map(move |subclass| {
                     get_subjects_for(store, &rdf_type().clone().into(), &subclass)

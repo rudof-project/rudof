@@ -118,6 +118,16 @@ pub trait Rdf: Sized {
         })
     }
 
+    fn term_as_iris(term: &Self::Term) -> Result<IriS, RDFError> {
+        let iri = <Self::Term as TryInto<Self::IRI>>::try_into(term.clone()).map_err(|_| {
+            RDFError::TermAsIriS {
+                term: term.to_string(),
+            }
+        })?;
+        let iri_s: IriS = iri.into();
+        Ok(iri_s)
+    }
+
     fn term_as_object(term: &Self::Term) -> Result<Object, RDFError> {
         <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_| {
             RDFError::TermAsObject {

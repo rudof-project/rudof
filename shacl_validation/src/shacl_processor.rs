@@ -25,10 +25,10 @@ use crate::validation_report::report::ValidationReport;
 /// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
 /// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
-    /// We use a Rust native engine in an imperative manner (performance)
+    /// Rust native engine using functions implemented with Rust native code
     #[default]
     Native,
-    /// We use a  SPARQL-based engine, which is declarative
+    /// SPARQL-based engine using SPARQL queries to validate the data
     Sparql,
 }
 

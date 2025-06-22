@@ -68,22 +68,16 @@ impl<S: Rdf> CompiledComponent<S> {
             Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
             Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
             Component::MinExclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
-                let term = literal.into();
-                CompiledComponent::MinExclusive(MinExclusive::new(term))
+                CompiledComponent::MinExclusive(MinExclusive::new(literal))
             }
             Component::MaxExclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
-                let term = literal.into();
-                CompiledComponent::MaxExclusive(MaxExclusive::new(term))
+                CompiledComponent::MaxExclusive(MaxExclusive::new(literal))
             }
             Component::MinInclusive(literal) => {
                 CompiledComponent::MinInclusive(MinInclusive::new(literal))
             }
             Component::MaxInclusive(literal) => {
-                let literal: S::Literal = literal.clone().into();
-                let term = literal.into();
-                CompiledComponent::MaxInclusive(MaxInclusive::new(term))
+                CompiledComponent::MaxInclusive(MaxInclusive::new(literal))
             }
             Component::MinLength(length) => CompiledComponent::MinLength(MinLength::new(length)),
             Component::MaxLength(length) => CompiledComponent::MaxLength(MaxLength::new(length)),
@@ -690,54 +684,60 @@ impl Nodekind {
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MaxExclusive<S: Rdf> {
-    max_exclusive: S::Term,
+pub struct MaxExclusive<S> {
+    max_exclusive: SLiteral,
+    _marker: PhantomData<S>,
 }
 
-impl<S: Rdf> MaxExclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<S> MaxExclusive<S> {
+    pub fn new(literal: SLiteral) -> Self {
         MaxExclusive {
             max_exclusive: literal,
+            _marker: PhantomData,
         }
     }
 
-    pub fn max_exclusive(&self) -> &S::Term {
+    pub fn max_exclusive(&self) -> &SLiteral {
         &self.max_exclusive
     }
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MaxInclusive<S: Rdf> {
-    max_inclusive: S::Term,
+pub struct MaxInclusive<S> {
+    max_inclusive: SLiteral,
+    _marker: PhantomData<S>,
 }
 
 impl<S: Rdf> MaxInclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+    pub fn new(literal: SLiteral) -> Self {
         MaxInclusive {
             max_inclusive: literal,
+            _marker: PhantomData,
         }
     }
 
-    pub fn max_inclusive(&self) -> &S::Term {
+    pub fn max_inclusive(&self) -> &SLiteral {
         &self.max_inclusive
     }
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MinExclusive<S: Rdf> {
-    min_exclusive: S::Term,
+pub struct MinExclusive<S> {
+    min_exclusive: SLiteral,
+    _marker: PhantomData<S>,
 }
 
-impl<S: Rdf> MinExclusive<S> {
-    pub fn new(literal: S::Term) -> Self {
+impl<S> MinExclusive<S> {
+    pub fn new(literal: SLiteral) -> Self {
         MinExclusive {
             min_exclusive: literal,
+            _marker: PhantomData,
         }
     }
 
-    pub fn min_exclusive(&self) -> &S::Term {
+    pub fn min_exclusive(&self) -> &SLiteral {
         &self.min_exclusive
     }
 }

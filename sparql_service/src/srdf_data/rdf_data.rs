@@ -106,6 +106,17 @@ impl RdfData {
         self.graph = None
     }
 
+    pub fn from_str(
+        data: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<RdfData, RdfDataError> {
+        let mut rdf_data = Self::new();
+        rdf_data.merge_from_reader(data.as_bytes(), format, base, reader_mode)?;
+        Ok(rdf_data)
+    }
+
     /// Merge the in-memory graph with the graph read from a reader
     pub fn merge_from_reader<R: io::Read>(
         &mut self,

@@ -31,7 +31,7 @@ impl<S: Rdf> CompiledShape<S> {
         }
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget> {
         match self {
             CompiledShape::NodeShape(ns) => ns.targets(),
             CompiledShape::PropertyShape(ps) => ps.targets(),

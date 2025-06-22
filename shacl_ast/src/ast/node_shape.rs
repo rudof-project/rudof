@@ -6,7 +6,7 @@ use crate::{component::Component, message_map::MessageMap, severity::Severity, t
 use srdf::{BuildRDF, RDFNode};
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NodeShape {
     id: RDFNode,
     components: Vec<Component>,

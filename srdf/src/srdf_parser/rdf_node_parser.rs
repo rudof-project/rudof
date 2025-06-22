@@ -964,8 +964,10 @@ where
     })
 }
 
-/// Returns the values of `property` for the focus node
+/// Returns the values of `property` for the focus node converted to concrete objects
 ///
+/// For some values, it can fail if there is an error converting the term to an `Object`.
+/// For example, if the term is something like `"x"^^xsd:integer` it will fail.
 /// If there is no value, it returns an empty set
 pub fn property_objects<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<Object>>
 where
@@ -984,6 +986,34 @@ where
         let objects = rs?;
         Ok(objects)
     })
+}
+
+/// Returns the values of `property` for the focus node as iris
+///
+/// If any of the values is not an IRI it fails
+/// If there is no value, it returns an empty set
+pub fn property_iris<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<IriS>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let rs: Result<HashSet<IriS>, RDFParseError> =
+            values.into_iter().map(value_to_iri::<RDF>).collect();
+        let iris = rs?;
+        Ok(iris)
+    })
+}
+
+fn value_to_iri<RDF>(value: RDF::Term) -> Result<IriS, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let iri: IriS = RDF::term_as_iri(&value)
+        .map_err(|_| RDFParseError::ExpectedIRI {
+            term: format!("{value}"),
+        })?
+        .into();
+    Ok(iri)
 }
 
 /// Returns the values of `property` for the focus node

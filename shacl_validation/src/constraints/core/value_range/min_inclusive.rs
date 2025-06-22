@@ -20,7 +20,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive<S> {
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
-        store: &S,
+        _store: &S,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&CompiledShape<S>>,
         maybe_path: Option<SHACLPath>,

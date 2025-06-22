@@ -19,6 +19,10 @@ impl Schema {
         Schema::default()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.shapes.is_empty()
+    }
+
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
         self.prefixmap = prefixmap;
         self
@@ -45,16 +49,6 @@ impl Schema {
         self.shapes.get(sref)
     }
 }
-
-/*impl Display for Schema {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
-        )
-    }
-}*/
 
 impl Display for Schema {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

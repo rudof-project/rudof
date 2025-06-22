@@ -1,7 +1,8 @@
-use std::collections::HashMap;
-
 use prefixmap::PrefixMap;
-use srdf::Rdf;
+use shacl_rdf::ShaclParser;
+use srdf::{RDFFormat, Rdf, ReaderMode, SRDFGraph};
+use std::collections::HashMap;
+use std::io;
 
 use shacl_ast::Schema;
 
@@ -28,6 +29,31 @@ impl<S: Rdf> SchemaIR<S> {
             prefixmap,
             base,
         }
+    }
+
+    pub fn from_reader<R: io::Read>(
+        read: R,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<SchemaIR<SRDFGraph>, CompiledShaclError> {
+        let mut rdf = SRDFGraph::new();
+        rdf.merge_from_reader(read, format, base, reader_mode)
+            .map_err(|e| CompiledShaclError::RdfGraphError(e))?;
+        let schema = ShaclParser::new(rdf)
+            .parse()
+            .map_err(|e| CompiledShaclError::ShaclParserError(e))?;
+        let schema_ir: SchemaIR<SRDFGraph> = schema.try_into()?;
+        Ok(schema_ir)
+    }
+
+    pub fn from_str(
+        data: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<SchemaIR<SRDFGraph>, CompiledShaclError> {
+        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
     pub fn prefix_map(&self) -> PrefixMap {
