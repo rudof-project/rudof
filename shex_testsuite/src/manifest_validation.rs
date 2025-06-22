@@ -206,15 +206,15 @@ impl ValidationEntry {
             (Validation, _) => {
                 debug!("Expected OK but failed {}", &self.name);
                 Err(ManifestError::ExpectedOkButObtained {
-                    value: status,
-                    entry: self.name.clone(),
+                    value: Box::new(status),
+                    entry: Box::new(self.name.clone()),
                 })
             }
             (Failure, false) => Ok(()),
             (Failure, _) => {
                 debug!("Expected Failure but passed {}", &self.name);
                 Err(ManifestError::ExpectedFailureButObtained {
-                    value: status.clone(),
+                    value: Box::new(status.clone()),
                     entry: self.name.clone(),
                 })
             }

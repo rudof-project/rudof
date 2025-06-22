@@ -36,15 +36,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
-                iri.as_str().len() > self.min_length() as usize
+                iri.as_str().len() < self.min_length() as usize
             } else if value_node.is_literal() {
                 let literal: S::Literal = match S::term_as_literal(value_node) {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
-                literal.lexical_form().len() > self.min_length() as usize
+                literal.lexical_form().len() < self.min_length() as usize
             } else {
-                todo!()
+                true
             }
         };
 
