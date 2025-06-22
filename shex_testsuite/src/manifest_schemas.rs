@@ -159,7 +159,7 @@ impl SchemasEntry {
 
         let schema_serialized = serde_json::to_string_pretty(&schema_parsed).map_err(|e| {
             ManifestError::SchemaSerializationError {
-                schema_parsed: schema_parsed.clone(),
+                schema_parsed: Box::new(schema_parsed.clone()),
                 error: e,
             }
         })?;
@@ -168,9 +168,9 @@ impl SchemasEntry {
         let schema_parsed_after_serialization =
             serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
                 ManifestError::SchemaParsingAfterSerialization {
-                    schema_name: self.name.to_string(),
-                    schema_parsed: schema_parsed.clone(),
-                    schema_serialized: schema_serialized.clone(),
+                    schema_name: Box::new(self.name.to_string()),
+                    schema_parsed: Box::new(schema_parsed.clone()),
+                    schema_serialized: Box::new(schema_serialized.clone()),
                     error: e,
                 }
             })?;
@@ -179,7 +179,7 @@ impl SchemasEntry {
         let schema_serialized_after =
             serde_json::to_string_pretty(&schema_parsed_after_serialization).map_err(|e| {
                 ManifestError::SchemaSerializationError2nd {
-                    schema_parsed: schema_parsed_after_serialization.clone(),
+                    schema_parsed: Box::new(schema_parsed_after_serialization.clone()),
                     error: e,
                 }
             })?;
@@ -213,18 +213,18 @@ impl SchemasEntry {
                 Ok(())
             } else {
                 Err(ManifestError::ShExSchemaDifferent {
-                    json_schema_parsed: schema_parsed,
-                    schema_serialized,
-                    shexc_schema_parsed,
+                    json_schema_parsed: Box::new(schema_parsed),
+                    schema_serialized: Box::new(schema_serialized),
+                    shexc_schema_parsed: Box::new(shexc_schema_parsed),
                 })
             }
         } else {
             debug!("Schemas in JSON are different");
             Err(ManifestError::SchemasDifferent {
-                schema_parsed,
-                schema_serialized: schema_serialized.clone(),
-                schema_parsed_after_serialization,
-                schema_serialized_after,
+                schema_parsed: Box::new(schema_parsed),
+                schema_serialized: Box::new(schema_serialized.clone()),
+                schema_parsed_after_serialization: Box::new(schema_parsed_after_serialization),
+                schema_serialized_after: Box::new(schema_serialized_after),
             })
         }
     }

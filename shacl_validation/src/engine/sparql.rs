@@ -6,10 +6,12 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::QueryRDF;
+use srdf::RDFNode;
 use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
@@ -39,7 +41,8 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+        let node: S::Term = node.clone().into();
         if node.is_blank_node() {
             return Err(ValidateError::TargetNodeBlankNode);
         }
@@ -58,7 +61,8 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
         })
     }
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+        let class: S::Term = class.clone().into();
         if !class.is_iri() {
             return Err(ValidateError::TargetClassNotIri);
         }
@@ -83,7 +87,7 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &S::IRI,
+        predicate: &IriS,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
@@ -102,7 +106,7 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn target_object_of(
         &self,
         store: &S,
-        predicate: &S::IRI,
+        predicate: &IriS,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
@@ -121,7 +125,7 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn implicit_target_class(
         &self,
         _store: &S,
-        _shape: &S::Term,
+        _shape: &RDFNode,
     ) -> Result<FocusNodes<S>, ValidateError> {
         Err(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),

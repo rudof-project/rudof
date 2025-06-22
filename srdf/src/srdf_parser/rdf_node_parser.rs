@@ -30,6 +30,10 @@ pub trait RDFNodeParse<RDF: FocusRDF> {
         self.parse_impl(&mut rdf)
     }
 
+    /// Borrows a parser instead of consuming it.
+    ///
+    /// Used to apply parser combinators on `self` without losing ownership.
+    /// This is useful when you want to chain parsers or apply combinators without consuming the original parser.
     #[inline(always)]
     fn by_ref(&mut self) -> ByRef<'_, Self>
     where
@@ -320,14 +324,19 @@ where
     }
 }
 
-pub fn and_then<RDF, P, F, O, E>(parser: P, function: F) -> AndThen<P, F>
+///  Applies a function `func` on the result of a parser, which may fail with an error.
+///
+pub fn and_then<RDF, P, F, O, E>(parser: P, func: F) -> AndThen<P, F>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
     F: FnMut(P::Output) -> Result<O, E>,
     E: Into<RDFParseError>,
 {
-    AndThen { parser, function }
+    AndThen {
+        parser,
+        function: func,
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -955,8 +964,10 @@ where
     })
 }
 
-/// Returns the values of `property` for the focus node
+/// Returns the values of `property` for the focus node converted to concrete objects
 ///
+/// For some values, it can fail if there is an error converting the term to an `Object`.
+/// For example, if the term is something like `"x"^^xsd:integer` it will fail.
 /// If there is no value, it returns an empty set
 pub fn property_objects<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<Object>>
 where
@@ -975,6 +986,34 @@ where
         let objects = rs?;
         Ok(objects)
     })
+}
+
+/// Returns the values of `property` for the focus node as iris
+///
+/// If any of the values is not an IRI it fails
+/// If there is no value, it returns an empty set
+pub fn property_iris<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<IriS>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let rs: Result<HashSet<IriS>, RDFParseError> =
+            values.into_iter().map(value_to_iri::<RDF>).collect();
+        let iris = rs?;
+        Ok(iris)
+    })
+}
+
+fn value_to_iri<RDF>(value: RDF::Term) -> Result<IriS, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let iri: IriS = RDF::term_as_iri(&value)
+        .map_err(|_| RDFParseError::ExpectedIRI {
+            term: format!("{value}"),
+        })?
+        .into();
+    Ok(iri)
 }
 
 /// Returns the values of `property` for the focus node
@@ -1328,6 +1367,70 @@ where
                 }
             },
         }
+    }
+}
+
+/// Combines the results of parsers that return vectors of values
+///
+pub fn combine_parsers_vec<RDF, P, A>(parsers: Vec<P>) -> CombineParsers<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    CombineParsers { parsers }
+}
+
+pub struct CombineParsers<P> {
+    parsers: Vec<P>,
+}
+
+impl<RDF, P, A> RDFNodeParse<RDF> for CombineParsers<P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = Vec<A>>,
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Vec<A>> {
+        let mut result = Vec::new();
+        for p in self.parsers.iter_mut() {
+            match p.parse_impl(rdf) {
+                Err(e) => return Err(e),
+                Ok(vs) => {
+                    result.extend(vs);
+                }
+            }
+        }
+        Ok(result)
+    }
+}
+
+pub fn opaque<RDF, F, O>(f: F) -> Opaque<F, RDF, O>
+where
+    RDF: FocusRDF,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    Opaque(f, PhantomData)
+}
+
+#[derive(Copy, Clone)]
+pub struct Opaque<F, RDF, O>(F, PhantomData<fn(&mut RDF) -> O>);
+
+impl<RDF, F, O> RDFNodeParse<RDF> for Opaque<F, RDF, O>
+where
+    RDF: FocusRDF,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    type Output = O;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        let mut result = Err(RDFParseError::Custom {
+            msg: "Opaque parser failed".to_string(),
+        });
+        (self.0)(&mut |parser| {
+            result = parser.parse_impl(rdf);
+        });
+        result
     }
 }
 
@@ -1985,12 +2088,55 @@ where
 
 /// Applies a parser over a list of nodes and returns the list of values
 ///
+/// Moves the focus to each node in the list and applies the parser to it.
+/// Returns a vector of results of each parser
 pub fn parse_nodes<RDF, P>(nodes: Vec<RDF::Term>, parser: P) -> ParserNodes<RDF, P>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF>,
 {
     ParserNodes { nodes, parser }
+}
+
+pub fn parse_property_values<RDF, P>(property: &IriS, parser: P) -> ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF>,
+{
+    ParserPropertyValues {
+        property: property.clone(),
+        parser,
+        _marker_rdf: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+{
+    property: IriS,
+    parser: P,
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF, A, P> RDFNodeParse<RDF> for ParserPropertyValues<RDF, P>
+where
+    RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = A>,
+{
+    type Output = Vec<A>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        let values = property_values(&self.property).parse_impl(rdf)?;
+        let mut results = Vec::new();
+        for node in values.iter() {
+            rdf.set_focus(node);
+            let value = self.parser.parse_impl(rdf)?;
+            results.push(value)
+        }
+        Ok(results)
+    }
 }
 
 #[derive(Clone)]

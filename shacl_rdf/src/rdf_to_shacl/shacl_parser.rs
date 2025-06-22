@@ -14,18 +14,21 @@ use shacl_ast::{
 };
 use srdf::Literal;
 use srdf::{
-    combine_parsers, combine_vec, get_focus, has_type, instances_of, lang::Lang, literal::SLiteral,
-    matcher::Any, not, ok, optional, parse_nodes, property_bool, property_objects, property_value,
+    combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
+    lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
+    parse_property_values, property_bool, property_iris, property_objects, property_value,
     property_values, property_values_int, property_values_iri, property_values_literal,
-    property_values_non_empty, property_values_string, rdf_list, term, FocusRDF,
-    Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, object,
-    Triple,
+    property_values_non_empty, property_values_string, rdf_list, term, FocusRDF, Iri as _, PResult,
+    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
 };
-use srdf::{rdf_type, rdfs_class};
+use srdf::{rdf_type, rdfs_class, FnOpaque};
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
+
+/// Result type for the ShaclParser
 type Result<A> = std::result::Result<A, ShaclParserError>;
 
+/// State used during the parsing process
+/// This is used to keep track of pending shapes to be parsed
 struct State {
     pending: Vec<RDFNode>,
 }
@@ -42,7 +45,7 @@ impl State {
 
 pub struct ShaclParser<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRDF,
 {
     rdf_parser: RDFParser<RDF>,
     shapes: HashMap<RDFNode, Shape>,
@@ -50,7 +53,7 @@ where
 
 impl<RDF> ShaclParser<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRDF,
 {
     pub fn new(rdf: RDF) -> ShaclParser<RDF> {
         ShaclParser {
@@ -261,7 +264,10 @@ fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    combine_parsers!(
+    // Note: the following code could be replaced by
+    // combine_parsers(min_count(), max_count(),...)
+    // But we found that the compiler takes too much memory when the number of parsers is large
+    combine_parsers_vec(vec![
         min_count(),
         max_count(),
         in_component(),
@@ -281,8 +287,8 @@ where
         min_inclusive(),
         min_exclusive(),
         max_inclusive(),
-        max_exclusive()
-    )
+        max_exclusive(),
+    ])
 }
 
 fn property_shape<'a, RDF>(
@@ -490,117 +496,147 @@ where
     property_bool(sh_closed())
 }
 
-fn min_count<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
-where
-    RDF: FocusRDF,
-{
-    property_values_int(sh_min_count())
+/*opaque! {
+    fn min_count[RDF]()(RDF) -> Vec<Component>
+    where [
+    ] {
+        property_values_int(sh_min_count())
         .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
+    }
 }
 
-fn max_count<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
-where
-    RDF: FocusRDF,
-{
-    property_values_int(sh_max_count())
+opaque! {
+    fn max_count[RDF]()(RDF) -> Vec<Component>
+    where [
+    ] {
+        property_values_int(sh_max_count())
         .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
-}
+    }
+}*/
 
-fn min_length<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn min_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_int(sh_min_length())
-        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
+    opaque!(property_values_int(sh_min_count())
+        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect()))
 }
 
-fn min_inclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_literal(sh_min_inclusive()).map(|ns| {
+    opaque!(property_values_int(sh_max_count())
+        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect()))
+}
+
+fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_int(sh_min_length())
+        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect()))
+}
+
+fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_literal(sh_min_inclusive()).map(|ns| {
         ns.iter()
             .map(|n: &<RDF as Rdf>::Literal| {
                 let lit: SLiteral = n.as_literal();
                 Component::MinInclusive(lit)
             })
             .collect()
-    })
+    }))
 }
 
-fn min_exclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn min_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_literal(sh_min_exclusive()).map(|ns| {
+    opaque!(property_values_literal(sh_min_exclusive()).map(|ns| {
         ns.iter()
             .map(|n: &<RDF as Rdf>::Literal| {
                 let lit: SLiteral = n.as_literal();
                 Component::MinExclusive(lit)
             })
             .collect()
-    })
+    }))
 }
 
-fn max_inclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn max_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_literal(sh_max_inclusive()).map(|ns| {
+    opaque!(property_values_literal(sh_max_inclusive()).map(|ns| {
         ns.iter()
             .map(|n: &<RDF as Rdf>::Literal| {
                 let lit: SLiteral = n.as_literal();
                 Component::MaxInclusive(lit)
             })
             .collect()
-    })
+    }))
 }
 
-fn max_exclusive<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn max_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_literal(sh_max_exclusive()).map(|ns| {
+    opaque!(property_values_literal(sh_max_exclusive()).map(|ns| {
         ns.iter()
             .map(|n: &<RDF as Rdf>::Literal| {
                 let lit: SLiteral = n.as_literal();
                 Component::MaxExclusive(lit)
             })
             .collect()
-    })
+    }))
 }
 
-fn max_length<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn max_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_int(sh_max_length())
-        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
+    opaque!(property_values_int(sh_max_length())
+        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect()))
 }
 
-fn datatype<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values_iri(sh_datatype()).map(|ns| {
+    opaque!(property_values_iri(sh_datatype()).map(|ns| {
         ns.iter()
             .map(|iri| Component::Datatype(IriRef::iri(iri.clone())))
             .collect()
-    })
+    }))
 }
 
-fn class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn class<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_objects(sh_class()).map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
+    opaque!(property_objects(sh_class())
+        .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect()))
 }
 
-fn node_kind<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn node_kind<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_node_kind()).flat_map(|ns| {
+    opaque!(property_values(sh_node_kind()).flat_map(|ns| {
         let nks: Vec<_> = ns
             .iter()
             .flat_map(|term| {
@@ -609,46 +645,49 @@ where
             })
             .collect();
         Ok(nks)
-    })
+    }))
 }
 
-fn has_value<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn has_value<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_has_value()).then(move |node_set| {
-        let nodes: Vec<_> = node_set.into_iter().collect();
-        parse_nodes(nodes, parse_has_value_values())
-    })
+    opaque!(parse_components_for_iri(
+        sh_has_value(),
+        parse_has_value_values()
+    ))
 }
 
-fn in_component<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn in_component<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_in()).then(move |node_set| {
-        let nodes: Vec<_> = node_set.into_iter().collect();
-        parse_nodes(nodes, parse_in_values())
-    })
+    opaque!(parse_components_for_iri(sh_in(), parse_in_values()))
 }
 
-fn language_in<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
-    property_values(sh_language_in()).then(move |node_set| {
-        let nodes: Vec<_> = node_set.into_iter().collect();
-        parse_nodes(nodes, parse_language_in_values())
-    })
+fn language_in<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
+    // impl RDFNodeParse<R, Output = Vec<Component>> {
+    opaque!(parse_components_for_iri(
+        sh_language_in(),
+        parse_language_in_values()
+    ))
 }
 
-fn pattern<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Component>> {
-    property_values_string(sh_pattern()).flat_map(|strs| match strs.len() {
-        0 => Ok(Vec::new()),
-        1 => {
-            let pattern = strs.first().unwrap().clone();
-            let flags = None;
-            Ok(vec![Component::Pattern { pattern, flags }])
-        }
-        _ => todo!(), // Error...
-    })
+fn pattern<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
+    // impl RDFNodeParse<R, Output = Vec<Component>> {
+    opaque!(
+        property_values_string(sh_pattern()).flat_map(|strs| match strs.len() {
+            0 => Ok(Vec::new()),
+            1 => {
+                let pattern = strs.first().unwrap().clone();
+                let flags = None;
+                Ok(vec![Component::Pattern { pattern, flags }])
+            }
+            _ => todo!(), // Error...
+        })
+    )
 }
 
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
@@ -713,54 +752,55 @@ where
     Ok(Component::In { values })
 }
 
-fn or<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn parse_components_for_iri<RDF, P>(
+    iri: &IriS,
+    component_parser: P,
+) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
+    P: RDFNodeParse<RDF, Output = Component>,
 {
-    property_values(sh_or()).then(move |terms_set| {
-        let terms: Vec<_> = terms_set.into_iter().collect();
-        parse_nodes(terms, parse_or_values())
-    })
+    parse_property_values(iri, component_parser)
 }
 
-fn xone<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn or<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_xone()).then(move |terms_set| {
-        let terms: Vec<_> = terms_set.into_iter().collect();
-        parse_nodes(terms, parse_xone_values())
-    })
+    opaque!(parse_components_for_iri(sh_or(), parse_or_values()))
 }
 
-fn and<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn xone<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_and()).then(move |terms_set| {
-        let terms: Vec<_> = terms_set.into_iter().collect();
-        parse_nodes(terms, parse_and_values())
-    })
+    opaque!(parse_components_for_iri(sh_xone(), parse_xone_values()))
 }
 
-fn not_parser<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn and<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_not()).then(move |terms_set| {
-        let terms: Vec<_> = terms_set.into_iter().collect();
-        parse_nodes(terms, parse_not_value())
-    })
+    opaque!(parse_components_for_iri(sh_and(), parse_and_values()))
 }
 
-fn node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn not_parser<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    property_values(sh_node()).then(move |terms_set| {
-        let terms: Vec<_> = terms_set.into_iter().collect();
-        parse_nodes(terms, parse_node_value())
-    })
+    opaque!(parse_components_for_iri(sh_not(), parse_not_value()))
+}
+
+fn node<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(parse_components_for_iri(sh_node(), parse_node_value()))
 }
 
 fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
@@ -786,14 +826,17 @@ where
     }
 }
 
-fn targets_class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
+fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target>>
 where
     RDF: FocusRDF,
 {
-    property_objects(sh_target_class()).flat_map(move |ts| {
-        let result = ts.into_iter().map(Target::TargetClass).collect();
+    opaque!(property_iris(sh_target_class()).flat_map(move |ts| {
+        let result = ts
+            .into_iter()
+            .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
+            .collect();
         Ok(result)
-    })
+    }))
 }
 
 fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>

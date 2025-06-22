@@ -3,6 +3,7 @@ use std::collections::HashSet;
 
 use crate::matcher::Any;
 use crate::matcher::Matcher;
+use crate::rdf_type;
 use crate::Rdf;
 use crate::Triple;
 
@@ -183,4 +184,19 @@ pub trait NeighsRDF: Rdf {
             Ok(triples)
         }
     }      */
+
+    fn shacl_instances_of<O>(
+        &self,
+        cls: O,
+    ) -> Result<impl Iterator<Item = Self::Subject>, Self::Err>
+    where
+        O: Matcher<Self::Term>,
+    {
+        let rdf_type: Self::IRI = rdf_type().clone().into();
+        let subjects: HashSet<_> = self
+            .triples_matching(Any, rdf_type, cls)?
+            .map(Triple::into_subject)
+            .collect();
+        Ok(subjects.into_iter())
+    }
 }

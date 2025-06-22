@@ -5,7 +5,7 @@ use crate::shacl_vocab::SH_INFO_STR;
 use crate::shacl_vocab::SH_VIOLATION_STR;
 use crate::shacl_vocab::SH_WARNING_STR;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Severity {
     Violation,
     Warning,

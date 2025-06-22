@@ -59,36 +59,36 @@ pub enum ManifestError {
 
     #[error("Expected faiure but obtained {value} for {entry}")]
     ExpectedFailureButObtained {
-        value: ValidationStatus,
+        value: Box<ValidationStatus>,
         entry: String,
     },
 
     #[error("Expected OK but obtained {value} for {entry}")]
     ExpectedOkButObtained {
-        value: ValidationStatus,
-        entry: String,
+        value: Box<ValidationStatus>,
+        entry: Box<String>,
     },
 
     #[error("Schema parsed is different to schema serialized after parsing\nSchema parsed from JSON\n{schema_parsed:?}\nSchema serialized after parsing:\n{schema_parsed_after_serialization:?}\nSchema serialized: {schema_serialized}\nSchema serialized after: {schema_serialized_after}")]
     SchemasDifferent {
-        schema_parsed: Schema,
-        schema_serialized: String,
-        schema_parsed_after_serialization: Schema,
-        schema_serialized_after: String,
+        schema_parsed: Box<Schema>,
+        schema_serialized: Box<String>,
+        schema_parsed_after_serialization: Box<Schema>,
+        schema_serialized_after: Box<String>,
     },
 
     #[error(
         "Error |ShExSchemaDifferent| ShEx Schema after serialization is different from schema parsed\nSchema JSON Parsed:\n{json_schema_parsed:?}\nSchema parsed from ShExC:\n{shexc_schema_parsed:?}\nInput schema serialized: {schema_serialized}"
     )]
     ShExSchemaDifferent {
-        json_schema_parsed: Schema,
-        schema_serialized: String,
-        shexc_schema_parsed: Schema,
+        json_schema_parsed: Box<Schema>,
+        schema_serialized: Box<String>,
+        shexc_schema_parsed: Box<Schema>,
     },
 
     #[error("Schema parsed could not be serialized\n{schema_parsed:?}\n{error:?}")]
     SchemaSerializationError {
-        schema_parsed: Schema,
+        schema_parsed: Box<Schema>,
         error: serde_json::Error,
     },
 
@@ -96,15 +96,15 @@ pub enum ManifestError {
         "Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}"
     )]
     SchemaSerializationError2nd {
-        schema_parsed: Schema,
+        schema_parsed: Box<Schema>,
         error: serde_json::Error,
     },
 
     #[error("Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}")]
     SchemaParsingAfterSerialization {
-        schema_name: String,
-        schema_parsed: Schema,
-        schema_serialized: String,
+        schema_name: Box<String>,
+        schema_parsed: Box<Schema>,
+        schema_serialized: Box<String>,
         error: serde_json::Error,
     },
 }

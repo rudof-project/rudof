@@ -198,3 +198,21 @@ macro_rules! combine_parsers {
         combine_vec($first, combine_parsers!($($rest),+))
     }
 }
+
+/// Convenience macro over [`opaque`][].
+/// This macro can be useful to combine parsers which can have some underlying different opaque types
+/// In this way, we can avoid some compiler performance problems when using `combine_parsers!` over a large number of parsers that are implemented as `impl RDFNodeParse`
+///  
+#[macro_export]
+macro_rules! opaque {
+    ($e: expr) => {
+        $crate::opaque!($e,);
+    };
+    ($e: expr,) => {
+        opaque(move |f: &mut dyn FnMut(&mut dyn RDFNodeParse<_, Output = _>)| f(&mut $e))
+    };
+}
+
+/// Alias over `Opaque` where the function can be a plain function pointer
+pub type FnOpaque<RDF, O> =
+    Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;

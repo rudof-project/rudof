@@ -16,7 +16,7 @@ use super::target::CompiledTarget;
 pub struct CompiledNodeShape<S: Rdf> {
     id: S::Term,
     components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget<S>>,
+    targets: Vec<CompiledTarget>,
     property_shapes: Vec<CompiledShape<S>>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
@@ -33,7 +33,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
     pub fn new(
         id: S::Term,
         components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget<S>>,
+        targets: Vec<CompiledTarget>,
         property_shapes: Vec<CompiledShape<S>>,
         closed: bool,
         deactivated: bool,
@@ -69,7 +69,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget> {
         &self.targets
     }
 

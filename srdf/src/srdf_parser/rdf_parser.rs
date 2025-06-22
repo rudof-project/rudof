@@ -109,24 +109,6 @@ where
         Ok(value)
     }
 
-    /*
-    pub fn term_as_iri(&self, term: &RDF::Term) -> Result<IriS, RDFParseError> {
-        let iri = self
-            .term_as_iri(term)
-            .map_err(|_| RDFParseError::ExpectedIRI {
-                term: term.to_string(),
-            })?;
-        let iri_string = iri.as_str();
-        Ok(iri!(iri_string))
-    } */
-
-    /*pub fn term_as_subject(&self, term: &RDF::Term) -> Result<RDF::Subject, RDFParseError> {
-        self.term_as_subject(term)
-            .map_err(|_| RDFParseError::ExpectedSubject {
-                node: format!("{term}"),
-            })
-    }*/
-
     pub fn parse_list_for_predicate(
         &mut self,
         pred: &IriS,

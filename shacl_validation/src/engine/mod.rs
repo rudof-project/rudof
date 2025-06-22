@@ -1,7 +1,9 @@
+use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use shacl_ir::compiled::target::CompiledTarget;
+use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SHACLPath;
 
@@ -27,7 +29,7 @@ pub trait Engine<S: Rdf> {
     fn focus_nodes(
         &self,
         store: &S,
-        targets: &[CompiledTarget<S>],
+        targets: &[CompiledTarget],
     ) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: here it would be nice to return an error...
         let targets = targets
@@ -37,7 +39,7 @@ pub trait Engine<S: Rdf> {
                 CompiledTarget::Class(class) => self.target_class(store, class),
                 CompiledTarget::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
                 CompiledTarget::ObjectsOf(predicate) => self.target_object_of(store, predicate),
-                CompiledTarget::ImplicitClass(class) => self.implicit_target_class(store, class),
+                CompiledTarget::ImplicitClass(node) => self.implicit_target_class(store, node),
             })
             .flatten();
 
@@ -46,26 +48,23 @@ pub trait Engine<S: Rdf> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError>;
 
-    fn target_class(&self, store: &S, class: &S::Term) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError>;
 
     fn target_subject_of(
         &self,
         store: &S,
-        predicate: &S::IRI,
+        predicate: &IriS,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &S::IRI,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_object_of(&self, store: &S, predicate: &IriS)
+        -> Result<FocusNodes<S>, ValidateError>;
 
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &S::Term,
+        shape: &RDFNode,
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn path(

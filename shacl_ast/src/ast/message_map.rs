@@ -2,7 +2,7 @@ use srdf::lang::Lang;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct MessageMap {
     messages: HashMap<Option<Lang>, String>,
 }
