@@ -39,10 +39,10 @@ impl<S: Rdf> SchemaIR<S> {
     ) -> Result<SchemaIR<SRDFGraph>, CompiledShaclError> {
         let mut rdf = SRDFGraph::new();
         rdf.merge_from_reader(read, format, base, reader_mode)
-            .map_err(|e| CompiledShaclError::RdfGraphError(e))?;
+            .map_err(CompiledShaclError::RdfGraphError)?;
         let schema = ShaclParser::new(rdf)
             .parse()
-            .map_err(|e| CompiledShaclError::ShaclParserError(e))?;
+            .map_err(CompiledShaclError::ShaclParserError)?;
         let schema_ir: SchemaIR<SRDFGraph> = schema.try_into()?;
         Ok(schema_ir)
     }

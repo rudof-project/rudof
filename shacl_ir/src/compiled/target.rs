@@ -15,7 +15,7 @@ pub enum CompiledTarget {
 impl CompiledTarget {
     pub fn compile(target: Target) -> Result<Self, CompiledShaclError> {
         let ans = match target {
-            Target::TargetNode(object) => CompiledTarget::Node(object.into()),
+            Target::TargetNode(object) => CompiledTarget::Node(object),
             Target::TargetClass(object) => CompiledTarget::Class(object),
             Target::TargetSubjectsOf(iri_ref) => CompiledTarget::SubjectsOf(iri_ref.into()),
             Target::TargetObjectsOf(iri_ref) => CompiledTarget::ObjectsOf(iri_ref.into()),
