@@ -26,7 +26,6 @@ where
 mod tests {
     use super::*;
     use iri_s::iri;
-    use prefixmap::IriRef;
     use shacl_ast::node_shape::NodeShape;
     use shacl_ast::shape::Shape;
     use shacl_ast::target::Target;
