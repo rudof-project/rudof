@@ -518,6 +518,7 @@ where
             } => todo!(),
             SLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
             SLiteral::BooleanLiteral(_) => todo!(),
+            SLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
         }
     }
 

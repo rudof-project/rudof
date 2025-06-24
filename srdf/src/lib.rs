@@ -30,6 +30,7 @@ pub mod subject;
 pub mod term;
 pub mod triple;
 pub mod vocab;
+pub mod xsd_datetime;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
@@ -53,6 +54,7 @@ pub use subject::*;
 pub use term::*;
 pub use triple::*;
 pub use vocab::*;
+pub use xsd_datetime::*;
 
 /// Concrete representation of RDF nodes, which are equivalent to objects
 pub type RDFNode = Object;

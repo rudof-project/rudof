@@ -3,13 +3,13 @@ use std::fmt::Display;
 use std::hash::Hash;
 use std::result;
 
+use crate::RDFError;
+use crate::XsdDateTime;
+use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use iri_s::IriS;
+use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::{Deserialize, Serialize, Serializer};
-
-use crate::RDFError;
-use crate::{lang::Lang, numeric_literal::NumericLiteral};
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 
 pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lexical_form(&self) -> &str;
@@ -19,23 +19,47 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn datatype(&self) -> &str;
 
     fn as_bool(&self) -> Option<bool> {
-        match self.lexical_form() {
-            "true" => Some(true),
-            "false" => Some(false),
-            _ => None,
+        if self.datatype() == "http://www.w3.org/2001/XMLSchema#boolean" {
+            match self.lexical_form() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            }
+        } else {
+            None
         }
     }
 
     fn as_integer(&self) -> Option<isize> {
-        self.lexical_form().parse().ok()
+        if self.datatype() == "http://www.w3.org/2001/XMLSchema#integer" {
+            self.lexical_form().parse().ok()
+        } else {
+            None
+        }
+    }
+
+    fn as_date_time(&self) -> Option<XsdDateTime> {
+        if self.datatype() == "http://www.w3.org/2001/XMLSchema#dateTime" {
+            XsdDateTime::new(self.lexical_form()).ok()
+        } else {
+            None
+        }
     }
 
     fn as_double(&self) -> Option<f64> {
-        self.lexical_form().parse().ok()
+        if self.datatype() == "http://www.w3.org/2001/XMLSchema#double" {
+            self.lexical_form().parse().ok()
+        } else {
+            None
+        }
     }
 
     fn as_decimal(&self) -> Option<Decimal> {
-        self.lexical_form().parse().ok()
+        if self.datatype() == "http://www.w3.org/2001/XMLSchema#decimal" {
+            self.lexical_form().parse().ok()
+        } else {
+            None
+        }
     }
 
     fn as_literal(&self) -> SLiteral {
@@ -47,6 +71,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
             SLiteral::double(decimal)
         } else if let Some(decimal) = self.as_decimal() {
             SLiteral::decimal(decimal)
+        } else if let Some(date_time) = self.as_date_time() {
+            SLiteral::DatetimeLiteral(date_time)
         } else if let Some(lang) = self.lang() {
             SLiteral::lang_str(self.lexical_form(), Lang::new_unchecked(lang))
         } else {
@@ -68,6 +94,7 @@ pub enum SLiteral {
         datatype: IriRef,
     },
     NumericLiteral(NumericLiteral),
+    DatetimeLiteral(XsdDateTime),
 
     #[serde(serialize_with = "serialize_boolean_literal")]
     BooleanLiteral(bool),
@@ -118,6 +145,7 @@ impl SLiteral {
             SLiteral::NumericLiteral(nl) => nl.lexical_form(),
             SLiteral::BooleanLiteral(true) => "true".to_string(),
             SLiteral::BooleanLiteral(false) => "false".to_string(),
+            SLiteral::DatetimeLiteral(dt) => dt.to_string(),
         }
     }
 
@@ -147,6 +175,7 @@ impl SLiteral {
             SLiteral::NumericLiteral(n) => write!(f, "{}", n),
             SLiteral::BooleanLiteral(true) => write!(f, "true"),
             SLiteral::BooleanLiteral(false) => write!(f, "false"),
+            SLiteral::DatetimeLiteral(date_time) => write!(f, "{}", date_time.value()),
         }
     }
 
@@ -177,6 +206,9 @@ impl SLiteral {
             SLiteral::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
                 "http://www.w3.org/2001/XMLSchema#boolean",
             )),
+            SLiteral::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#dateTime",
+            )),
         }
     }
 
@@ -187,6 +219,7 @@ impl SLiteral {
             | SLiteral::DatatypeLiteral { .. }
             | SLiteral::BooleanLiteral(true)
             | SLiteral::BooleanLiteral(false) => None,
+            SLiteral::DatetimeLiteral(_) => None,
         }
     }
 }
@@ -200,9 +233,18 @@ impl Default for SLiteral {
     }
 }
 
+// The comparison between literals is based on SPARQL comparison rules.
+// String literals are compared lexicographically, datatype literals are compared based on their datatype and lexical form,
+// numeric literals are compared based on their numeric value, and boolean literals are compared as true >
+// See: https://www.w3.org/TR/sparql11-query/#OperatorMapping
+// Numeric arguments are promoted as necessary to fit the expected types for that function or operator.
 impl PartialOrd for SLiteral {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self {
+            SLiteral::DatetimeLiteral(date_time1) => match other {
+                SLiteral::DatetimeLiteral(date_time2) => date_time1.partial_cmp(date_time2),
+                _ => None,
+            },
             SLiteral::StringLiteral { lexical_form, .. } => match other {
                 SLiteral::StringLiteral {
                     lexical_form: other_lexical_form,
@@ -277,6 +319,9 @@ impl Deref for SLiteral {
                     datatype: dt,
                 })
             }
+            SLiteral::DatetimeLiteral(date_time) => {
+                Ok(SLiteral::DatetimeLiteral(date_time.clone()))
+            }
         }
     }
 }
@@ -292,6 +337,7 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                 let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
+                let xsd_datetime = oxrdf::vocab::xsd::DATE_TIME.to_owned();
                 match dtype {
                     d if d == xsd_double => {
                         let double_value: f64 =
@@ -315,6 +361,15 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                                 msg: format!("Failed to parse integer from value: {value}"),
                             })?;
                         Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
+                    }
+                    d if d == xsd_datetime => {
+                        let date_time =
+                            XsdDateTime::new(&value).map_err(|e| RDFError::ConversionError {
+                                msg: format!(
+                                    "Failed to parse datetime from value: {value}, error: {e}"
+                                ),
+                            })?;
+                        Ok(SLiteral::DatetimeLiteral(date_time))
                     }
                     _ => {
                         let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
@@ -358,6 +413,7 @@ impl From<SLiteral> for oxrdf::Literal {
                 NumericLiteral::Double(double) => double.into(),
             },
             SLiteral::BooleanLiteral(bool) => bool.into(),
+            SLiteral::DatetimeLiteral(date_time) => (*date_time.value()).into(),
         }
     }
 }

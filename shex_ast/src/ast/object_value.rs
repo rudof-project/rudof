@@ -13,6 +13,8 @@ use srdf::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
 
+use crate::ast::DATETIME_STR;
+
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -117,6 +119,13 @@ impl Serialize for ObjectValue {
                 map.serialize_entry("value", &num.to_string())?;
                 map.end()
             }
+            ObjectValue::Literal(SLiteral::DatetimeLiteral(date_time)) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", DATETIME_STR)?;
+                map.serialize_entry("value", &date_time.to_string())?;
+                map.end()
+            }
+
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
             ObjectValue::Literal(SLiteral::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;

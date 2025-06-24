@@ -18,6 +18,7 @@ pub(crate) fn pp_object_value<'a, A>(
         }
         ObjectValue::Literal(SLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
         ObjectValue::Literal(SLiteral::DatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::DatetimeLiteral { .. }) => todo!(),
         ObjectValue::Literal(SLiteral::StringLiteral { .. }) => todo!(),
     }
 }

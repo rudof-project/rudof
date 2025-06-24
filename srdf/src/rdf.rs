@@ -174,7 +174,6 @@ pub trait Rdf: Sized {
         // This requires to clone but we should be able to optimize this later
         let obj1: Object = Self::term_as_object(term1)?;
         let obj2: Object = Self::term_as_object(term2)?;
-        println!("Comparing objects: {obj1:?} {obj2:?}");
         obj1.partial_cmp(&obj2)
             .ok_or_else(|| RDFError::ComparisonError {
                 term1: term1.lexical_form(),
