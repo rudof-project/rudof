@@ -2,8 +2,11 @@
 
 ## Current changes without release yet
 
+## [v0.1.77] - 2025-06-24
+
 - Added support for (min/max)(in/ex)clusive
 - Repaired bug in minLength
+- Solved typo in documentation
 
 ## [v0.1.72] - 2025-06-14
 
