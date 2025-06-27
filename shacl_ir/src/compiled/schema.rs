@@ -80,10 +80,10 @@ impl<S: Rdf> SchemaIR<S> {
     }
 }
 
-impl<S: Rdf> TryFrom<Schema> for SchemaIR<S> {
+impl<S: Rdf> TryFrom<Schema<S>> for SchemaIR<S> {
     type Error = CompiledShaclError;
 
-    fn try_from(schema: Schema) -> Result<Self, Self::Error> {
+    fn try_from(schema: Schema<S>) -> Result<Self, Self::Error> {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {

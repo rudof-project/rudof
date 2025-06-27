@@ -3,20 +3,24 @@ use std::{collections::HashMap, fmt::Display};
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::RDFNode;
+use srdf::{RDFNode, Rdf};
 
 #[derive(Debug, Clone, Default)]
-pub struct Schema {
+pub struct Schema<RDF: Rdf> where RDF::Term: Clone {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, Shape>,
+    shapes: HashMap<RDFNode, Shape<RDF>>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
 }
 
-impl Schema {
-    pub fn new() -> Schema {
-        Schema::default()
+impl<RDF: Rdf> Schema<RDF> {
+    pub fn new() -> Schema<RDF> {
+        Schema {
+            shapes: HashMap::new(),
+            prefixmap: PrefixMap::new(),
+            base: None
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -28,7 +32,7 @@ impl Schema {
         self
     }
 
-    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape>) -> Self {
+    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape<RDF>>) -> Self {
         self.shapes = shapes;
         self
     }
@@ -41,16 +45,16 @@ impl Schema {
         self.base.clone()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape<RDF>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape> {
+    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape<RDF>> {
         self.shapes.get(sref)
     }
 }
 
-impl Display for Schema {
+impl<RDF: Rdf> Display for Schema<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (id, shape) in self.shapes.iter() {
             writeln!(f, "{id} -> {shape}")?;

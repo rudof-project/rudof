@@ -20,7 +20,7 @@ where
         Self { rdf: RDF::empty() }
     }
 
-    pub fn write(&mut self, schema: &Schema) -> Result<(), RDF::Err> {
+    pub fn write(&mut self, schema: &Schema<RDF>) -> Result<(), RDF::Err> {
         let mut prefix_map = schema.prefix_map();
         let _ = prefix_map.insert("rdf", &IriS::from_str(RDF).unwrap());
         let _ = prefix_map.insert("xsd", &IriS::from_str(XSD).unwrap());

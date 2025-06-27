@@ -41,14 +41,14 @@ impl FromStr for PrefixCC {
         Ok(p)
     }
 }
-
 #[cfg(test)]
 mod tests {
+
     use std::path::{Path, PathBuf};
 
     use super::PrefixCC;
-    use std::str::FromStr;
 
+    use std::str::FromStr;
     #[test]
     fn test_prefixcc_simple() {
         let data = r#"{ "@context": {

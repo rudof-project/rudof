@@ -54,7 +54,7 @@ pub enum CompiledComponent<S: Rdf> {
 }
 
 impl<S: Rdf> CompiledComponent<S> {
-    pub fn compile(component: Component, schema: &Schema) -> Result<Self, CompiledShaclError> {
+    pub fn compile(component: Component, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
                 let class_rule = object.into();

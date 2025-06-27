@@ -16,7 +16,7 @@ use super::target::CompiledTarget;
 pub struct CompiledNodeShape<S: Rdf> {
     id: S::Term,
     components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget>,
+    targets: Vec<CompiledTarget<S>>,
     property_shapes: Vec<CompiledShape<S>>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
@@ -33,7 +33,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
     pub fn new(
         id: S::Term,
         components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget>,
+        targets: Vec<CompiledTarget<S>>,
         property_shapes: Vec<CompiledShape<S>>,
         closed: bool,
         deactivated: bool,
@@ -69,7 +69,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget> {
+    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
         &self.targets
     }
 
@@ -83,7 +83,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
 }
 
 impl<S: Rdf> CompiledNodeShape<S> {
-    pub fn compile(shape: Box<NodeShape>, schema: &Schema) -> Result<Self, CompiledShaclError> {
+    pub fn compile(shape: Box<NodeShape<S>>, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
         let id = shape.id().clone().into();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();

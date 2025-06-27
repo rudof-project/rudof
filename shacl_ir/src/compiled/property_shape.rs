@@ -18,7 +18,7 @@ pub struct CompiledPropertyShape<S: Rdf> {
     id: S::Term,
     path: SHACLPath,
     components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget>,
+    targets: Vec<CompiledTarget<S>>,
     property_shapes: Vec<CompiledShape<S>>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
@@ -39,7 +39,7 @@ impl<S: Rdf> CompiledPropertyShape<S> {
         id: S::Term,
         path: SHACLPath,
         components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget>,
+        targets: Vec<CompiledTarget<S>>,
         property_shapes: Vec<CompiledShape<S>>,
         closed: bool,
         deactivated: bool,
@@ -84,7 +84,7 @@ impl<S: Rdf> CompiledPropertyShape<S> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget> {
+    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
         &self.targets
     }
 
@@ -94,7 +94,7 @@ impl<S: Rdf> CompiledPropertyShape<S> {
 }
 
 impl<S: Rdf> CompiledPropertyShape<S> {
-    pub fn compile(shape: PropertyShape, schema: &Schema) -> Result<Self, CompiledShaclError> {
+    pub fn compile(shape: PropertyShape<S>, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
         let id = shape.id().clone().into();
         let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();

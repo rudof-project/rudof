@@ -48,7 +48,7 @@ where
     RDF: FocusRDF,
 {
     rdf_parser: RDFParser<RDF>,
-    shapes: HashMap<RDFNode, Shape>,
+    shapes: HashMap<RDFNode, Shape<RDF>>,
 }
 
 impl<RDF> ShaclParser<RDF>
@@ -62,7 +62,7 @@ where
         }
     }
 
-    pub fn parse(&mut self) -> Result<Schema> {
+    pub fn parse(&mut self) -> Result<Schema<RDF>> {
         let prefixmap: PrefixMap = self.rdf_parser.prefixmap().unwrap_or_default();
 
         let mut state = State::from(self.shapes_candidates()?);
@@ -250,7 +250,7 @@ where
         sh_node().clone().into()
     }
 
-    fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape> + 'a
+    fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape<RDF>> + 'a
     where
         RDF: FocusRDF + 'a,
     {
@@ -293,7 +293,7 @@ where
 
 fn property_shape<'a, RDF>(
     _state: &'a mut State,
-) -> impl RDFNodeParse<RDF, Output = PropertyShape> + 'a
+) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>> + 'a
 where
     RDF: FocusRDF + 'a,
 {
@@ -321,15 +321,15 @@ where
 }
 
 fn property_shape_components<RDF>(
-    ps: PropertyShape,
-) -> impl RDFNodeParse<RDF, Output = PropertyShape>
+    ps: PropertyShape<RDF>,
+) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
 where
     RDF: FocusRDF,
 {
     components().flat_map(move |cs| Ok(ps.clone().with_components(cs)))
 }
 
-fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape>
+fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape<RDF>>
 where
     RDF: FocusRDF,
 {
@@ -476,7 +476,7 @@ where
     }
 }
 
-fn targets<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
+fn targets<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
 where
     RDF: FocusRDF,
 {
@@ -825,7 +825,7 @@ where
     }
 }
 
-fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target>>
+fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target<RDF>>>
 where
     RDF: FocusRDF,
 {
@@ -838,7 +838,7 @@ where
     }))
 }
 
-fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>>
+fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
 where
     RDF: FocusRDF,
 {
@@ -848,14 +848,14 @@ where
     })
 }
 
-fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target>> {
+fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     instances_of(rdfs_class())
         .and(instances_of(sh_property_shape()))
         .and(instances_of(sh_node_shape()))
         .and(get_focus())
         .flat_map(
             move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
-                let result: std::result::Result<Vec<Target>, RDFParseError> = class
+                let result: std::result::Result<Vec<Target<R>>, RDFParseError> = class
                     .into_iter()
                     .filter(|t: &R::Subject| property_shapes.contains(t) || node_shapes.contains(t))
                     .map(Into::into)
@@ -875,7 +875,7 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
         )
 }
 
-fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target>> {
+fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(sh_target_objects_of()).flat_map(move |ts| {
         let result = ts
             .into_iter()
@@ -885,7 +885,7 @@ fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target
     })
 }
 
-fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target>> {
+fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(sh_target_subjects_of()).flat_map(move |ts| {
         let result = ts
             .into_iter()

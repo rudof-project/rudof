@@ -24,3 +24,4 @@ const_format = "0.2"
 itertools = "0.14"
 regex.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+

@@ -29,7 +29,7 @@ pub trait Engine<S: Rdf> {
     fn focus_nodes(
         &self,
         store: &S,
-        targets: &[CompiledTarget],
+        targets: &[CompiledTarget<S>],
     ) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: here it would be nice to return an error...
         let targets = targets
@@ -40,6 +40,11 @@ pub trait Engine<S: Rdf> {
                 CompiledTarget::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
                 CompiledTarget::ObjectsOf(predicate) => self.target_object_of(store, predicate),
                 CompiledTarget::ImplicitClass(node) => self.implicit_target_class(store, node),
+                CompiledTarget::WrongTargetNode(_) => todo!(),
+                CompiledTarget::WrongTargetClass(_) => todo!(),
+                CompiledTarget::WrongSubjectsOf(_) => todo!(),
+                CompiledTarget::WrongObjectsOf(_) => todo!(),
+                CompiledTarget::WrongImplicitClass(_) => todo!(),
             })
             .flatten();
 
