@@ -92,10 +92,16 @@ pub enum RudofError {
     SHACLParseError { error: String },
 
     #[error("SHACL Compilation from schema {schema} error: {error}")]
-    SHACLCompilationError { error: String, schema: Box<Schema> },
+    SHACLCompilationError {
+        error: String,
+        schema: Box<Schema<RdfData>>,
+    },
 
     #[error("SHACL Validation from schema {schema} error: {error}")]
-    SHACLValidationError { error: String, schema: Box<Schema> },
+    SHACLValidationError {
+        error: String,
+        schema: Box<Schema<RdfData>>,
+    },
 
     #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]
     SHACLEndpointValidationCreation {

@@ -16,7 +16,7 @@ use super::target::CompiledTarget;
 
 #[derive(Debug)]
 pub struct CompiledPropertyShape {
-    id: S::Term,
+    id: RDFNode,
     path: SHACLPath,
     components: Vec<CompiledComponent>,
     targets: Vec<CompiledTarget>,
@@ -37,7 +37,7 @@ pub struct CompiledPropertyShape {
 impl CompiledPropertyShape {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: S::Term,
+        id: RDFNode,
         path: SHACLPath,
         components: Vec<CompiledComponent>,
         targets: Vec<CompiledTarget>,
@@ -94,8 +94,8 @@ impl CompiledPropertyShape {
     }
 }
 
-impl<S: Rdf> CompiledPropertyShape<S> {
-    pub fn compile(
+impl CompiledPropertyShape {
+    pub fn compile<S: Rdf>(
         shape: PropertyShape<S>,
         schema: &Schema<S>,
     ) -> Result<Self, CompiledShaclError> {

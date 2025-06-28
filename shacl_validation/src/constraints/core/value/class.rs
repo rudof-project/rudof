@@ -19,14 +19,14 @@ use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {
+impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
@@ -63,14 +63,14 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();

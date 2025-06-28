@@ -12,8 +12,8 @@ use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 fn apply<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
+    component: &CompiledComponent,
+    shape: &CompiledShape,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
@@ -26,14 +26,14 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
             let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
             let severity = Object::iri(shape.severity());
-            let shape_id = S::term_as_object(shape.id()).ok()?;
+            let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
             if let Ok(condition) = evaluator(item) {
                 if condition {
                     return Some(
                         ValidationResult::new(focus, component, severity)
-                            .with_source(source)
+                            .with_source(source.cloned())
                             .with_message(message)
                             .with_path(maybe_path.clone())
                             .with_value(value),
@@ -48,8 +48,8 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
 }
 
 pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
+    component: &CompiledComponent,
+    shape: &CompiledShape,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
@@ -68,8 +68,8 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
 }
 
 pub fn validate_ask_with<S: QueryRDF>(
-    component: &CompiledComponent<S>,
-    shape: &CompiledShape<S>,
+    component: &CompiledComponent,
+    shape: &CompiledShape,
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,

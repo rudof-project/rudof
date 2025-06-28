@@ -18,12 +18,12 @@ pub trait Validator<S: Rdf + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -31,11 +31,11 @@ pub trait Validator<S: Rdf + Debug> {
 pub trait NativeValidator<S: NeighsRDF> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -43,15 +43,16 @@ pub trait NativeValidator<S: NeighsRDF> {
 pub trait SparqlValidator<S: QueryRDF + Debug> {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
+/*
 macro_rules! generate_deref_fn {
     ($enum_name:ident, $($variant:ident),+) => {
         fn deref(&self) -> &Self::Target {
@@ -61,14 +62,15 @@ macro_rules! generate_deref_fn {
         }
     };
 }
-
+*/
 pub trait NativeDeref {
     type Target: ?Sized;
 
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: NeighsRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
+/*
+impl<S: NeighsRDF + Debug + 'static> NativeDeref for CompiledComponent {
     type Target = dyn NativeValidator<S>;
 
     generate_deref_fn!(
@@ -102,14 +104,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
         QualifiedValueShape
     );
 }
-
+*/
 pub trait SparqlDeref {
     type Target: ?Sized;
 
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
+/*
+impl<S: QueryRDF + Debug + 'static> SparqlDeref for CompiledComponent {
     type Target = dyn SparqlValidator<S>;
 
     generate_deref_fn!(
@@ -143,3 +146,4 @@ impl<S: QueryRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
         QualifiedValueShape
     );
 }
+*/

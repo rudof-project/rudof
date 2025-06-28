@@ -21,7 +21,7 @@ impl ShaclDataManager {
         reader: R,
         rdf_format: RDFFormat,
         base: Option<&str>,
-    ) -> Result<SchemaIR<SRDFGraph>, ValidateError> {
+    ) -> Result<SchemaIR, ValidateError> {
         let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {

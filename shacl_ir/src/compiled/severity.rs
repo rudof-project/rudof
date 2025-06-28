@@ -1,11 +1,9 @@
 use iri_s::IriS;
 use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
-use srdf::Rdf;
 
 use shacl_ast::severity::Severity;
 
 use super::compiled_shacl_error::CompiledShaclError;
-use super::convert_iri_ref;
 
 #[derive(Hash, PartialEq, Eq, Debug)]
 pub enum CompiledSeverity {

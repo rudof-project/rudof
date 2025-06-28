@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::Rdf;
+use srdf::{RDFNode, Rdf};
 
 use shacl_ast::node_shape::NodeShape;
 use shacl_ast::Schema;
@@ -14,7 +14,7 @@ use super::target::CompiledTarget;
 
 #[derive(Debug)]
 pub struct CompiledNodeShape {
-    id: S::Term,
+    id: RDFNode,
     components: Vec<CompiledComponent>,
     targets: Vec<CompiledTarget>,
     property_shapes: Vec<CompiledShape>,
@@ -31,7 +31,7 @@ pub struct CompiledNodeShape {
 
 impl CompiledNodeShape {
     pub fn new(
-        id: S::Term,
+        id: RDFNode,
         components: Vec<CompiledComponent>,
         targets: Vec<CompiledTarget>,
         property_shapes: Vec<CompiledShape>,

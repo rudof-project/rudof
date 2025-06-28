@@ -49,7 +49,7 @@ pub trait ShaclProcessor<S: Rdf + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&self, shapes_graph: &SchemaIR<S>) -> Result<ValidationReport, ValidateError> {
+    fn validate(&self, shapes_graph: &SchemaIR) -> Result<ValidationReport, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 

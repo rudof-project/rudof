@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -65,7 +63,7 @@ impl CompiledComponent {
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Datatype(Datatype::new(iri_ref))
             }
             Component::NodeKind(node_kind) => CompiledComponent::NodeKind(Nodekind::new(node_kind)),
@@ -93,19 +91,19 @@ impl CompiledComponent {
                 CompiledComponent::LanguageIn(LanguageIn::new(langs))
             }
             Component::Equals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Equals(Equals::new(iri_ref))
             }
             Component::Disjoint(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Disjoint(Disjoint::new(iri_ref))
             }
             Component::LessThan(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::LessThan(LessThan::new(iri_ref))
             }
             Component::LessThanOrEquals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(iri_ref))
             }
             Component::Or { shapes } => {
@@ -127,7 +125,7 @@ impl CompiledComponent {
             } => {
                 let properties = ignored_properties
                     .into_iter()
-                    .map(|prop| convert_iri_ref::<S>(prop))
+                    .map(|prop| convert_iri_ref(prop))
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::Closed(Closed::new(is_closed, properties))
             }
@@ -136,13 +134,13 @@ impl CompiledComponent {
                 CompiledComponent::Node(Node::new(shape))
             }
             Component::HasValue { value } => {
-                let term = convert_value::<S>(value)?;
+                let term = convert_value(value)?;
                 CompiledComponent::HasValue(HasValue::new(term))
             }
             Component::In { values } => {
                 let terms = values
                     .into_iter()
-                    .map(|value| convert_value::<S>(value))
+                    .map(|value| convert_value(value))
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::In(In::new(terms))
             }
@@ -638,16 +636,16 @@ impl UniqueLang {
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug)]
-pub struct Class<S: Rdf> {
-    class_rule: S::Term,
+pub struct Class {
+    class_rule: RDFNode,
 }
 
-impl<S: Rdf> Class<S> {
-    pub fn new(class_rule: S::Term) -> Self {
+impl Class {
+    pub fn new(class_rule: RDFNode) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &S::Term {
+    pub fn class_rule(&self) -> &RDFNode {
         &self.class_rule
     }
 }
@@ -657,16 +655,16 @@ impl<S: Rdf> Class<S> {
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug)]
-pub struct Datatype<S: Rdf> {
-    datatype: S::IRI,
+pub struct Datatype {
+    datatype: IriS,
 }
 
-impl<S: Rdf> Datatype<S> {
-    pub fn new(datatype: S::IRI) -> Self {
+impl Datatype {
+    pub fn new(datatype: IriS) -> Self {
         Datatype { datatype }
     }
 
-    pub fn datatype(&self) -> &S::IRI {
+    pub fn datatype(&self) -> &IriS {
         &self.datatype
     }
 }
@@ -692,16 +690,14 @@ impl Nodekind {
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MaxExclusive<S> {
+pub struct MaxExclusive {
     max_exclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MaxExclusive<S> {
+impl MaxExclusive {
     pub fn new(literal: SLiteral) -> Self {
         MaxExclusive {
             max_exclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -712,16 +708,14 @@ impl<S> MaxExclusive<S> {
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MaxInclusive<S> {
+pub struct MaxInclusive {
     max_inclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S: Rdf> MaxInclusive<S> {
+impl MaxInclusive {
     pub fn new(literal: SLiteral) -> Self {
         MaxInclusive {
             max_inclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -732,16 +726,14 @@ impl<S: Rdf> MaxInclusive<S> {
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MinExclusive<S> {
+pub struct MinExclusive {
     min_exclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MinExclusive<S> {
+impl MinExclusive {
     pub fn new(literal: SLiteral) -> Self {
         MinExclusive {
             min_exclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -752,16 +744,14 @@ impl<S> MinExclusive<S> {
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug)]
-pub struct MinInclusive<S> {
+pub struct MinInclusive {
     min_inclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MinInclusive<S> {
+impl MinInclusive {
     pub fn new(literal: SLiteral) -> Self {
         MinInclusive {
             min_inclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -770,8 +760,8 @@ impl<S> MinInclusive<S> {
     }
 }
 
-impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
-    fn from(value: &CompiledComponent<S>) -> Self {
+impl From<&CompiledComponent> for IriS {
+    fn from(value: &CompiledComponent) -> Self {
         match value {
             CompiledComponent::Class(_) => sh_class().clone(),
             CompiledComponent::Datatype(_) => sh_datatype().clone(),

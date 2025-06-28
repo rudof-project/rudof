@@ -44,7 +44,7 @@ impl SchemaIR {
         let schema = ShaclParser::new(rdf)
             .parse()
             .map_err(CompiledShaclError::ShaclParserError)?;
-        let schema_ir: SchemaIR = Self::compile(&schema)?;
+        let schema_ir: SchemaIR = schema.try_into()?;
         Ok(schema_ir)
     }
 
@@ -65,7 +65,7 @@ impl SchemaIR {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&IriS, &CompiledShape)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &CompiledShape)> {
         self.shapes.iter()
     }
 
@@ -149,7 +149,7 @@ mod tests {
             ] .
     "#;
 
-    fn load_schema(shacl_schema: &str) -> SchemaIR<SRDFGraph> {
+    fn load_schema(shacl_schema: &str) -> SchemaIR {
         let reader = Cursor::new(shacl_schema);
         let rdf_format = RDFFormat::Turtle;
         let base = None;

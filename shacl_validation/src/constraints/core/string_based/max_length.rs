@@ -21,11 +21,11 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         _: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
@@ -64,11 +64,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();

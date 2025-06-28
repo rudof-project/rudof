@@ -40,7 +40,7 @@ pub use sparql_service::RdfData;
 pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
-    shacl_schema: Option<ShaclSchema>, // TODO: Should we store a compiled schema to avoid compiling it for each validation request?
+    shacl_schema: Option<ShaclSchema<RdfData>>, // TODO: Should we store a compiled schema to avoid compiling it for each validation request?
     shex_schema: Option<ShExSchema>,
     shex_schema_ir: Option<SchemaIR>,
     resolved_shex_schema: Option<SchemaWithoutImports>,
