@@ -1,12 +1,15 @@
 use std::io::Cursor;
 
 use prefixmap::PrefixMap;
+use shacl_ir::schema::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate_error::ValidateError;
 use srdf::RDFFormat;
+use srdf::SRDFGraph;
+use srdf::SRDFSparql;
 
 fn main() -> Result<(), ValidateError> {
     let shacl = r#"
@@ -27,7 +30,9 @@ fn main() -> Result<(), ValidateError> {
             ] .
     "#;
 
-    let schema = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
+    let schema: SchemaIR<SRDFGraph> =
+        ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
+    let schema_endpoint: SchemaIR<SRDFSparql> = schema.map_terms();
 
     let endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",
@@ -35,7 +40,7 @@ fn main() -> Result<(), ValidateError> {
         ShaclValidationMode::Native,
     )?;
 
-    let report = endpoint_validation.validate(&schema)?;
+    let report = endpoint_validation.validate(&schema_endpoint)?;
 
     println!("{report}");
 

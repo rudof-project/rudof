@@ -1,6 +1,7 @@
+use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_rdf::ShaclParser;
-use srdf::{RDFFormat, Rdf, ReaderMode, SRDFGraph};
+use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::io;
 
@@ -10,20 +11,20 @@ use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
 #[derive(Debug)]
-pub struct SchemaIR<S: Rdf> {
+pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<S::Term, CompiledShape<S>>,
+    shapes: HashMap<RDFNode, CompiledShape>,
     prefixmap: PrefixMap,
-    base: Option<S::IRI>,
+    base: Option<IriS>,
 }
 
-impl<S: Rdf> SchemaIR<S> {
+impl SchemaIR {
     pub fn new(
-        shapes: HashMap<S::Term, CompiledShape<S>>,
+        shapes: HashMap<RDFNode, CompiledShape>,
         prefixmap: PrefixMap,
-        base: Option<S::IRI>,
-    ) -> SchemaIR<S> {
+        base: Option<IriS>,
+    ) -> SchemaIR {
         SchemaIR {
             shapes,
             prefixmap,
@@ -36,14 +37,14 @@ impl<S: Rdf> SchemaIR<S> {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SchemaIR<SRDFGraph>, CompiledShaclError> {
+    ) -> Result<SchemaIR, CompiledShaclError> {
         let mut rdf = SRDFGraph::new();
         rdf.merge_from_reader(read, format, base, reader_mode)
             .map_err(CompiledShaclError::RdfGraphError)?;
         let schema = ShaclParser::new(rdf)
             .parse()
             .map_err(CompiledShaclError::ShaclParserError)?;
-        let schema_ir: SchemaIR<SRDFGraph> = schema.try_into()?;
+        let schema_ir: SchemaIR = Self::compile(&schema)?;
         Ok(schema_ir)
     }
 
@@ -52,7 +53,7 @@ impl<S: Rdf> SchemaIR<S> {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SchemaIR<SRDFGraph>, CompiledShaclError> {
+    ) -> Result<SchemaIR, CompiledShaclError> {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
@@ -60,30 +61,30 @@ impl<S: Rdf> SchemaIR<S> {
         self.prefixmap.clone()
     }
 
-    pub fn base(&self) -> &Option<S::IRI> {
+    pub fn base(&self) -> &Option<IriS> {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&S::Term, &CompiledShape<S>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&IriS, &CompiledShape)> {
         self.shapes.iter()
     }
 
     /// Iterate over all shapes that have at least one target.
-    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&S::Term, &CompiledShape<S>)> {
+    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&RDFNode, &CompiledShape)> {
         self.shapes
             .iter()
             .filter(|(_, shape)| !shape.targets().is_empty())
     }
 
-    pub fn get_shape(&self, sref: &S::Term) -> Option<&CompiledShape<S>> {
+    pub fn get_shape(&self, sref: &RDFNode) -> Option<&CompiledShape> {
         self.shapes.get(sref)
     }
 }
 
-impl<S: Rdf> TryFrom<Schema<S>> for SchemaIR<S> {
+impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
     type Error = CompiledShaclError;
 
-    fn try_from(schema: Schema<S>) -> Result<Self, Self::Error> {
+    fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {

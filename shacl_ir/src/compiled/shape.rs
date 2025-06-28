@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::{Rdf, SHACLPath};
+use srdf::{RDFNode, Rdf, SHACLPath};
 
 use shacl_ast::shape::Shape;
 use shacl_ast::Schema;
@@ -11,12 +11,12 @@ use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub enum CompiledShape<RDF: Rdf> {
-    NodeShape(Box<CompiledNodeShape<RDF>>),
-    PropertyShape(Box<CompiledPropertyShape<RDF>>),
+pub enum CompiledShape {
+    NodeShape(Box<CompiledNodeShape>),
+    PropertyShape(Box<CompiledPropertyShape>),
 }
 
-impl<RDF: Rdf> CompiledShape<RDF> {
+impl CompiledShape {
     pub fn is_deactivated(&self) -> &bool {
         match self {
             CompiledShape::NodeShape(ns) => ns.is_deactivated(),
@@ -24,28 +24,28 @@ impl<RDF: Rdf> CompiledShape<RDF> {
         }
     }
 
-    pub fn id(&self) -> &RDF::Term {
+    pub fn id(&self) -> &RDFNode {
         match self {
             CompiledShape::NodeShape(ns) => ns.id(),
             CompiledShape::PropertyShape(ps) => ps.id(),
         }
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<RDF>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget> {
         match self {
             CompiledShape::NodeShape(ns) => ns.targets(),
             CompiledShape::PropertyShape(ps) => ps.targets(),
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent<RDF>> {
+    pub fn components(&self) -> &Vec<CompiledComponent> {
         match self {
             CompiledShape::NodeShape(ns) => ns.components(),
             CompiledShape::PropertyShape(ps) => ps.components(),
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape<RDF>> {
+    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
         match self {
             CompiledShape::NodeShape(ns) => ns.property_shapes(),
             CompiledShape::PropertyShape(ps) => ps.property_shapes(),
@@ -74,7 +74,10 @@ impl<RDF: Rdf> CompiledShape<RDF> {
         iri_s
     }
 
-    pub fn compile(shape: Shape<RDF>, schema: &Schema<RDF>) -> Result<Self, CompiledShaclError> {
+    pub fn compile<RDF: Rdf>(
+        shape: Shape<RDF>,
+        schema: &Schema<RDF>,
+    ) -> Result<Self, CompiledShaclError> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {
                 let node_shape = CompiledNodeShape::compile(node_shape, schema)?;

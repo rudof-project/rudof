@@ -9,7 +9,7 @@ use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,
     TripleExpr, TripleExprWrapper, ValueSetValue,
 };
-use srdf::{Object, RDFNode, SHACLPath};
+use srdf::{Object, RDFNode, Rdf, SHACLPath};
 use tracing::debug;
 
 #[allow(dead_code)] // TODO: only for config...
@@ -30,7 +30,7 @@ impl Shacl2ShEx {
         &self.current_shex
     }
 
-    pub fn convert(&mut self, schema: &ShaclSchema) -> Result<(), Shacl2ShExError> {
+    pub fn convert<RDF: Rdf>(&mut self, schema: &ShaclSchema<RDF>) -> Result<(), Shacl2ShExError> {
         let prefixmap = schema.prefix_map().without_rich_qualifying();
         self.current_shex = ShExSchema::new().with_prefixmap(Some(prefixmap));
         for (_, shape) in schema.iter() {
@@ -47,10 +47,10 @@ impl Shacl2ShEx {
         Ok(())
     }
 
-    pub fn convert_shape(
+    pub fn convert_shape<RDF: Rdf>(
         &self,
-        shape: &NodeShape,
-        schema: &ShaclSchema,
+        shape: &NodeShape<RDF>,
+        schema: &ShaclSchema<RDF>,
     ) -> Result<(ShapeExprLabel, ShapeExpr, bool), Shacl2ShExError> {
         let label = self.rdfnode2label(shape.id())?;
         let shape_expr = self.node_shape2shape_expr(shape, schema)?;
@@ -68,10 +68,10 @@ impl Shacl2ShEx {
         }
     }
 
-    pub fn node_shape2shape_expr(
+    pub fn node_shape2shape_expr<RDF: Rdf>(
         &self,
-        shape: &NodeShape,
-        schema: &ShaclSchema,
+        shape: &NodeShape<RDF>,
+        schema: &ShaclSchema<RDF>,
     ) -> Result<ShapeExpr, Shacl2ShExError> {
         let mut exprs = Vec::new();
         for node in shape.property_shapes() {
@@ -84,7 +84,7 @@ impl Shacl2ShEx {
                         Ok(())
                     }
                     ShaclShape::NodeShape(ns) => Err(Shacl2ShExError::NotExpectedNodeShape {
-                        node_shape: ns.clone(),
+                        node_shape: ns.to_string(),
                     }),
                 },
             }?
@@ -110,10 +110,10 @@ impl Shacl2ShEx {
     }
 
     /// Collect targetClass declarations and add a rdf:type constraint for each
-    pub fn convert_target_decls(
+    pub fn convert_target_decls<RDF: Rdf>(
         &self,
-        targets: &Vec<Target>,
-        schema: &ShaclSchema,
+        targets: &Vec<Target<RDF>>,
+        schema: &ShaclSchema<RDF>,
     ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
         let mut values = Vec::new();
         for target in targets {
@@ -133,30 +133,35 @@ impl Shacl2ShEx {
         Ok(Some(tc))
     }
 
-    pub fn target2value_set_value(
+    pub fn target2value_set_value<RDF: Rdf>(
         &self,
-        target: &Target,
-        _schema: &ShaclSchema,
+        target: &Target<RDF>,
+        _schema: &ShaclSchema<RDF>,
     ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
             Target::TargetNode(_) => Ok(None),
             Target::TargetClass(cls) => {
-                let value_set_value = match cls {
-                    Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
-                    Object::BlankNode(bn) => {
-                        Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
-                            bnode: bn.clone(),
-                        })
+                        let value_set_value = match cls {
+                            Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
+                            Object::BlankNode(bn) => {
+                                Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
+                                    bnode: bn.clone(),
+                                })
+                            }
+                            Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
+                                literal: lit.clone(),
+                            }),
+                        }?;
+                        Ok(Some(value_set_value))
                     }
-                    Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
-                        literal: lit.clone(),
-                    }),
-                }?;
-                Ok(Some(value_set_value))
-            }
             Target::TargetSubjectsOf(_) => Ok(None),
             Target::TargetObjectsOf(_) => Ok(None),
             Target::TargetImplicitClass(_) => Ok(None),
+            Target::WrongTargetNode(_) => todo!(),
+            Target::WrongTargetClass(_) => todo!(),
+            Target::WrongSubjectsOf(_) => todo!(),
+            Target::WrongObjectsOf(_) => todo!(),
+            Target::WrongImplicitClass(_) => todo!(),
         }
     }
 
@@ -278,9 +283,9 @@ impl Shacl2ShEx {
         es
     }
 
-    pub fn property_shape2triple_constraint(
+    pub fn property_shape2triple_constraint<RDF: Rdf>(
         &self,
-        shape: &PropertyShape,
+        shape: &PropertyShape<RDF>,
     ) -> Result<TripleExpr, Shacl2ShExError> {
         let predicate = self.shacl_path2predicate(shape.path())?;
         let negated = None;

@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SHACLPath;
 
@@ -14,17 +15,17 @@ use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
 #[derive(Debug)]
-pub struct CompiledPropertyShape<S: Rdf> {
+pub struct CompiledPropertyShape {
     id: S::Term,
     path: SHACLPath,
-    components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget<S>>,
-    property_shapes: Vec<CompiledShape<S>>,
+    components: Vec<CompiledComponent>,
+    targets: Vec<CompiledTarget>,
+    property_shapes: Vec<CompiledShape>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
     deactivated: bool,
     // message: MessageMap,
-    severity: Option<CompiledSeverity<S>>,
+    severity: Option<CompiledSeverity>,
     // name: MessageMap,
     // description: MessageMap,
     // order: Option<NumericLiteral>,
@@ -33,17 +34,17 @@ pub struct CompiledPropertyShape<S: Rdf> {
     // annotations: Vec<(S::IRI, S::Term)>,
 }
 
-impl<S: Rdf> CompiledPropertyShape<S> {
+impl CompiledPropertyShape {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: S::Term,
         path: SHACLPath,
-        components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget<S>>,
-        property_shapes: Vec<CompiledShape<S>>,
+        components: Vec<CompiledComponent>,
+        targets: Vec<CompiledTarget>,
+        property_shapes: Vec<CompiledShape>,
         closed: bool,
         deactivated: bool,
-        severity: Option<CompiledSeverity<S>>,
+        severity: Option<CompiledSeverity>,
     ) -> Self {
         CompiledPropertyShape {
             id,
@@ -57,7 +58,7 @@ impl<S: Rdf> CompiledPropertyShape<S> {
         }
     }
 
-    pub fn id(&self) -> &S::Term {
+    pub fn id(&self) -> &RDFNode {
         &self.id
     }
 
@@ -73,28 +74,31 @@ impl<S: Rdf> CompiledPropertyShape<S> {
         &self.deactivated
     }
 
-    pub fn severity(&self) -> &CompiledSeverity<S> {
+    pub fn severity(&self) -> &CompiledSeverity {
         match &self.severity {
             Some(severity) => severity,
             None => &CompiledSeverity::Violation,
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent<S>> {
+    pub fn components(&self) -> &Vec<CompiledComponent> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
         &self.property_shapes
     }
 }
 
 impl<S: Rdf> CompiledPropertyShape<S> {
-    pub fn compile(shape: PropertyShape<S>, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
+    pub fn compile(
+        shape: PropertyShape<S>,
+        schema: &Schema<S>,
+    ) -> Result<Self, CompiledShaclError> {
         let id = shape.id().clone().into();
         let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();

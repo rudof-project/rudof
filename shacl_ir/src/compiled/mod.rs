@@ -27,7 +27,7 @@ fn convert_iri_ref<S: Rdf>(iri_ref: IriRef) -> Result<S::IRI, CompiledShaclError
 fn compile_shape<S: Rdf>(
     shape: Object,
     schema: &Schema<S>,
-) -> Result<CompiledShape<S>, CompiledShaclError> {
+) -> Result<CompiledShape, CompiledShaclError> {
     let shape = schema
         .get_shape(&shape)
         .ok_or(CompiledShaclError::ShapeNotFound)?;
@@ -37,7 +37,7 @@ fn compile_shape<S: Rdf>(
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
     schema: &Schema<S>,
-) -> Result<Vec<CompiledShape<S>>, CompiledShaclError> {
+) -> Result<Vec<CompiledShape>, CompiledShaclError> {
     let compiled_shapes = shapes
         .into_iter()
         .map(|shape| compile_shape::<S>(shape, schema))
