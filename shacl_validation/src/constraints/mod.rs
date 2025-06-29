@@ -84,7 +84,7 @@ impl<'a, S> ShaclComponent<'a, S> {
     }
 
     pub fn component(&self) -> &CompiledComponent {
-        &self.component
+        self.component
     }
 }
 

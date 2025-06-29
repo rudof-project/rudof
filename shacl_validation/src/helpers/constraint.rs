@@ -83,7 +83,7 @@ pub fn validate_ask_with<S: QueryRDF>(
         ValueNodeIteration,
         |value_node| match store.query_ask(&eval_query(value_node)) {
             Ok(ask) => Ok(!ask),
-            Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {}", err))),
+            Err(err) => Err(ConstraintError::Query(format!("ASK query failed: {err}"))),
         },
         message,
         maybe_path,

@@ -1489,13 +1489,13 @@ fn show_result<W: Write>(
                         prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
                     format!("{}     ", str)
                 }
-                oxrdf::Term::BlankNode(blank_node) => format!("  {}", blank_node),
-                oxrdf::Term::Literal(literal) => format!("  {}", literal),
-                oxrdf::Term::Triple(triple) => format!("  {}", triple),
+                oxrdf::Term::BlankNode(blank_node) => format!("  {blank_node}"),
+                oxrdf::Term::Literal(literal) => format!("  {literal}"),
+                oxrdf::Term::Triple(triple) => format!("  {triple}"),
             },
             None => String::new(),
         };
-        write!(writer, "{:15}", str)?;
+        write!(writer, "{str:15}")?;
     }
     writeln!(writer)?;
     Ok(())

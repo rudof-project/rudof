@@ -106,7 +106,7 @@ impl Display for Shape {
             self.preds.iter().join(",")
         };
         write!(f, "Shape {extends}{closed}{extra} ")?;
-        writeln!(f, "Preds: {}", preds)?;
+        writeln!(f, "Preds: {preds}")?;
         writeln!(f, "{}", self.rbe_table)?;
         Ok(())
     }
