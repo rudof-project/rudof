@@ -6,7 +6,7 @@ use pyo3::{
 use rudof_lib::{
     iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
     ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
-    ShExSchema, ShaclFormat, ShaclSchema, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
+    ShExSchema, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
     ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, DCTAP,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
@@ -121,7 +121,7 @@ impl PyRudof {
     /// Obtains the current SHACL schema
     #[pyo3(signature = ())]
     pub fn get_shacl(&self) -> Option<PyShaclSchema> {
-        let shacl_schema = self.inner.get_shacl();
+        let shacl_schema = self.inner.get_shacl_ir();
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
     }
 
@@ -683,7 +683,7 @@ impl PyQueryShapeMap {
 
 #[pyclass(name = "ShaclSchema")]
 pub struct PyShaclSchema {
-    inner: ShaclSchema,
+    inner: ShaclSchemaIR,
 }
 
 #[pymethods]

@@ -104,7 +104,7 @@ impl Display for ShapeExprLabel {
             ShapeExprLabel::BNode { value } => value.to_string(),
             ShapeExprLabel::Start => "START".to_string(),
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 

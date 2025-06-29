@@ -156,7 +156,7 @@ impl FromStr for RudofConfig {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {}", e))
+        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {e}"))
     }
 }
 

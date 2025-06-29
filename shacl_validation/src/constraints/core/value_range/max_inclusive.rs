@@ -15,14 +15,14 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         _store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_inclusive = |node: &S::Term| match S::term_as_sliteral(node) {
@@ -45,14 +45,14 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_inclusive_value = self.max_inclusive().clone();

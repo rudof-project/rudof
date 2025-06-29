@@ -62,12 +62,12 @@ impl SRDFSparql {
     }
 
     fn show_blanknode(&self, bn: &OxBlankNode) -> String {
-        let str: String = format!("{}", bn);
+        let str: String = format!("{bn}");
         format!("{}", str.green())
     }
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
-        let str: String = format!("{}", lit);
+        let str: String = format!("{lit}");
         format!("{}", str.red())
     }
 }
@@ -152,7 +152,7 @@ impl AsyncSRDF for SRDFSparql {
     type Err = SRDFSparqlError;
 
     async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
-        let query = format!(r#"select ?pred where {{ {} ?pred ?obj . }}"#, subject);
+        let query = format!(r#"select ?pred where {{ {subject} ?pred ?obj . }}"#);
         let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {

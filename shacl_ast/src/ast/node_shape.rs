@@ -7,8 +7,10 @@ use srdf::{BuildRDF, RDFNode, Rdf};
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub struct NodeShape<RDF: Rdf> 
- where RDF::Term: Clone {
+pub struct NodeShape<RDF: Rdf>
+where
+    RDF::Term: Clone,
+{
     id: RDFNode,
     components: Vec<Component>,
     targets: Vec<Target<RDF>>,
@@ -182,14 +184,34 @@ impl<RDF: Rdf> Display for NodeShape<RDF> {
     }
 }
 
-impl<RDF:Rdf> Clone for NodeShape<RDF> {
+impl<RDF: Rdf> Clone for NodeShape<RDF> {
     fn clone(&self) -> Self {
-        Self { id: self.id.clone(), components: self.components.clone(), targets: self.targets.clone(), property_shapes: self.property_shapes.clone(), closed: self.closed.clone(), deactivated: self.deactivated.clone(), severity: self.severity.clone(), name: self.name.clone(), description: self.description.clone(), group: self.group.clone() }
+        Self {
+            id: self.id.clone(),
+            components: self.components.clone(),
+            targets: self.targets.clone(),
+            property_shapes: self.property_shapes.clone(),
+            closed: self.closed,
+            deactivated: self.deactivated,
+            severity: self.severity.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            group: self.group.clone(),
+        }
     }
 }
 
-impl<RDF:Rdf> PartialEq for NodeShape<RDF> {
+impl<RDF: Rdf> PartialEq for NodeShape<RDF> {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.components == other.components && self.targets == other.targets && self.property_shapes == other.property_shapes && self.closed == other.closed && self.deactivated == other.deactivated && self.severity == other.severity && self.name == other.name && self.description == other.description && self.group == other.group
+        self.id == other.id
+            && self.components == other.components
+            && self.targets == other.targets
+            && self.property_shapes == other.property_shapes
+            && self.closed == other.closed
+            && self.deactivated == other.deactivated
+            && self.severity == other.severity
+            && self.name == other.name
+            && self.description == other.description
+            && self.group == other.group
     }
 }

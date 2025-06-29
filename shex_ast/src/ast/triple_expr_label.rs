@@ -49,7 +49,7 @@ impl Display for TripleExprLabel {
             TripleExprLabel::IriRef { value } => value.to_string(),
             TripleExprLabel::BNode { value } => value.to_string(),
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 

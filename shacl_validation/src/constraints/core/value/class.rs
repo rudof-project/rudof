@@ -19,29 +19,30 @@ use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {
+impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if value_node.is_literal() {
                 return true;
             }
+            let class_term = &S::object_as_term(self.class_rule());
 
             let is_class_valid = get_objects_for(store, value_node, &rdf_type().clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
-                    ctype == self.class_rule()
+                    ctype == class_term
                         || get_objects_for(store, ctype, &rdfs_subclass_of().clone().into())
                             .unwrap_or_default()
-                            .contains(self.class_rule())
+                            .contains(class_term)
                 });
 
             !is_class_valid
@@ -63,14 +64,14 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();

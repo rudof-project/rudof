@@ -51,9 +51,9 @@ impl<RDF: Rdf> Clone for Shape<RDF> {
             Self::PropertyShape(ps) => Self::PropertyShape((*ps).clone()),
         }
     }
-} 
+}
 
-impl <RDF:Rdf> PartialEq for Shape<RDF> {
+impl<RDF: Rdf> PartialEq for Shape<RDF> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::NodeShape(l0), Self::NodeShape(r0)) => l0 == r0,
@@ -70,12 +70,12 @@ mod tests {
 
     use crate::{node_shape::NodeShape, shape::Shape};
 
-
     #[test]
     fn test_clone() {
-        let ns: NodeShape<SRDFGraph> = NodeShape::new(srdf::Object::Iri(iri!("http://example.org/id")));
+        let ns: NodeShape<SRDFGraph> =
+            NodeShape::new(srdf::Object::Iri(iri!("http://example.org/id")));
         let s1 = Shape::node_shape(ns);
         let s2 = s1.clone();
-        assert_eq!(s1,s2)
+        assert_eq!(s1, s2)
     }
 }

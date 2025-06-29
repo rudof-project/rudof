@@ -215,9 +215,9 @@ impl<'de> Deserialize<'de> for NumericLiteral {
 impl Display for NumericLiteral {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NumericLiteral::Double(d) => write!(f, "{}", d),
-            NumericLiteral::Integer(n) => write!(f, "{}", n),
-            NumericLiteral::Decimal(d) => write!(f, "{}", d),
+            NumericLiteral::Double(d) => write!(f, "{d}"),
+            NumericLiteral::Integer(n) => write!(f, "{n}"),
+            NumericLiteral::Decimal(d) => write!(f, "{d}"),
         }
     }
 }

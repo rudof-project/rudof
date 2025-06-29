@@ -9,7 +9,9 @@ use srdf::{rdf_type, rdfs_class, BuildRDF, RDFNode, Rdf};
 /// Represents target declarations
 #[derive(Debug)]
 pub enum Target<S: Rdf>
- where S::Term: Clone {
+where
+    S::Term: Clone,
+{
     TargetNode(RDFNode), // TODO: Shacl12: Extend to Node Expressions
     TargetClass(RDFNode),
     TargetSubjectsOf(IriRef),
@@ -21,11 +23,10 @@ pub enum Target<S: Rdf>
     WrongTargetClass(S::Term),
     WrongSubjectsOf(S::Term),
     WrongObjectsOf(S::Term),
-    WrongImplicitClass(S::Term)
-
+    WrongImplicitClass(S::Term),
 }
 
-impl<S:Rdf> Target<S> {
+impl<S: Rdf> Target<S> {
     pub fn target_node(node: RDFNode) -> Self {
         Target::TargetNode(node)
     }
@@ -48,25 +49,25 @@ impl<S:Rdf> Target<S> {
         let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
             Target::TargetNode(target_rdf_node) => {
-                        rdf.add_triple(node, sh_target_node().clone(), target_rdf_node.clone())
-                    }
+                rdf.add_triple(node, sh_target_node().clone(), target_rdf_node.clone())
+            }
             Target::TargetClass(node_class) => {
-                        rdf.add_triple(node, sh_target_class().clone(), node_class.clone())
-                    }
+                rdf.add_triple(node, sh_target_class().clone(), node_class.clone())
+            }
             Target::TargetSubjectsOf(iri_ref) => rdf.add_triple(
-                        node,
-                        sh_target_subjects_of().clone(),
-                        iri_ref.get_iri().unwrap().clone(),
-                    ),
+                node,
+                sh_target_subjects_of().clone(),
+                iri_ref.get_iri().unwrap().clone(),
+            ),
             Target::TargetObjectsOf(iri_ref) => rdf.add_triple(
-                        node,
-                        sh_target_objects_of().clone(),
-                        iri_ref.get_iri().unwrap().clone(),
-                    ),
+                node,
+                sh_target_objects_of().clone(),
+                iri_ref.get_iri().unwrap().clone(),
+            ),
             Target::TargetImplicitClass(_class) => {
-                        // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
-                        rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
-                    }
+                // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
+                rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
+            }
             Target::WrongTargetNode(_) => todo!(),
             Target::WrongTargetClass(_) => todo!(),
             Target::WrongSubjectsOf(_) => todo!(),
@@ -76,7 +77,7 @@ impl<S:Rdf> Target<S> {
     }
 }
 
-impl<S:Rdf> Display for Target<S> {
+impl<S: Rdf> Display for Target<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Target::TargetNode(node) => write!(f, "targetNode({node})"),
@@ -93,7 +94,7 @@ impl<S:Rdf> Display for Target<S> {
     }
 }
 
-impl <RDF: Rdf> Clone for Target<RDF> {
+impl<RDF: Rdf> Clone for Target<RDF> {
     fn clone(&self) -> Self {
         match self {
             Self::TargetNode(arg0) => Self::TargetNode(arg0.clone()),
@@ -110,7 +111,7 @@ impl <RDF: Rdf> Clone for Target<RDF> {
     }
 }
 
-impl<RDF:Rdf> PartialEq for Target<RDF> {
+impl<RDF: Rdf> PartialEq for Target<RDF> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::TargetNode(l0), Self::TargetNode(r0)) => l0 == r0,

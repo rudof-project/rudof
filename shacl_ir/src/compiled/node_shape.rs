@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::Rdf;
+use srdf::{RDFNode, Rdf};
 
 use shacl_ast::node_shape::NodeShape;
 use shacl_ast::Schema;
@@ -12,32 +12,32 @@ use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
-#[derive(Debug)]
-pub struct CompiledNodeShape<S: Rdf> {
-    id: S::Term,
-    components: Vec<CompiledComponent<S>>,
-    targets: Vec<CompiledTarget<S>>,
-    property_shapes: Vec<CompiledShape<S>>,
+#[derive(Debug, Clone)]
+pub struct CompiledNodeShape {
+    id: RDFNode,
+    components: Vec<CompiledComponent>,
+    targets: Vec<CompiledTarget>,
+    property_shapes: Vec<CompiledShape>,
     closed: bool,
     // ignored_properties: Vec<S::IRI>,
     deactivated: bool,
     // message: MessageMap,
-    severity: Option<CompiledSeverity<S>>,
+    severity: Option<CompiledSeverity>,
     // name: MessageMap,
     // description: MessageMap,
     // group: S::Term,
     // source_iri: S::IRI,
 }
 
-impl<S: Rdf> CompiledNodeShape<S> {
+impl CompiledNodeShape {
     pub fn new(
-        id: S::Term,
-        components: Vec<CompiledComponent<S>>,
-        targets: Vec<CompiledTarget<S>>,
-        property_shapes: Vec<CompiledShape<S>>,
+        id: RDFNode,
+        components: Vec<CompiledComponent>,
+        targets: Vec<CompiledTarget>,
+        property_shapes: Vec<CompiledShape>,
         closed: bool,
         deactivated: bool,
-        severity: Option<CompiledSeverity<S>>,
+        severity: Option<CompiledSeverity>,
     ) -> Self {
         CompiledNodeShape {
             id,
@@ -50,7 +50,7 @@ impl<S: Rdf> CompiledNodeShape<S> {
         }
     }
 
-    pub fn id(&self) -> &S::Term {
+    pub fn id(&self) -> &RDFNode {
         &self.id
     }
 
@@ -58,22 +58,22 @@ impl<S: Rdf> CompiledNodeShape<S> {
         &self.deactivated
     }
 
-    pub fn severity(&self) -> &CompiledSeverity<S> {
+    pub fn severity(&self) -> &CompiledSeverity {
         match &self.severity {
             Some(severity) => severity,
             None => &CompiledSeverity::Violation,
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent<S>> {
+    pub fn components(&self) -> &Vec<CompiledComponent> {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<CompiledTarget<S>> {
+    pub fn targets(&self) -> &Vec<CompiledTarget> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
         &self.property_shapes
     }
 
@@ -82,9 +82,12 @@ impl<S: Rdf> CompiledNodeShape<S> {
     }
 }
 
-impl<S: Rdf> CompiledNodeShape<S> {
-    pub fn compile(shape: Box<NodeShape<S>>, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
-        let id = shape.id().clone().into();
+impl CompiledNodeShape {
+    pub fn compile<S: Rdf>(
+        shape: Box<NodeShape<S>>,
+        schema: &Schema<S>,
+    ) -> Result<Self, CompiledShaclError> {
+        let id = shape.id().clone();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;

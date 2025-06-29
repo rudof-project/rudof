@@ -221,8 +221,7 @@ fn component2plantuml<W: Write>(
             };
             writeln!(
                 writer,
-                "class \"{}\" as {} <<(S,#FF7700)>> {} {{ ",
-                name, node_id, href
+                "class \"{name}\" as {node_id} <<(S,#FF7700)>> {href} {{ "
             )?;
             for entry in class.entries() {
                 entry2plantuml(entry, config, writer)?;
@@ -254,7 +253,7 @@ fn entry2plantuml<W: Write>(
     let property = name2plantuml(&entry.name, config);
     let value_constraint = value_constraint2plantuml(&entry.value_constraint, config);
     let card = card2plantuml(&entry.card);
-    writeln!(writer, "{} : {} {}", property, value_constraint, card)?;
+    writeln!(writer, "{property} : {value_constraint} {card}")?;
     writeln!(writer, "--")?;
     Ok(())
 }
@@ -270,7 +269,7 @@ fn name2plantuml(name: &Name, config: &ShEx2UmlConfig) -> String {
         name.name()
     };
     if let Some(href) = name.href() {
-        format!("[[{href} {}]]", str)
+        format!("[[{href} {str}]]")
     } else {
         name.name()
     }

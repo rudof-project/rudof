@@ -519,7 +519,7 @@ fn run_shex(
         writeln!(io::stdout(), "\nDependencies:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
             for (source, posneg, target) in shex_ir.dependencies() {
-                writeln!(io::stdout(), "{}-{}->{}", source, posneg, target)?;
+                writeln!(io::stdout(), "{source}-{posneg}->{target}")?;
             }
         } else {
             bail!("Internal error: No ShEx schema read")
@@ -1057,7 +1057,7 @@ fn run_shex2sparql(
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
-        write!(writer, "{}", sparql)?;
+        write!(writer, "{sparql}")?;
     }
     Ok(())
 }
@@ -1469,8 +1469,8 @@ fn show_variables<'a, W: Write>(
     vars: impl Iterator<Item = &'a VarName>,
 ) -> Result<()> {
     for var in vars {
-        let str = format!("{}", var);
-        write!(writer, "{:15}", str)?;
+        let str = format!("{var}");
+        write!(writer, "{str:15}")?;
     }
     writeln!(writer)?;
     Ok(())
@@ -1487,15 +1487,15 @@ fn show_result<W: Write>(
                 oxrdf::Term::NamedNode(named_node) => {
                     let (str, _length) =
                         prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
-                    format!("{}     ", str)
+                    format!("{str}     ")
                 }
-                oxrdf::Term::BlankNode(blank_node) => format!("  {}", blank_node),
-                oxrdf::Term::Literal(literal) => format!("  {}", literal),
-                oxrdf::Term::Triple(triple) => format!("  {}", triple),
+                oxrdf::Term::BlankNode(blank_node) => format!("  {blank_node}"),
+                oxrdf::Term::Literal(literal) => format!("  {literal}"),
+                oxrdf::Term::Triple(triple) => format!("  {triple}"),
             },
             None => String::new(),
         };
-        write!(writer, "{:15}", str)?;
+        write!(writer, "{str:15}")?;
     }
     writeln!(writer)?;
     Ok(())

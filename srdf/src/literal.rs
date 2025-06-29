@@ -169,10 +169,10 @@ impl SLiteral {
             } => match datatype {
                 IriRef::Iri(iri) => write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri)),
                 IriRef::Prefixed { prefix, local } => {
-                    write!(f, "\"{lexical_form}\"^^{}:{}", prefix, local)
+                    write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
                 }
             },
-            SLiteral::NumericLiteral(n) => write!(f, "{}", n),
+            SLiteral::NumericLiteral(n) => write!(f, "{n}"),
             SLiteral::BooleanLiteral(true) => write!(f, "true"),
             SLiteral::BooleanLiteral(false) => write!(f, "false"),
             SLiteral::DatetimeLiteral(date_time) => write!(f, "{}", date_time.value()),

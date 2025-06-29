@@ -57,7 +57,7 @@ where
         let v: Vec<String> = self
             .bag
             .set_iter()
-            .map(|(t, n)| format!("{}/{}", t, n))
+            .map(|(t, n)| format!("{t}/{n}"))
             .collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
@@ -77,7 +77,7 @@ where
         let v: Vec<String> = self
             .bag
             .set_iter()
-            .map(|(t, n)| format!("{:?}/{}", t, n))
+            .map(|(t, n)| format!("{t:?}/{n}"))
             .collect();
         write!(f, "Bag [{}]", v.join(", "))
     }

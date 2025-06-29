@@ -12,6 +12,7 @@ use srdf::Triple;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
+use crate::constraints::ShaclComponent;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::srdf::get_objects_for;
 use crate::helpers::srdf::get_subjects_for;
@@ -26,14 +27,15 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
+        shape: &CompiledShape,
+        component: &CompiledComponent,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
-        let validator = component.deref();
+        let shacl_component = ShaclComponent::new(component);
+        let validator = shacl_component.deref();
         Ok(validator.validate_native(
             component,
             shape,
@@ -119,7 +121,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn predicate(
         &self,
         store: &S,
-        _: &CompiledPropertyShape<S>,
+        _: &CompiledPropertyShape,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -131,7 +133,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn alternative(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -143,7 +145,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn sequence(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -155,7 +157,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn inverse(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -167,7 +169,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn zero_or_more(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -179,7 +181,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn one_or_more(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -191,7 +193,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn zero_or_one(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape<S>,
+        _shape: &CompiledPropertyShape,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {

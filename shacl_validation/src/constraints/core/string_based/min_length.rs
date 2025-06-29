@@ -21,11 +21,11 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         _store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
@@ -64,11 +64,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
@@ -80,7 +80,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
             }
         };
 
-        let message = format!("MinLength({}) not satisfied", min_length_value);
+        let message = format!("MinLength({min_length_value}) not satisfied");
         validate_ask_with(
             component,
             shape,

@@ -41,7 +41,7 @@ where
             FromStr::from_str(value).map_err(|err| {
                 // Just convert the underlying error type into a string and
                 // pass it to serde as a custom error.
-                de::Error::custom(format!("{}", err))
+                de::Error::custom(format!("{err}"))
             })
         }
 

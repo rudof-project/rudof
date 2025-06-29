@@ -22,11 +22,11 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         _: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
@@ -71,11 +71,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();

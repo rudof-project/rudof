@@ -19,19 +19,21 @@ use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
+impl<S: Rdf + Debug> Validator<S> for HasValue {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let has_value =
-            |targets: &FocusNodes<S>| !targets.iter().any(|value| value == self.value());
+        let has_value = |targets: &FocusNodes<S>| {
+            let value_term = &S::object_as_term(self.value());
+            !targets.iter().any(|value| value == value_term)
+        };
         let message = format!("HasValue({}) not satisfied", self.value());
         validate_with(
             component,
@@ -45,14 +47,14 @@ impl<S: Rdf + Debug> Validator<S> for HasValue<S> {
     }
 }
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for HasValue<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for HasValue {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
@@ -67,14 +69,14 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for HasValue<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for HasValue<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for HasValue {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

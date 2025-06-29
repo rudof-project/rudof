@@ -6,6 +6,7 @@ use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
@@ -18,12 +19,12 @@ pub trait Validator<S: Rdf + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -31,11 +32,11 @@ pub trait Validator<S: Rdf + Debug> {
 pub trait NativeValidator<S: NeighsRDF> {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -43,24 +44,25 @@ pub trait NativeValidator<S: NeighsRDF> {
 pub trait SparqlValidator<S: QueryRDF + Debug> {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &CompiledComponent,
+        shape: &CompiledShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
+/*
 macro_rules! generate_deref_fn {
     ($enum_name:ident, $($variant:ident),+) => {
         fn deref(&self) -> &Self::Target {
-            match self {
+            match self.component() {
                 $( $enum_name::$variant(inner) => inner, )+
             }
         }
     };
-}
+}*/
 
 pub trait NativeDeref {
     type Target: ?Sized;
@@ -68,10 +70,60 @@ pub trait NativeDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: NeighsRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
+pub struct ShaclComponent<'a, S> {
+    component: &'a CompiledComponent,
+    _marker: PhantomData<S>,
+}
+
+impl<'a, S> ShaclComponent<'a, S> {
+    pub fn new(component: &'a CompiledComponent) -> Self {
+        ShaclComponent {
+            component,
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn component(&self) -> &CompiledComponent {
+        self.component
+    }
+}
+
+impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
     type Target = dyn NativeValidator<S>;
 
-    generate_deref_fn!(
+    fn deref(&self) -> &Self::Target {
+        match self.component() {
+            CompiledComponent::Class(inner) => inner,
+            CompiledComponent::Datatype(inner) => inner,
+            CompiledComponent::NodeKind(inner) => inner,
+            CompiledComponent::MinCount(inner) => inner,
+            CompiledComponent::MaxCount(inner) => inner,
+            CompiledComponent::MinExclusive(inner) => inner,
+            CompiledComponent::MaxExclusive(inner) => inner,
+            CompiledComponent::MinInclusive(inner) => inner,
+            CompiledComponent::MaxInclusive(inner) => inner,
+            CompiledComponent::MinLength(inner) => inner,
+            CompiledComponent::MaxLength(inner) => inner,
+            CompiledComponent::Pattern(inner) => inner,
+            CompiledComponent::UniqueLang(inner) => inner,
+            CompiledComponent::LanguageIn(inner) => inner,
+            CompiledComponent::Equals(inner) => inner,
+            CompiledComponent::Disjoint(inner) => inner,
+            CompiledComponent::LessThan(inner) => inner,
+            CompiledComponent::LessThanOrEquals(inner) => inner,
+            CompiledComponent::Or(inner) => inner,
+            CompiledComponent::And(inner) => inner,
+            CompiledComponent::Not(inner) => inner,
+            CompiledComponent::Xone(inner) => inner,
+            CompiledComponent::Closed(inner) => inner,
+            CompiledComponent::Node(inner) => inner,
+            CompiledComponent::HasValue(inner) => inner,
+            CompiledComponent::In(inner) => inner,
+            CompiledComponent::QualifiedValueShape(inner) => inner,
+        }
+    }
+
+    /*generate_deref_fn!(
         CompiledComponent,
         Class,
         Datatype,
@@ -100,7 +152,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for CompiledComponent<S> {
         HasValue,
         In,
         QualifiedValueShape
-    );
+    );*/
 }
 
 pub trait SparqlDeref {
@@ -109,10 +161,42 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
     type Target = dyn SparqlValidator<S>;
 
-    generate_deref_fn!(
+    fn deref(&self) -> &Self::Target {
+        match self.component() {
+            CompiledComponent::Class(inner) => inner,
+            CompiledComponent::Datatype(inner) => inner,
+            CompiledComponent::NodeKind(inner) => inner,
+            CompiledComponent::MinCount(inner) => inner,
+            CompiledComponent::MaxCount(inner) => inner,
+            CompiledComponent::MinExclusive(inner) => inner,
+            CompiledComponent::MaxExclusive(inner) => inner,
+            CompiledComponent::MinInclusive(inner) => inner,
+            CompiledComponent::MaxInclusive(inner) => inner,
+            CompiledComponent::MinLength(inner) => inner,
+            CompiledComponent::MaxLength(inner) => inner,
+            CompiledComponent::Pattern(inner) => inner,
+            CompiledComponent::UniqueLang(inner) => inner,
+            CompiledComponent::LanguageIn(inner) => inner,
+            CompiledComponent::Equals(inner) => inner,
+            CompiledComponent::Disjoint(inner) => inner,
+            CompiledComponent::LessThan(inner) => inner,
+            CompiledComponent::LessThanOrEquals(inner) => inner,
+            CompiledComponent::Or(inner) => inner,
+            CompiledComponent::And(inner) => inner,
+            CompiledComponent::Not(inner) => inner,
+            CompiledComponent::Xone(inner) => inner,
+            CompiledComponent::Closed(inner) => inner,
+            CompiledComponent::Node(inner) => inner,
+            CompiledComponent::HasValue(inner) => inner,
+            CompiledComponent::In(inner) => inner,
+            CompiledComponent::QualifiedValueShape(inner) => inner,
+        }
+    }
+
+    /*   generate_deref_fn!(
         CompiledComponent,
         Class,
         Datatype,
@@ -141,5 +225,5 @@ impl<S: QueryRDF + Debug + 'static> SparqlDeref for CompiledComponent<S> {
         HasValue,
         In,
         QualifiedValueShape
-    );
+    ); */
 }

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -19,49 +17,53 @@ use shacl_ast::shacl_vocab::{
 };
 use shacl_ast::Schema;
 use srdf::lang::Lang;
+use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SLiteral;
 
-#[derive(Debug)]
-pub enum CompiledComponent<S: Rdf> {
-    Class(Class<S>),
-    Datatype(Datatype<S>),
+#[derive(Debug, Clone)]
+pub enum CompiledComponent {
+    Class(Class),
+    Datatype(Datatype),
     NodeKind(Nodekind),
     MinCount(MinCount),
     MaxCount(MaxCount),
-    MinExclusive(MinExclusive<S>),
-    MaxExclusive(MaxExclusive<S>),
-    MinInclusive(MinInclusive<S>),
-    MaxInclusive(MaxInclusive<S>),
+    MinExclusive(MinExclusive),
+    MaxExclusive(MaxExclusive),
+    MinInclusive(MinInclusive),
+    MaxInclusive(MaxInclusive),
     MinLength(MinLength),
     MaxLength(MaxLength),
     Pattern(Pattern),
     UniqueLang(UniqueLang),
     LanguageIn(LanguageIn),
-    Equals(Equals<S>),
-    Disjoint(Disjoint<S>),
-    LessThan(LessThan<S>),
-    LessThanOrEquals(LessThanOrEquals<S>),
-    Or(Or<S>),
-    And(And<S>),
-    Not(Not<S>),
-    Xone(Xone<S>),
-    Closed(Closed<S>),
-    Node(Node<S>),
-    HasValue(HasValue<S>),
-    In(In<S>),
-    QualifiedValueShape(QualifiedValueShape<S>),
+    Equals(Equals),
+    Disjoint(Disjoint),
+    LessThan(LessThan),
+    LessThanOrEquals(LessThanOrEquals),
+    Or(Or),
+    And(And),
+    Not(Not),
+    Xone(Xone),
+    Closed(Closed),
+    Node(Node),
+    HasValue(HasValue),
+    In(In),
+    QualifiedValueShape(QualifiedValueShape),
 }
 
-impl<S: Rdf> CompiledComponent<S> {
-    pub fn compile(component: Component, schema: &Schema<S>) -> Result<Self, CompiledShaclError> {
+impl CompiledComponent {
+    pub fn compile<S: Rdf>(
+        component: Component,
+        schema: &Schema<S>,
+    ) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
-                let class_rule = object.into();
+                let class_rule = object;
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Datatype(Datatype::new(iri_ref))
             }
             Component::NodeKind(node_kind) => CompiledComponent::NodeKind(Nodekind::new(node_kind)),
@@ -89,19 +91,19 @@ impl<S: Rdf> CompiledComponent<S> {
                 CompiledComponent::LanguageIn(LanguageIn::new(langs))
             }
             Component::Equals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Equals(Equals::new(iri_ref))
             }
             Component::Disjoint(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::Disjoint(Disjoint::new(iri_ref))
             }
             Component::LessThan(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::LessThan(LessThan::new(iri_ref))
             }
             Component::LessThanOrEquals(iri_ref) => {
-                let iri_ref = convert_iri_ref::<S>(iri_ref)?;
+                let iri_ref = convert_iri_ref(iri_ref)?;
                 CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(iri_ref))
             }
             Component::Or { shapes } => {
@@ -123,7 +125,7 @@ impl<S: Rdf> CompiledComponent<S> {
             } => {
                 let properties = ignored_properties
                     .into_iter()
-                    .map(|prop| convert_iri_ref::<S>(prop))
+                    .map(convert_iri_ref)
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::Closed(Closed::new(is_closed, properties))
             }
@@ -132,13 +134,13 @@ impl<S: Rdf> CompiledComponent<S> {
                 CompiledComponent::Node(Node::new(shape))
             }
             Component::HasValue { value } => {
-                let term = convert_value::<S>(value)?;
+                let term = convert_value(value)?;
                 CompiledComponent::HasValue(HasValue::new(term))
             }
             Component::In { values } => {
                 let terms = values
                     .into_iter()
-                    .map(|value| convert_value::<S>(value))
+                    .map(convert_value)
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::In(In::new(terms))
             }
@@ -168,7 +170,7 @@ impl<S: Rdf> CompiledComponent<S> {
 /// - IRI: https://www.w3.org/TR/shacl/#MaxCountConstraintComponent
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxCount {
     max_count: usize,
 }
@@ -192,7 +194,7 @@ impl MaxCount {
 /// - IRI: https://www.w3.org/TR/shacl/#MinCountConstraintComponent
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinCount {
     min_count: usize,
 }
@@ -213,17 +215,17 @@ impl MinCount {
 /// shapes. This is comparable to conjunction and the logical "and" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-#[derive(Debug)]
-pub struct And<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Debug, Clone)]
+pub struct And {
+    shapes: Vec<CompiledShape>,
 }
 
-impl<S: Rdf> And<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl And {
+    pub fn new(shapes: Vec<CompiledShape>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape> {
         &self.shapes
     }
 }
@@ -232,17 +234,19 @@ impl<S: Rdf> And<S> {
 /// given shape. This is comparable to negation and the logical "not" operator.
 ///
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
-#[derive(Debug)]
-pub struct Not<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Debug, Clone)]
+pub struct Not {
+    shape: Box<CompiledShape>,
 }
 
-impl<S: Rdf> Not<S> {
-    pub fn new(shape: CompiledShape<S>) -> Self {
-        Not { shape }
+impl Not {
+    pub fn new(shape: CompiledShape) -> Self {
+        Not {
+            shape: Box::new(shape),
+        }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape {
         &self.shape
     }
 }
@@ -253,17 +257,17 @@ impl<S: Rdf> Not<S> {
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 
-#[derive(Debug)]
-pub struct Or<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Debug, Clone)]
+pub struct Or {
+    shapes: Vec<CompiledShape>,
 }
 
-impl<S: Rdf> Or<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl Or {
+    pub fn new(shapes: Vec<CompiledShape>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape> {
         &self.shapes
     }
 }
@@ -273,17 +277,17 @@ impl<S: Rdf> Or<S> {
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
-#[derive(Debug)]
-pub struct Xone<S: Rdf> {
-    shapes: Vec<CompiledShape<S>>,
+#[derive(Debug, Clone)]
+pub struct Xone {
+    shapes: Vec<CompiledShape>,
 }
 
-impl<S: Rdf> Xone<S> {
-    pub fn new(shapes: Vec<CompiledShape<S>>) -> Self {
+impl Xone {
+    pub fn new(shapes: Vec<CompiledShape>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<CompiledShape<S>> {
+    pub fn shapes(&self) -> &Vec<CompiledShape> {
         &self.shapes
     }
 }
@@ -299,14 +303,14 @@ impl<S: Rdf> Xone<S> {
 /// shapes specified for the shape via sh:property.
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
-#[derive(Debug)]
-pub struct Closed<S: Rdf> {
+#[derive(Debug, Clone)]
+pub struct Closed {
     is_closed: bool,
-    ignored_properties: Vec<S::IRI>,
+    ignored_properties: Vec<IriS>,
 }
 
-impl<S: Rdf> Closed<S> {
-    pub fn new(is_closed: bool, ignored_properties: Vec<S::IRI>) -> Self {
+impl Closed {
+    pub fn new(is_closed: bool, ignored_properties: Vec<IriS>) -> Self {
         Closed {
             is_closed,
             ignored_properties,
@@ -317,7 +321,7 @@ impl<S: Rdf> Closed<S> {
         self.is_closed
     }
 
-    pub fn ignored_properties(&self) -> &Vec<S::IRI> {
+    pub fn ignored_properties(&self) -> &Vec<IriS> {
         &self.ignored_properties
     }
 }
@@ -326,17 +330,17 @@ impl<S: Rdf> Closed<S> {
 ///  the given RDF term.
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
-#[derive(Debug)]
-pub struct HasValue<S: Rdf> {
-    value: S::Term,
+#[derive(Debug, Clone)]
+pub struct HasValue {
+    value: RDFNode,
 }
 
-impl<S: Rdf> HasValue<S> {
-    pub fn new(value: S::Term) -> Self {
+impl HasValue {
+    pub fn new(value: RDFNode) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &S::Term {
+    pub fn value(&self) -> &RDFNode {
         &self.value
     }
 }
@@ -345,17 +349,17 @@ impl<S: Rdf> HasValue<S> {
 /// SHACL list.
 ///
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
-#[derive(Debug)]
-pub struct In<S: Rdf> {
-    values: Vec<S::Term>,
+#[derive(Debug, Clone)]
+pub struct In {
+    values: Vec<RDFNode>,
 }
 
-impl<S: Rdf> In<S> {
-    pub fn new(values: Vec<S::Term>) -> Self {
+impl In {
+    pub fn new(values: Vec<RDFNode>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<S::Term> {
+    pub fn values(&self) -> &Vec<RDFNode> {
         &self.values
     }
 }
@@ -365,18 +369,18 @@ impl<S: Rdf> In<S> {
 /// and the value of sh:disjoint as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
-#[derive(Debug)]
-pub struct Disjoint<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Debug, Clone)]
+pub struct Disjoint {
+    iri: IriS,
 }
 
-impl<S: Rdf> Disjoint<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
-        Disjoint { iri_ref }
+impl Disjoint {
+    pub fn new(iri: IriS) -> Self {
+        Disjoint { iri }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
-        &self.iri_ref
+    pub fn iri_ref(&self) -> &IriS {
+        &self.iri
     }
 }
 
@@ -385,18 +389,18 @@ impl<S: Rdf> Disjoint<S> {
 /// the value of sh:equals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
-#[derive(Debug)]
-pub struct Equals<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Debug, Clone)]
+pub struct Equals {
+    iri: IriS,
 }
 
-impl<S: Rdf> Equals<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
-        Equals { iri_ref }
+impl Equals {
+    pub fn new(iri: IriS) -> Self {
+        Equals { iri }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
-        &self.iri_ref
+    pub fn iri(&self) -> &IriS {
+        &self.iri
     }
 }
 
@@ -407,18 +411,18 @@ impl<S: Rdf> Equals<S> {
 /// as subject and the value of sh:lessThanOrEquals as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
-#[derive(Debug)]
-pub struct LessThanOrEquals<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Debug, Clone)]
+pub struct LessThanOrEquals {
+    iri: IriS,
 }
 
-impl<S: Rdf> LessThanOrEquals<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
-        LessThanOrEquals { iri_ref }
+impl LessThanOrEquals {
+    pub fn new(iri: IriS) -> Self {
+        LessThanOrEquals { iri }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
-        &self.iri_ref
+    pub fn iri(&self) -> &IriS {
+        &self.iri
     }
 }
 
@@ -427,18 +431,18 @@ impl<S: Rdf> LessThanOrEquals<S> {
 /// value of sh:lessThan as predicate.
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
-#[derive(Debug)]
-pub struct LessThan<S: Rdf> {
-    iri_ref: S::IRI,
+#[derive(Debug, Clone)]
+pub struct LessThan {
+    iri: IriS,
 }
 
-impl<S: Rdf> LessThan<S> {
-    pub fn new(iri_ref: S::IRI) -> Self {
-        LessThan { iri_ref }
+impl LessThan {
+    pub fn new(iri: IriS) -> Self {
+        LessThan { iri }
     }
 
-    pub fn iri_ref(&self) -> &S::IRI {
-        &self.iri_ref
+    pub fn iri(&self) -> &IriS {
+        &self.iri
     }
 }
 
@@ -446,17 +450,19 @@ impl<S: Rdf> LessThan<S> {
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
-#[derive(Debug)]
-pub struct Node<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Debug, Clone)]
+pub struct Node {
+    shape: Box<CompiledShape>,
 }
 
-impl<S: Rdf> Node<S> {
-    pub fn new(shape: CompiledShape<S>) -> Self {
-        Node { shape }
+impl Node {
+    pub fn new(shape: CompiledShape) -> Self {
+        Node {
+            shape: Box::new(shape),
+        }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape {
         &self.shape
     }
 }
@@ -469,30 +475,30 @@ impl<S: Rdf> Node<S> {
 ///  sh:qualifiedMaxCount or, one value for each, at the same subject.
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
-#[derive(Debug)]
-pub struct QualifiedValueShape<S: Rdf> {
-    shape: CompiledShape<S>,
+#[derive(Debug, Clone)]
+pub struct QualifiedValueShape {
+    shape: Box<CompiledShape>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
 }
 
-impl<S: Rdf> QualifiedValueShape<S> {
+impl QualifiedValueShape {
     pub fn new(
-        shape: CompiledShape<S>,
+        shape: CompiledShape,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
     ) -> Self {
         QualifiedValueShape {
-            shape,
+            shape: Box::new(shape),
             qualified_min_count,
             qualified_max_count,
             qualified_value_shapes_disjoint,
         }
     }
 
-    pub fn shape(&self) -> &CompiledShape<S> {
+    pub fn shape(&self) -> &CompiledShape {
         &self.shape
     }
 
@@ -513,7 +519,7 @@ impl<S: Rdf> QualifiedValueShape<S> {
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LanguageIn {
     langs: Vec<Lang>,
 }
@@ -533,7 +539,7 @@ impl LanguageIn {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MaxLength {
     max_length: isize,
 }
@@ -553,7 +559,7 @@ impl MaxLength {
 /// not to blank nodes.
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MinLength {
     min_length: isize,
 }
@@ -572,7 +578,7 @@ impl MinLength {
 /// shape.
 ///
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
@@ -610,7 +616,7 @@ impl Pattern {
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UniqueLang {
     unique_lang: bool,
 }
@@ -629,17 +635,17 @@ impl UniqueLang {
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
-pub struct Class<S: Rdf> {
-    class_rule: S::Term,
+#[derive(Debug, Clone)]
+pub struct Class {
+    class_rule: RDFNode,
 }
 
-impl<S: Rdf> Class<S> {
-    pub fn new(class_rule: S::Term) -> Self {
+impl Class {
+    pub fn new(class_rule: RDFNode) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &S::Term {
+    pub fn class_rule(&self) -> &RDFNode {
         &self.class_rule
     }
 }
@@ -648,17 +654,17 @@ impl<S: Rdf> Class<S> {
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
-#[derive(Debug)]
-pub struct Datatype<S: Rdf> {
-    datatype: S::IRI,
+#[derive(Debug, Clone)]
+pub struct Datatype {
+    datatype: IriS,
 }
 
-impl<S: Rdf> Datatype<S> {
-    pub fn new(datatype: S::IRI) -> Self {
+impl Datatype {
+    pub fn new(datatype: IriS) -> Self {
         Datatype { datatype }
     }
 
-    pub fn datatype(&self) -> &S::IRI {
+    pub fn datatype(&self) -> &IriS {
         &self.datatype
     }
 }
@@ -667,7 +673,7 @@ impl<S: Rdf> Datatype<S> {
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Nodekind {
     node_kind: NodeKind,
 }
@@ -683,17 +689,15 @@ impl Nodekind {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MaxExclusive<S> {
+#[derive(Debug, Clone)]
+pub struct MaxExclusive {
     max_exclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MaxExclusive<S> {
+impl MaxExclusive {
     pub fn new(literal: SLiteral) -> Self {
         MaxExclusive {
             max_exclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -703,17 +707,15 @@ impl<S> MaxExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MaxInclusive<S> {
+#[derive(Debug, Clone)]
+pub struct MaxInclusive {
     max_inclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S: Rdf> MaxInclusive<S> {
+impl MaxInclusive {
     pub fn new(literal: SLiteral) -> Self {
         MaxInclusive {
             max_inclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -723,17 +725,15 @@ impl<S: Rdf> MaxInclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MinExclusive<S> {
+#[derive(Debug, Clone)]
+pub struct MinExclusive {
     min_exclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MinExclusive<S> {
+impl MinExclusive {
     pub fn new(literal: SLiteral) -> Self {
         MinExclusive {
             min_exclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -743,17 +743,15 @@ impl<S> MinExclusive<S> {
 }
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
-#[derive(Debug)]
-pub struct MinInclusive<S> {
+#[derive(Debug, Clone)]
+pub struct MinInclusive {
     min_inclusive: SLiteral,
-    _marker: PhantomData<S>,
 }
 
-impl<S> MinInclusive<S> {
+impl MinInclusive {
     pub fn new(literal: SLiteral) -> Self {
         MinInclusive {
             min_inclusive: literal,
-            _marker: PhantomData,
         }
     }
 
@@ -762,8 +760,8 @@ impl<S> MinInclusive<S> {
     }
 }
 
-impl<S: Rdf> From<&CompiledComponent<S>> for IriS {
-    fn from(value: &CompiledComponent<S>) -> Self {
+impl From<&CompiledComponent> for IriS {
+    fn from(value: &CompiledComponent) -> Self {
         match value {
             CompiledComponent::Class(_) => sh_class().clone(),
             CompiledComponent::Datatype(_) => sh_datatype().clone(),

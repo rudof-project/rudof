@@ -142,7 +142,7 @@ impl FromStr for TapConfig {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse TapConfig: {}", e))
+        toml::from_str(s).map_err(|e| format!("Failed to parse TapConfig: {e}"))
     }
 }
 

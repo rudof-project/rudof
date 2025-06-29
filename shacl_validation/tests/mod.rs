@@ -32,12 +32,12 @@ mod core;
 
 struct ShaclTest<R: Rdf> {
     data: R,
-    shapes: Schema,
+    shapes: Schema<R>,
     report: ValidationReport,
 }
 
 impl<R: Rdf> ShaclTest<R> {
-    fn new(data: R, shapes: Schema, report: ValidationReport) -> Self {
+    fn new(data: R, shapes: Schema<R>, report: ValidationReport) -> Self {
         ShaclTest {
             data,
             shapes,

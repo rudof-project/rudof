@@ -4,23 +4,23 @@ use shacl_ast::target::Target;
 use srdf::{RDFNode, Rdf};
 
 /// Represents compiled target declarations
-#[derive(Debug)]
-pub enum CompiledTarget<S: Rdf> {
+#[derive(Debug, Clone)]
+pub enum CompiledTarget {
     Node(RDFNode),
     Class(RDFNode),
     SubjectsOf(IriS),
     ObjectsOf(IriS),
     ImplicitClass(RDFNode),
-    // The following target declarations always return violation errors 
-    WrongTargetNode(S::Term),
-    WrongTargetClass(S::Term),
-    WrongSubjectsOf(S::Term),
-    WrongObjectsOf(S::Term),
-    WrongImplicitClass(S::Term)
+    // The following target declarations always return violation errors
+    WrongTargetNode(RDFNode),
+    WrongTargetClass(RDFNode),
+    WrongSubjectsOf(RDFNode),
+    WrongObjectsOf(RDFNode),
+    WrongImplicitClass(RDFNode),
 }
 
-impl<S: Rdf> CompiledTarget<S> {
-    pub fn compile(target: Target<S>) -> Result<Self, CompiledShaclError> {
+impl CompiledTarget {
+    pub fn compile<S: Rdf>(target: Target<S>) -> Result<Self, CompiledShaclError> {
         let ans = match target {
             Target::TargetNode(object) => CompiledTarget::Node(object),
             Target::TargetClass(object) => CompiledTarget::Class(object),

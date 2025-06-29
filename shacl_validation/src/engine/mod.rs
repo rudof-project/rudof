@@ -19,17 +19,17 @@ pub trait Engine<S: Rdf> {
     fn evaluate(
         &self,
         store: &S,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
+        shape: &CompiledShape,
+        component: &CompiledComponent,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
     fn focus_nodes(
         &self,
         store: &S,
-        targets: &[CompiledTarget<S>],
+        targets: &[CompiledTarget],
     ) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: here it would be nice to return an error...
         let targets = targets
@@ -75,7 +75,7 @@ pub trait Engine<S: Rdf> {
     fn path(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
         match shape.path() {
@@ -94,7 +94,7 @@ pub trait Engine<S: Rdf> {
     fn predicate(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -102,7 +102,7 @@ pub trait Engine<S: Rdf> {
     fn alternative(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -110,7 +110,7 @@ pub trait Engine<S: Rdf> {
     fn sequence(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         paths: &[SHACLPath],
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -118,7 +118,7 @@ pub trait Engine<S: Rdf> {
     fn inverse(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -126,7 +126,7 @@ pub trait Engine<S: Rdf> {
     fn zero_or_more(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -134,7 +134,7 @@ pub trait Engine<S: Rdf> {
     fn one_or_more(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;
@@ -142,7 +142,7 @@ pub trait Engine<S: Rdf> {
     fn zero_or_one(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape<S>,
+        shape: &CompiledPropertyShape,
         path: &SHACLPath,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError>;

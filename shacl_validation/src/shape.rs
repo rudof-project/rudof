@@ -16,17 +16,17 @@ pub trait Validate<S: Rdf> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
-impl<S: Rdf + Debug> Validate<S> for CompiledShape<S> {
+impl<S: Rdf + Debug> Validate<S> for CompiledShape {
     fn validate(
         &self,
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&CompiledShape>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         tracing::debug!(
             "Shape.validate with shape {} and source shape: {}",
@@ -87,7 +87,7 @@ pub trait FocusNodesOps<S: Rdf> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S>;
 }
 
-impl<S: Rdf> FocusNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> FocusNodesOps<S> for CompiledShape {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
             .focus_nodes(store, self.targets())
@@ -104,7 +104,7 @@ pub trait ValueNodesOps<S: Rdf> {
     ) -> ValueNodes<S>;
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledShape {
     fn value_nodes(
         &self,
         store: &S,
@@ -118,7 +118,7 @@ impl<S: Rdf> ValueNodesOps<S> for CompiledShape<S> {
     }
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape {
     fn value_nodes(&self, _: &S, focus_nodes: &FocusNodes<S>, _: &dyn Engine<S>) -> ValueNodes<S> {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
@@ -130,7 +130,7 @@ impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape<S> {
     }
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledPropertyShape<S> {
+impl<S: Rdf> ValueNodesOps<S> for CompiledPropertyShape {
     fn value_nodes(
         &self,
         store: &S,
