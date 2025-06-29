@@ -30,9 +30,7 @@ fn main() -> Result<(), ValidateError> {
             ] .
     "#;
 
-    let schema: SchemaIR<SRDFGraph> =
-        ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
-    let schema_endpoint: SchemaIR<SRDFSparql> = schema.map_terms();
+    let schema: SchemaIR = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
 
     let endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",
@@ -40,7 +38,7 @@ fn main() -> Result<(), ValidateError> {
         ShaclValidationMode::Native,
     )?;
 
-    let report = endpoint_validation.validate(&schema_endpoint)?;
+    let report = endpoint_validation.validate(&schema)?;
 
     println!("{report}");
 
