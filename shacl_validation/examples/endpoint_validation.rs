@@ -8,8 +8,6 @@ use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
 use shacl_validation::validate_error::ValidateError;
 use srdf::RDFFormat;
-use srdf::SRDFGraph;
-use srdf::SRDFSparql;
 
 fn main() -> Result<(), ValidateError> {
     let shacl = r#"
