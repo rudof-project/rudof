@@ -141,19 +141,19 @@ impl Shacl2ShEx {
         match target {
             Target::TargetNode(_) => Ok(None),
             Target::TargetClass(cls) => {
-                        let value_set_value = match cls {
-                            Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
-                            Object::BlankNode(bn) => {
-                                Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
-                                    bnode: bn.clone(),
-                                })
-                            }
-                            Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
-                                literal: lit.clone(),
-                            }),
-                        }?;
-                        Ok(Some(value_set_value))
+                let value_set_value = match cls {
+                    Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
+                    Object::BlankNode(bn) => {
+                        Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
+                            bnode: bn.clone(),
+                        })
                     }
+                    Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
+                        literal: lit.clone(),
+                    }),
+                }?;
+                Ok(Some(value_set_value))
+            }
             Target::TargetSubjectsOf(_) => Ok(None),
             Target::TargetObjectsOf(_) => Ok(None),
             Target::TargetImplicitClass(_) => Ok(None),

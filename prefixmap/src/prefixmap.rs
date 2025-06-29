@@ -272,9 +272,7 @@ impl PrefixMap {
                 Some(color) => ":".color(color),
                 None => ColoredString::from(":"),
             };
-            Some(format!(
-                "{prefix_colored}{semicolon_colored}{rest_colored}"
-            ))
+            Some(format!("{prefix_colored}{semicolon_colored}{rest_colored}"))
         } else {
             None
         };

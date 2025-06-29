@@ -50,7 +50,7 @@ fn convert_value(value: Value) -> Result<RDFNode, CompiledShaclError> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri = convert_iri_ref(iri_ref)?;
-            
+
             RDFNode::iri(iri)
         }
         Value::Literal(literal) => RDFNode::literal(literal),

@@ -6,7 +6,10 @@ use prefixmap::PrefixMap;
 use srdf::{RDFNode, Rdf};
 
 #[derive(Debug, Clone, Default)]
-pub struct Schema<RDF: Rdf> where RDF::Term: Clone {
+pub struct Schema<RDF: Rdf>
+where
+    RDF::Term: Clone,
+{
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
     shapes: HashMap<RDFNode, Shape<RDF>>,
@@ -19,7 +22,7 @@ impl<RDF: Rdf> Schema<RDF> {
         Schema {
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
-            base: None
+            base: None,
         }
     }
 
