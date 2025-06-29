@@ -5,7 +5,7 @@ use shacl_ast::severity::Severity;
 
 use super::compiled_shacl_error::CompiledShaclError;
 
-#[derive(Hash, PartialEq, Eq, Debug)]
+#[derive(Hash, Clone, PartialEq, Eq, Debug)]
 pub enum CompiledSeverity {
     Violation,
     Warning,

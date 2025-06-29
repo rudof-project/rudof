@@ -149,10 +149,9 @@ fn print_basic(result: &ManifestRunResult) {
         result.panicked.len(),
     );
     let overview = format!(
-        "Passed: {}, Failed: {}, Skipped: {}, Not implemented: {}",
-        npassed, nfailed, nskipped, npanicked
+        "Passed: {npassed}, Failed: {nfailed}, Skipped: {nskipped}, Not implemented: {npanicked}",
     );
-    println!("{}", overview);
+    println!("{overview}");
 }
 
 fn print_failed(result: &ManifestRunResult) {

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use iri_s::IriS;
 use srdf::{RDFNode, Rdf, SHACLPath};
 
@@ -10,7 +12,7 @@ use super::node_shape::CompiledNodeShape;
 use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CompiledShape {
     NodeShape(Box<CompiledNodeShape>),
     PropertyShape(Box<CompiledPropertyShape>),
@@ -90,5 +92,14 @@ impl CompiledShape {
         };
 
         Ok(shape)
+    }
+}
+
+impl Display for CompiledShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompiledShape::NodeShape(_shape) => write!(f, "NodeShape"),
+            CompiledShape::PropertyShape(_shape) => write!(f, "PropertyShape"),
+        }
     }
 }

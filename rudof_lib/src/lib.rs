@@ -10,7 +10,7 @@ pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
 pub use rudof_error::*;
-pub use shacl_ast;
+pub use shacl_ir;
 pub use shacl_validation;
 pub use shapes_graph_source::*;
 pub use srdf;

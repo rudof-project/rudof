@@ -148,7 +148,7 @@ impl<'de> Deserialize<'de> for Focus {
 fn change_extension(name: String, old_extension: String, new_extension: String) -> String {
     if name.ends_with(&old_extension) {
         let (first, _) = name.split_at(name.len() - old_extension.len());
-        format!("{}{}", first, new_extension)
+        format!("{first}{new_extension}")
     } else {
         name
     }

@@ -14,7 +14,7 @@ use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompiledPropertyShape {
     id: RDFNode,
     path: SHACLPath,

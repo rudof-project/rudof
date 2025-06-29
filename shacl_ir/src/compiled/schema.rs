@@ -3,6 +3,7 @@ use prefixmap::PrefixMap;
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::io;
 
 use shacl_ast::Schema;
@@ -10,7 +11,7 @@ use shacl_ast::Schema;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::CompiledShape;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
@@ -110,6 +111,16 @@ impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
 
     fn try_from(schema: &Schema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(schema)
+    }
+}
+
+impl Display for SchemaIR {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "SHACL shapes graph",)?;
+        for (node, shape) in self.shapes.iter() {
+            writeln!(f, "{node} -> {shape}")?;
+        }
+        Ok(())
     }
 }
 

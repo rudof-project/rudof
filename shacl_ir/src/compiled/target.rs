@@ -4,7 +4,7 @@ use shacl_ast::target::Target;
 use srdf::{RDFNode, Rdf};
 
 /// Represents compiled target declarations
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CompiledTarget {
     Node(RDFNode),
     Class(RDFNode),

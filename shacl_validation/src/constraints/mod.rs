@@ -88,7 +88,7 @@ impl<'a, S> ShaclComponent<'a, S> {
     }
 }
 
-impl<'a, S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'a, S> {
+impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
     type Target = dyn NativeValidator<S>;
 
     fn deref(&self) -> &Self::Target {
@@ -161,7 +161,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<'a, S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'a, S> {
+impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
     type Target = dyn SparqlValidator<S>;
 
     fn deref(&self) -> &Self::Target {
