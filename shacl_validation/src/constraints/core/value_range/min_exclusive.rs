@@ -15,7 +15,7 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
     fn validate_native(
         &self,
         component: &CompiledComponent,
@@ -45,7 +45,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

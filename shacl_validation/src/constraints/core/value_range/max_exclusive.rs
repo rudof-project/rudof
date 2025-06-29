@@ -15,7 +15,7 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
     fn validate_native(
         &self,
         component: &CompiledComponent,
@@ -45,7 +45,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxExclusive<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxExclusive {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

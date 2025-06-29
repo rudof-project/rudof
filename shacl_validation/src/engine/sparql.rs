@@ -1,4 +1,5 @@
 use super::Engine;
+use crate::constraints::ShaclComponent;
 use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
@@ -28,7 +29,8 @@ impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
         source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        let validator = component.deref();
+        let shacl_component = ShaclComponent::new(component);
+        let validator = shacl_component.deref();
         Ok(validator.validate_sparql(
             component,
             shape,

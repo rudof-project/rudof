@@ -79,12 +79,8 @@ impl SchemaIR {
     pub fn get_shape(&self, sref: &RDFNode) -> Option<&CompiledShape> {
         self.shapes.get(sref)
     }
-}
 
-impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
-    type Error = CompiledShaclError;
-
-    fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
+    pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, CompiledShaclError> {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {
@@ -98,6 +94,22 @@ impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
         let base = schema.base().map(Into::into);
 
         Ok(SchemaIR::new(shapes, prefixmap, base))
+    }
+}
+
+impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
+    type Error = CompiledShaclError;
+
+    fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
+        Self::compile(&schema)
+    }
+}
+
+impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
+    type Error = CompiledShaclError;
+
+    fn try_from(schema: &Schema<RDF>) -> Result<Self, Self::Error> {
+        Self::compile(schema)
     }
 }
 

@@ -12,6 +12,7 @@ use srdf::Triple;
 
 use super::Engine;
 use crate::constraints::NativeDeref;
+use crate::constraints::ShaclComponent;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::srdf::get_objects_for;
 use crate::helpers::srdf::get_subjects_for;
@@ -33,7 +34,8 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
-        let validator = component.deref();
+        let shacl_component = ShaclComponent::new(component);
+        let validator = shacl_component.deref();
         Ok(validator.validate_native(
             component,
             shape,

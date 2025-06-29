@@ -136,6 +136,10 @@ pub trait Rdf: Sized {
         })
     }
 
+    fn object_as_term(object: &Object) -> Self::Term {
+        Self::Term::from(object.clone())
+    }
+
     fn subject_as_object(subj: &Self::Subject) -> Result<Object, RDFError> {
         let term = Self::subject_as_term(subj);
         <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_| {

@@ -28,7 +28,14 @@ impl<S: Rdf + Debug> Validator<S> for In {
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let r#in = |value_node: &S::Term| !self.values().contains(value_node);
+        let check = |value_node: &S::Term| {
+            let values: Vec<_> = self
+                .values()
+                .iter()
+                .map(|node| S::object_as_term(node))
+                .collect();
+            !values.contains(value_node)
+        };
         let message = format!(
             "In constraint not satisfied. Expected one of: {:?}",
             self.values()
@@ -38,14 +45,14 @@ impl<S: Rdf + Debug> Validator<S> for In {
             shape,
             value_nodes,
             ValueNodeIteration,
-            r#in,
+            check,
             &message,
             maybe_path,
         )
     }
 }
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for In<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for In {
     fn validate_native(
         &self,
         component: &CompiledComponent,
@@ -67,7 +74,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for In<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for In<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for In {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

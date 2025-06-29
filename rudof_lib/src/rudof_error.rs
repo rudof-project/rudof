@@ -2,11 +2,16 @@ use std::io;
 
 use iri_s::IriS;
 use shacl_ast::Schema;
+use shacl_ir::compiled_shacl_error::CompiledShaclError;
+use sparql_service::RdfData;
 use srdf::SRDFSparql;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Compiling SHACL: {error}")]
+    ShaclCompilation { error: Box<CompiledShaclError> },
+
     #[error("Error reading config file from path {path}: {error}")]
     RudofConfigFromPathError { path: String, error: io::Error },
 

@@ -31,6 +31,7 @@ pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql,
 
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
 pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
 pub use sparql_service::RdfData;
@@ -40,7 +41,8 @@ pub use sparql_service::RdfData;
 pub struct Rudof {
     config: RudofConfig,
     rdf_data: RdfData,
-    shacl_schema: Option<ShaclSchema<RdfData>>, // TODO: Should we store a compiled schema to avoid compiling it for each validation request?
+    shacl_schema: Option<ShaclSchema<RdfData>>,
+    shacl_schema_ir: Option<ShaclSchemaIR>,
     shex_schema: Option<ShExSchema>,
     shex_schema_ir: Option<SchemaIR>,
     resolved_shex_schema: Option<SchemaWithoutImports>,
@@ -61,6 +63,7 @@ impl Rudof {
             shex_schema: None,
             shex_schema_ir: None,
             shacl_schema: None,
+            shacl_schema_ir: None,
             resolved_shex_schema: None,
             shex_validator: None,
             rdf_data: RdfData::new(),
@@ -106,13 +109,21 @@ impl Rudof {
     /// Get the shapes graph schema from the current RDF data
     pub fn get_shacl_from_data(&mut self) -> Result<()> {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;
-        self.shacl_schema = Some(schema);
+        self.shacl_schema = Some(schema.clone());
+        let shacl_ir = ShaclSchemaIR::compile(&schema)
+            .map_err(|e| RudofError::ShaclCompilation { error: Box::new(e) })?;
+        self.shacl_schema_ir = Some(shacl_ir);
         Ok(())
     }
 
     /// Get the current SHACL
-    pub fn get_shacl(&self) -> Option<&ShaclSchema> {
+    pub fn get_shacl(&self) -> Option<&ShaclSchema<RdfData>> {
         self.shacl_schema.as_ref()
+    }
+
+    /// Get the current SHACL Schema Internal Representation
+    pub fn get_shacl_ir(&self) -> Option<&ShaclSchemaIR> {
+        self.shacl_schema_ir.as_ref()
     }
 
     /// Get the current ShEx Schema
@@ -293,7 +304,7 @@ impl Rudof {
                 }
                 _ => {
                     let data_format = shacl_format2rdf_format(format)?;
-                    let mut shacl_writer: ShaclWriter<SRDFGraph> = ShaclWriter::new();
+                    let mut shacl_writer: ShaclWriter<RdfData> = ShaclWriter::new();
                     shacl_writer
                         .write(shacl)
                         .map_err(|e| RudofError::WritingSHACL {
@@ -357,7 +368,10 @@ impl Rudof {
                     error: format!("{e}"),
                 }
             })?;
-        let schema = shacl_schema_from_data(rdf_graph)?;
+        let rdf_data = RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadError {
+            error: format!("Obtaining SHACL from rdf_data: {e}"),
+        })?;
+        let schema = shacl_schema_from_data(rdf_data)?;
         self.shacl_schema = Some(schema);
         Ok(())
     }
@@ -685,7 +699,7 @@ impl Rudof {
     }
 }
 
-fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema> {
+fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema<RDF>> {
     let schema = ShaclParser::new(rdf_data)
         .parse()
         .map_err(|e| RudofError::SHACLParseError {

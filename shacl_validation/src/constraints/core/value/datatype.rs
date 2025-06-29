@@ -12,7 +12,6 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::Datatype;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::Iri;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -20,7 +19,7 @@ use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
+impl<S: Rdf + Debug> Validator<S> for Datatype {
     fn validate(
         &self,
         component: &CompiledComponent,
@@ -55,7 +54,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
     }
 }
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
     fn validate_native(
         &self,
         component: &CompiledComponent,
@@ -77,7 +76,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype<S> {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Datatype<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Datatype {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,
