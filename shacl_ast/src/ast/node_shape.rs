@@ -184,7 +184,7 @@ impl<RDF: Rdf> Display for NodeShape<RDF> {
 
 impl<RDF:Rdf> Clone for NodeShape<RDF> {
     fn clone(&self) -> Self {
-        Self { id: self.id.clone(), components: self.components.clone(), targets: self.targets.clone(), property_shapes: self.property_shapes.clone(), closed: self.closed.clone(), deactivated: self.deactivated.clone(), severity: self.severity.clone(), name: self.name.clone(), description: self.description.clone(), group: self.group.clone() }
+        Self { id: self.id.clone(), components: self.components.clone(), targets: self.targets.clone(), property_shapes: self.property_shapes.clone(), closed: self.closed, deactivated: self.deactivated, severity: self.severity.clone(), name: self.name.clone(), description: self.description.clone(), group: self.group.clone() }
     }
 }
 

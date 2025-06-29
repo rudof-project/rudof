@@ -87,7 +87,7 @@ impl CompiledNodeShape {
         shape: Box<NodeShape<S>>,
         schema: &Schema<S>,
     ) -> Result<Self, CompiledShaclError> {
-        let id = shape.id().clone().into();
+        let id = shape.id().clone();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;

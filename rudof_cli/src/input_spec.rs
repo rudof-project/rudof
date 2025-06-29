@@ -30,7 +30,7 @@ impl Display for InputSpec {
             InputSpec::Path(path_buf) => write!(f, "Path: {}", path_buf.display()),
             InputSpec::Stdin => write!(f, "Stdin"),
             InputSpec::Url(url_spec) => write!(f, "Url: {url_spec}"),
-            InputSpec::Str(s) => write!(f, "String: {}", s),
+            InputSpec::Str(s) => write!(f, "String: {s}"),
         }
     }
 }

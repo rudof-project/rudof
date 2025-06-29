@@ -40,8 +40,8 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Atom::Pos(value) => write!(f, "+({})", value),
-            Atom::Neg(value) => write!(f, "!({})", value),
+            Atom::Pos(value) => write!(f, "+({value})"),
+            Atom::Neg(value) => write!(f, "!({value})"),
         }
     }
 }

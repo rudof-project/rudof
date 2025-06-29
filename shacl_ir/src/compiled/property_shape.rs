@@ -99,7 +99,7 @@ impl CompiledPropertyShape {
         shape: PropertyShape<S>,
         schema: &Schema<S>,
     ) -> Result<Self, CompiledShaclError> {
-        let id = shape.id().clone().into();
+        let id = shape.id().clone();
         let path = shape.path().to_owned();
         let closed = shape.is_closed().to_owned();
         let deactivated = shape.is_deactivated().to_owned();

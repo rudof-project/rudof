@@ -726,7 +726,7 @@ fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
 fn mk_cond_value_set(value_set: ValueSet) -> Cond {
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("{}", value_set).as_str())
+            .with_name(format!("{value_set}").as_str())
             .with_cond(move |node: &Node| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())

@@ -84,14 +84,14 @@ impl SchemaIR {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {
-            let term = rdf_node.clone().into();
-            let shape = CompiledShape::compile(shape.to_owned(), &schema)?;
+            let term = rdf_node.clone();
+            let shape = CompiledShape::compile(shape.to_owned(), schema)?;
             shapes.insert(term, shape);
         }
 
         let prefixmap = schema.prefix_map();
 
-        let base = schema.base().map(Into::into);
+        let base = schema.base();
 
         Ok(SchemaIR::new(shapes, prefixmap, base))
     }

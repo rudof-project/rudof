@@ -213,7 +213,7 @@ fn parse_constraint(
             Ok(())
         }
         _ => Err(Tap2ShExError::NotImplemented {
-            msg: format!("ValueConstraint: {:?}", constraint),
+            msg: format!("ValueConstraint: {constraint:?}"),
         }),
     }
 }

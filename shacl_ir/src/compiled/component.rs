@@ -59,7 +59,7 @@ impl CompiledComponent {
     ) -> Result<Self, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
-                let class_rule = object.into();
+                let class_rule = object;
                 CompiledComponent::Class(Class::new(class_rule))
             }
             Component::Datatype(iri_ref) => {
@@ -125,7 +125,7 @@ impl CompiledComponent {
             } => {
                 let properties = ignored_properties
                     .into_iter()
-                    .map(|prop| convert_iri_ref(prop))
+                    .map(convert_iri_ref)
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::Closed(Closed::new(is_closed, properties))
             }
@@ -140,7 +140,7 @@ impl CompiledComponent {
             Component::In { values } => {
                 let terms = values
                     .into_iter()
-                    .map(|value| convert_value(value))
+                    .map(convert_value)
                     .collect::<Result<Vec<_>, _>>()?;
                 CompiledComponent::In(In::new(terms))
             }

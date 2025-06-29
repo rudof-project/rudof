@@ -486,7 +486,7 @@ impl Rudof {
             ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
                 RudofError::ShExValidatorCreationError {
                     error: format!("{e}"),
-                    schema: format!("{}", schema_json),
+                    schema: format!("{schema_json}"),
                 }
             })?;
         self.shex_validator = Some(validator);

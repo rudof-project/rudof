@@ -188,9 +188,9 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Pending {{")?;
         for (v, r) in self.pending_map.iter() {
-            write!(f, "{}@", v)?;
+            write!(f, "{v}@")?;
             for r in r.iter() {
-                write!(f, "{} ", r)?;
+                write!(f, "{r} ")?;
             }
             write!(f, "| ")?;
         }

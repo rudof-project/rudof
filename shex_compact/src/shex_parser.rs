@@ -98,7 +98,7 @@ impl StatementIterator<'_> {
             }),
             Err(Err::Incomplete(_)) => Ok(StatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
-                msg: format!("cannot start parsing. Error: {}", e),
+                msg: format!("cannot start parsing. Error: {e}"),
             }),
         }
     }
@@ -143,7 +143,7 @@ impl<'a> Iterator for StatementIterator<'a> {
             }
             Err(e) => {
                 r = Some(Err(ParseError::Custom {
-                    msg: format!("error parsing whitespace. Error: {}", e),
+                    msg: format!("error parsing whitespace. Error: {e}"),
                 }));
                 self.done = true;
             }

@@ -43,7 +43,7 @@ impl From<&CompiledSeverity> for IriS {
             CompiledSeverity::Violation => sh_violation().clone(),
             CompiledSeverity::Warning => sh_warning().clone(),
             CompiledSeverity::Info => sh_info().clone(),
-            CompiledSeverity::Generic(iri) => iri.clone().into(),
+            CompiledSeverity::Generic(iri) => iri.clone(),
         }
     }
 }

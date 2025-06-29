@@ -1951,7 +1951,7 @@ where
     cond(
         &term,
         move |t| t == &expected,
-        format!("Term {term} not equals {}", expected_str),
+        format!("Term {term} not equals {expected_str}"),
     )
 }
 

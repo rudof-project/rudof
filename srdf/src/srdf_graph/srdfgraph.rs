@@ -155,12 +155,12 @@ impl SRDFGraph {
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
-        let str: String = format!("{}", bn);
+        let str: String = format!("{bn}");
         format!("{}", str.green())
     }
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
-        let str: String = format!("{}", lit);
+        let str: String = format!("{lit}");
         format!("{}", str.red())
     }
 

@@ -48,7 +48,7 @@ impl Display for IriOrStr {
             IriOrStr::String(s) => s,
             IriOrStr::IriS(iri_s) => iri_s.as_str(),
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 

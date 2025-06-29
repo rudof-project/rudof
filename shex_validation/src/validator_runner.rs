@@ -788,7 +788,7 @@ fn show_result(result: &Either<Vec<ValidatorError>, Vec<Reason>>) -> String {
 
 fn show_label(maybe_label: &Option<ShapeLabel>) -> String {
     match maybe_label {
-        Some(label) => format!("{}", label),
+        Some(label) => format!("{label}"),
         None => "No label".to_string(),
     }
 }

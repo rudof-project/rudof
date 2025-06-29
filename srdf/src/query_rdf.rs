@@ -108,7 +108,7 @@ impl<S: Rdf> QuerySolution<S> {
                 None => "()".to_string(),
                 Some(v) => format!("{v}"),
             };
-            result.push_str(format!("{} -> {}\n", var, value).as_str())
+            result.push_str(format!("{var} -> {value}\n").as_str())
         }
         result
     }

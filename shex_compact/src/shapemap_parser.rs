@@ -123,7 +123,7 @@ impl ShapeMapStatementIterator<'_> {
             }),
             Err(Err::Incomplete(_)) => Ok(ShapeMapStatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
-                msg: format!("cannot start parsing. Error: {}", e),
+                msg: format!("cannot start parsing. Error: {e}"),
             }),
         }
     }

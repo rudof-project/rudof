@@ -273,8 +273,7 @@ impl PrefixMap {
                 None => ColoredString::from(":"),
             };
             Some(format!(
-                "{}{}{}",
-                prefix_colored, semicolon_colored, rest_colored
+                "{prefix_colored}{semicolon_colored}{rest_colored}"
             ))
         } else {
             None
@@ -334,7 +333,7 @@ impl PrefixMap {
             };
             let length = prefix_colored.len() + 1 + rest_colored.len();
             (
-                format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored),
+                format!("{prefix_colored}{semicolon_colored}{rest_colored}"),
                 length,
             )
         } else {

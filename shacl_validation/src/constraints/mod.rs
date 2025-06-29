@@ -78,7 +78,7 @@ pub struct ShaclComponent<'a, S> {
 impl<'a, S> ShaclComponent<'a, S> {
     pub fn new(component: &'a CompiledComponent) -> Self {
         ShaclComponent {
-            component: component,
+            component,
             _marker: PhantomData,
         }
     }
