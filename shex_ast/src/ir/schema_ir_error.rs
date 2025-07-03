@@ -10,6 +10,9 @@ use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
+    #[error("Error creating language tag: {lang}: {err}")]
+    LangTagError { lang: String, err: String },
+
     #[error("Parsing {str:?} as IRI")]
     Str2IriError { str: String },
 

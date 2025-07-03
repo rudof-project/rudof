@@ -319,14 +319,19 @@ fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a Shape
 
 fn show_errors(errors: &[ValidatorError]) -> String {
     let mut result = String::new();
-    for (err, idx) in errors.iter().enumerate() {
-        result.push_str(format!("Error #{idx}: {err}\n").as_str());
+    if errors.len() == 1 {
+        result.push_str(format!("Error {}\n", errors.get(0).unwrap()).as_str());
+    } else {
+        for (idx, err) in errors.iter().enumerate() {
+            result.push_str(format!("Error #{idx}: {err}\n").as_str());
+        }
     }
     result
 }
 
-fn json_errors(_errors: &[ValidatorError]) -> Value {
-    let vs = vec!["todo", "errors"];
+fn json_errors(errors: &[ValidatorError]) -> Value {
+    // let vs = vec!["todo", "errors"];
+    let vs: Vec<_> = errors.iter().map(|e| e.to_string()).collect();
     vs.into()
 }
 

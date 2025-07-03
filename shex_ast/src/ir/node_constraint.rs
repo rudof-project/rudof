@@ -1,8 +1,10 @@
+use serde::Serialize;
+
 use crate::{ast::NodeConstraint as AstNodeConstraint, Cond};
 use std::fmt::Display;
 
 /// Represents compiled node constraints
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Serialize, Clone)]
 pub struct NodeConstraint {
     source: AstNodeConstraint,
     cond: Cond,

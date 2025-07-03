@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
+use serde::Serialize;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -142,5 +143,14 @@ impl Display for ValidatorErrors {
             writeln!(f, "  {err}")?;
         }
         Ok(())
+    }
+}
+
+impl Serialize for ValidatorError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
     }
 }

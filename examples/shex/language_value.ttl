@@ -1,0 +1,12 @@
+prefix :       <http://example.org/> 
+prefix sh:     <http://www.w3.org/ns/shacl#> 
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+
+:ok1 :name "ABCD"@en .
+:bad1 :name "ABD" .
+:bad2 :name "ABCDE"@it .
+:bad3 :name 23 .
+:bad4 :noname "ABCD" .
+:bad5 :name "ABCD"@en, "DEF"@en .
+:bad6 :name "ABCD"@en, "DEF"@it .
+:bad7 :name "ABCD"@it, "DEF"@es .

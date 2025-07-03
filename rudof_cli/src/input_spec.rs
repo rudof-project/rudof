@@ -60,12 +60,21 @@ impl InputSpec {
     }
 
     // The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
-    pub fn open_read(&self, accept: Option<&str>) -> Result<InputSpecReader, InputSpecError> {
+    pub fn open_read(
+        &self,
+        accept: Option<&str>,
+        context_error: &str,
+    ) -> Result<InputSpecReader, InputSpecError> {
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
-            InputSpec::Path(p) => Ok(Either::Right(Either::Left(BufReader::new(fs::File::open(
-                p,
-            )?)))),
+            InputSpec::Path(p) => match fs::File::open(p) {
+                Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
+                Err(e) => Err(InputSpecError::OpenPathError {
+                    msg: context_error.to_string(),
+                    path: p.to_path_buf(),
+                    err: e,
+                }),
+            },
             InputSpec::Url(url_spec) => {
                 let url = url_spec.url.clone();
                 let resp = match accept {
@@ -74,6 +83,7 @@ impl InputSpec {
                         let mut headers = reqwest::header::HeaderMap::new();
                         let accept_value = HeaderValue::from_str(accept_str).map_err(|e| {
                             InputSpecError::AcceptValue {
+                                context: context_error.to_string(),
                                 str: accept_str.to_string(),
                                 error: format!("{e}"),
                             }
@@ -157,6 +167,13 @@ pub type InputSpecReader =
 
 #[derive(Error, Debug)]
 pub enum InputSpecError {
+    #[error("IO Error reading {msg} from {path}: {err}")]
+    OpenPathError {
+        msg: String,
+        path: PathBuf,
+        err: io::Error,
+    },
+
     #[error("IO Error: {err}")]
     IOError {
         #[from]
@@ -190,8 +207,12 @@ pub enum InputSpecError {
     #[error("Dereferencing url {url} error: {error}")]
     UrlDerefError { url: Url, error: String },
 
-    #[error("Creating accept value {str} error: {error}")]
-    AcceptValue { str: String, error: String },
+    #[error("Error at {context} creating accept value {str} error: {error}")]
+    AcceptValue {
+        context: String,
+        str: String,
+        error: String,
+    },
 }
 
 #[derive(Debug, Clone)]

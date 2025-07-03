@@ -759,7 +759,7 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
-            language_tag: language_tag.to_string(),
+            language_tag: language_tag.clone(),
         }),
         ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
             stem: stem.to_string(),

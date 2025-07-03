@@ -1,6 +1,6 @@
 use super::object_value::ObjectValue;
 use iri_s::IriS;
-use srdf::Object;
+use srdf::{lang::Lang, Object};
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -20,7 +20,7 @@ pub enum ValueSetValue {
         exclusions: Option<Vec<StringOrLiteralStem>>,
     },
     Language {
-        language_tag: String,
+        language_tag: Lang,
     },
     LanguageStem,
     LanguageStemRange,
@@ -54,11 +54,28 @@ pub enum StringOrIriStem {
 impl ValueSetValue {
     pub fn match_value(&self, object: &Object) -> bool {
         match self {
-            ValueSetValue::IriStem { .. } => todo!(),
+            ValueSetValue::IriStem { stem } => match object {
+                Object::Iri(iri_s) => iri_s.as_str().starts_with(stem),
+                Object::BlankNode(_) => false,
+                Object::Literal(_) => false,
+            },
             ValueSetValue::IriStemRange { .. } => todo!(),
             ValueSetValue::LiteralStem { .. } => todo!(),
             ValueSetValue::LiteralStemRange { .. } => todo!(),
-            ValueSetValue::Language { .. } => todo!(),
+            ValueSetValue::Language { language_tag } => match object {
+                Object::Iri(_iri_s) => false,
+                Object::BlankNode(_) => false,
+                Object::Literal(sliteral) => match sliteral {
+                    srdf::SLiteral::StringLiteral { lang, .. } => match lang {
+                        Some(lang) => language_tag == lang,
+                        None => false,
+                    },
+                    srdf::SLiteral::DatatypeLiteral { .. } => false,
+                    srdf::SLiteral::NumericLiteral(_) => false,
+                    srdf::SLiteral::DatetimeLiteral(_) => false,
+                    srdf::SLiteral::BooleanLiteral(_) => false,
+                },
+            },
             ValueSetValue::LanguageStem => todo!(),
             ValueSetValue::LanguageStemRange => todo!(),
             ValueSetValue::ObjectValue(v) => v.match_value(object),
@@ -73,7 +90,7 @@ impl Display for ValueSetValue {
             ValueSetValue::IriStemRange { .. } => todo!(),
             ValueSetValue::LiteralStem { .. } => todo!(),
             ValueSetValue::LiteralStemRange { .. } => todo!(),
-            ValueSetValue::Language { .. } => todo!(),
+            ValueSetValue::Language { language_tag } => write!(f, "@{language_tag}"),
             ValueSetValue::LanguageStem => todo!(),
             ValueSetValue::LanguageStemRange => todo!(),
             ValueSetValue::ObjectValue(ov) => write!(f, "{ov}"),

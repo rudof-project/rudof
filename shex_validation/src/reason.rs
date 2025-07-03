@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use serde::Serialize;
 use shex_ast::{
     ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
     Node, ShapeLabelIdx,
@@ -185,5 +186,14 @@ impl Display for Reasons {
             writeln!(f, "  {reason}")?;
         }
         Ok(())
+    }
+}
+
+impl Serialize for Reason {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
     }
 }

@@ -440,7 +440,7 @@ fn run_service(
     force_overwrite: bool,
 ) -> Result<()> {
     let config = get_config(config)?;
-    let reader = input.open_read(Some(data_format.mime_type().as_str()))?;
+    let reader = input.open_read(Some(data_format.mime_type().as_str()), "Service")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let rdf_format = data_format2rdf_format(data_format);
     let config = config.service_config();
@@ -605,7 +605,7 @@ fn run_validate_shex(
         let mut rudof = Rudof::new(config);
         let (writer, _color) = get_writer(output, force_overwrite)?;
         let schema_format = schema_format.unwrap_or_default();
-        let schema_reader = schema.open_read(Some(&schema_format.mime_type()))?;
+        let schema_reader = schema.open_read(Some(&schema_format.mime_type()), "ShEx Schema")?;
         let schema_format = match schema_format {
             CliShExFormat::ShExC => ShExFormat::ShExC,
             CliShExFormat::ShExJ => ShExFormat::ShExJ,
@@ -618,7 +618,7 @@ fn run_validate_shex(
 
         let shapemap_format = shapemap_format_convert(shapemap_format);
         if let Some(shapemap_spec) = shapemap {
-            let shapemap_reader = shapemap_spec.open_read(None)?;
+            let shapemap_reader = shapemap_spec.open_read(None, "ShapeMap")?;
             rudof.read_shapemap(shapemap_reader, &shapemap_format)?;
         }
 
@@ -1167,7 +1167,7 @@ fn add_shacl_schema_rudof(
     reader_mode: &ReaderMode,
     config: &RudofConfig,
 ) -> Result<()> {
-    let reader = schema.open_read(Some(shapes_format.mime_type().as_str()))?;
+    let reader = schema.open_read(Some(shapes_format.mime_type().as_str()), "SHACL shapes")?;
     let shapes_format = shacl_format_convert(shapes_format)?;
     let base = get_base(schema, config)?;
     rudof.read_shacl(reader, &shapes_format, base.as_deref(), reader_mode)?;
@@ -1193,7 +1193,7 @@ fn get_data_rudof(
                 RDFReaderMode::Strict => srdf::ReaderMode::Strict,
             };
             for d in data {
-                let data_reader = d.open_read(Some(&data_format.mime_type()))?;
+                let data_reader = d.open_read(Some(&data_format.mime_type()), "RDF data")?;
                 let base = get_base(d, config)?;
                 rudof.read_data(data_reader, &rdf_format, base.as_deref(), &reader_mode)?;
             }
@@ -1379,7 +1379,7 @@ fn run_shapemap(
     let (mut writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(&RudofConfig::new());
     let shapemap_format = shapemap_format_convert(shapemap_format);
-    rudof.read_shapemap(shapemap.open_read(None)?, &shapemap_format)?;
+    rudof.read_shapemap(shapemap.open_read(None, "ShapeMap")?, &shapemap_format)?;
     let result_format = shapemap_format_convert(result_format);
     let formatter = match color {
         ColorSupport::WithColor => ShapeMapFormatter::default(),
@@ -1450,7 +1450,7 @@ fn run_query(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let mut reader = query.open_read(None)?;
+    let mut reader = query.open_read(None, "Query")?;
     let results = rudof.run_query(&mut reader)?;
     let mut results_iter = results.iter().peekable();
     if let Some(first) = results_iter.peek() {
@@ -1508,7 +1508,7 @@ fn parse_shex_schema_rudof(
     config: &RudofConfig,
 ) -> Result<()> {
     let reader = input
-        .open_read(Some(&schema_format.mime_type()))
+        .open_read(Some(&schema_format.mime_type()), "ShEx schema")
         .context(format!("Get reader from input: {input}"))?;
     let schema_format = shex_format_convert(schema_format);
     let shex_config = config.shex_config();
@@ -1535,7 +1535,7 @@ fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &DCTapFormat) -> Re
     };
     match format {
         DCTapFormat::CSV => {
-            let reader = input.open_read(None)?;
+            let reader = input.open_read(None, "DCTAP")?;
             rudof.read_dctap(reader, &dctap_format)?;
             Ok(())
         }

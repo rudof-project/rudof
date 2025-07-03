@@ -44,14 +44,11 @@ where
         match self {
             MatchCond::Single(single) => single.matches(value),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
-            /*MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
+            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
                 let new_pending = c.matches(value)?;
                 current.merge(new_pending);
                 Ok(current)
-            }), */
-            _ => {
-                todo!()
-            }
+            }),
         }
     }
 
