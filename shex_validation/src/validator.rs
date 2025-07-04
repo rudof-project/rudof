@@ -320,7 +320,7 @@ fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a Shape
 fn show_errors(errors: &[ValidatorError]) -> String {
     let mut result = String::new();
     if errors.len() == 1 {
-        result.push_str(format!("Error {}\n", errors.get(0).unwrap()).as_str());
+        result.push_str(format!("Error {}\n", errors.first().unwrap()).as_str());
     } else {
         for (idx, err) in errors.iter().enumerate() {
             result.push_str(format!("Error #{idx}: {err}\n").as_str());
