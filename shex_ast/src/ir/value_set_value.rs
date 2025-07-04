@@ -55,7 +55,7 @@ impl ValueSetValue {
     pub fn match_value(&self, object: &Object) -> bool {
         match self {
             ValueSetValue::IriStem { stem } => match object {
-                Object::Iri(iri_s) => iri_s.as_str().starts_with(stem),
+                Object::Iri(iri_s) => iri_s.as_str().starts_with(stem.as_str()),
                 Object::BlankNode(_) => false,
                 Object::Literal(_) => false,
             },
