@@ -14,6 +14,12 @@ pub struct StringOrLiteralStemWrapper {
     s: StringOrLiteralStem,
 }
 
+impl StringOrLiteralStemWrapper {
+    pub fn inner(&self) -> &StringOrLiteralStem {
+        &self.s
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum StringOrLiteralStem {

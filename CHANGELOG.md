@@ -2,7 +2,7 @@
 
 ## Current changes without release yet
 
-## [v0.1.78] - 2025-06-30
+## [v0.1.79] - 2025-06-30
 
 - Internal refactor in SHACL validator to use SHACL Internal Representation with an independent representation from the `Rdf` trait which allows it to be applied to different implementations of the `Rdf` trait. 
 

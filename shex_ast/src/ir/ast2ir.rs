@@ -11,7 +11,7 @@ use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::ShapeExprLabel;
 use crate::{ast, ast::Schema as SchemaJson, SchemaIRError, ShapeLabelIdx};
-use crate::{CResult, Cond, Node, Pred};
+use crate::{ir, CResult, Cond, Node, Pred};
 use iri_s::IriS;
 use lazy_static::lazy_static;
 use prefixmap::IriRef;
@@ -613,7 +613,7 @@ fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
         ast::StringFacet::Length(len) => mk_cond_length(*len),
         ast::StringFacet::MinLength(len) => mk_cond_min_length(*len),
         ast::StringFacet::MaxLength(len) => mk_cond_max_length(*len),
-        ast::StringFacet::Pattern(_) => todo!(),
+        ast::StringFacet::Pattern(pat) => mk_cond_pattern(pat.regex(), pat.flags()),
     }
 }
 
@@ -713,6 +713,20 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     )
 }
 
+fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
+    let regex_str = format!("/{regex}/{}", flags.unwrap_or(""));
+    let regex = regex.to_string();
+    let flags = flags.map(|f| f.to_string());
+    MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
+        move |value: &Node| match check_pattern(value, &regex, flags.as_deref()) {
+            Ok(_) => Ok(Pending::new()),
+            Err(err) => Err(RbeError::MsgError {
+                msg: format!("Pattern error: {err}"),
+            }),
+        },
+    ))
+}
+
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
@@ -764,13 +778,107 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
         ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem {
             stem: stem.to_string(),
         }),
-        ast::ValueSetValue::LiteralStemRange { .. } => {
-            todo!()
-            /*let stem = cnv_string_or_wildcard(&stem)?;
-            let exclusions = cnv_opt_vec(&exclusions, cnv_string_or_literalstem)?;
-            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })*/
+        ast::ValueSetValue::LiteralStemRange { stem, exclusions } => {
+            let stem = cnv_string_or_wildcard(stem)?;
+            let exclusions = cnv_literal_exclusions(exclusions)?;
+            Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
-        _ => todo!(),
+        ast::ValueSetValue::IriStemRange {
+            stem: _,
+            exclusions: _,
+        } => todo!(),
+        ast::ValueSetValue::LanguageStem { stem: _ } => todo!(),
+        ast::ValueSetValue::LanguageStemRange {
+            stem: _,
+            exclusions: _,
+        } => todo!(),
+    }
+}
+
+fn cnv_string_or_wildcard(
+    stem: &ast::StringOrWildcard,
+) -> CResult<crate::ir::value_set_value::StringOrWildcard> {
+    match stem {
+        ast::StringOrWildcard::String(s) => Ok(
+            crate::ir::value_set_value::StringOrWildcard::String(s.to_string()),
+        ),
+        ast::StringOrWildcard::Wildcard => {
+            Ok(crate::ir::value_set_value::StringOrWildcard::Wildcard {
+                type_: "".to_string(),
+            })
+        }
+    }
+}
+
+/*fn cnv_exclusions(
+    exclusions: &Option<Vec<ast::StringOrLiteralStemWrapper>>,
+) -> CResult<Option<Vec<crate::ir::value_set_value::StringOrLiteralStem>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_string_or_literal_stem(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}*/
+
+fn cnv_literal_exclusions(
+    exclusions: &Option<Vec<ast::LiteralExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::LiteralExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_literal_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}
+
+/*
+fn cnv_string_or_literal_exclusions(
+    exclusions: &Option<Vec<ast::StringOrLiteralExclusion>>,
+) -> CResult<Option<Vec<crate::ir::value_set_value::StringOrLiteralExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_string_or_literal_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}*/
+
+/*
+fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<StringOrLiteralStem> {
+    match sl.inner() {
+        ast::StringOrLiteralStem::String(s) => Ok(StringOrLiteralStem::String(s.to_string())),
+        ast::StringOrLiteralStem::LiteralStem { stem } => Ok(StringOrLiteralStem::LiteralStem {
+            stem: stem.to_string(),
+        }),
+    }
+}*/
+
+fn cnv_literal_exclusion(
+    le: &ast::LiteralExclusion,
+) -> CResult<crate::ir::exclusion::LiteralExclusion> {
+    match le {
+        ast::LiteralExclusion::Literal(s) => Ok(crate::ir::exclusion::LiteralExclusion::Literal(
+            s.to_string(),
+        )),
+        ast::LiteralExclusion::LiteralStem(s) => Ok(
+            crate::ir::exclusion::LiteralExclusion::LiteralStem(s.to_string()),
+        ),
     }
 }
 
@@ -860,6 +968,33 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
         Some(nk) => check_node_node_kind(node, &nk),
     }
 }*/
+
+fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
+    match node.as_object() {
+        Object::Literal(SLiteral::StringLiteral { lexical_form, .. }) => {
+            if let Some(re) = regex::Regex::new(regex).ok() {
+                if re.is_match(lexical_form) {
+                    Ok(())
+                } else {
+                    Err(SchemaIRError::PatternError {
+                        regex: regex.to_string(),
+                        flags: flags.unwrap_or("").to_string(),
+                        lexical_form: lexical_form.clone(),
+                    })
+                }
+            } else {
+                Err(SchemaIRError::InvalidRegex {
+                    regex: regex.to_string(),
+                })
+            }
+        }
+        _ => Err(SchemaIRError::PatternNodeNotLiteral {
+            node: node.to_string(),
+            regex: regex.to_string(),
+            flags: flags.map(|f| f.to_string()),
+        }),
+    }
+}
 
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
