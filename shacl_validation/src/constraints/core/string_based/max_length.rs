@@ -8,9 +8,9 @@ use srdf::Query;
 use srdf::Sparql;
 use srdf::Term;
 
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::Engine;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::validate_error::ValidateError;
@@ -18,7 +18,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxLength {
+impl<Q: Query> Validator<Q, NativeEngine> for MaxLength {
     fn validate(
         &self,
         component: &CompiledComponent<Q>,
@@ -56,8 +56,8 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MaxLength {
     }
 }
 
-impl<S: Sparql + Query> SparqlValidator<S> for MaxLength {
-    fn validate_sparql(
+impl<S: Sparql + Query> Validator<S, SparqlEngine> for MaxLength {
+    fn validate(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,

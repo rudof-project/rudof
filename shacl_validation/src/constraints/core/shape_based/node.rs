@@ -1,10 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::Node;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Sparql;
+use srdf::Rdf;
 
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
@@ -15,17 +13,17 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Node<Q> {
+impl<R: Rdf, E: Engine<R>> Validator<R, E> for Node<R> {
     fn validate(
         &self,
-        component: &CompiledComponent<Q>,
-        shape: &CompiledShape<Q>,
-        store: &Q,
-        value_nodes: &ValueNodes<Q>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        let node = |value_node: &Q::Term| {
+        let node = |value_node: &R::Term| {
             let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
-            match Validate::<Q>::validate::<E>(self.shape(), store, Some(&focus_nodes)) {
+            match Validate::<R>::validate::<E>(self.shape(), store, Some(&focus_nodes)) {
                 Ok(results) => Ok(!results.is_empty()),
                 Err(error) => Err(error),
             }
@@ -34,5 +32,3 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for Node<Q> {
         validate_with(component, shape, value_nodes, ValueNodeIteration, node)
     }
 }
-
-impl<S: Sparql + Query> SparqlValidator<S> for Node<S> {}

@@ -1,10 +1,8 @@
 use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::component::In;
 use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Sparql;
+use srdf::Rdf;
 
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
@@ -13,17 +11,15 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query, E: Engine<Q>> Validator<Q, E> for In<Q> {
+impl<R: Rdf, E: Engine<R>> Validator<R, E> for In<R> {
     fn validate(
         &self,
-        component: &CompiledComponent<Q>,
-        shape: &CompiledShape<Q>,
-        _store: &Q,
-        value_nodes: &ValueNodes<Q>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        _store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        let r#in = |value_node: &Q::Term| Ok(!self.values().contains(value_node));
+        let r#in = |value_node: &R::Term| Ok(!self.values().contains(value_node));
         validate_with(component, shape, value_nodes, ValueNodeIteration, r#in)
     }
 }
-
-impl<S: Sparql + Query> SparqlValidator<S> for In<S> {}

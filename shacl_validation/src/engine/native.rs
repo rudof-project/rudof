@@ -1,6 +1,4 @@
-use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
 use srdf::matcher::Any;
 use srdf::Query;
 use srdf::SHACLPath;
@@ -9,27 +7,14 @@ use srdf::Triple;
 use srdf::RDFS_SUBCLASS_OF;
 use srdf::RDF_TYPE;
 
-use crate::constraints::NativeDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
 
 use super::Engine;
 
 pub struct NativeEngine;
 
 impl<Q: Query> Engine<Q> for NativeEngine {
-    fn evaluate(
-        store: &Q,
-        shape: &CompiledShape<Q>,
-        component: &CompiledComponent<Q>,
-        value_nodes: &ValueNodes<Q>,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
-        let validator = component.deref();
-        validator.validate(component, shape, store, value_nodes)
-    }
-
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(_: &Q, node: &Q::Term) -> Result<FocusNodes<Q>, ValidateError> {

@@ -10,15 +10,15 @@ use crate::value_nodes::IterationStrategy;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-fn apply<R: Rdf, I: IterationStrategy<R>>(
+fn apply<R: Rdf, I: IterationStrategy>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
-    evaluator: impl Fn(&I::Item) -> Result<bool, ValidateError>,
+    evaluator: impl Fn(&I::Item<R>) -> Result<bool, ValidateError>,
 ) -> Result<Vec<ValidationResult>, ValidateError> {
-    let results = iteration_strategy
-        .iterate(value_nodes)
+    let results = value_nodes
+        .iterate::<I>()
         .flat_map(|(focus_node, item)| {
             if let Ok(condition) = evaluator(item) {
                 if condition {
@@ -38,19 +38,19 @@ fn apply<R: Rdf, I: IterationStrategy<R>>(
     Ok(results)
 }
 
-pub fn validate_with<R: Rdf, I: IterationStrategy<R>>(
+pub fn validate_with<R: Rdf, I: IterationStrategy>(
     component: &CompiledComponent<R>,
     shape: &CompiledShape<R>,
     value_nodes: &ValueNodes<R>,
     iteration_strategy: I,
-    evaluator: impl Fn(&I::Item) -> Result<bool, ValidateError>,
+    evaluator: impl Fn(&I::Item<R>) -> Result<bool, ValidateError>,
 ) -> Result<Vec<ValidationResult>, ValidateError> {
     apply(
         component,
         shape,
         value_nodes,
         iteration_strategy,
-        |item: &I::Item| evaluator(item),
+        |item: &I::Item<R>| evaluator(item),
     )
 }
 

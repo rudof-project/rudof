@@ -1,26 +1,15 @@
-use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
 use shacl_ast::compiled::target::CompiledTarget;
 use srdf::Rdf;
 use srdf::SHACLPath;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
 
 pub mod native;
 pub mod sparql;
 
 pub trait Engine<R: Rdf> {
-    fn evaluate(
-        store: &R,
-        shape: &CompiledShape<R>,
-        component: &CompiledComponent<R>,
-        value_nodes: &ValueNodes<R>,
-    ) -> Result<Vec<ValidationResult>, ValidateError>;
-
     fn focus_nodes(
         store: &R,
         targets: &[CompiledTarget<R>],

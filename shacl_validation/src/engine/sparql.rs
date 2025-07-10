@@ -1,34 +1,19 @@
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
 use shacl_ast::compiled::property_shape::CompiledPropertyShape;
-use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::SHACLPath;
 use srdf::Sparql;
 use srdf::Term;
 
-use crate::constraints::SparqlDeref;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
-use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodes;
 
 use super::Engine;
 
 pub struct SparqlEngine;
 
 impl<S: Sparql + Query> Engine<S> for SparqlEngine {
-    fn evaluate(
-        store: &S,
-        shape: &CompiledShape<S>,
-        component: &CompiledComponent<S>,
-        value_nodes: &ValueNodes<S>,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
-        let validator = component.deref();
-        validator.validate_sparql(component, shape, store, value_nodes)
-    }
-
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(store: &S, node: &S::Term) -> Result<FocusNodes<S>, ValidateError> {

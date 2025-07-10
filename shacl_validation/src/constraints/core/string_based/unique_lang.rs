@@ -5,10 +5,8 @@ use shacl_ast::compiled::component::UniqueLang;
 use shacl_ast::compiled::shape::CompiledShape;
 use srdf::lang::Lang;
 use srdf::Literal;
-use srdf::Query;
-use srdf::Sparql;
+use srdf::Rdf;
 
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
@@ -18,19 +16,19 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::FocusNodeIteration;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query, E: Engine<Q>> Validator<Q, E> for UniqueLang {
+impl<R: Rdf, E: Engine<R>> Validator<R, E> for UniqueLang {
     fn validate(
         &self,
-        component: &CompiledComponent<Q>,
-        shape: &CompiledShape<Q>,
-        _store: &Q,
-        value_nodes: &ValueNodes<Q>,
+        component: &CompiledComponent<R>,
+        shape: &CompiledShape<R>,
+        _store: &R,
+        value_nodes: &ValueNodes<R>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         if !self.unique_lang() {
             return Ok(Default::default());
         }
 
-        let unique_lang = |targets: &FocusNodes<Q>| {
+        let unique_lang = |targets: &FocusNodes<R>| {
             let mut unique_langs = HashSet::new();
             let is_all_unique_langs = targets
                 .iter()
@@ -39,7 +37,7 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for UniqueLang {
                         .try_into()
                         .map_err(|_| ValidateError::ExpectedLiteral(term.to_string()))
                 })
-                .filter_map(|literal: Q::Literal| literal.lang().map(Lang::new_unchecked))
+                .filter_map(|literal: R::Literal| literal.lang().map(Lang::new_unchecked))
                 .all(move |x| unique_langs.insert(x));
             Ok(!is_all_unique_langs)
         };
@@ -53,5 +51,3 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for UniqueLang {
         )
     }
 }
-
-impl<S: Sparql + Query> SparqlValidator<S> for UniqueLang {}

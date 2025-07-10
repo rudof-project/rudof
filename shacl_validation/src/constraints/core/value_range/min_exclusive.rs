@@ -5,15 +5,15 @@ use shacl_ast::compiled::shape::CompiledShape;
 use srdf::Query;
 use srdf::Sparql;
 
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::Engine;
+use crate::engine::native::NativeEngine;
+use crate::engine::sparql::SparqlEngine;
 use crate::helpers::constraint::validate_ask_with;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinExclusive<Q> {
+impl<Q: Query> Validator<Q, NativeEngine> for MinExclusive<Q> {
     fn validate(
         &self,
         _component: &CompiledComponent<Q>,
@@ -25,8 +25,8 @@ impl<Q: Query, E: Engine<Q>> Validator<Q, E> for MinExclusive<Q> {
     }
 }
 
-impl<S: Sparql + Query> SparqlValidator<S> for MinExclusive<S> {
-    fn validate_sparql(
+impl<S: Sparql + Query> Validator<S, SparqlEngine> for MinExclusive<S> {
+    fn validate(
         &self,
         component: &CompiledComponent<S>,
         shape: &CompiledShape<S>,
