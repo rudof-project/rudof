@@ -1,6 +1,6 @@
 [package]
 name = "shex_validation"
-version = "0.1.79"
+version = "0.1.80"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_validation"
