@@ -157,6 +157,13 @@ impl ShExConfig {
         self.show_dependencies = Some(flag);
         self
     }
+
+    pub fn without_showing_stats(&mut self) {
+        self.show_extends = Some(false);
+        self.show_imports = Some(false);
+        self.show_shapes = Some(false);
+        self.show_dependencies = Some(false);
+    }
 }
 
 #[derive(Error, Debug, Clone)]

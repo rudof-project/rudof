@@ -86,15 +86,15 @@ impl RudofConfig {
     }
 
     pub fn show_extends(&self) -> bool {
-        self.shex_config().show_extends.unwrap_or(true)
+        self.shex_config().show_extends.unwrap_or(false)
     }
 
     pub fn show_imports(&self) -> bool {
-        self.shex_config().show_extends.unwrap_or(true)
+        self.shex_config().show_extends.unwrap_or(false)
     }
 
     pub fn show_shapes(&self) -> bool {
-        self.shex_config().show_shapes.unwrap_or(true)
+        self.shex_config().show_shapes.unwrap_or(false)
     }
 
     pub fn show_dependencies(&self) -> bool {
@@ -148,6 +148,16 @@ impl RudofConfig {
         match &self.rdf_data {
             None => true,
             Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
+        }
+    }
+
+    pub fn shex_without_showing_stats(&mut self) {
+        if let Some(shex_config) = &mut self.shex {
+            shex_config.without_showing_stats();
+        } else {
+            let mut shex_config = ShExConfig::default();
+            shex_config.without_showing_stats();
+            self.shex = Some(shex_config);
         }
     }
 }

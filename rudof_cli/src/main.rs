@@ -385,6 +385,7 @@ fn main() -> Result<()> {
             target_folder,
             force_overwrite,
             config,
+            show_time,
             reader_mode,
         }) => run_convert(
             file,
@@ -398,6 +399,7 @@ fn main() -> Result<()> {
             config,
             *force_overwrite,
             reader_mode,
+            show_time.unwrap_or(false),
         ),
         Some(Command::Query {
             query,
@@ -805,10 +807,17 @@ fn run_convert(
     config: &Option<PathBuf>,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
+    show_time: bool,
 ) -> Result<()> {
     // let mut writer = get_writer(output)?;
-    let config = get_config(config)?;
+    let mut config = get_config(config)?;
     match (input_mode, output_mode) {
+        (InputConvertMode::ShEx, OutputConvertMode::ShEx) => {
+            let shex_format = format_2_shex_format(format)?;
+            let output_format = output_format_2_shex_format(result_format)?;
+            config.shex_without_showing_stats();
+            run_shex(input, &shex_format, &output_format, output, show_time, true, false, force_overwrite, reader_mode, &config)
+        }
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
             run_tap2shex(input, format, output, result_format, &config, force_overwrite)
         }
@@ -1515,7 +1524,6 @@ fn parse_shex_schema_rudof(
     let base = base_convert(&shex_config.base);
     rudof.read_shex(reader, &schema_format, base)?;
     if config.shex_config().check_well_formed() {
-        println!("Checking well formedness...");
         let shex_ir = rudof.get_shex_ir().unwrap();
         if shex_ir.has_neg_cycle() {
             let neg_cycles = shex_ir.neg_cycles();
@@ -1658,6 +1666,25 @@ fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
         CliShExFormat::ShExJ => ShExFormat::ShExJ,
         CliShExFormat::Turtle => ShExFormat::Turtle,
         _ => ShExFormat::ShExC,
+    }
+}
+
+fn output_format_2_shex_format(format: &OutputConvertFormat) -> Result<CliShExFormat> {
+    match format {
+        OutputConvertFormat::Default => Ok(CliShExFormat::ShExC),
+        OutputConvertFormat::ShExC => Ok(CliShExFormat::ShExC),
+        OutputConvertFormat::ShExJ => Ok(CliShExFormat::ShExJ),
+        OutputConvertFormat::Turtle => Ok(CliShExFormat::Turtle),
+        _ => bail!("Converting ShEx, format {format} not supported"),
+    }
+}
+
+fn format_2_shex_format(format: &InputConvertFormat) -> Result<CliShExFormat> {
+    match format {
+        InputConvertFormat::ShExC => Ok(CliShExFormat::ShExC),
+        InputConvertFormat::ShExJ => Ok(CliShExFormat::ShExJ),
+        InputConvertFormat::Turtle => Ok(CliShExFormat::Turtle),
+        _ => bail!("Converting ShEx, format {format} not supported"),
     }
 }
 

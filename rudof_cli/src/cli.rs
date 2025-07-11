@@ -656,6 +656,9 @@ pub enum Command {
 
         #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
         output_mode: OutputConvertMode,
+
+        #[arg(long = "show-time")]
+        show_time: Option<bool>,
     },
 
     /// Show information about SPARQL service
