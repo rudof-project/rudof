@@ -118,6 +118,14 @@ impl Pattern {
             flags: Some(flags.to_string()),
         }
     }
+
+    pub fn regex(&self) -> &str {
+        &self.str
+    }
+
+    pub fn flags(&self) -> Option<&str> {
+        self.flags.as_deref()
+    }
 }
 
 impl FromStr for Pattern {

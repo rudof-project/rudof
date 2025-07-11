@@ -1,4 +1,5 @@
 use super::object_value::ObjectValue;
+use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriS;
 use srdf::{lang::Lang, Object};
 use std::fmt::Display;
@@ -10,20 +11,25 @@ pub enum ValueSetValue {
     },
     IriStemRange {
         stem: IriRefOrWildcard,
-        exclusions: Option<Vec<StringOrIriStem>>,
+        exclusions: Option<Vec<IriExclusion>>,
     },
     LiteralStem {
         stem: String,
     },
     LiteralStemRange {
         stem: StringOrWildcard,
-        exclusions: Option<Vec<StringOrLiteralStem>>,
+        exclusions: Option<Vec<LiteralExclusion>>,
     },
     Language {
         language_tag: Lang,
     },
-    LanguageStem,
-    LanguageStemRange,
+    LanguageStem {
+        stem: Lang,
+    },
+    LanguageStemRange {
+        stem: LangOrWildcard,
+        exclusions: Option<Vec<LanguageExclusion>>,
+    },
     ObjectValue(ObjectValue),
 }
 
@@ -42,6 +48,16 @@ pub enum IriRefOrWildcard {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum StringOrWildcard {
     String(String),
+
+    // TODO: Document the need for the type_ field
+    Wildcard { type_: String },
+}
+
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum LangOrWildcard {
+    Lang(Lang),
+
+    // TODO: Document the need for the type_ field
     Wildcard { type_: String },
 }
 
@@ -76,8 +92,8 @@ impl ValueSetValue {
                     srdf::SLiteral::BooleanLiteral(_) => false,
                 },
             },
-            ValueSetValue::LanguageStem => todo!(),
-            ValueSetValue::LanguageStemRange => todo!(),
+            ValueSetValue::LanguageStem { .. } => todo!(),
+            ValueSetValue::LanguageStemRange { .. } => todo!(),
             ValueSetValue::ObjectValue(v) => v.match_value(object),
         }
     }
@@ -91,8 +107,8 @@ impl Display for ValueSetValue {
             ValueSetValue::LiteralStem { .. } => todo!(),
             ValueSetValue::LiteralStemRange { .. } => todo!(),
             ValueSetValue::Language { language_tag } => write!(f, "@{language_tag}"),
-            ValueSetValue::LanguageStem => todo!(),
-            ValueSetValue::LanguageStemRange => todo!(),
+            ValueSetValue::LanguageStem { .. } => todo!(),
+            ValueSetValue::LanguageStemRange { .. } => todo!(),
             ValueSetValue::ObjectValue(ov) => write!(f, "{ov}"),
         }
     }

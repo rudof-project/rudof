@@ -10,6 +10,23 @@ use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
+    #[error("Pattern  /{regex}/{} not found in {node}", flags.as_deref().unwrap_or(""))]
+    PatternNodeNotLiteral {
+        node: String,
+        regex: String,
+        flags: Option<String>,
+    },
+
+    #[error("Invalid regex /{regex}")]
+    InvalidRegex { regex: String },
+
+    #[error("Error matching /{regex}/{flags} with {lexical_form}")]
+    PatternError {
+        regex: String,
+        flags: String,
+        lexical_form: String,
+    },
+
     #[error("Error creating language tag: {lang}: {err}")]
     LangTagError { lang: String, err: String },
 
