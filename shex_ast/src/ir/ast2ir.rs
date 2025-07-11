@@ -972,7 +972,7 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
 fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
     match node.as_object() {
         Object::Literal(SLiteral::StringLiteral { lexical_form, .. }) => {
-            if let Some(re) = regex::Regex::new(regex).ok() {
+            if let Ok(re) = regex::Regex::new(regex) {
                 if re.is_match(lexical_form) {
                     Ok(())
                 } else {
