@@ -33,6 +33,7 @@ pub trait NeighsRDF: Rdf {
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
+        // TODO: Implement this function in a way that it does not retrieve all triples
         let triples = self.triples()?.filter_map(move |triple| {
             match subject == triple.subj() && predicate == triple.pred() && object == triple.obj() {
                 true => Some(triple),

@@ -342,10 +342,26 @@ fn _rdf_type() -> OxNamedNode {
 
 impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let endpoints_triples = self.endpoints.iter().flat_map(NeighsRDF::triples).flatten();
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
-        Ok(endpoints_triples.chain(graph_triples))
+        let endpoints_triples = self.endpoints.iter().flat_map(NeighsRDF::triples).flatten();
+        Ok(graph_triples.chain(endpoints_triples))
     }
+
+    //TODO: implement optimizations for triples_with_subject and similar methods!
+    /*fn triples_with_object<O: srdf::matcher::Matcher<Self::Term>>(
+        &self,
+        object: O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(|g| g.triples_with_object(object.clone()));
+        let endpoints_triples = self
+            .endpoints
+            .iter()
+            .flat_map(|e| e.triples_with_object(object.clone()));
+        Ok(graph_triples.chain(endpoints_triples))
+    }*/
 }
 
 impl FocusRDF for RdfData {
@@ -360,45 +376,78 @@ impl FocusRDF for RdfData {
 
 impl BuildRDF for RdfData {
     fn empty() -> Self {
-        todo!()
+        RdfData::new()
     }
 
     fn add_base(&mut self, _base: &Option<IriS>) -> Result<(), Self::Err> {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.add_base(_base))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_prefix(&mut self, _alias: &str, _iri: &IriS) -> Result<(), Self::Err> {
-        todo!()
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
+        self.graph
+            .as_mut()
+            .map(|g| g.add_prefix(alias, iri))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_prefix_map(&mut self, _prefix_map: PrefixMap) -> Result<(), Self::Err> {
-        todo!()
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+        self.graph
+            .as_mut()
+            .map(|g| g.add_prefix_map(prefix_map))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        todo!()
+        match self.graph {
+            Some(ref mut graph) => {
+                graph
+                    .add_triple(subj, pred, obj)
+                    .map_err(|e| RdfDataError::SRDFGraphError { err: e })?;
+                Ok(())
+            }
+            None => {
+                let mut graph = SRDFGraph::new();
+                graph.add_triple(subj, pred, obj)?;
+                self.graph = Some(graph);
+                Ok(())
+            }
+        }
     }
 
-    fn remove_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.remove_triple(subj, pred, obj))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_type<S, T>(&mut self, _node: S, _type_: T) -> Result<(), Self::Err>
+    fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         T: Into<Self::Term>,
     {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.add_type(node, type_))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
     fn serialize<W: std::io::Write>(
@@ -426,5 +475,39 @@ impl BuildRDF for RdfData {
             }
             None => Err(RdfDataError::BNodeNoGraph),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use iri_s::iri;
+
+    use super::*;
+
+    #[test]
+    fn test_rdf_data_from_str() {
+        let data = "<http://example.org/subject> <http://example.org/predicate> <http://example.org/object> .";
+        let rdf_data = RdfData::from_str(data, &RDFFormat::NTriples, None, &ReaderMode::Lax);
+        assert!(rdf_data.is_ok());
+        let rdf_data = rdf_data.unwrap();
+        assert!(rdf_data.graph.is_some());
+        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
+    }
+
+    #[test]
+    fn test_build_rdf_data() {
+        let mut rdf_data = RdfData::new();
+        rdf_data
+            .add_prefix("ex", &IriS::from_str("http://example.org/").unwrap())
+            .unwrap();
+        rdf_data
+            .add_triple(
+                iri!("http://example.org/alice"),
+                iri!("http://example.org/knows"),
+                iri!("http://example.org/bob"),
+            )
+            .unwrap();
+        assert!(rdf_data.graph.is_some());
+        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
     }
 }

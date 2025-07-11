@@ -1054,6 +1054,7 @@ pub enum OutputConvertMode {
     ShEx,
     UML,
     HTML,
+    SHACL,
 }
 
 impl Display for OutputConvertMode {
@@ -1063,6 +1064,7 @@ impl Display for OutputConvertMode {
             OutputConvertMode::ShEx => write!(dest, "shex"),
             OutputConvertMode::UML => write!(dest, "uml"),
             OutputConvertMode::HTML => write!(dest, "html"),
+            OutputConvertMode::SHACL => write!(dest, "shacl"),
         }
     }
 }

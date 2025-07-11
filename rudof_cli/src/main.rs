@@ -818,6 +818,11 @@ fn run_convert(
             config.shex_without_showing_stats();
             run_shex(input, &shex_format, &output_format, output, show_time, true, false, force_overwrite, reader_mode, &config)
         }
+        (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
+            let shacl_format = format_2_shacl_format(format)?;
+            let output_format = output_format_2_shacl_format(result_format)?;
+            run_shacl(input, &shacl_format, &output_format, output, force_overwrite, reader_mode, &config)
+        }
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
             run_tap2shex(input, format, output, result_format, &config, force_overwrite)
         }
@@ -1669,6 +1674,14 @@ fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
     }
 }
 
+fn output_format_2_shacl_format(format: &OutputConvertFormat) -> Result<CliShaclFormat> {
+    match format {
+        OutputConvertFormat::Default => Ok(CliShaclFormat::Internal),
+        OutputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
+        _ => bail!("Converting SHACL, format {format} not supported"),
+    }
+}
+
 fn output_format_2_shex_format(format: &OutputConvertFormat) -> Result<CliShExFormat> {
     match format {
         OutputConvertFormat::Default => Ok(CliShExFormat::ShExC),
@@ -1684,6 +1697,13 @@ fn format_2_shex_format(format: &InputConvertFormat) -> Result<CliShExFormat> {
         InputConvertFormat::ShExC => Ok(CliShExFormat::ShExC),
         InputConvertFormat::ShExJ => Ok(CliShExFormat::ShExJ),
         InputConvertFormat::Turtle => Ok(CliShExFormat::Turtle),
+        _ => bail!("Converting ShEx, format {format} not supported"),
+    }
+}
+
+fn format_2_shacl_format(format: &InputConvertFormat) -> Result<CliShaclFormat> {
+    match format {
+        InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
         _ => bail!("Converting ShEx, format {format} not supported"),
     }
 }
