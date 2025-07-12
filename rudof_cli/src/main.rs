@@ -18,38 +18,37 @@ use anyhow::*;
 use clap::Parser;
 use cli::{
     Cli, Command, DCTapFormat, DCTapResultFormat, DataFormat, InputConvertMode, MimeType,
-    OutputConvertMode, RDFReaderMode, ResultFormat, ResultQueryFormat, ResultServiceFormat,
-    ShowNodeMode, ValidationMode,
+    OutputConvertMode, RDFReaderMode, ResultFormat, ResultServiceFormat, ValidationMode,
 };
 use dctap::DCTAPFormat;
 use iri_s::IriS;
-use prefixmap::{IriRef, PrefixMap};
+use prefixmap::IriRef;
 use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
 };
 use shacl_validation::validation_report::report::ValidationReport;
-use shapemap::{NodeSelector, ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
+use shapemap::{ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
 use shapes_converter::ShEx2Sparql;
 use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Uml, Shacl2ShEx, Tap2ShEx, UmlGenerationMode};
-use shex_ast::object_value::ObjectValue;
-use shex_ast::{ShapeExprLabel, SimpleReprSchema};
-use sparql_service::{RdfData, ServiceDescription};
-use srdf::NeighsRDF;
-use srdf::{QuerySolution, RDFFormat, ReaderMode, SRDFGraph, VarName};
-use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
-use std::io::{self, BufWriter, Write};
+use sparql_service::ServiceDescription;
+use srdf::{RDFFormat, ReaderMode, SRDFGraph};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
-use std::str::FromStr;
-use std::time::Instant;
-use supports_color::Stream;
 use tracing::debug;
+
+// Current modules
 pub mod cli;
+pub mod data;
 pub mod input_convert_format;
 pub mod input_spec;
+pub mod node;
+pub mod node_selector;
 pub mod output_convert_format;
+pub mod query;
+pub mod shex;
+pub mod writer;
 
 pub use cli::{
     ShExFormat as CliShExFormat, ShaclFormat as CliShaclFormat, ShapeMapFormat as CliShapeMapFormat,
@@ -58,9 +57,15 @@ pub use input_convert_format::InputConvertFormat;
 pub use input_spec::*;
 pub use output_convert_format::OutputConvertFormat;
 
-use shex_ast::ast::Schema as SchemaJson;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
+
+use crate::data::{data_format2rdf_format, get_base, get_data_rudof, run_data};
+use crate::node::run_node;
+use crate::node_selector::parse_node_selector;
+use crate::query::run_query;
+use crate::shex::{parse_shex_schema_rudof, run_shex, show_shex_schema_rudof};
+use crate::writer::get_writer;
 
 #[allow(unused_variables)]
 fn main() -> Result<()> {
@@ -459,133 +464,6 @@ fn run_service(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_shex(
-    input: &InputSpec,
-    schema_format: &CliShExFormat,
-    result_schema_format: &CliShExFormat,
-    output: &Option<PathBuf>,
-    show_time: bool,
-    show_schema: bool,
-    compile: bool,
-    force_overwrite: bool,
-    _reader_mode: &RDFReaderMode,
-    config: &RudofConfig,
-) -> Result<()> {
-    let begin = Instant::now();
-    let (writer, color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
-
-    parse_shex_schema_rudof(&mut rudof, input, schema_format, config)?;
-    if show_schema {
-        show_schema_rudof(&rudof, result_schema_format, writer, color)?;
-    }
-    if show_time {
-        let elapsed = begin.elapsed();
-        let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
-    }
-    let schema_resolved = rudof.shex_schema_without_imports()?;
-    if config.show_extends() {
-        show_extends_table(&mut io::stderr(), schema_resolved.count_extends())?;
-    }
-
-    if config.show_imports() {
-        writeln!(
-            io::stderr(),
-            "Local shapes: {}/Total shapes {}",
-            schema_resolved.local_shapes_count(),
-            schema_resolved.total_shapes_count()
-        )?;
-    }
-    if config.show_shapes() {
-        for (shape_label, (_shape_expr, iri)) in schema_resolved.shapes() {
-            let label = match shape_label {
-                ShapeExprLabel::IriRef { value } => {
-                    schema_resolved.resolve_iriref(value).as_str().to_string()
-                }
-                ShapeExprLabel::BNode { value } => format!("{value}"),
-                ShapeExprLabel::Start => "Start".to_string(),
-            };
-            writeln!(io::stderr(), "{label} from {iri}")?
-        }
-    }
-    if compile && config.show_ir() {
-        writeln!(io::stdout(), "\nIR:")?;
-        if let Some(shex_ir) = rudof.get_shex_ir() {
-            writeln!(io::stdout(), "ShEx IR:")?;
-            writeln!(io::stdout(), "{shex_ir}")?;
-        } else {
-            bail!("Internal error: No ShEx schema read")
-        }
-    }
-    if compile && config.show_dependencies() {
-        writeln!(io::stdout(), "\nDependencies:")?;
-        if let Some(shex_ir) = rudof.get_shex_ir() {
-            for (source, posneg, target) in shex_ir.dependencies() {
-                writeln!(io::stdout(), "{source}-{posneg}->{target}")?;
-            }
-        } else {
-            bail!("Internal error: No ShEx schema read")
-        }
-        writeln!(io::stdout(), "---end dependencies\n")?;
-    }
-    Ok(())
-}
-
-// TODO: Replace by show_schema_rudof
-fn show_schema(
-    schema: &SchemaJson,
-    result_schema_format: &CliShExFormat,
-    mut writer: Box<dyn Write>,
-    color: ColorSupport,
-) -> Result<()> {
-    match result_schema_format {
-        CliShExFormat::Internal => {
-            writeln!(writer, "{schema:?}")?;
-            Ok(())
-        }
-        CliShExFormat::ShExC => {
-            let formatter = match color {
-                ColorSupport::NoColor => ShExFormatter::default().without_colors(),
-                ColorSupport::WithColor => ShExFormatter::default(),
-            };
-            let str = formatter.format_schema(schema);
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        CliShExFormat::ShExJ => {
-            let str = serde_json::to_string_pretty(&schema)?;
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        CliShExFormat::Simple => {
-            let mut simplified = SimpleReprSchema::new();
-            simplified.from_schema(schema);
-            let str = serde_json::to_string_pretty(&simplified)?;
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        _ => Err(anyhow!(
-            "Not implemented conversion to {result_schema_format} yet"
-        )),
-    }
-}
-
-fn show_schema_rudof(
-    rudof: &Rudof,
-    result_schema_format: &CliShExFormat,
-    mut writer: Box<dyn Write>,
-    color: ColorSupport,
-) -> Result<()> {
-    let shex_format = shex_format_convert(result_schema_format);
-    let formatter = match color {
-        ColorSupport::NoColor => ShExFormatter::default().without_colors(),
-        ColorSupport::WithColor => ShExFormatter::default(),
-    };
-    rudof.serialize_shex(&shex_format, &formatter, &mut writer)?;
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
 fn run_validate_shex(
     schema: &Option<InputSpec>,
     schema_format: &Option<CliShExFormat>,
@@ -830,7 +708,7 @@ fn run_convert(
             let maybe_shape = match maybe_shape_str {
                 None => None,
                 Some(shape_str) => {
-                    let iri_shape = parse_iri_ref(shape_str)?;
+                    let iri_shape = ShapeMapParser::parse_iri_ref(shape_str)?;
                     Some(iri_shape)
                 }
             };
@@ -902,8 +780,9 @@ fn run_shacl2shex(
             bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output")
         }
     };
-    show_schema(
-        converter.current_shex(),
+    show_shex_schema_rudof(
+        &rudof,
+        // converter.current_shex(),
         &result_schema_format,
         writer,
         color,
@@ -1102,7 +981,7 @@ fn run_tap2shex(
             _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
         }?;
         let (writer, color) = get_writer(output, force_overwrite)?;
-        show_schema(&shex, &result_schema_format, writer, color)?;
+        show_shex_schema_rudof(&rudof, &result_schema_format, writer, color)?;
         Ok(())
     } else {
         bail!("Internal error: No DCTAP")
@@ -1144,36 +1023,6 @@ enum ColorSupport {
     WithColor,
 }
 
-fn get_writer(
-    output: &Option<PathBuf>,
-    force_overwrite: bool,
-) -> Result<(Box<dyn Write>, ColorSupport)> {
-    match output {
-        None => {
-            let stdout = io::stdout();
-            let handle = stdout.lock();
-            let color_support = match supports_color::on(Stream::Stdout) {
-                Some(_) => ColorSupport::WithColor,
-                _ => ColorSupport::NoColor,
-            };
-            Ok((Box::new(handle), color_support))
-        }
-        Some(path) => {
-            let file = if Path::exists(path) {
-                if force_overwrite {
-                    OpenOptions::new().write(true).truncate(true).open(path)
-                } else {
-                    bail!("File {} already exists. If you want to overwrite it, use the `force-overwrite` option", path.display());
-                }
-            } else {
-                File::create(path)
-            }?;
-            let writer = BufWriter::new(file);
-            Ok((Box::new(writer), ColorSupport::NoColor))
-        }
-    }
-}
-
 fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -1188,199 +1037,8 @@ fn add_shacl_schema_rudof(
     Ok(())
 }
 
-fn get_data_rudof(
-    rudof: &mut Rudof,
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
-    config: &RudofConfig,
-) -> Result<()> {
-    match (data.is_empty(), endpoint) {
-        (true, None) => {
-            bail!("None of `data` or `endpoint` parameters have been specified for validation")
-        }
-        (false, None) => {
-            let rdf_format = data_format2rdf_format(data_format);
-            let reader_mode = match &reader_mode {
-                RDFReaderMode::Lax => srdf::ReaderMode::Lax,
-                RDFReaderMode::Strict => srdf::ReaderMode::Strict,
-            };
-            for d in data {
-                let data_reader = d.open_read(Some(&data_format.mime_type()), "RDF data")?;
-                let base = get_base(d, config)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), &reader_mode)?;
-            }
-            Ok(())
-        }
-        (true, Some(endpoint)) => {
-            let (endpoint_iri, prefixmap) =
-                if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
-                    (
-                        endpoint_descr.query_url().clone(),
-                        endpoint_descr.prefixmap().clone(),
-                    )
-                } else {
-                    let iri = IriS::from_str(endpoint.as_str())?;
-                    (iri, PrefixMap::basic())
-                };
-            rudof.add_endpoint(&endpoint_iri, &prefixmap)?;
-            Ok(())
-        }
-        (false, Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
-        }
-    }
-}
-
-fn get_base(input: &InputSpec, config: &RudofConfig) -> Result<Option<String>> {
-    let base = match config.rdf_data_base() {
-        Some(base) => Some(base.to_string()),
-        None => {
-            if config.automatic_base() {
-                let base = input.guess_base()?;
-                Some(base)
-            } else {
-                None
-            }
-        }
-    };
-    Ok(base)
-}
-
 fn start() -> ShapeSelector {
     ShapeSelector::start()
-}
-
-#[allow(clippy::too_many_arguments)]
-fn run_node(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
-    node_str: &str,
-    predicates: &Vec<String>,
-    show_node_mode: &ShowNodeMode,
-    show_hyperlinks: &bool,
-    _debug: u8,
-    output: &Option<PathBuf>,
-    config: &RudofConfig,
-    force_overwrite: bool,
-) -> Result<()> {
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let data = rudof.get_rdf_data();
-    let node_selector = parse_node_selector(node_str)?;
-    show_node_info(
-        node_selector,
-        predicates,
-        data,
-        show_node_mode,
-        show_hyperlinks,
-        &mut writer,
-    )
-}
-
-fn show_node_info<S, W: Write>(
-    node_selector: NodeSelector,
-    predicates: &Vec<String>,
-    rdf: &S,
-    show_node_mode: &ShowNodeMode,
-    _show_hyperlinks: &bool,
-    writer: &mut W,
-) -> Result<()>
-where
-    S: NeighsRDF,
-{
-    for node in node_selector.iter_node(rdf) {
-        let subject = node_to_subject(node, rdf)?;
-        writeln!(
-            writer,
-            "Information about {}",
-            rdf.qualify_subject(&subject)
-        )?;
-
-        // Show outgoing arcs
-        match show_node_mode {
-            ShowNodeMode::Outgoing | ShowNodeMode::Both => {
-                writeln!(writer, "Outgoing arcs")?;
-                let map = if predicates.is_empty() {
-                    match rdf.outgoing_arcs(subject.clone()) {
-                        Result::Ok(rs) => rs,
-                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
-                    }
-                } else {
-                    let preds = cnv_predicates(predicates, rdf)?;
-                    match rdf.outgoing_arcs_from_list(&subject, &preds) {
-                        Result::Ok((rs, _)) => rs,
-                        Err(e) => bail!("Error obtaining outgoing arcs of {subject}: {e}"),
-                    }
-                };
-                writeln!(writer, "{}", rdf.qualify_subject(&subject))?;
-                let mut preds: Vec<_> = map.keys().collect();
-                preds.sort();
-                for pred in preds {
-                    writeln!(writer, " -{}-> ", rdf.qualify_iri(pred))?;
-                    if let Some(objs) = map.get(pred) {
-                        for o in objs {
-                            writeln!(writer, "      {}", rdf.qualify_term(o))?;
-                        }
-                    } else {
-                        bail!("Not found values for {pred} in map")
-                    }
-                }
-            }
-            _ => {
-                // Nothing to do
-            }
-        }
-
-        // Show incoming arcs
-        match show_node_mode {
-            ShowNodeMode::Incoming | ShowNodeMode::Both => {
-                writeln!(writer, "Incoming arcs")?;
-                let object: S::Term = subject.clone().into();
-                let map = match rdf.incoming_arcs(object.clone()) {
-                    Result::Ok(m) => m,
-                    Err(e) => bail!("Can't get outgoing arcs of node {subject}: {e}"),
-                };
-                writeln!(writer, "{}", rdf.qualify_term(&object))?;
-                for pred in map.keys() {
-                    writeln!(writer, "  <-{}-", rdf.qualify_iri(pred))?;
-                    if let Some(subjs) = map.get(pred) {
-                        for s in subjs {
-                            writeln!(writer, "      {}", rdf.qualify_subject(s))?;
-                        }
-                    } else {
-                        bail!("Not found values for {pred} in map")
-                    }
-                }
-            }
-            _ => {
-                // Nothing to do
-            }
-        }
-    }
-    Ok(())
-}
-
-fn cnv_predicates<S>(predicates: &Vec<String>, rdf: &S) -> Result<Vec<S::IRI>>
-where
-    S: NeighsRDF,
-{
-    let mut vs = Vec::new();
-    for s in predicates {
-        let iri_ref = parse_iri_ref(s)?;
-        let iri_s = match iri_ref {
-            IriRef::Prefixed { prefix, local } => {
-                rdf.resolve_prefix_local(prefix.as_str(), local.as_str())?
-            }
-            IriRef::Iri(iri) => iri,
-        };
-        vs.push(iri_s.into())
-    }
-    Ok(vs)
 }
 
 fn run_shapemap(
@@ -1400,141 +1058,6 @@ fn run_shapemap(
         ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
     };
     rudof.serialize_shapemap(&result_format, &formatter, &mut writer)?;
-    Ok(())
-}
-
-fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
-where
-    S: NeighsRDF,
-{
-    match node {
-        ObjectValue::IriRef(iri_ref) => {
-            let iri: S::IRI = match iri_ref {
-                IriRef::Iri(iri_s) => iri_s.clone().into(),
-                IriRef::Prefixed { prefix, local } => {
-                    let iri_s = rdf.resolve_prefix_local(prefix, local)?;
-                    iri_s.into()
-                }
-            };
-            let term: S::Term = iri.into().into();
-            match S::term_as_subject(&term) {
-                Ok(subject) => Ok(subject),
-                Err(_) => bail!("node_to_subject: Can't convert term {term} to subject"),
-            }
-        }
-        ObjectValue::Literal(lit) => Err(anyhow!("Node must be an IRI, but found a literal {lit}")),
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn run_data(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    debug: u8,
-    output: &Option<PathBuf>,
-    result_format: &DataFormat,
-    force_overwrite: bool,
-    reader_mode: &RDFReaderMode,
-    config: &RudofConfig,
-) -> Result<()> {
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
-    if debug > 0 {
-        println!("Config: {config:?}")
-    }
-    get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
-    let format: RDFFormat = RDFFormat::from(*result_format);
-    rudof.get_rdf_data().serialize(&format, &mut writer)?;
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-fn run_query(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
-    query: &InputSpec,
-    _result_query_format: &ResultQueryFormat,
-    output: &Option<PathBuf>,
-    config: &RudofConfig,
-    _debug: u8,
-    force_overwrite: bool,
-) -> Result<()> {
-    let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
-    let mut reader = query.open_read(None, "Query")?;
-    let results = rudof.run_query(&mut reader)?;
-    let mut results_iter = results.iter().peekable();
-    if let Some(first) = results_iter.peek() {
-        show_variables(&mut writer, first.variables())?;
-        for result in results_iter {
-            show_result(&mut writer, result, &rudof.nodes_prefixmap())?
-        }
-    } else {
-        write!(writer, "No results")?;
-    }
-    Ok(())
-}
-
-fn show_variables<'a, W: Write>(
-    writer: &mut W,
-    vars: impl Iterator<Item = &'a VarName>,
-) -> Result<()> {
-    for var in vars {
-        let str = format!("{var}");
-        write!(writer, "{str:15}")?;
-    }
-    writeln!(writer)?;
-    Ok(())
-}
-
-fn show_result<W: Write>(
-    writer: &mut W,
-    result: &QuerySolution<RdfData>,
-    prefixmap: &PrefixMap,
-) -> Result<()> {
-    for (idx, _variable) in result.variables().enumerate() {
-        let str = match result.find_solution(idx) {
-            Some(term) => match term {
-                oxrdf::Term::NamedNode(named_node) => {
-                    let (str, _length) =
-                        prefixmap.qualify_and_length(&IriS::from_named_node(named_node));
-                    format!("{str}     ")
-                }
-                oxrdf::Term::BlankNode(blank_node) => format!("  {blank_node}"),
-                oxrdf::Term::Literal(literal) => format!("  {literal}"),
-                oxrdf::Term::Triple(triple) => format!("  {triple}"),
-            },
-            None => String::new(),
-        };
-        write!(writer, "{str:15}")?;
-    }
-    writeln!(writer)?;
-    Ok(())
-}
-
-fn parse_shex_schema_rudof(
-    rudof: &mut Rudof,
-    input: &InputSpec,
-    schema_format: &CliShExFormat,
-    config: &RudofConfig,
-) -> Result<()> {
-    let reader = input
-        .open_read(Some(&schema_format.mime_type()), "ShEx schema")
-        .context(format!("Get reader from input: {input}"))?;
-    let schema_format = shex_format_convert(schema_format);
-    let shex_config = config.shex_config();
-    let base = base_convert(&shex_config.base);
-    rudof.read_shex(reader, &schema_format, base)?;
-    if config.shex_config().check_well_formed() {
-        let shex_ir = rudof.get_shex_ir().unwrap();
-        if shex_ir.has_neg_cycle() {
-            let neg_cycles = shex_ir.neg_cycles();
-            bail!("Schema contains negative cycles: {neg_cycles:?}");
-        }
-    }
     Ok(())
 }
 
@@ -1578,48 +1101,9 @@ fn shacl_format_convert(shacl_format: &cli::ShaclFormat) -> Result<ShaclFormat> 
     }
 }
 
-fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
-    match data_format {
-        DataFormat::N3 => RDFFormat::N3,
-        DataFormat::NQuads => RDFFormat::NQuads,
-        DataFormat::NTriples => RDFFormat::NTriples,
-        DataFormat::RDFXML => RDFFormat::RDFXML,
-        DataFormat::TriG => RDFFormat::TriG,
-        DataFormat::Turtle => RDFFormat::Turtle,
-    }
-}
-
-/*
-fn parse_data(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    reader_mode: &RDFReaderMode,
-    config: &RdfDataConfig,
-) -> Result<SRDFGraph> {
-    let mut graph = SRDFGraph::new();
-    let rdf_format = data_format2rdf_format(data_format);
-    for d in data {
-        let reader = d.open_read(Some(data_format.mime_type().as_str()))?;
-        let base = config.base.as_ref().map(|iri_s| iri_s.as_str());
-        let reader_mode = reader_mode_convert(*reader_mode);
-        graph.merge_from_reader(reader, &rdf_format, base, &reader_mode)?;
-    }
-    Ok(graph)
-}*/
-
-fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
-    let ns = ShapeMapParser::parse_node_selector(node_str)?;
-    Ok(ns)
-}
-
 fn parse_shape_selector(label_str: &str) -> Result<ShapeSelector> {
     let selector = ShapeMapParser::parse_shape_selector(label_str)?;
     Ok(selector)
-}
-
-fn parse_iri_ref(iri: &str) -> Result<IriRef> {
-    let iri = ShapeMapParser::parse_iri_ref(iri)?;
-    Ok(iri)
 }
 
 fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
@@ -1648,29 +1132,10 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
     }
 }*/
 
-fn show_extends_table<R: Write>(
-    writer: &mut R,
-    extends_count: HashMap<usize, usize>,
-) -> Result<()> {
-    for (key, value) in extends_count.iter() {
-        writeln!(writer, "Shapes with {key} extends = {value}")?;
-    }
-    Ok(())
-}
-
 fn shapemap_format_convert(shapemap_format: &CliShapeMapFormat) -> ShapemapFormat {
     match shapemap_format {
         CliShapeMapFormat::Compact => ShapemapFormat::Compact,
         CliShapeMapFormat::Internal => ShapemapFormat::JSON,
-    }
-}
-
-fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
-    match shex_format {
-        CliShExFormat::ShExC => ShExFormat::ShExC,
-        CliShExFormat::ShExJ => ShExFormat::ShExJ,
-        CliShExFormat::Turtle => ShExFormat::Turtle,
-        _ => ShExFormat::ShExC,
     }
 }
 

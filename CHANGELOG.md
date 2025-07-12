@@ -2,6 +2,12 @@
 
 ## Current changes without release yet
 
+## [v0.1.80] - 2025-07-11
+
+- Added the possibility to convert between ShEx to ShEx (with different formats) and SHACL to SHACL (with different formats) to the `convert` command in the command line.
+- Refactor the SHACL Intermediate representation
+- Added support to language ValueSetValue in ShEx, i.e. constraints like `[ @en ]` (issue #304)
+
 ## [v0.1.79] - 2025-06-30
 
 - Internal refactor in SHACL validator to use SHACL Internal Representation with an independent representation from the `Rdf` trait which allows it to be applied to different implementations of the `Rdf` trait. 
