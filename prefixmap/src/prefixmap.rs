@@ -239,13 +239,13 @@ impl PrefixMap {
     ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), Some(":a"));
+    /// assert_eq!(pm.qualify_optional(&a), Some(":a".to_string()));
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), Some("schema:knows"));
+    /// assert_eq!(pm.qualify_optional(&knows), Some("schema:knows".to_string()));
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), None);
+    /// assert_eq!(pm.qualify_optional(&other), None);
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
@@ -277,7 +277,7 @@ impl PrefixMap {
             None
         };
         if self.hyperlink {
-            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s.as_str(), s))
+            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s))
         } else {
             str
         }
@@ -296,13 +296,13 @@ impl PrefixMap {
     ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), ":a");
+    /// assert_eq!(pm.qualify_and_length(&a), (":a".to_string(), 2));
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), "schema:knows");
+    /// assert_eq!(pm.qualify_and_length(&knows), ("schema:knows".to_string(),12));
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
+    /// assert_eq!(pm.qualify_and_length(&other), ("<http://other.org/foo>".to_string(), 22));
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_and_length(&self, iri: &IriS) -> (String, usize) {
@@ -336,7 +336,7 @@ impl PrefixMap {
             )
         } else {
             let length = format!("{iri}").len();
-            (format!("<{iri}>"), length)
+            (format!("<{iri}>"), length + 2)
         };
         if self.hyperlink {
             (

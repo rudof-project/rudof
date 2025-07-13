@@ -10,7 +10,7 @@ use crate::{base_convert, ColorSupport};
 use crate::{cli::RDFReaderMode, CliShExFormat, InputSpec};
 use anyhow::Context;
 use rudof_lib::{Rudof, RudofConfig, ShExFormat, ShExFormatter};
-use shex_ast::ShapeExprLabel;
+use shex_ast::{Schema, ShapeExprLabel};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shex(
@@ -133,7 +133,23 @@ pub(crate) fn show_shex_schema_rudof(
         ColorSupport::NoColor => ShExFormatter::default().without_colors(),
         ColorSupport::WithColor => ShExFormatter::default(),
     };
-    rudof.serialize_shex(&shex_format, &formatter, &mut writer)?;
+    rudof.serialize_current_shex(&shex_format, &formatter, &mut writer)?;
+    Ok(())
+}
+
+pub(crate) fn show_shex_schema(
+    rudof: &Rudof,
+    shex: &Schema,
+    result_schema_format: &CliShExFormat,
+    mut writer: Box<dyn Write>,
+    color: ColorSupport,
+) -> Result<()> {
+    let shex_format = shex_format_convert(result_schema_format);
+    let formatter = match color {
+        ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+        ColorSupport::WithColor => ShExFormatter::default(),
+    };
+    rudof.serialize_shex(&shex, &shex_format, &formatter, &mut writer)?;
     Ok(())
 }
 

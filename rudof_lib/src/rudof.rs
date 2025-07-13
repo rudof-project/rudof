@@ -231,34 +231,45 @@ impl Rudof {
     /// Serialize the current ShEx Schema
     pub fn serialize_shex<W: io::Write>(
         &self,
+        shex: &ShExSchema,
+        format: &ShExFormat,
+        formatter: &ShExFormatter,
+        writer: &mut W,
+    ) -> Result<()> {
+        match format {
+            ShExFormat::ShExC => {
+                formatter.write_schema(shex, writer).map_err(|e| {
+                    RudofError::ErrorFormattingSchema {
+                        schema: format!("{:?}", shex.clone()),
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(())
+            }
+            ShExFormat::ShExJ => {
+                serde_json::to_writer_pretty(writer, &shex).map_err(|e| {
+                    RudofError::ErrorWritingShExJson {
+                        schema: format!("{:?}", shex.clone()),
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(())
+            }
+            ShExFormat::Turtle => Err(RudofError::NotImplemented {
+                msg: format!("ShEx to ShExR for {shex:?}"),
+            }),
+        }
+    }
+
+    /// Serialize the current ShEx Schema
+    pub fn serialize_current_shex<W: io::Write>(
+        &self,
         format: &ShExFormat,
         formatter: &ShExFormatter,
         writer: &mut W,
     ) -> Result<()> {
         if let Some(shex) = &self.shex_schema {
-            match format {
-                ShExFormat::ShExC => {
-                    formatter.write_schema(shex, writer).map_err(|e| {
-                        RudofError::ErrorFormattingSchema {
-                            schema: format!("{:?}", shex.clone()),
-                            error: format!("{e}"),
-                        }
-                    })?;
-                    Ok(())
-                }
-                ShExFormat::ShExJ => {
-                    serde_json::to_writer_pretty(writer, &shex).map_err(|e| {
-                        RudofError::ErrorWritingShExJson {
-                            schema: format!("{:?}", shex.clone()),
-                            error: format!("{e}"),
-                        }
-                    })?;
-                    Ok(())
-                }
-                ShExFormat::Turtle => Err(RudofError::NotImplemented {
-                    msg: format!("ShEx to ShExR for {shex:?}"),
-                }),
-            }
+            self.serialize_shex(shex, format, formatter, writer)
         } else {
             Err(RudofError::NoShExSchemaToSerialize)
         }

@@ -64,7 +64,7 @@ use crate::data::{data_format2rdf_format, get_base, get_data_rudof, run_data};
 use crate::node::run_node;
 use crate::node_selector::parse_node_selector;
 use crate::query::run_query;
-use crate::shex::{parse_shex_schema_rudof, run_shex, show_shex_schema_rudof};
+use crate::shex::{parse_shex_schema_rudof, run_shex, show_shex_schema};
 use crate::writer::get_writer;
 
 #[allow(unused_variables)]
@@ -87,7 +87,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    // tracing::info!("rudof is running...");
+    tracing::debug!("rudof running...");
 
     // Expand wildcards and @argfiles:
     let args = clientele::args_os()?;
@@ -780,9 +780,9 @@ fn run_shacl2shex(
             bail!("Shacl2ShEx converter, {result_format} format not supported for ShEx output")
         }
     };
-    show_shex_schema_rudof(
+    show_shex_schema(
         &rudof,
-        // converter.current_shex(),
+        converter.current_shex(),
         &result_schema_format,
         writer,
         color,
@@ -981,7 +981,7 @@ fn run_tap2shex(
             _ => Err(anyhow!("Can't write ShEx in {result_format} format")),
         }?;
         let (writer, color) = get_writer(output, force_overwrite)?;
-        show_shex_schema_rudof(&rudof, &result_schema_format, writer, color)?;
+        show_shex_schema(&rudof, &shex, &result_schema_format, writer, color)?;
         Ok(())
     } else {
         bail!("Internal error: No DCTAP")

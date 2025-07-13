@@ -38,6 +38,7 @@ pub fn run_node(
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
     let data = rudof.get_rdf_data();
     let node_selector = parse_node_selector(node_str)?;
+    tracing::debug!("Node info with node selector: {node_selector:?}");
     show_node_info(
         node_selector,
         predicates,

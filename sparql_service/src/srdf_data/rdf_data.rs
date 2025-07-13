@@ -11,6 +11,7 @@ use oxrdf::{
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
+use srdf::matcher::Matcher;
 use srdf::BuildRDF;
 use srdf::FocusRDF;
 use srdf::NeighsRDF;
@@ -192,6 +193,21 @@ impl RdfData {
         }
         Ok(())
     }
+
+    /*fn triples_with_subject(
+        &self,
+        subject: &OxSubject,
+    ) -> Result<impl Iterator<OxTriple>, RdfDataError> {
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(|g| g.triples_with_subject(subject.clone()));
+        let endpoints_triples = self
+            .endpoints
+            .iter()
+            .flat_map(|e| e.triples_with_subject(subject.clone()));
+        Ok(graph_triples.chain(endpoints_triples))
+    }*/
 }
 
 impl Default for RdfData {
@@ -344,6 +360,35 @@ impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
         let endpoints_triples = self.endpoints.iter().flat_map(NeighsRDF::triples).flatten();
+        Ok(graph_triples.chain(endpoints_triples))
+    }
+
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    where
+        S: Matcher<Self::Subject> + Clone,
+        P: Matcher<Self::IRI> + Clone,
+        O: Matcher<Self::Term> + Clone,
+    {
+        let s1 = subject.clone();
+        let p1 = predicate.clone();
+        let o1 = object.clone();
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(move |g| NeighsRDF::triples_matching(g, s1.clone(), p1.clone(), o1.clone()))
+            .flatten();
+        let endpoints_triples = self
+            .endpoints
+            .iter()
+            .flat_map(move |e| {
+                NeighsRDF::triples_matching(e, subject.clone(), predicate.clone(), object.clone())
+            })
+            .flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }
 

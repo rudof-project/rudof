@@ -1,4 +1,5 @@
 use crate::async_srdf::AsyncSRDF;
+use crate::matcher::Matcher;
 use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
@@ -293,6 +294,44 @@ impl Rdf for SRDFGraph {
 impl NeighsRDF for SRDFGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
+    }
+
+    // Optimized version for triples with a specific subject
+    fn triples_with_subject(
+        &self,
+        subject: Self::Subject,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        // Collect the triples into a Vec to avoid the lifetime dependency on subject
+        let triples: Vec<_> = self
+            .graph
+            .triples_for_subject(&subject)
+            .map(TripleRef::into_owned)
+            .collect();
+        Ok(triples.into_iter())
+    }
+
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    where
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
+    {
+        // TODO: Implement this function in a way that it does not retrieve all triples
+        let triples = self.triples()?.filter_map(move |triple| {
+            match subject == triple.subject
+                && predicate == triple.predicate
+                && object == triple.object
+            {
+                true => Some(triple),
+                false => None,
+            }
+        });
+        Ok(triples)
     }
 }
 

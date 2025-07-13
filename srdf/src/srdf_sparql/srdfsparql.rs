@@ -211,6 +211,8 @@ impl NeighsRDF for SRDFSparql {
             },
         );
 
+        tracing::debug!("SPARQL query: {}", query);
+
         let triples = self
             .query_select(&query)? // TODO: check this unwrap
             .into_iter()
@@ -319,7 +321,7 @@ fn make_sparql_query(
     use url::Url;
 
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    tracing::debug!("SPARQL query: {}", url);
+    tracing::debug!("Making SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);

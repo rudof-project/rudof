@@ -51,4 +51,7 @@ pub enum RdfDataError {
 
     #[error("Trying to create a BNode on RDF data without a graph")]
     BNodeNoGraph,
+
+    #[error("Store not initialized")]
+    StoreNotInitialized,
 }

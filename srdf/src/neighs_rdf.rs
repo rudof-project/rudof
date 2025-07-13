@@ -29,37 +29,27 @@ pub trait NeighsRDF: Rdf {
         object: O,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
     where
-        S: Matcher<Self::Subject>,
-        P: Matcher<Self::IRI>,
-        O: Matcher<Self::Term>,
-    {
-        // TODO: Implement this function in a way that it does not retrieve all triples
-        let triples = self.triples()?.filter_map(move |triple| {
-            match subject == triple.subj() && predicate == triple.pred() && object == triple.obj() {
-                true => Some(triple),
-                false => None,
-            }
-        });
-        Ok(triples)
-    }
+        S: Matcher<Self::Subject> + Clone,
+        P: Matcher<Self::IRI> + Clone,
+        O: Matcher<Self::Term> + Clone;
 
-    fn triples_with_subject<S: Matcher<Self::Subject>>(
+    fn triples_with_subject(
         &self,
-        subject: S,
+        subject: Self::Subject,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(subject, Any, Any)
     }
 
-    fn triples_with_predicate<P: Matcher<Self::IRI>>(
+    fn triples_with_predicate(
         &self,
-        predicate: P,
+        predicate: Self::IRI,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(Any, predicate, Any)
     }
 
-    fn triples_with_object<O: Matcher<Self::Term>>(
+    fn triples_with_object(
         &self,
-        object: O,
+        object: Self::Term,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(Any, Any, object)
     }
@@ -76,6 +66,7 @@ pub trait NeighsRDF: Rdf {
     /// get all outgoing arcs from a subject
     fn outgoing_arcs(&self, subject: Self::Subject) -> Result<OutgoingArcs<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
+        tracing::debug!("Getting outgoing arcs for subject: {}", subject);
         for triple in self.triples_with_subject(subject.clone())? {
             let (_, p, o) = triple.into_components();
             results.entry(p).or_default().insert(o);
@@ -191,7 +182,7 @@ pub trait NeighsRDF: Rdf {
         cls: O,
     ) -> Result<impl Iterator<Item = Self::Subject>, Self::Err>
     where
-        O: Matcher<Self::Term>,
+        O: Matcher<Self::Term> + Clone,
     {
         let rdf_type: Self::IRI = rdf_type().clone().into();
         let subjects: HashSet<_> = self

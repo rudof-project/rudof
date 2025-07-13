@@ -55,4 +55,7 @@ pub enum SRDFGraphError {
 
     #[error("Unexepected node type: {node}")]
     UnexepectedNodeType { node: String },
+
+    #[error("Expected node to become a subject")]
+    ExpectedSubject,
 }
