@@ -122,7 +122,6 @@ impl Rdf for SRDFSparql {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => unimplemented!(),
         }
     }
@@ -132,7 +131,6 @@ impl Rdf for SRDFSparql {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
     }

@@ -11,8 +11,8 @@ keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
 
-[features]
-rdf-star = ["srdf/rdf-star"]
+#[features]
+#rdf-star = ["srdf/rdf-star"]
 
 [dependencies]
 srdf = { workspace = true }
@@ -30,7 +30,7 @@ indoc = "2"                      # needed for the definition of SPARQL queries
 # oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the stores )
 clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
 serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-toml = { workspace = true }                   # needed for the config thing
+toml = { workspace = true }                        # needed for the config thing
 colored = { workspace = true }
 tracing = { workspace = true }
 

@@ -9,8 +9,8 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-default = []
+#[features]
+#default = []
 
 [dependencies]
 iri_s.workspace = true

@@ -9,13 +9,13 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [
-    "oxrdf/rdf-star",
-    "oxrdfio/rdf-star",
-    "oxttl/rdf-star",
-    "sparesults/rdf-star",
-]
+#[features]
+#rdf-star = [
+#    "oxrdf/rdf-star",
+#    "oxrdfio/rdf-star",
+#    "oxttl/rdf-star",
+#    "sparesults/rdf-star",
+#]
 
 [dependencies]
 iri_s.workspace = true
@@ -31,19 +31,19 @@ const_format = "0.2"
 lazy_static = "1"
 itertools.workspace = true
 
-oxttl = { version = "0.1.0-alpha.6" }
-oxrdfio = { version = "0.1.0-alpha.5" }
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
-oxrdfxml = "0.1.0-rc.1"
-oxiri = "0.2.3-alpha.1"
-oxsdatatypes = "0.2.0-alpha.2"
-sparesults = { version = "0.2.0-rc.2" }
+oxttl = { workspace = true, features = ["rdf-star"] }
+oxrdfio = { workspace = true }
+oxrdf = { workspace = true }
+oxrdfxml = { version = "0.1.7" }
+oxilangtag.workspace = true
+oxiri = { workspace = true }
+oxsdatatypes = { workspace = true }
+sparesults = { workspace = true }
 colored.workspace = true
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 url.workspace = true
 regex.workspace = true
 tracing.workspace = true
-oxilangtag = { version = "0.1.5", features = ["serde"] }
 
 [dev-dependencies]
 serde_json.workspace = true

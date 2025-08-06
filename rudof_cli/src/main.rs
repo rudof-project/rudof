@@ -432,7 +432,7 @@ fn main() -> Result<()> {
             )
         }
         None => {
-            bail!("Command not specified")
+            bail!("Command not specified, type `--help` to see list of commands")
         }
     }
 }

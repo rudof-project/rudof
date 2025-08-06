@@ -65,7 +65,7 @@ shapes_converter = { version = "0.1.60", path = "./shapes_converter" }
 shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.71", path = "./shex_validation" }
 shex_compact = { version = "0.1.71", path = "./shex_compact" }
-srdf = { version = "0.1.69", path = "./srdf" }
+srdf = { version = "0.1.81", path = "./srdf" }
 sparql_service = { version = "0.1.60", path = "./sparql_service" }
 
 # [dependencies]
@@ -75,7 +75,16 @@ clap = { version = "4.2.1", features = ["derive"] }
 colored = "3"
 const_format = "0.2"
 indexmap = "2.1"
-oxrdf = "0.2.0-alpha.5"
+oxsdatatypes = "0.2.2"
+oxiri = { version = "0.2.11" }
+oxigraph = { version = "0.4.11", default-features = false }
+oxrdf = { version = "0.2.4", features = ["oxsdatatypes", "rdf-star"] }
+oxrdfio = { version = "0.1.8", features = ["rdf-star"] }
+oxrdfxml = { version = "0.1.7", features = ["rdf-star"] }
+oxttl = { version = "0.1.8", features = ["rdf-star"] }
+sparesults = { version = "0.2.5", features = ["rdf-star"] }
+oxilangtag = { version = "0.1.5", features = ["serde"] }
+
 regex = "1.11"
 supports-color = "3.0.0"
 serde = { version = "1", features = ["derive"] }

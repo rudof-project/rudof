@@ -2,6 +2,13 @@
 
 ## Current changes without release yet
 
+- Updated oxigraph dependencies
+- Remove the feature `rdf-star` with the goal of replacing `rdf-star` by `rdf-12` once Oxigraph publishes the packages with that feature and assume that rudof will work with RDF 1.2 files.
+
+## [v0.1.81] - 2025-07-13 
+
+Repaired a bug that was found when obtaining the neighbours of a node in an endpoint. 
+
 ## [v0.1.80] - 2025-07-11
 
 - Added the possibility to convert between ShEx to ShEx (with different formats) and SHACL to SHACL (with different formats) to the `convert` command in the command line.

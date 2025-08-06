@@ -9,13 +9,13 @@ documentation = "https://docs.rs/sparql_service"
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [
-    "srdf/rdf-star",
-    "oxrdf/rdf-star",
-    "oxrdfio/rdf-star",
-    "sparesults/rdf-star",
-]
+#[features]
+#rdf-star = [
+#    "srdf/rdf-star",
+#    "oxrdf/rdf-star",
+#    "oxrdfio/rdf-star",
+#    "sparesults/rdf-star",
+#]
 
 [dependencies]
 const_format = "0.2"
@@ -26,11 +26,11 @@ toml.workspace = true
 itertools.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
-srdf = { workspace = true, features = [ "rdf-star"] }
-oxsdatatypes = "0.2.0-alpha.2"
-oxigraph = { version = "0.4.0-rc.2", default-features = false }
-oxrdf = { workspace = true, features = [ "oxsdatatypes", "rdf-star"] }
-oxrdfio = { version = "0.1.0-alpha.5", features = [ "rdf-star" ]}
+srdf = { workspace = true }
+oxsdatatypes = { workspace = true }
+oxigraph = { workspace = true, default-features = false }
+oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-star"] }
+oxrdfio = { workspace = true, features = ["rdf-star"] }
+sparesults = { workspace = true, features = ["rdf-star"] }
 colored.workspace = true
-sparesults = { version = "0.2.0-alpha.5", features = [ "rdf-star" ] }
 rust_decimal = "1.32"

@@ -391,16 +391,17 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx schema
-    #[pyo3(signature = (formatter, format = &PyShExFormat::ShExC))]
+    #[pyo3(signature = (shex, formatter, format = &PyShExFormat::ShExC))]
     pub fn serialize_shex(
         &self,
+        shex: &PyShExSchema,
         formatter: &PyShExFormatter,
         format: &PyShExFormat,
     ) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shex_format(format);
         self.inner
-            .serialize_shex(&format, &formatter.inner, &mut v)
+            .serialize_shex(&shex.inner, &format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShEx {
                 error: format!("{e}"),
             })

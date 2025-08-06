@@ -9,11 +9,11 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [
-    # "oxrdf/rdf-star", 
-    "srdf/rdf-star",
-]
+#[features]
+#rdf-star = [
+# "oxrdf/rdf-star", 
+#    "srdf/rdf-star",
+#]
 
 [dependencies]
 srdf.workspace = true

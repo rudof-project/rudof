@@ -102,7 +102,6 @@ impl TryFrom<oxrdf::Term> for Object {
                 let lit: SLiteral = literal.try_into()?;
                 Ok(Object::literal(lit))
             }
-            #[cfg(feature = "rdf-star")]
             oxrdf::Term::Triple(_) => todo!(),
         }
     }

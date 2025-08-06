@@ -20,7 +20,6 @@ impl Subject for OxSubject {
         match self {
             OxSubject::NamedNode(_) => TermKind::Iri,
             OxSubject::BlankNode(_) => TermKind::BlankNode,
-            #[cfg(feature = "rdf-star")]
             OxSubject::Triple(_) => TermKind::Triple,
         }
     }
@@ -31,7 +30,6 @@ impl Subject for OxSubjectRef<'_> {
         match self {
             OxSubjectRef::NamedNode(_) => TermKind::Iri,
             OxSubjectRef::BlankNode(_) => TermKind::BlankNode,
-            #[cfg(feature = "rdf-star")]
             OxSubjectRef::Triple(_) => TermKind::Triple,
         }
     }
@@ -61,7 +59,6 @@ impl Term for OxTerm {
             OxTerm::NamedNode(_) => TermKind::Iri,
             OxTerm::BlankNode(_) => TermKind::BlankNode,
             OxTerm::Literal(_) => TermKind::Literal,
-            #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => TermKind::Triple,
         }
     }
@@ -70,7 +67,6 @@ impl Term for OxTerm {
             OxTerm::NamedNode(iri) => iri.as_str().to_string(),
             OxTerm::BlankNode(bnode) => bnode.as_str().to_string(),
             OxTerm::Literal(literal) => literal.value().to_string(),
-            #[cfg(feature = "rdf-star")]
             OxTerm::Triple(triple) => triple.to_string(),
         }
     }
