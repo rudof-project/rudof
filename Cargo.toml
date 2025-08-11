@@ -18,7 +18,8 @@ members = [
     "shacl_validation",
     "shapes_converter",
     "sparql_service",
-    "python", "generator",
+    "python", 
+    "data_generator",
 ]
 
 exclude = ["shex_compact_winnow"]
