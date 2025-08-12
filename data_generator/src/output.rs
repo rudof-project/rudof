@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::{Result, DataGeneratorError};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{RDFFormat, SRDFBuilder};
+use srdf::{RDFFormat, SRDFBuilder, Query, Triple};
 use std::fs::File;
 
 /// Handles writing generated data to various output formats
@@ -18,6 +18,11 @@ impl OutputWriter {
 
     /// Write the generated graph to the configured output
     pub async fn write_graph(&self, graph: &SRDFGraph) -> Result<()> {
+        self.write_graph_with_timing(graph, None).await
+    }
+
+    /// Write the generated graph to the configured output with timing information
+    pub async fn write_graph_with_timing(&self, graph: &SRDFGraph, generation_time: Option<std::time::Duration>) -> Result<()> {
         let format = self.get_rdf_format();
         
         // Create output directory if it doesn't exist
@@ -34,7 +39,7 @@ impl OutputWriter {
 
         // Write statistics if requested
         if self.config.write_stats {
-            self.write_statistics(graph).await?;
+            self.write_statistics(graph, generation_time).await?;
         }
 
         // Compress output if requested
@@ -46,9 +51,14 @@ impl OutputWriter {
     }
 
     /// Write generation statistics
-    async fn write_statistics(&self, graph: &SRDFGraph) -> Result<()> {
+    async fn write_statistics(&self, graph: &SRDFGraph, generation_time: Option<std::time::Duration>) -> Result<()> {
         let stats_path = self.config.path.with_extension("stats.json");
-        let stats = GenerationStatistics::from_graph(graph);
+        let mut stats = GenerationStatistics::from_graph(graph);
+        
+        // Add timing information if provided
+        if let Some(duration) = generation_time {
+            stats = stats.with_timing(duration);
+        }
         
         let stats_json = serde_json::to_string_pretty(&stats)?;
         std::fs::write(stats_path, stats_json)?;
@@ -87,19 +97,48 @@ pub struct GenerationStatistics {
 
 impl GenerationStatistics {
     pub fn from_graph(graph: &SRDFGraph) -> Self {
+        use srdf::Query;
+        use std::collections::HashSet;
+        
         let total_triples = graph.len();
         
-        // For now, provide basic statistics
-        // TODO: Implement proper statistics extraction once we have access to graph internals
-        let shape_counts = std::collections::HashMap::new();
+        // Calculate unique subjects, predicates, and objects
+        let mut subjects = HashSet::new();
+        let mut predicates = HashSet::new();
+        let mut objects = HashSet::new();
+        let mut shape_counts = std::collections::HashMap::new();
+        
+        // Iterate through all triples to collect statistics
+        if let Ok(triples) = graph.triples() {
+            for triple in triples {
+                subjects.insert(triple.subj().to_string());
+                let pred_str = triple.pred().to_string();
+                predicates.insert(pred_str.clone());
+                objects.insert(triple.obj().to_string());
+                
+                // Count shape types (look for rdf:type triples)
+                // The predicate comes with angle brackets around it
+                if pred_str == "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>" {
+                    let shape_type = triple.obj().to_string();
+                    // Remove angle brackets if present
+                    let shape_type = shape_type.trim_start_matches('<').trim_end_matches('>');
+                    *shape_counts.entry(shape_type.to_string()).or_insert(0) += 1;
+                }
+            }
+        }
 
         Self {
             total_triples,
-            total_subjects: 0, // Will be calculated properly later
-            total_predicates: 0, // Will be calculated properly later  
-            total_objects: 0, // Will be calculated properly later
+            total_subjects: subjects.len(),
+            total_predicates: predicates.len(),
+            total_objects: objects.len(),
             generation_time: None,
             shape_counts,
         }
+    }
+    
+    pub fn with_timing(mut self, duration: std::time::Duration) -> Self {
+        self.generation_time = Some(format!("{}ms", duration.as_millis()));
+        self
     }
 }

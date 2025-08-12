@@ -49,8 +49,11 @@ impl DataGenerator {
 
     /// Generate synthetic data and write to output
     pub async fn generate(&mut self) -> Result<()> {
+        let start_time = std::time::Instant::now();
         let graph = self.generator.generate_data(&self.config.generation).await?;
-        self.writer.write_graph(&graph).await?;
+        let generation_time = start_time.elapsed();
+        
+        self.writer.write_graph_with_timing(&graph, Some(generation_time)).await?;
         Ok(())
     }
 
