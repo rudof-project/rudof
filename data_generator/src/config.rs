@@ -104,6 +104,11 @@ pub struct OutputConfig {
     pub compress: bool,
     /// Write statistics file
     pub write_stats: bool,
+    /// Enable parallel writing to multiple files
+    pub parallel_writing: bool,
+    /// Number of parallel output files (when parallel_writing is true)
+    /// If set to 0, the system will automatically determine the optimal count
+    pub parallel_file_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -149,6 +154,8 @@ impl Default for GeneratorConfig {
                 format: OutputFormat::Turtle,
                 compress: false,
                 write_stats: true,
+                parallel_writing: false,
+                parallel_file_count: 0, // 0 means auto-detect optimal count
             },
             parallel: ParallelConfig {
                 worker_threads: None,
@@ -157,6 +164,41 @@ impl Default for GeneratorConfig {
                 parallel_fields: true,
             },
         }
+    }
+}
+
+impl OutputConfig {
+    /// Calculate optimal parallel file count based on dataset size and system capabilities
+    pub fn get_optimal_file_count(&self, total_triples: usize) -> usize {
+        // If user explicitly set a count, use it
+        if self.parallel_file_count > 0 {
+            return self.parallel_file_count;
+        }
+
+        // If parallel writing is disabled, always use 1 file
+        if !self.parallel_writing {
+            return 1;
+        }
+
+        // Detect CPU cores (with fallback to 4)
+        let cpu_count = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4);
+
+        // Calculate optimal file count based on dataset size
+        let optimal_count = match total_triples {
+            0..=1000 => 1,                           // Small datasets: single file
+            1001..=5000 => cpu_count.min(4),         // Small-medium: up to 4 files
+            5001..=50000 => (cpu_count * 2).min(8),  // Medium: up to 2x CPU cores, max 8
+            _ => (cpu_count * 2).min(16),            // Large: up to 2x CPU cores, max 16
+        };
+
+        tracing::info!(
+            "Auto-detected optimal parallel file count: {} (CPU cores: {}, triples: {})",
+            optimal_count, cpu_count, total_triples
+        );
+
+        optimal_count
     }
 }
 

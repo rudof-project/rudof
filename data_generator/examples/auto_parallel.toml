@@ -1,11 +1,11 @@
-# Ready-to-use configuration for RDF data generation
-# Copy this file and modify as needed
+# Configuration for automatic file count detection
+# This configuration will automatically determine the optimal number of parallel files
 
 [generation]
-entity_count = 1000                    # Generate 1000 entities total
+entity_count = 1000                   # Generate 1000 entities total
 seed = 42                             # Use fixed seed for reproducible results
-entity_distribution = "Equal"         # Distribute entities equally across shapes
-cardinality_strategy = "Balanced"     # Use balanced cardinality strategy
+entity_distribution = "Equal"        # Distribute entities equally across shapes
+cardinality_strategy = "Balanced"    # Use balanced cardinality strategy
 
 [field_generators.default]
 locale = "en"                         # Generate English text
@@ -41,15 +41,15 @@ generator = "string"
 parameters = {}
 
 [output]
-path = "generated_data.ttl"           # Output file name
-format = "Turtle"                     # Use Turtle format
-compress = false                      # Don't compress output
-write_stats = true                    # Include generation statistics
-parallel_writing = false             # Disable parallel writing (use single file)
-parallel_file_count = 4              # Number of parallel files (when enabled)
+path = "auto_parallel.ttl"           # Output file name
+format = "Turtle"                    # Use Turtle format
+compress = false                     # Don't compress output
+write_stats = true                   # Include generation statistics
+parallel_writing = true             # Enable parallel writing
+parallel_file_count = 0             # 0 = auto-detect optimal count based on system and dataset
 
 [parallel]
-worker_threads = 4                    # Use 4 parallel threads
-batch_size = 100                      # Process 100 entities per batch
-parallel_shapes = true                # Process shapes in parallel
-parallel_fields = true                # Generate fields in parallel
+worker_threads = 4                   # Use 4 parallel threads
+batch_size = 100                     # Process entities in batches of 100
+parallel_shapes = true              # Process shapes in parallel
+parallel_fields = true              # Generate fields in parallel
