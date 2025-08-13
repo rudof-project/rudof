@@ -83,7 +83,7 @@ oxrdfio = { version = "0.2.0-beta.2", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0-beta.2", features = ["rdf-12"] }
 oxttl = { version = "0.2.0-beta.2", features = ["rdf-12"] }
 sparesults = { version = "0.3.0-beta.2" }
-spargebra = { version = "0.4.0-beta.2" }
+spargebra = { version = "0.4.0-beta.2", features = ["sparql-12"] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
 
 regex = "1.11"
