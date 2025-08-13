@@ -29,8 +29,8 @@ prefixmap.workspace = true
 srdf = { workspace = true }
 oxsdatatypes = { workspace = true }
 oxigraph = { workspace = true, default-features = false }
-oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-star"] }
-oxrdfio = { workspace = true, features = ["rdf-star"] }
-sparesults = { workspace = true, features = ["rdf-star"] }
+oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-12"] }
+oxrdfio = { workspace = true, features = ["rdf-12"] }
+sparesults = { workspace = true }
 colored.workspace = true
 rust_decimal = "1.32"

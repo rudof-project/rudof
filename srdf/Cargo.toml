@@ -31,7 +31,7 @@ const_format = "0.2"
 lazy_static = "1"
 itertools.workspace = true
 
-oxttl = { workspace = true, features = ["rdf-star"] }
+oxttl = { workspace = true, features = ["rdf-12"] }
 oxrdfio = { workspace = true }
 oxrdf = { workspace = true }
 oxrdfxml = { version = "0.1.7" }

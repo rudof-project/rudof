@@ -29,7 +29,7 @@ serde.workspace = true
 toml = "0.8"
 chrono = "0.4.38"
 
-spargebra = "0.3.0-alpha.5"
+spargebra.workspace = true
 thiserror = "2.0"
 tracing = { workspace = true }
 minijinja = { version = "2.0.3", features = ["loader"] }
