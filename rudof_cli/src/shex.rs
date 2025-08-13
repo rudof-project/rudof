@@ -149,7 +149,7 @@ pub(crate) fn show_shex_schema(
         ColorSupport::NoColor => ShExFormatter::default().without_colors(),
         ColorSupport::WithColor => ShExFormatter::default(),
     };
-    rudof.serialize_shex(&shex, &shex_format, &formatter, &mut writer)?;
+    rudof.serialize_shex(shex, &shex_format, &formatter, &mut writer)?;
     Ok(())
 }
 

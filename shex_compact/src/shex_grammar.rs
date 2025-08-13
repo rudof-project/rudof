@@ -2020,7 +2020,7 @@ fn blank_node(i: Span) -> IRes<BNode> {
 //----   Terminals
 
 /// `[142s] <BLANK_NODE_LABEL> ::= "_:" (PN_CHARS_U | [0-9]) ((PN_CHARS | ".")* PN_CHARS)?`
-fn blank_node_label(i: Span) -> IRes<&str> {
+fn blank_node_label(i: Span<'_>) -> IRes<'_, &str> {
     let (i, _) = tag("_:")(i)?;
     let (i, label) = recognize(tuple((one_if(is_pn_chars_u_digit), blank_node_label2)))(i)?;
     Ok((i, label.fragment()))
@@ -2124,7 +2124,7 @@ fn pname_ln(i: Span) -> IRes<IriRef> {
 }
 
 /// `[77] <PN_LOCAL> ::= (PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`
-fn pn_local(i: Span) -> IRes<&str> {
+fn pn_local(i: Span<'_>) -> IRes<'_, &str> {
     let (i, cs) = recognize(tuple((alt((one_if(is_pn_local_start), plx)), pn_local2)))(i)?;
     Ok((i, cs.fragment()))
 }

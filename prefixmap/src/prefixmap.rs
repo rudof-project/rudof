@@ -95,7 +95,7 @@ impl PrefixMap {
     }
 
     /// Return an iterator over the key-value pairs of the ("map, in their order
-    pub fn iter(&self) -> Iter<String, IriS> {
+    pub fn iter(&self) -> Iter<'_, String, IriS> {
         self.map.iter()
     }
 

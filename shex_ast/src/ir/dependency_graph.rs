@@ -52,7 +52,7 @@ impl DependencyGraph {
         !neg_cycles.is_empty()
     }
 
-    pub fn all_edges(&self) -> DependencyGraphIter {
+    pub fn all_edges(&self) -> DependencyGraphIter<'_> {
         DependencyGraphIter {
             inner: self.graph.all_edges(),
         }

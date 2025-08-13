@@ -128,7 +128,7 @@ where
         }
     }
 
-    pub fn components(&self) -> ComponentsIter<K, V, R> {
+    pub fn components(&self) -> ComponentsIter<'_, K, V, R> {
         ComponentsIter {
             current: 0,
             table: self,

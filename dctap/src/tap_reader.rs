@@ -87,7 +87,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }*/
 
-    pub fn shapes(&mut self) -> ShapesIter<R> {
+    pub fn shapes(&mut self) -> ShapesIter<'_, R> {
         ShapesIter::new(self)
     }
 
