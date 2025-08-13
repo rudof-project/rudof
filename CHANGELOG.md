@@ -6,10 +6,11 @@ This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepacha
 - Updated oxigraph dependencies to 0.5.0-beta.2 which supports RDF 1.2
 - Remove the feature `rdf-star` replacing `rdf-star` by `rdf-12`.
 - Some examples with RDF 1.2 features
+
 ### Fixed
 
 ### Changed
-
+- Started implementing deactivated
 ### Removed
 
 ## [v0.1.81] - 2025-07-13 

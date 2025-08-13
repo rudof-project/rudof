@@ -3,7 +3,7 @@ use std::io::Error;
 use std::path::Path;
 
 use oxrdf::NamedNode;
-use oxrdf::Subject as OxSubject;
+use oxrdf::NamedOrBlankNode as OxSubject;
 use oxrdf::Term as OxTerm;
 use oxrdf::TryFromTermError;
 use shacl_ast::Schema;

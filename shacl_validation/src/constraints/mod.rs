@@ -120,6 +120,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
             CompiledComponent::HasValue(inner) => inner,
             CompiledComponent::In(inner) => inner,
             CompiledComponent::QualifiedValueShape(inner) => inner,
+            CompiledComponent::Deactivated(_) => todo!(),
         }
     }
 
@@ -193,6 +194,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
             CompiledComponent::HasValue(inner) => inner,
             CompiledComponent::In(inner) => inner,
             CompiledComponent::QualifiedValueShape(inner) => inner,
+            CompiledComponent::Deactivated(_) => todo!(),
         }
     }
 

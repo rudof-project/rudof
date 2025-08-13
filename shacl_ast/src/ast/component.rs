@@ -7,6 +7,7 @@ use crate::shacl_vocab::{
     SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
+use crate::SH_DEACTIVATED_STR;
 use crate::{node_kind::NodeKind, value::Value};
 use iri_s::{iri, IriS};
 use itertools::Itertools;
@@ -70,6 +71,7 @@ pub enum Component {
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
     },
+    Deactivated(bool),
 }
 
 impl Component {
@@ -193,15 +195,19 @@ impl Component {
                 }
             },
             Self::In { values } => {
+                // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
-                    Value::Iri(iri) => Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf),
+                    Value::Iri(iri) => Self::write_iri(iri, SH_IN_STR, rdf_node, rdf),
                     Value::Literal(literal) => Self::write_literal(
                         &SLiteral::str(&literal.to_string()),
-                        SH_HAS_VALUE_STR,
+                        SH_IN_STR,
                         rdf_node,
                         rdf,
                     ),
                 })?;
+            }
+            Self::Deactivated(value) => {
+                Self::write_boolean(*value, SH_DEACTIVATED_STR, rdf_node, rdf)?;
             }
             Self::QualifiedValueShape {
                 shape,
@@ -322,7 +328,7 @@ impl Display for Component {
                 None => write!(f, "pattern({pattern})"),
             },
             Component::UniqueLang(ul) => write!(f, "uniqueLang({ul})"),
-            Component::LanguageIn { .. } => todo!(), // write!(f, "languageIn({langs})"),
+            Component::LanguageIn { .. } => todo!(),
             Component::Equals(e) => write!(f, "equals({e})"),
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
             Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
@@ -350,6 +356,7 @@ impl Display for Component {
                 write!(f, "In [{str}]")
             }
             Component::QualifiedValueShape { .. } => todo!(),
+            Component::Deactivated(b) => write!(f, "deactivated({b})"),
         }
     }
 }
@@ -386,6 +393,7 @@ impl From<Component> for IriS {
             Component::QualifiedValueShape { .. } => {
                 IriS::new_unchecked(SH_QUALIFIED_VALUE_SHAPE_STR)
             }
+            Component::Deactivated(_) => IriS::new_unchecked(SH_DEACTIVATED_STR),
         }
     }
 }

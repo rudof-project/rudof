@@ -17,9 +17,10 @@ use srdf::{
     combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
     lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
     parse_property_values, property_bool, property_iris, property_objects, property_value,
-    property_values, property_values_int, property_values_iri, property_values_literal,
-    property_values_non_empty, property_values_string, rdf_list, term, FocusRDF, Iri as _, PResult,
-    RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, Term, Triple,
+    property_values, property_values_bool, property_values_int, property_values_iri,
+    property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
+    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
+    Term, Triple,
 };
 use srdf::{rdf_type, rdfs_class, FnOpaque};
 use std::collections::{HashMap, HashSet};
@@ -269,6 +270,7 @@ where
     // But we found that the compiler takes too much memory when the number of parsers is large
     combine_parsers_vec(vec![
         min_count(),
+        deactivated(),
         max_count(),
         in_component(),
         datatype(),
@@ -539,6 +541,15 @@ where
 {
     opaque!(property_values_int(sh_min_length())
         .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect()))
+}
+
+fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
+// impl RDFNodeParse<RDF, Output = Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_bool(sh_deactivated())
+        .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
 }
 
 fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
