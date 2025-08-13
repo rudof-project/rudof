@@ -1,8 +1,8 @@
 use oxrdf::BlankNode as OxBlankNode;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
-use oxrdf::Subject as OxSubject;
-use oxrdf::SubjectRef as OxSubjectRef;
+use oxrdf::NamedOrBlankNode as OxSubject;
+use oxrdf::NamedOrBlankNodeRef as OxSubjectRef;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
@@ -20,7 +20,6 @@ impl Subject for OxSubject {
         match self {
             OxSubject::NamedNode(_) => TermKind::Iri,
             OxSubject::BlankNode(_) => TermKind::BlankNode,
-            OxSubject::Triple(_) => TermKind::Triple,
         }
     }
 }
@@ -30,7 +29,6 @@ impl Subject for OxSubjectRef<'_> {
         match self {
             OxSubjectRef::NamedNode(_) => TermKind::Iri,
             OxSubjectRef::BlankNode(_) => TermKind::BlankNode,
-            OxSubjectRef::Triple(_) => TermKind::Triple,
         }
     }
 }

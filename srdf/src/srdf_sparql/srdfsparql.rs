@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
+    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
@@ -122,7 +122,6 @@ impl Rdf for SRDFSparql {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -365,7 +364,7 @@ mod tests {
     use crate::Triple;
 
     use super::*;
-    use oxrdf::{NamedNode, Subject};
+    use oxrdf::{NamedNode, NamedOrBlankNode as Subject};
 
     #[test]
     fn check_sparql() {

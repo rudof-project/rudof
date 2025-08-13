@@ -77,13 +77,13 @@ const_format = "0.2"
 indexmap = "2.1"
 oxsdatatypes = "0.2.2"
 oxiri = { version = "0.2.11" }
-oxigraph = { version = "0.5.0-beta.2", default-features = false }
+oxigraph = { version = "0.5.0-beta.2", default-features = false, features = [ "rdf-12"] }
 oxrdf = { version = "0.3.0-beta.2", features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { version = "0.2.0-beta.2", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.0-beta.2", features = ["rdf-12"] }
+oxrdfxml = { version = "0.2.0-beta.2" }
 oxttl = { version = "0.2.0-beta.2", features = ["rdf-12"] }
-sparesults = { version = "0.3.0-beta.2" }
-spargebra = { version = "0.4.0-beta.2" }
+sparesults = { version = "0.3.0-beta.2", features = ["sparql-12"] }
+spargebra = { version = "0.4.0-beta.2", features = ["sparql-12" ] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
 
 regex = "1.11"

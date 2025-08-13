@@ -331,9 +331,11 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
 
     fn try_from(value: oxrdf::Literal) -> Result<Self, Self::Error> {
         match value.destruct() {
-            (s, None, None) => Ok(SLiteral::str(&s)),
-            (s, None, Some(language)) => Ok(SLiteral::lang_str(&s, Lang::new_unchecked(&language))),
-            (value, Some(dtype), None) => {
+            (s, None, None, None) => Ok(SLiteral::str(&s)),
+            (s, None, Some(language), None) => {
+                Ok(SLiteral::lang_str(&s, Lang::new_unchecked(&language)))
+            }
+            (value, Some(dtype), None, None) => {
                 let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();

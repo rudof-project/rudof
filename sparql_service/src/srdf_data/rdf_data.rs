@@ -1,12 +1,11 @@
 use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::sparql::Query as OxQuery;
-use oxigraph::sparql::QueryResults;
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
+    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
 use oxrdfio::RdfFormat;
 use prefixmap::PrefixMap;
@@ -247,8 +246,6 @@ impl Rdf for RdfData {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            // #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -290,9 +287,11 @@ impl QueryRDF for RdfData {
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
-        let query = OxQuery::parse(query_str, None)?;
         if let Some(store) = &self.store {
-            let new_sol = store.query(query)?;
+            let new_sol = SparqlEvaluator::new()
+                .parse_query(query_str)?
+                .on_store(store)
+                .execute()?;
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol)
         }

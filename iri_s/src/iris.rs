@@ -1,6 +1,6 @@
 use oxiri::Iri;
 use oxrdf::NamedNode;
-use oxrdf::Subject;
+use oxrdf::NamedOrBlankNode;
 use oxrdf::Term;
 use serde::de;
 use serde::de::Visitor;
@@ -228,7 +228,7 @@ impl From<IriS> for NamedNode {
     }
 }
 
-impl From<IriS> for Subject {
+impl From<IriS> for NamedOrBlankNode {
     fn from(value: IriS) -> Self {
         let named_node: NamedNode = value.into();
         named_node.into()

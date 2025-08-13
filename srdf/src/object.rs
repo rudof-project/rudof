@@ -107,7 +107,7 @@ impl TryFrom<oxrdf::Term> for Object {
     }
 }
 
-impl TryFrom<Object> for oxrdf::Subject {
+impl TryFrom<Object> for oxrdf::NamedOrBlankNode {
     // TODO: Change this to a more appropriate error type
     type Error = RDFError;
 
