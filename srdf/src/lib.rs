@@ -20,6 +20,7 @@ pub mod query_rdf;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
+pub mod rdf_visualizer;
 pub mod shacl_path;
 pub mod srdf_builder;
 pub mod srdf_error;
@@ -44,6 +45,7 @@ pub use literal::*;
 pub use object::*;
 pub use oxrdf_impl::*;
 pub use rdf_format::*;
+
 pub use shacl_path::*;
 pub use srdf_builder::*;
 pub use srdf_error::*;
