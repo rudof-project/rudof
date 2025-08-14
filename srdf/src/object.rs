@@ -8,12 +8,12 @@ use serde::{Deserialize, Serialize};
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
 ///
-/// Note: We plan to support triple terms as in RDF-1.2 in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
     Iri(IriS),
     BlankNode(String),
     Literal(SLiteral),
+    Triple,
 }
 
 impl Object {
@@ -38,13 +38,14 @@ impl Object {
             Object::Iri(iri) => iri.as_str().len(),
             Object::BlankNode(bn) => bn.len(),
             Object::Literal(lit) => lit.lexical_form().len(),
+            Object::Triple => todo!(),
         }
     }
 
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
-            Object::Iri(_) | Object::BlankNode(_) => None,
             Object::Literal(lit) => lit.numeric_value(),
+            _ => None,
         }
     }
 
@@ -71,6 +72,7 @@ impl From<Object> for oxrdf::Term {
             Object::Iri(iri_s) => oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into(),
             Object::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
             Object::Literal(literal) => oxrdf::Term::Literal(literal.into()),
+            Object::Triple => todo!(),
         }
     }
 }
@@ -116,6 +118,7 @@ impl TryFrom<Object> for oxrdf::NamedOrBlankNode {
             Object::Iri(iri_s) => Ok(oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into()),
             Object::BlankNode(bnode) => Ok(oxrdf::BlankNode::new_unchecked(bnode).into()),
             Object::Literal(_) => todo!(),
+            Object::Triple => todo!(),
         }
     }
 }
@@ -132,6 +135,7 @@ impl Display for Object {
             Object::Iri(iri) => write!(f, "{iri}"),
             Object::BlankNode(bnode) => write!(f, "_{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
+            Object::Triple => todo!(),
         }
     }
 }
@@ -142,6 +146,7 @@ impl Debug for Object {
             Object::Iri(iri) => write!(f, "Iri {{{iri:?}}}"),
             Object::BlankNode(bnode) => write!(f, "Bnode{{{bnode:?}}}"),
             Object::Literal(lit) => write!(f, "Literal{{{lit:?}}}"),
+            Object::Triple => todo!(),
         }
     }
 }

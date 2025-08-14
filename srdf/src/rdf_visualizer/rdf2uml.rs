@@ -7,18 +7,17 @@ use crate::{Rdf, Triple};
 pub struct VisualRDFGraph {
     node_counter: usize,
     nodes_map: HashMap<VisualRDFNode, NodeId>,
+    edge_counter: usize,
     edges_map: HashMap<VisualRDFEdge, EdgeId>,
     edges: HashSet<(NodeId, EdgeId, NodeId)>,
 }
 
-impl<R: Rdf> VisualRDFGraph
-where
-    VisualRDFNode: From<R::Subject>,
-{
+impl VisualRDFGraph {
     pub fn new() -> Self {
         VisualRDFGraph {
             node_counter: 0,
             nodes_map: HashMap::new(),
+            edge_counter: 0,
             edges_map: HashMap::new(),
             edges: HashSet::new(),
         }
@@ -28,29 +27,28 @@ where
         let mut graph = VisualRDFGraph::new();
         for triple in rdf.triples()? {
             let (subject, predicate, object) = triple.into_components();
-            let subject_id = graph.get_or_create_node(subject);
-            let edge_id = graph.get_or_create_node(predicate);
-            let object_id = graph.get_or_create_node(object);
+            let subject_id = graph.get_or_create_node(subject_to_visual_node(subject));
+            let edge_id = graph.get_or_create_edge(convert_to_visual_edge(predicate));
+            let object_id = graph.get_or_create_node(term_to_visual_node(object));
 
             graph.edges.insert((subject_id, edge_id, object_id));
         }
         // Convert RDF data into VisualRDFGraph
-        graph
+        Ok(graph)
     }
 
-    pub fn get_or_create_node(&mut self, node: impl Into<VisualRDFNode>) -> NodeId {
-        let node_id = node.into();
-        *self.nodes_map.entry(node_id).or_insert_with(|| {
+    pub fn get_or_create_node(&mut self, node: VisualRDFNode) -> NodeId {
+        *self.nodes_map.entry(node).or_insert_with(|| {
             let id = self.node_counter;
             self.node_counter += 1;
             NodeId { id }
         })
     }
 
-    pub fn get_or_create_edge(&mut self, edge: impl Into<VisualRDFEdge>) -> EdgeId {
-        let edge_id = edge.into();
-        *self.edges_map.entry(edge_id).or_insert_with(|| {
-            let id = self.edges_map.len();
+    pub fn get_or_create_edge(&mut self, edge: VisualRDFEdge) -> EdgeId {
+        *self.edges_map.entry(edge).or_insert_with(|| {
+            let id = self.edge_counter;
+            self.edge_counter += 1;
             EdgeId { id }
         })
     }
@@ -78,4 +76,32 @@ pub enum VisualRDFNode {
     BlankNode { label: String },
     Literal { value: String },
     Triple(Box<VisualRDFNode>, Box<VisualRDFNode>, Box<VisualRDFNode>),
+}
+
+fn subject_to_visual_node<R: Rdf>(subject: R::Subject) -> Result<VisualRDFNode, R::Err> {
+    match R::subject_as_object(&subject) {
+        Ok(object) => obj_to_visual_node(object),
+        Err(_) => VisualRDFNode::BlankNode {
+            label: format!("{:?}", subject),
+        },
+    }
+}
+
+fn term_to_visual_node<R: Rdf>(term: R::Term) -> VisualRDFNode {
+    // This is a placeholder implementation. Adjust based on your RDF model
+    match term {
+        _ => VisualRDFNode::BlankNode {
+            label: format!("{:?}", term),
+        },
+    }
+}
+
+fn convert_to_visual_edge<R: Rdf>(term: R::Term) -> VisualRDFEdge {
+    // This is a placeholder implementation. Adjust based on your RDF model
+    match term {
+        _ => VisualRDFEdge::Iri {
+            label: format!("{:?}", term),
+            url: String::new(),
+        },
+    }
 }
