@@ -4,10 +4,10 @@ use std::str::FromStr;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{Rudof, RudofConfig};
-use srdf::RDFFormat;
+use srdf::{rdf_format, RDFFormat};
 
 use crate::anyhow::{bail, Result};
-use crate::cli::MimeType;
+use crate::cli::{MimeType, ResultFormat};
 use crate::writer::get_writer;
 use crate::{
     cli::{DataFormat, RDFReaderMode},
@@ -109,7 +109,7 @@ pub fn run_data(
     data_format: &DataFormat,
     debug: u8,
     output: &Option<PathBuf>,
-    result_format: &DataFormat,
+    result_format: &ResultFormat,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
     config: &RudofConfig,
@@ -120,7 +120,40 @@ pub fn run_data(
         println!("Config: {config:?}")
     }
     get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
-    let format: RDFFormat = RDFFormat::from(*result_format);
-    rudof.get_rdf_data().serialize(&format, &mut writer)?;
+    match check_result_format(result_format) {
+        CheckResultFormat::RDFFormat(rdf_format) => {
+            rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
+        }
+        CheckResultFormat::VisualFormat(visual_format) => {
+            // rudof.data2plant_uml(&mut writer, visual_format);
+            todo!()
+        }
+    }
     Ok(())
+}
+
+enum CheckResultFormat {
+    RDFFormat(RDFFormat),
+    VisualFormat(VisualFormat),
+}
+
+enum VisualFormat {
+    PlantUML,
+    SVG,
+    PNG,
+}
+
+fn check_result_format(format: &ResultFormat) -> CheckResultFormat {
+    match format {
+        ResultFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
+        ResultFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
+        ResultFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
+        ResultFormat::RDFXML => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
+        ResultFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
+        ResultFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
+        ResultFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),
+        ResultFormat::SVG => CheckResultFormat::VisualFormat(VisualFormat::SVG),
+        ResultFormat::PNG => CheckResultFormat::VisualFormat(VisualFormat::PNG),
+        _ => todo!(),
+    }
 }

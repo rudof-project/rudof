@@ -448,7 +448,7 @@ fn subjects_as_nodes<RDF: Rdf>(
     subjs
         .into_iter()
         .map(|s| {
-            RDF::subject_as_object(&s).map_err(|_| RDFParseError::SubjToRDFNodeFailed {
+            RDF::subject_as_node(&s).map_err(|_| RDFParseError::SubjToRDFNodeFailed {
                 subj: s.to_string(),
             })
         })

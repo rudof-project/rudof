@@ -416,9 +416,9 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
-            default_value_t = DataFormat::Turtle
+            default_value_t = ResultFormat::Turtle
         )]
-        result_format: DataFormat,
+        result_format: ResultFormat,
 
         #[arg(
             short = 'o',
@@ -874,6 +874,9 @@ pub enum ResultFormat {
     NQuads,
     Compact,
     Json,
+    PlantUML,
+    SVG,
+    PNG,
 }
 
 impl Display for ResultFormat {
@@ -887,6 +890,9 @@ impl Display for ResultFormat {
             ResultFormat::NQuads => write!(dest, "nquads"),
             ResultFormat::Compact => write!(dest, "compact"),
             ResultFormat::Json => write!(dest, "json"),
+            ResultFormat::PlantUML => write!(dest, "plantuml"),
+            ResultFormat::SVG => write!(dest, "svg"),
+            ResultFormat::PNG => write!(dest, "png"),
         }
     }
 }

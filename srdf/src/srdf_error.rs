@@ -31,6 +31,9 @@ pub enum RDFError {
 
     #[error("Comparison error: {term1} with {term2}")]
     ComparisonError { term1: String, term2: String },
+
+    #[error("Obtaining triples from RDF: {error}")]
+    ObtainingTriples { error: String },
 }
 
 impl RDFError {

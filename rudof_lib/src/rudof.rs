@@ -9,6 +9,7 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
+use srdf::rdf_visualizer::rdf2uml::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;
@@ -161,6 +162,29 @@ impl Rudof {
         } else {
             Err(RudofError::NoDCTAP)
         }
+    }
+
+    /// Generate a PlantUML representation of RDF Data
+    ///
+    pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
+        let converter = VisualRDFGraph::from_rdf(&self.rdf_data).map_err(|e| {
+            RudofError::RDF2PlantUmlError {
+                error: format!("{e}"),
+            }
+        })?;
+        converter
+            .as_plantuml(
+                writer,
+                &self
+                    .config
+                    .rdf_data_config()
+                    .rdf_visualization
+                    .unwrap_or_default(),
+            )
+            .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
+                error: format!("{e}"),
+            })?;
+        Ok(())
     }
 
     /// Generate a UML Class-like representation of a ShEx schema according to PlantUML syntax

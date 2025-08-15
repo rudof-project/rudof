@@ -14,9 +14,9 @@ where
 {
     fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
 
-    fn subj(&self) -> S;
-    fn pred(&self) -> P;
-    fn obj(&self) -> O;
+    fn subj(&self) -> &S;
+    fn pred(&self) -> &P;
+    fn obj(&self) -> &O;
 
     fn into_components(self) -> (S, P, O);
 

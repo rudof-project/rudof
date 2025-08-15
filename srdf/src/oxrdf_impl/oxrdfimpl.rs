@@ -109,16 +109,16 @@ impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
         OxTriple::new(subj, pred, obj)
     }
 
-    fn subj(&self) -> OxSubject {
-        self.subject.clone()
+    fn subj(&self) -> &OxSubject {
+        &self.subject
     }
 
-    fn pred(&self) -> OxNamedNode {
-        self.predicate.clone()
+    fn pred(&self) -> &OxNamedNode {
+        &self.predicate
     }
 
-    fn obj(&self) -> OxTerm {
-        self.object.clone()
+    fn obj(&self) -> &OxTerm {
+        &self.object
     }
 
     fn into_components(self) -> (OxSubject, OxNamedNode, OxTerm) {

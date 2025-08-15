@@ -65,6 +65,7 @@ impl Shacl2ShEx {
             srdf::Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral {
                 literal: lit.clone(),
             }),
+            Object::Triple { .. } => todo!(),
         }
     }
 
@@ -151,6 +152,7 @@ impl Shacl2ShEx {
                     Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
                         literal: lit.clone(),
                     }),
+                    Object::Triple { .. } => todo!(),
                 }?;
                 Ok(Some(value_set_value))
             }
@@ -331,6 +333,7 @@ impl Shacl2ShEx {
             Object::Iri(iri) => ValueSetValue::iri(IriRef::iri(iri.clone())),
             Object::BlankNode(_) => todo!(),
             Object::Literal(_) => todo!(),
+            Object::Triple { .. } => todo!(),
         };
         let cls = NodeConstraint::new().with_values(vec![value]);
         let te = TripleExpr::triple_constraint(

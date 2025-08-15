@@ -1,6 +1,6 @@
 use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
-use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
+use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFError, RDFFormat, Rdf, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -536,7 +536,7 @@ mod tests {
     use iri_s::IriS;
     use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;
-    use oxrdf::Subject as OxSubject;
+    use oxrdf::NamedOrBlankNode as OxSubject;
     use oxrdf::Term as OxTerm;
     use std::collections::HashSet;
 

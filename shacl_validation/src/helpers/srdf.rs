@@ -79,6 +79,7 @@ pub(crate) fn get_path_for<S: NeighsRDF>(
                 Object::Literal(literal) => Err(SRDFError::SHACLUnexpectedLiteral {
                     lit: literal.to_string(),
                 }),
+                Object::Triple { .. } => todo!(),
             }
         }
         None => Ok(None),

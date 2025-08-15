@@ -186,7 +186,7 @@ fn var_from_predicate(predicate: &IriRef, schema: &Schema, var_builder: &mut Var
 mod tests {
     use super::*;
     use shex_compact::ShExParser;
-    use spargebra::Query;
+    use spargebra::SparqlParser;
 
     #[test]
     fn test_simple() {
@@ -207,11 +207,15 @@ Select * where {
     ?this :name  ?name  .
     ?this :knows ?knows  
 }";
-        let expected_query = Query::parse(query_str, None).unwrap();
-        let converter = ShEx2Sparql::new(&ShEx2SparqlConfig::default());
-        let converted_query = converter.convert(&schema, None).unwrap();
+        let expected_query = SparqlParser::new().parse_query(query_str).unwrap();
+        let converted_query = ShEx2Sparql::new(&ShEx2SparqlConfig::default())
+            .convert(&schema, None)
+            .unwrap();
         let converted_query_str = format!("{}", converted_query);
-        let converted_query_parsed = Query::parse(converted_query_str.as_str(), None).unwrap();
+        let converted_query_parsed = SparqlParser::new()
+            .parse_query(converted_query_str.as_str())
+            .unwrap();
+
         assert_eq!(converted_query_parsed, expected_query);
     }
 }

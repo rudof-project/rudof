@@ -65,6 +65,7 @@ where
             Object::Literal(lit) => Err(ShExRError::ShapeExprLabelLiteral {
                 term: lit.to_string(),
             }),
+            Object::Triple { .. } => todo!(),
         }
     }
 

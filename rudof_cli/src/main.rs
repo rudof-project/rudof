@@ -589,6 +589,15 @@ fn write_result_shapemap(
                 .context("Error converting Result to JSON: {result}")?;
             writeln!(writer, "{str}")?;
         }
+        ResultFormat::PlantUML => {
+            bail!("Generation of PlantUML for Shapemap is not implemented yet")
+        }
+        ResultFormat::SVG => {
+            bail!("Generation of SVG for Shapemap is not implemented yet")
+        }
+        ResultFormat::PNG => {
+            bail!("Generation of PNG for Shapemap is not implemented yet")
+        }
     }
     Ok(())
 }
