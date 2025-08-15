@@ -3,12 +3,12 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use crate::anyhow::{bail, Result};
-use crate::cli::MimeType;
+use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use crate::{base_convert, ColorSupport};
-use crate::{cli::RDFReaderMode, CliShExFormat, InputSpec};
+use crate::{InputSpec, RDFReaderMode, ShExFormat as CliShExFormat};
 use anyhow::Context;
+use anyhow::{bail, Result};
 use rudof_lib::{Rudof, RudofConfig, ShExFormat, ShExFormatter};
 use shex_ast::{Schema, ShapeExprLabel};
 

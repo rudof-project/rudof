@@ -16,13 +16,20 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use cli::{
-    Cli, Command, DCTapFormat, DCTapResultFormat, DataFormat, InputConvertMode, MimeType,
-    OutputConvertMode, RDFReaderMode, ResultFormat, ResultServiceFormat, ValidationMode,
-};
 use dctap::DCTAPFormat;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rudof_cli::cli::{Cli, Command};
+use rudof_cli::data::{data_format2rdf_format, get_data_rudof, run_data};
+use rudof_cli::data_format::DataFormat;
+use rudof_cli::mime_type::MimeType;
+use rudof_cli::node::run_node;
+use rudof_cli::node_selector::parse_node_selector;
+use rudof_cli::query::run_query;
+use rudof_cli::writer::get_writer;
+use rudof_cli::{run_shex, InputSpec, RDFReaderMode, ResultServiceFormat, ValidationMode};
+use rudof_cli::{ResultShExValidationFormat, ShExFormat as CliShExFormat};
+use rudof_cli::{ResultShaclValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use rudof_lib::{
     Rudof, RudofConfig, ShExFormat, ShExFormatter, ShaclFormat, ShaclValidationMode,
     ShapeMapFormatter, ShapeMapParser, ShapesGraphSource,
@@ -38,34 +45,8 @@ use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 use tracing::debug;
 
-// Current modules
-pub mod cli;
-pub mod data;
-pub mod input_convert_format;
-pub mod input_spec;
-pub mod node;
-pub mod node_selector;
-pub mod output_convert_format;
-pub mod query;
-pub mod shex;
-pub mod writer;
-
-pub use cli::{
-    ShExFormat as CliShExFormat, ShaclFormat as CliShaclFormat, ShapeMapFormat as CliShapeMapFormat,
-};
-pub use input_convert_format::InputConvertFormat;
-pub use input_spec::*;
-pub use output_convert_format::OutputConvertFormat;
-
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
-
-use crate::data::{data_format2rdf_format, get_base, get_data_rudof, run_data};
-use crate::node::run_node;
-use crate::node_selector::parse_node_selector;
-use crate::query::run_query;
-use crate::shex::{parse_shex_schema_rudof, run_shex, show_shex_schema};
-use crate::writer::get_writer;
 
 #[allow(unused_variables)]
 fn main() -> Result<()> {
@@ -170,32 +151,37 @@ fn main() -> Result<()> {
             force_overwrite,
         }) => {
             let config = get_config(config)?;
+
             match validation_mode {
-                ValidationMode::ShEx => run_validate_shex(
-                    schema,
-                    schema_format,
-                    data,
-                    data_format,
-                    endpoint,
-                    reader_mode,
-                    node,
-                    shape,
-                    shapemap,
-                    shapemap_format,
-                    cli.debug,
-                    result_format,
-                    output,
-                    &config,
-                    *force_overwrite,
-                ),
+                ValidationMode::ShEx => {
+                    let result_shex_format = result_format.to_shex_result_format();
+                    run_validate_shex(
+                        schema,
+                        schema_format,
+                        data,
+                        data_format,
+                        endpoint,
+                        reader_mode,
+                        node,
+                        shape,
+                        shapemap,
+                        shapemap_format,
+                        cli.debug,
+                        result_shex_format,
+                        output,
+                        &config,
+                        *force_overwrite,
+                    )
+                }
                 ValidationMode::SHACL => {
                     let shacl_format = match &schema_format {
-                        None => Ok::<Option<cli::ShaclFormat>, anyhow::Error>(None),
+                        None => Ok::<Option<ShaclFormat>, anyhow::Error>(None),
                         Some(f) => {
                             let f = schema_format_to_shacl_format(f)?;
                             Ok(Some(f))
                         }
                     }?;
+                    let result_shacl_validation = result_format.to_shacl_result_format();
                     run_validate_shacl(
                         schema,
                         &shacl_format,
@@ -205,7 +191,7 @@ fn main() -> Result<()> {
                         reader_mode,
                         *shacl_validation_mode,
                         cli.debug,
-                        result_format,
+                        result_shacl_validation,
                         output,
                         &config,
                         *force_overwrite,
@@ -476,7 +462,7 @@ fn run_validate_shex(
     shapemap: &Option<InputSpec>,
     shapemap_format: &CliShapeMapFormat,
     _debug: u8,
-    result_format: &ResultFormat,
+    result_format: &ResultShExValidationFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
@@ -532,14 +518,14 @@ fn run_validate_shex(
 
 fn write_validation_report(
     mut writer: Box<dyn Write + 'static>,
-    format: &ResultFormat,
+    format: &ResultShaclValidationFormat,
     report: ValidationReport,
 ) -> Result<()> {
     match format {
-        ResultFormat::Compact => {
+        ResultShaclValidationFormat::Compact => {
             writeln!(writer, "Validation report: {report}")?;
         }
-        ResultFormat::Json => {
+        ResultShaclValidationFormat::Json => {
             bail!("Generation of JSON for SHACl validation report is not implemented yet")
             /*let str = serde_json::to_string_pretty(&report)
                 .context("Error converting Result to JSON: {result}")?;
@@ -570,33 +556,18 @@ fn result_format_to_rdf_format(result_format: &ResultFormat) -> Result<RDFFormat
 
 fn write_result_shapemap(
     mut writer: Box<dyn Write + 'static>,
-    format: &ResultFormat,
+    format: &ResultShExValidationFormat,
     result: ResultShapeMap,
 ) -> Result<()> {
     match format {
-        ResultFormat::Turtle => todo!(),
-        ResultFormat::NTriples => todo!(),
-        ResultFormat::RDFXML => todo!(),
-        ResultFormat::TriG => todo!(),
-        ResultFormat::N3 => todo!(),
-        ResultFormat::NQuads => todo!(),
-        ResultFormat::Compact => {
+        ResultShExValidationFormat::Compact => {
             writeln!(writer, "Result:")?;
             result.show_minimal(writer)?;
         }
-        ResultFormat::Json => {
+        ResultShExValidationFormat::Internal => {
             let str = serde_json::to_string_pretty(&result)
                 .context("Error converting Result to JSON: {result}")?;
             writeln!(writer, "{str}")?;
-        }
-        ResultFormat::PlantUML => {
-            bail!("Generation of PlantUML for Shapemap is not implemented yet")
-        }
-        ResultFormat::SVG => {
-            bail!("Generation of SVG for Shapemap is not implemented yet")
-        }
-        ResultFormat::PNG => {
-            bail!("Generation of PNG for Shapemap is not implemented yet")
         }
     }
     Ok(())
@@ -605,14 +576,14 @@ fn write_result_shapemap(
 #[allow(clippy::too_many_arguments)]
 fn run_validate_shacl(
     schema: &Option<InputSpec>,
-    shapes_format: &Option<CliShaclFormat>,
+    shapes_format: &Option<ShaclFormat>,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
     endpoint: &Option<String>,
     reader_mode: &RDFReaderMode,
     mode: ShaclValidationMode,
     _debug: u8,
-    result_format: &ResultFormat,
+    result_format: &ResultShaclValidationFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
@@ -1026,12 +997,6 @@ fn run_tap2uml(
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum ColorSupport {
-    NoColor,
-    WithColor,
-}
-
 fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -1180,10 +1145,6 @@ fn format_2_shacl_format(format: &InputConvertFormat) -> Result<CliShaclFormat> 
         InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
         _ => bail!("Converting ShEx, format {format} not supported"),
     }
-}
-
-fn base_convert(base: &Option<IriS>) -> Option<&str> {
-    base.as_ref().map(|iri| iri.as_str())
 }
 
 fn reader_mode_convert(rm: RDFReaderMode) -> ReaderMode {

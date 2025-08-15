@@ -1,3 +1,5 @@
+use clap::{Parser, Subcommand, ValueEnum};
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -6,13 +8,10 @@ use prefixmap::PrefixMap;
 use rudof_lib::{Rudof, RudofConfig};
 use srdf::{rdf_format, RDFFormat};
 
-use crate::anyhow::{bail, Result};
-use crate::cli::{MimeType, ResultFormat};
 use crate::writer::get_writer;
-use crate::{
-    cli::{DataFormat, RDFReaderMode},
-    InputSpec,
-};
+use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
+use crate::{input_spec::InputSpec, RDFReaderMode};
+use anyhow::{bail, Result};
 
 pub fn get_data_rudof(
     rudof: &mut Rudof,
@@ -109,7 +108,7 @@ pub fn run_data(
     data_format: &DataFormat,
     debug: u8,
     output: &Option<PathBuf>,
-    result_format: &ResultFormat,
+    result_format: &ResultDataFormat,
     force_overwrite: bool,
     reader_mode: &RDFReaderMode,
     config: &RudofConfig,
@@ -143,17 +142,17 @@ enum VisualFormat {
     PNG,
 }
 
-fn check_result_format(format: &ResultFormat) -> CheckResultFormat {
+fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {
     match format {
-        ResultFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
-        ResultFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
-        ResultFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
-        ResultFormat::RDFXML => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
-        ResultFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
-        ResultFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
-        ResultFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),
-        ResultFormat::SVG => CheckResultFormat::VisualFormat(VisualFormat::SVG),
-        ResultFormat::PNG => CheckResultFormat::VisualFormat(VisualFormat::PNG),
+        ResultDataFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
+        ResultDataFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
+        ResultDataFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
+        ResultDataFormat::RDFXML => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
+        ResultDataFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
+        ResultDataFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
+        ResultDataFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),
+        ResultDataFormat::SVG => CheckResultFormat::VisualFormat(VisualFormat::SVG),
+        ResultDataFormat::PNG => CheckResultFormat::VisualFormat(VisualFormat::PNG),
         _ => todo!(),
     }
 }
