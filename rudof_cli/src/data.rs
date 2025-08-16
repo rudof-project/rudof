@@ -1,12 +1,11 @@
-use clap::{Parser, Subcommand, ValueEnum};
-use std::fmt::Display;
+// use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{Rudof, RudofConfig};
-use srdf::{rdf_format, RDFFormat};
+use srdf::RDFFormat;
 
 use crate::writer::get_writer;
 use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
@@ -124,8 +123,12 @@ pub fn run_data(
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
         }
         CheckResultFormat::VisualFormat(visual_format) => {
-            // rudof.data2plant_uml(&mut writer, visual_format);
-            todo!()
+            let uml = rudof.data2plant_uml(&mut writer);
+            /*match visual_format {
+                VisualFormat::PlantUML => uml,
+                VisualFormat::SVG => todo!(),
+                VisualFormat::PNG => todo!(),
+            }*/
         }
     }
     Ok(())

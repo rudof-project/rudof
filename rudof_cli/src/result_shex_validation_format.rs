@@ -1,5 +1,8 @@
+use anyhow::{bail, Result};
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
+
+use crate::ShapeMapFormat;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
@@ -12,6 +15,19 @@ pub enum ResultShExValidationFormat {
     NQuads,
     Compact,
     Json,
+}
+
+impl ResultShExValidationFormat {
+    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat> {
+        match self {
+            ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
+            ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Internal),
+            _ => bail!(
+                "Conversion to ShapeMapFormat not supported for {self}. \
+                 Use a different format or implement conversion."
+            ),
+        }
+    }
 }
 
 impl Display for ResultShExValidationFormat {

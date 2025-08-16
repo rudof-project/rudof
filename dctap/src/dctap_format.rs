@@ -3,32 +3,37 @@ use std::{
     str::FromStr,
 };
 
-/// Different formats supported by DCTAP
-pub enum DCTapFormat {
-    /// Comma separated values
+/// DCTAP available formats
+#[derive(Debug, Default, PartialEq)]
+pub enum DCTAPFormat {
+    #[default]
     CSV,
-
-    /// Excel based format
     XLSX,
+    XLSB,
+    XLSM,
+    XLS,
 }
 
-impl FromStr for DCTapFormat {
+impl FromStr for DCTAPFormat {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "csv" => Ok(DCTapFormat::CSV),
-            "xlsx" => Ok(DCTapFormat::XLSX),
+            "csv" => Ok(DCTAPFormat::CSV),
+            "xlsx" => Ok(DCTAPFormat::XLSX),
             _ => Err(format!("Unsupported DCTAP format {s}")),
         }
     }
 }
 
-impl Display for DCTapFormat {
+impl Display for DCTAPFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            DCTapFormat::CSV => write!(dest, "csv"),
-            &DCTapFormat::XLSX => write!(dest, "xlsx"),
+            DCTAPFormat::CSV => write!(dest, "csv"),
+            &DCTAPFormat::XLSX => write!(dest, "xlsx"),
+            DCTAPFormat::XLSB => write!(dest, "xlsb"),
+            DCTAPFormat::XLSM => write!(dest, "xlsm"),
+            DCTAPFormat::XLS => write!(dest, "xls"),
         }
     }
 }

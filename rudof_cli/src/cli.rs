@@ -2,10 +2,10 @@ use crate::data_format::DataFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::input_spec::InputSpec;
 use crate::{
-    DCTapResultFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat,
+    CliShaclFormat, DCTapResultFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat,
     OutputConvertMode, RDFReaderMode, ResultDataFormat, ResultQueryFormat, ResultServiceFormat,
     ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
-    ShaclFormat, ShapeMapFormat, ShowNodeMode, ValidationMode,
+    ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -334,7 +334,7 @@ pub enum Command {
         shapes: Option<InputSpec>,
 
         #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
-        shapes_format: Option<ShaclFormat>,
+        shapes_format: Option<CliShaclFormat>,
 
         #[arg(
             short = 't',
@@ -517,17 +517,17 @@ pub enum Command {
             short = 'f',
             long = "shapes-format",
             value_name = "Shapes file format",
-            default_value_t = ShaclFormat::Turtle
+            default_value_t = CliShaclFormat::Turtle
         )]
-        shapes_format: ShaclFormat,
+        shapes_format: CliShaclFormat,
 
         #[arg(
             short = 'r',
             long = "result-shapes-format",
             value_name = "Result shapes format",
-            default_value_t = ShaclFormat::Internal
+            default_value_t = CliShaclFormat::Internal
         )]
-        result_shapes_format: ShaclFormat,
+        result_shapes_format: CliShaclFormat,
 
         #[arg(
             short = 'o',
