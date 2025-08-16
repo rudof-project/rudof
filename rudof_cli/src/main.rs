@@ -17,24 +17,18 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use rudof_cli::cli::{Cli, Command};
-use rudof_cli::data::{run_data};
+use rudof_cli::data::run_data;
 
 use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
-use rudof_cli::{
-    run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex, run_validate_shacl, run_validate_shex, ColorSupport, InputConvertFormat, InputSpec, OutputConvertFormat, RDFReaderMode, ResultServiceFormat, ValidationMode
-};
 use rudof_cli::CliShaclFormat;
-use rudof_cli::{ResultShExValidationFormat, ShExFormat as CliShExFormat};
-use rudof_lib::{
-    Rudof, RudofConfig, ShExFormat, ShaclValidationMode, ShapeMapFormatter, ShapeMapParser,
-    ShapesGraphSource,
+use rudof_cli::ShExFormat as CliShExFormat;
+use rudof_cli::{
+    run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex, run_validate_shacl,
+    run_validate_shex, ValidationMode,
 };
-use shacl_validation::validation_report::report::ValidationReport;
-use shapemap::{ResultShapeMap, ShapeMapFormat as ShapemapFormat, ShapeSelector};
-use sparql_service::ServiceDescription;
-use srdf::{RDFFormat, SRDFGraph};
-use std::io::{self, Write};
+use rudof_lib::RudofConfig;
+use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
 
@@ -421,8 +415,6 @@ fn main() -> Result<()> {
         }
     }
 }
-
-
 
 fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
     match config {

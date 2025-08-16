@@ -12,7 +12,7 @@ use rudof_lib::{Rudof, RudofConfig, ShapeMapParser};
 
 use crate::data_format::DataFormat;
 use crate::{
-    data::get_data_rudof, data_format, input_spec::InputSpec, node_selector::parse_node_selector,
+    data::get_data_rudof, input_spec::InputSpec, node_selector::parse_node_selector,
     writer::get_writer, RDFReaderMode, ShowNodeMode,
 };
 

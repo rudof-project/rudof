@@ -422,31 +422,6 @@ fn get_label(
     Ok(None)
 }
 
-pub enum ImageFormat {
-    SVG,
-    PNG,
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum UmlGenerationMode {
-    /// Show all nodes
-    #[default]
-    AllNodes,
-
-    /// Show only the neighbours of a node
-    Neighs(String),
-}
-
-impl UmlGenerationMode {
-    pub fn all() -> UmlGenerationMode {
-        UmlGenerationMode::AllNodes
-    }
-
-    pub fn neighs(node: &str) -> UmlGenerationMode {
-        UmlGenerationMode::Neighs(node.to_string())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // use super::*;

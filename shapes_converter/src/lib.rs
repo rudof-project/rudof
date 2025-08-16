@@ -9,6 +9,7 @@ pub mod shex_to_html;
 pub mod shex_to_sparql;
 pub mod shex_to_uml;
 pub mod tap_to_shex;
+pub mod uml_converter;
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
@@ -33,6 +34,7 @@ pub use crate::shex_to_uml::shex2uml_error::*;
 pub use crate::tap_to_shex::tap2shex::*;
 pub use crate::tap_to_shex::tap2shex_config::*;
 pub use crate::tap_to_shex::tap2shex_error::*;
+pub use uml_converter::*;
 
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
 

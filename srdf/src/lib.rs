@@ -30,6 +30,7 @@ pub mod srdf_sparql;
 pub mod subject;
 pub mod term;
 pub mod triple;
+pub mod uml_converter;
 pub mod vocab;
 pub mod xsd_datetime;
 
@@ -45,6 +46,7 @@ pub use literal::*;
 pub use object::*;
 pub use oxrdf_impl::*;
 pub use rdf_format::*;
+pub use uml_converter::*;
 
 pub use shacl_path::*;
 pub use srdf_builder::*;
