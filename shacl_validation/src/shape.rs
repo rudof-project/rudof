@@ -32,7 +32,7 @@ impl<S: Rdf + Debug> Validate<S> for CompiledShape {
             "Shape.validate with shape {} and source shape: {}",
             self.id(),
             source_shape
-                .map(|s| format!("{}", s.id()))
+                .map(|s| format!("{:?}", s))
                 .unwrap_or_else(|| "None".to_string())
         );
         // 0. skipping if it is deactivated

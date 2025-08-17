@@ -16,8 +16,8 @@ use tracing::debug;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, Quad, Subject as OxSubject, SubjectRef, Term as OxTerm, TermRef,
-    Triple as OxTriple, TripleRef,
+    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
+    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
 };
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{prefixmap::*, PrefixMapError};
@@ -108,7 +108,8 @@ impl SRDFGraph {
                             debug!("Error captured: {e:?}")
                         }
                         Ok(t) => {
-                            self.graph.insert(t.as_ref());
+                            let triple_ref = cnv_triple(&t);
+                            self.graph.insert(triple_ref);
                         }
                     }
                 }
@@ -185,11 +186,11 @@ impl SRDFGraph {
         obj: O,
     ) -> Result<(), SRDFGraphError>
     where
-        S: Into<SubjectRef<'a>>,
+        S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
         O: Into<TermRef<'a>>,
     {
-        let subj: SubjectRef<'a> = subj.into();
+        let subj: OxSubjectRef<'a> = subj.into();
         let pred: NamedNodeRef<'a> = pred.into();
         let obj: TermRef<'a> = obj.into();
         let triple = TripleRef::new(subj, pred, obj);
@@ -271,7 +272,6 @@ impl Rdf for SRDFGraph {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -499,7 +499,7 @@ fn rdf_type() -> OxNamedNode {
 }
 
 fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
-    let subj: oxrdf::Subject = t.subject.into();
+    let subj: oxrdf::NamedOrBlankNode = t.subject.into();
     let pred: oxrdf::NamedNode = t.predicate.into();
     let obj: oxrdf::Term = t.object.into();
     Quad::new(subj, pred, obj, graph_name)
@@ -520,6 +520,14 @@ impl ReaderMode {
     pub fn is_strict(&self) -> bool {
         matches!(self, ReaderMode::Strict)
     }
+}
+
+fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
+    TripleRef::new(
+        OxSubjectRef::from(&t.subject),
+        NamedNodeRef::from(&t.predicate),
+        TermRef::from(&t.object),
+    )
 }
 
 #[cfg(test)]

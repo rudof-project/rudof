@@ -9,8 +9,8 @@ use regex::Regex;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_closed, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in,
-    sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
+    sh_and, sh_class, sh_closed, sh_datatype, sh_deactivated, sh_disjoint, sh_equals, sh_has_value,
+    sh_in, sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
     sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive,
     sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
     sh_unique_lang, sh_xone,
@@ -50,6 +50,7 @@ pub enum CompiledComponent {
     HasValue(HasValue),
     In(In),
     QualifiedValueShape(QualifiedValueShape),
+    Deactivated(bool),
 }
 
 impl CompiledComponent {
@@ -158,6 +159,7 @@ impl CompiledComponent {
                     qualified_value_shapes_disjoint,
                 ))
             }
+            Component::Deactivated(b) => CompiledComponent::Deactivated(b),
         };
 
         Ok(component)
@@ -790,6 +792,7 @@ impl From<&CompiledComponent> for IriS {
             CompiledComponent::HasValue { .. } => sh_has_value().clone(),
             CompiledComponent::In { .. } => sh_in().clone(),
             CompiledComponent::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
+            CompiledComponent::Deactivated(_) => sh_deactivated().clone(),
         }
     }
 }

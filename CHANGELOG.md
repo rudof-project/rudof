@@ -1,9 +1,17 @@
 # CHANGE LOG
+This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
-## Current changes without release yet
+## [Unreleased]
+### Added
+- Updated oxigraph dependencies to 0.5.0-beta.2 which supports RDF 1.2
+- Remove the feature `rdf-star` replacing `rdf-star` by `rdf-12`.
+- Some examples with RDF 1.2 features
 
-- Updated oxigraph dependencies
-- Remove the feature `rdf-star` with the goal of replacing `rdf-star` by `rdf-12` once Oxigraph publishes the packages with that feature and assume that rudof will work with RDF 1.2 files.
+### Fixed
+
+### Changed
+- Started implementing deactivated
+### Removed
 
 ## [v0.1.81] - 2025-07-13 
 
