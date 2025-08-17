@@ -8,6 +8,7 @@ use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{
     Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue,
 };
+use srdf::{ImageFormat, UmlGenerationMode};
 use tracing::debug;
 
 use crate::{

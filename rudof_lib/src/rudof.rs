@@ -33,9 +33,9 @@ pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql,
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
-pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
 pub use sparql_service::RdfData;
+pub use srdf::UmlGenerationMode;
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]

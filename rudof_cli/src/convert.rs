@@ -7,7 +7,8 @@ use crate::{
 use anyhow::{anyhow, bail, Result};
 use prefixmap::IriRef;
 use rudof_lib::{Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
-use shapes_converter::{ImageFormat, ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
+use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
+use srdf::ImageFormat;
 use std::{
     io::Write,
     path::{Path, PathBuf},

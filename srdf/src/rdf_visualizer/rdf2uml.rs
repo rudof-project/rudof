@@ -13,6 +13,7 @@ pub struct VisualRDFGraph {
     nodes_map: HashMap<VisualRDFNode, NodeId>,
     edge_counter: usize,
     edges_map: HashMap<VisualRDFEdge, EdgeId>,
+
     edges: HashSet<(NodeId, EdgeId, NodeId)>,
 }
 
@@ -65,24 +66,15 @@ impl VisualRDFGraph {
         config: &RDFVisualizationConfig,
     ) -> Result<(), RdfVisualizerError> {
         writeln!(writer, "@startuml\n")?;
+        writeln!(writer, "{}", style())?;
+
         // Add nodes
-        for (node, id) in &self.nodes_map {
-            match node {
-                VisualRDFNode::Iri { label, url } => {
-                    writeln!(writer, "class {} << (I, {}) >>\n", label, url)?;
-                }
-                VisualRDFNode::BlankNode { label } => {
-                    writeln!(writer, "class {} << (B, _) >>\n", label)?;
-                }
-                VisualRDFNode::Literal { value } => {
-                    writeln!(writer, "class \"{}\" << (L, _) >>\n", value)?;
-                }
-                VisualRDFNode::Triple(visual_rdfnode, visual_rdfnode1, visual_rdfnode2) => todo!(),
-            }
+        for (node, node_id) in &self.nodes_map {
+            writeln!(writer, "{}\n", node.as_plantuml(*node_id))?;
         }
         // Add edges
         for (source, edge, target) in &self.edges {
-            writeln!(writer, "{} --> {} : {}\n", source, target, edge)?;
+            let edfe = writeln!(writer, "{} --> {} : {}\n", source, target, edge)?;
         }
         writeln!(writer, "@enduml\n")?;
         Ok(())
@@ -117,12 +109,35 @@ pub enum VisualRDFEdge {
     Reifies,
 }
 
+impl VisualRDFEdge {
+    pub fn as_plantuml(&self, edge_id: EdgeId) -> String {
+        " ".to_string()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VisualRDFNode {
     Iri { label: String, url: String },
     BlankNode { label: String },
     Literal { value: String },
     Triple(Box<VisualRDFNode>, Box<VisualRDFNode>, Box<VisualRDFNode>),
+}
+
+impl VisualRDFNode {
+    pub fn as_plantuml(&self, node_id: NodeId) -> String {
+        match self {
+            VisualRDFNode::Iri { label, url } => {
+                format!("rectangle \"{label}\" <<uri>> as {node_id}")
+            }
+            VisualRDFNode::BlankNode { label } => {
+                format!("rectangle \" \" <<bnode>> as {node_id}")
+            }
+            VisualRDFNode::Literal { value } => {
+                format!("rectangle \"{value}\" <<literal>> as {node_id}")
+            }
+            VisualRDFNode::Triple(visual_rdfnode, visual_rdfnode1, visual_rdfnode2) => todo!(),
+        }
+    }
 }
 
 fn subject_to_visual_node<R: Rdf>(
@@ -164,4 +179,46 @@ fn convert_to_visual_edge<R: Rdf>(rdf: &R, iri: &R::IRI) -> VisualRDFEdge {
         label: iri_label,
         url: iri_str,
     }
+}
+
+fn style() -> String {
+    r#"<style>
+.reifier {
+ BackGroundColor Yellow
+ LineThickness 1
+ LineColor black
+}
+.literal {
+ BackGroundColor Cyan
+ LineThickness 1
+ LineColor black
+}
+.uri {
+ BackGroundColor White
+ LineThickness 1
+ LineColor Blue
+ RoundCorner 25
+}
+.bnode {
+ BackGroundColor Gray
+ LineThickness 1
+ LineColor Blue
+ RoundCorner 25
+}
+
+.asserted {
+ BackGroundColor White
+ LineThickness 2
+ LineColor Black
+}
+.non_asserted {
+ BackGroundColor White
+ LineThickness 1
+ LineColor Blue
+}
+</style>
+
+hide stereotype
+"#
+    .to_string()
 }

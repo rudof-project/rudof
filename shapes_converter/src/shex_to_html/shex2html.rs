@@ -2,11 +2,12 @@ use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 
-use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, UmlGenerationMode};
+use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml};
 use minijinja::Template;
 use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use srdf::UmlGenerationMode;
 
 use super::{
     Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry,
@@ -75,7 +76,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            crate::ImageFormat::SVG,
+            srdf::ImageFormat::SVG,
             &UmlGenerationMode::all(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -86,7 +87,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            crate::ImageFormat::SVG,
+            srdf::ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -450,7 +451,7 @@ pub fn create_svg_shape(converter: &ShEx2Uml, name: &str) -> Result<String, ShEx
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        crate::ImageFormat::SVG,
+        srdf::ImageFormat::SVG,
         &UmlGenerationMode::neighs(name),
     )?;
     let str = String::from_utf8(str_writer.into_inner()?)?;

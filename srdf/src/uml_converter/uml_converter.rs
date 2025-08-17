@@ -1,20 +1,22 @@
 use std::io::Write;
 
-use crate::OutputConvertFormat;
-use anyhow::{anyhow, bail, Result};
-use shapes_converter::ImageFormat;
+use thiserror::Error;
 
 pub trait UmlConverter {
-    fn as_plant_uml(&self, writer: &mut Box<dyn Write>, mode: &UmlGenerationMode) -> String;
+    fn as_plant_uml(
+        &self,
+        writer: &mut Box<dyn Write>,
+        mode: &UmlGenerationMode,
+    ) -> Result<(), UmlConverterError>;
 
     fn as_image(
         &self,
         writer: &mut Box<dyn Write>,
         image_format: ImageFormat,
         mode: &UmlGenerationMode,
-    ) -> Result<()>;
+    ) -> Result<(), UmlConverterError>;
 
-    fn generate_uml_output(
+    /*fn generate_uml_output(
         &self,
         maybe_shape: &Option<String>,
         writer: &mut Box<dyn Write>,
@@ -42,7 +44,7 @@ pub trait UmlConverter {
                 "Conversion to UML does not support output format {result_format}"
             )),
         }
-    }
+    }*/
 }
 
 pub enum ImageFormat {
@@ -69,3 +71,6 @@ impl UmlGenerationMode {
         UmlGenerationMode::Neighs(node.to_string())
     }
 }
+
+#[derive(Debug, Clone, Error)]
+pub enum UmlConverterError {}

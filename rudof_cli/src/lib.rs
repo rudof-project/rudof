@@ -31,7 +31,6 @@ pub mod shapemap_format;
 pub mod shex;
 pub mod shex_format;
 pub mod show_mode;
-pub mod uml_converter;
 pub mod validation_mode;
 pub mod writer;
 
@@ -61,7 +60,6 @@ pub use shapemap_format::*;
 pub use shex::*;
 pub use shex_format::*;
 pub use show_mode::*;
-pub use uml_converter::*;
 pub use validation_mode::*;
 
 fn base_convert(base: &Option<IriS>) -> Option<&str> {
