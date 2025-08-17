@@ -55,6 +55,7 @@ pub trait Rdf: Sized {
 
     type Err: Display;
 
+    /// Get the prefixed name that corresponds to a IRI
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;
     fn qualify_term(&self, term: &Self::Term) -> String;

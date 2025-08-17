@@ -9,7 +9,7 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
-use srdf::rdf_visualizer::rdf2uml::VisualRDFGraph;
+use srdf::rdf_visualizer::rdf_visualizer_graph::RDFVisualizerGraph;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;
@@ -167,7 +167,7 @@ impl Rudof {
     /// Generate a PlantUML representation of RDF Data
     ///
     pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
-        let converter = VisualRDFGraph::from_rdf(&self.rdf_data).map_err(|e| {
+        let converter = RDFVisualizerGraph::from_rdf(&self.rdf_data).map_err(|e| {
             RudofError::RDF2PlantUmlError {
                 error: format!("{e}"),
             }

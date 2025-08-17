@@ -4,41 +4,37 @@ use std::io::Write;
 
 use crate::rdf_visualizer::rdf_visualizer_config::RDFVisualizationConfig;
 use crate::rdf_visualizer::rdf_visualizer_error::RdfVisualizerError;
+use crate::rdf_visualizer::visual_rdf_node::VisualRDFNode;
 use crate::{Iri, NeighsRDF, Object, RDFError};
 use crate::{Rdf, Triple};
 
 /// Converts RDF graphs to PlantUML
-pub struct VisualRDFGraph {
+pub struct RDFVisualizerGraph {
     node_counter: usize,
     nodes_map: HashMap<VisualRDFNode, NodeId>,
-    edge_counter: usize,
-    edges_map: HashMap<VisualRDFEdge, EdgeId>,
-
-    edges: HashSet<(NodeId, EdgeId, NodeId)>,
+    edges: HashSet<(NodeId, VisualRDFEdge, NodeId)>,
 }
 
-impl VisualRDFGraph {
+impl RDFVisualizerGraph {
     pub fn new() -> Self {
-        VisualRDFGraph {
+        RDFVisualizerGraph {
             node_counter: 0,
             nodes_map: HashMap::new(),
-            edge_counter: 0,
-            edges_map: HashMap::new(),
             edges: HashSet::new(),
         }
     }
 
     pub fn from_rdf<R: NeighsRDF>(rdf: &R) -> Result<Self, RDFError> {
-        let mut graph = VisualRDFGraph::new();
+        let mut graph = RDFVisualizerGraph::new();
         let triples = rdf.triples().map_err(|e| RDFError::ObtainingTriples {
             error: e.to_string(),
         })?;
         for triple in triples {
             let (subject, predicate, object) = triple.into_components();
-            let subject_id = graph.get_or_create_node(subject_to_visual_node(rdf, &subject)?);
-            let edge_id = graph.get_or_create_edge(convert_to_visual_edge(rdf, &predicate));
-            let object_id = graph.get_or_create_node(term_to_visual_node(rdf, &object)?);
-            graph.edges.insert((subject_id, edge_id, object_id));
+            let subject_id = graph.get_or_create_node(VisualRDFNode::from_subject(rdf, &subject)?);
+            let edge = convert_to_visual_edge(rdf, &predicate);
+            let object_id = graph.get_or_create_node(VisualRDFNode::from_term(rdf, &object)?);
+            graph.edges.insert((subject_id, edge, object_id));
         }
         // Convert RDF data into VisualRDFGraph
         Ok(graph)
@@ -49,14 +45,6 @@ impl VisualRDFGraph {
             let id = self.node_counter;
             self.node_counter += 1;
             NodeId { id }
-        })
-    }
-
-    pub fn get_or_create_edge(&mut self, edge: VisualRDFEdge) -> EdgeId {
-        *self.edges_map.entry(edge).or_insert_with(|| {
-            let id = self.edge_counter;
-            self.edge_counter += 1;
-            EdgeId { id }
         })
     }
 
@@ -74,7 +62,7 @@ impl VisualRDFGraph {
         }
         // Add edges
         for (source, edge, target) in &self.edges {
-            let edfe = writeln!(writer, "{} --> {} : {}\n", source, target, edge)?;
+            writeln!(writer, "{} --> {} : {}\n", source, target, edge.label())?;
         }
         writeln!(writer, "@enduml\n")?;
         Ok(())
@@ -110,65 +98,15 @@ pub enum VisualRDFEdge {
 }
 
 impl VisualRDFEdge {
-    pub fn as_plantuml(&self, edge_id: EdgeId) -> String {
+    pub fn as_plantuml(&self, _edge_id: EdgeId) -> String {
         " ".to_string()
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum VisualRDFNode {
-    Iri { label: String, url: String },
-    BlankNode { label: String },
-    Literal { value: String },
-    Triple(Box<VisualRDFNode>, Box<VisualRDFNode>, Box<VisualRDFNode>),
-}
-
-impl VisualRDFNode {
-    pub fn as_plantuml(&self, node_id: NodeId) -> String {
+    pub fn label(&self) -> String {
         match self {
-            VisualRDFNode::Iri { label, url } => {
-                format!("rectangle \"{label}\" <<uri>> as {node_id}")
-            }
-            VisualRDFNode::BlankNode { label } => {
-                format!("rectangle \" \" <<bnode>> as {node_id}")
-            }
-            VisualRDFNode::Literal { value } => {
-                format!("rectangle \"{value}\" <<literal>> as {node_id}")
-            }
-            VisualRDFNode::Triple(visual_rdfnode, visual_rdfnode1, visual_rdfnode2) => todo!(),
+            VisualRDFEdge::Iri { label, .. } => label.clone(),
+            VisualRDFEdge::Reifies => " ".to_string(),
         }
-    }
-}
-
-fn subject_to_visual_node<R: Rdf>(
-    rdf: &R,
-    subject: &R::Subject,
-) -> Result<VisualRDFNode, RDFError> {
-    let term = R::subject_as_term(subject);
-    term_to_visual_node(rdf, &term)
-}
-
-fn term_to_visual_node<R: Rdf>(rdf: &R, term: &R::Term) -> Result<VisualRDFNode, RDFError> {
-    let object = R::term_as_object(term)?;
-    Ok(object_to_visual_node(rdf, &object))
-}
-
-fn object_to_visual_node<R: Rdf>(rdf: &R, object: &Object) -> VisualRDFNode {
-    match object {
-        Object::Iri(iri_s) => {
-            let iri: R::IRI = iri_s.clone().into();
-            VisualRDFNode::Iri {
-                label: format!("{:?}", iri),
-                url: rdf.qualify_iri(&iri),
-            }
-        }
-        Object::BlankNode(bnode) => VisualRDFNode::BlankNode {
-            label: format!("{:?}", bnode),
-        },
-        Object::Literal(literal) => VisualRDFNode::Literal {
-            value: format!("{:?}", literal),
-        },
-        Object::Triple { .. } => todo!(),
     }
 }
 

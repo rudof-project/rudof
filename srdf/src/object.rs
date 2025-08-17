@@ -2,11 +2,12 @@ use std::fmt::{Debug, Display};
 
 use crate::literal::SLiteral;
 use crate::numeric_literal::NumericLiteral;
+use crate::triple::Triple;
 use crate::RDFError;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 
-/// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
+/// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
 ///
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
@@ -116,7 +117,15 @@ impl TryFrom<oxrdf::Term> for Object {
                 let lit: SLiteral = literal.try_into()?;
                 Ok(Object::literal(lit))
             }
-            oxrdf::Term::Triple(_) => todo!(),
+            oxrdf::Term::Triple(triple) => {
+                let (s, p, o) = triple.into_components();
+                let object = Object::try_from(o)?;
+                Ok(Object::Triple {
+                    subject: Box::new(s),
+                    predicate: Box::new(p),
+                    object: Box::new(object),
+                })
+            }
         }
     }
 }
