@@ -123,7 +123,7 @@ pub fn run_data(
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
         }
         CheckResultFormat::VisualFormat(visual_format) => {
-            let uml = rudof.data2plant_uml(&mut writer);
+            rudof.data2plant_uml(&mut writer)?;
             /*match visual_format {
                 VisualFormat::PlantUML => uml,
                 VisualFormat::SVG => todo!(),

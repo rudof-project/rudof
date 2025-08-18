@@ -10,6 +10,7 @@ use crate::lang::Lang;
 use crate::matcher::Matcher;
 use crate::BlankNode;
 use crate::Iri;
+use crate::IriOrBlankNode;
 use crate::Literal;
 use crate::Object;
 use crate::RDFError;
@@ -23,6 +24,7 @@ pub trait Rdf: Sized {
         + From<Self::IRI>
         + From<Self::BNode>
         + From<IriS>
+        + From<IriOrBlankNode>
         + TryFrom<Self::Term>
         + TryFrom<Object>
         + Matcher<Self::Subject>;
@@ -34,6 +36,7 @@ pub trait Rdf: Sized {
         + From<Self::IRI>
         + From<Self::BNode>
         + From<Self::Literal>
+        + From<Self::Triple>
         + From<IriS>
         + From<Object>
         + TryInto<Object>

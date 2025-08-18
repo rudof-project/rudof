@@ -1,20 +1,20 @@
 use std::io::Write;
 
-use thiserror::Error;
+use crate::rdf_visualizer::rdf_visualizer_error::RdfVisualizerError;
 
 pub trait UmlConverter {
     fn as_plant_uml(
         &self,
         writer: &mut Box<dyn Write>,
         mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError>;
+    ) -> Result<(), RdfVisualizerError>;
 
     fn as_image(
         &self,
         writer: &mut Box<dyn Write>,
         image_format: ImageFormat,
         mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError>;
+    ) -> Result<(), RdfVisualizerError>;
 
     /*fn generate_uml_output(
         &self,
@@ -71,6 +71,3 @@ impl UmlGenerationMode {
         UmlGenerationMode::Neighs(node.to_string())
     }
 }
-
-#[derive(Debug, Clone, Error)]
-pub enum UmlConverterError {}

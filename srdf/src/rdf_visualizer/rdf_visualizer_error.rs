@@ -2,6 +2,8 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::rdf_visualizer::visual_rdf_node::VisualRDFNode;
+
 #[derive(Error, Debug)]
 pub enum RdfVisualizerError {
     #[error(transparent)]
@@ -11,6 +13,9 @@ pub enum RdfVisualizerError {
     },
     #[error("UmlError: Feature not implemented: {msg}")]
     NotImplemented { msg: String },
+
+    #[error("VisualRDFNode not found: {node} in Visual graph")]
+    NodeNotFound { node: VisualRDFNode },
 }
 
 impl RdfVisualizerError {
