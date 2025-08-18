@@ -120,9 +120,11 @@ impl TryFrom<oxrdf::Term> for Object {
             oxrdf::Term::Triple(triple) => {
                 let (s, p, o) = triple.into_components();
                 let object = Object::try_from(o)?;
+                let subject = IriOrBlankNode::try_from(s)?;
+                let predicate = IriS::from_named_node(&p);
                 Ok(Object::Triple {
-                    subject: Box::new(s),
-                    predicate: Box::new(p),
+                    subject: Box::new(subject),
+                    predicate: Box::new(predicate),
                     object: Box::new(object),
                 })
             }
@@ -198,6 +200,19 @@ impl IriOrBlankNode {
         match self {
             IriOrBlankNode::BlankNode(label) => label.len(),
             IriOrBlankNode::Iri(iri) => iri.as_str().len(),
+        }
+    }
+}
+
+impl TryFrom<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
+    type Error = RDFError;
+
+    fn try_from(value: oxrdf::NamedOrBlankNode) -> Result<Self, Self::Error> {
+        match value {
+            oxrdf::NamedOrBlankNode::NamedNode(iri) => Ok(IriOrBlankNode::Iri(iri.into())),
+            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
+                Ok(IriOrBlankNode::BlankNode(bnode.into_string()))
+            }
         }
     }
 }
