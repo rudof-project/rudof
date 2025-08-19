@@ -34,6 +34,16 @@ pub enum RDFError {
 
     #[error("Obtaining triples from RDF: {error}")]
     ObtainingTriples { error: String },
+
+    #[error(
+        "Error checking if RDF contains the triple <{subject}, {predicate}, {object}>: {error}"
+    )]
+    FailedCheckingAssertion {
+        subject: String,
+        predicate: String,
+        object: String,
+        error: String,
+    },
 }
 
 impl RDFError {

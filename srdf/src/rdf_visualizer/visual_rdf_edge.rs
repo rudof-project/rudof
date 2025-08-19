@@ -1,4 +1,5 @@
 use crate::iri::Iri;
+use crate::rdf_visualizer::REIFIES;
 use crate::{rdf_visualizer::visual_rdf_graph::EdgeId, Rdf};
 use std::fmt::Display;
 
@@ -10,11 +11,32 @@ pub enum VisualRDFEdge {
 
 impl VisualRDFEdge {
     pub fn from_iri<R: Rdf>(rdf: &R, iri: &R::IRI) -> Self {
+        if iri.as_str() == REIFIES {
+            return VisualRDFEdge::Reifies;
+        }
         let iri_label = R::qualify_iri(&rdf, iri);
         let iri_str = (*iri).as_str().to_string();
         VisualRDFEdge::Iri {
             label: iri_label,
             url: iri_str,
+        }
+    }
+
+    pub fn as_plantuml_link(&self) -> String {
+        match self {
+            VisualRDFEdge::Iri { label, url } => format!("[[{} {}]]", url, label),
+            VisualRDFEdge::Reifies => format!("[[{} {}]]", REIFIES, "reifies"),
+        }
+    }
+
+    pub fn as_plantuml(&self, _edge_id: EdgeId) -> String {
+        " ".to_string()
+    }
+
+    pub fn label(&self) -> String {
+        match self {
+            VisualRDFEdge::Iri { label, .. } => label.clone(),
+            VisualRDFEdge::Reifies => "reifies".to_string(),
         }
     }
 }
@@ -28,24 +50,11 @@ impl Display for VisualRDFEdge {
     }
 }
 
-impl VisualRDFEdge {
-    pub fn as_plantuml(&self, _edge_id: EdgeId) -> String {
-        " ".to_string()
-    }
-
-    pub fn label(&self) -> String {
-        match self {
-            VisualRDFEdge::Iri { label, .. } => label.clone(),
-            VisualRDFEdge::Reifies => " ".to_string(),
-        }
-    }
-}
-
-fn convert_to_visual_edge<R: Rdf>(rdf: &R, iri: &R::IRI) -> VisualRDFEdge {
+/*fn convert_to_visual_edge<R: Rdf>(rdf: &R, iri: &R::IRI) -> VisualRDFEdge {
     let iri_label = R::qualify_iri(&rdf, iri);
     let iri_str = (*iri).as_str().to_string();
     VisualRDFEdge::Iri {
         label: iri_label,
         url: iri_str,
     }
-}
+}*/

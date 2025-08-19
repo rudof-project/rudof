@@ -2,9 +2,11 @@ use std::fmt::Display;
 
 pub struct UsageCount {
     as_predicate: usize,
+    as_predicate_in_triple: usize,
     as_subject: usize,
+    as_subject_in_triple: usize,
     as_object: usize,
-    in_triple: usize,
+    as_object_in_triple: usize,
 }
 
 impl UsageCount {
@@ -13,7 +15,9 @@ impl UsageCount {
             as_predicate: 0,
             as_subject: 0,
             as_object: 0,
-            in_triple: 0,
+            as_predicate_in_triple: 0,
+            as_subject_in_triple: 0,
+            as_object_in_triple: 0,
         }
     }
 
@@ -29,8 +33,10 @@ impl UsageCount {
         self.as_object
     }
 
-    pub fn in_triple(&self) -> usize {
-        self.in_triple
+    pub fn in_triple(&self) -> bool {
+        self.as_predicate_in_triple > 0
+            || self.as_subject_in_triple > 0
+            || self.as_object_in_triple > 0
     }
 
     pub fn increment_as_predicate(&mut self) {
@@ -45,8 +51,16 @@ impl UsageCount {
         self.as_object += 1;
     }
 
-    pub fn increment_in_triple(&mut self) {
-        self.in_triple += 1;
+    pub fn increment_as_predicate_in_triple(&mut self) {
+        self.as_predicate_in_triple += 1;
+    }
+
+    pub fn increment_as_subject_in_triple(&mut self) {
+        self.as_subject_in_triple += 1;
+    }
+
+    pub fn increment_as_object_in_triple(&mut self) {
+        self.as_object_in_triple += 1;
     }
 }
 
@@ -54,8 +68,8 @@ impl Display for UsageCount {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "UsageCount {{ as_predicate: {}, as_subject: {}, as_object: {}, in_triple: {} }}",
-            self.as_predicate, self.as_subject, self.as_object, self.in_triple
+            "UsageCount {{ as_predicate: {}, as_subject: {}, as_object: {}, as_predicate_in_triple: {}, as_subject_in_triple: {}, as_object_in_triple: {} }}",
+            self.as_predicate, self.as_subject, self.as_object, self.as_predicate_in_triple, self.as_subject_in_triple, self.as_object_in_triple
         )
     }
 }
