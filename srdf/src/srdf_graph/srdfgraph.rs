@@ -85,9 +85,9 @@ impl SRDFGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::TurtleError {
-                                    data: "Reading n-quads".to_string(),
-                                    turtle_error: e,
+                                return Err(SRDFGraphError::NTriplesError {
+                                    data: "Reading N-Triples".to_string(),
+                                    error: e.to_string(),
                                 });
                             } else {
                                 debug!("Error captured: {e:?}")
@@ -105,7 +105,14 @@ impl SRDFGraph {
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
-                            debug!("Error captured: {e:?}")
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::RDFXMLError {
+                                    data: "Reading RDF/XML".to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("Error captured: {e:?}")
+                            }
                         }
                         Ok(t) => {
                             let triple_ref = cnv_triple(&t);
@@ -122,7 +129,14 @@ impl SRDFGraph {
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
-                            debug!("Error captured: {e:?}")
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::NQuadsError {
+                                    data: "Reading NQuads".to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("NQuads Error captured in Lax mode: {e:?}")
+                            }
                         }
                         Ok(t) => {
                             self.graph.insert(t.as_ref());

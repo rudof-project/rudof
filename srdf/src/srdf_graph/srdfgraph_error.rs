@@ -29,11 +29,20 @@ pub enum SRDFGraphError {
         err: IOError,
     },
 
-    #[error("Turtle error: {turtle_error:?} str: {data:?}")]
+    #[error("Turtle error: {turtle_error}\nData:\n{data}")]
     TurtleError {
         data: String,
         turtle_error: TurtleParseError,
     },
+
+    #[error("RDF/XML error: {error}\nData: {data}")]
+    RDFXMLError { data: String, error: String },
+
+    #[error("N-Triples error: {error}\nData: {data}")]
+    NTriplesError { data: String, error: String },
+
+    #[error("NQuads error: {error}\nData: {data}")]
+    NQuadsError { data: String, error: String },
 
     #[error(transparent)]
     IriParseError {
