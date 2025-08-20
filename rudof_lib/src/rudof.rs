@@ -9,6 +9,7 @@ use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
+use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
 use std::path::Path;
@@ -32,9 +33,9 @@ pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql,
 pub type Result<T> = result::Result<T, RudofError>;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
-pub use shapes_converter::UmlGenerationMode;
 pub use shex_ast::Schema as ShExSchema;
 pub use sparql_service::RdfData;
+pub use srdf::UmlGenerationMode;
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
@@ -161,6 +162,24 @@ impl Rudof {
         } else {
             Err(RudofError::NoDCTAP)
         }
+    }
+
+    /// Generate a PlantUML representation of RDF Data
+    ///
+    pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
+        let converter = VisualRDFGraph::from_rdf(
+            &self.rdf_data,
+            self.config.rdf_data_config().rdf_visualization_config(),
+        )
+        .map_err(|e| RudofError::RDF2PlantUmlError {
+            error: format!("{e}"),
+        })?;
+        converter
+            .as_plantuml(writer, &UmlGenerationMode::AllNodes)
+            .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
+                error: format!("{e}"),
+            })?;
+        Ok(())
     }
 
     /// Generate a UML Class-like representation of a ShEx schema according to PlantUML syntax

@@ -1,12 +1,14 @@
-use std::ffi::OsStr;
-use std::fs::OpenOptions;
-use std::io::{BufWriter, Write};
-
-use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml, UmlGenerationMode};
+use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml};
 use minijinja::Template;
 use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
+use srdf::UmlConverter;
+use srdf::UmlGenerationMode;
+use std::ffi::OsStr;
+use std::fs::OpenOptions;
+use std::io::{BufWriter, Write};
+use std::path::Path;
 
 use super::{
     Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry,
@@ -59,7 +61,11 @@ impl ShEx2Html {
 
         if self.config.embed_svg_shape {
             for shape in self.current_html.shapes_mut() {
-                let str = create_svg_shape(&self.current_uml_converter, &shape.name().name())?;
+                let str = create_svg_shape(
+                    &self.current_uml_converter,
+                    &shape.name().name(),
+                    self.config.plantuml_path(),
+                )?;
                 shape.set_svg_shape(str.as_str());
             }
         }
@@ -75,8 +81,9 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            crate::ImageFormat::SVG,
+            srdf::ImageFormat::SVG,
             &UmlGenerationMode::all(),
+            self.config.shex2uml_config().plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
@@ -86,8 +93,9 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            crate::ImageFormat::SVG,
+            srdf::ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
+            self.config.shex2uml_config().plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
@@ -446,12 +454,17 @@ fn get_label(
     Ok(None)
 }
 
-pub fn create_svg_shape(converter: &ShEx2Uml, name: &str) -> Result<String, ShEx2HtmlError> {
+pub fn create_svg_shape<P: AsRef<Path>>(
+    converter: &ShEx2Uml,
+    name: &str,
+    plantuml_path: P,
+) -> Result<String, ShEx2HtmlError> {
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        crate::ImageFormat::SVG,
+        srdf::ImageFormat::SVG,
         &UmlGenerationMode::neighs(name),
+        plantuml_path.as_ref(),
     )?;
     let str = String::from_utf8(str_writer.into_inner()?)?;
     Ok(str)

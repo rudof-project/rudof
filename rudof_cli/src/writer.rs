@@ -1,3 +1,4 @@
+use crate::ColorSupport;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter};
 use std::path::Path;
@@ -5,10 +6,10 @@ use std::{io::Write, path::PathBuf};
 
 use supports_color::Stream;
 
-use crate::anyhow::{bail, Result};
-use crate::ColorSupport;
+use anyhow::{bail, Result};
+// use ColorSupport;
 
-pub(crate) fn get_writer(
+pub fn get_writer(
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<(Box<dyn Write>, ColorSupport)> {

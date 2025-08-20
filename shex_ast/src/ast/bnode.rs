@@ -16,7 +16,6 @@ impl BNode {
     }
 }
 
-#[allow(clippy::infallible_try_from)]
 impl TryFrom<&str> for BNode {
     type Error = Void;
     fn try_from(s: &str) -> Result<Self, Self::Error> {

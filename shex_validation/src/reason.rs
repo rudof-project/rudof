@@ -194,6 +194,6 @@ impl Serialize for Reason {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(format!("{}", self).as_str())
+        serializer.serialize_str(format!("{self}").as_str())
     }
 }

@@ -536,7 +536,7 @@ mod tests {
     use iri_s::IriS;
     use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;
-    use oxrdf::Subject as OxSubject;
+    use oxrdf::NamedOrBlankNode as OxSubject;
     use oxrdf::Term as OxTerm;
     use std::collections::HashSet;
 

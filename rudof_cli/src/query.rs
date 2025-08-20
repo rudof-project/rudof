@@ -6,10 +6,8 @@ use rudof_lib::{RdfData, Rudof, RudofConfig};
 use srdf::{QuerySolution, VarName};
 
 use crate::{
-    cli::{DataFormat, RDFReaderMode, ResultQueryFormat},
-    data::get_data_rudof,
-    writer::get_writer,
-    InputSpec,
+    data::get_data_rudof, data_format::DataFormat, writer::get_writer, InputSpec, RDFReaderMode,
+    ResultQueryFormat,
 };
 use anyhow::Result;
 

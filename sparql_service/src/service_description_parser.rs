@@ -3,8 +3,8 @@ use srdf::{ok, property_iri, property_values_iri, FocusRDF, PResult, RDFNodePars
 use std::fmt::Debug;
 
 use crate::{
-    Dataset, Feature, ResultFormat, ServiceDescription, ServiceDescriptionError, SupportedLanguage,
-    SD_BASIC_FEDERATED_QUERY_STR, SD_DEFAULT_DATASET, SD_DEREFERENCES_URIS_STR,
+    Dataset, Feature, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
+    SupportedLanguage, SD_BASIC_FEDERATED_QUERY_STR, SD_DEFAULT_DATASET, SD_DEREFERENCES_URIS_STR,
     SD_EMPTY_GRAPHS_STR, SD_ENDPOINT, SD_FEATURE, SD_REQUIRES_DATASET_STR, SD_RESULT_FORMAT,
     SD_SERVICE, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR,
     SD_SUPPORTED_LANGUAGE, SD_UNION_DEFAULT_GRAPH_STR,
@@ -96,7 +96,7 @@ where
         })
     }
 
-    pub fn result_format() -> impl RDFNodeParse<RDF, Output = Vec<ResultFormat>>
+    pub fn result_format() -> impl RDFNodeParse<RDF, Output = Vec<SparqlResultFormat>>
     where
         RDF: FocusRDF,
     {
@@ -139,7 +139,7 @@ fn get_features(iris: &Vec<IriS>) -> PResult<Vec<Feature>> {
     Ok(res)
 }
 
-fn get_result_formats(iris: &Vec<IriS>) -> PResult<Vec<ResultFormat>> {
+fn get_result_formats(iris: &Vec<IriS>) -> PResult<Vec<SparqlResultFormat>> {
     let mut res = Vec::new();
     for i in iris {
         let res_format = result_format(i)?;
@@ -159,17 +159,17 @@ fn supported_language(iri: &IriS) -> PResult<SupportedLanguage> {
     }
 }
 
-fn result_format(iri: &IriS) -> PResult<ResultFormat> {
+fn result_format(iri: &IriS) -> PResult<SparqlResultFormat> {
     let rf = match iri.as_str() {
-        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => ResultFormat::XML,
-        "http://www.w3.org/ns/formats/JSON-LD" => ResultFormat::JsonLD,
-        "http://www.w3.org/ns/formats/N-Triples" => ResultFormat::NTriples,
-        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => ResultFormat::CSV,
-        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => ResultFormat::JSON,
-        "http://www.w3.org/ns/formats/Turtle" => ResultFormat::Turtle,
-        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => ResultFormat::TSV,
-        "http://www.w3.org/ns/formats/RDF_XML" => ResultFormat::RdfXml,
-        _ => ResultFormat::Other(iri.clone()),
+        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => SparqlResultFormat::XML,
+        "http://www.w3.org/ns/formats/JSON-LD" => SparqlResultFormat::JsonLD,
+        "http://www.w3.org/ns/formats/N-Triples" => SparqlResultFormat::NTriples,
+        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => SparqlResultFormat::CSV,
+        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => SparqlResultFormat::JSON,
+        "http://www.w3.org/ns/formats/Turtle" => SparqlResultFormat::Turtle,
+        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => SparqlResultFormat::TSV,
+        "http://www.w3.org/ns/formats/RDF_XML" => SparqlResultFormat::RdfXml,
+        _ => SparqlResultFormat::Other(iri.clone()),
     };
     Ok(rf)
 }

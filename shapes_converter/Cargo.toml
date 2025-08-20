@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.79"
+version = "0.1.82"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -33,4 +33,4 @@ spargebra.workspace = true
 thiserror = "2.0"
 tracing = { workspace = true }
 minijinja = { version = "2.0.3", features = ["loader"] }
-tempfile = "3.10.1"
+tempfile.workspace = true

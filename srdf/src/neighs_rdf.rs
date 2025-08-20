@@ -16,6 +16,16 @@ pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 pub trait NeighsRDF: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
+    fn contains<S, P, O>(&self, subject: S, predicate: P, object: O) -> Result<bool, Self::Err>
+    where
+        S: Matcher<Self::Subject> + Clone,
+        P: Matcher<Self::IRI> + Clone,
+        O: Matcher<Self::Term> + Clone,
+    {
+        let mut iter = self.triples_matching(subject, predicate, object)?;
+        Ok(iter.next().is_some())
+    }
+
     /// Note to implementors: this function needs to retrieve all the triples of
     /// the graph. Therefore, for use-cases where the graph is large, this
     /// function should be implemented in a way that it does not retrieve all

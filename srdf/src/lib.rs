@@ -20,6 +20,7 @@ pub mod query_rdf;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
+pub mod rdf_visualizer;
 pub mod shacl_path;
 pub mod srdf_builder;
 pub mod srdf_error;
@@ -29,6 +30,7 @@ pub mod srdf_sparql;
 pub mod subject;
 pub mod term;
 pub mod triple;
+pub mod uml_converter;
 pub mod vocab;
 pub mod xsd_datetime;
 
@@ -44,6 +46,8 @@ pub use literal::*;
 pub use object::*;
 pub use oxrdf_impl::*;
 pub use rdf_format::*;
+pub use uml_converter::*;
+
 pub use shacl_path::*;
 pub use srdf_builder::*;
 pub use srdf_error::*;
@@ -218,3 +222,6 @@ macro_rules! opaque {
 /// Alias over `Opaque` where the function can be a plain function pointer
 pub type FnOpaque<RDF, O> =
     Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;
+
+/// Name of Environment variable where we search for plantuml JAR
+pub const PLANTUML: &str = "PLANTUML";

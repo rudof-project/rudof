@@ -7,6 +7,8 @@ use iri_s::{IriS, IriSError};
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 
+use crate::rdf_visualizer::rdf_visualizer_config::RDFVisualizationConfig;
+
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RdfDataConfig {
@@ -18,6 +20,8 @@ pub struct RdfDataConfig {
 
     /// If true, the base IRI will be automatically set to the local file or URI of the document
     pub automatic_base: Option<bool>,
+
+    pub rdf_visualization: Option<RDFVisualizationConfig>,
 }
 
 impl RdfDataConfig {
@@ -26,6 +30,7 @@ impl RdfDataConfig {
             base: None,
             endpoints: None,
             automatic_base: Some(true),
+            rdf_visualization: None,
         }
     }
 
@@ -72,6 +77,10 @@ impl RdfDataConfig {
                 None => None,
             },
         }
+    }
+
+    pub fn rdf_visualization_config(&self) -> RDFVisualizationConfig {
+        self.rdf_visualization.clone().unwrap_or_default()
     }
 }
 
