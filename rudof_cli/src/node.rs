@@ -10,12 +10,10 @@ use std::{io::Write, path::PathBuf};
 
 use rudof_lib::{Rudof, RudofConfig, ShapeMapParser};
 
+use crate::data_format::DataFormat;
 use crate::{
-    cli::{DataFormat, RDFReaderMode, ShowNodeMode},
-    data::get_data_rudof,
-    node_selector::parse_node_selector,
-    writer::get_writer,
-    InputSpec,
+    data::get_data_rudof, input_spec::InputSpec, node_selector::parse_node_selector,
+    writer::get_writer, RDFReaderMode, ShowNodeMode,
 };
 
 #[allow(clippy::too_many_arguments)]

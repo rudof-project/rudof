@@ -10,6 +10,7 @@ use crate::lang::Lang;
 use crate::matcher::Matcher;
 use crate::BlankNode;
 use crate::Iri;
+use crate::IriOrBlankNode;
 use crate::Literal;
 use crate::Object;
 use crate::RDFError;
@@ -23,6 +24,7 @@ pub trait Rdf: Sized {
         + From<Self::IRI>
         + From<Self::BNode>
         + From<IriS>
+        + From<IriOrBlankNode>
         + TryFrom<Self::Term>
         + TryFrom<Object>
         + Matcher<Self::Subject>;
@@ -34,6 +36,7 @@ pub trait Rdf: Sized {
         + From<Self::IRI>
         + From<Self::BNode>
         + From<Self::Literal>
+        + From<Self::Triple>
         + From<IriS>
         + From<Object>
         + TryInto<Object>
@@ -55,6 +58,7 @@ pub trait Rdf: Sized {
 
     type Err: Display;
 
+    /// Get the prefixed name that corresponds to a IRI
     fn qualify_iri(&self, iri: &Self::IRI) -> String;
     fn qualify_subject(&self, subj: &Self::Subject) -> String;
     fn qualify_term(&self, term: &Self::Term) -> String;
@@ -140,14 +144,14 @@ pub trait Rdf: Sized {
         Self::Term::from(object.clone())
     }
 
-    fn subject_as_object(subj: &Self::Subject) -> Result<Object, RDFError> {
+    /*fn subject_as_object(subj: &Self::Subject) -> Result<Object, RDFError> {
         let term = Self::subject_as_term(subj);
         <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_| {
             RDFError::TermAsObject {
                 term: format!("Converting subject to object: {term}"),
             }
         })
-    }
+    }*/
 
     fn subject_as_node(subject: &Self::Subject) -> Result<Object, RDFError> {
         let term = Self::subject_as_term(subject);

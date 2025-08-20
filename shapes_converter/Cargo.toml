@@ -33,4 +33,4 @@ spargebra.workspace = true
 thiserror = "2.0"
 tracing = { workspace = true }
 minijinja = { version = "2.0.3", features = ["loader"] }
-tempfile = "3.10.1"
+tempfile.workspace = true

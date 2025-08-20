@@ -15,7 +15,7 @@ pub struct ServiceDescription {
     default_dataset: Dataset,
     supported_language: Vec<SupportedLanguage>,
     feature: Vec<Feature>,
-    result_format: Vec<ResultFormat>,
+    result_format: Vec<SparqlResultFormat>,
 }
 
 #[derive(Clone, PartialEq, Eq, Default, Debug)]
@@ -39,7 +39,7 @@ impl Display for SupportedLanguage {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum ResultFormat {
+pub enum SparqlResultFormat {
     XML,
     Turtle,
     TSV,
@@ -51,18 +51,18 @@ pub enum ResultFormat {
     Other(IriS),
 }
 
-impl Display for ResultFormat {
+impl Display for SparqlResultFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResultFormat::XML => write!(f, "XML"),
-            ResultFormat::Turtle => write!(f, "Turtle"),
-            ResultFormat::TSV => write!(f, "TSV"),
-            ResultFormat::RdfXml => write!(f, "RDF/XML"),
-            ResultFormat::JSON => write!(f, "JSON"),
-            ResultFormat::NTriples => write!(f, "N-TRIPLES"),
-            ResultFormat::CSV => write!(f, "CSV"),
-            ResultFormat::JsonLD => write!(f, "JSON_LD"),
-            ResultFormat::Other(iri) => write!(f, "ResultFormat({iri})",),
+            SparqlResultFormat::XML => write!(f, "XML"),
+            SparqlResultFormat::Turtle => write!(f, "Turtle"),
+            SparqlResultFormat::TSV => write!(f, "TSV"),
+            SparqlResultFormat::RdfXml => write!(f, "RDF/XML"),
+            SparqlResultFormat::JSON => write!(f, "JSON"),
+            SparqlResultFormat::NTriples => write!(f, "N-TRIPLES"),
+            SparqlResultFormat::CSV => write!(f, "CSV"),
+            SparqlResultFormat::JsonLD => write!(f, "JSON_LD"),
+            SparqlResultFormat::Other(iri) => write!(f, "ResultFormat({iri})",),
         }
     }
 }
@@ -184,7 +184,7 @@ impl ServiceDescription {
         feature.clone_into(&mut self.feature);
     }
 
-    pub fn add_result_format(&mut self, result_format: &[ResultFormat]) {
+    pub fn add_result_format(&mut self, result_format: &[SparqlResultFormat]) {
         result_format.clone_into(&mut self.result_format);
     }
 

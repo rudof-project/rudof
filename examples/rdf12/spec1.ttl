@@ -1,0 +1,6 @@
+PREFIX :    <http://www.example.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+_:e38  :familyName                     "Smith" .
+_:anno :pepe <<( _:e38 :jobTitle "Designer" )>> .
+_:anno :accordingTo                     _:e22 .

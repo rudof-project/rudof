@@ -1,0 +1,55 @@
+use clap::ValueEnum;
+use srdf::RDFFormat;
+use std::fmt::{Display, Formatter};
+
+use crate::mime_type::MimeType;
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[clap(rename_all = "lower")]
+pub enum DataFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
+}
+
+impl From<DataFormat> for RDFFormat {
+    fn from(val: DataFormat) -> Self {
+        match val {
+            DataFormat::Turtle => RDFFormat::Turtle,
+            DataFormat::NTriples => RDFFormat::NTriples,
+            DataFormat::RDFXML => RDFFormat::RDFXML,
+            DataFormat::TriG => RDFFormat::TriG,
+            DataFormat::N3 => RDFFormat::N3,
+            DataFormat::NQuads => RDFFormat::NQuads,
+        }
+    }
+}
+
+impl Display for DataFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            DataFormat::Turtle => write!(dest, "turtle"),
+            DataFormat::NTriples => write!(dest, "ntriples"),
+            DataFormat::RDFXML => write!(dest, "rdfxml"),
+            DataFormat::TriG => write!(dest, "trig"),
+            DataFormat::N3 => write!(dest, "n3"),
+            DataFormat::NQuads => write!(dest, "nquads"),
+        }
+    }
+}
+
+impl MimeType for DataFormat {
+    fn mime_type(&self) -> String {
+        match self {
+            DataFormat::Turtle => "text/turtle".to_string(),
+            DataFormat::NTriples => "application/n-triples".to_string(),
+            DataFormat::RDFXML => "application/rdf+xml".to_string(),
+            DataFormat::TriG => "application/trig".to_string(),
+            DataFormat::N3 => "text/n3".to_string(),
+            DataFormat::NQuads => "application/n-quads".to_string(),
+        }
+    }
+}

@@ -227,6 +227,7 @@ fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
         Object::Iri(iri_s) => shacl_prefixmap.qualify(iri_s),
         Object::BlankNode(node) => format!("_:{node}"),
         Object::Literal(literal) => format!("{literal}"),
+        Object::Triple { .. } => todo!(),
     }
 }
 
@@ -239,6 +240,7 @@ fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixM
         }
         Some(Object::BlankNode(node)) => format!(" {msg}: _:{node},"),
         Some(Object::Literal(literal)) => format!(" {msg}: {literal},"),
+        Some(Object::Triple { .. }) => todo!(),
     }
 }
 

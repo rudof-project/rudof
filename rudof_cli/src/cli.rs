@@ -1,10 +1,15 @@
+use crate::data_format::DataFormat;
+use crate::dctap_format::DCTapFormat;
 use crate::input_spec::InputSpec;
-use crate::{InputConvertFormat, OutputConvertFormat};
-use clap::{Parser, Subcommand, ValueEnum};
+use crate::{
+    CliShaclFormat, DCTapResultFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat,
+    OutputConvertMode, RDFReaderMode, ResultDataFormat, ResultQueryFormat, ResultServiceFormat,
+    ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
+    ShapeMapFormat, ShowNodeMode, ValidationMode,
+};
+use clap::{Parser, Subcommand};
 use shacl_validation::shacl_processor::ShaclValidationMode;
-use srdf::{RDFFormat, ReaderMode};
-use std::fmt::Display;
-use std::{fmt::Formatter, path::PathBuf};
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -210,9 +215,9 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
-            default_value_t = ResultFormat::Compact
+            default_value_t = ResultValidationFormat::Compact
         )]
-        result_format: ResultFormat,
+        result_format: ResultValidationFormat,
 
         #[arg(
             short = 'o',
@@ -293,9 +298,9 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
-            default_value_t = ResultFormat::Turtle
+            default_value_t = ResultShExValidationFormat::Turtle
         )]
-        result_format: ResultFormat,
+        result_format: ResultShExValidationFormat,
 
         #[arg(
             short = 'o',
@@ -329,7 +334,7 @@ pub enum Command {
         shapes: Option<InputSpec>,
 
         #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
-        shapes_format: Option<ShaclFormat>,
+        shapes_format: Option<CliShaclFormat>,
 
         #[arg(
             short = 't',
@@ -365,9 +370,9 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
-            default_value_t = ResultFormat::Compact
+            default_value_t = ResultShaclValidationFormat::Compact
         )]
-        result_format: ResultFormat,
+        result_format: ResultShaclValidationFormat,
 
         #[arg(
             short = 'o',
@@ -416,9 +421,9 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "Ouput result format",
-            default_value_t = DataFormat::Turtle
+            default_value_t = ResultDataFormat::Turtle
         )]
-        result_format: DataFormat,
+        result_format: ResultDataFormat,
 
         #[arg(
             short = 'o',
@@ -512,17 +517,17 @@ pub enum Command {
             short = 'f',
             long = "shapes-format",
             value_name = "Shapes file format",
-            default_value_t = ShaclFormat::Turtle
+            default_value_t = CliShaclFormat::Turtle
         )]
-        shapes_format: ShaclFormat,
+        shapes_format: CliShaclFormat,
 
         #[arg(
             short = 'r',
             long = "result-shapes-format",
             value_name = "Result shapes format",
-            default_value_t = ShaclFormat::Internal
+            default_value_t = CliShaclFormat::Internal
         )]
-        result_shapes_format: ShaclFormat,
+        result_shapes_format: CliShaclFormat,
 
         #[arg(
             short = 'o',
@@ -766,360 +771,4 @@ pub enum Command {
         )]
         force_overwrite: bool,
     },
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ShowNodeMode {
-    Outgoing,
-    Incoming,
-    Both,
-}
-
-impl Display for ShowNodeMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ShowNodeMode::Outgoing => write!(dest, "outgoing"),
-            ShowNodeMode::Incoming => write!(dest, "incoming"),
-            ShowNodeMode::Both => write!(dest, "both"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
-pub enum ShExFormat {
-    Internal,
-    Simple,
-    #[default]
-    ShExC,
-    ShExJ,
-    Turtle,
-    NTriples,
-    RDFXML,
-    TriG,
-    N3,
-    NQuads,
-}
-
-impl MimeType for ShExFormat {
-    fn mime_type(&self) -> String {
-        match self {
-            ShExFormat::Internal => "text/turtle".to_string(),
-            ShExFormat::Simple => "text/turtle".to_string(),
-            ShExFormat::ShExC => "text/shex".to_string(),
-            ShExFormat::ShExJ => "application/json".to_string(),
-            ShExFormat::Turtle => "text/turtle".to_string(),
-            ShExFormat::NTriples => "application/n-triples".to_string(),
-            ShExFormat::RDFXML => "application/rdf+xml".to_string(),
-            ShExFormat::TriG => "application/trig".to_string(),
-            ShExFormat::N3 => "text/n3".to_string(),
-            ShExFormat::NQuads => "application/n-quads".to_string(),
-        }
-    }
-}
-
-impl Display for ShExFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ShExFormat::Internal => write!(dest, "internal"),
-            ShExFormat::Simple => write!(dest, "simple"),
-            ShExFormat::ShExC => write!(dest, "shexc"),
-            ShExFormat::ShExJ => write!(dest, "shexj"),
-            ShExFormat::Turtle => write!(dest, "turtle"),
-            ShExFormat::NTriples => write!(dest, "ntriples"),
-            ShExFormat::RDFXML => write!(dest, "rdfxml"),
-            ShExFormat::TriG => write!(dest, "trig"),
-            ShExFormat::N3 => write!(dest, "n3"),
-            ShExFormat::NQuads => write!(dest, "nquads"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ShapeMapFormat {
-    Compact,
-    Internal,
-}
-
-impl Display for ShapeMapFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ShapeMapFormat::Compact => write!(dest, "compact"),
-            ShapeMapFormat::Internal => write!(dest, "internal"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum DataFormat {
-    Turtle,
-    NTriples,
-    RDFXML,
-    TriG,
-    N3,
-    NQuads,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ResultFormat {
-    Turtle,
-    NTriples,
-    RDFXML,
-    TriG,
-    N3,
-    NQuads,
-    Compact,
-    Json,
-}
-
-impl Display for ResultFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ResultFormat::Turtle => write!(dest, "turtle"),
-            ResultFormat::NTriples => write!(dest, "ntriples"),
-            ResultFormat::RDFXML => write!(dest, "rdfxml"),
-            ResultFormat::TriG => write!(dest, "trig"),
-            ResultFormat::N3 => write!(dest, "n3"),
-            ResultFormat::NQuads => write!(dest, "nquads"),
-            ResultFormat::Compact => write!(dest, "compact"),
-            ResultFormat::Json => write!(dest, "json"),
-        }
-    }
-}
-
-pub trait MimeType {
-    fn mime_type(&self) -> String;
-}
-
-impl MimeType for DataFormat {
-    fn mime_type(&self) -> String {
-        match self {
-            DataFormat::Turtle => "text/turtle".to_string(),
-            DataFormat::NTriples => "application/n-triples".to_string(),
-            DataFormat::RDFXML => "application/rdf+xml".to_string(),
-            DataFormat::TriG => "application/trig".to_string(),
-            DataFormat::N3 => "text/n3".to_string(),
-            DataFormat::NQuads => "application/n-quads".to_string(),
-        }
-    }
-}
-
-impl From<DataFormat> for RDFFormat {
-    fn from(val: DataFormat) -> Self {
-        match val {
-            DataFormat::Turtle => RDFFormat::Turtle,
-            DataFormat::NTriples => RDFFormat::NTriples,
-            DataFormat::RDFXML => RDFFormat::RDFXML,
-            DataFormat::TriG => RDFFormat::TriG,
-            DataFormat::N3 => RDFFormat::N3,
-            DataFormat::NQuads => RDFFormat::NQuads,
-        }
-    }
-}
-
-impl Display for DataFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            DataFormat::Turtle => write!(dest, "turtle"),
-            DataFormat::NTriples => write!(dest, "ntriples"),
-            DataFormat::RDFXML => write!(dest, "rdfxml"),
-            DataFormat::TriG => write!(dest, "trig"),
-            DataFormat::N3 => write!(dest, "n3"),
-            DataFormat::NQuads => write!(dest, "nquads"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
-pub enum ShaclFormat {
-    Internal,
-    #[default]
-    Turtle,
-    NTriples,
-    RDFXML,
-    TriG,
-    N3,
-    NQuads,
-}
-
-impl MimeType for ShaclFormat {
-    fn mime_type(&self) -> String {
-        match self {
-            ShaclFormat::Turtle => "text/turtle".to_string(),
-            ShaclFormat::NTriples => "application/n-triples".to_string(),
-            ShaclFormat::RDFXML => "application/rdf+xml".to_string(),
-            ShaclFormat::TriG => "application/trig".to_string(),
-            ShaclFormat::N3 => "text/n3".to_string(),
-            ShaclFormat::NQuads => "application/n-quads".to_string(),
-            ShaclFormat::Internal => "text/turtle".to_string(),
-        }
-    }
-}
-
-impl Display for ShaclFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ShaclFormat::Internal => write!(dest, "internal"),
-            ShaclFormat::Turtle => write!(dest, "turtle"),
-            ShaclFormat::NTriples => write!(dest, "NTriples"),
-            ShaclFormat::RDFXML => write!(dest, "rdfxml"),
-            ShaclFormat::TriG => write!(dest, "trig"),
-            ShaclFormat::N3 => write!(dest, "n3"),
-            ShaclFormat::NQuads => write!(dest, "nquads"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum DCTapFormat {
-    CSV,
-    XLSX,
-    XLSB,
-    XLSM,
-    XLS,
-}
-
-impl Display for DCTapFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            DCTapFormat::CSV => write!(dest, "csv"),
-            DCTapFormat::XLSX => write!(dest, "xlsx"),
-            DCTapFormat::XLSB => write!(dest, "xlsb"),
-            DCTapFormat::XLSM => write!(dest, "xlsm"),
-            DCTapFormat::XLS => write!(dest, "xls"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum DCTapResultFormat {
-    Internal,
-    JSON,
-}
-
-impl Display for DCTapResultFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            DCTapResultFormat::Internal => write!(dest, "internal"),
-            DCTapResultFormat::JSON => write!(dest, "json"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ValidationMode {
-    ShEx,
-    SHACL,
-}
-
-impl Display for ValidationMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ValidationMode::ShEx => write!(dest, "shex"),
-            ValidationMode::SHACL => write!(dest, "shacl"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum InputConvertMode {
-    SHACL,
-    ShEx,
-    DCTAP,
-}
-
-impl Display for InputConvertMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            InputConvertMode::SHACL => write!(dest, "shacl"),
-            InputConvertMode::ShEx => write!(dest, "shex"),
-            InputConvertMode::DCTAP => write!(dest, "dctap"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum OutputConvertMode {
-    SPARQL,
-    ShEx,
-    UML,
-    HTML,
-    SHACL,
-}
-
-impl Display for OutputConvertMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            OutputConvertMode::SPARQL => write!(dest, "sparql"),
-            OutputConvertMode::ShEx => write!(dest, "shex"),
-            OutputConvertMode::UML => write!(dest, "uml"),
-            OutputConvertMode::HTML => write!(dest, "html"),
-            OutputConvertMode::SHACL => write!(dest, "shacl"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Default, Debug)]
-#[clap(rename_all = "lower")]
-pub enum RDFReaderMode {
-    Lax,
-
-    #[default]
-    Strict,
-}
-
-impl From<RDFReaderMode> for ReaderMode {
-    fn from(value: RDFReaderMode) -> Self {
-        match value {
-            RDFReaderMode::Strict => ReaderMode::Strict,
-            RDFReaderMode::Lax => ReaderMode::Lax,
-        }
-    }
-}
-
-impl Display for RDFReaderMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match &self {
-            RDFReaderMode::Strict => write!(dest, "strict"),
-            RDFReaderMode::Lax => write!(dest, "lax"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ResultServiceFormat {
-    Internal,
-}
-
-impl Display for ResultServiceFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ResultServiceFormat::Internal => write!(dest, "internal"),
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
-pub enum ResultQueryFormat {
-    Internal,
-}
-
-impl Display for ResultQueryFormat {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ResultQueryFormat::Internal => write!(dest, "internal"),
-        }
-    }
 }

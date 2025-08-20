@@ -2,18 +2,23 @@ use std::fmt::{Debug, Display};
 
 use crate::literal::SLiteral;
 use crate::numeric_literal::NumericLiteral;
+use crate::triple::Triple;
 use crate::RDFError;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 
-/// Concrete representation of RDF objects which can be IRIs, Blank nodes or literals
+/// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
 ///
-/// Note: We plan to support triple terms as in RDF-1.2 in the future
 #[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Object {
     Iri(IriS),
     BlankNode(String),
     Literal(SLiteral),
+    Triple {
+        subject: Box<IriOrBlankNode>,
+        predicate: Box<IriS>,
+        object: Box<Object>,
+    },
 }
 
 impl Object {
@@ -38,13 +43,22 @@ impl Object {
             Object::Iri(iri) => iri.as_str().len(),
             Object::BlankNode(bn) => bn.len(),
             Object::Literal(lit) => lit.lexical_form().len(),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => {
+                subject.as_ref().length()
+                    + predicate.as_ref().as_str().len()
+                    + object.as_ref().length()
+            }
         }
     }
 
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
-            Object::Iri(_) | Object::BlankNode(_) => None,
             Object::Literal(lit) => lit.numeric_value(),
+            _ => None,
         }
     }
 
@@ -71,6 +85,7 @@ impl From<Object> for oxrdf::Term {
             Object::Iri(iri_s) => oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into(),
             Object::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
             Object::Literal(literal) => oxrdf::Term::Literal(literal.into()),
+            Object::Triple { .. } => todo!(),
         }
     }
 }
@@ -102,7 +117,17 @@ impl TryFrom<oxrdf::Term> for Object {
                 let lit: SLiteral = literal.try_into()?;
                 Ok(Object::literal(lit))
             }
-            oxrdf::Term::Triple(_) => todo!(),
+            oxrdf::Term::Triple(triple) => {
+                let (s, p, o) = triple.into_components();
+                let object = Object::try_from(o)?;
+                let subject = IriOrBlankNode::from(s);
+                let predicate = IriS::from_named_node(&p);
+                Ok(Object::Triple {
+                    subject: Box::new(subject),
+                    predicate: Box::new(predicate),
+                    object: Box::new(object),
+                })
+            }
         }
     }
 }
@@ -116,6 +141,7 @@ impl TryFrom<Object> for oxrdf::NamedOrBlankNode {
             Object::Iri(iri_s) => Ok(oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into()),
             Object::BlankNode(bnode) => Ok(oxrdf::BlankNode::new_unchecked(bnode).into()),
             Object::Literal(_) => todo!(),
+            Object::Triple { .. } => todo!(),
         }
     }
 }
@@ -132,6 +158,7 @@ impl Display for Object {
             Object::Iri(iri) => write!(f, "{iri}"),
             Object::BlankNode(bnode) => write!(f, "_{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
+            Object::Triple { .. } => todo!(),
         }
     }
 }
@@ -142,6 +169,11 @@ impl Debug for Object {
             Object::Iri(iri) => write!(f, "Iri {{{iri:?}}}"),
             Object::BlankNode(bnode) => write!(f, "Bnode{{{bnode:?}}}"),
             Object::Literal(lit) => write!(f, "Literal{{{lit:?}}}"),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => write!(f, "Triple {{{subject:?}, {predicate:?}, {object:?}}}"),
         }
     }
 }
@@ -153,6 +185,41 @@ impl PartialOrd for Object {
             (Object::BlankNode(a), Object::BlankNode(b)) => a.partial_cmp(b),
             (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
             _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum IriOrBlankNode {
+    BlankNode(String),
+    Iri(IriS),
+}
+
+impl IriOrBlankNode {
+    pub fn length(&self) -> usize {
+        match self {
+            IriOrBlankNode::BlankNode(label) => label.len(),
+            IriOrBlankNode::Iri(iri) => iri.as_str().len(),
+        }
+    }
+}
+
+impl From<IriOrBlankNode> for oxrdf::NamedOrBlankNode {
+    fn from(value: IriOrBlankNode) -> Self {
+        match value {
+            IriOrBlankNode::Iri(iri) => oxrdf::NamedNode::new_unchecked(iri.as_str()).into(),
+            IriOrBlankNode::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
+        }
+    }
+}
+
+impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
+    fn from(value: oxrdf::NamedOrBlankNode) -> Self {
+        match value {
+            oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
+            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
+                IriOrBlankNode::BlankNode(bnode.into_string())
+            }
         }
     }
 }

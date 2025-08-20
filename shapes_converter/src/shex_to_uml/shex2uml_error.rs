@@ -2,6 +2,7 @@ use std::io;
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
+use srdf::UmlConverterError;
 use thiserror::Error;
 
 use super::UmlError;
@@ -35,6 +36,12 @@ pub enum ShEx2UmlError {
     UmlError {
         #[from]
         err: UmlError,
+    },
+
+    #[error(transparent)]
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
     },
 
     #[error(transparent)]
@@ -75,6 +82,12 @@ pub enum ShEx2UmlError {
 
     #[error("Not found label: {name}")]
     NotFoundLabel { name: String },
+
+    #[error("Error flushing temporary UML file: {tempfile_name}, error: {error:?}")]
+    FlushingTempUMLFile {
+        tempfile_name: String,
+        error: io::Error,
+    },
 }
 
 impl ShEx2UmlError {

@@ -5,6 +5,7 @@ use std::{
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
+use srdf::UmlConverterError;
 use thiserror::Error;
 
 use crate::ShEx2UmlError;
@@ -15,6 +16,12 @@ use super::{HtmlShape, Name, NodeId};
 pub enum ShEx2HtmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
     ShapeNotFound { iri: IriRef, schema: Box<Schema> },
+
+    #[error(transparent)]
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
+    },
 
     #[error("No local referece for shape name: {name:?}")]
     NoLocalRefName { name: Name },

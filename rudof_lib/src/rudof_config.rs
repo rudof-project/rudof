@@ -5,9 +5,10 @@ use shapes_converter::{
 };
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::RdfDataConfig;
+use srdf::{RdfDataConfig, PLANTUML};
+use std::env;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::RudofError;
@@ -26,6 +27,7 @@ pub struct RudofConfig {
     tap: Option<TapConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
     service: Option<ServiceConfig>,
+    plantuml_path: Option<PathBuf>,
 }
 
 impl RudofConfig {
@@ -158,6 +160,22 @@ impl RudofConfig {
             let mut shex_config = ShExConfig::default();
             shex_config.without_showing_stats();
             self.shex = Some(shex_config);
+        }
+    }
+
+    pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
+        self.plantuml_path = Some(path.as_ref().to_owned());
+        self
+    }
+
+    pub fn plantuml_path(&self) -> PathBuf {
+        if let Some(path) = &self.plantuml_path {
+            return path.to_owned();
+        } else {
+            match env::var(PLANTUML) {
+                Ok(value) => Path::new(value.as_str()).to_path_buf(),
+                Err(_) => env::current_dir().unwrap(),
+            }
         }
     }
 }
