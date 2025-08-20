@@ -3,14 +3,23 @@ This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepacha
 
 ## [Unreleased]
 ### Added
+### Fixed
+### Changed
+### Removed
+
+## [v0.1.82] - 2025-08-20
+### Added
 - Updated oxigraph dependencies to 0.5.0-beta.2 which supports RDF 1.2
 - Remove the feature `rdf-star` replacing `rdf-star` by `rdf-12`.
 - Some examples with RDF 1.2 features
+- Visualization of RDF graphs leveraging on PlantUML
 
 ### Fixed
 
 ### Changed
 - Started implementing deactivated
+- Added an UMLConverter trait to handle both ShEx2UML and RDF2UML
+
 ### Removed
 
 ## [v0.1.81] - 2025-07-13 
