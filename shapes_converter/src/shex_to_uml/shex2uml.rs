@@ -354,6 +354,16 @@ fn get_label(
     Ok(None)
 }
 
+impl UmlConverter for ShEx2Uml {
+    fn as_plantuml<W: Write>(
+        &self,
+        writer: &mut W,
+        mode: &UmlGenerationMode,
+    ) -> Result<(), UmlConverterError> {
+        self.as_plantuml(writer, mode)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     // use super::*;
@@ -382,14 +392,4 @@ mod tests {
             let converted_uml = converter.convert(&shex).unwrap();
             assert_eq!(converted_uml, expected_uml);
         } */
-}
-
-impl UmlConverter for ShEx2Uml {
-    fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError> {
-        self.as_plantuml(writer, mode)
-    }
 }
