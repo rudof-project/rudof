@@ -45,10 +45,8 @@ impl TryFrom<&str> for ShapeLabel {
             Ok(ShapeLabel::Start)
         } else if let Ok(iri) = IriS::from_str(s) {
             Ok(ShapeLabel::Iri(iri))
-        } else if let Ok(bnode) = BNode::try_from(s) {
-            Ok(ShapeLabel::BNode(bnode))
         } else {
-            Err(ShapeLabelError::InvalidStr(s.to_string()))
+            Ok(ShapeLabel::BNode(BNode::from(s)))
         }
     }
 }

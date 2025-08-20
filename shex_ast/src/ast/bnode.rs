@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
-use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
 pub struct BNode {
@@ -16,12 +15,11 @@ impl BNode {
     }
 }
 
-impl TryFrom<&str> for BNode {
-    type Error = Void;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Ok(BNode {
+impl From<&str> for BNode {
+    fn from(s: &str) -> Self {
+        BNode {
             value: s.to_string(),
-        })
+        }
     }
 }
 

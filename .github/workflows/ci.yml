@@ -54,7 +54,6 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.85.0
           profile: minimal
           override: true
           components: clippy
