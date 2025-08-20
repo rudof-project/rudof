@@ -167,20 +167,15 @@ impl Rudof {
     /// Generate a PlantUML representation of RDF Data
     ///
     pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
-        let converter = VisualRDFGraph::from_rdf(&self.rdf_data).map_err(|e| {
-            RudofError::RDF2PlantUmlError {
-                error: format!("{e}"),
-            }
+        let converter = VisualRDFGraph::from_rdf(
+            &self.rdf_data,
+            self.config.rdf_data_config().rdf_visualization_config(),
+        )
+        .map_err(|e| RudofError::RDF2PlantUmlError {
+            error: format!("{e}"),
         })?;
         converter
-            .as_plantuml(
-                writer,
-                &self
-                    .config
-                    .rdf_data_config()
-                    .rdf_visualization
-                    .unwrap_or_default(),
-            )
+            .as_plantuml(writer, &UmlGenerationMode::AllNodes)
             .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
                 error: format!("{e}"),
             })?;

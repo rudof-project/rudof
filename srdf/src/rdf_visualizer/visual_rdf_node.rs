@@ -64,14 +64,14 @@ impl VisualRDFNode {
         &self,
         node_id: NodeId,
         show_if_predicate: bool,
-        graph: &VisualRDFGraph,
+        _graph: &VisualRDFGraph,
     ) -> Result<String, RdfVisualizerError> {
         println!("Converting node {self} with node id {node_id} to plantuml");
         match self {
             VisualRDFNode::Iri { label, url } => Ok(format!(
                 "rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"
             )),
-            VisualRDFNode::BlankNode { label } => {
+            VisualRDFNode::BlankNode { label: _ } => {
                 Ok(format!("rectangle \" \" <<bnode>> as {node_id}"))
             }
             VisualRDFNode::Literal { value } => {

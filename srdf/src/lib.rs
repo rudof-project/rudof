@@ -222,3 +222,6 @@ macro_rules! opaque {
 /// Alias over `Opaque` where the function can be a plain function pointer
 pub type FnOpaque<RDF, O> =
     Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;
+
+/// Name of Environment variable where we search for plantuml JAR
+pub const PLANTUML: &str = "PLANTUML";

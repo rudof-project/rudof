@@ -23,6 +23,7 @@ prefixmap.workspace = true
 async-trait = "0.1.68"
 serde.workspace = true
 toml.workspace = true
+tempfile.workspace = true
 
 thiserror.workspace = true
 rust_decimal = "1.32"

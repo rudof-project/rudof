@@ -78,6 +78,10 @@ impl RdfDataConfig {
             },
         }
     }
+
+    pub fn rdf_visualization_config(&self) -> RDFVisualizationConfig {
+        self.rdf_visualization.clone().unwrap_or_default()
+    }
 }
 
 impl Default for RdfDataConfig {

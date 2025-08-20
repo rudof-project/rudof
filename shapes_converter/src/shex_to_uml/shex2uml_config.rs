@@ -1,17 +1,14 @@
 use std::{
     env::{self, VarError},
     fs, io,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use srdf::RDFS_LABEL_STR;
+use srdf::{PLANTUML, RDFS_LABEL_STR};
 use thiserror::Error;
-
-/// Name of Environment variable where we search for plantuml JAR
-pub const PLANTUML: &str = "PLANTUML";
 
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
 
@@ -25,15 +22,11 @@ pub struct ShEx2UmlConfig {
 
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
-        let plantuml_path = match env::var(PLANTUML) {
-            Ok(value) => Some(Path::new(value.as_str()).to_path_buf()),
-            Err(_) => None,
-        };
         Self {
-            plantuml_path,
             annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
+            plantuml_path: None,
         }
     }
 
@@ -61,9 +54,12 @@ impl ShEx2UmlConfig {
         })
     }
 
-    pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
-        self.plantuml_path = Some(path.as_ref().to_owned());
-        self
+    pub fn plantuml_path(&self) -> PathBuf {
+        self.plantuml_path.clone().unwrap_or_else(|| {
+            env::var(PLANTUML)
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| env::current_dir().unwrap())
+        })
     }
 }
 

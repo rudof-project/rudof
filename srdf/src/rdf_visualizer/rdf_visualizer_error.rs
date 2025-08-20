@@ -2,7 +2,7 @@ use std::io;
 
 use thiserror::Error;
 
-use crate::rdf_visualizer::visual_rdf_node::VisualRDFNode;
+use crate::{rdf_visualizer::visual_rdf_node::VisualRDFNode, UmlConverterError};
 
 #[derive(Error, Debug)]
 pub enum RdfVisualizerError {
@@ -16,6 +16,12 @@ pub enum RdfVisualizerError {
 
     #[error("VisualRDFNode not found: {node} in Visual graph")]
     NodeNotFound { node: VisualRDFNode },
+
+    #[error(transparent)]
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
+    },
 }
 
 impl RdfVisualizerError {

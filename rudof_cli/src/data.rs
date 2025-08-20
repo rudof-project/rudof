@@ -5,12 +5,14 @@ use std::str::FromStr;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{Rudof, RudofConfig};
-use srdf::RDFFormat;
+use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
+use srdf::{ImageFormat, RDFFormat, UmlGenerationMode};
 
 use crate::writer::get_writer;
 use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
 use crate::{input_spec::InputSpec, RDFReaderMode};
 use anyhow::{bail, Result};
+use srdf::UmlConverter;
 
 pub fn get_data_rudof(
     rudof: &mut Rudof,
@@ -122,13 +124,31 @@ pub fn run_data(
         CheckResultFormat::RDFFormat(rdf_format) => {
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
         }
-        CheckResultFormat::VisualFormat(visual_format) => {
+        CheckResultFormat::VisualFormat(VisualFormat::PlantUML) => {
             rudof.data2plant_uml(&mut writer)?;
+
             /*match visual_format {
                 VisualFormat::PlantUML => uml,
                 VisualFormat::SVG => todo!(),
                 VisualFormat::PNG => todo!(),
             }*/
+        }
+        CheckResultFormat::VisualFormat(VisualFormat::SVG)
+        | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
+            let rdf = rudof.get_rdf_data();
+            let uml_converter =
+                VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
+            let format = match result_format {
+                ResultDataFormat::SVG => ImageFormat::SVG,
+                ResultDataFormat::PNG => ImageFormat::PNG,
+                _ => unreachable!(),
+            };
+            uml_converter.as_image(
+                &mut writer,
+                format,
+                &UmlGenerationMode::all(),
+                config.plantuml_path(),
+            )?;
         }
     }
     Ok(())

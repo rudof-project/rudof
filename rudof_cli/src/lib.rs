@@ -47,7 +47,6 @@ pub use output_convert_format::*;
 pub use output_convert_mode::*;
 pub use rdf_reader_mode::*;
 pub use result_data_format::*;
-pub use result_data_format::*;
 pub use result_query_format::*;
 pub use result_service_format::*;
 pub use result_shacl_validation_format::*;
@@ -65,3 +64,5 @@ pub use validation_mode::*;
 fn base_convert(base: &Option<IriS>) -> Option<&str> {
     base.as_ref().map(|iri| iri.as_str())
 }
+
+// pub const PLANTUML: &str = "PLANTUML";

@@ -3,7 +3,6 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use crate::cli_shacl_format::CliShaclFormat;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
 use crate::mime_type::MimeType;

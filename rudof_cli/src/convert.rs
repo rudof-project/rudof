@@ -9,6 +9,7 @@ use prefixmap::IriRef;
 use rudof_lib::{Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use srdf::ImageFormat;
+use srdf::UmlConverter;
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -140,18 +141,25 @@ fn run_shex2uml(
     if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
-        generate_uml_output(converter, maybe_shape, &mut writer, result_format)?;
+        generate_uml_output(
+            converter,
+            maybe_shape,
+            &mut writer,
+            result_format,
+            config.shex2uml_config().plantuml_path(),
+        )?;
     } else {
         bail!("No ShEx schema")
     }
     Ok(())
 }
 
-fn generate_uml_output(
+fn generate_uml_output<P: AsRef<Path>>(
     uml_converter: ShEx2Uml,
     maybe_shape: &Option<String>,
     writer: &mut Box<dyn Write>,
     result_format: &OutputConvertFormat,
+    plantuml_path: P,
 ) -> Result<()> {
     let mode = if let Some(str) = maybe_shape {
         UmlGenerationMode::neighs(str)
@@ -164,11 +172,11 @@ fn generate_uml_output(
             Ok(())
         }
         OutputConvertFormat::SVG => {
-            uml_converter.as_image(writer, ImageFormat::SVG, &mode)?;
+            uml_converter.as_image(writer, ImageFormat::SVG, &mode, plantuml_path)?;
             Ok(())
         }
         OutputConvertFormat::PNG => {
-            uml_converter.as_image(writer, ImageFormat::PNG, &mode)?;
+            uml_converter.as_image(writer, ImageFormat::PNG, &mode, plantuml_path)?;
             Ok(())
         }
         OutputConvertFormat::Default => {
@@ -321,7 +329,13 @@ fn run_tap2uml(
         let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
         converter_uml.convert(&shex)?;
         let (mut writer, _color) = get_writer(output, force_overwrite)?;
-        generate_uml_output(converter_uml, maybe_shape, &mut writer, result_format)?;
+        generate_uml_output(
+            converter_uml,
+            maybe_shape,
+            &mut writer,
+            result_format,
+            config.shex2uml_config().plantuml_path(),
+        )?;
         Ok(())
     } else {
         bail!("Internal error: No DCTAP")

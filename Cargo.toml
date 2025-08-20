@@ -99,6 +99,7 @@ url = "2.2.2"
 itertools = "0.14"
 lazy_static = "1"
 tracing-test = "0.2.5"
+tempfile = "3.10.1"
 
 [patch.crates-io]
 # use fork fixing zip dependency until PR is merged

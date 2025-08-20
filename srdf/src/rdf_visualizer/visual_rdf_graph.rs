@@ -9,8 +9,8 @@ use crate::rdf_visualizer::rdf_visualizer_error::RdfVisualizerError;
 use crate::rdf_visualizer::usage_count::UsageCount;
 use crate::rdf_visualizer::visual_rdf_edge::VisualRDFEdge;
 use crate::rdf_visualizer::visual_rdf_node::VisualRDFNode;
-use crate::Triple;
-use crate::{NeighsRDF, RDFError};
+use crate::{NeighsRDF, RDFError, UmlConverterError, UmlGenerationMode};
+use crate::{Triple, UmlConverter};
 
 /// Converts RDF graphs to PlantUML
 pub struct VisualRDFGraph {
@@ -18,20 +18,25 @@ pub struct VisualRDFGraph {
     nodes_map: HashMap<VisualRDFNode, NodeId>,
     usage_count: HashMap<VisualRDFNode, UsageCount>,
     edges: HashSet<(NodeId, VisualRDFEdge, NodeId)>,
+    config: RDFVisualizationConfig,
 }
 
 impl VisualRDFGraph {
-    pub fn new() -> Self {
+    pub fn new(config: RDFVisualizationConfig) -> Self {
         VisualRDFGraph {
             node_counter: 0,
             nodes_map: HashMap::new(),
             usage_count: HashMap::new(),
             edges: HashSet::new(),
+            config,
         }
     }
 
-    pub fn from_rdf<R: NeighsRDF>(rdf: &R) -> Result<Self, RDFError> {
-        let mut graph = VisualRDFGraph::new();
+    pub fn from_rdf<R: NeighsRDF>(
+        rdf: &R,
+        config: RDFVisualizationConfig,
+    ) -> Result<Self, RDFError> {
+        let mut graph = VisualRDFGraph::new(config);
         let triples = rdf.triples().map_err(|e| RDFError::ObtainingTriples {
             error: e.to_string(),
         })?;
@@ -181,9 +186,9 @@ impl VisualRDFGraph {
     pub fn as_plantuml<W: Write>(
         &self,
         writer: &mut W,
-        config: &RDFVisualizationConfig,
+        _mode: &UmlGenerationMode,
     ) -> Result<(), RdfVisualizerError> {
-        let style = config.get_style();
+        let style = self.config.get_style();
         println!("Visual graph: {}", self);
         println!("Starting conversion...");
         writeln!(writer, "@startuml\n")?;
@@ -296,5 +301,18 @@ impl Display for VisualRDFGraph {
             write!(f, "\nEdge {}: {} --> {}", edge, source, target)?;
         }
         Ok(())
+    }
+}
+
+impl UmlConverter for VisualRDFGraph {
+    fn as_plantuml<W: Write>(
+        &self,
+        writer: &mut W,
+        mode: &crate::UmlGenerationMode,
+    ) -> Result<(), UmlConverterError> {
+        self.as_plantuml(writer, mode)
+            .map_err(|e| UmlConverterError::UmlError {
+                error: e.to_string(),
+            })
     }
 }
