@@ -84,3 +84,9 @@ fn non_asserted_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
         .with_line_thickness(config.non_asserted_line_thickness())
         .with_round_corner(config.non_asserted_round_corner())
 }
+
+impl Default for Style {
+    fn default() -> Self {
+        Style::new()
+    }
+}

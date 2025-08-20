@@ -73,3 +73,9 @@ impl Display for UsageCount {
         )
     }
 }
+
+impl Default for UsageCount {
+    fn default() -> Self {
+        UsageCount::new()
+    }
+}

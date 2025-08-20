@@ -159,6 +159,7 @@ enum CheckResultFormat {
     VisualFormat(VisualFormat),
 }
 
+#[allow(clippy::upper_case_acronyms)]
 enum VisualFormat {
     PlantUML,
     SVG,

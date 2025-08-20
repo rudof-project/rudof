@@ -41,7 +41,7 @@ impl StereotypeStyle {
 
     fn show_round_corner(&self) -> String {
         if let Some(corner) = self.round_corner {
-            format!("RoundCorner {}\n", corner)
+            format!("RoundCorner {corner}\n")
         } else {
             String::new()
         }
@@ -49,7 +49,7 @@ impl StereotypeStyle {
 
     fn show_line_thickness(&self) -> String {
         if let Some(thickness) = self.line_thickness {
-            format!("LineThickness {}\n", thickness)
+            format!("LineThickness {thickness}\n")
         } else {
             String::new()
         }

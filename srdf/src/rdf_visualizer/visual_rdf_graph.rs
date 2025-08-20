@@ -106,10 +106,10 @@ impl VisualRDFGraph {
         let object_str = object.to_string();
         let asserted = rdf.contains(subject, predicate, object).map_err(|e| {
             RDFError::FailedCheckingAssertion {
-                subject: format!("{}", subject_str),
-                predicate: format!("{}", predicate_str),
-                object: format!("{}", object_str),
-                error: format!("{}", e.to_string()),
+                subject: subject_str.to_string(),
+                predicate: predicate_str.to_string(),
+                object: object_str.to_string(),
+                error: e.to_string(),
             }
         })?;
         let triple = if asserted {
@@ -121,50 +121,32 @@ impl VisualRDFGraph {
     }
 
     pub fn increment_usage_count_as_subject(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_subject();
     }
 
     pub fn increment_usage_count_as_subject_in_triple(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_subject_in_triple();
     }
 
     pub fn increment_usage_count_as_predicate(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_predicate();
     }
 
     pub fn increment_usage_count_as_predicate_in_triple(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_predicate_in_triple();
     }
 
     pub fn increment_usage_count_as_object(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_object();
     }
 
     pub fn increment_usage_count_as_object_in_triple(&mut self, node: &VisualRDFNode) {
-        let count = self
-            .usage_count
-            .entry(node.clone())
-            .or_insert(UsageCount::new());
+        let count = self.usage_count.entry(node.clone()).or_default();
         count.increment_as_object_in_triple();
     }
 
@@ -189,7 +171,7 @@ impl VisualRDFGraph {
         _mode: &UmlGenerationMode,
     ) -> Result<(), RdfVisualizerError> {
         let style = self.config.get_style();
-        println!("Visual graph: {}", self);
+        println!("Visual graph: {self}");
         println!("Starting conversion...");
         writeln!(writer, "@startuml\n")?;
         writeln!(writer, "{}", style.as_uml())?;
@@ -197,18 +179,16 @@ impl VisualRDFGraph {
         // Add nodes
         for (node, node_id) in &self.nodes_map {
             let show_node = self.show_node(node);
-            let node_uml = node.as_plantuml(*node_id, show_node, &self)?;
-            debug!("Node {}: {}", node_id, node_uml);
-            writeln!(writer, "{}\n", node_uml)?;
+            let node_uml = node.as_plantuml(*node_id, show_node, self)?;
+            debug!("Node {node_id}: {node_uml}");
+            writeln!(writer, "{node_uml}\n")?;
         }
         // Add edges
         for (source, edge, target) in &self.edges {
-            debug!("Edge {} --> {}: {}", source, target, edge);
+            debug!("Edge {source} --> {target}: {edge}");
             writeln!(
                 writer,
-                "{} --> {} : {}\n",
-                source,
-                target,
+                "{source} --> {target} : {}\n",
                 edge.as_plantuml_link()
             )?;
         }
@@ -245,13 +225,7 @@ impl VisualRDFGraph {
         match node {
             VisualRDFNode::Predicate { .. } | VisualRDFNode::Reifies => {
                 match self.usage_count.get(node) {
-                    Some(usage_count) => {
-                        if usage_count.in_triple() {
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                    Some(usage_count) => usage_count.in_triple(),
                     None => false,
                 }
             }
@@ -294,11 +268,11 @@ impl Display for VisualRDFGraph {
         let zero = UsageCount::new();
         for (node, id) in &self.nodes_map {
             let count = self.usage_count.get(node).unwrap_or(&zero);
-            write!(f, "\nNode {}: {}", id, node)?;
-            write!(f, "\n     count: {}", count)?;
+            write!(f, "\nNode {id}: {node}")?;
+            write!(f, "\n     count: {count}")?;
         }
         for (source, edge, target) in &self.edges {
-            write!(f, "\nEdge {}: {} --> {}", edge, source, target)?;
+            write!(f, "\nEdge {edge}: {source} --> {target}")?;
         }
         Ok(())
     }

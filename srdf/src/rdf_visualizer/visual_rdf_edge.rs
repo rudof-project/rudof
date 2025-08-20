@@ -14,7 +14,7 @@ impl VisualRDFEdge {
         if iri.as_str() == REIFIES {
             return VisualRDFEdge::Reifies;
         }
-        let iri_label = R::qualify_iri(&rdf, iri);
+        let iri_label = R::qualify_iri(rdf, iri);
         let iri_str = (*iri).as_str().to_string();
         VisualRDFEdge::Iri {
             label: iri_label,
@@ -24,7 +24,7 @@ impl VisualRDFEdge {
 
     pub fn as_plantuml_link(&self) -> String {
         match self {
-            VisualRDFEdge::Iri { label, url } => format!("[[{} {}]]", url, label),
+            VisualRDFEdge::Iri { label, url } => format!("[[{url} {label}]]"),
             VisualRDFEdge::Reifies => format!("[[{} {}]]", REIFIES, "reifies"),
         }
     }
@@ -44,7 +44,7 @@ impl VisualRDFEdge {
 impl Display for VisualRDFEdge {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VisualRDFEdge::Iri { label, url } => write!(f, "{} ({})", label, url),
+            VisualRDFEdge::Iri { label, url } => write!(f, "{label} ({url})"),
             VisualRDFEdge::Reifies => write!(f, "reifies"),
         }
     }

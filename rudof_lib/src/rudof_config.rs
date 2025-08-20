@@ -170,7 +170,7 @@ impl RudofConfig {
 
     pub fn plantuml_path(&self) -> PathBuf {
         if let Some(path) = &self.plantuml_path {
-            return path.to_owned();
+            path.to_owned()
         } else {
             match env::var(PLANTUML) {
                 Ok(value) => Path::new(value.as_str()).to_path_buf(),

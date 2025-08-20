@@ -26,7 +26,7 @@ impl VisualRDFNode {
         if predicate.as_str() == REIFIES {
             VisualRDFNode::Reifies
         } else {
-            let iri_label = rdf.qualify_iri(&predicate);
+            let iri_label = rdf.qualify_iri(predicate);
             let iri_str = predicate.to_string();
             VisualRDFNode::Predicate {
                 label: iri_label,
@@ -93,7 +93,7 @@ impl VisualRDFNode {
                         "rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"
                     ))
                 } else {
-                    Ok(format!(""))
+                    Ok(String::new())
                 }
             }
             VisualRDFNode::Reifies => {
@@ -164,10 +164,10 @@ fn object_to_visual_node<R: NeighsRDF>(
             })
         }
         Object::BlankNode(bnode) => Ok(VisualRDFNode::BlankNode {
-            label: format!("{}", bnode),
+            label: bnode.to_string(),
         }),
         Object::Literal(literal) => Ok(VisualRDFNode::Literal {
-            value: format!("{}", literal),
+            value: literal.to_string(),
         }),
         Object::Triple {
             subject,
@@ -187,17 +187,17 @@ fn object_to_visual_node<R: NeighsRDF>(
 impl Display for VisualRDFNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VisualRDFNode::Iri { label, url } => write!(f, "Iri: {} ({})", label, url),
+            VisualRDFNode::Iri { label, url } => write!(f, "Iri: {label} ({url})"),
             VisualRDFNode::BlankNode { label } => {
-                write!(f, "BlankNode: {}", label)
+                write!(f, "BlankNode: {label}")
             }
             VisualRDFNode::Literal { value } => {
-                write!(f, "Literal: {}", value)
+                write!(f, "Literal: {value}")
             }
             VisualRDFNode::NonAssertedTriple(_, _, _) => write!(f, "NonAssertedTriple"),
             VisualRDFNode::AssertedTriple(_, _, _) => write!(f, "AssertedTriple"),
             VisualRDFNode::Predicate { label, url } => {
-                write!(f, "Predicate: {} ({})", label, url)
+                write!(f, "Predicate: {label} ({url})")
             }
             VisualRDFNode::Reifies => {
                 write!(f, "Reifies")

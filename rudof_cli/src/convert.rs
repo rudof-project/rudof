@@ -36,15 +36,15 @@ pub fn run_convert(
             let shex_format = format.to_shex_format()?;
             let output_format = result_format.to_shex_format()?;
             // config.shex_without_showing_stats();
-            run_shex(input, &shex_format, &output_format, output, show_time, true, false, force_overwrite, reader_mode, &config)
+            run_shex(input, &shex_format, &output_format, output, show_time, true, false, force_overwrite, reader_mode, config)
         }
         (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
             let shacl_format = format.to_shacl_format()?;
             let output_format = result_format.to_shacl_format()?;
-            run_shacl(input, &shacl_format, &output_format, output, force_overwrite, reader_mode, &config)
+            run_shacl(input, &shacl_format, &output_format, output, force_overwrite, reader_mode, config)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input, format, output, result_format, &config, force_overwrite)
+            run_tap2shex(input, format, output, result_format, config, force_overwrite)
         }
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
@@ -54,13 +54,13 @@ pub fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input, format, maybe_shape, output, result_format, &config, force_overwrite, reader_mode)
+            run_shex2sparql(input, format, maybe_shape, output, result_format, config, force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input, format, output, result_format, maybe_shape_str, &config, force_overwrite, reader_mode)
+            run_shex2uml(input, format, output, result_format, maybe_shape_str, config, force_overwrite, reader_mode)
         }
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
-            run_shacl2shex(input, format, output, result_format, &config, force_overwrite, reader_mode)
+            run_shacl2shex(input, format, output, result_format, config, force_overwrite, reader_mode)
         }
         (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
             match target_folder {
@@ -68,12 +68,12 @@ pub fn run_convert(
             "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_shex2html(input, format, output_path, &config, reader_mode)
+                    run_shex2html(input, format, output_path, config, reader_mode)
                 }
             }
         }
         (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input, format, output, maybe_shape_str, result_format, &config, force_overwrite)
+            run_tap2uml(input, format, output, maybe_shape_str, result_format, config, force_overwrite)
         }
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
             match target_folder {
@@ -81,7 +81,7 @@ pub fn run_convert(
             "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
                 )),
                 Some(output_path) => {
-                    run_tap2html(input, format, output_path, &config)
+                    run_tap2html(input, format, output_path, config)
                 }
             }
         }

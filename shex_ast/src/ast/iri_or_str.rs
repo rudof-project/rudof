@@ -62,7 +62,6 @@ impl From<IriOrStr> for String {
     }
 }
 
-#[allow(clippy::infallible_try_from)]
 impl TryFrom<String> for IriOrStr {
     type Error = Void;
     fn try_from(s: String) -> Result<Self, Self::Error> {

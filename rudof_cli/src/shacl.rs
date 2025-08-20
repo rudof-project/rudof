@@ -89,7 +89,7 @@ pub fn run_validate_shacl(
     get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
     let validation_report = if let Some(schema) = schema {
         let reader_mode = (*reader_mode).into();
-        let shapes_format = shapes_format.clone().unwrap_or_default();
+        let shapes_format = (*shapes_format).unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
     } else {
