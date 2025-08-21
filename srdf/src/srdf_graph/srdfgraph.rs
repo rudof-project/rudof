@@ -153,7 +153,7 @@ impl SRDFGraph {
                         Err(e) => {
                             if reader_mode.is_strict() {
                                 return Err(SRDFGraphError::JsonLDError {
-                                    data: format!("Reading JSON-LD"),
+                                    data: "Reading JSON-LD".to_string(),
                                     error: e.to_string(),
                                 });
                             } else {
