@@ -1,9 +1,22 @@
 # CHANGE LOG
-This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepachangelog.com/).
+This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
 ## [Unreleased]
 ### Added
 ### Fixed
+### Changed
+### Removed
+
+## v0.1.83 - 2025-08-21
+
+### Added
+
+Method `data2plantuml` to rudof Python bindings
+
+### Fixed
+
+Issue #312 changing the behaviour of RDF/XML and NQuads parsers which were generating empty RDF graphs for incorrect RDF files instead of raising an error. Those empty RDf graphs didn't raise violations when they were validated.
+
 ### Changed
 ### Removed
 
