@@ -265,6 +265,24 @@ impl PyRudof {
         self.inner.reset_validation_results();
     }
 
+    /// Converts the current RDF data to a Visual representation in PlantUML, that visual representation can be later converted to SVG or PNG pictures using PlantUML processors
+    #[pyo3(signature = ())]
+    pub fn data2plantuml(&self) -> PyResult<String> {
+        let mut v = Vec::new();
+        self.inner
+            .data2plant_uml(&mut v)
+            .map_err(|e| RudofError::RDF2PlantUmlError {
+                error: format!("Error generating UML for current RDF data: {e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::RDF2PlantUmlError {
+                error: format!("RDF2PlantUML: Error converting generated vector to UML: {e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
     /// Adds RDF data read from a Path
     #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_path(
