@@ -48,25 +48,25 @@ authors = [
 ]
 
 [workspace.dependencies]
-iri_s = { version = "0.1.79", path = "./iri_s" }
-dctap = { version = "0.1.71", path = "./dctap" }
-prefixmap = { version = "0.1.69", path = "./prefixmap" }
-rbe = { version = "0.1.69", path = "./rbe" }
-rbe_testsuite = { version = "0.1.62", path = "./rbe_testsuite" }
-rudof_lib = { version = "0.1.60", path = "./rudof_lib" }
-rudof_cli = { version = "0.1.60", path = "./rudof_cli" }
-shex_ast = { version = "0.1.71", path = "./shex_ast" }
-shapemap = { version = "0.1.69", path = "./shapemap" }
-shacl_ast = { version = "0.1.69", path = "./shacl_ast" }
-shacl_rdf = { version = "0.1.69", path = "./shacl_rdf" }
-shacl_ir = { version = "0.1.69", path = "./shacl_ir" }
-shacl_validation = { version = "0.1.63", path = "./shacl_validation" }
-shapes_converter = { version = "0.1.60", path = "./shapes_converter" }
+iri_s = { version = "0.1.82", path = "./iri_s" }
+dctap = { version = "0.1.82", path = "./dctap" }
+prefixmap = { version = "0.1.82", path = "./prefixmap" }
+rbe = { version = "0.1.82", path = "./rbe" }
+rbe_testsuite = { version = "0.1.82", path = "./rbe_testsuite" }
+rudof_lib = { version = "0.1.83", path = "./rudof_lib" }
+rudof_cli = { version = "0.1.84", path = "./rudof_cli" }
+shex_ast = { version = "0.1.83", path = "./shex_ast" }
+shapemap = { version = "0.1.76", path = "./shapemap" }
+shacl_ast = { version = "0.1.82", path = "./shacl_ast" }
+shacl_rdf = { version = "0.1.82", path = "./shacl_rdf" }
+shacl_ir = { version = "0.1.82", path = "./shacl_ir" }
+shacl_validation = { version = "0.1.82", path = "./shacl_validation" }
+shapes_converter = { version = "0.1.83", path = "./shapes_converter" }
 shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
-shex_validation = { version = "0.1.71", path = "./shex_validation" }
-shex_compact = { version = "0.1.71", path = "./shex_compact" }
-srdf = { version = "0.1.81", path = "./srdf" }
-sparql_service = { version = "0.1.60", path = "./sparql_service" }
+shex_validation = { version = "0.1.82", path = "./shex_validation" }
+shex_compact = { version = "0.1.82", path = "./shex_compact" }
+srdf = { version = "0.1.83", path = "./srdf" }
+sparql_service = { version = "0.1.84", path = "./sparql_service" }
 
 # [dependencies]
 # External dependencies
