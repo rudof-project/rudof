@@ -36,6 +36,7 @@ oxttl.workspace = true
 oxrdfio.workspace = true
 oxrdf.workspace = true
 oxrdfxml.workspace = true
+oxjsonld.workspace = true
 oxilangtag.workspace = true
 oxiri.workspace = true
 oxsdatatypes.workspace = true

@@ -67,6 +67,7 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
         DataFormat::RDFXML => RDFFormat::RDFXML,
         DataFormat::TriG => RDFFormat::TriG,
         DataFormat::Turtle => RDFFormat::Turtle,
+        DataFormat::JsonLd => RDFFormat::JsonLd,
     }
 }
 

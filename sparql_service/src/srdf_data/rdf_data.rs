@@ -7,7 +7,7 @@ use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
-use oxrdfio::RdfFormat;
+use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
 use srdf::matcher::Matcher;
@@ -348,6 +348,9 @@ fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
+        RDFFormat::JsonLd => RdfFormat::JsonLd {
+            profile: JsonLdProfileSet::empty(),
+        },
     }
 }
 

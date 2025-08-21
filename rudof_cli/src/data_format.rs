@@ -13,6 +13,7 @@ pub enum DataFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
 }
 
 impl From<DataFormat> for RDFFormat {
@@ -24,6 +25,7 @@ impl From<DataFormat> for RDFFormat {
             DataFormat::TriG => RDFFormat::TriG,
             DataFormat::N3 => RDFFormat::N3,
             DataFormat::NQuads => RDFFormat::NQuads,
+            DataFormat::JsonLd => RDFFormat::JsonLd,
         }
     }
 }
@@ -37,6 +39,7 @@ impl Display for DataFormat {
             DataFormat::TriG => write!(dest, "trig"),
             DataFormat::N3 => write!(dest, "n3"),
             DataFormat::NQuads => write!(dest, "nquads"),
+            DataFormat::JsonLd => write!(dest, "jsonld"),
         }
     }
 }
@@ -50,6 +53,7 @@ impl MimeType for DataFormat {
             DataFormat::TriG => "application/trig".to_string(),
             DataFormat::N3 => "text/n3".to_string(),
             DataFormat::NQuads => "application/n-quads".to_string(),
+            DataFormat::JsonLd => "application/ld+json".to_string(),
         }
     }
 }

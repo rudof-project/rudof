@@ -7,6 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.84
+### Added
+- Support for JSON-LD oslving issue #295
+### Fixed
+### Changed
+### Removed
+
 ## v0.1.83 - 2025-08-21
 
 ### Added
