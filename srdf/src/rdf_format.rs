@@ -13,6 +13,7 @@ pub enum RDFFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
 }
 
 impl FromStr for RDFFormat {
@@ -42,6 +43,7 @@ impl Display for RDFFormat {
             RDFFormat::TriG => write!(f, "TriG"),
             RDFFormat::N3 => write!(f, "N3"),
             RDFFormat::NQuads => write!(f, "NQuads"),
+            RDFFormat::JsonLd => write!(f, "JSONLD"),
         }
     }
 }

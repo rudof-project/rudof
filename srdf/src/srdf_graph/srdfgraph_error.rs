@@ -44,6 +44,9 @@ pub enum SRDFGraphError {
     #[error("NQuads error: {error}\nData: {data}")]
     NQuadsError { data: String, error: String },
 
+    #[error("JSON-LD error: {error}\nData: {data}")]
+    JsonLDError { data: String, error: String },
+
     #[error(transparent)]
     IriParseError {
         #[from]

@@ -4,7 +4,8 @@ use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use oxrdfio::{RdfFormat, RdfSerializer};
+use oxjsonld::JsonLdParser;
+use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -136,6 +137,27 @@ impl SRDFGraph {
                                 });
                             } else {
                                 debug!("NQuads Error captured in Lax mode: {e:?}")
+                            }
+                        }
+                        Ok(t) => {
+                            self.graph.insert(t.as_ref());
+                        }
+                    }
+                }
+            }
+            RDFFormat::JsonLd => {
+                let parser = JsonLdParser::new();
+                let mut reader = parser.for_reader(read);
+                for triple_result in reader.by_ref() {
+                    match triple_result {
+                        Err(e) => {
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::JsonLDError {
+                                    data: format!("Reading JSON-LD"),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("JSON-LD Error captured in Lax mode: {e:?}")
                             }
                         }
                         Ok(t) => {
@@ -505,6 +527,9 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
+        RDFFormat::JsonLd => RdfFormat::JsonLd {
+            profile: JsonLdProfileSet::empty(),
+        },
     }
 }
 
