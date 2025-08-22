@@ -1,3 +1,4 @@
+#![allow(unsafe_op_in_unsafe_fn)]
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
 use pyo3::{
