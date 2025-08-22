@@ -1,5 +1,5 @@
+use crate::{rbe_error::RbeError, Pending};
 use crate::{Key, Ref, Value};
-use crate::{Pending, rbe_error::RbeError};
 use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -351,11 +351,9 @@ mod tests {
             })
         }
 
-        assert!(
-            cond_name("foo".to_string())
-                .matches(&"baz".to_string())
-                .is_err()
-        );
+        assert!(cond_name("foo".to_string())
+            .matches(&"baz".to_string())
+            .is_err());
     }
 
     #[test]

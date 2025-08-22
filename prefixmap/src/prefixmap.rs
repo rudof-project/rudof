@@ -1,6 +1,6 @@
 use colored::*;
-use indexmap::IndexMap;
 use indexmap::map::Iter;
+use indexmap::IndexMap;
 use iri_s::*;
 use serde::{Deserialize, Serialize};
 

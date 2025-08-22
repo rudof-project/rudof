@@ -511,7 +511,11 @@ fn parse_values(str: &str, delimiter: char) -> Result<Vec<Value>> {
 
 fn strip_whitespace(str: &str) -> Option<&str> {
     let s = str.trim();
-    if s.is_empty() { None } else { Some(s) }
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
 }
 
 fn get_strs(str: &str) -> impl Iterator<Item = &str> {

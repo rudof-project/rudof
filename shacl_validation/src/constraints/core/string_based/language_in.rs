@@ -1,21 +1,21 @@
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::LanguageIn;
 use shacl_ir::compiled::shape::CompiledShape;
+use srdf::lang::Lang;
 use srdf::Literal;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
-use srdf::lang::Lang;
 use std::fmt::Debug;
 
+use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::constraints::constraint_error::ConstraintError;
-use crate::engine::Engine;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
+use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;

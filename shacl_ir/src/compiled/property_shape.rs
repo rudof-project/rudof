@@ -4,8 +4,8 @@ use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SHACLPath;
 
-use shacl_ast::Schema;
 use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::Schema;
 
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;

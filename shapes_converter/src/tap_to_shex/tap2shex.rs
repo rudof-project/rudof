@@ -188,7 +188,11 @@ fn parse_node_constraint(
         parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
         changed = true;
     }
-    if changed { Ok(Some(nc)) } else { Ok(None) }
+    if changed {
+        Ok(Some(nc))
+    } else {
+        Ok(None)
+    }
 }
 
 #[allow(clippy::result_large_err)]

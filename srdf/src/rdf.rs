@@ -6,6 +6,8 @@ use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 use rust_decimal::Decimal;
 
+use crate::lang::Lang;
+use crate::matcher::Matcher;
 use crate::BlankNode;
 use crate::Iri;
 use crate::IriOrBlankNode;
@@ -16,8 +18,6 @@ use crate::SLiteral;
 use crate::Subject;
 use crate::Term;
 use crate::Triple;
-use crate::lang::Lang;
-use crate::matcher::Matcher;
 
 pub trait Rdf: Sized {
     type Subject: Subject

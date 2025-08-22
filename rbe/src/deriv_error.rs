@@ -1,6 +1,6 @@
+use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
-use crate::rbe::Rbe;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fmt::Formatter;

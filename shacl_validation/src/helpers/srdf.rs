@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{NeighsRDF, Object, RDFNode, SHACLPath, Triple, matcher::Any};
+use srdf::{matcher::Any, NeighsRDF, Object, RDFNode, SHACLPath, Triple};
 
 use super::helper_error::SRDFError;
 

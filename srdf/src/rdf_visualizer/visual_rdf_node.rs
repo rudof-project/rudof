@@ -3,11 +3,11 @@ use std::fmt::Display;
 use crate::iri::Iri;
 use crate::rdf_visualizer::REIFIES;
 use crate::{
-    IriOrBlankNode, NeighsRDF, Object, RDFError, Rdf,
     rdf_visualizer::{
         rdf_visualizer_error::RdfVisualizerError,
         visual_rdf_graph::{NodeId, VisualRDFGraph},
     },
+    IriOrBlankNode, NeighsRDF, Object, RDFError, Rdf,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

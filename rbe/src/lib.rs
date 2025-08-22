@@ -35,11 +35,11 @@ pub use crate::match_cond::*;
 pub use crate::max::*;
 pub use crate::min::*;
 pub use crate::pending::*;
+pub use crate::rbe1::*;
+pub use crate::rbe1_matcher::*;
 pub use crate::rbe_error::*;
 pub use crate::rbe_schema::*;
 pub use crate::rbe_table::*;
-pub use crate::rbe1::*;
-pub use crate::rbe1_matcher::*;
 pub use crate::values::*;
 
 // We may remove the following

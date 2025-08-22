@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use tracing::debug;
 
-use crate::{Key, Ref, Value, rbe1::Rbe};
-use crate::{Pending, rbe_error::RbeError};
+use crate::{rbe1::Rbe, Key, Ref, Value};
+use crate::{rbe_error::RbeError, Pending};
 
 #[derive(Default)]
 pub struct RbeMatcher<K, V, R>

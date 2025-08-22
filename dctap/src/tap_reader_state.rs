@@ -1,7 +1,7 @@
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::{hash_map::Entry, HashMap};
 
 use crate::TapShape;
-use crate::{TapReaderWarning, tap_headers::TapHeaders};
+use crate::{tap_headers::TapHeaders, TapReaderWarning};
 use csv::{Position, StringRecord};
 
 #[derive(Debug)]

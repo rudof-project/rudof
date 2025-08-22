@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::data::data_format2rdf_format;
 use crate::mime_type::MimeType;
 use crate::writer::get_writer;
-use crate::{InputSpec, RDFReaderMode, ResultServiceFormat, data_format::DataFormat};
+use crate::{data_format::DataFormat, InputSpec, RDFReaderMode, ResultServiceFormat};
 use anyhow::Result;
 use rudof_lib::RudofConfig;
 use sparql_service::ServiceDescription;

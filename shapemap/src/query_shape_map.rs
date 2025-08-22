@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
 use serde::Serialize;
-use shex_ast::{ShapeExprLabel, object_value::ObjectValue};
+use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::NeighsRDF;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]

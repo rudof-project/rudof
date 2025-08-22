@@ -1,8 +1,8 @@
 use crate::{
-    IRes, ParseError, Span,
     grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
     iri, literal,
     shex_grammar::shape_expr_label,
+    IRes, ParseError, Span,
 };
 use nom::{
     branch::alt,

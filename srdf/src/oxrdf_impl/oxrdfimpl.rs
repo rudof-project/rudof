@@ -6,6 +6,7 @@ use oxrdf::NamedOrBlankNodeRef as OxSubjectRef;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
 
+use crate::matcher::Matcher;
 use crate::BlankNode;
 use crate::Iri;
 use crate::Literal;
@@ -13,7 +14,6 @@ use crate::Subject;
 use crate::Term;
 use crate::TermKind;
 use crate::Triple;
-use crate::matcher::Matcher;
 
 impl Subject for OxSubject {
     fn kind(&self) -> TermKind {

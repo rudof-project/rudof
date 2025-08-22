@@ -1,13 +1,13 @@
-use crate::{IRes, Span, shex_parser_error::ParseError as ShExParseError};
+use crate::{shex_parser_error::ParseError as ShExParseError, IRes, Span};
 use colored::*;
 use nom::{
-    Err,
     branch::alt,
     bytes::complete::{is_not, tag, tag_no_case},
     character::complete::multispace1,
     combinator::value,
     multi::many0,
     sequence::{delimited, pair},
+    Err,
 };
 use std::fmt::Debug;
 

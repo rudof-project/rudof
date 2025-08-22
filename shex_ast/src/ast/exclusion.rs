@@ -3,7 +3,7 @@ use std::{fmt, result};
 
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer, de};
+use serde::{de, Deserialize, Serialize, Serializer};
 use srdf::lang::Lang;
 
 use prefixmap::IriRef;

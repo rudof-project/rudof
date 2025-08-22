@@ -1,10 +1,10 @@
 use crate::{
+    add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
+    parse_shex_schema_rudof, run_shacl, run_shex, show_shex_schema, writer::get_writer,
     CliShaclFormat, InputConvertFormat, InputConvertMode, InputSpec, OutputConvertFormat,
-    OutputConvertMode, RDFReaderMode, add_shacl_schema_rudof,
-    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, parse_shex_schema_rudof, run_shacl,
-    run_shex, show_shex_schema, writer::get_writer,
+    OutputConvertMode, RDFReaderMode,
 };
-use anyhow::{Result, anyhow, bail};
+use anyhow::{anyhow, bail, Result};
 use prefixmap::IriRef;
 use rudof_lib::{Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};

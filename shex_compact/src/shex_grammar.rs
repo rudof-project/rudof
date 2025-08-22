@@ -2,12 +2,11 @@ use crate::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
 use crate::{
-    IRes, Span, map_error, shex_parser_error::ParseError as ShExParseError, tag_no_case_tws, token,
-    token_tws, traced, tws0,
+    map_error, shex_parser_error::ParseError as ShExParseError, tag_no_case_tws, token, token_tws,
+    traced, tws0, IRes, Span,
 };
 use iri_s::IriS;
 use nom::{
-    Err, InputTake,
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy},
@@ -16,24 +15,25 @@ use nom::{
     error_position,
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
+    Err, InputTake,
 };
 use regex::Regex;
-use shex_ast::IriOrStr;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
+use shex_ast::IriOrStr;
 use shex_ast::{
-    Annotation, BNode, IriExclusion, LangOrWildcard, LanguageExclusion, LiteralExclusion,
-    NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr, ShapeExprLabel,
-    StringFacet, TripleExpr, TripleExprLabel, XsFacet, object_value::ObjectValue,
-    value_set_value::ValueSetValue,
+    object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, BNode, IriExclusion,
+    LangOrWildcard, LanguageExclusion, LiteralExclusion, NodeConstraint, NodeKind, NumericFacet,
+    Pattern, SemAct, Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel,
+    XsFacet,
 };
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
 
-use lazy_regex::{Lazy, regex};
+use lazy_regex::{regex, Lazy};
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
-use srdf::{RDF_TYPE_STR, lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
+use srdf::{lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral, RDF_TYPE_STR};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {

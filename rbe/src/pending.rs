@@ -1,4 +1,4 @@
-use indexmap::{IndexMap, IndexSet, map::Entry};
+use indexmap::{map::Entry, IndexMap, IndexSet};
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 

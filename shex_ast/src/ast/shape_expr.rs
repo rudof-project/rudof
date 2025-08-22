@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
-use crate::Annotation;
 use crate::ast::serde_string_or_struct::*;
+use crate::Annotation;
 use crate::{NodeConstraint, RefError, Shape, ShapeExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

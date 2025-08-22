@@ -1,6 +1,6 @@
-use crate::{ShEx2HtmlError, ShEx2Uml, find_annotation, object_value2string};
+use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml};
 use minijinja::Template;
-use minijinja::{Environment, path_loader};
+use minijinja::{path_loader, Environment};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use srdf::UmlConverter;
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_minininja() {
-        use minijinja::{Environment, context};
+        use minijinja::{context, Environment};
 
         let mut env = Environment::new();
         env.add_template("hello", "Hello {{ name }}!").unwrap();

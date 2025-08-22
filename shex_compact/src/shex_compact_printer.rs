@@ -5,9 +5,9 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    Annotation, BNode, IriOrStr, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern,
-    Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
-    value_set_value::ValueSetValue,
+    value_set_value::ValueSetValue, Annotation, BNode, IriOrStr, NodeConstraint, NodeKind,
+    NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
+    ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
 };
 use srdf::{lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};

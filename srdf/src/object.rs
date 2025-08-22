@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Display};
 
-use crate::RDFError;
 use crate::literal::SLiteral;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
+use crate::RDFError;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 

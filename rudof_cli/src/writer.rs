@@ -6,7 +6,7 @@ use std::{io::Write, path::PathBuf};
 
 use supports_color::Stream;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 // use ColorSupport;
 
 pub fn get_writer(

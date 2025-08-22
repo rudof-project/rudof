@@ -4,8 +4,8 @@ use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;
 use serde::{
-    Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
+    Deserialize, Serialize, Serializer,
 };
 use srdf::lang::Lang;
 use srdf::literal::SLiteral;

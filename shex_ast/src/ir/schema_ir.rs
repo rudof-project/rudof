@@ -1,7 +1,7 @@
 use crate::Pred;
 use crate::{
-    CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
-    ir::ast2ir::AST2IR,
+    ast::Schema as SchemaJson, ir::ast2ir::AST2IR, CResult, SchemaIRError, ShapeExprLabel,
+    ShapeLabelIdx,
 };
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -271,7 +271,7 @@ mod tests {
     use iri_s::iri;
 
     use super::SchemaIR;
-    use crate::{Pred, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel};
+    use crate::{ast::Schema as SchemaJson, ir::shape_label::ShapeLabel, Pred, ShapeLabelIdx};
 
     #[test]
     fn test_find_component() {

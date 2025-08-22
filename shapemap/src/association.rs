@@ -1,6 +1,6 @@
 use crate::{NodeSelector, ShapeSelector};
 use serde::Serialize;
-use shex_ast::{ShapeExprLabel, object_value::ObjectValue};
+use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
 use srdf::NeighsRDF;
 use std::iter::once;
 

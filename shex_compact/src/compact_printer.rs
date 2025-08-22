@@ -2,7 +2,7 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
-use shex_ast::{BNode, ShapeExprLabel, object_value::ObjectValue};
+use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
 use srdf::{literal::SLiteral, numeric_literal::NumericLiteral};
 use std::borrow::Cow;
 

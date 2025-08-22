@@ -13,15 +13,16 @@ use shacl_ast::{
     property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
 };
 use srdf::Literal;
-use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
-    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
-    Term, Triple, combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type,
-    instances_of, lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
+    combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
+    lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
     parse_property_values, property_bool, property_iris, property_objects, property_value,
     property_values, property_values_bool, property_values_int, property_values_iri,
     property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
+    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
+    Term, Triple,
 };
+use srdf::{rdf_type, rdfs_class, FnOpaque};
 use std::collections::{HashMap, HashSet};
 
 /// Result type for the ShaclParser
@@ -520,10 +521,8 @@ fn min_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_values_int(sh_min_count())
-            .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
-    )
+    opaque!(property_values_int(sh_min_count())
+        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect()))
 }
 
 fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -531,10 +530,8 @@ fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_values_int(sh_max_count())
-            .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
-    )
+    opaque!(property_values_int(sh_max_count())
+        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect()))
 }
 
 fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -542,10 +539,8 @@ fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_values_int(sh_min_length())
-            .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
-    )
+    opaque!(property_values_int(sh_min_length())
+        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect()))
 }
 
 fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -553,10 +548,8 @@ fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_values_bool(sh_deactivated())
-            .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
-    )
+    opaque!(property_values_bool(sh_deactivated())
+        .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
 }
 
 fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -623,10 +616,8 @@ fn max_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_values_int(sh_max_length())
-            .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
-    )
+    opaque!(property_values_int(sh_max_length())
+        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect()))
 }
 
 fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -646,10 +637,8 @@ fn class<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(
-        property_objects(sh_class())
-            .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
-    )
+    opaque!(property_objects(sh_class())
+        .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect()))
 }
 
 fn node_kind<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -922,11 +911,11 @@ mod tests {
     use super::ShaclParser;
     use iri_s::IriS;
     use shacl_ast::shape::Shape;
+    use srdf::lang::Lang;
     use srdf::Object;
     use srdf::RDFFormat;
     use srdf::ReaderMode;
     use srdf::SRDFGraph;
-    use srdf::lang::Lang;
 
     #[test]
     fn test_language_in() {

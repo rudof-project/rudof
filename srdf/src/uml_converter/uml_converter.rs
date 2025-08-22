@@ -6,7 +6,7 @@ use std::{
 };
 
 use tempfile::TempDir;
-use tracing::{Level, debug};
+use tracing::{debug, Level};
 
 use crate::UmlConverterError;
 

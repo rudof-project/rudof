@@ -1,3 +1,4 @@
+use crate::{tap_error::Result, tap_headers::TapHeaders};
 use crate::{
     // ReaderRange,
     TapConfig,
@@ -5,7 +6,6 @@ use crate::{
     TapReader,
     TapReaderState,
 };
-use crate::{tap_error::Result, tap_headers::TapHeaders};
 // use calamine::{open_workbook, Reader as XlsxReader, Xlsx};
 use csv::ReaderBuilder;
 use std::fs::File;

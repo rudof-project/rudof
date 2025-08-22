@@ -1,9 +1,9 @@
 use crate::{
+    tap_config::TapConfig,
+    tap_error::TapError,
     // TapReader,
     TapReaderBuilder,
     TapShape,
-    tap_config::TapConfig,
-    tap_error::TapError,
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};

@@ -2,8 +2,8 @@ use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shacl_ast::{
-    Schema as ShaclSchema, component::Component, node_shape::NodeShape,
-    property_shape::PropertyShape, shape::Shape as ShaclShape, target::Target,
+    component::Component, node_shape::NodeShape, property_shape::PropertyShape,
+    shape::Shape as ShaclShape, target::Target, Schema as ShaclSchema,
 };
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,

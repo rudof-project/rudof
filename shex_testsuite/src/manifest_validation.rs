@@ -1,25 +1,25 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
-use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
+use shex_ast::{ast::Schema as SchemaJson, ir::ast2ir::AST2IR, Node};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
-use srdf::Object;
-use srdf::RDFFormat;
 use srdf::literal::SLiteral;
 use srdf::srdf_graph::SRDFGraph;
+use srdf::Object;
+use srdf::RDFFormat;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::str::FromStr;
 use tracing::debug;
+use ValidationType::*;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]

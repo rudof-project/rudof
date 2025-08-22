@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use shex_testsuite::manifest_mode::ManifestMode;
 use shex_testsuite::manifest_run_result::ManifestRunResult;

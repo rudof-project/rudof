@@ -1,5 +1,5 @@
 use crate::failures::Failures;
-use crate::{Cardinality, MatchCond, Max, Min, Pending, deriv_n, rbe_error::RbeError};
+use crate::{deriv_n, rbe_error::RbeError, Cardinality, MatchCond, Max, Min, Pending};
 use crate::{Key, Ref, Value};
 use core::hash::Hash;
 use itertools::cloned;

@@ -5,8 +5,8 @@ use prefixmap::IriRef;
 use prefixmap::{Deref, DerefError};
 use serde::ser::SerializeMap;
 use serde::{
-    Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
+    Deserialize, Serialize, Serializer,
 };
 use srdf::RDFS_LABEL_STR;
 

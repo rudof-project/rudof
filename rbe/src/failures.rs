@@ -1,8 +1,8 @@
+use crate::rbe1::Rbe;
+use crate::rbe_error::RbeError;
 use crate::Key;
 use crate::Ref;
 use crate::Value;
-use crate::rbe_error::RbeError;
-use crate::rbe1::Rbe;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Display;

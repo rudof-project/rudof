@@ -1,8 +1,8 @@
-use crate::DCTapResultFormat;
-use crate::InputSpec;
 use crate::dctap_format::DCTapFormat as CliDCTapFormat;
 use crate::writer::get_writer;
-use anyhow::{Context, Result, bail};
+use crate::DCTapResultFormat;
+use crate::InputSpec;
+use anyhow::{bail, Context, Result};
 use dctap::DCTAPFormat;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;

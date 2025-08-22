@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, hash_map::Entry},
+    collections::{hash_map::Entry, HashMap},
     time::SystemTime,
 };
 
@@ -8,8 +8,8 @@ use prefixmap::PrefixMap;
 
 use super::{HtmlShape, NodeId, ShEx2HtmlConfig};
 use crate::{
-    ShEx2HtmlError,
     landing_html_template::{LandingHtmlTemplate, ShapeRef},
+    ShEx2HtmlError,
 };
 
 #[derive(Debug, PartialEq, Default)]

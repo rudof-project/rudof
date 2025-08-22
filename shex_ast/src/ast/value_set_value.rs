@@ -5,8 +5,8 @@ use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
-    Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
+    Deserialize, Serialize, Serializer,
 };
 
 use srdf::lang::Lang;
@@ -15,7 +15,7 @@ use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 
 use super::{
-    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
+    iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
 };
 
 #[derive(Debug, PartialEq, Clone)]

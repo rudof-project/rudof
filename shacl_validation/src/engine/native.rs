@@ -2,13 +2,13 @@ use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
 use srdf::NeighsRDF;
 use srdf::RDFNode;
 use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
 
 use super::Engine;
 use crate::constraints::NativeDeref;

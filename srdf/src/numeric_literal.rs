@@ -2,10 +2,10 @@ use core::fmt;
 use std::fmt::Display;
 
 use rust_decimal::{
-    Decimal,
     prelude::{FromPrimitive, ToPrimitive},
+    Decimal,
 };
-use serde::{Deserialize, Serialize, Serializer, de::Visitor};
+use serde::{de::Visitor, Deserialize, Serialize, Serializer};
 use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Clone)]

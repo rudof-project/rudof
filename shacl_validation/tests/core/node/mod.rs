@@ -1,8 +1,8 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
 // use shacl_validation::Subsetting;
 
-use crate::TestSuiteError;
 use crate::test;
+use crate::TestSuiteError;
 
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/node/";
 

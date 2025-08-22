@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
-use crate::{Node, ast};
+use crate::{ast, Node};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
