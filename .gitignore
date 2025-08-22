@@ -22,3 +22,7 @@ Cargo.lock
 
 # Ignore virtual environments from the Python bindings
 .venv
+
+# python
+__pycache__/
+dist/
