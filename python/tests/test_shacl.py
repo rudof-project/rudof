@@ -1,7 +1,6 @@
-import sys
 import unittest
 
-from pyrudof import Rudof, RudofConfig, ShaclValidationMode, ShapesGraphSource
+from pyrudof import Rudof, RudofConfig
 
 class TestShacl(unittest.TestCase):
     def test_ok(self) -> None:
@@ -21,7 +20,7 @@ class TestShacl(unittest.TestCase):
         :ok :name "alice" .          
         """
         rudof.read_data_str(data)
-        result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
+        result = rudof.validate_shacl()
         print(result.show())
         self.assertTrue(result.conforms())
 
@@ -39,10 +38,10 @@ class TestShacl(unittest.TestCase):
            sh:maxCount 1;
            sh:datatype xsd:string ;
         ] .
-        :ok :name 23 .          
+        :ko :name 23 .    
         """
         rudof.read_data_str(data)
-        result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
+        result = rudof.validate_shacl()
         print(result.show())
         self.assertFalse(result.conforms())
 
