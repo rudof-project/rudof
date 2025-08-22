@@ -1,6 +1,6 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::helpers::srdf::get_objects_for;
@@ -11,12 +11,12 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component::Class;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
 use srdf::Term;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {

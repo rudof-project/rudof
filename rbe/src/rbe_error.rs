@@ -1,11 +1,11 @@
-use crate::failures::Failures;
-use crate::rbe1::Rbe;
 use crate::Cardinality;
 use crate::Key;
 use crate::Keys;
 use crate::Ref;
 use crate::Value;
 use crate::Values;
+use crate::failures::Failures;
+use crate::rbe1::Rbe;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -45,14 +45,18 @@ where
         expr: Box<Rbe<K, V, R>>,
     },
 
-    #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
+    #[error(
+        "Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}"
+    )]
     CardinalityFail {
         symbol: K,
         expected_cardinality: Cardinality,
         current_number: usize,
     },
 
-    #[error("Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
+    #[error(
+        "Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}"
+    )]
     CardinalityFailRepeat {
         expected_cardinality: Cardinality,
         current_number: usize,
@@ -73,7 +77,9 @@ where
     #[error("All values in or branch failed")]
     MkOrValuesFail,
 
-    #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
+    #[error(
+        "Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}"
+    )]
     DerivIterError {
         error_msg: String,
         processed: Vec<(K, V)>,

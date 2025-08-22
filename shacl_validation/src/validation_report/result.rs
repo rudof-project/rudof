@@ -117,7 +117,7 @@ impl ValidationResult {
             None => {
                 return Err(ResultError::MissingRequiredField(
                     "SourceConstraintComponent".to_owned(),
-                ))
+                ));
             }
         };
 

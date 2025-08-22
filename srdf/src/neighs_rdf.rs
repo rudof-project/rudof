@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use crate::Rdf;
+use crate::Triple;
 use crate::matcher::Any;
 use crate::matcher::Matcher;
 use crate::rdf_type;
-use crate::Rdf;
-use crate::Triple;
 
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;

@@ -91,7 +91,9 @@ pub enum ShEx2HtmlError {
     #[error("Wrong cardinality: ({min},{max})")]
     WrongCardinality { min: i32, max: i32 },
 
-    #[error("Adding component: {component:?} to nodeId {node_id} fails because that node already contains shape: {shape:?}")]
+    #[error(
+        "Adding component: {component:?} to nodeId {node_id} fails because that node already contains shape: {shape:?}"
+    )]
     AddingComponentNodeIdHasShape {
         node_id: NodeId,
         shape: Box<HtmlShape>,

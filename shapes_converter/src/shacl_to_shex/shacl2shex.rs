@@ -2,8 +2,8 @@ use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shacl_ast::{
-    component::Component, node_shape::NodeShape, property_shape::PropertyShape,
-    shape::Shape as ShaclShape, target::Target, Schema as ShaclSchema,
+    Schema as ShaclSchema, component::Component, node_shape::NodeShape,
+    property_shape::PropertyShape, shape::Shape as ShaclShape, target::Target,
 };
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,
@@ -354,7 +354,9 @@ impl Shacl2ShEx {
     ) -> Result<ShapeExpr, Shacl2ShExError> {
         match component {
             Component::Class(cls) => {
-                debug!("TODO: Converting Class components for {cls:?} doesn't match rdfs:subClassOf semantics of SHACL yet");
+                debug!(
+                    "TODO: Converting Class components for {cls:?} doesn't match rdfs:subClassOf semantics of SHACL yet"
+                );
                 let se = self.create_class_constraint(cls)?;
                 Ok(se)
             }

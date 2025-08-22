@@ -1,13 +1,13 @@
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
 use pyo3::{
-    exceptions::PyValueError, pyclass, pymethods, Py, PyErr, PyRef, PyRefMut, PyResult, Python,
+    Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    iri, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
-    ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
+    DCTAP, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
+    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
     ShExSchema, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
-    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, DCTAP,
+    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
 };
 use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
 

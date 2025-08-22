@@ -1,11 +1,11 @@
 use core::fmt;
 
-use serde::de;
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde::de;
+use serde::de::Visitor;
 
 /// Represents a min cardinality which must be a 0 or positive integer.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Debug, Clone, Copy)]

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use srdf::{matcher::Any, NeighsRDF, Object, RDFNode, SHACLPath, Triple};
+use srdf::{NeighsRDF, Object, RDFNode, SHACLPath, Triple, matcher::Any};
 
 use super::helper_error::SRDFError;
 
@@ -31,7 +31,7 @@ pub(crate) fn get_objects_for<S: NeighsRDF>(
         Err(_) => {
             return Err(SRDFError::SRDFTermAsSubject {
                 subject: format!("{subject}"),
-            })
+            });
         }
     };
 

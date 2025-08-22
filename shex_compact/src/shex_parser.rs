@@ -8,11 +8,11 @@ use std::io;
 use std::path::Path;
 use tracing::debug;
 
+use crate::ParseError;
+use crate::Span;
 use crate::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
-use crate::ParseError;
-use crate::Span;
 
 // This code is inspired from:
 // https://github.com/vandenoever/rome/blob/master/src/io/turtle/parser.rs

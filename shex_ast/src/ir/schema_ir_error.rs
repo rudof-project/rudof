@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
-use crate::{ast, Node};
+use crate::{Node, ast};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
@@ -60,7 +60,9 @@ pub enum SchemaIRError {
     #[error("NodeKind NonLiteral but found {node}")]
     NodeKindNonLiteral { node: Node },
 
-    #[error("Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}")]
+    #[error(
+        "Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}"
+    )]
     DatatypeDontMatch {
         found: IriRef,
         expected: IriRef,

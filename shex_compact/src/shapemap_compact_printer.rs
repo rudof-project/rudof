@@ -2,7 +2,7 @@ use crate::{keyword, pp_label, pp_object_value};
 use colored::*;
 use prefixmap::PrefixMap;
 use pretty::{Arena, DocAllocator, DocBuilder};
-use shapemap::{query_shape_map::QueryShapeMap, Association, NodeSelector, ShapeSelector};
+use shapemap::{Association, NodeSelector, ShapeSelector, query_shape_map::QueryShapeMap};
 use std::marker::PhantomData;
 
 /// Struct that can be used to pretty print Shapemaps

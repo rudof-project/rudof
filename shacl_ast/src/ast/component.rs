@@ -1,3 +1,4 @@
+use crate::SH_DEACTIVATED_STR;
 use crate::shacl_vocab::{
     SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR, SH_DISJOINT_STR, SH_EQUALS_STR,
     SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR, SH_IN_STR, SH_IRI_STR,
@@ -7,12 +8,11 @@ use crate::shacl_vocab::{
     SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
-use crate::SH_DEACTIVATED_STR;
 use crate::{node_kind::NodeKind, value::Value};
-use iri_s::{iri, IriS};
+use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::SLiteral, BuildRDF, RDFNode};
+use srdf::{BuildRDF, RDFNode, lang::Lang, literal::SLiteral};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

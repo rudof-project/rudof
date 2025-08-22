@@ -6,7 +6,7 @@ use std::{io::Write, path::PathBuf};
 
 use supports_color::Stream;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 // use ColorSupport;
 
 pub fn get_writer(
@@ -28,7 +28,10 @@ pub fn get_writer(
                 if force_overwrite {
                     OpenOptions::new().write(true).truncate(true).open(path)
                 } else {
-                    bail!("File {} already exists. If you want to overwrite it, use the `force-overwrite` option", path.display());
+                    bail!(
+                        "File {} already exists. If you want to overwrite it, use the `force-overwrite` option",
+                        path.display()
+                    );
                 }
             } else {
                 File::create(path)

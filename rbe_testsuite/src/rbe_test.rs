@@ -1,5 +1,5 @@
 use crate::{MatchResult, RbeTestResult, TestType};
-use rbe::{deriv_error::DerivError, rbe::Rbe, Bag};
+use rbe::{Bag, deriv_error::DerivError, rbe::Rbe};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]

@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::engine::Engine;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;

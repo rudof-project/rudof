@@ -39,7 +39,9 @@ pub enum RudofError {
     #[error("Compiling schema error: {error}")]
     CompilingSchemaError { error: String },
 
-    #[error("ShEx Validator undefined. Before trying to validate with ShEx, a ShEx validator must be initialized in rudof")]
+    #[error(
+        "ShEx Validator undefined. Before trying to validate with ShEx, a ShEx validator must be initialized in rudof"
+    )]
     ShExValidatorUndefined {},
 
     #[error("Error creating schema for ShEx validation. Schema:\n{schema}\nError: {error} ")]
@@ -61,7 +63,9 @@ pub enum RudofError {
         error: String,
     },
 
-    #[error("Error merging current RDF data, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} ")]
+    #[error(
+        "Error merging current RDF data, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
+    )]
     MergeRDFDataFromReader {
         format: String,
         base: String,

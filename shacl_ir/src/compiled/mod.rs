@@ -6,8 +6,8 @@ use srdf::Object;
 use srdf::RDFNode;
 use srdf::Rdf;
 
-use shacl_ast::value::Value;
 use shacl_ast::Schema;
+use shacl_ast::value::Value;
 
 pub mod compiled_shacl_error;
 pub mod component;

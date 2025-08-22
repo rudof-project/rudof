@@ -69,7 +69,12 @@ impl Display for UsageCount {
         write!(
             f,
             "UsageCount {{ as_predicate: {}, as_subject: {}, as_object: {}, as_predicate_in_triple: {}, as_subject_in_triple: {}, as_object_in_triple: {} }}",
-            self.as_predicate, self.as_subject, self.as_object, self.as_predicate_in_triple, self.as_subject_in_triple, self.as_object_in_triple
+            self.as_predicate,
+            self.as_subject,
+            self.as_object,
+            self.as_predicate_in_triple,
+            self.as_subject_in_triple,
+            self.as_object_in_triple
         )
     }
 }

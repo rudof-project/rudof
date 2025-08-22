@@ -1,6 +1,6 @@
-use crate::{find_annotation, object_value2string, ShEx2HtmlError, ShEx2Uml};
+use crate::{ShEx2HtmlError, ShEx2Uml, find_annotation, object_value2string};
 use minijinja::Template;
-use minijinja::{path_loader, Environment};
+use minijinja::{Environment, path_loader};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use srdf::UmlConverter;
@@ -162,7 +162,9 @@ impl ShEx2Html {
                 self.shape2htmlshape(name, shape, prefixmap, current_node_id, parent)
             }
             _ => Err(ShEx2HtmlError::NotImplemented {
-                msg: format!("Complex shape expressions are not implemented yet for conversion to HTML: {shape_expr:?}"),
+                msg: format!(
+                    "Complex shape expressions are not implemented yet for conversion to HTML: {shape_expr:?}"
+                ),
             }),
         }
     }
@@ -477,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_minininja() {
-        use minijinja::{context, Environment};
+        use minijinja::{Environment, context};
 
         let mut env = Environment::new();
         env.add_template("hello", "Hello {{ name }}!").unwrap();
@@ -489,8 +491,8 @@ mod tests {
     }
 
     /*    #[test]
-        fn test_simple() {
-            let shex_str = "\
+    fn test_simple() {
+        let shex_str = "\
     prefix : <http://example.org/>
     prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -503,12 +505,12 @@ mod tests {
     :Course {
       :name xsd:string
     }";
-            let mut expected_uml = Uml::new();
-            expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
-            expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
-            let shex = ShExParser::parse(shex_str, None).unwrap();
-            let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
-            let converted_uml = converter.convert(&shex).unwrap();
-            assert_eq!(converted_uml, expected_uml);
-        } */
+        let mut expected_uml = Uml::new();
+        expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
+        expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
+        let shex = ShExParser::parse(shex_str, None).unwrap();
+        let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+        let converted_uml = converter.convert(&shex).unwrap();
+        assert_eq!(converted_uml, expected_uml);
+    } */
 }

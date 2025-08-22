@@ -1,6 +1,6 @@
 use iri_s::IriSError;
 use shapemap::ValidationStatus;
-use shex_ast::{ast::SchemaJsonError, Schema, SchemaIRError};
+use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_compact::ParseError;
 use shex_validation::ValidatorError;
 use srdf::srdf_graph::SRDFGraphError;
@@ -69,7 +69,9 @@ pub enum ManifestError {
         entry: Box<String>,
     },
 
-    #[error("Schema parsed is different to schema serialized after parsing\nSchema parsed from JSON\n{schema_parsed:?}\nSchema serialized after parsing:\n{schema_parsed_after_serialization:?}\nSchema serialized: {schema_serialized}\nSchema serialized after: {schema_serialized_after}")]
+    #[error(
+        "Schema parsed is different to schema serialized after parsing\nSchema parsed from JSON\n{schema_parsed:?}\nSchema serialized after parsing:\n{schema_parsed_after_serialization:?}\nSchema serialized: {schema_serialized}\nSchema serialized after: {schema_serialized_after}"
+    )]
     SchemasDifferent {
         schema_parsed: Box<Schema>,
         schema_serialized: Box<String>,
@@ -100,7 +102,9 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
-    #[error("Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}")]
+    #[error(
+        "Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}"
+    )]
     SchemaParsingAfterSerialization {
         schema_name: Box<String>,
         schema_parsed: Box<Schema>,

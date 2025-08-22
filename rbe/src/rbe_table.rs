@@ -15,11 +15,11 @@ use crate::RbeError;
 use crate::Ref;
 use crate::Value;
 // use crate::RbeError;
-use crate::rbe::Rbe;
-use crate::rbe1::Rbe as Rbe1;
-use crate::rbe_error;
-use crate::values::Values;
 use crate::Component;
+use crate::rbe::Rbe;
+use crate::rbe_error;
+use crate::rbe1::Rbe as Rbe1;
+use crate::values::Values;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R>
@@ -272,7 +272,9 @@ where
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            debug!("Condition passed: {cond} with value: {v}, new pending: {new_pending}");
+                            debug!(
+                                "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
+                            );
                             pending.merge(new_pending);
                             debug!("Pending merged: {pending}");
                         }

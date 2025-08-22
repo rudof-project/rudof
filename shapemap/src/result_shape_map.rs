@@ -7,9 +7,9 @@ use crate::ShapemapError;
 use crate::ValidationStatus;
 use prefixmap::PrefixMap;
 use serde::ser::{SerializeMap, SerializeSeq};
-use shex_ast::{ir::shape_label::ShapeLabel, Node};
-use std::collections::hash_map::Entry;
+use shex_ast::{Node, ir::shape_label::ShapeLabel};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
@@ -306,7 +306,10 @@ impl Display for ResultShapeMap {
                         None => ColoredString::from(node_label),
                         Some(color) => node_label.color(color),
                     };
-                    write!(f, "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}")?
+                    write!(
+                        f,
+                        "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}"
+                    )?
                 }
             }
         }

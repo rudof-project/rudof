@@ -1,6 +1,6 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;

@@ -1,7 +1,7 @@
 use super::object_value::ObjectValue;
 use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriS;
-use srdf::{lang::Lang, Object};
+use srdf::{Object, lang::Lang};
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq, Clone)]

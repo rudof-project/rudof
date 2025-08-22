@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{ast::NodeConstraint as AstNodeConstraint, Cond};
+use crate::{Cond, ast::NodeConstraint as AstNodeConstraint};
 use std::fmt::Display;
 
 /// Represents compiled node constraints

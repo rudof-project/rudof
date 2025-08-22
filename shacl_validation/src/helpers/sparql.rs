@@ -14,7 +14,7 @@ pub fn select<S: QueryRDF>(
             return Err(SPARQLError::Query {
                 query: query_str.to_string(),
                 error: format!("{e}"),
-            })
+            });
         }
     };
     for solution in query.iter() {

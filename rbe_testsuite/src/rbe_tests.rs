@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use anyhow::{bail, Context, Result};
+    use anyhow::{Context, Result, bail};
     use pretty_assertions::assert_eq;
     use std::collections::HashSet;
 
@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{RbeTest, RbeTestResult, RbeTestsResults};
     use indoc::indoc;
-    use rbe::{rbe::Rbe, Bag, Max};
+    use rbe::{Bag, Max, rbe::Rbe};
 
     /// A collection of rbe tests.
     #[derive(Clone, Debug, Serialize, Deserialize, Default)]

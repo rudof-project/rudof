@@ -56,19 +56,25 @@ pub enum ShEx2UmlError {
     #[error("Wrong cardinality: ({min},{max})")]
     WrongCardinality { min: i32, max: i32 },
 
-    #[error("Not found environment variable: {env_name}, which should point to the folder where the external tool PlantUML is located")]
+    #[error(
+        "Not found environment variable: {env_name}, which should point to the folder where the external tool PlantUML is located"
+    )]
     NoPlantUMLPath { env_name: String },
 
     #[error("Error launching command: {command:?}\nError: {error} ")]
     PlantUMLCommandError { command: String, error: io::Error },
 
-    #[error("Can't open generated temporary file used from PlantUML. Temporary file name: {generated_name}, error: {error:?}")]
+    #[error(
+        "Can't open generated temporary file used from PlantUML. Temporary file name: {generated_name}, error: {error:?}"
+    )]
     CantOpenGeneratedTempFile {
         generated_name: String,
         error: io::Error,
     },
 
-    #[error("Can't create temporary file for UML content. Temporary file name: {tempfile_name}, error: {error:?}")]
+    #[error(
+        "Can't create temporary file for UML content. Temporary file name: {tempfile_name}, error: {error:?}"
+    )]
     CreatingTempUMLFile {
         tempfile_name: String,
         error: io::Error,

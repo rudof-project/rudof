@@ -3,8 +3,8 @@ use std::fmt::Display;
 use iri_s::IriS;
 use srdf::{RDFNode, Rdf, SHACLPath};
 
-use shacl_ast::shape::Shape;
 use shacl_ast::Schema;
+use shacl_ast::shape::Shape;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;

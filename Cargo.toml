@@ -33,13 +33,14 @@ default-members = [
 ]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
+rust-version = "1.87"
 license = "MIT OR Apache-2.0"
-description = "RDF data shapes implementation in Rust"
+description = "Rust RDF library"
 repository = "https://github.com/rudof-project/rudof"
 homepage = "https://rudof-project.github.io/rudof"
 readme = "./README.md"
-keywords = ["rdf", "linked-data", "semantic-web", "shex"]
+keywords = ["rdf", "linked-data", "semantic-web", "shex", "shacl"]
 categories = ["database"]
 authors = [
     "Jose Emilio Labra Gayo <labra@uniovi.es>",

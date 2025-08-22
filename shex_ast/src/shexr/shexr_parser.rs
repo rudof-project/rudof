@@ -6,10 +6,10 @@ use crate::{
 };
 use iri_s::IriS;
 use prefixmap::IriRef;
-use srdf::rdf_parser;
-use srdf::srdf_parser::*;
 use srdf::FocusRDF;
 use srdf::RDFParseError;
+use srdf::rdf_parser;
+use srdf::srdf_parser::*;
 use srdf::{Object, RDFParser};
 
 type Result<A> = std::result::Result<A, ShExRError>;

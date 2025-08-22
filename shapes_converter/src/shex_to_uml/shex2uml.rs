@@ -285,12 +285,12 @@ fn value_set2value_constraint(
             ValueSetValue::ObjectValue(ObjectValue::Literal(lit)) => {
                 return Err(ShEx2UmlError::not_implemented(
                     format!("value_set2value_constraint with literal value: {lit:?}").as_str(),
-                ))
+                ));
             }
             _ => {
                 return Err(ShEx2UmlError::not_implemented(
                     format!("value_set2value_constraint with value: {value:?}").as_str(),
-                ))
+                ));
             }
         }
     }
@@ -370,8 +370,8 @@ mod tests {
     // use shex_compact::ShExParser;
 
     /*    #[test]
-        fn test_simple() {
-            let shex_str = "\
+    fn test_simple() {
+        let shex_str = "\
     prefix : <http://example.org/>
     prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -384,12 +384,12 @@ mod tests {
     :Course {
       :name xsd:string
     }";
-            let mut expected_uml = Uml::new();
-            expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
-            expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
-            let shex = ShExParser::parse(shex_str, None).unwrap();
-            let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
-            let converted_uml = converter.convert(&shex).unwrap();
-            assert_eq!(converted_uml, expected_uml);
-        } */
+        let mut expected_uml = Uml::new();
+        expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
+        expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
+        let shex = ShExParser::parse(shex_str, None).unwrap();
+        let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+        let converted_uml = converter.convert(&shex).unwrap();
+        assert_eq!(converted_uml, expected_uml);
+    } */
 }

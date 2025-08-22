@@ -1,4 +1,4 @@
-use crate::{deriv_error::DerivError, deriv_n, Bag, Cardinality, Max, Min};
+use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
 use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;

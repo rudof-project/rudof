@@ -1,6 +1,6 @@
-use crate::rbe::Rbe;
 use crate::Bag;
 use crate::Cardinality;
+use crate::rbe::Rbe;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -83,14 +83,18 @@ where
         expr: Box<Rbe<A>>,
     },
 
-    #[error("Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
+    #[error(
+        "Cardinality failed for symbol {symbol}. Current number: {current_number}, expected cardinality: {expected_cardinality}"
+    )]
     CardinalityFail {
         symbol: A,
         expected_cardinality: Cardinality,
         current_number: usize,
     },
 
-    #[error("Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}")]
+    #[error(
+        "Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}"
+    )]
     CardinalityFailRepeat {
         expected_cardinality: Cardinality,
         current_number: usize,
@@ -111,7 +115,9 @@ where
     #[error("All values in or branch failed")]
     MkOrValuesFail,
 
-    #[error("Error matching bag: {error_msg}\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}\nopen: {open}")]
+    #[error(
+        "Error matching bag: {error_msg}\nBag: {bag}\nExpr: {expr}\nCurrent:{current}\nValue: {value}\nopen: {open}"
+    )]
     DerivBagError {
         error_msg: String,
         processed: Box<Bag<A>>,

@@ -1,10 +1,10 @@
 use crate::{
-    add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
-    parse_shex_schema_rudof, run_shacl, run_shex, show_shex_schema, writer::get_writer,
     CliShaclFormat, InputConvertFormat, InputConvertMode, InputSpec, OutputConvertFormat,
-    OutputConvertMode, RDFReaderMode,
+    OutputConvertMode, RDFReaderMode, add_shacl_schema_rudof,
+    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, parse_shex_schema_rudof, run_shacl,
+    run_shex, show_shex_schema, writer::get_writer,
 };
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use prefixmap::IriRef;
 use rudof_lib::{Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
@@ -36,16 +36,40 @@ pub fn run_convert(
             let shex_format = format.to_shex_format()?;
             let output_format = result_format.to_shex_format()?;
             // config.shex_without_showing_stats();
-            run_shex(input, &shex_format, &output_format, output, show_time, true, false, force_overwrite, reader_mode, config)
+            run_shex(
+                input,
+                &shex_format,
+                &output_format,
+                output,
+                show_time,
+                true,
+                false,
+                force_overwrite,
+                reader_mode,
+                config,
+            )
         }
         (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
             let shacl_format = format.to_shacl_format()?;
             let output_format = result_format.to_shacl_format()?;
-            run_shacl(input, &shacl_format, &output_format, output, force_overwrite, reader_mode, config)
+            run_shacl(
+                input,
+                &shacl_format,
+                &output_format,
+                output,
+                force_overwrite,
+                reader_mode,
+                config,
+            )
         }
-        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
-            run_tap2shex(input, format, output, result_format, config, force_overwrite)
-        }
+        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => run_tap2shex(
+            input,
+            format,
+            output,
+            result_format,
+            config,
+            force_overwrite,
+        ),
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
                 None => None,
@@ -54,37 +78,57 @@ pub fn run_convert(
                     Some(iri_shape)
                 }
             };
-            run_shex2sparql(input, format, maybe_shape, output, result_format, config, force_overwrite, reader_mode)
+            run_shex2sparql(
+                input,
+                format,
+                maybe_shape,
+                output,
+                result_format,
+                config,
+                force_overwrite,
+                reader_mode,
+            )
         }
-        (InputConvertMode::ShEx, OutputConvertMode::UML) => {
-            run_shex2uml(input, format, output, result_format, maybe_shape_str, config, force_overwrite, reader_mode)
-        }
-        (InputConvertMode::SHACL, OutputConvertMode::ShEx) => {
-            run_shacl2shex(input, format, output, result_format, config, force_overwrite, reader_mode)
-        }
-        (InputConvertMode::ShEx, OutputConvertMode::HTML) => {
-            match target_folder {
-                None => Err(anyhow!(
-            "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
-                )),
-                Some(output_path) => {
-                    run_shex2html(input, format, output_path, config, reader_mode)
-                }
-            }
-        }
-        (InputConvertMode::DCTAP, OutputConvertMode::UML, ) => {
-            run_tap2uml(input, format, output, maybe_shape_str, result_format, config, force_overwrite)
-        }
-        (InputConvertMode::DCTAP, OutputConvertMode::HTML) => {
-            match target_folder {
-                None => Err(anyhow!(
-            "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
-                )),
-                Some(output_path) => {
-                    run_tap2html(input, format, output_path, config)
-                }
-            }
-        }
+        (InputConvertMode::ShEx, OutputConvertMode::UML) => run_shex2uml(
+            input,
+            format,
+            output,
+            result_format,
+            maybe_shape_str,
+            config,
+            force_overwrite,
+            reader_mode,
+        ),
+        (InputConvertMode::SHACL, OutputConvertMode::ShEx) => run_shacl2shex(
+            input,
+            format,
+            output,
+            result_format,
+            config,
+            force_overwrite,
+            reader_mode,
+        ),
+        (InputConvertMode::ShEx, OutputConvertMode::HTML) => match target_folder {
+            None => Err(anyhow!(
+                "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
+            )),
+            Some(output_path) => run_shex2html(input, format, output_path, config, reader_mode),
+        },
+        (InputConvertMode::DCTAP, OutputConvertMode::UML) => run_tap2uml(
+            input,
+            format,
+            output,
+            maybe_shape_str,
+            result_format,
+            config,
+            force_overwrite,
+        ),
+        (InputConvertMode::DCTAP, OutputConvertMode::HTML) => match target_folder {
+            None => Err(anyhow!(
+                "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
+            )),
+            Some(output_path) => run_tap2html(input, format, output_path, config),
+        },
         _ => Err(anyhow!(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
         )),

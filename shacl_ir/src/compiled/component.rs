@@ -6,6 +6,7 @@ use super::convert_value;
 use super::shape::CompiledShape;
 use iri_s::IriS;
 use regex::Regex;
+use shacl_ast::Schema;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
@@ -15,11 +16,10 @@ use shacl_ast::shacl_vocab::{
     sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
     sh_unique_lang, sh_xone,
 };
-use shacl_ast::Schema;
-use srdf::lang::Lang;
 use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SLiteral;
+use srdf::lang::Lang;
 
 #[derive(Debug, Clone)]
 pub enum CompiledComponent {

@@ -1,27 +1,27 @@
-use crate::atom;
-use crate::validator_error::*;
 use crate::Reason;
 use crate::Reasons;
 use crate::ValidatorConfig;
+use crate::atom;
+use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
 use rbe::MatchTableIter;
+use shex_ast::Node;
+use shex_ast::Pred;
+use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::Node;
-use shex_ast::Pred;
-use shex_ast::ShapeLabelIdx;
 use srdf::BlankNode;
 use srdf::Iri as _;
 use srdf::{NeighsRDF, Object};
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::hash_map::Entry;
 use tracing::debug;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -668,7 +668,9 @@ impl Engine {
             let errs = match current_err {
                 Some(rbe_err) => vec![ValidatorError::RbeError(rbe_err)],
                 None => {
-                    debug!("No value found for node/shape where node = {node}, shape = {shape:?}. Current_err = empty");
+                    debug!(
+                        "No value found for node/shape where node = {node}, shape = {shape:?}. Current_err = empty"
+                    );
                     Vec::new()
                 }
             };

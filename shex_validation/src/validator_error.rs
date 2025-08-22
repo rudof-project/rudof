@@ -6,7 +6,7 @@ use serde::Serialize;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
+use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
 use srdf::Object;
 use thiserror::Error;
 
@@ -47,7 +47,9 @@ pub enum ValidatorError {
     #[error("Failed regular expression")]
     RbeFailed(),
 
-    #[error("Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}")]
+    #[error(
+        "Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}"
+    )]
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]

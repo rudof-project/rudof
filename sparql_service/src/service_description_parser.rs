@@ -1,13 +1,13 @@
 use iri_s::IriS;
-use srdf::{ok, property_iri, property_values_iri, FocusRDF, PResult, RDFNodeParse, RDFParser};
+use srdf::{FocusRDF, PResult, RDFNodeParse, RDFParser, ok, property_iri, property_values_iri};
 use std::fmt::Debug;
 
 use crate::{
-    Dataset, Feature, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
-    SupportedLanguage, SD_BASIC_FEDERATED_QUERY_STR, SD_DEFAULT_DATASET, SD_DEREFERENCES_URIS_STR,
+    Dataset, Feature, SD_BASIC_FEDERATED_QUERY_STR, SD_DEFAULT_DATASET, SD_DEREFERENCES_URIS_STR,
     SD_EMPTY_GRAPHS_STR, SD_ENDPOINT, SD_FEATURE, SD_REQUIRES_DATASET_STR, SD_RESULT_FORMAT,
     SD_SERVICE, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR,
-    SD_SUPPORTED_LANGUAGE, SD_UNION_DEFAULT_GRAPH_STR,
+    SD_SUPPORTED_LANGUAGE, SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription, ServiceDescriptionError,
+    SparqlResultFormat, SupportedLanguage,
 };
 
 type Result<A> = std::result::Result<A, ServiceDescriptionError>;

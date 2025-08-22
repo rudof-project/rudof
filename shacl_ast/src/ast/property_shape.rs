@@ -6,7 +6,7 @@ use crate::shacl_vocab::{
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use srdf::Rdf;
-use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
+use srdf::{BuildRDF, RDFNode, SHACLPath, numeric_literal::NumericLiteral};
 
 #[derive(Debug)]
 pub struct PropertyShape<RDF: Rdf> {

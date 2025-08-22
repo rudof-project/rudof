@@ -3,13 +3,13 @@ use std::{
     marker::PhantomData,
 };
 
-use iri_s::iri;
 use iri_s::IriS;
+use iri_s::iri;
 use std::fmt::Debug;
 
 use crate::{
-    matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, FocusRDF, NeighsRDF, Object, PResult,
-    RDFParseError, Rdf, Triple, RDF_NIL_STR,
+    FocusRDF, NeighsRDF, Object, PResult, RDF_NIL_STR, RDFParseError, Rdf, Triple, matcher::Any,
+    rdf_first, rdf_parser, rdf_rest, rdf_type,
 };
 use crate::{Iri as _, Literal as _};
 
@@ -1175,7 +1175,10 @@ where
                     Ok(value1.clone())
                 }
             } else {
-                panic!("Internal error: Node {} has no value for predicate {}...but this case should be handled in the outer else...", focus_node_str, self.property)
+                panic!(
+                    "Internal error: Node {} has no value for predicate {}...but this case should be handled in the outer else...",
+                    focus_node_str, self.property
+                )
             }
         } else {
             Err(RDFParseError::NoValuesPredicateDebug {
