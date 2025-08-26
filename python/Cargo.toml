@@ -21,8 +21,8 @@ name = "pyrudof"
 crate-type = ["cdylib"]
 
 [dependencies]
-rudof_lib = { version = "0.1.83" }
+rudof_lib.workspace = true
 
 [dependencies.pyo3]
-version = "0.22.0"
+version = "0.25.1"
 features = ["abi3-py37", "extension-module"]

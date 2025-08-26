@@ -19,3 +19,15 @@ pip install .
 ```
 
 ## Running the tests
+
+Go to the tests folder: 
+
+```sh
+cd tests
+```
+
+and run: 
+
+```sh
+python3 -m unittest discover -vvv
+```
