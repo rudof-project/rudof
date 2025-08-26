@@ -1,6 +1,6 @@
 [package]
 name = "rbe"
-version = "0.1.82"
+version = "0.1.86"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
