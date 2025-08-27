@@ -88,6 +88,7 @@ impl ValueSetValue {
                         None => false,
                     },
                     srdf::SLiteral::DatatypeLiteral { .. } => false,
+                    srdf::SLiteral::WrongDatatypeLiteral { .. } => false,
                     srdf::SLiteral::NumericLiteral(_) => false,
                     srdf::SLiteral::DatetimeLiteral(_) => false,
                     srdf::SLiteral::BooleanLiteral(_) => false,

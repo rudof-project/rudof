@@ -1,0 +1,23 @@
+@prefix : <http://datashapes.org/sh/tests/core/misc/deactivated-001.test#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:ActiveShape a sh:NodeShape ;
+  sh:property :Name ;
+  sh:deactivated true ;
+  sh:targetClass :Person ;
+.
+
+:Name a sh:PropertyShape ;
+  sh:path :name ;
+  sh:minCount 1 ;
+  sh:datatype xsd:string
+.
+
+:ok1 a :Person ;
+  :name "Alice" .
+
+:ko1 a :Person ;
+  :name 23 .

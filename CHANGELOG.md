@@ -3,9 +3,18 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- Support for SHACL validation of: deactivated
 ### Fixed
 ### Changed
 ### Removed
+
+## v0.1.86
+### Added
+### Fixed
+### Changed
+- Updated dependency on py03 to use 0.25.1, it required adding Sync to Cond trait
+### Removed
+
 
 ## v0.1.84
 ### Added

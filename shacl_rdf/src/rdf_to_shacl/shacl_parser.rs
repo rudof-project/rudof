@@ -339,7 +339,7 @@ where
         object()
             .then(move |t: RDFNode| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-            .then(|ps| {
+            /* .then(|ps| {
                 optional(closed()).flat_map(move |c| {
                     if let Some(true) = c {
                         Ok(ps.clone().with_closed(true))
@@ -347,7 +347,7 @@ where
                         Ok(ps.clone())
                     }
                 })
-            })
+            }) */
             .then(|ns| {
                 property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
             })

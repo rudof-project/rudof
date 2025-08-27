@@ -1,4 +1,6 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
+use tracing::debug;
+use tracing_test::traced_test;
 // use shacl_validation::Subsetting;
 
 use crate::test;
@@ -20,9 +22,12 @@ fn class_001() -> Result<(), TestSuiteError> {
     test(path, ShaclValidationMode::Native)
 }
 
+#[traced_test]
 #[test]
 fn datatype_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-001");
+    debug!("Starting test for {path}");
+    println!("Starting!!!");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }

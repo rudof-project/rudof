@@ -535,36 +535,54 @@ impl Rudof {
         mode: &ShaclValidationMode,
         shapes_graph_source: &ShapesGraphSource,
     ) -> Result<ValidationReport> {
-        let (compiled_schema, shacl_schema) = match shapes_graph_source {
+        self.compile_shacl(shapes_graph_source)?;
+        let compiled_schema = self
+            .shacl_schema_ir
+            .as_ref()
+            .ok_or(RudofError::NoShaclSchema {})?;
+        let shacl_schema = self
+            .shacl_schema
+            .as_ref()
+            .ok_or(RudofError::NoShaclSchema {})?;
+        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
+        let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
+            RudofError::SHACLValidationError {
+                error: format!("{e}"),
+                schema: Box::new(shacl_schema.to_owned()),
+            }
+        })?;
+        Ok(result)
+    }
+
+    /// Compiles the current SHACL schema to an internal representation
+    pub fn compile_shacl(&mut self, shapes_graph_source: &ShapesGraphSource) -> Result<()> {
+        let (compiled_schema, ast_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
                 let ast_schema = self.shacl_schema.as_ref().unwrap();
-                let compiled_schema = ast_schema.clone().to_owned().try_into().map_err(|e| {
+                let compiled_schema = ShaclSchemaIR::compile(ast_schema).map_err(|e| {
                     RudofError::SHACLCompilationError {
-                        error: format!("{e}"),
+                        error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
                     }
                 })?;
                 Ok((compiled_schema, ast_schema.clone()))
             }
+            // If self.shacl_schema is None or shapes_graph_source is CurrentData
+            // We extract the SHACL schema from the current RDF data
             _ => {
                 let ast_schema = shacl_schema_from_data(self.rdf_data.clone())?;
-                let compiled_schema = ast_schema.to_owned().try_into().map_err(|e| {
+                let compiled_schema = ShaclSchemaIR::compile(&ast_schema).map_err(|e| {
                     RudofError::SHACLCompilationError {
-                        error: format!("{e}"),
+                        error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
                     }
                 })?;
                 Ok((compiled_schema, ast_schema))
             }
         }?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
-        let result = ShaclProcessor::validate(&validator, &compiled_schema).map_err(|e| {
-            RudofError::SHACLValidationError {
-                error: format!("{e}"),
-                schema: Box::new(shacl_schema),
-            }
-        })?;
-        Ok(result)
+        self.shacl_schema = Some(ast_schema);
+        self.shacl_schema_ir = Some(compiled_schema);
+        Ok(())
     }
 
     /// Validate RDF data using ShEx

@@ -317,9 +317,12 @@ fn main() -> Result<()> {
             *force_overwrite,
         ),
         Some(Command::Shacl {
+            data,
+            data_format,
+            reader_mode,
             shapes,
             shapes_format,
-            reader_mode,
+            endpoint,
             result_shapes_format,
             output,
             force_overwrite,
@@ -327,6 +330,9 @@ fn main() -> Result<()> {
         }) => {
             let config = get_config(config)?;
             run_shacl(
+                data,
+                data_format,
+                endpoint,
                 shapes,
                 shapes_format,
                 result_shapes_format,

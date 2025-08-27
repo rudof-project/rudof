@@ -1,5 +1,4 @@
-# SHACL AST
+# SHACL IR (Internal representation)
 
-Represents [SHACL](https://www.w3.org/TR/shacl/) Abstract Syntax Tree. 
+Represents [SHACL](https://www.w3.org/TR/shacl/) Internal representation which is used to run the validation. 
 
-This project started as a re-implementation in Rust of [SHACL-s](https://github.com/weso/shacl-s). 

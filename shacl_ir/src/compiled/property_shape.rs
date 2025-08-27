@@ -108,8 +108,9 @@ impl CompiledPropertyShape {
         let components = shape.components().iter().collect::<HashSet<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            let component = CompiledComponent::compile(component.to_owned(), schema)?;
-            compiled_components.push(component);
+            if let Some(component) = CompiledComponent::compile(component.to_owned(), schema)? {
+                compiled_components.push(component);
+            }
         }
 
         let mut targets = Vec::new();

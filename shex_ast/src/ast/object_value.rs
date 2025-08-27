@@ -144,6 +144,18 @@ impl Serialize for ObjectValue {
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
             }
+            ObjectValue::Literal(SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                error,
+            }) => {
+                // TODO: Maybe raise some warning instead of using the error field?
+                let mut map = serializer.serialize_map(Some(3))?;
+                map.serialize_entry("type", datatype)?;
+                map.serialize_entry("value", lexical_form)?;
+                map.serialize_entry("error", error)?;
+                map.end()
+            }
         }
     }
 }

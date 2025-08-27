@@ -26,7 +26,15 @@ pub fn run_query(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        config,
+        false,
+    )?;
     let mut reader = query.open_read(None, "Query")?;
     let results = rudof.run_query(&mut reader)?;
     let mut results_iter = results.iter().peekable();
