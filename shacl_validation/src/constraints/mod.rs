@@ -160,7 +160,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
     type Target = dyn SparqlValidator<S>;
 
     fn deref(&self) -> &Self::Target {

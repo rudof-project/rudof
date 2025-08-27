@@ -1,10 +1,11 @@
 use crate::shacl_vocab::{
-    sh_closed, sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity,
+    sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity,
     sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use prefixmap::IriRef;
 use srdf::{BuildRDF, RDFNode, Rdf};
+use std::collections::HashSet;
 use std::fmt::Display;
 
 #[derive(Debug)]

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -9,11 +11,10 @@ use regex::Regex;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_closed, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in,
-    sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
-    sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive,
-    sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
-    sh_unique_lang, sh_xone,
+    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in,
+    sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive,
+    sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
+    sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
 };
 use shacl_ast::Schema;
 use srdf::lang::Lang;
@@ -791,6 +792,41 @@ impl From<&CompiledComponent> for IriS {
             CompiledComponent::HasValue { .. } => sh_has_value().clone(),
             CompiledComponent::In { .. } => sh_in().clone(),
             CompiledComponent::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
+        }
+    }
+}
+
+impl Display for CompiledComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompiledComponent::Class(_) => write!(f, "Class"),
+            CompiledComponent::Datatype(_) => write!(f, "Datatype"),
+            CompiledComponent::NodeKind(_) => write!(f, "NodeKind"),
+            CompiledComponent::MinCount(_) => write!(f, "MinCount"),
+            CompiledComponent::MaxCount(_) => write!(f, "MaxCount"),
+            CompiledComponent::MinExclusive(_) => write!(f, "MinExclusive"),
+            CompiledComponent::MaxExclusive(_) => write!(f, "MaxExclusive"),
+            CompiledComponent::MinInclusive(_) => write!(f, "MinInclusive"),
+            CompiledComponent::MaxInclusive(_) => write!(f, "MaxInclusive"),
+            CompiledComponent::MinLength(_) => write!(f, "MinLength"),
+            CompiledComponent::MaxLength(_) => write!(f, "MaxLength"),
+            CompiledComponent::Pattern { .. } => write!(f, "Pattern"),
+            CompiledComponent::UniqueLang(_) => write!(f, "UniqueLang"),
+            CompiledComponent::LanguageIn { .. } => write!(f, "LanguageIn"),
+            CompiledComponent::Equals(_) => write!(f, "Equals"),
+            CompiledComponent::Disjoint(_) => write!(f, "Disjoint"),
+            CompiledComponent::LessThan(_) => write!(f, "LessThan"),
+            CompiledComponent::LessThanOrEquals(_) => write!(f, "LessThanOrEquals"),
+            CompiledComponent::Or { .. } => write!(f, "Or"),
+            CompiledComponent::And { .. } => write!(f, "And"),
+            CompiledComponent::Not { .. } => write!(f, "Not"),
+            CompiledComponent::Xone { .. } => write!(f, "Xone"),
+            CompiledComponent::Node { .. } => write!(f, "Node"),
+            CompiledComponent::HasValue { .. } => write!(f, "HasValue"),
+            CompiledComponent::In { .. } => write!(f, "In"),
+            CompiledComponent::QualifiedValueShape { .. } => {
+                write!(f, "QualifiedValueShape")
+            }
         }
     }
 }

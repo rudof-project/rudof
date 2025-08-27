@@ -276,6 +276,7 @@ where
         datatype(),
         node_kind(),
         class(),
+        closed(),
         or(),
         xone(),
         and(),
@@ -306,7 +307,7 @@ where
                 .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
         )
         .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
-        .then(|ps| {
+        /* .then(|ps| {
             optional(closed()).flat_map(move |c| {
                 if let Some(true) = c {
                     Ok(ps.clone().with_closed(true))
@@ -314,7 +315,7 @@ where
                     Ok(ps.clone())
                 }
             })
-        })
+        })*/
         .then(|ps| {
             property_shapes()
                 .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
@@ -491,12 +492,12 @@ where
     )
 }
 
-fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
+/*fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
 where
     RDF: FocusRDF,
 {
     property_bool(sh_closed())
-}
+}*/
 
 /*opaque! {
     fn min_count[RDF]()(RDF) -> Vec<Component>
@@ -550,6 +551,16 @@ where
 {
     opaque!(property_values_bool(sh_deactivated())
         .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
+}
+
+fn closed<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_bool(sh_closed()).map(|ns| ns
+        .iter()
+        .map(|n| Component::closed(*n, Vec::new()))
+        .collect()))
 }
 
 fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>

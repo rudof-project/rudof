@@ -55,7 +55,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape 
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for QualifiedValueShape {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for QualifiedValueShape {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

@@ -1,3 +1,4 @@
+use shacl_ast::ShaclError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -16,4 +17,7 @@ pub enum CompiledShaclError {
 
     #[error("ShaclParserError: {0}")]
     ShaclParserError(#[from] shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError),
+
+    #[error(transparent)]
+    ShaclError(#[from] ShaclError),
 }

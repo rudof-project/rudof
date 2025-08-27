@@ -1,10 +1,26 @@
+use std::collections::HashSet;
+
 use iri_s::IriS;
-use shacl_ast::node_shape::NodeShape;
+use shacl_ast::{
+    node_shape::NodeShape,
+    property_shape::{self, PropertyShape},
+    shape::Shape,
+    Schema, ShaclError,
+};
 use srdf::Rdf;
 
 #[derive(Debug, Clone)]
 pub enum ClosedInfo {
-    Yes { ignored_properties: Vec<IriS> },
+    Yes {
+        // Properties that have been declared as ignored
+        ignored_properties: HashSet<IriS>,
+
+        // Properties that appear in the definition
+        defined_properties: HashSet<IriS>,
+
+        // Union of ignored and defined properties: union of ignored and defined
+        allowed_properties: HashSet<IriS>,
+    },
     No,
 }
 
@@ -13,25 +29,56 @@ impl ClosedInfo {
         matches!(self, ClosedInfo::Yes { .. })
     }
 
-    pub fn ignored_properties(&self) -> Option<&Vec<IriS>> {
+    pub fn ignored_properties(&self) -> Option<&HashSet<IriS>> {
         match self {
-            ClosedInfo::Yes { ignored_properties } => Some(ignored_properties),
+            ClosedInfo::Yes {
+                ignored_properties, ..
+            } => Some(ignored_properties),
             ClosedInfo::No => None,
         }
     }
 
-    pub fn get_closed_info_node_shape<R: Rdf>(shape: &NodeShape<R>) -> Self {
+    pub fn get_closed_info_node_shape<R: Rdf>(
+        shape: &NodeShape<R>,
+        schema: &Schema<R>,
+    ) -> Result<Self, ShaclError> {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
-            let ignored = ignored_properties
+            let ignored_properties: HashSet<IriS> = ignored_properties
                 .into_iter()
                 .map(|iri| iri.into())
                 .collect();
-            ClosedInfo::Yes {
-                ignored_properties: ignored,
-            }
+            let defined_properties = defined_properties(shape, schema)?;
+            let all_properties = defined_properties
+                .union(&ignored_properties)
+                .cloned()
+                .collect::<HashSet<IriS>>();
+            Ok(ClosedInfo::Yes {
+                ignored_properties,
+                defined_properties: defined_properties,
+                allowed_properties: all_properties,
+            })
         } else {
-            ClosedInfo::No
+            Ok(ClosedInfo::No)
+        }
+    }
+
+    pub fn get_closed_info_property_shape<R: Rdf>(
+        shape: &PropertyShape<R>,
+        schema: &Schema<R>,
+    ) -> Result<Self, ShaclError> {
+        let (is_closed, ignored_properties) = shape.closed_component();
+        if is_closed {
+            todo!()
+            /*let ignored = ignored_properties
+            .into_iter()
+            .map(|iri| iri.into())
+            .collect(); */
+            /*ClosedInfo::Yes {
+                ignored_properties: ignored,
+            }*/
+        } else {
+            Ok(ClosedInfo::No)
         }
     }
 }
@@ -40,4 +87,31 @@ impl Default for ClosedInfo {
     fn default() -> Self {
         ClosedInfo::No
     }
+}
+
+fn defined_properties<R: Rdf>(
+    shape: &NodeShape<R>,
+    schema: &Schema<R>,
+) -> Result<HashSet<IriS>, ShaclError> {
+    let mut defined_properties: HashSet<IriS> = HashSet::new();
+    for property_shape_ref in shape.property_shapes() {
+        let property_shape =
+            schema
+                .get_shape(property_shape_ref)
+                .ok_or_else(|| ShaclError::ShapeNotFound {
+                    shape: property_shape_ref.clone(),
+                })?;
+        match property_shape {
+            Shape::PropertyShape(ps) => {
+                let pred = ps.path().pred().unwrap();
+                defined_properties.insert(pred.clone().into());
+            }
+            _ => {
+                return Err(ShaclError::ShapeNotFound {
+                    shape: property_shape_ref.clone(),
+                })
+            }
+        }
+    }
+    Ok(defined_properties)
 }

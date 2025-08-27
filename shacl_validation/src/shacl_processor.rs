@@ -2,8 +2,8 @@ use clap::ValueEnum;
 use prefixmap::PrefixMap;
 use shacl_ir::compiled::schema::SchemaIR;
 use sparql_service::RdfData;
+use srdf::NeighsRDF;
 use srdf::RDFFormat;
-use srdf::Rdf;
 use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
@@ -38,7 +38,7 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: Rdf + Debug> {
+pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 

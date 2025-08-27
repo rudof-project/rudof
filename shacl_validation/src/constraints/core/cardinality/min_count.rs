@@ -73,7 +73,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinCount {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinCount {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MinCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

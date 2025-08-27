@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::fmt::Display;
 
+use iri_s::IriS;
 use srdf::{RDFNode, Rdf};
 
 use shacl_ast::node_shape::NodeShape;
@@ -22,6 +24,7 @@ pub struct CompiledNodeShape {
     property_shapes: Vec<CompiledShape>,
     closed_info: ClosedInfo,
     deactivated: bool,
+
     // message: MessageMap,
     severity: Option<CompiledSeverity>,
     // name: MessageMap,
@@ -45,7 +48,7 @@ impl CompiledNodeShape {
             components,
             targets,
             property_shapes,
-            closed_info: ClosedInfo::default(),
+            closed_info,
             deactivated,
             severity,
         }
@@ -64,6 +67,13 @@ impl CompiledNodeShape {
             Some(severity) => severity,
             None => &CompiledSeverity::Violation,
         }
+    }
+
+    pub fn ignored_properties(&self) -> HashSet<IriS> {
+        self.closed_info
+            .ignored_properties()
+            .cloned()
+            .unwrap_or_else(HashSet::new)
     }
 
     pub fn components(&self) -> &Vec<CompiledComponent> {
@@ -114,7 +124,7 @@ impl CompiledNodeShape {
             property_shapes.push(shape);
         }
 
-        let closed_info = ClosedInfo::get_closed_info_node_shape(&shape);
+        let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, &schema)?;
 
         let compiled_node_shape = CompiledNodeShape::new(
             id,
@@ -127,5 +137,27 @@ impl CompiledNodeShape {
         );
 
         Ok(compiled_node_shape)
+    }
+}
+
+impl Display for CompiledNodeShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "NodeShape {}", self.id)?;
+        writeln!(f, " Deactivated: {}", self.deactivated)?;
+        writeln!(f, " Severity: {}", self.severity())?;
+        writeln!(f, " Closed: {}", self.closed())?;
+        writeln!(f, " Components:")?;
+        for component in &self.components {
+            writeln!(f, "  - {}", component)?;
+        }
+        writeln!(f, " Targets:")?;
+        for target in &self.targets {
+            writeln!(f, "  - {}", target)?;
+        }
+        writeln!(f, " Property Shapes:")?;
+        for property_shape in &self.property_shapes {
+            writeln!(f, "  - {}", property_shape)?;
+        }
+        Ok(())
     }
 }

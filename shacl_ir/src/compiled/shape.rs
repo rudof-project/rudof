@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 
 use iri_s::IriS;
@@ -93,13 +94,27 @@ impl CompiledShape {
 
         Ok(shape)
     }
+
+    pub fn closed(&self) -> bool {
+        match self {
+            CompiledShape::NodeShape(ns) => ns.closed(),
+            CompiledShape::PropertyShape(ps) => ps.closed(),
+        }
+    }
+
+    pub fn ignored_properties(&self) -> HashSet<IriS> {
+        match self {
+            CompiledShape::NodeShape(ns) => ns.ignored_properties(),
+            CompiledShape::PropertyShape(ps) => ps.ignored_properties(),
+        }
+    }
 }
 
 impl Display for CompiledShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledShape::NodeShape(_shape) => write!(f, "NodeShape"),
-            CompiledShape::PropertyShape(_shape) => write!(f, "PropertyShape"),
+            CompiledShape::NodeShape(shape) => write!(f, "{shape}"),
+            CompiledShape::PropertyShape(shape) => write!(f, "{shape}"),
         }
     }
 }
