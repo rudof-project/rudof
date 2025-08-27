@@ -4,8 +4,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 - Support for SHACL validation of: deactivated
+
 ### Fixed
+
 ### Changed
+- Command line interface for `shacl` option now suppports information from RDF data or Schema to have an interface similar to `shacl-validate`
 ### Removed
 
 ## v0.1.86
