@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use iri_s::IriS;
 use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
 
@@ -44,6 +46,17 @@ impl From<&CompiledSeverity> for IriS {
             CompiledSeverity::Warning => sh_warning().clone(),
             CompiledSeverity::Info => sh_info().clone(),
             CompiledSeverity::Generic(iri) => iri.clone(),
+        }
+    }
+}
+
+impl Display for CompiledSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompiledSeverity::Violation => write!(f, "Violation"),
+            CompiledSeverity::Warning => write!(f, "Warning"),
+            CompiledSeverity::Info => write!(f, "Info"),
+            CompiledSeverity::Generic(iri) => write!(f, "Generic({})", iri),
         }
     }
 }

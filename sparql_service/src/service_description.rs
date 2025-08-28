@@ -1,7 +1,7 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 
-use std::{fmt::Display, io::BufRead, path::Path};
+use std::{collections::HashSet, fmt::Display, io::BufRead, path::Path};
 
 use iri_s::IriS;
 use itertools::Itertools;
@@ -13,12 +13,12 @@ use crate::{ServiceDescriptionError, ServiceDescriptionParser};
 pub struct ServiceDescription {
     endpoint: IriS,
     default_dataset: Dataset,
-    supported_language: Vec<SupportedLanguage>,
-    feature: Vec<Feature>,
-    result_format: Vec<SparqlResultFormat>,
+    supported_language: HashSet<SupportedLanguage>,
+    feature: HashSet<Feature>,
+    result_format: HashSet<SparqlResultFormat>,
 }
 
-#[derive(Clone, PartialEq, Eq, Default, Debug)]
+#[derive(Clone, PartialEq, Eq, Default, Debug, Hash)]
 pub enum SupportedLanguage {
     SPARQL10Query,
 
@@ -38,7 +38,7 @@ impl Display for SupportedLanguage {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum SparqlResultFormat {
     XML,
     Turtle,
@@ -68,7 +68,7 @@ impl Display for SparqlResultFormat {
 }
 
 /// Features defined in: https://www.w3.org/TR/sparql11-service-description/#sd-Feature
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Feature {
     DereferencesURIs,
     UnionDefaultGraph,
@@ -146,9 +146,9 @@ impl ServiceDescription {
         ServiceDescription {
             endpoint: endpoint.clone(),
             default_dataset: Dataset::default(),
-            supported_language: Vec::new(),
-            feature: Vec::new(),
-            result_format: Vec::new(),
+            supported_language: HashSet::new(),
+            feature: HashSet::new(),
+            result_format: HashSet::new(),
         }
     }
 
@@ -176,16 +176,22 @@ impl ServiceDescription {
         Ok(service)
     }
 
-    pub fn add_supported_language(&mut self, supported_language: &[SupportedLanguage]) {
-        supported_language.clone_into(&mut self.supported_language);
+    pub fn add_supported_languages<I: IntoIterator<Item = SupportedLanguage>>(
+        &mut self,
+        supported_languages: I,
+    ) {
+        self.supported_language.extend(supported_languages);
     }
 
-    pub fn add_feature(&mut self, feature: &[Feature]) {
-        feature.clone_into(&mut self.feature);
+    pub fn add_features<I: IntoIterator<Item = Feature>>(&mut self, features: I) {
+        self.feature.extend(features);
     }
 
-    pub fn add_result_format(&mut self, result_format: &[SparqlResultFormat]) {
-        result_format.clone_into(&mut self.result_format);
+    pub fn add_result_formats<I: IntoIterator<Item = SparqlResultFormat>>(
+        &mut self,
+        result_formats: I,
+    ) {
+        self.result_format.extend(result_formats);
     }
 
     pub fn add_default_dataset(&mut self, default_dataset: &Dataset) {

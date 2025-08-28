@@ -11,6 +11,7 @@ use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
+use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::RDFNode;
 use srdf::SHACLPath;
@@ -19,7 +20,7 @@ use std::fmt::Debug;
 
 pub struct SparqlEngine;
 
-impl<S: QueryRDF + Debug + 'static> Engine<S> for SparqlEngine {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,

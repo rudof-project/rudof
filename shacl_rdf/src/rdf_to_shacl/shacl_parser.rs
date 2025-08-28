@@ -12,7 +12,6 @@ use shacl_ast::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,
     property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
 };
-use srdf::Literal;
 use srdf::{
     combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
     lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
@@ -22,6 +21,7 @@ use srdf::{
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple,
 };
+use srdf::{property_value_as_list, Literal};
 use srdf::{rdf_type, rdfs_class, FnOpaque};
 use std::collections::{HashMap, HashSet};
 
@@ -276,6 +276,7 @@ where
         datatype(),
         node_kind(),
         class(),
+        closed_component(),
         or(),
         xone(),
         and(),
@@ -306,7 +307,7 @@ where
                 .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
         )
         .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
-        .then(|ps| {
+        /* .then(|ps| {
             optional(closed()).flat_map(move |c| {
                 if let Some(true) = c {
                     Ok(ps.clone().with_closed(true))
@@ -314,7 +315,7 @@ where
                     Ok(ps.clone())
                 }
             })
-        })
+        })*/
         .then(|ps| {
             property_shapes()
                 .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
@@ -339,7 +340,7 @@ where
         object()
             .then(move |t: RDFNode| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-            .then(|ps| {
+            /* .then(|ps| {
                 optional(closed()).flat_map(move |c| {
                     if let Some(true) = c {
                         Ok(ps.clone().with_closed(true))
@@ -347,7 +348,7 @@ where
                         Ok(ps.clone())
                     }
                 })
-            })
+            }) */
             .then(|ns| {
                 property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
             })
@@ -535,7 +536,6 @@ where
 }
 
 fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
@@ -544,12 +544,50 @@ where
 }
 
 fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
     opaque!(property_values_bool(sh_deactivated())
         .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
+}
+
+fn closed_component<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(optional(closed()).then(move |maybe_closed| {
+        ignored_properties()
+            .map(move |is| maybe_closed.map_or(vec![], |b| vec![Component::closed(b, is)]))
+    }))
+}
+
+fn ignored_properties<RDF>() -> FnOpaque<RDF, HashSet<IriS>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(
+        optional(property_value_as_list(sh_ignored_properties())).flat_map(|is| {
+            match is {
+                None => Ok(HashSet::new()),
+                Some(vs) => {
+                    let mut hs = HashSet::new();
+                    for v in vs {
+                        if let Ok(iri) = RDF::term_as_iri(&v) {
+                            let iri: RDF::IRI = iri;
+                            let iri_string = iri.as_str();
+                            let iri_s = IriS::new_unchecked(iri_string);
+                            hs.insert(iri_s);
+                        } else {
+                            return Err(RDFParseError::ExpectedIRI {
+                                term: v.to_string(),
+                            });
+                        }
+                    }
+                    Ok(hs)
+                }
+            }
+        })
+    )
 }
 
 fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -621,7 +659,6 @@ where
 }
 
 fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {

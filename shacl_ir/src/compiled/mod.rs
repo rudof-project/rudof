@@ -1,3 +1,13 @@
+pub mod closed_info;
+pub mod compiled_shacl_error;
+pub mod component;
+pub mod node_shape;
+pub mod property_shape;
+pub mod schema;
+pub mod severity;
+pub mod shape;
+pub mod target;
+
 use compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
 use prefixmap::IriRef;
@@ -8,15 +18,6 @@ use srdf::Rdf;
 
 use shacl_ast::value::Value;
 use shacl_ast::Schema;
-
-pub mod compiled_shacl_error;
-pub mod component;
-pub mod node_shape;
-pub mod property_shape;
-pub mod schema;
-pub mod severity;
-pub mod shape;
-pub mod target;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, CompiledShaclError> {
     let iri = iri_ref

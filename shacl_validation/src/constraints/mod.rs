@@ -115,12 +115,10 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
             CompiledComponent::And(inner) => inner,
             CompiledComponent::Not(inner) => inner,
             CompiledComponent::Xone(inner) => inner,
-            CompiledComponent::Closed(inner) => inner,
             CompiledComponent::Node(inner) => inner,
             CompiledComponent::HasValue(inner) => inner,
             CompiledComponent::In(inner) => inner,
             CompiledComponent::QualifiedValueShape(inner) => inner,
-            CompiledComponent::Deactivated(_) => todo!(),
         }
     }
 
@@ -162,7 +160,7 @@ pub trait SparqlDeref {
     fn deref(&self) -> &Self::Target;
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
     type Target = dyn SparqlValidator<S>;
 
     fn deref(&self) -> &Self::Target {
@@ -189,12 +187,10 @@ impl<S: QueryRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
             CompiledComponent::And(inner) => inner,
             CompiledComponent::Not(inner) => inner,
             CompiledComponent::Xone(inner) => inner,
-            CompiledComponent::Closed(inner) => inner,
             CompiledComponent::Node(inner) => inner,
             CompiledComponent::HasValue(inner) => inner,
             CompiledComponent::In(inner) => inner,
             CompiledComponent::QualifiedValueShape(inner) => inner,
-            CompiledComponent::Deactivated(_) => todo!(),
         }
     }
 

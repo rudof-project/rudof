@@ -1,8 +1,9 @@
+use crate::run_shacl_convert;
 use crate::{
     add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
-    parse_shex_schema_rudof, run_shacl, run_shex, show_shex_schema, writer::get_writer,
-    CliShaclFormat, InputConvertFormat, InputConvertMode, InputSpec, OutputConvertFormat,
-    OutputConvertMode, RDFReaderMode,
+    parse_shex_schema_rudof, run_shex, show_shex_schema, writer::get_writer, CliShaclFormat,
+    InputConvertFormat, InputConvertMode, InputSpec, OutputConvertFormat, OutputConvertMode,
+    RDFReaderMode,
 };
 use anyhow::{anyhow, bail, Result};
 use prefixmap::IriRef;
@@ -52,11 +53,11 @@ pub fn run_convert(
         (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
             let shacl_format = format.to_shacl_format()?;
             let output_format = result_format.to_shacl_format()?;
-            run_shacl(
+            run_shacl_convert(
                 input,
                 &shacl_format,
-                &output_format,
                 output,
+                &output_format,
                 force_overwrite,
                 reader_mode,
                 config,

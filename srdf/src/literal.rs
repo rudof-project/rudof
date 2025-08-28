@@ -98,6 +98,16 @@ pub enum SLiteral {
 
     #[serde(serialize_with = "serialize_boolean_literal")]
     BooleanLiteral(bool),
+
+    /// Represents a literal with a wrong datatype
+    /// For example, a value like `23` with datatype `xsd:date`
+    /// These literals can be useful to parse RDF data that can have wrong datatype literals but needs to be validated
+    /// Error contains the error message
+    WrongDatatypeLiteral {
+        lexical_form: String,
+        datatype: IriRef,
+        error: String,
+    },
 }
 
 impl SLiteral {
@@ -146,6 +156,7 @@ impl SLiteral {
             SLiteral::BooleanLiteral(true) => "true".to_string(),
             SLiteral::BooleanLiteral(false) => "false".to_string(),
             SLiteral::DatetimeLiteral(dt) => dt.to_string(),
+            SLiteral::WrongDatatypeLiteral { lexical_form, .. } => lexical_form.clone(),
         }
     }
 
@@ -176,6 +187,16 @@ impl SLiteral {
             SLiteral::BooleanLiteral(true) => write!(f, "true"),
             SLiteral::BooleanLiteral(false) => write!(f, "false"),
             SLiteral::DatetimeLiteral(date_time) => write!(f, "{}", date_time.value()),
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                ..
+            } => match datatype {
+                IriRef::Iri(iri) => write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri)),
+                IriRef::Prefixed { prefix, local } => {
+                    write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
+                }
+            },
         }
     }
 
@@ -209,17 +230,19 @@ impl SLiteral {
             SLiteral::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
                 "http://www.w3.org/2001/XMLSchema#dateTime",
             )),
+            SLiteral::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
         }
     }
 
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
             SLiteral::NumericLiteral(nl) => Some(nl.clone()),
-            SLiteral::StringLiteral { .. }
-            | SLiteral::DatatypeLiteral { .. }
-            | SLiteral::BooleanLiteral(true)
-            | SLiteral::BooleanLiteral(false) => None,
-            SLiteral::DatetimeLiteral(_) => None,
+            _ => None, /*SLiteral::StringLiteral { .. }
+                       | SLiteral::DatatypeLiteral { .. }
+                       | SLiteral::WrongDatatypeLiteral { .. }
+                       | SLiteral::BooleanLiteral(true)
+                       | SLiteral::BooleanLiteral(false) => None,
+                       SLiteral::DatetimeLiteral(_) => None, */
         }
     }
 }
@@ -276,6 +299,23 @@ impl PartialOrd for SLiteral {
                 SLiteral::BooleanLiteral(other_b) => Some(b.cmp(other_b)),
                 _ => None,
             },
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                ..
+            } => match other {
+                SLiteral::DatatypeLiteral {
+                    lexical_form: other_lexical_form,
+                    datatype: other_datatype,
+                } => {
+                    if datatype == other_datatype {
+                        Some(lexical_form.cmp(other_lexical_form))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
         }
     }
 }
@@ -322,6 +362,17 @@ impl Deref for SLiteral {
             SLiteral::DatetimeLiteral(date_time) => {
                 Ok(SLiteral::DatetimeLiteral(date_time.clone()))
             }
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                ..
+            } => {
+                let dt = datatype.deref(base, prefixmap)?;
+                Ok(SLiteral::DatatypeLiteral {
+                    lexical_form: lexical_form.clone(),
+                    datatype: dt,
+                })
+            }
         }
     }
 }
@@ -340,39 +391,57 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
                 let xsd_datetime = oxrdf::vocab::xsd::DATE_TIME.to_owned();
-                match dtype {
-                    d if d == xsd_double => {
-                        let double_value: f64 =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse double from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::double(
+                match &dtype {
+                    d if *d == xsd_double => match value.parse() {
+                        Ok(double_value) => Ok(SLiteral::NumericLiteral(NumericLiteral::double(
                             double_value,
-                        )))
-                    }
-                    d if d == xsd_decimal => {
-                        let num_value: Decimal =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse decimal from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
-                    }
-                    d if d == xsd_integer => {
-                        let num_value: isize =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse integer from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
-                    }
-                    d if d == xsd_datetime => {
-                        let date_time =
-                            XsdDateTime::new(&value).map_err(|e| RDFError::ConversionError {
-                                msg: format!(
-                                    "Failed to parse datetime from value: {value}, error: {e}"
-                                ),
-                            })?;
-                        Ok(SLiteral::DatetimeLiteral(date_time))
-                    }
+                        ))),
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_decimal => match value.parse() {
+                        Ok(num_value) => {
+                            Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
+                        }
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_integer => match value.parse() {
+                        Ok(num_value) => {
+                            Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
+                        }
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_datetime => match XsdDateTime::new(&value) {
+                        Ok(date_time) => Ok(SLiteral::DatetimeLiteral(date_time)),
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
                     _ => {
                         let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                         Ok(SLiteral::lit_datatype(&value, &datatype))
@@ -416,6 +485,17 @@ impl From<SLiteral> for oxrdf::Literal {
             },
             SLiteral::BooleanLiteral(bool) => bool.into(),
             SLiteral::DatetimeLiteral(date_time) => (*date_time.value()).into(),
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                ..
+            } => match datatype.get_iri() {
+                Ok(datatype) => oxrdf::Literal::new_typed_literal(
+                    lexical_form,
+                    datatype.as_named_node().to_owned(),
+                ),
+                Err(_) => lexical_form.into(),
+            },
         }
     }
 }

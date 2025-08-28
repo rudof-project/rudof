@@ -11,6 +11,9 @@ use shacl_ast::ShaclFormat;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
+use tracing::debug;
+use tracing::enabled;
+use tracing::Level;
 
 use crate::data::get_base;
 use crate::data::get_data_rudof;
@@ -23,9 +26,13 @@ use crate::RDFReaderMode;
 use crate::ResultShaclValidationFormat;
 use anyhow::Result;
 
+#[allow(clippy::too_many_arguments)]
 pub fn run_shacl(
-    input: &InputSpec,
-    shapes_format: &CliShaclFormat,
+    data: &Vec<InputSpec>,
+    data_format: &DataFormat,
+    endpoint: &Option<String>,
+    schema: &Option<InputSpec>,
+    shapes_format: &Option<CliShaclFormat>,
     result_shapes_format: &CliShaclFormat,
     output: &Option<PathBuf>,
     force_overwrite: bool,
@@ -34,10 +41,59 @@ pub fn run_shacl(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
-    let reader_mode = (*reader_mode).into();
-    add_shacl_schema_rudof(&mut rudof, input, shapes_format, &reader_mode, config)?;
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        config,
+        true,
+    )?;
+    if let Some(schema) = schema {
+        let reader_mode = (*reader_mode).into();
+        let shapes_format = (*shapes_format).unwrap_or_default();
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, &reader_mode, config)?;
+        rudof.compile_shacl(&ShapesGraphSource::current_schema())
+    } else {
+        rudof.compile_shacl(&ShapesGraphSource::current_data())
+    }?;
+
     let shacl_format = shacl_format_convert(*result_shapes_format)?;
     rudof.serialize_shacl(&shacl_format, &mut writer)?;
+    if enabled!(Level::DEBUG) {
+        match rudof.get_shacl_ir() {
+            Some(ir) => debug!("SHACL IR: {}", ir),
+            None => debug!("No SHACL IR available"),
+        }
+    }
+    Ok(())
+}
+
+pub fn run_shacl_convert(
+    input: &InputSpec,
+    input_format: &CliShaclFormat,
+    output: &Option<PathBuf>,
+    output_format: &CliShaclFormat,
+    force_overwrite: bool,
+    reader_mode: &RDFReaderMode,
+    config: &RudofConfig,
+) -> Result<()> {
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let mut rudof = Rudof::new(config);
+    let mime_type = input_format.mime_type();
+    let mime_type_str = mime_type.as_str();
+    let reader = input.open_read(Some(mime_type_str), "SHACL shapes")?;
+    let input_format = shacl_format_convert(*input_format)?;
+    let base = get_base(input, config)?;
+    rudof.read_shacl(
+        reader,
+        &input_format,
+        base.as_deref(),
+        &(*reader_mode).into(),
+    )?;
+    let output_format = shacl_format_convert(*output_format)?;
+    rudof.serialize_shacl(&output_format, &mut writer)?;
     Ok(())
 }
 
@@ -86,7 +142,15 @@ pub fn run_validate_shacl(
 ) -> Result<()> {
     let (writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        config,
+        false,
+    )?;
     let validation_report = if let Some(schema) = schema {
         let reader_mode = (*reader_mode).into();
         let shapes_format = (*shapes_format).unwrap_or_default();
@@ -95,9 +159,7 @@ pub fn run_validate_shacl(
     } else {
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
     }?;
-
     write_validation_report(writer, result_format, validation_report)?;
-
     Ok(())
 }
 

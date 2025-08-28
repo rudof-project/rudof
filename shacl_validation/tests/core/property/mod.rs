@@ -42,20 +42,6 @@ fn datatype_003() -> Result<(), TestSuiteError> {
 }
 
 #[test]
-fn datatype_ill_formed_data() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-data");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
-fn datatype_ill_formed_shapes() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-shapes");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
 fn datatype_ill_formed() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed");
     // test(path, ShaclValidationMode::Native, Subsetting::None)

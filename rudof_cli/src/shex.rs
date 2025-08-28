@@ -231,7 +231,15 @@ pub fn run_validate_shex(
         let base_iri = config.shex_config().base;
         let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
         rudof.read_shex(schema_reader, &schema_format, schema_base)?;
-        get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+        get_data_rudof(
+            &mut rudof,
+            data,
+            data_format,
+            endpoint,
+            reader_mode,
+            config,
+            false,
+        )?;
 
         let shapemap_format = shapemap_format_convert(shapemap_format);
         if let Some(shapemap_spec) = shapemap {

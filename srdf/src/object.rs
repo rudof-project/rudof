@@ -137,6 +137,7 @@ impl TryFrom<Object> for oxrdf::NamedOrBlankNode {
     type Error = RDFError;
 
     fn try_from(value: Object) -> Result<Self, Self::Error> {
+        println!("Trying from Object: {value}");
         match value {
             Object::Iri(iri_s) => Ok(oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into()),
             Object::BlankNode(bnode) => Ok(oxrdf::BlankNode::new_unchecked(bnode).into()),

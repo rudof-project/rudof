@@ -48,4 +48,6 @@ pub enum ValidateError {
     NotImplemented { msg: String },
     #[error(transparent)]
     RdfDataError(#[from] RdfDataError),
+    #[error("Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED")]
+    TriplesWithSubject { subject: String, error: String },
 }

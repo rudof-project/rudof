@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use srdf::{ok, property_iri, property_values_iri, FocusRDF, PResult, RDFNodeParse, RDFParser};
-use std::fmt::Debug;
+use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
     Dataset, Feature, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
@@ -57,9 +57,9 @@ where
                                     let result_format = result_format.clone();
                                     move |default_ds| {
                                         let mut sd = ServiceDescription::new(iri.clone());
-                                        sd.add_supported_language(&sl);
-                                        sd.add_feature(&feature);
-                                        sd.add_result_format(&result_format);
+                                        sd.add_supported_languages(sl.clone());
+                                        sd.add_features(feature.clone());
+                                        sd.add_result_formats(result_format.clone());
                                         sd.add_default_dataset(&default_ds);
                                         ok(&sd)
                                     }
@@ -86,7 +86,7 @@ where
         property_iri(&SD_ENDPOINT)
     }
 
-    pub fn feature() -> impl RDFNodeParse<RDF, Output = Vec<Feature>>
+    pub fn feature() -> impl RDFNodeParse<RDF, Output = HashSet<Feature>>
     where
         RDF: FocusRDF,
     {
@@ -96,7 +96,7 @@ where
         })
     }
 
-    pub fn result_format() -> impl RDFNodeParse<RDF, Output = Vec<SparqlResultFormat>>
+    pub fn result_format() -> impl RDFNodeParse<RDF, Output = HashSet<SparqlResultFormat>>
     where
         RDF: FocusRDF,
     {
@@ -106,7 +106,7 @@ where
         })
     }
 
-    pub fn supported_language() -> impl RDFNodeParse<RDF, Output = Vec<SupportedLanguage>>
+    pub fn supported_language() -> impl RDFNodeParse<RDF, Output = HashSet<SupportedLanguage>>
     where
         RDF: FocusRDF,
     {
@@ -121,29 +121,29 @@ where
     }
 }
 
-fn get_supported_languages(iris: &Vec<IriS>) -> PResult<Vec<SupportedLanguage>> {
-    let mut res = Vec::new();
+fn get_supported_languages(iris: &HashSet<IriS>) -> PResult<HashSet<SupportedLanguage>> {
+    let mut res = HashSet::new();
     for i in iris {
         let supported_language = supported_language(i)?;
-        res.push(supported_language)
+        res.insert(supported_language);
     }
     Ok(res)
 }
 
-fn get_features(iris: &Vec<IriS>) -> PResult<Vec<Feature>> {
-    let mut res = Vec::new();
+fn get_features(iris: &HashSet<IriS>) -> PResult<HashSet<Feature>> {
+    let mut res = HashSet::new();
     for i in iris {
         let feature = feature(i)?;
-        res.push(feature)
+        res.insert(feature);
     }
     Ok(res)
 }
 
-fn get_result_formats(iris: &Vec<IriS>) -> PResult<Vec<SparqlResultFormat>> {
-    let mut res = Vec::new();
+fn get_result_formats(iris: &HashSet<IriS>) -> PResult<HashSet<SparqlResultFormat>> {
+    let mut res = HashSet::new();
     for i in iris {
         let res_format = result_format(i)?;
-        res.push(res_format)
+        res.insert(res_format);
     }
     Ok(res)
 }

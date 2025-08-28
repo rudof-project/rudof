@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::compile_shape;
 use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
@@ -9,11 +11,10 @@ use regex::Regex;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_closed, sh_datatype, sh_deactivated, sh_disjoint, sh_equals, sh_has_value,
-    sh_in, sh_language_in, sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive,
-    sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive,
-    sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape,
-    sh_unique_lang, sh_xone,
+    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in,
+    sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive,
+    sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
+    sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
 };
 use shacl_ast::Schema;
 use srdf::lang::Lang;
@@ -45,105 +46,104 @@ pub enum CompiledComponent {
     And(And),
     Not(Not),
     Xone(Xone),
-    Closed(Closed),
     Node(Node),
     HasValue(HasValue),
     In(In),
     QualifiedValueShape(QualifiedValueShape),
-    Deactivated(bool),
 }
 
 impl CompiledComponent {
     pub fn compile<S: Rdf>(
         component: Component,
         schema: &Schema<S>,
-    ) -> Result<Self, CompiledShaclError> {
+    ) -> Result<Option<Self>, CompiledShaclError> {
         let component = match component {
             Component::Class(object) => {
                 let class_rule = object;
-                CompiledComponent::Class(Class::new(class_rule))
+                Some(CompiledComponent::Class(Class::new(class_rule)))
             }
             Component::Datatype(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                CompiledComponent::Datatype(Datatype::new(iri_ref))
+                Some(CompiledComponent::Datatype(Datatype::new(iri_ref)))
             }
-            Component::NodeKind(node_kind) => CompiledComponent::NodeKind(Nodekind::new(node_kind)),
-            Component::MinCount(count) => CompiledComponent::MinCount(MinCount::new(count)),
-            Component::MaxCount(count) => CompiledComponent::MaxCount(MaxCount::new(count)),
+            Component::NodeKind(node_kind) => {
+                Some(CompiledComponent::NodeKind(Nodekind::new(node_kind)))
+            }
+            Component::MinCount(count) => Some(CompiledComponent::MinCount(MinCount::new(count))),
+            Component::MaxCount(count) => Some(CompiledComponent::MaxCount(MaxCount::new(count))),
             Component::MinExclusive(literal) => {
-                CompiledComponent::MinExclusive(MinExclusive::new(literal))
+                Some(CompiledComponent::MinExclusive(MinExclusive::new(literal)))
             }
             Component::MaxExclusive(literal) => {
-                CompiledComponent::MaxExclusive(MaxExclusive::new(literal))
+                Some(CompiledComponent::MaxExclusive(MaxExclusive::new(literal)))
             }
             Component::MinInclusive(literal) => {
-                CompiledComponent::MinInclusive(MinInclusive::new(literal))
+                Some(CompiledComponent::MinInclusive(MinInclusive::new(literal)))
             }
             Component::MaxInclusive(literal) => {
-                CompiledComponent::MaxInclusive(MaxInclusive::new(literal))
+                Some(CompiledComponent::MaxInclusive(MaxInclusive::new(literal)))
             }
-            Component::MinLength(length) => CompiledComponent::MinLength(MinLength::new(length)),
-            Component::MaxLength(length) => CompiledComponent::MaxLength(MaxLength::new(length)),
+            Component::MinLength(length) => {
+                Some(CompiledComponent::MinLength(MinLength::new(length)))
+            }
+            Component::MaxLength(length) => {
+                Some(CompiledComponent::MaxLength(MaxLength::new(length)))
+            }
             Component::Pattern { pattern, flags } => {
-                CompiledComponent::Pattern(Pattern::new(pattern, flags))
+                Some(CompiledComponent::Pattern(Pattern::new(pattern, flags)))
             }
-            Component::UniqueLang(lang) => CompiledComponent::UniqueLang(UniqueLang::new(lang)),
+            Component::UniqueLang(lang) => {
+                Some(CompiledComponent::UniqueLang(UniqueLang::new(lang)))
+            }
             Component::LanguageIn { langs } => {
-                CompiledComponent::LanguageIn(LanguageIn::new(langs))
+                Some(CompiledComponent::LanguageIn(LanguageIn::new(langs)))
             }
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                CompiledComponent::Equals(Equals::new(iri_ref))
+                Some(CompiledComponent::Equals(Equals::new(iri_ref)))
             }
             Component::Disjoint(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                CompiledComponent::Disjoint(Disjoint::new(iri_ref))
+                Some(CompiledComponent::Disjoint(Disjoint::new(iri_ref)))
             }
             Component::LessThan(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                CompiledComponent::LessThan(LessThan::new(iri_ref))
+                Some(CompiledComponent::LessThan(LessThan::new(iri_ref)))
             }
             Component::LessThanOrEquals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(iri_ref))
+                Some(CompiledComponent::LessThanOrEquals(LessThanOrEquals::new(
+                    iri_ref,
+                )))
             }
-            Component::Or { shapes } => {
-                CompiledComponent::Or(Or::new(compile_shapes::<S>(shapes, schema)?))
-            }
-            Component::And { shapes } => {
-                CompiledComponent::And(And::new(compile_shapes::<S>(shapes, schema)?))
-            }
+            Component::Or { shapes } => Some(CompiledComponent::Or(Or::new(compile_shapes::<S>(
+                shapes, schema,
+            )?))),
+            Component::And { shapes } => Some(CompiledComponent::And(And::new(
+                compile_shapes::<S>(shapes, schema)?,
+            ))),
             Component::Not { shape } => {
                 let shape = compile_shape::<S>(shape, schema)?;
-                CompiledComponent::Not(Not::new(shape))
+                Some(CompiledComponent::Not(Not::new(shape)))
             }
-            Component::Xone { shapes } => {
-                CompiledComponent::Xone(Xone::new(compile_shapes::<S>(shapes, schema)?))
-            }
-            Component::Closed {
-                is_closed,
-                ignored_properties,
-            } => {
-                let properties = ignored_properties
-                    .into_iter()
-                    .map(convert_iri_ref)
-                    .collect::<Result<Vec<_>, _>>()?;
-                CompiledComponent::Closed(Closed::new(is_closed, properties))
-            }
+            Component::Xone { shapes } => Some(CompiledComponent::Xone(Xone::new(
+                compile_shapes::<S>(shapes, schema)?,
+            ))),
+            Component::Closed { .. } => None,
             Component::Node { shape } => {
                 let shape = compile_shape::<S>(shape, schema)?;
-                CompiledComponent::Node(Node::new(shape))
+                Some(CompiledComponent::Node(Node::new(shape)))
             }
             Component::HasValue { value } => {
                 let term = convert_value(value)?;
-                CompiledComponent::HasValue(HasValue::new(term))
+                Some(CompiledComponent::HasValue(HasValue::new(term)))
             }
             Component::In { values } => {
                 let terms = values
                     .into_iter()
                     .map(convert_value)
                     .collect::<Result<Vec<_>, _>>()?;
-                CompiledComponent::In(In::new(terms))
+                Some(CompiledComponent::In(In::new(terms)))
             }
             Component::QualifiedValueShape {
                 shape,
@@ -152,16 +152,17 @@ impl CompiledComponent {
                 qualified_value_shapes_disjoint,
             } => {
                 let shape = compile_shape::<S>(shape, schema)?;
-                CompiledComponent::QualifiedValueShape(QualifiedValueShape::new(
-                    shape,
-                    qualified_min_count,
-                    qualified_max_count,
-                    qualified_value_shapes_disjoint,
+                Some(CompiledComponent::QualifiedValueShape(
+                    QualifiedValueShape::new(
+                        shape,
+                        qualified_min_count,
+                        qualified_max_count,
+                        qualified_value_shapes_disjoint,
+                    ),
                 ))
             }
-            Component::Deactivated(b) => CompiledComponent::Deactivated(b),
+            Component::Deactivated(_b) => None,
         };
-
         Ok(component)
     }
 }
@@ -787,12 +788,45 @@ impl From<&CompiledComponent> for IriS {
             CompiledComponent::And { .. } => sh_and().clone(),
             CompiledComponent::Not { .. } => sh_not().clone(),
             CompiledComponent::Xone { .. } => sh_xone().clone(),
-            CompiledComponent::Closed { .. } => sh_closed().clone(),
             CompiledComponent::Node { .. } => sh_node().clone(),
             CompiledComponent::HasValue { .. } => sh_has_value().clone(),
             CompiledComponent::In { .. } => sh_in().clone(),
             CompiledComponent::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
-            CompiledComponent::Deactivated(_) => sh_deactivated().clone(),
+        }
+    }
+}
+
+impl Display for CompiledComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompiledComponent::Class(_) => write!(f, "Class"),
+            CompiledComponent::Datatype(_) => write!(f, "Datatype"),
+            CompiledComponent::NodeKind(_) => write!(f, "NodeKind"),
+            CompiledComponent::MinCount(_) => write!(f, "MinCount"),
+            CompiledComponent::MaxCount(_) => write!(f, "MaxCount"),
+            CompiledComponent::MinExclusive(_) => write!(f, "MinExclusive"),
+            CompiledComponent::MaxExclusive(_) => write!(f, "MaxExclusive"),
+            CompiledComponent::MinInclusive(_) => write!(f, "MinInclusive"),
+            CompiledComponent::MaxInclusive(_) => write!(f, "MaxInclusive"),
+            CompiledComponent::MinLength(_) => write!(f, "MinLength"),
+            CompiledComponent::MaxLength(_) => write!(f, "MaxLength"),
+            CompiledComponent::Pattern { .. } => write!(f, "Pattern"),
+            CompiledComponent::UniqueLang(_) => write!(f, "UniqueLang"),
+            CompiledComponent::LanguageIn { .. } => write!(f, "LanguageIn"),
+            CompiledComponent::Equals(_) => write!(f, "Equals"),
+            CompiledComponent::Disjoint(_) => write!(f, "Disjoint"),
+            CompiledComponent::LessThan(_) => write!(f, "LessThan"),
+            CompiledComponent::LessThanOrEquals(_) => write!(f, "LessThanOrEquals"),
+            CompiledComponent::Or { .. } => write!(f, "Or"),
+            CompiledComponent::And { .. } => write!(f, "And"),
+            CompiledComponent::Not { .. } => write!(f, "Not"),
+            CompiledComponent::Xone { .. } => write!(f, "Xone"),
+            CompiledComponent::Node { .. } => write!(f, "Node"),
+            CompiledComponent::HasValue { .. } => write!(f, "HasValue"),
+            CompiledComponent::In { .. } => write!(f, "In"),
+            CompiledComponent::QualifiedValueShape { .. } => {
+                write!(f, "QualifiedValueShape")
+            }
         }
     }
 }

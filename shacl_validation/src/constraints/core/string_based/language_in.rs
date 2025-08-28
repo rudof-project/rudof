@@ -80,7 +80,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LanguageIn {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for LanguageIn {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

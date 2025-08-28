@@ -78,6 +78,7 @@ pub trait Rdf: Sized {
 
     fn term_as_literal(term: &Self::Term) -> Result<Self::Literal, RDFError> {
         <Self::Term as TryInto<Self::Literal>>::try_into(term.clone()).map_err(|_| {
+            println!("Failed to convert term to literal: {term}");
             RDFError::TermAsLiteral {
                 term: term.to_string(),
             }
@@ -133,9 +134,10 @@ pub trait Rdf: Sized {
     }
 
     fn term_as_object(term: &Self::Term) -> Result<Object, RDFError> {
-        <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_| {
+        <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_e| {
             RDFError::TermAsObject {
                 term: format!("Converting term to object: {term}"),
+                error: "Error term_as_object".to_string(),
             }
         })
     }
@@ -143,15 +145,6 @@ pub trait Rdf: Sized {
     fn object_as_term(object: &Object) -> Self::Term {
         Self::Term::from(object.clone())
     }
-
-    /*fn subject_as_object(subj: &Self::Subject) -> Result<Object, RDFError> {
-        let term = Self::subject_as_term(subj);
-        <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsObject {
-                term: format!("Converting subject to object: {term}"),
-            }
-        })
-    }*/
 
     fn subject_as_node(subject: &Self::Subject) -> Result<Object, RDFError> {
         let term = Self::subject_as_term(subject);

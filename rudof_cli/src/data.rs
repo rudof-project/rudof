@@ -21,10 +21,16 @@ pub fn get_data_rudof(
     endpoint: &Option<String>,
     reader_mode: &RDFReaderMode,
     config: &RudofConfig,
+    allow_no_data: bool,
 ) -> Result<()> {
     match (data.is_empty(), endpoint) {
         (true, None) => {
-            bail!("None of `data` or `endpoint` parameters have been specified for validation")
+            if allow_no_data {
+                rudof.reset_data();
+                Ok(())
+            } else {
+                bail!("None of `data` or `endpoint` parameters have been specified for validation")
+            }
         }
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
@@ -120,7 +126,15 @@ pub fn run_data(
     if debug > 0 {
         println!("Config: {config:?}")
     }
-    get_data_rudof(&mut rudof, data, data_format, &None, reader_mode, config)?;
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        &None,
+        reader_mode,
+        config,
+        false,
+    )?;
     match check_result_format(result_format) {
         CheckResultFormat::RDFFormat(rdf_format) => {
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;

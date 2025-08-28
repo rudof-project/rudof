@@ -9,7 +9,7 @@ use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_with;
-use crate::shape::Validate;
+use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -18,11 +18,10 @@ use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for And {
+impl<S: NeighsRDF + Debug> Validator<S> for And {
     fn validate(
         &self,
         component: &CompiledComponent,
@@ -81,7 +80,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for And {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for And {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for And {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

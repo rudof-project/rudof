@@ -67,7 +67,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

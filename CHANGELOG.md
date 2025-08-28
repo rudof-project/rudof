@@ -7,6 +7,25 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.87
+### Added
+- Support for SHACL validation of: deactivated, closed, ignoredProperties
+
+### Fixed
+
+- Error with datatype test from SHACL validation
+
+### Changed
+- Command line interface for `shacl` option now suppports information from RDF data or Schema to have an interface similar to `shacl-validate`
+
+## v0.1.86
+### Added
+### Fixed
+### Changed
+- Updated dependency on py03 to use 0.25.1, it required adding Sync to Cond trait
+### Removed
+
+
 ## v0.1.84
 ### Added
 - Support for JSON-LD oslving issue #295

@@ -20,8 +20,8 @@ pub enum RDFError {
     #[error("Converting literal {literal} to SLiteral")]
     LiteralAsSLiteral { literal: String },
 
-    #[error("Converting Term {term} to Object")]
-    TermAsObject { term: String },
+    #[error("Converting Term {term} to Object: {error}")]
+    TermAsObject { term: String, error: String },
 
     #[error("Converting term {term} to subject")]
     TermAsSubject { term: String },

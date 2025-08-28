@@ -53,7 +53,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Closed {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Closed {
     fn validate_sparql(
         &self,
         component: &CompiledComponent,

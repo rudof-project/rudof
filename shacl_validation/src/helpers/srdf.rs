@@ -34,11 +34,15 @@ pub(crate) fn get_objects_for<S: NeighsRDF>(
             });
         }
     };
-
+    let subject_str = format!("{subject}");
+    let predicate_str = format!("{predicate}");
     let triples = store
         .triples_matching(subject, predicate.clone(), Any)
         .map_err(|e| SRDFError::Srdf {
-            error: e.to_string(),
+            error: format!(
+                "Error obtaining objects for subject {} and predicate {}: {e}",
+                subject_str, predicate_str
+            ),
         })?
         .map(Triple::into_object)
         .collect();

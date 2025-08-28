@@ -327,16 +327,6 @@ pub enum Command {
         data: Vec<InputSpec>,
 
         #[arg(
-            short = 's',
-            long = "shapes",
-            value_name = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
-        )]
-        shapes: Option<InputSpec>,
-
-        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
-        shapes_format: Option<CliShaclFormat>,
-
-        #[arg(
             short = 't',
             long = "data-format",
             value_name = "RDF Data format",
@@ -352,6 +342,16 @@ pub enum Command {
             value_enum
         )]
         reader_mode: RDFReaderMode,
+
+        #[arg(
+            short = 's',
+            long = "shapes",
+            value_name = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
+        )]
+        shapes: Option<InputSpec>,
+
+        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        shapes_format: Option<CliShaclFormat>,
 
         #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
         endpoint: Option<String>,
@@ -505,21 +505,40 @@ pub enum Command {
     },
 
     /// Show information about SHACL shapes
+    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar to Shacl-validate
     Shacl {
+        #[clap(value_parser = clap::value_parser!(InputSpec))]
+        data: Vec<InputSpec>,
+
+        #[arg(
+            short = 't',
+            long = "data-format",
+            value_name = "RDF Data format",
+            default_value_t = DataFormat::Turtle
+        )]
+        data_format: DataFormat,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
+
+        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        endpoint: Option<String>,
+
         #[arg(
             short = 's',
             long = "shapes",
             value_name = "Shapes graph (file, URI or -)"
         )]
-        shapes: InputSpec,
+        shapes: Option<InputSpec>,
 
-        #[arg(
-            short = 'f',
-            long = "shapes-format",
-            value_name = "Shapes file format",
-            default_value_t = CliShaclFormat::Turtle
-        )]
-        shapes_format: CliShaclFormat,
+        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        shapes_format: Option<CliShaclFormat>,
 
         #[arg(
             short = 'r',
@@ -535,15 +554,6 @@ pub enum Command {
             value_name = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
-
-        /// RDF Reader mode
-        #[arg(
-            long = "reader-mode",
-            value_name = "RDF Reader mode",
-            default_value_t = RDFReaderMode::default(),
-            value_enum
-        )]
-        reader_mode: RDFReaderMode,
 
         #[arg(
             long = "force-overwrite",

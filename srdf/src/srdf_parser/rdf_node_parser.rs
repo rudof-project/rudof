@@ -6,6 +6,7 @@ use std::{
 use iri_s::iri;
 use iri_s::IriS;
 use std::fmt::Debug;
+use tracing::debug;
 
 use crate::{
     matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, FocusRDF, NeighsRDF, Object, PResult,
@@ -775,15 +776,6 @@ where
     }
 }
 
-/// Parses the RDF list linked from the value of property `prop` at focus node
-///
-pub fn property_list<RDF>(prop: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Term>>
-where
-    RDF: FocusRDF,
-{
-    property_value(prop).and(rdf_list()).map(|(_, ls)| ls)
-}
-
 /// Created a parser that returns the boolean associated with the current focus node for `property`
 ///
 /// It doesn't move the current focus node
@@ -947,19 +939,19 @@ where
 /// Return the IRI values of `property` for the focus node
 ///
 /// If some value is not an IRI it fails, if there is no value returns an empty set
-pub fn property_values_iri<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = Vec<IriS>>
+pub fn property_values_iri<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = HashSet<IriS>>
 where
     RDF: FocusRDF,
 {
     property_values(property).flat_map(|values| {
-        let ints: Vec<_> = values
+        let iris: HashSet<_> = values
             .iter()
             .flat_map(|t| {
                 let iri = term_to_iri::<RDF>(t)?;
                 Ok::<IriS, RDFParseError>(iri)
             })
             .collect();
-        Ok(ints)
+        Ok(iris)
     })
 }
 
@@ -1062,11 +1054,59 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
         let subject = rdf.get_focus_as_subject()?;
         let pred: RDF::IRI = self.property.clone().into();
-        let values = rdf
+        let values: HashSet<_> = rdf
             .triples_matching(subject, pred, Any)
             .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
             .map(Triple::into_object)
             .collect();
+        Ok(values)
+    }
+}
+
+/// Returns the values of `property` for the focus node
+///
+/// If there is no value, it returns an empty set
+/// This is a debug version which prints tracing information
+///
+pub fn property_values_debug<RDF>(property: &IriS) -> PropertyValuesDebug<RDF>
+where
+    RDF: FocusRDF,
+{
+    PropertyValuesDebug {
+        property: property.clone(),
+        _marker_rdf: PhantomData,
+    }
+}
+
+pub struct PropertyValuesDebug<RDF: FocusRDF> {
+    property: IriS,
+    _marker_rdf: PhantomData<RDF>,
+}
+
+impl<RDF> RDFNodeParse<RDF> for PropertyValuesDebug<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = HashSet<RDF::Term>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
+        let subject = rdf.get_focus_as_subject()?;
+        let pred: RDF::IRI = self.property.clone().into();
+        let values: HashSet<_> = rdf
+            .triples_matching(subject.clone(), pred, Any)
+            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
+            .map(Triple::into_object)
+            .collect();
+        debug!(
+            "property_values: Subject {}, Property {}: {}",
+            subject,
+            self.property,
+            values
+                .iter()
+                .map(|v| format!("{v}"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
         Ok(values)
     }
 }
@@ -1148,7 +1188,7 @@ pub struct PropertyValueDebug<RDF: NeighsRDF> {
 
 impl<RDF> RDFNodeParse<RDF> for PropertyValueDebug<RDF>
 where
-    RDF: FocusRDF + Debug,
+    RDF: FocusRDF,
 {
     type Output = RDF::Term;
 
@@ -1157,11 +1197,21 @@ where
         let focus_node_str = match rdf.get_focus() {
             None => "No focus node".to_string(),
             Some(focus_node) => {
-                format!("{focus_node:?}")
+                format!("{focus_node}")
             }
         };
         let outgoing_arcs = p.parse_impl(rdf)?;
+        debug!("Property value: Focus node {focus_node_str}");
         if let Some(values) = outgoing_arcs.get(&self.property) {
+            debug!(
+                "Found values for property {} {}",
+                &self.property,
+                values
+                    .iter()
+                    .map(|v| format!("{v:?}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
             let mut values_iter = values.iter();
             if let Some(value1) = values_iter.next() {
                 if let Some(value2) = values_iter.next() {
@@ -2034,7 +2084,7 @@ where
 
 rdf_parser! {
     /// Parses the value of `property` as an RDF list
-    pub fn parse_property_value_as_list['a, RDF](property: &'a IriS)(RDF) -> Vec<RDF::Term>
+    pub fn property_value_as_list['a, RDF](property: &'a IriS)(RDF) -> Vec<RDF::Term>
         where [
         ] {
             property_value(property)

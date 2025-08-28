@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::shacl_vocab::{
@@ -5,6 +6,7 @@ use crate::shacl_vocab::{
     sh_property_shape, sh_severity, sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use iri_s::IriS;
 use srdf::Rdf;
 use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
 
@@ -67,6 +69,19 @@ impl<RDF: Rdf> PropertyShape<RDF> {
     pub fn with_group(mut self, group: Option<RDFNode>) -> Self {
         self.group = group;
         self
+    }
+
+    pub fn closed_component(&self) -> (bool, HashSet<IriS>) {
+        for component in &self.components {
+            if let Component::Closed {
+                is_closed,
+                ignored_properties,
+            } = component
+            {
+                return (*is_closed, ignored_properties.clone());
+            }
+        }
+        (false, HashSet::new())
     }
 
     pub fn with_targets(mut self, targets: Vec<Target<RDF>>) -> Self {

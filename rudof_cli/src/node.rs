@@ -33,7 +33,15 @@ pub fn run_node(
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
-    get_data_rudof(&mut rudof, data, data_format, endpoint, reader_mode, config)?;
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        endpoint,
+        reader_mode,
+        config,
+        false,
+    )?;
     let data = rudof.get_rdf_data();
     let node_selector = parse_node_selector(node_str)?;
     tracing::debug!("Node info with node selector: {node_selector:?}");
