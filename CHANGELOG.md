@@ -3,13 +3,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
-- Support for SHACL validation of: deactivated
+### Fixed
+### Changed
+### Removed
+
+## 0.1.87
+### Added
+- Support for SHACL validation of: deactivated, closed, ignoredProperties
 
 ### Fixed
 
+- Error with datatype test from SHACL validation
+
 ### Changed
 - Command line interface for `shacl` option now suppports information from RDF data or Schema to have an interface similar to `shacl-validate`
-### Removed
 
 ## v0.1.86
 ### Added
