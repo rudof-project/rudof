@@ -12,7 +12,6 @@ use shacl_ast::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,
     property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
 };
-use srdf::Literal;
 use srdf::{
     combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
     lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
@@ -22,6 +21,7 @@ use srdf::{
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple,
 };
+use srdf::{property_value_as_list, Literal};
 use srdf::{rdf_type, rdfs_class, FnOpaque};
 use std::collections::{HashMap, HashSet};
 
@@ -276,7 +276,7 @@ where
         datatype(),
         node_kind(),
         class(),
-        closed(),
+        closed_component(),
         or(),
         xone(),
         and(),
@@ -492,12 +492,12 @@ where
     )
 }
 
-/*fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
+fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
 where
     RDF: FocusRDF,
 {
     property_bool(sh_closed())
-}*/
+}
 
 /*opaque! {
     fn min_count[RDF]()(RDF) -> Vec<Component>
@@ -536,7 +536,6 @@ where
 }
 
 fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
@@ -545,7 +544,6 @@ where
 }
 
 fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
@@ -553,14 +551,43 @@ where
         .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
 }
 
-fn closed<RDF>() -> FnOpaque<RDF, Vec<Component>>
+fn closed_component<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_bool(sh_closed()).map(|ns| ns
-        .iter()
-        .map(|n| Component::closed(*n, Vec::new()))
-        .collect()))
+    opaque!(optional(closed()).then(move |maybe_closed| {
+        ignored_properties()
+            .map(move |is| maybe_closed.map_or(vec![], |b| vec![Component::closed(b, is)]))
+    }))
+}
+
+fn ignored_properties<RDF>() -> FnOpaque<RDF, HashSet<IriS>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(
+        optional(property_value_as_list(sh_ignored_properties())).flat_map(|is| {
+            match is {
+                None => Ok(HashSet::new()),
+                Some(vs) => {
+                    let mut hs = HashSet::new();
+                    for v in vs {
+                        if let Ok(iri) = RDF::term_as_iri(&v) {
+                            let iri: RDF::IRI = iri;
+                            let iri_string = iri.as_str();
+                            let iri_s = IriS::new_unchecked(iri_string);
+                            hs.insert(iri_s);
+                        } else {
+                            return Err(RDFParseError::ExpectedIRI {
+                                term: v.to_string(),
+                            });
+                        }
+                    }
+                    Ok(hs)
+                }
+            }
+        })
+    )
 }
 
 fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -632,7 +659,6 @@ where
 }
 
 fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {

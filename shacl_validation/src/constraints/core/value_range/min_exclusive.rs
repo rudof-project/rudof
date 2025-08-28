@@ -114,6 +114,9 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         let schema = parse_shacl_rdf(rdf).unwrap();
         let schema_ir = schema.try_into().unwrap();
         let report = validator.validate(&schema_ir).unwrap();
-        assert_eq!(report.results().len(), 4);
+        if report.results().len() != 5 {
+            println!("Report results should be 5:\n{report}");
+        }
+        assert_eq!(report.results().len(), 5);
     }
 }

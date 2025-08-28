@@ -9,7 +9,7 @@ pub mod shacl_config;
 /// a shapes graph and obtaining a Validation Report as a result.
 pub mod shacl_processor;
 pub mod shacl_validation_vocab;
-pub mod shape;
+pub mod shape_validation;
 /// Utilities for handling local graphs (serialized), SPARQL endpoints and SHACL
 /// shapes graphs.
 pub mod store;

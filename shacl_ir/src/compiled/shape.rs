@@ -102,10 +102,10 @@ impl CompiledShape {
         }
     }
 
-    pub fn ignored_properties(&self) -> HashSet<IriS> {
+    pub fn allowed_properties(&self) -> HashSet<IriS> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.ignored_properties(),
-            CompiledShape::PropertyShape(ps) => ps.ignored_properties(),
+            CompiledShape::NodeShape(ns) => ns.allowed_properties(),
+            CompiledShape::PropertyShape(ps) => ps.allowed_properties(),
         }
     }
 }

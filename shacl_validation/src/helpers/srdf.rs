@@ -40,10 +40,8 @@ pub(crate) fn get_objects_for<S: NeighsRDF>(
         .triples_matching(subject, predicate.clone(), Any)
         .map_err(|e| SRDFError::Srdf {
             error: format!(
-                "Error obtaining objects for subject {} and predicate {}: {}",
-                subject_str,
-                predicate_str,
-                e.to_string()
+                "Error obtaining objects for subject {} and predicate {}: {e}",
+                subject_str, predicate_str
             ),
         })?
         .map(Triple::into_object)

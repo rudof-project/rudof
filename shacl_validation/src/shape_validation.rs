@@ -78,9 +78,9 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
         let mut closed_validation_results = Vec::new();
         if self.closed() {
             for focus_node in focus_nodes.iter() {
-                let ignored_properties: HashSet<IriS> = self.ignored_properties();
+                let allowed_properties: HashSet<IriS> = self.allowed_properties();
                 println!("Checking closed for focus node: {focus_node}");
-                println!("Ignored properties: {:?}", ignored_properties);
+                println!("Allowed properties: {:?}", allowed_properties);
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
@@ -100,7 +100,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
                 println!("All properties: {:?}", all_properties);
 
                 let invalid_properties: Vec<IriS> = all_properties
-                    .difference(&ignored_properties.iter().cloned().collect())
+                    .difference(&allowed_properties.iter().cloned().collect())
                     .cloned()
                     .collect();
 

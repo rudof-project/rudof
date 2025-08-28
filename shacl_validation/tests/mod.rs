@@ -206,8 +206,6 @@ fn test(
         let validator = RdfDataValidation::from_rdf_data(test.data, mode);
         let report = validator.validate(&test.shapes.try_into()?)?;
         if report != test.report {
-            println!("Report found: {report}");
-            println!("Expected Report found: {}", test.report);
             return Err(TestSuiteError::NotEquals);
         }
     }

@@ -3,7 +3,7 @@ use crate::shacl_vocab::{
     sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
-use prefixmap::IriRef;
+use iri_s::IriS;
 use srdf::{BuildRDF, RDFNode, Rdf};
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -74,10 +74,10 @@ impl<RDF: Rdf> NodeShape<RDF> {
                 return true;
             }
         }
-        return false;
+        false
     }
 
-    pub fn closed_component(&self) -> (bool, Vec<IriRef>) {
+    pub fn closed_component(&self) -> (bool, HashSet<IriS>) {
         for component in &self.components {
             if let Component::Closed {
                 is_closed,
@@ -87,7 +87,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
                 return (*is_closed, ignored_properties.clone());
             }
         }
-        return (false, Vec::new());
+        (false, HashSet::new())
     }
 
     pub fn severity(&self) -> Option<Severity> {

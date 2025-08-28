@@ -13,9 +13,10 @@ use iri_s::{iri, IriS};
 use itertools::Itertools;
 use prefixmap::IriRef;
 use srdf::{lang::Lang, literal::SLiteral, BuildRDF, RDFNode};
+use std::collections::HashSet;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Component {
     Class(RDFNode),
     Datatype(IriRef),
@@ -54,7 +55,7 @@ pub enum Component {
     },
     Closed {
         is_closed: bool,
-        ignored_properties: Vec<IriRef>,
+        ignored_properties: HashSet<IriS>,
     },
     Node {
         shape: RDFNode,
@@ -175,7 +176,8 @@ impl Component {
                 Self::write_boolean(*is_closed, SH_CLOSED_STR, rdf_node, rdf)?;
 
                 ignored_properties.iter().try_for_each(|iri| {
-                    Self::write_iri(iri, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
+                    let iri_ref = IriRef::Iri(iri.clone());
+                    Self::write_iri(&iri_ref, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
                 })?;
             }
             Self::Node { shape } => {
@@ -308,7 +310,7 @@ impl Component {
         rdf.add_triple(node, iri!(predicate), value.clone())
     }
 
-    pub fn closed(is_closed: bool, ignored_properties: Vec<IriRef>) -> Self {
+    pub fn closed(is_closed: bool, ignored_properties: HashSet<IriS>) -> Self {
         Component::Closed {
             is_closed,
             ignored_properties,

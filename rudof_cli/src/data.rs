@@ -27,7 +27,7 @@ pub fn get_data_rudof(
         (true, None) => {
             if allow_no_data {
                 rudof.reset_data();
-                return Ok(());
+                Ok(())
             } else {
                 bail!("None of `data` or `endpoint` parameters have been specified for validation")
             }

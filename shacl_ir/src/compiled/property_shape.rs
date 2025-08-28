@@ -70,9 +70,9 @@ impl CompiledPropertyShape {
         self.closed_info.is_closed()
     }
 
-    pub fn ignored_properties(&self) -> HashSet<IriS> {
+    pub fn allowed_properties(&self) -> HashSet<IriS> {
         self.closed_info
-            .ignored_properties()
+            .allowed_properties()
             .cloned()
             .unwrap_or_else(HashSet::new)
     }
@@ -115,7 +115,7 @@ impl CompiledPropertyShape {
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;
 
-        let components = shape.components().iter().collect::<HashSet<_>>();
+        let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
             if let Some(component) = CompiledComponent::compile(component.to_owned(), schema)? {
@@ -135,7 +135,7 @@ impl CompiledPropertyShape {
             property_shapes.push(shape);
         }
 
-        let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, &schema)?;
+        let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)?;
 
         let compiled_property_shape = CompiledPropertyShape::new(
             id,

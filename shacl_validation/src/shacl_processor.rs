@@ -11,7 +11,7 @@ use std::path::Path;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
-use crate::shape::Validate;
+use crate::shape_validation::Validate;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
 use crate::store::Store;

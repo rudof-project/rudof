@@ -26,6 +26,7 @@ use crate::RDFReaderMode;
 use crate::ResultShaclValidationFormat;
 use anyhow::Result;
 
+#[allow(clippy::too_many_arguments)]
 pub fn run_shacl(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,

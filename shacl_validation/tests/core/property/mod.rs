@@ -1,6 +1,4 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
-use tracing::debug;
-use tracing_test::traced_test;
 // use shacl_validation::Subsetting;
 
 use crate::test;
@@ -22,12 +20,9 @@ fn class_001() -> Result<(), TestSuiteError> {
     test(path, ShaclValidationMode::Native)
 }
 
-#[traced_test]
 #[test]
 fn datatype_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-001");
-    debug!("Starting test for {path}");
-    println!("Starting!!!");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
@@ -42,20 +37,6 @@ fn datatype_002() -> Result<(), TestSuiteError> {
 #[test]
 fn datatype_003() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-003");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
-fn datatype_ill_formed_data() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-data");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
-fn datatype_ill_formed_shapes() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-shapes");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }

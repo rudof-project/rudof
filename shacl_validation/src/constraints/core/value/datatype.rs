@@ -17,25 +17,44 @@ use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
+use srdf::SLiteral;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for Datatype {
+impl<R: Rdf + Debug> Validator<R> for Datatype {
     fn validate(
         &self,
         component: &CompiledComponent,
         shape: &CompiledShape,
-        _: &S,
-        _: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
+        _: &R,
+        _: impl Engine<R>,
+        value_nodes: &ValueNodes<R>,
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let datatype = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = S::term_as_literal(value_node);
-            if let Ok(literal) = tmp {
-                return literal.datatype() != self.datatype().as_str();
+        let datatype_check = |value_node: &R::Term| {
+            println!(
+                "Datatype check: value node: {value_node} with datatype: {}",
+                self.datatype()
+            );
+            if let Ok(literal) = R::term_as_literal(value_node) {
+                match TryInto::<SLiteral>::try_into(literal.clone()) {
+                    Ok(SLiteral::WrongDatatypeLiteral {
+                        lexical_form,
+                        datatype,
+                        error,
+                    }) => {
+                        println!("Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}");
+                        true
+                    }
+                    Ok(_slit) => literal.datatype() != self.datatype().as_str(),
+                    Err(_) => {
+                        println!("Failed to convert literal to SLiteral: {literal}");
+                        true
+                    }
+                }
+            } else {
+                true
             }
-            true
         };
 
         let message = format!(
@@ -47,7 +66,7 @@ impl<S: Rdf + Debug> Validator<S> for Datatype {
             shape,
             value_nodes,
             ValueNodeIteration,
-            datatype,
+            datatype_check,
             &message,
             maybe_path,
         )

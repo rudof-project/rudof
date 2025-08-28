@@ -392,29 +392,45 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
                 let xsd_datetime = oxrdf::vocab::xsd::DATE_TIME.to_owned();
                 match &dtype {
-                    d if *d == xsd_double => {
-                        let double_value: f64 =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse double from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::double(
+                    d if *d == xsd_double => match value.parse() {
+                        Ok(double_value) => Ok(SLiteral::NumericLiteral(NumericLiteral::double(
                             double_value,
-                        )))
-                    }
-                    d if *d == xsd_decimal => {
-                        let num_value: Decimal =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse decimal from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
-                    }
-                    d if *d == xsd_integer => {
-                        let num_value: isize =
-                            value.parse().map_err(|_| RDFError::ConversionError {
-                                msg: format!("Failed to parse integer from value: {value}"),
-                            })?;
-                        Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
-                    }
+                        ))),
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_decimal => match value.parse() {
+                        Ok(num_value) => {
+                            Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
+                        }
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_integer => match value.parse() {
+                        Ok(num_value) => {
+                            Ok(SLiteral::NumericLiteral(NumericLiteral::integer(num_value)))
+                        }
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
                     d if *d == xsd_datetime => match XsdDateTime::new(&value) {
                         Ok(date_time) => Ok(SLiteral::DatetimeLiteral(date_time)),
                         Err(e) => {
