@@ -19,7 +19,11 @@ fn test(
 
     for test in tests {
         let validator = RdfDataValidation::from_rdf_data(test.data, mode);
-        let report = validator.validate(&test.shapes.try_into()?)?;
+        let report = validator.validate(&test.shapes.try_into()?).map_err(|e| {
+            TestSuiteError::Validation {
+                error: e.to_string(),
+            }
+        })?;
         if report != test.report {
             return Err(TestSuiteError::NotEquals);
         }

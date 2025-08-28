@@ -1,9 +1,7 @@
 use oxrdf::TryFromTermError;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::shacl_parser_error::ShaclParserError;
-use shacl_validation::{
-    validate_error::ValidateError, validation_report::validation_report_error::ReportError,
-};
+use shacl_validation::validation_report::validation_report_error::ReportError;
 use sparql_service::RdfDataError;
 use std::io::Error;
 use thiserror::Error;
