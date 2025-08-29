@@ -33,6 +33,7 @@ toml = { workspace = true }                        # needed for the config thing
 colored = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+anyhow.workspace = true
 
 [dev-dependencies]
 oxrdf.workspace = true
