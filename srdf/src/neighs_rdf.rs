@@ -50,6 +50,16 @@ pub trait NeighsRDF: Rdf {
         self.triples_matching(subject, Any, Any)
     }
 
+    /// We define this function to get all triples with a specific subject and predicate
+    /// This function could be optimized by some implementations
+    fn triples_with_subject_predicate(
+        &self,
+        subject: Self::Subject,
+        predicate: Self::IRI,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        self.triples_matching(subject, predicate, Any)
+    }
+
     fn triples_with_predicate(
         &self,
         predicate: Self::IRI,

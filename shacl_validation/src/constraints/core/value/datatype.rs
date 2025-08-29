@@ -31,7 +31,7 @@ impl<R: Rdf + Debug> Validator<R> for Datatype {
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let datatype_check = |value_node: &R::Term| {
+        let check = |value_node: &R::Term| {
             if let Ok(literal) = R::term_as_literal(value_node) {
                 match TryInto::<SLiteral>::try_into(literal.clone()) {
                     Ok(SLiteral::WrongDatatypeLiteral {
@@ -62,7 +62,7 @@ impl<R: Rdf + Debug> Validator<R> for Datatype {
             shape,
             value_nodes,
             ValueNodeIteration,
-            datatype_check,
+            check,
             &message,
             maybe_path,
         )

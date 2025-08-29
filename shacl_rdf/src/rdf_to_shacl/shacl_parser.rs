@@ -291,6 +291,10 @@ where
         min_exclusive(),
         max_inclusive(),
         max_exclusive(),
+        equals(),
+        disjoint(),
+        less_than(),
+        less_than_or_equals(),
     ])
 }
 
@@ -644,6 +648,62 @@ where
             .map(|n: &<RDF as Rdf>::Literal| {
                 let lit: SLiteral = n.as_literal();
                 Component::MaxExclusive(lit)
+            })
+            .collect()
+    }))
+}
+
+fn equals<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_iri(sh_equals()).map(|ns| {
+        ns.iter()
+            .map(|n| {
+                let iri: IriRef = IriRef::iri(n.clone());
+                Component::Equals(iri)
+            })
+            .collect()
+    }))
+}
+
+fn disjoint<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_iri(sh_disjoint()).map(|ns| {
+        ns.iter()
+            .map(|n| {
+                let iri: IriRef = IriRef::iri(n.clone());
+                Component::Disjoint(iri)
+            })
+            .collect()
+    }))
+}
+
+fn less_than<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_iri(sh_less_than()).map(|ns| {
+        ns.iter()
+            .map(|n| {
+                let iri: IriRef = IriRef::iri(n.clone());
+                Component::LessThan(iri)
+            })
+            .collect()
+    }))
+}
+
+fn less_than_or_equals<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_iri(sh_less_than_or_equals()).map(|ns| {
+        ns.iter()
+            .map(|n| {
+                let iri: IriRef = IriRef::iri(n.clone());
+                Component::LessThanOrEquals(iri)
             })
             .collect()
     }))

@@ -8,40 +8,54 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::LessThan;
 use shacl_ir::compiled::shape::CompiledShape;
+use srdf::subject;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
+use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 use tracing::debug;
 
-impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
+impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan
+where
+    <R as Rdf>::Err: Debug,
+{
     fn validate_native(
         &self,
         component: &CompiledComponent,
         shape: &CompiledShape,
-        _store: &R,
+        store: &R,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let datatype_check = |value_node: &R::Term| {
+        let mp = maybe_path.clone();
+        let check = |value_node: &R::Term| {
             debug!(
-                "Less than check: value node: {value_node} with values of property: {}",
-                self.iri()
+                "lessThan check: value node: {value_node} with values of property: {}. Path: {:?}",
+                self.iri(),
+                mp
+            );
+            let subject: R::Subject = <R as Rdf>::term_as_subject(value_node).unwrap();
+            let triples_to_compare = store
+                .triples_with_subject_predicate(subject, self.iri().clone().into())
+                .unwrap();
+            debug!(
+                "Triples to compare: {:?}",
+                triples_to_compare
+                    .map(|n| format!("{:?}", n))
+                    .collect::<Vec<_>>()
             );
             true
         };
+        let message = format!("Less than failed. Property {}", self.iri());
 
-        let message = format!(
-            "Less than constraint not satisfied. Expected less than: {}",
-            self.iri()
-        );
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
-            datatype_check,
+            check,
             &message,
             maybe_path,
         )

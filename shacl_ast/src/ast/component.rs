@@ -340,8 +340,8 @@ impl Display for Component {
             Component::LanguageIn { .. } => todo!(),
             Component::Equals(e) => write!(f, "equals({e})"),
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
-            Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
-            Component::LessThanOrEquals(lte) => write!(f, "uniqueLang({lte})"),
+            Component::LessThan(lt) => write!(f, "lessThan({lt})"),
+            Component::LessThanOrEquals(lte) => write!(f, "lessThanOrEquals({lte})"),
             Component::Or { shapes } => {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "or [{str}]")
