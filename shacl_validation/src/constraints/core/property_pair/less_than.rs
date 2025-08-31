@@ -1,15 +1,13 @@
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
-use crate::helpers::constraint::validate_with;
 use crate::helpers::constraint::validate_with_focus;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::LessThan;
 use shacl_ir::compiled::shape::CompiledShape;
-use srdf::subject;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
@@ -28,14 +26,10 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let mp = maybe_path.clone();
-        debug!("LessThan.validate_native with path: {:?}", mp);
+        // TODO: We should change the logic of the validation because now we do the loop inside the check and
+        // in this way, when there is a violation for a focus node, it returns that violation and so, it doesn't return other
+        // violations
         let check = |focus: &R::Term, value_node: &R::Term| {
-            debug!(
-                "lessThan check: focus: {focus}, value node: {value_node} with values of property: {}. Path: {:?}",
-                self.iri(),
-                mp
-            );
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
             let triples_to_compare = match store
                 .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
@@ -43,25 +37,38 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
                 Ok(iter) => iter,
                 Err(e) => {
                     debug!(
-                        "Error trying to find triples for subject {} and predicate {}: {e}",
+                        "LessThan: Error trying to find triples for subject {} and predicate {}: {e}",
                         subject,
                         self.iri()
                     );
                     return true;
                 }
             };
+            // This loop should be refactored to collect all violations and return them...
             for triple in triples_to_compare {
                 let value = triple.obj();
-                let value1 = <R as Rdf>::term_as_object(&value_node).unwrap();
-                let value2 = <R as Rdf>::term_as_object(&value).unwrap();
-                debug!("Comparing {value1} < {value2}");
-                if value1 >= value2 {
-                    debug!("LessThan constraint violated: {value_node} is not less than {value}");
-                    return true;
+                let value1 = <R as Rdf>::term_as_object(value_node).unwrap();
+                let value2 = <R as Rdf>::term_as_object(value).unwrap();
+                debug!("Comparing {value1} less than {value2}?");
+                match value1.partial_cmp(&value2) {
+                    None => {
+                        debug!("LessThan constraint violated: {value_node} is not comparable to {value}");
+                        return true;
+                    }
+                    Some(ord) if ord.is_ge() => {
+                        debug!(
+                            "LessThan constraint violated: {value_node} is not less than {value}"
+                        );
+                        return true;
+                    }
+                    _ => {}
                 }
             }
             false
         };
+
+        // We should do the loop over all candidates here
+
         let message = format!("Less than failed. Property {}", self.iri());
 
         validate_with_focus(

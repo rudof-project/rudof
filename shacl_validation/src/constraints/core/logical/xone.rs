@@ -15,9 +15,9 @@ use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Xone {

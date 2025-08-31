@@ -382,7 +382,7 @@ impl Disjoint {
         Disjoint { iri }
     }
 
-    pub fn iri_ref(&self) -> &IriS {
+    pub fn iri(&self) -> &IriS {
         &self.iri
     }
 }

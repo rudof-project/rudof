@@ -207,7 +207,7 @@ impl Display for ValidationReport {
             for result in self.results.iter() {
                 writeln!(
                     f,
-                    "{} node: {} {}{}{}{}{}",
+                    "{} node: {} {}\n{}{}{}{}",
                     show_object(result.severity(), &shacl_prefixmap),
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),

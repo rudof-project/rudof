@@ -7,9 +7,9 @@ use srdf::SHACLPath;
 use tracing::debug;
 
 use crate::constraints::constraint_error::ConstraintError;
+use crate::iteration_strategy::IterationStrategy;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::IterationStrategy;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 fn apply<S: Rdf, I: IterationStrategy<S>>(
@@ -67,15 +67,13 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
             match evaluator(focus_node, item) {
-                Ok(true) => {
-                    return Some(
-                        ValidationResult::new(focus, component, severity)
-                            .with_source(source.cloned())
-                            .with_message(message)
-                            .with_path(maybe_path.clone())
-                            .with_value(value),
-                    );
-                }
+                Ok(true) => Some(
+                    ValidationResult::new(focus, component, severity)
+                        .with_source(source.cloned())
+                        .with_message(message)
+                        .with_path(maybe_path.clone())
+                        .with_value(value),
+                ),
                 Ok(false) => None,
                 Err(err) => {
                     debug!(
