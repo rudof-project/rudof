@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use srdf::Rdf;
 
+/// Contains the set of focus nodes
 #[derive(Debug)]
 pub struct FocusNodes<S: Rdf>(HashSet<S::Term>);
 

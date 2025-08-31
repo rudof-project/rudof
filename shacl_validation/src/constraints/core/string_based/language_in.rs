@@ -17,8 +17,8 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 
 impl<S: Rdf + Debug> Validator<S> for LanguageIn {

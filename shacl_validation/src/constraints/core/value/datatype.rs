@@ -6,8 +6,8 @@ use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::component::Datatype;
@@ -31,7 +31,7 @@ impl<R: Rdf + Debug> Validator<R> for Datatype {
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let datatype_check = |value_node: &R::Term| {
+        let check = |value_node: &R::Term| {
             if let Ok(literal) = R::term_as_literal(value_node) {
                 match TryInto::<SLiteral>::try_into(literal.clone()) {
                     Ok(SLiteral::WrongDatatypeLiteral {
@@ -62,7 +62,7 @@ impl<R: Rdf + Debug> Validator<R> for Datatype {
             shape,
             value_nodes,
             ValueNodeIteration,
-            datatype_check,
+            check,
             &message,
             maybe_path,
         )
