@@ -29,13 +29,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&CompiledShape>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        tracing::debug!(
-            "Shape.validate with shape {} and source shape: {}",
-            self.id(),
-            source_shape
-                .map(|s| format!("{s:?}"))
-                .unwrap_or_else(|| "None".to_string())
-        );
+        tracing::debug!("Shape.validate with shape {}", self.id());
 
         // Skip validation if it is deactivated
         if *self.is_deactivated() {

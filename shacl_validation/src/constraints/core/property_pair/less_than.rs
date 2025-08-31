@@ -2,6 +2,7 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::helpers::constraint::validate_with;
+use crate::helpers::constraint::validate_with_focus;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
@@ -13,13 +14,11 @@ use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
+use srdf::Triple;
 use std::fmt::Debug;
 use tracing::debug;
 
-impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan
-where
-    <R as Rdf>::Err: Debug,
-{
+impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
     fn validate_native(
         &self,
         component: &CompiledComponent,
@@ -30,27 +29,42 @@ where
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mp = maybe_path.clone();
-        let check = |value_node: &R::Term| {
+        debug!("LessThan.validate_native with path: {:?}", mp);
+        let check = |focus: &R::Term, value_node: &R::Term| {
             debug!(
-                "lessThan check: value node: {value_node} with values of property: {}. Path: {:?}",
+                "lessThan check: focus: {focus}, value node: {value_node} with values of property: {}. Path: {:?}",
                 self.iri(),
                 mp
             );
-            let subject: R::Subject = <R as Rdf>::term_as_subject(value_node).unwrap();
-            let triples_to_compare = store
-                .triples_with_subject_predicate(subject, self.iri().clone().into())
-                .unwrap();
-            debug!(
-                "Triples to compare: {:?}",
-                triples_to_compare
-                    .map(|n| format!("{:?}", n))
-                    .collect::<Vec<_>>()
-            );
-            true
+            let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
+            let triples_to_compare = match store
+                .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
+            {
+                Ok(iter) => iter,
+                Err(e) => {
+                    debug!(
+                        "Error trying to find triples for subject {} and predicate {}: {e}",
+                        subject,
+                        self.iri()
+                    );
+                    return true;
+                }
+            };
+            for triple in triples_to_compare {
+                let value = triple.obj();
+                let value1 = <R as Rdf>::term_as_object(&value_node).unwrap();
+                let value2 = <R as Rdf>::term_as_object(&value).unwrap();
+                debug!("Comparing {value1} < {value2}");
+                if value1 >= value2 {
+                    debug!("LessThan constraint violated: {value_node} is not less than {value}");
+                    return true;
+                }
+            }
+            false
         };
         let message = format!("Less than failed. Property {}", self.iri());
 
-        validate_with(
+        validate_with_focus(
             component,
             shape,
             value_nodes,

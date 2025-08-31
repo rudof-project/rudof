@@ -4,6 +4,7 @@ use srdf::Object;
 use srdf::QueryRDF;
 use srdf::Rdf;
 use srdf::SHACLPath;
+use tracing::debug;
 
 use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
@@ -47,6 +48,50 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     Ok(results)
 }
 
+fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
+    component: &CompiledComponent,
+    shape: &CompiledShape,
+    value_nodes: &ValueNodes<S>,
+    iteration_strategy: I,
+    evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ConstraintError>,
+    message: &str,
+    maybe_path: Option<SHACLPath>,
+) -> Result<Vec<ValidationResult>, ConstraintError> {
+    let results = iteration_strategy
+        .iterate(value_nodes)
+        .flat_map(|(focus_node, item)| {
+            let focus = S::term_as_object(focus_node).ok()?;
+            let component = Object::iri(component.into());
+            let severity = Object::iri(shape.severity());
+            let shape_id = shape.id();
+            let source = Some(shape_id);
+            let value = iteration_strategy.to_object(item);
+            match evaluator(focus_node, item) {
+                Ok(true) => {
+                    return Some(
+                        ValidationResult::new(focus, component, severity)
+                            .with_source(source.cloned())
+                            .with_message(message)
+                            .with_path(maybe_path.clone())
+                            .with_value(value),
+                    );
+                }
+                Ok(false) => None,
+                Err(err) => {
+                    debug!(
+                        "LessThan.validate_native with focus: {:?}, err: {err}",
+                        focus
+                    );
+                    None
+                }
+            }
+        })
+        .collect();
+
+    Ok(results)
+}
+
+/// Validate with a boolean evaluator. If the evaluator returns true, it means that there is a violation
 pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     component: &CompiledComponent,
     shape: &CompiledShape,
@@ -62,6 +107,27 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
         value_nodes,
         iteration_strategy,
         |item: &I::Item| Ok(evaluator(item)),
+        message,
+        maybe_path,
+    )
+}
+
+/// Validate with a boolean evaluator. If the evaluator returns true, it means that there is a violation
+pub fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
+    component: &CompiledComponent,
+    shape: &CompiledShape,
+    value_nodes: &ValueNodes<S>,
+    iteration_strategy: I,
+    evaluator: impl Fn(&S::Term, &I::Item) -> bool,
+    message: &str,
+    maybe_path: Option<SHACLPath>,
+) -> Result<Vec<ValidationResult>, ConstraintError> {
+    apply_with_focus(
+        component,
+        shape,
+        value_nodes,
+        iteration_strategy,
+        |focus: &S::Term, item: &I::Item| Ok(evaluator(focus, item)),
         message,
         maybe_path,
     )
