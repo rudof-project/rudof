@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.87"
+version = "0.1.88"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
