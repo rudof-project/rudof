@@ -15,12 +15,12 @@ use shacl_ir::compiled::shape::CompiledShape;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use srdf::SLiteral;
 use std::fmt::Debug;
+use tracing::debug;
 
-impl<R: Rdf + Debug> Validator<R> for Datatype {
+impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
     fn validate(
         &self,
         component: &CompiledComponent,
@@ -39,12 +39,12 @@ impl<R: Rdf + Debug> Validator<R> for Datatype {
                         datatype,
                         error,
                     }) => {
-                        println!("Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}");
+                        debug!("Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}");
                         true
                     }
                     Ok(_slit) => literal.datatype() != self.datatype().as_str(),
                     Err(_) => {
-                        println!("Failed to convert literal to SLiteral: {literal}");
+                        debug!("Failed to convert literal to SLiteral: {literal}");
                         true
                     }
                 }

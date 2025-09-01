@@ -4,7 +4,7 @@ use shacl_ast::shacl_vocab::{
     sh_focus_node, sh_result_message, sh_result_path, sh_result_severity,
     sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
 };
-use srdf::{BuildRDF, NeighsRDF, Object, RDFNode, SHACLPath};
+use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -89,12 +89,11 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: NeighsRDF>(
-        store: &S,
+    pub(crate) fn parse<S: FocusRDF>(
+        store: &mut S,
         validation_result: &S::Term,
     ) -> Result<Self, ResultError> {
-        // 1. First, we must start processing the required fields. In case some
-        //    don't appear, an error message must be raised
+        // Start processing the required fields.
         let focus_node =
             match get_object_for(store, validation_result, &sh_focus_node().clone().into())? {
                 Some(focus_node) => focus_node,
@@ -121,7 +120,7 @@ impl ValidationResult {
             }
         };
 
-        // 2. Second, we must process the optional fields
+        // Process the optional fields
         let sh_result_path_iri: S::IRI = sh_result_path().clone().into();
         let path = get_path_for(store, validation_result, &sh_result_path_iri)?;
 

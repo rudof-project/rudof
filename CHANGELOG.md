@@ -7,6 +7,27 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.89
+### Added
+
+- Support for SHACL Paths
+- Support for sh:uniqueLang
+
+### Fixed
+- Error in sh:hasValue when the value was a literal
+
+### Changed
+### Removed
+
+
+## 0.1.88
+### Added
+
+Support for lessThan, lessThanOrEquals, equals and disjoint 
+### Fixed
+### Changed
+### Removed
+
 ## 0.1.87
 ### Added
 - Support for SHACL validation of: deactivated, closed, ignoredProperties

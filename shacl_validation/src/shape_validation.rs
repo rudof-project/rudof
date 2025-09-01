@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
@@ -9,6 +9,7 @@ use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
+use tracing::debug;
 
 /// Validate RDF data using SHACL
 pub trait Validate<S: Rdf> {
@@ -29,7 +30,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&CompiledShape>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        tracing::debug!("Shape.validate with shape {}", self.id());
+        debug!("Shape.validate with shape {}", self.id());
 
         // Skip validation if it is deactivated
         if *self.is_deactivated() {
@@ -41,11 +42,12 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
             Some(targets) => targets.to_owned(),
             None => self.focus_nodes(store, runner),
         };
+        debug!("Focus nodes for shape {}: {focus_nodes}", self.id());
 
-        // 2. Second we compute the ValueNodes; that is, the set of nodes that
-        //    are going to be used during validation. This set of
-        //    nodes is obtained from the set of focus nodes
-        let value_nodes = self.value_nodes(store, &focus_nodes, runner);
+        // ValueNodes = set of nodes that are going to be used during validation.
+        // This set of nodes is obtained from the set of focus nodes
+        let value_nodes = self.value_nodes(store, &focus_nodes, runner)?;
+        debug!("Value nodes for shape {}: {value_nodes}", self.id());
 
         // 3. Check each of the components
         let component_validation_results = self.components().iter().flat_map(move |component| {
@@ -73,8 +75,6 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
         if self.closed() {
             for focus_node in focus_nodes.iter() {
                 let allowed_properties: HashSet<IriS> = self.allowed_properties();
-                println!("Checking closed for focus node: {focus_node}");
-                println!("Allowed properties: {:?}", allowed_properties);
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
@@ -91,14 +91,10 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
                     Err(_) => Ok::<HashSet<IriS>, ValidateError>(HashSet::new()),
                 }?;
 
-                println!("All properties: {:?}", all_properties);
-
                 let invalid_properties: Vec<IriS> = all_properties
                     .difference(&allowed_properties.iter().cloned().collect())
                     .cloned()
                     .collect();
-
-                println!("Invalid properties: {:?}", invalid_properties);
 
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
@@ -107,7 +103,6 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
                         self.severity().into(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
-                    println!("Adding error {vr_single:?}");
                     closed_validation_results.push(vr_single);
                 }
             }
@@ -132,7 +127,7 @@ pub trait FocusNodesOps<S: Rdf> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S>;
 }
 
-impl<S: Rdf> FocusNodesOps<S> for CompiledShape {
+impl<S: NeighsRDF> FocusNodesOps<S> for CompiledShape {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
             .focus_nodes(store, self.targets())
@@ -146,16 +141,16 @@ pub trait ValueNodesOps<S: Rdf> {
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> ValueNodes<S>;
+    ) -> Result<ValueNodes<S>, ValidateError>;
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledShape {
+impl<S: NeighsRDF> ValueNodesOps<S> for CompiledShape {
     fn value_nodes(
         &self,
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> ValueNodes<S> {
+    ) -> Result<ValueNodes<S>, ValidateError> {
         match self {
             CompiledShape::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
             CompiledShape::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
@@ -164,30 +159,45 @@ impl<S: Rdf> ValueNodesOps<S> for CompiledShape {
 }
 
 impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape {
-    fn value_nodes(&self, _: &S, focus_nodes: &FocusNodes<S>, _: &dyn Engine<S>) -> ValueNodes<S> {
+    fn value_nodes(
+        &self,
+        _: &S,
+        focus_nodes: &FocusNodes<S>,
+        _: &dyn Engine<S>,
+    ) -> Result<ValueNodes<S>, ValidateError> {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
                 focus_node.clone(),
-                FocusNodes::new(std::iter::once(focus_node.clone())),
+                FocusNodes::from_iter(std::iter::once(focus_node.clone())),
             )
         });
-        ValueNodes::new(value_nodes)
+        Ok(ValueNodes::new(value_nodes))
     }
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledPropertyShape {
+impl<S: NeighsRDF> ValueNodesOps<S> for CompiledPropertyShape {
     fn value_nodes(
         &self,
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> ValueNodes<S> {
+    ) -> Result<ValueNodes<S>, ValidateError> {
         let value_nodes = focus_nodes.iter().filter_map(|focus_node| {
-            runner
-                .path(store, self, focus_node)
-                .ok()
-                .map(|targets| (focus_node.clone(), targets))
+            match runner.path(store, self, focus_node) {
+                Ok(ts) => Some((focus_node.clone(), ts)),
+                Err(e) => {
+                    debug!(
+                        "Error calculating nodes for focus node {} with path {}: {}",
+                        focus_node,
+                        self.path(),
+                        e
+                    );
+                    // We are currently ust ignoring this case
+                    // TODO: Should we add a violation for this case?
+                    None
+                }
+            }
         });
-        ValueNodes::new(value_nodes)
+        Ok(ValueNodes::new(value_nodes))
     }
 }

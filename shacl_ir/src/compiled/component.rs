@@ -799,34 +799,183 @@ impl From<&CompiledComponent> for IriS {
 impl Display for CompiledComponent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledComponent::Class(_) => write!(f, "Class"),
-            CompiledComponent::Datatype(_) => write!(f, "Datatype"),
-            CompiledComponent::NodeKind(_) => write!(f, "NodeKind"),
-            CompiledComponent::MinCount(_) => write!(f, "MinCount"),
-            CompiledComponent::MaxCount(_) => write!(f, "MaxCount"),
-            CompiledComponent::MinExclusive(_) => write!(f, "MinExclusive"),
-            CompiledComponent::MaxExclusive(_) => write!(f, "MaxExclusive"),
-            CompiledComponent::MinInclusive(_) => write!(f, "MinInclusive"),
-            CompiledComponent::MaxInclusive(_) => write!(f, "MaxInclusive"),
-            CompiledComponent::MinLength(_) => write!(f, "MinLength"),
-            CompiledComponent::MaxLength(_) => write!(f, "MaxLength"),
-            CompiledComponent::Pattern { .. } => write!(f, "Pattern"),
-            CompiledComponent::UniqueLang(_) => write!(f, "UniqueLang"),
-            CompiledComponent::LanguageIn { .. } => write!(f, "LanguageIn"),
-            CompiledComponent::Equals(_) => write!(f, "Equals"),
-            CompiledComponent::Disjoint(_) => write!(f, "Disjoint"),
-            CompiledComponent::LessThan(_) => write!(f, "LessThan"),
-            CompiledComponent::LessThanOrEquals(_) => write!(f, "LessThanOrEquals"),
+            CompiledComponent::Class(cls) => write!(f, "Class {:}", cls.class_rule()),
+            CompiledComponent::Datatype(dt) => write!(f, "Datatype: {}", dt.datatype()),
+            CompiledComponent::NodeKind(nk) => write!(f, "NodeKind: {}", nk.node_kind()),
+            CompiledComponent::MinCount(n) => write!(f, " {n}"),
+            CompiledComponent::MaxCount(n) => write!(f, " {n}"),
+            CompiledComponent::MinExclusive(n) => write!(f, " {n}"),
+            CompiledComponent::MaxExclusive(n) => write!(f, " {n}"),
+            CompiledComponent::MinInclusive(n) => write!(f, " {n}"),
+            CompiledComponent::MaxInclusive(n) => write!(f, " {n}"),
+            CompiledComponent::MinLength(n) => write!(f, " {n}"),
+            CompiledComponent::MaxLength(n) => write!(f, " {n}"),
+            CompiledComponent::Pattern(pat) => write!(f, " {pat}"),
+            CompiledComponent::UniqueLang(ul) => write!(f, " {ul}"),
+            CompiledComponent::LanguageIn(l) => write!(f, " {l}"),
+            CompiledComponent::Equals(p) => write!(f, " {p}"),
+            CompiledComponent::Disjoint(p) => write!(f, " {p}"),
+            CompiledComponent::LessThan(p) => write!(f, " {p}"),
+            CompiledComponent::LessThanOrEquals(p) => write!(f, " {p}"),
             CompiledComponent::Or { .. } => write!(f, "Or"),
             CompiledComponent::And { .. } => write!(f, "And"),
             CompiledComponent::Not { .. } => write!(f, "Not"),
             CompiledComponent::Xone { .. } => write!(f, "Xone"),
             CompiledComponent::Node { .. } => write!(f, "Node"),
-            CompiledComponent::HasValue { .. } => write!(f, "HasValue"),
-            CompiledComponent::In { .. } => write!(f, "In"),
-            CompiledComponent::QualifiedValueShape { .. } => {
-                write!(f, "QualifiedValueShape")
+            CompiledComponent::HasValue(value) => write!(f, " {}", value),
+            CompiledComponent::In(vs) => write!(f, " {}", vs),
+            CompiledComponent::QualifiedValueShape(qvs) => {
+                write!(f, " {}", qvs)
             }
         }
+    }
+}
+
+impl Display for MinCount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MinCount: {}", self.min_count())
+    }
+}
+
+impl Display for MaxCount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MaxCount: {}", self.max_count())
+    }
+}
+
+impl Display for And {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "And: {} shapes", self.shapes().len())
+    }
+}
+
+impl Display for Not {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Not: {}", self.shape())
+    }
+}
+
+impl Display for Or {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Or: {} shapes", self.shapes().len())
+    }
+}
+
+impl Display for Equals {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Equals: {}", self.iri())
+    }
+}
+
+impl Display for Disjoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Disjoint: {}", self.iri())
+    }
+}
+
+impl Display for LessThan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LessThan: {}", self.iri())
+    }
+}
+
+impl Display for LessThanOrEquals {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LessThanOrEquals: {}", self.iri())
+    }
+}
+
+impl Display for MinInclusive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MinInclusive: {}", self.min_inclusive)
+    }
+}
+
+impl Display for MaxInclusive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MaxInclusive: {}", self.max_inclusive())
+    }
+}
+
+impl Display for MinExclusive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MinExclusive: {}", self.min_exclusive())
+    }
+}
+
+impl Display for MaxExclusive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MaxExclusive: {}", self.max_exclusive())
+    }
+}
+
+impl Display for MinLength {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MinLength: {}", self.min_length())
+    }
+}
+
+impl Display for MaxLength {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MaxLength: {}", self.max_length())
+    }
+}
+
+impl Display for In {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let values = self
+            .values()
+            .iter()
+            .map(|v| format!("{v}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(f, "In: [{}]", values)
+    }
+}
+
+impl Display for HasValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HasValue: {}", self.value())
+    }
+}
+
+impl Display for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(flags) = &self.flags {
+            write!(f, "Pattern: /{}/{}", self.pattern(), flags)
+        } else {
+            write!(f, "Pattern: /{}/", self.pattern())
+        }
+    }
+}
+
+impl Display for QualifiedValueShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "QualifiedValueShape: shape: {}, qualifiedMinCount: {:?}, qualifiedMaxCount: {:?}, qualifiedValueShapesDisjoint: {:?}",
+            self.shape(),
+            self.qualified_min_count(),
+            self.qualified_max_count(),
+            self.qualified_value_shapes_disjoint()
+        )
+    }
+}
+
+impl Display for UniqueLang {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UniqueLang: {}", self.unique_lang())
+    }
+}
+
+impl Display for LanguageIn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let langs = self
+            .langs()
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(f, "LanguageIn: [{}]", langs)
     }
 }

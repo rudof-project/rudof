@@ -148,6 +148,13 @@ impl SLiteral {
         }
     }
 
+    pub fn lang(&self) -> Option<Lang> {
+        match self {
+            SLiteral::StringLiteral { lang, .. } => lang.clone(),
+            _ => None,
+        }
+    }
+
     pub fn lexical_form(&self) -> String {
         match self {
             SLiteral::StringLiteral { lexical_form, .. } => lexical_form.clone(),

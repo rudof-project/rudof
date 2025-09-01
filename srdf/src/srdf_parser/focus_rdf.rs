@@ -26,6 +26,7 @@ pub trait FocusRDF: NeighsRDF {
                 let subject =
                     Self::term_as_subject(term).map_err(|_| RDFParseError::ExpectedSubject {
                         node: format!("{term}"),
+                        context: "get_focus_as_subject".to_string(),
                     })?;
                 Ok(subject)
             }

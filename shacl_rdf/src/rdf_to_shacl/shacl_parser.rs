@@ -21,8 +21,9 @@ use srdf::{
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple,
 };
-use srdf::{property_value_as_list, Literal};
+use srdf::{property_string, property_value_as_list, Literal};
 use srdf::{rdf_type, rdfs_class, FnOpaque};
+use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
 
 /// Result type for the ShaclParser
@@ -110,11 +111,23 @@ where
         // elements of `sh:not` list
         let sh_node_values = self.get_sh_node_values()?;
 
-        // TODO: subjects with type `sh:PropertyShape`
-        let property_shapes_instances = HashSet::new();
+        // Subjects with type `sh:PropertyShape`
+        let property_shapes_instances: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_property_shape_iri())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
 
-        // TODO: subjects with type `sh:Shape`
-        let shape_instances = HashSet::new();
+        // Subjects with type `sh:Shape`
+        let shape_instances: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_shape_iri())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
 
         // I would prefer a code like: node_shape_instances.union(subjects_property).union(...)
         // But looking to the union API in HashSet, I think it can't be chained
@@ -138,7 +151,7 @@ where
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Ok(subj) = term_to_subject::<RDF>(&v) {
+                if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:or") {
                     rs.insert(subj.clone());
                 } else {
                     return Err(ShaclParserError::OrValueNoSubject {
@@ -156,7 +169,7 @@ where
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Ok(subj) = &term_to_subject::<RDF>(&v) {
+                if let Ok(subj) = &term_to_subject::<RDF>(&v, "sh:xone") {
                     rs.insert(subj.clone());
                 } else {
                     return Err(ShaclParserError::XOneValueNoSubject {
@@ -174,7 +187,7 @@ where
             self.rdf_parser.set_focus(&subject.into());
             let vs = rdf_list().parse_impl(&mut self.rdf_parser.rdf)?;
             for v in vs {
-                if let Ok(subj) = term_to_subject::<RDF>(&v) {
+                if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:and") {
                     rs.insert(subj);
                 } else {
                     return Err(ShaclParserError::AndValueNoSubject {
@@ -203,13 +216,14 @@ where
     }
 
     fn objects_with_predicate(&self, pred: RDF::IRI) -> Result<HashSet<RDF::Subject>> {
+        let msg = format!("objects with predicate {pred}");
         let values_as_subjects = self
             .rdf_parser
             .rdf
             .triples_with_predicate(pred)
             .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
             .map(Triple::into_object)
-            .flat_map(|t| term_to_subject::<RDF>(&t))
+            .flat_map(|t| term_to_subject::<RDF>(&t.clone(), msg.as_str()))
             .collect();
         Ok(values_as_subjects)
     }
@@ -225,6 +239,14 @@ where
 
     fn sh_node_shape_iri() -> RDF::Term {
         RDF::iris_as_term(sh_node_shape())
+    }
+
+    fn sh_property_shape_iri() -> RDF::Term {
+        RDF::iris_as_term(sh_property_shape())
+    }
+
+    fn sh_shape_iri() -> RDF::Term {
+        RDF::iris_as_term(sh_shape())
     }
 
     fn sh_property_iri() -> RDF::IRI {
@@ -286,6 +308,7 @@ where
         max_length(),
         has_value(),
         language_in(),
+        unique_lang(),
         pattern(),
         min_inclusive(),
         min_exclusive(),
@@ -304,27 +327,22 @@ fn property_shape<'a, RDF>(
 where
     RDF: FocusRDF + 'a,
 {
-    optional(has_type(sh_property_shape().clone()))
-        .with(
-            object()
-                .and(path())
-                .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
-        )
-        .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
-        /* .then(|ps| {
-            optional(closed()).flat_map(move |c| {
-                if let Some(true) = c {
-                    Ok(ps.clone().with_closed(true))
-                } else {
-                    Ok(ps.clone())
-                }
+    get_focus().then(move |focus: RDF::Term| {
+        optional(has_type(sh_property_shape().clone()))
+            .with(
+                object()
+                    .and(path())
+                    .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
+            )
+            // The following line is required because the path parser moves the focus node
+            .then(move |ps| set_focus(&focus.clone()).with(ok(&ps)))
+            .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
+            .then(|ps| {
+                property_shapes()
+                    .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
             })
-        })*/
-        .then(|ps| {
-            property_shapes()
-                .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
-        })
-        .then(move |ps| property_shape_components(ps))
+            .then(move |ps| property_shape_components(ps))
+    })
 }
 
 fn property_shape_components<RDF>(
@@ -425,12 +443,16 @@ fn cnv_or_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> PResult<Component> {
     Ok(Component::Or { shapes })
 }
 
-fn term_to_subject<RDF>(term: &RDF::Term) -> std::result::Result<RDF::Subject, ShaclParserError>
+fn term_to_subject<RDF>(
+    term: &RDF::Term,
+    context: &str,
+) -> std::result::Result<RDF::Subject, ShaclParserError>
 where
     RDF: FocusRDF,
 {
     RDF::term_as_subject(term).map_err(|_| ShaclParserError::ExpectedSubject {
         term: term.to_string(),
+        context: context.to_string(),
     })
 }
 
@@ -465,22 +487,7 @@ fn path<RDF>() -> impl RDFNodeParse<RDF, Output = SHACLPath>
 where
     RDF: FocusRDF,
 {
-    property_value(sh_path()).then(shacl_path)
-}
-
-/// Parses the current focus node as a SHACL path
-fn shacl_path<RDF>(term: RDF::Term) -> impl RDFNodeParse<RDF, Output = SHACLPath>
-where
-    RDF: FocusRDF,
-{
-    if let Ok(iri) = RDF::term_as_iri(&term) {
-        let iri: RDF::IRI = iri;
-        let iri_string = iri.as_str();
-        let iri_s = IriS::new_unchecked(iri_string);
-        ok(&SHACLPath::iri(iri_s))
-    } else {
-        todo!()
-    }
+    property_value(sh_path()).then(shacl_path_parse)
 }
 
 fn targets<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
@@ -783,18 +790,21 @@ fn language_in<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
 }
 
 fn pattern<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
-    // impl RDFNodeParse<R, Output = Vec<Component>> {
-    opaque!(
-        property_values_string(sh_pattern()).flat_map(|strs| match strs.len() {
+    opaque!(optional(flags()).then(move |maybe_flags| {
+        property_values_string(sh_pattern()).flat_map(move |strs| match strs.len() {
             0 => Ok(Vec::new()),
             1 => {
                 let pattern = strs.first().unwrap().clone();
-                let flags = None;
+                let flags = maybe_flags.clone();
                 Ok(vec![Component::Pattern { pattern, flags }])
             }
             _ => todo!(), // Error...
         })
-    )
+    }))
+}
+
+fn flags<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = String> {
+    property_string(sh_flags())
 }
 
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
@@ -808,7 +818,7 @@ fn parse_has_value_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
 where
     RDF: FocusRDF,
 {
-    term().flat_map(cnv_has_value::<RDF>)
+    term().flat_map(|t| cnv_has_value::<RDF>(t))
 }
 
 fn parse_language_in_values<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Component> {
@@ -819,7 +829,7 @@ fn cnv_has_value<RDF>(term: RDF::Term) -> std::result::Result<Component, RDFPars
 where
     RDF: Rdf,
 {
-    let value = term_to_value::<RDF>(&term)?;
+    let value = term_to_value::<RDF>(&term, "parsing hasValue")?;
     Ok(Component::HasValue { value })
 }
 
@@ -830,13 +840,14 @@ fn cnv_language_in_list<R: FocusRDF>(
     Ok(Component::LanguageIn { langs })
 }
 
-fn term_to_value<RDF>(term: &RDF::Term) -> std::result::Result<Value, RDFParseError>
+fn term_to_value<RDF>(term: &RDF::Term, msg: &str) -> std::result::Result<Value, RDFParseError>
 where
     RDF: Rdf,
 {
     if term.is_blank_node() {
         Err(RDFParseError::BlankNodeNoValue {
             bnode: term.to_string(),
+            msg: msg.to_string(),
         })
     } else if let Ok(iri) = RDF::term_as_iri(term) {
         let iri: RDF::IRI = iri;
@@ -847,6 +858,7 @@ where
         let literal: RDF::Literal = literal;
         Ok(Value::Literal(literal.as_literal()))
     } else {
+        println!("Unexpected code in term_to_value: {term}: {msg}");
         todo!()
     }
 }
@@ -855,7 +867,10 @@ fn cnv_in_list<RDF>(ls: Vec<RDF::Term>) -> std::result::Result<Component, RDFPar
 where
     RDF: Rdf,
 {
-    let values = ls.iter().flat_map(term_to_value::<RDF>).collect();
+    let values = ls
+        .iter()
+        .flat_map(|t| term_to_value::<RDF>(t, "parsing in list"))
+        .collect();
     Ok(Component::In { values })
 }
 
@@ -1046,4 +1061,12 @@ mod tests {
             _ => panic!("Shape has not a LanguageIn component"),
         }
     }
+}
+
+fn unique_lang<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values_bool(sh_unique_lang())
+        .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect()))
 }

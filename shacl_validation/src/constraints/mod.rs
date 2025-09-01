@@ -3,7 +3,6 @@ use shacl_ir::compiled::component::CompiledComponent;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -15,7 +14,7 @@ use crate::value_nodes::ValueNodes;
 pub mod constraint_error;
 pub mod core;
 
-pub trait Validator<S: Rdf + Debug> {
+pub trait Validator<S: NeighsRDF + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,

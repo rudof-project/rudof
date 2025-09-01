@@ -10,6 +10,9 @@ pub enum RDFParseError {
     #[error("Expected focus node to be boolean but found: {term}")]
     ExpectedBoolean { term: String },
 
+    #[error("Expected focus node to be IRI or BNode but found: {term}")]
+    UnexpectedLiteral { term: String },
+
     #[error("Converting Term to RDFNode failed: {term}")]
     TermToRDFNodeFailed { term: String },
 
@@ -22,8 +25,8 @@ pub enum RDFParseError {
     #[error("Expected focus node to be string but found: {term}")]
     ExpectedString { term: String },
 
-    #[error("Expected IRI or Literal value but obtained blank node: {bnode}")]
-    BlankNodeNoValue { bnode: String },
+    #[error("Expected IRI or Literal value but obtained blank node: {bnode}: {msg}")]
+    BlankNodeNoValue { bnode: String, msg: String },
 
     #[error("RDF Error: {err}")]
     SRDFError { err: String },
@@ -56,8 +59,8 @@ pub enum RDFParseError {
         value2: String,
     },
 
-    #[error("Expected node to act as subject: {node}")]
-    ExpectedSubject { node: String },
+    #[error("Expected node to act as subject: {node} in {context}")]
+    ExpectedSubject { node: String, context: String },
 
     #[error("Error parsing RDF list. Value: {node} has already been visited")]
     RecursiveRDFList { node: String },

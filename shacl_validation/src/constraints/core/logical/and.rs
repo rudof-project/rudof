@@ -36,7 +36,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
             self.shapes()
                 .iter()
                 .all(|shape| {
-                    let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
+                    let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
                     match shape.validate(store, &engine, Some(&focus_nodes), Some(shape)) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,

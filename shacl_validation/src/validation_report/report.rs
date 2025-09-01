@@ -4,7 +4,7 @@ use crate::helpers::srdf::get_objects_for;
 use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
-use srdf::{BuildRDF, NeighsRDF, Object, Rdf, SHACLPath};
+use srdf::{BuildRDF, FocusRDF, Object, Rdf, SHACLPath};
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
@@ -68,7 +68,7 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<S: NeighsRDF>(store: &S, subject: S::Term) -> Result<Self, ReportError> {
+    pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in get_objects_for(store, &subject, &sh_result().clone().into())? {
             results.push(ValidationResult::parse(store, &result)?);

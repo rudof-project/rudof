@@ -12,11 +12,10 @@ use shacl_ir::compiled::component::QualifiedValueShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for QualifiedValueShape {
+impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
         &self,
         _component: &CompiledComponent,

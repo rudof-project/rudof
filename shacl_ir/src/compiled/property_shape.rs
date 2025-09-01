@@ -155,20 +155,34 @@ impl CompiledPropertyShape {
 impl Display for CompiledPropertyShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Property shape {}", self.id)?;
-        writeln!(f, " Deactivated: {}", self.deactivated)?;
-        writeln!(f, " Severity: {}", self.severity())?;
-        writeln!(f, " Closed: {}", self.closed())?;
-        writeln!(f, " Components:")?;
-        for component in &self.components {
-            writeln!(f, "  - {}", component)?;
+        writeln!(f, " path: {}", self.path)?;
+        if self.deactivated {
+            writeln!(f, " Deactivated: {}", self.deactivated)?;
         }
-        writeln!(f, " Targets:")?;
-        for target in &self.targets {
-            writeln!(f, "  - {}", target)?;
+        writeln!(f, " severity: {}", self.severity())?;
+        if self.closed() {
+            writeln!(f, " closed: {}", self.closed())?;
         }
-        writeln!(f, " Property Shapes:")?;
-        for property_shape in &self.property_shapes {
-            writeln!(f, "  - {}", property_shape)?;
+        let mut components = self.components().iter().peekable();
+        if components.peek().is_some() {
+            writeln!(f, " Components:")?;
+            for component in &self.components {
+                writeln!(f, "  - {}", component)?;
+            }
+        }
+        let mut targets = self.targets().iter().peekable();
+        if targets.peek().is_some() {
+            writeln!(f, " Targets:")?;
+            for target in &self.targets {
+                writeln!(f, "  - {}", target)?;
+            }
+        }
+        let mut property_shapes = self.property_shapes().iter().peekable();
+        if property_shapes.peek().is_some() {
+            writeln!(f, " Property Shapes:")?;
+            for property_shape in &self.property_shapes {
+                writeln!(f, "  - {}", property_shape)?;
+            }
         }
         Ok(())
     }

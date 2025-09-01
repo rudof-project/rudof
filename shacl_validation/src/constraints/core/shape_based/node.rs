@@ -31,7 +31,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
-            let focus_nodes = FocusNodes::new(std::iter::once(value_node.clone()));
+            let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
             let inner_results =
                 self.shape()
                     .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));

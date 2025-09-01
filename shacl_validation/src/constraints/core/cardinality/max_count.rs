@@ -3,7 +3,6 @@ use shacl_ir::compiled::component::MaxCount;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
@@ -20,7 +19,7 @@ use crate::iteration_strategy::FocusNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-impl<S: Rdf + Debug> Validator<S> for MaxCount {
+impl<S: NeighsRDF + Debug> Validator<S> for MaxCount {
     fn validate(
         &self,
         component: &CompiledComponent,

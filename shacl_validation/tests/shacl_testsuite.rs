@@ -14,7 +14,7 @@ fn test(
     mode: ShaclValidationMode,
     // subsetting: Subsetting,
 ) -> Result<(), TestSuiteError> {
-    let manifest = Manifest::new(Path::new(&path))?;
+    let mut manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 
     for test in tests {

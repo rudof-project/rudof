@@ -1,6 +1,5 @@
 use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::rdf_type;
 use srdf::rdfs_subclass_of;
@@ -10,11 +9,10 @@ use srdf::SHACLPath;
 use srdf::Term;
 use srdf::Triple;
 
-use super::Engine;
 use crate::constraints::NativeDeref;
 use crate::constraints::ShaclComponent;
+use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::srdf::get_objects_for;
 use crate::helpers::srdf::get_subjects_for;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
@@ -52,7 +50,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         if node.is_blank_node() {
             Err(ValidateError::TargetNodeBlankNode)
         } else {
-            Ok(FocusNodes::new(std::iter::once(node.clone())))
+            Ok(FocusNodes::from_iter(std::iter::once(node.clone())))
         }
     }
 
@@ -66,7 +64,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             })?
             .map(|subj| S::subject_as_term(&subj));
 
-        Ok(FocusNodes::new(focus_nodes))
+        Ok(FocusNodes::from_iter(focus_nodes))
     }
 
     fn target_subject_of(
@@ -80,7 +78,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
-        let focus_nodes = FocusNodes::new(subjects);
+        let focus_nodes = FocusNodes::from_iter(subjects);
         Ok(focus_nodes)
     }
 
@@ -94,7 +92,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             .triples_with_predicate(pred)
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_object);
-        Ok(FocusNodes::new(objects))
+        Ok(FocusNodes::from_iter(objects))
     }
 
     fn implicit_target_class(
@@ -115,17 +113,19 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
                         .flatten()
                 });
 
-        Ok(FocusNodes::new(targets.into_iter().chain(subclass_targets)))
+        Ok(FocusNodes::from_iter(
+            targets.into_iter().chain(subclass_targets),
+        ))
     }
 
-    fn predicate(
+    /*     fn predicate(
         &self,
         store: &S,
         _: &CompiledPropertyShape,
         predicate: &S::IRI,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        Ok(FocusNodes::new(
+        Ok(FocusNodes::from_iter(
             get_objects_for(store, focus_node, predicate)?.into_iter(),
         ))
     }
@@ -144,11 +144,12 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn sequence(
         &self,
-        _store: &S,
-        _shape: &CompiledPropertyShape,
-        _paths: &[SHACLPath],
-        _focus_node: &S::Term,
+        store: &S,
+        shape: &CompiledPropertyShape,
+        paths: &[SHACLPath],
+        focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
+        debug!("Sequence path not yet implemented");
         Err(ValidateError::NotImplemented {
             msg: "sequence".to_string(),
         })
@@ -200,5 +201,5 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_one".to_string(),
         })
-    }
+    } */
 }

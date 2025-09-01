@@ -1,11 +1,11 @@
-@prefix ex:     <http://example.org/> .
+@prefix :     <http://example.org/> .
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
         
-ex:StanfordGraduate
+:StanfordGraduate
 	a sh:NodeShape ;
-	sh:targetNode ex:Alice ;
+	sh:targetNode :Alice ;
 	sh:property [
-		sh:path ex:alumniOf ;
-		sh:hasValue ex:Stanford ;
+		sh:path :alumniOf ;
+		sh:hasValue "Stanford" ;
 	] .

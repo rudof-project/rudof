@@ -39,9 +39,9 @@ impl Manifest {
             error: e.to_string(),
         })?;
 
-        let store = graph.store().clone();
+        let mut store = graph.store().clone();
 
-        let entries = Manifest::parse_entries(&store, subject)?;
+        let entries = Manifest::parse_entries(&mut store, subject)?;
 
         Ok(Self {
             base,
@@ -51,7 +51,7 @@ impl Manifest {
     }
 
     fn parse_entries(
-        store: &RdfData,
+        store: &mut RdfData,
         subject: OxSubject,
     ) -> Result<HashSet<OxTerm>, TestSuiteError> {
         let mut entry_terms = HashSet::new();
@@ -90,7 +90,7 @@ impl Manifest {
         Ok(entry_terms)
     }
 
-    pub fn collect_tests(&self) -> Result<Vec<ShaclTest<RdfData>>, TestSuiteError> {
+    pub fn collect_tests(&mut self) -> Result<Vec<ShaclTest<RdfData>>, TestSuiteError> {
         let mut entries = Vec::new();
         for entry in &self.entries {
             let entry: OxSubject = entry.clone().try_into()?;
@@ -112,7 +112,7 @@ impl Manifest {
                 .next()
                 .unwrap();
 
-            let report = ValidationReport::parse(&self.store, results)?;
+            let report = ValidationReport::parse(&mut self.store, results)?;
 
             let sht_data_graph: NamedNode = shacl_validation_vocab::SHT_DATA_GRAPH.clone().into();
             let data_graph_iri = self

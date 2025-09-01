@@ -16,8 +16,8 @@ pub enum ShaclParserError {
     #[error("Expected RDFNode parsing node shape, found: {term}")]
     ExpectedRDFNodeNodeShape { term: String },
 
-    #[error("Expected term as subject, found: {term}")]
-    ExpectedSubject { term: String },
+    #[error("Expected term as subject, found: {term} in {context}")]
+    ExpectedSubject { term: String, context: String },
 
     #[error("Expected Value of `sh:or` to be a subject, found: {term}")]
     OrValueNoSubject { term: String },

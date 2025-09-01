@@ -78,7 +78,6 @@ pub trait Rdf: Sized {
 
     fn term_as_literal(term: &Self::Term) -> Result<Self::Literal, RDFError> {
         <Self::Term as TryInto<Self::Literal>>::try_into(term.clone()).map_err(|_| {
-            println!("Failed to convert term to literal: {term}");
             RDFError::TermAsLiteral {
                 term: term.to_string(),
             }
@@ -118,6 +117,14 @@ pub trait Rdf: Sized {
     fn term_as_iri(term: &Self::Term) -> Result<Self::IRI, RDFError> {
         <Self::Term as TryInto<Self::IRI>>::try_into(term.clone()).map_err(|_| {
             RDFError::TermAsIri {
+                term: term.to_string(),
+            }
+        })
+    }
+
+    fn term_as_bnode(term: &Self::Term) -> Result<Self::BNode, RDFError> {
+        <Self::Term as TryInto<Self::BNode>>::try_into(term.clone()).map_err(|_| {
+            RDFError::TermAsBNode {
                 term: term.to_string(),
             }
         })

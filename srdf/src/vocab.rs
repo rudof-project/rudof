@@ -16,6 +16,14 @@ pub const XSD_BOOLEAN_STR: &str = concatcp!(XSD, "boolean");
 pub const XSD_INTEGER_STR: &str = concatcp!(XSD, "integer");
 pub const XSD_DECIMAL_STR: &str = concatcp!(XSD, "decimal");
 pub const XSD_DOUBLE_STR: &str = concatcp!(XSD, "double");
+pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
+
+// The following constants are required for SHACL Path parsing
+pub const SH_ALTERNATIVE_PATH_STR: &str = concatcp!(SH_STR, "alternativePath");
+pub const SH_ZERO_OR_ONE_PATH_STR: &str = concatcp!(SH_STR, "zeroOrOnePath");
+pub const SH_ZERO_OR_MORE_PATH_STR: &str = concatcp!(SH_STR, "zeroOrMorePath");
+pub const SH_ONE_OR_MORE_PATH_STR: &str = concatcp!(SH_STR, "oneOrMorePath");
+pub const SH_INVERSE_PATH_STR: &str = concatcp!(SH_STR, "inversePath");
 
 iri_once!(rdf_type, RDF_TYPE_STR);
 iri_once!(rdf_first, RDF_FIRST_STR);
@@ -30,3 +38,9 @@ iri_once!(xsd_boolean, XSD_BOOLEAN_STR);
 iri_once!(xsd_integer, XSD_INTEGER_STR);
 iri_once!(xsd_decimal, XSD_DECIMAL_STR);
 iri_once!(xsd_double, XSD_DOUBLE_STR);
+
+iri_once!(sh_alternative_path, SH_ALTERNATIVE_PATH_STR);
+iri_once!(sh_zero_or_one_path, SH_ZERO_OR_ONE_PATH_STR);
+iri_once!(sh_zero_or_more_path, SH_ZERO_OR_MORE_PATH_STR);
+iri_once!(sh_one_or_more_path, SH_ONE_OR_MORE_PATH_STR);
+iri_once!(sh_inverse_path, SH_INVERSE_PATH_STR);

@@ -1,6 +1,6 @@
-use super::Engine;
 use crate::constraints::ShaclComponent;
 use crate::constraints::SparqlDeref;
+use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::validate_error::ValidateError;
@@ -9,7 +9,6 @@ use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use iri_s::IriS;
 use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::property_shape::CompiledPropertyShape;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -135,7 +134,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         })
     }
 
-    fn predicate(
+    /*fn predicate(
         &self,
         _store: &S,
         _shape: &CompiledPropertyShape,
@@ -217,5 +216,5 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         Err(ValidateError::NotImplemented {
             msg: "zero_or_one".to_string(),
         })
-    }
+    }*/
 }

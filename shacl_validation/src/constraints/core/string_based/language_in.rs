@@ -5,7 +5,6 @@ use srdf::lang::Lang;
 use srdf::Literal;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
@@ -21,7 +20,7 @@ use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-impl<S: Rdf + Debug> Validator<S> for LanguageIn {
+impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
     fn validate(
         &self,
         component: &CompiledComponent,

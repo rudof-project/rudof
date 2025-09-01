@@ -16,11 +16,10 @@ use shacl_ir::compiled::component::MinCount;
 use shacl_ir::compiled::shape::CompiledShape;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use srdf::Rdf;
 use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for MinCount {
+impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
     fn validate(
         &self,
         component: &CompiledComponent,

@@ -39,7 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                     match shape.validate(
                         store,
                         &engine,
-                        Some(&FocusNodes::new(std::iter::once(value_node.clone()))),
+                        Some(&FocusNodes::from_iter(std::iter::once(value_node.clone()))),
                         Some(shape),
                     ) {
                         Ok(validation_results) => validation_results.is_empty(),

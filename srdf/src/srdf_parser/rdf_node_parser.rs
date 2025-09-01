@@ -9,8 +9,9 @@ use std::fmt::Debug;
 use tracing::debug;
 
 use crate::{
-    matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, FocusRDF, NeighsRDF, Object, PResult,
-    RDFParseError, Rdf, Triple, RDF_NIL_STR,
+    matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, sh_alternative_path, sh_inverse_path,
+    sh_one_or_more_path, sh_zero_or_more_path, sh_zero_or_one_path, FocusRDF, NeighsRDF, Object,
+    PResult, RDFParseError, Rdf, SHACLPath, Triple, RDF_NIL_STR,
 };
 use crate::{Iri as _, Literal as _};
 
@@ -1052,14 +1053,17 @@ where
     type Output = HashSet<RDF::Term>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
-        let subject = rdf.get_focus_as_subject()?;
-        let pred: RDF::IRI = self.property.clone().into();
-        let values: HashSet<_> = rdf
-            .triples_matching(subject, pred, Any)
-            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
-            .map(Triple::into_object)
-            .collect();
-        Ok(values)
+        if let Ok(subject) = rdf.get_focus_as_subject() {
+            let pred: RDF::IRI = self.property.clone().into();
+            let values: HashSet<_> = rdf
+                .triples_matching(subject, pred, Any)
+                .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
+                .map(Triple::into_object)
+                .collect();
+            Ok(values)
+        } else {
+            Ok(HashSet::new())
+        }
     }
 }
 
@@ -1090,24 +1094,27 @@ where
     type Output = HashSet<RDF::Term>;
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<HashSet<RDF::Term>> {
-        let subject = rdf.get_focus_as_subject()?;
-        let pred: RDF::IRI = self.property.clone().into();
-        let values: HashSet<_> = rdf
-            .triples_matching(subject.clone(), pred, Any)
-            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
-            .map(Triple::into_object)
-            .collect();
-        debug!(
-            "property_values: Subject {}, Property {}: {}",
-            subject,
-            self.property,
-            values
-                .iter()
-                .map(|v| format!("{v}"))
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-        Ok(values)
+        if let Ok(subject) = rdf.get_focus_as_subject() {
+            let pred: RDF::IRI = self.property.clone().into();
+            let values: HashSet<_> = rdf
+                .triples_matching(subject.clone(), pred, Any)
+                .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
+                .map(Triple::into_object)
+                .collect();
+            debug!(
+                "property_values: Subject {}, Property {}: {}",
+                subject,
+                self.property,
+                values
+                    .iter()
+                    .map(|v| format!("{v}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            Ok(values)
+        } else {
+            Ok(HashSet::new())
+        }
     }
 }
 
@@ -2279,4 +2286,123 @@ where
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         self.p.parse_impl(rdf)
     }
+}
+
+/// Parses the current focus node as a SHACL path
+pub fn shacl_path_parse<RDF>(term: RDF::Term) -> impl RDFNodeParse<RDF, Output = SHACLPath>
+where
+    RDF: FocusRDF,
+{
+    ShaclPathParser::<RDF> {
+        _marker_rdf: PhantomData,
+        term,
+    }
+}
+
+pub struct ShaclPathParser<RDF: FocusRDF> {
+    _marker_rdf: PhantomData<RDF>,
+    term: RDF::Term,
+}
+
+impl<RDF> RDFNodeParse<RDF> for ShaclPathParser<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = SHACLPath;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<SHACLPath> {
+        rdf.set_focus(&self.term);
+        if let Ok(iri) = RDF::term_as_iri(&self.term) {
+            Ok(SHACLPath::iri(IriS::new_unchecked(iri.as_str())))
+        } else if let Ok(_bnode) = RDF::term_as_bnode(&self.term) {
+            // TODO: Refactor this code to use something like an or
+            match sequence(rdf) {
+                Ok(sequence) => Ok(sequence),
+                Err(_err) => match alternative(rdf) {
+                    Ok(alternative) => Ok(alternative),
+                    Err(_err) => match zero_or_more_path(rdf) {
+                        Ok(zero_or_more) => Ok(zero_or_more),
+                        Err(_err) => match one_or_more_path(rdf) {
+                            Ok(one_or_more) => Ok(one_or_more),
+                            Err(_err) => match zero_or_one_path(rdf) {
+                                Ok(zero_or_one) => Ok(zero_or_one),
+                                Err(_err) => match inverse_path(rdf) {
+                                    Ok(inverse) => Ok(inverse),
+                                    Err(err) => Err(RDFParseError::Custom {
+                                        msg: format!("Error parsing SHACL Path: {}", err),
+                                    }),
+                                },
+                            },
+                        },
+                    },
+                },
+            }
+        } else {
+            Err(RDFParseError::UnexpectedLiteral {
+                term: self.term.to_string(),
+            })
+        }
+    }
+}
+
+fn sequence<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let ls = rdf_list().parse_impl(rdf)?;
+    let mut r = Vec::new();
+    for t in ls {
+        let p = shacl_path_parse::<RDF>(t).parse_impl(rdf)?;
+        r.push(p);
+    }
+    Ok(SHACLPath::sequence(r))
+}
+
+fn alternative<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let ls = property_value_as_list(sh_alternative_path())
+        .parse_impl(rdf)?
+        .into_iter()
+        .map(|t| shacl_path_parse::<RDF>(t).parse_impl(rdf));
+    let ls_iter: std::result::Result<Vec<SHACLPath>, RDFParseError> = ls.into_iter().collect();
+    let ls = ls_iter?;
+    Ok(SHACLPath::alternative(ls))
+}
+
+fn zero_or_more_path<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let term = property_value(sh_zero_or_more_path()).parse_impl(rdf)?;
+    let p = shacl_path_parse::<RDF>(term).parse_impl(rdf)?;
+    Ok(SHACLPath::zero_or_more(p))
+}
+
+fn one_or_more_path<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let term = property_value(sh_one_or_more_path()).parse_impl(rdf)?;
+    let p = shacl_path_parse::<RDF>(term).parse_impl(rdf)?;
+    Ok(SHACLPath::one_or_more(p))
+}
+
+fn zero_or_one_path<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let term = property_value(sh_zero_or_one_path()).parse_impl(rdf)?;
+    let p = shacl_path_parse::<RDF>(term).parse_impl(rdf)?;
+    Ok(SHACLPath::zero_or_one(p))
+}
+
+fn inverse_path<RDF>(rdf: &mut RDF) -> std::result::Result<SHACLPath, RDFParseError>
+where
+    RDF: FocusRDF,
+{
+    let term = property_value(sh_inverse_path()).parse_impl(rdf)?;
+    let p = shacl_path_parse::<RDF>(term).parse_impl(rdf)?;
+    Ok(SHACLPath::inverse(p))
 }
