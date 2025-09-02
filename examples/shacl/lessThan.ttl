@@ -12,4 +12,9 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:lessThan :endDate .
 
 :ok1 a :Node; :startDate "2025-04-01"^^xsd:date; :endDate "2025-05-02"^^xsd:date .
-:ko1 a :Node; :startDate "2025-02-01"^^xsd:date; :endDate "2019-05-02"^^xsd:date .
+:ko1 a :Node; 
+     :startDate "2025-02-01"^^xsd:date; 
+     :endDate "2019-05-02"^^xsd:date .
+:ko2 a :Node ;
+     :startDate 3, 4 ;
+     :endDate 1, 2 .

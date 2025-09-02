@@ -33,7 +33,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
         debug!("Shape.validate with shape {}", self.id());
 
         // Skip validation if it is deactivated
-        if *self.is_deactivated() {
+        if self.deactivated() {
             return Ok(Vec::default());
         }
 
@@ -100,7 +100,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
                         closed_constraint_component(),
-                        self.severity().into(),
+                        Object::iri(self.severity().iri()),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
                     closed_validation_results.push(vr_single);

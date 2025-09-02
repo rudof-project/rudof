@@ -26,12 +26,12 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
         _source_shape: Option<&CompiledShape>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let pattern = |value_node: &S::Term| {
+        let pattern_check = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true
             } else {
                 let lexical_form = value_node.lexical_form();
-                !self.regex().is_match(lexical_form.as_str())
+                !self.match_str(lexical_form.as_str())
             }
         };
         let message = format!("Pattern({}) not satisfied", self.pattern());
@@ -40,7 +40,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
             shape,
             value_nodes,
             ValueNodeIteration,
-            pattern,
+            pattern_check,
             &message,
             maybe_path,
         )

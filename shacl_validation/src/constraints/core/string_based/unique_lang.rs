@@ -37,11 +37,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
         let mut validation_results = Vec::new();
         // Collect langs
         // println!("Value nodes: {}", value_nodes);
-        for (focus_node, focus_nodes) in value_nodes.iter() {
-            println!(
-                "Focus node: {:?} with focus_nodes: {}",
-                focus_node, focus_nodes
-            );
+        for (_focus_node, focus_nodes) in value_nodes.iter() {
             let mut langs_map: HashMap<String, Vec<S::Term>> = HashMap::new();
             for node in focus_nodes.iter() {
                 if let Ok(lit) = S::term_as_literal(&node) {
@@ -64,7 +60,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                         nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>()
                     );
                     let component = Object::iri(component.into());
-                    let severity = Object::iri(shape.severity());
+                    let severity = Object::iri(shape.severity().iri());
                     let message = format!(
                         "Unique lang failed for lang {} with values: {}",
                         key,

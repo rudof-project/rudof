@@ -16,6 +16,15 @@ pub enum CompiledSeverity {
 }
 
 impl CompiledSeverity {
+    pub fn iri(&self) -> IriS {
+        match self {
+            CompiledSeverity::Violation => sh_violation().clone(),
+            CompiledSeverity::Warning => sh_warning().clone(),
+            CompiledSeverity::Info => sh_info().clone(),
+            CompiledSeverity::Generic(iri) => iri.clone(),
+        }
+    }
+
     pub fn compile(severity: Option<Severity>) -> Result<Option<Self>, CompiledShaclError> {
         let ans = match severity {
             Some(severity) => {

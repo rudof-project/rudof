@@ -1,20 +1,15 @@
-use std::collections::HashSet;
-use std::fmt::Display;
-
-use iri_s::IriS;
-use srdf::{RDFNode, Rdf};
-
-use shacl_ast::node_shape::NodeShape;
-use shacl_ast::Schema;
-
-use crate::closed_info::ClosedInfo;
-
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
+use crate::closed_info::ClosedInfo;
+use iri_s::IriS;
+use shacl_ast::node_shape::NodeShape;
+use shacl_ast::Schema;
+use srdf::{RDFNode, Rdf};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct CompiledNodeShape {
@@ -58,14 +53,14 @@ impl CompiledNodeShape {
         &self.id
     }
 
-    pub fn is_deactivated(&self) -> &bool {
-        &self.deactivated
+    pub fn deactivated(&self) -> bool {
+        self.deactivated
     }
 
-    pub fn severity(&self) -> &CompiledSeverity {
+    pub fn severity(&self) -> CompiledSeverity {
         match &self.severity {
-            Some(severity) => severity,
-            None => &CompiledSeverity::Violation,
+            Some(severity) => severity.clone(),
+            None => CompiledSeverity::Violation,
         }
     }
 
@@ -140,9 +135,9 @@ impl CompiledNodeShape {
     }
 }
 
-impl Display for CompiledNodeShape {
+/*impl Display for CompiledNodeShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "NodeShape {}", self.id)?;
+        writeln!(f, "NodeShape\n Id: {}", self.id)?;
         writeln!(f, " Deactivated: {}", self.deactivated)?;
         writeln!(f, " Severity: {}", self.severity())?;
         writeln!(f, " Closed: {}", self.closed())?;
@@ -160,4 +155,4 @@ impl Display for CompiledNodeShape {
         }
         Ok(())
     }
-}
+}*/

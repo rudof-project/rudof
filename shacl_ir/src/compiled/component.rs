@@ -613,6 +613,10 @@ impl Pattern {
     pub fn regex(&self) -> &Regex {
         &self.regex
     }
+
+    pub fn match_str(&self, str: &str) -> bool {
+        !self.regex().is_match(str)
+    }
 }
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
@@ -799,9 +803,9 @@ impl From<&CompiledComponent> for IriS {
 impl Display for CompiledComponent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledComponent::Class(cls) => write!(f, "Class {:}", cls.class_rule()),
-            CompiledComponent::Datatype(dt) => write!(f, "Datatype: {}", dt.datatype()),
-            CompiledComponent::NodeKind(nk) => write!(f, "NodeKind: {}", nk.node_kind()),
+            CompiledComponent::Class(cls) => write!(f, " {cls}"),
+            CompiledComponent::Datatype(dt) => write!(f, " {dt}"),
+            CompiledComponent::NodeKind(nk) => write!(f, " {nk}"),
             CompiledComponent::MinCount(n) => write!(f, " {n}"),
             CompiledComponent::MaxCount(n) => write!(f, " {n}"),
             CompiledComponent::MinExclusive(n) => write!(f, " {n}"),
@@ -817,12 +821,12 @@ impl Display for CompiledComponent {
             CompiledComponent::Disjoint(p) => write!(f, " {p}"),
             CompiledComponent::LessThan(p) => write!(f, " {p}"),
             CompiledComponent::LessThanOrEquals(p) => write!(f, " {p}"),
-            CompiledComponent::Or { .. } => write!(f, "Or"),
-            CompiledComponent::And { .. } => write!(f, "And"),
-            CompiledComponent::Not { .. } => write!(f, "Not"),
-            CompiledComponent::Xone { .. } => write!(f, "Xone"),
-            CompiledComponent::Node { .. } => write!(f, "Node"),
-            CompiledComponent::HasValue(value) => write!(f, " {}", value),
+            CompiledComponent::Or(or) => write!(f, " {or}"),
+            CompiledComponent::And(and) => write!(f, " {and}"),
+            CompiledComponent::Not(not) => write!(f, " {not}"),
+            CompiledComponent::Xone(xone) => write!(f, " {xone}"),
+            CompiledComponent::Node(node) => write!(f, " {node}"),
+            CompiledComponent::HasValue(value) => write!(f, " HasValue({value})"),
             CompiledComponent::In(vs) => write!(f, " {}", vs),
             CompiledComponent::QualifiedValueShape(qvs) => {
                 write!(f, " {}", qvs)
@@ -843,21 +847,75 @@ impl Display for MaxCount {
     }
 }
 
+impl Display for Class {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Class: {}", self.class_rule())
+    }
+}
+
+impl Display for Datatype {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Datatype: {}", self.datatype())
+    }
+}
+
+impl Display for Nodekind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NodeKind: {:?}", self.node_kind())
+    }
+}
+
+impl Display for Xone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Xone [{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.id().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Node [{}]", self.shape.id())
+    }
+}
+
 impl Display for And {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "And: {} shapes", self.shapes().len())
+        write!(
+            f,
+            "And [{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.id().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     }
 }
 
 impl Display for Not {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Not: {}", self.shape())
+        write!(f, "Not [{}]", self.shape.id())
     }
 }
 
 impl Display for Or {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Or: {} shapes", self.shapes().len())
+        write!(
+            f,
+            "Or[{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.id().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     }
 }
 

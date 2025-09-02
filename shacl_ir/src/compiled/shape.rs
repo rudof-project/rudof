@@ -1,17 +1,16 @@
-use std::collections::HashSet;
-use std::fmt::Display;
-
-use iri_s::IriS;
-use srdf::{RDFNode, Rdf, SHACLPath};
-
-use shacl_ast::shape::Shape;
-use shacl_ast::Schema;
+use crate::severity::CompiledSeverity;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::node_shape::CompiledNodeShape;
 use super::property_shape::CompiledPropertyShape;
 use super::target::CompiledTarget;
+use iri_s::IriS;
+use shacl_ast::shape::Shape;
+use shacl_ast::Schema;
+use srdf::{RDFNode, Rdf, SHACLPath};
+use std::collections::HashSet;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub enum CompiledShape {
@@ -20,10 +19,10 @@ pub enum CompiledShape {
 }
 
 impl CompiledShape {
-    pub fn is_deactivated(&self) -> &bool {
+    pub fn deactivated(&self) -> bool {
         match self {
-            CompiledShape::NodeShape(ns) => ns.is_deactivated(),
-            CompiledShape::PropertyShape(ps) => ps.is_deactivated(),
+            CompiledShape::NodeShape(ns) => ns.deactivated(),
+            CompiledShape::PropertyShape(ps) => ps.deactivated(),
         }
     }
 
@@ -69,12 +68,19 @@ impl CompiledShape {
         }
     }
 
-    pub fn severity(&self) -> IriS {
+    pub fn severity_iri(&self) -> IriS {
         let iri_s: IriS = match self {
-            CompiledShape::NodeShape(ns) => ns.severity().into(),
-            CompiledShape::PropertyShape(ps) => ps.severity().into(),
+            CompiledShape::NodeShape(ns) => ns.severity().iri(),
+            CompiledShape::PropertyShape(ps) => ps.severity().iri(),
         };
         iri_s
+    }
+
+    pub fn severity(&self) -> CompiledSeverity {
+        match self {
+            CompiledShape::NodeShape(ns) => ns.severity(),
+            CompiledShape::PropertyShape(ps) => ps.severity(),
+        }
     }
 
     pub fn compile<RDF: Rdf>(
@@ -113,8 +119,48 @@ impl CompiledShape {
 impl Display for CompiledShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledShape::NodeShape(shape) => write!(f, "{shape}"),
-            CompiledShape::PropertyShape(shape) => write!(f, "{shape}"),
+            CompiledShape::NodeShape(_shape) => {
+                writeln!(f, "NodeShape")?;
+            }
+            CompiledShape::PropertyShape(shape) => {
+                writeln!(f, "PropertyShape")?;
+                writeln!(f, " path: {}", shape.path())?;
+            }
         }
+        if self.deactivated() {
+            writeln!(f, " Deactivated: {}", self.deactivated())?;
+        }
+        if self.severity() != CompiledSeverity::Violation {
+            writeln!(f, " Severity: {}", self.severity())?;
+        }
+        if self.closed() {
+            writeln!(f, " closed: {}", self.closed())?;
+        }
+        let mut components = self.components().iter().peekable();
+        if components.peek().is_some() {
+            writeln!(f, " Components:")?;
+            for component in components {
+                writeln!(f, "  - {}", component)?;
+            }
+        }
+        let mut targets = self.targets().iter().peekable();
+        if targets.peek().is_some() {
+            writeln!(f, " Targets:")?;
+            for target in targets {
+                writeln!(f, "  - {}", target)?;
+            }
+        }
+        let mut property_shapes = self.property_shapes().iter().peekable();
+        if property_shapes.peek().is_some() {
+            writeln!(
+                f,
+                " Property Shapes: [{}]",
+                property_shapes
+                    .map(|ps| ps.id().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+        }
+        Ok(())
     }
 }

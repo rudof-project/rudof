@@ -1,22 +1,17 @@
-use std::collections::HashSet;
-use std::fmt::Display;
-
-use iri_s::IriS;
-use srdf::RDFNode;
-use srdf::Rdf;
-use srdf::SHACLPath;
-
-use shacl_ast::property_shape::PropertyShape;
-use shacl_ast::Schema;
-
-use crate::closed_info::ClosedInfo;
-
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component::CompiledComponent;
 use super::severity::CompiledSeverity;
 use super::shape::CompiledShape;
 use super::target::CompiledTarget;
+use crate::closed_info::ClosedInfo;
+use iri_s::IriS;
+use shacl_ast::property_shape::PropertyShape;
+use shacl_ast::Schema;
+use srdf::RDFNode;
+use srdf::Rdf;
+use srdf::SHACLPath;
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct CompiledPropertyShape {
@@ -81,14 +76,14 @@ impl CompiledPropertyShape {
         &self.path
     }
 
-    pub fn is_deactivated(&self) -> &bool {
-        &self.deactivated
+    pub fn deactivated(&self) -> bool {
+        self.deactivated
     }
 
-    pub fn severity(&self) -> &CompiledSeverity {
+    pub fn severity(&self) -> CompiledSeverity {
         match &self.severity {
-            Some(severity) => severity,
-            None => &CompiledSeverity::Violation,
+            Some(severity) => severity.clone(),
+            None => CompiledSeverity::Violation,
         }
     }
 
@@ -149,41 +144,5 @@ impl CompiledPropertyShape {
         );
 
         Ok(compiled_property_shape)
-    }
-}
-
-impl Display for CompiledPropertyShape {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Property shape {}", self.id)?;
-        writeln!(f, " path: {}", self.path)?;
-        if self.deactivated {
-            writeln!(f, " Deactivated: {}", self.deactivated)?;
-        }
-        writeln!(f, " severity: {}", self.severity())?;
-        if self.closed() {
-            writeln!(f, " closed: {}", self.closed())?;
-        }
-        let mut components = self.components().iter().peekable();
-        if components.peek().is_some() {
-            writeln!(f, " Components:")?;
-            for component in &self.components {
-                writeln!(f, "  - {}", component)?;
-            }
-        }
-        let mut targets = self.targets().iter().peekable();
-        if targets.peek().is_some() {
-            writeln!(f, " Targets:")?;
-            for target in &self.targets {
-                writeln!(f, "  - {}", target)?;
-            }
-        }
-        let mut property_shapes = self.property_shapes().iter().peekable();
-        if property_shapes.peek().is_some() {
-            writeln!(f, " Property Shapes:")?;
-            for property_shape in &self.property_shapes {
-                writeln!(f, "  - {}", property_shape)?;
-            }
-        }
-        Ok(())
     }
 }

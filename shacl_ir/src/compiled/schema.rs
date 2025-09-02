@@ -116,7 +116,7 @@ impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
 
 impl Display for SchemaIR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "SHACL shapes graph",)?;
+        writeln!(f, "SHACL shapes graph IR",)?;
         for (node, shape) in self.shapes.iter() {
             writeln!(f, "{node} -> {shape}")?;
         }

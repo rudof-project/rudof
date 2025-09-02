@@ -26,7 +26,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
-            let severity = Object::iri(shape.severity());
+            let severity = Object::iri(shape.severity().iri());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
@@ -62,7 +62,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
-            let severity = Object::iri(shape.severity());
+            let severity = Object::iri(shape.severity().iri());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
