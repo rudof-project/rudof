@@ -3,9 +3,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::LessThanOrEquals;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::LessThanOrEquals;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::Object;
 use srdf::QueryRDF;
@@ -17,11 +17,11 @@ use std::fmt::Debug;
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &R,
         value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
@@ -89,11 +89,11 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals {
     fn validate_sparql(
         &self,
-        _component: &CompiledComponent,
-        _shape: &CompiledShape,
+        _component: &ComponentIR,
+        _shape: &ShapeIR,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented(

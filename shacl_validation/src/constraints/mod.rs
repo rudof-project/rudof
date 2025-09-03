@@ -1,6 +1,6 @@
 use constraint_error::ConstraintError;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -18,12 +18,12 @@ pub trait Validator<S: NeighsRDF + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -31,11 +31,11 @@ pub trait Validator<S: NeighsRDF + Debug> {
 pub trait NativeValidator<S: NeighsRDF> {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -43,11 +43,11 @@ pub trait NativeValidator<S: NeighsRDF> {
 pub trait SparqlValidator<S: QueryRDF + Debug> {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -70,19 +70,19 @@ pub trait NativeDeref {
 }
 
 pub struct ShaclComponent<'a, S> {
-    component: &'a CompiledComponent,
+    component: &'a ComponentIR,
     _marker: PhantomData<S>,
 }
 
 impl<'a, S> ShaclComponent<'a, S> {
-    pub fn new(component: &'a CompiledComponent) -> Self {
+    pub fn new(component: &'a ComponentIR) -> Self {
         ShaclComponent {
             component,
             _marker: PhantomData,
         }
     }
 
-    pub fn component(&self) -> &CompiledComponent {
+    pub fn component(&self) -> &ComponentIR {
         self.component
     }
 }
@@ -92,37 +92,37 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
 
     fn deref(&self) -> &Self::Target {
         match self.component() {
-            CompiledComponent::Class(inner) => inner,
-            CompiledComponent::Datatype(inner) => inner,
-            CompiledComponent::NodeKind(inner) => inner,
-            CompiledComponent::MinCount(inner) => inner,
-            CompiledComponent::MaxCount(inner) => inner,
-            CompiledComponent::MinExclusive(inner) => inner,
-            CompiledComponent::MaxExclusive(inner) => inner,
-            CompiledComponent::MinInclusive(inner) => inner,
-            CompiledComponent::MaxInclusive(inner) => inner,
-            CompiledComponent::MinLength(inner) => inner,
-            CompiledComponent::MaxLength(inner) => inner,
-            CompiledComponent::Pattern(inner) => inner,
-            CompiledComponent::UniqueLang(inner) => inner,
-            CompiledComponent::LanguageIn(inner) => inner,
-            CompiledComponent::Equals(inner) => inner,
-            CompiledComponent::Disjoint(inner) => inner,
-            CompiledComponent::LessThan(inner) => inner,
-            CompiledComponent::LessThanOrEquals(inner) => inner,
-            CompiledComponent::Or(inner) => inner,
-            CompiledComponent::And(inner) => inner,
-            CompiledComponent::Not(inner) => inner,
-            CompiledComponent::Xone(inner) => inner,
-            CompiledComponent::Node(inner) => inner,
-            CompiledComponent::HasValue(inner) => inner,
-            CompiledComponent::In(inner) => inner,
-            CompiledComponent::QualifiedValueShape(inner) => inner,
+            ComponentIR::Class(inner) => inner,
+            ComponentIR::Datatype(inner) => inner,
+            ComponentIR::NodeKind(inner) => inner,
+            ComponentIR::MinCount(inner) => inner,
+            ComponentIR::MaxCount(inner) => inner,
+            ComponentIR::MinExclusive(inner) => inner,
+            ComponentIR::MaxExclusive(inner) => inner,
+            ComponentIR::MinInclusive(inner) => inner,
+            ComponentIR::MaxInclusive(inner) => inner,
+            ComponentIR::MinLength(inner) => inner,
+            ComponentIR::MaxLength(inner) => inner,
+            ComponentIR::Pattern(inner) => inner,
+            ComponentIR::UniqueLang(inner) => inner,
+            ComponentIR::LanguageIn(inner) => inner,
+            ComponentIR::Equals(inner) => inner,
+            ComponentIR::Disjoint(inner) => inner,
+            ComponentIR::LessThan(inner) => inner,
+            ComponentIR::LessThanOrEquals(inner) => inner,
+            ComponentIR::Or(inner) => inner,
+            ComponentIR::And(inner) => inner,
+            ComponentIR::Not(inner) => inner,
+            ComponentIR::Xone(inner) => inner,
+            ComponentIR::Node(inner) => inner,
+            ComponentIR::HasValue(inner) => inner,
+            ComponentIR::In(inner) => inner,
+            ComponentIR::QualifiedValueShape(inner) => inner,
         }
     }
 
     /*generate_deref_fn!(
-        CompiledComponent,
+        ComponentIR,
         Class,
         Datatype,
         NodeKind,
@@ -164,37 +164,37 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
 
     fn deref(&self) -> &Self::Target {
         match self.component() {
-            CompiledComponent::Class(inner) => inner,
-            CompiledComponent::Datatype(inner) => inner,
-            CompiledComponent::NodeKind(inner) => inner,
-            CompiledComponent::MinCount(inner) => inner,
-            CompiledComponent::MaxCount(inner) => inner,
-            CompiledComponent::MinExclusive(inner) => inner,
-            CompiledComponent::MaxExclusive(inner) => inner,
-            CompiledComponent::MinInclusive(inner) => inner,
-            CompiledComponent::MaxInclusive(inner) => inner,
-            CompiledComponent::MinLength(inner) => inner,
-            CompiledComponent::MaxLength(inner) => inner,
-            CompiledComponent::Pattern(inner) => inner,
-            CompiledComponent::UniqueLang(inner) => inner,
-            CompiledComponent::LanguageIn(inner) => inner,
-            CompiledComponent::Equals(inner) => inner,
-            CompiledComponent::Disjoint(inner) => inner,
-            CompiledComponent::LessThan(inner) => inner,
-            CompiledComponent::LessThanOrEquals(inner) => inner,
-            CompiledComponent::Or(inner) => inner,
-            CompiledComponent::And(inner) => inner,
-            CompiledComponent::Not(inner) => inner,
-            CompiledComponent::Xone(inner) => inner,
-            CompiledComponent::Node(inner) => inner,
-            CompiledComponent::HasValue(inner) => inner,
-            CompiledComponent::In(inner) => inner,
-            CompiledComponent::QualifiedValueShape(inner) => inner,
+            ComponentIR::Class(inner) => inner,
+            ComponentIR::Datatype(inner) => inner,
+            ComponentIR::NodeKind(inner) => inner,
+            ComponentIR::MinCount(inner) => inner,
+            ComponentIR::MaxCount(inner) => inner,
+            ComponentIR::MinExclusive(inner) => inner,
+            ComponentIR::MaxExclusive(inner) => inner,
+            ComponentIR::MinInclusive(inner) => inner,
+            ComponentIR::MaxInclusive(inner) => inner,
+            ComponentIR::MinLength(inner) => inner,
+            ComponentIR::MaxLength(inner) => inner,
+            ComponentIR::Pattern(inner) => inner,
+            ComponentIR::UniqueLang(inner) => inner,
+            ComponentIR::LanguageIn(inner) => inner,
+            ComponentIR::Equals(inner) => inner,
+            ComponentIR::Disjoint(inner) => inner,
+            ComponentIR::LessThan(inner) => inner,
+            ComponentIR::LessThanOrEquals(inner) => inner,
+            ComponentIR::Or(inner) => inner,
+            ComponentIR::And(inner) => inner,
+            ComponentIR::Not(inner) => inner,
+            ComponentIR::Xone(inner) => inner,
+            ComponentIR::Node(inner) => inner,
+            ComponentIR::HasValue(inner) => inner,
+            ComponentIR::In(inner) => inner,
+            ComponentIR::QualifiedValueShape(inner) => inner,
         }
     }
 
     /*   generate_deref_fn!(
-        CompiledComponent,
+        ComponentIR,
         Class,
         Datatype,
         NodeKind,

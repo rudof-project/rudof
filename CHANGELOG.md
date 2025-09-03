@@ -10,11 +10,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## 0.1.89
 ### Added
 
-- Support for SHACL Paths
-- Support for sh:uniqueLang
+- Added support for SHACL Paths, sh:uniqueLang, flags in sh:pattern, sh:qualifiedValueShape
+
 
 ### Fixed
 - Error in sh:hasValue when the value was a literal
+- sh:lessThan and sh:lessThanOrEquals now return the expected errors
 
 ### Changed
 ### Removed

@@ -1,6 +1,6 @@
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::LanguageIn;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::LanguageIn;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::lang::Lang;
 use srdf::Literal;
 use srdf::NeighsRDF;
@@ -23,12 +23,12 @@ use crate::value_nodes::ValueNodes;
 impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
     fn validate(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
@@ -60,11 +60,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
@@ -82,11 +82,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for LanguageIn {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

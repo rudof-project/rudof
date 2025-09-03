@@ -9,20 +9,20 @@ use std::io;
 use shacl_ast::Schema;
 
 use super::compiled_shacl_error::CompiledShaclError;
-use super::shape::CompiledShape;
+use super::shape::ShapeIR;
 
 #[derive(Clone, Debug)]
 pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, CompiledShape>,
+    shapes: HashMap<RDFNode, ShapeIR>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
 }
 
 impl SchemaIR {
     pub fn new(
-        shapes: HashMap<RDFNode, CompiledShape>,
+        shapes: HashMap<RDFNode, ShapeIR>,
         prefixmap: PrefixMap,
         base: Option<IriS>,
     ) -> SchemaIR {
@@ -66,18 +66,18 @@ impl SchemaIR {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &CompiledShape)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
         self.shapes.iter()
     }
 
     /// Iterate over all shapes that have at least one target.
-    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&RDFNode, &CompiledShape)> {
+    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
         self.shapes
             .iter()
             .filter(|(_, shape)| !shape.targets().is_empty())
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&CompiledShape> {
+    pub fn get_shape(&self, sref: &RDFNode) -> Option<&ShapeIR> {
         self.shapes.get(sref)
     }
 
@@ -86,7 +86,7 @@ impl SchemaIR {
 
         for (rdf_node, shape) in schema.iter() {
             let term = rdf_node.clone();
-            let shape = CompiledShape::compile(shape.to_owned(), schema)?;
+            let shape = ShapeIR::compile(shape.to_owned(), schema)?;
             shapes.insert(term, shape);
         }
 

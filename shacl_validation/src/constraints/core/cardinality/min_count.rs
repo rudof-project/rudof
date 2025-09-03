@@ -11,9 +11,9 @@ use crate::iteration_strategy::FocusNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::MinCount;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::MinCount;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -22,12 +22,12 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
     fn validate(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validating minCount with shape {}", shape.id());
@@ -52,11 +52,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinCount {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validate native minCount with shape: {}", shape.id());
@@ -75,11 +75,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinCount {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MinCount {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

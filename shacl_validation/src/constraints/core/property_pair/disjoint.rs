@@ -5,9 +5,9 @@ use crate::helpers::constraint::validate_with_focus;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::Disjoint;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::Disjoint;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
@@ -19,11 +19,11 @@ use tracing::debug;
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &R,
         value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
@@ -72,11 +72,11 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
     fn validate_sparql(
         &self,
-        _component: &CompiledComponent,
-        _shape: &CompiledShape,
+        _component: &ComponentIR,
+        _shape: &ShapeIR,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))

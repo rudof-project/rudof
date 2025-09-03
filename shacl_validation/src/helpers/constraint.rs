@@ -1,5 +1,5 @@
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::Object;
 use srdf::QueryRDF;
 use srdf::Rdf;
@@ -13,8 +13,8 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 fn apply<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent,
-    shape: &CompiledShape,
+    component: &ComponentIR,
+    shape: &ShapeIR,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
@@ -49,8 +49,8 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
 }
 
 fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent,
-    shape: &CompiledShape,
+    component: &ComponentIR,
+    shape: &ShapeIR,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ConstraintError>,
@@ -91,8 +91,8 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
 
 /// Validate with a boolean evaluator. If the evaluator returns true, it means that there is a violation
 pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent,
-    shape: &CompiledShape,
+    component: &ComponentIR,
+    shape: &ShapeIR,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&I::Item) -> bool,
@@ -112,8 +112,8 @@ pub fn validate_with<S: Rdf, I: IterationStrategy<S>>(
 
 /// Validate with a boolean evaluator. If the evaluator returns true, it means that there is a violation
 pub fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
-    component: &CompiledComponent,
-    shape: &CompiledShape,
+    component: &ComponentIR,
+    shape: &ShapeIR,
     value_nodes: &ValueNodes<S>,
     iteration_strategy: I,
     evaluator: impl Fn(&S::Term, &I::Item) -> bool,
@@ -132,8 +132,8 @@ pub fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
 }
 
 pub fn validate_ask_with<S: QueryRDF>(
-    component: &CompiledComponent,
-    shape: &CompiledShape,
+    component: &ComponentIR,
+    shape: &ShapeIR,
     store: &S,
     value_nodes: &ValueNodes<S>,
     eval_query: impl Fn(&S::Term) -> String,

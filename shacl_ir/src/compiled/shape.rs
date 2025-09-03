@@ -1,9 +1,9 @@
 use crate::severity::CompiledSeverity;
 
 use super::compiled_shacl_error::CompiledShaclError;
-use super::component::CompiledComponent;
-use super::node_shape::CompiledNodeShape;
-use super::property_shape::CompiledPropertyShape;
+use super::component_ir::ComponentIR;
+use super::node_shape::NodeShapeIR;
+use super::property_shape::PropertyShapeIR;
 use super::target::CompiledTarget;
 use iri_s::IriS;
 use shacl_ast::shape::Shape;
@@ -13,73 +13,73 @@ use std::collections::HashSet;
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]
-pub enum CompiledShape {
-    NodeShape(Box<CompiledNodeShape>),
-    PropertyShape(Box<CompiledPropertyShape>),
+pub enum ShapeIR {
+    NodeShape(Box<NodeShapeIR>),
+    PropertyShape(Box<PropertyShapeIR>),
 }
 
-impl CompiledShape {
+impl ShapeIR {
     pub fn deactivated(&self) -> bool {
         match self {
-            CompiledShape::NodeShape(ns) => ns.deactivated(),
-            CompiledShape::PropertyShape(ps) => ps.deactivated(),
+            ShapeIR::NodeShape(ns) => ns.deactivated(),
+            ShapeIR::PropertyShape(ps) => ps.deactivated(),
         }
     }
 
     pub fn id(&self) -> &RDFNode {
         match self {
-            CompiledShape::NodeShape(ns) => ns.id(),
-            CompiledShape::PropertyShape(ps) => ps.id(),
+            ShapeIR::NodeShape(ns) => ns.id(),
+            ShapeIR::PropertyShape(ps) => ps.id(),
         }
     }
 
     pub fn targets(&self) -> &Vec<CompiledTarget> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.targets(),
-            CompiledShape::PropertyShape(ps) => ps.targets(),
+            ShapeIR::NodeShape(ns) => ns.targets(),
+            ShapeIR::PropertyShape(ps) => ps.targets(),
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent> {
+    pub fn components(&self) -> &Vec<ComponentIR> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.components(),
-            CompiledShape::PropertyShape(ps) => ps.components(),
+            ShapeIR::NodeShape(ns) => ns.components(),
+            ShapeIR::PropertyShape(ps) => ps.components(),
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
+    pub fn property_shapes(&self) -> &Vec<ShapeIR> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.property_shapes(),
-            CompiledShape::PropertyShape(ps) => ps.property_shapes(),
+            ShapeIR::NodeShape(ns) => ns.property_shapes(),
+            ShapeIR::PropertyShape(ps) => ps.property_shapes(),
         }
     }
 
     pub fn path(&self) -> Option<SHACLPath> {
         match self {
-            CompiledShape::NodeShape(_) => None,
-            CompiledShape::PropertyShape(ps) => Some(ps.path().clone()),
+            ShapeIR::NodeShape(_) => None,
+            ShapeIR::PropertyShape(ps) => Some(ps.path().clone()),
         }
     }
 
     pub fn path_str(&self) -> Option<String> {
         match self {
-            CompiledShape::NodeShape(_) => None,
-            CompiledShape::PropertyShape(ps) => Some(ps.path().to_string()),
+            ShapeIR::NodeShape(_) => None,
+            ShapeIR::PropertyShape(ps) => Some(ps.path().to_string()),
         }
     }
 
     pub fn severity_iri(&self) -> IriS {
         let iri_s: IriS = match self {
-            CompiledShape::NodeShape(ns) => ns.severity().iri(),
-            CompiledShape::PropertyShape(ps) => ps.severity().iri(),
+            ShapeIR::NodeShape(ns) => ns.severity().iri(),
+            ShapeIR::PropertyShape(ps) => ps.severity().iri(),
         };
         iri_s
     }
 
     pub fn severity(&self) -> CompiledSeverity {
         match self {
-            CompiledShape::NodeShape(ns) => ns.severity(),
-            CompiledShape::PropertyShape(ps) => ps.severity(),
+            ShapeIR::NodeShape(ns) => ns.severity(),
+            ShapeIR::PropertyShape(ps) => ps.severity(),
         }
     }
 
@@ -89,12 +89,12 @@ impl CompiledShape {
     ) -> Result<Self, CompiledShaclError> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {
-                let node_shape = CompiledNodeShape::compile(node_shape, schema)?;
-                CompiledShape::NodeShape(Box::new(node_shape))
+                let node_shape = NodeShapeIR::compile(node_shape, schema)?;
+                ShapeIR::NodeShape(Box::new(node_shape))
             }
             Shape::PropertyShape(property_shape) => {
-                let property_shape = CompiledPropertyShape::compile(*property_shape, schema)?;
-                CompiledShape::PropertyShape(Box::new(property_shape))
+                let property_shape = PropertyShapeIR::compile(*property_shape, schema)?;
+                ShapeIR::PropertyShape(Box::new(property_shape))
             }
         };
 
@@ -103,26 +103,26 @@ impl CompiledShape {
 
     pub fn closed(&self) -> bool {
         match self {
-            CompiledShape::NodeShape(ns) => ns.closed(),
-            CompiledShape::PropertyShape(ps) => ps.closed(),
+            ShapeIR::NodeShape(ns) => ns.closed(),
+            ShapeIR::PropertyShape(ps) => ps.closed(),
         }
     }
 
     pub fn allowed_properties(&self) -> HashSet<IriS> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.allowed_properties(),
-            CompiledShape::PropertyShape(ps) => ps.allowed_properties(),
+            ShapeIR::NodeShape(ns) => ns.allowed_properties(),
+            ShapeIR::PropertyShape(ps) => ps.allowed_properties(),
         }
     }
 }
 
-impl Display for CompiledShape {
+impl Display for ShapeIR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledShape::NodeShape(_shape) => {
+            ShapeIR::NodeShape(_shape) => {
                 writeln!(f, "NodeShape")?;
             }
-            CompiledShape::PropertyShape(shape) => {
+            ShapeIR::PropertyShape(shape) => {
                 writeln!(f, "PropertyShape")?;
                 writeln!(f, " path: {}", shape.path())?;
             }

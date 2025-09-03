@@ -60,16 +60,6 @@ impl<'de> Deserialize<'de> for XsdDateTime {
     }
 }
 
-/*impl ToString for NumericLiteral {
-    fn to_string(&self) -> String {
-        match self {
-            NumericLiteral::Double(d) => format!("{}", d),
-            NumericLiteral::Integer(n) => n.to_string(),
-            NumericLiteral::Decimal(d) => d.to_string(),
-        }
-    }
-}*/
-
 impl Display for XsdDateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)

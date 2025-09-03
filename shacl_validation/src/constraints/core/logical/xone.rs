@@ -1,6 +1,6 @@
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::Xone;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::Xone;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -23,12 +23,12 @@ use crate::value_nodes::ValueNodes;
 impl<S: NeighsRDF + Debug> Validator<S> for Xone {
     fn validate(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let xone = |value_node: &S::Term| {
@@ -61,11 +61,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Xone {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
@@ -83,11 +83,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Xone {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Xone {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

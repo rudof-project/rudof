@@ -1,0 +1,23 @@
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:genderShape
+	a sh:NodeShape ;
+	sh:targetNode :ok1, :ko1 ;
+	sh:property _:p .
+    
+_:p sh:path :parent ;
+	sh:minCount 2 ;
+	sh:maxCount 2 ;
+	sh:qualifiedValueShape _:1 ;
+	sh:qualifiedMinCount 1  .
+
+_:1 sh:path :gender ;
+	sh:hasValue :female .
+
+
+:ok1 :parent [ :gender :female; :gender :male ] .
+:ko1 :parent [ :gender :other; :gender :male ] .
+ 

@@ -380,7 +380,8 @@ impl Display for Component {
                 let str = values.iter().map(|v| v.to_string()).join(" ");
                 write!(f, "In [{str}]")
             }
-            Component::QualifiedValueShape { .. } => todo!(),
+            Component::QualifiedValueShape { shape, qualified_max_count, qualified_min_count, qualified_value_shapes_disjoint } => 
+                write!(f, "QualifiedValueShape(shape: {shape}, qualified_min_count: {qualified_min_count:?}, qualified_max_count: {qualified_max_count:?}, qualified_value_shapes_disjoint: {qualified_value_shapes_disjoint:?})"),
             Component::Deactivated(b) => write!(f, "deactivated({b})"),
         }
     }

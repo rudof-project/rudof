@@ -8,8 +8,8 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use iri_s::IriS;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::RDFNode;
@@ -23,10 +23,10 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &self,
         store: &S,
-        shape: &CompiledShape,
-        component: &CompiledComponent,
+        shape: &ShapeIR,
+        component: &ComponentIR,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         let shacl_component = ShaclComponent::new(component);
@@ -137,7 +137,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     /*fn predicate(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _predicate: &S::IRI,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -149,7 +149,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn alternative(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -161,7 +161,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn sequence(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _paths: &[SHACLPath],
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -173,7 +173,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn inverse(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -185,7 +185,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn zero_or_more(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -197,7 +197,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn one_or_more(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
@@ -209,7 +209,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn zero_or_one(
         &self,
         _store: &S,
-        _shape: &CompiledPropertyShape,
+        _shape: &PropertyShapeIR,
         _path: &SHACLPath,
         _focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {

@@ -82,7 +82,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 }
 
 /// Concrete representation of RDF literals
-/// This representation internally uses integers or doubles to represent numeric values
+/// This representation internally uses integers, doubles, booleans, etc. to represent values
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub enum SLiteral {
     StringLiteral {
@@ -263,6 +263,16 @@ impl Default for SLiteral {
     }
 }
 
+fn parse_bool(str: &str) -> Result<bool, String> {
+    match str.to_lowercase().as_str() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        "0" => Ok(true),
+        "1" => Ok(false),
+        _ => Err(format!("Cannot convert {str} to boolean")),
+    }
+}
+
 // The comparison between literals is based on SPARQL comparison rules.
 // String literals are compared lexicographically, datatype literals are compared based on their datatype and lexical form,
 // numeric literals are compared based on their numeric value, and boolean literals are compared as true >
@@ -398,7 +408,19 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
                 let xsd_datetime = oxrdf::vocab::xsd::DATE_TIME.to_owned();
+                let xsd_boolean = oxrdf::vocab::xsd::BOOLEAN.to_owned();
                 match &dtype {
+                    d if *d == xsd_boolean => match parse_bool(&value) {
+                        Ok(b) => Ok(SLiteral::BooleanLiteral(b)),
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
                     d if *d == xsd_double => match value.parse() {
                         Ok(double_value) => Ok(SLiteral::NumericLiteral(NumericLiteral::double(
                             double_value,

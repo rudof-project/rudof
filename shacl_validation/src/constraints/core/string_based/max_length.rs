@@ -7,9 +7,9 @@ use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::component::MaxLength;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::MaxLength;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
@@ -21,11 +21,11 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         _: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
@@ -64,11 +64,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();

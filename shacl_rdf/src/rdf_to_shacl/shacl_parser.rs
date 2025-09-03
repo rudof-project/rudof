@@ -5,8 +5,8 @@ use shacl_ast::shacl_vocab::{
     sh_and, sh_class, sh_closed, sh_datatype, sh_has_value, sh_in, sh_language_in, sh_max_count,
     sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive,
     sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_node_shape, sh_not, sh_or,
-    sh_pattern, sh_property_shape, sh_target_class, sh_target_node, sh_target_objects_of,
-    sh_target_subjects_of, sh_xone,
+    sh_pattern, sh_property_shape, sh_qualified_value_shapes_disjoint, sh_target_class,
+    sh_target_node, sh_target_objects_of, sh_target_subjects_of, sh_xone,
 };
 use shacl_ast::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,
@@ -21,7 +21,7 @@ use srdf::{
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple,
 };
-use srdf::{property_string, property_value_as_list, Literal};
+use srdf::{property_integer, property_string, property_value_as_list, Literal};
 use srdf::{rdf_type, rdfs_class, FnOpaque};
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
@@ -93,23 +93,27 @@ where
             .map(Triple::into_subject)
             .collect();
 
-        // subjects with property `sh:property`
-        let subjects_property = self.objects_with_predicate(Self::sh_property_iri())?;
+        // Search shape expecting parameters: https://www.w3.org/TR/shacl12-core/#dfn-shape-expecting
+        // elements of `sh:and` list
+        let sh_and_values = self.get_sh_and_values()?;
 
         // elements of `sh:or` list
         let sh_or_values = self.get_sh_or_values()?;
 
-        // elements of `sh:xone` list
-        let sh_xone_values = self.get_sh_xone_values()?;
-
-        // elements of `sh:and` list
-        let sh_and_values = self.get_sh_and_values()?;
-
         // elements of `sh:not` list
         let sh_not_values = self.get_sh_not_values()?;
 
-        // elements of `sh:not` list
+        // subjects with property `sh:property`
+        let subjects_property = self.objects_with_predicate(Self::sh_property_iri())?;
+
+        // elements of `sh:node` list
+        let sh_qualified_value_shape_nodes = self.get_sh_qualified_value_shape()?;
+
+        // elements of `sh:node` list
         let sh_node_values = self.get_sh_node_values()?;
+
+        // elements of `sh:xone` list
+        let sh_xone_values = self.get_sh_xone_values()?;
 
         // Subjects with type `sh:PropertyShape`
         let property_shapes_instances: HashSet<_> = self
@@ -138,6 +142,7 @@ where
         candidates.extend(sh_xone_values);
         candidates.extend(sh_and_values);
         candidates.extend(sh_not_values);
+        candidates.extend(sh_qualified_value_shape_nodes);
         candidates.extend(sh_node_values);
         candidates.extend(property_shapes_instances);
         candidates.extend(shape_instances);
@@ -202,6 +207,14 @@ where
     fn get_sh_not_values(&mut self) -> Result<HashSet<RDF::Subject>> {
         let mut rs = HashSet::new();
         for s in self.objects_with_predicate(Self::sh_not_iri())? {
+            rs.insert(s);
+        }
+        Ok(rs)
+    }
+
+    fn get_sh_qualified_value_shape(&mut self) -> Result<HashSet<RDF::Subject>> {
+        let mut rs = HashSet::new();
+        for s in self.objects_with_predicate(Self::sh_qualified_value_shape_iri())? {
             rs.insert(s);
         }
         Ok(rs)
@@ -273,6 +286,10 @@ where
         sh_node().clone().into()
     }
 
+    fn sh_qualified_value_shape_iri() -> RDF::IRI {
+        sh_qualified_value_shape().clone().into()
+    }
+
     fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape<RDF>> + 'a
     where
         RDF: FocusRDF + 'a,
@@ -291,33 +308,56 @@ where
     // combine_parsers(min_count(), max_count(),...)
     // But we found that the compiler takes too much memory when the number of parsers is large
     combine_parsers_vec(vec![
-        min_count(),
-        deactivated(),
-        max_count(),
-        in_component(),
-        datatype(),
-        node_kind(),
+        // Value type
         class(),
-        closed_component(),
-        or(),
-        xone(),
-        and(),
-        not_parser(),
-        node(),
-        min_length(),
-        max_length(),
-        has_value(),
-        language_in(),
-        unique_lang(),
-        pattern(),
+        node_kind(),
+        datatype(),
+        // Cardinality
+        min_count(),
+        max_count(),
+        // Value range
         min_inclusive(),
         min_exclusive(),
         max_inclusive(),
         max_exclusive(),
+        // String based
+        min_length(),
+        max_length(),
+        pattern(),
+        // TODO: SHACL 1.2: single line ?
+        // single_line(),
+        language_in(),
+        unique_lang(),
+        // SHACL 1.2: List constraint components
+        // member_shape(),
+        // min_list_length(),
+        // max_list_length(),
+        // unique_members(),
+
+        // Property pair
         equals(),
         disjoint(),
         less_than(),
         less_than_or_equals(),
+        // Logical
+        not_component(),
+        and(),
+        or(),
+        xone(),
+        // Shape based
+        node(),
+        // property is handled differently
+        // Qualified value shape
+        qualified_value_shape(),
+        // Other
+        closed_component(),
+        has_value(),
+        in_component(),
+        // SPARQL based constraints and SPARQL based constraint components
+        // TODO
+
+        // TODO: deactivated is not a shape component...move this code elsewhere?
+        deactivated(),
     ])
 }
 
@@ -362,15 +402,6 @@ where
         object()
             .then(move |t: RDFNode| ok(&NodeShape::new(t)))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-            /* .then(|ps| {
-                optional(closed()).flat_map(move |c| {
-                    if let Some(true) = c {
-                        Ok(ps.clone().with_closed(true))
-                    } else {
-                        Ok(ps.clone())
-                    }
-                })
-            }) */
             .then(|ns| {
                 property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
             })
@@ -412,6 +443,53 @@ fn parse_not_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component
 
 fn parse_node_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component> {
     term().flat_map(|t| cnv_node::<RDF>(t))
+}
+
+fn qualified_value_shape_disjoint_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<bool>> {
+    opaque!(optional(
+        property_bool(sh_qualified_value_shapes_disjoint())
+    ))
+}
+
+fn qualified_min_count_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<isize>> {
+    opaque!(optional(property_integer(sh_qualified_min_count())))
+}
+
+fn qualified_max_count_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<isize>> {
+    opaque!(optional(property_integer(sh_qualified_max_count())))
+}
+
+fn parse_qualified_value_shape<RDF: FocusRDF>(
+    qvs: HashSet<RDFNode>,
+) -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+    qualified_value_shape_disjoint_parser()
+        .and(qualified_min_count_parser())
+        .and(qualified_max_count_parser())
+        .map(move |((maybe_disjoint, maybe_mins), maybe_maxs)| {
+            build_qualified_shape::<RDF>(qvs.clone(), maybe_disjoint, maybe_mins, maybe_maxs)
+        })
+}
+
+fn build_qualified_shape<RDF: FocusRDF>(
+    terms: HashSet<RDFNode>,
+    qualified_value_shapes_disjoint: Option<bool>,
+    qualified_min_count: Option<isize>,
+    qualified_max_count: Option<isize>,
+) -> Vec<Component>
+where
+    RDF: Rdf,
+{
+    let mut result = Vec::new();
+    for term in terms {
+        let shape = Component::QualifiedValueShape {
+            shape: term.clone(),
+            qualified_min_count,
+            qualified_max_count,
+            qualified_value_shapes_disjoint,
+        };
+        result.push(shape);
+    }
+    result
 }
 
 fn cnv_node<RDF>(t: RDF::Term) -> PResult<Component>
@@ -909,7 +987,7 @@ where
     opaque!(parse_components_for_iri(sh_and(), parse_and_values()))
 }
 
-fn not_parser<RDF>() -> FnOpaque<RDF, Vec<Component>>
+fn not_component<RDF>() -> FnOpaque<RDF, Vec<Component>>
 // impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
@@ -923,6 +1001,14 @@ where
     RDF: FocusRDF,
 {
     opaque!(parse_components_for_iri(sh_node(), parse_node_value()))
+}
+
+fn qualified_value_shape<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_objects(sh_qualified_value_shape())
+        .then(|qvs| { parse_qualified_value_shape::<RDF>(qvs) }))
 }
 
 fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>

@@ -1,8 +1,8 @@
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
-use super::component::CompiledComponent;
+use super::component_ir::ComponentIR;
 use super::severity::CompiledSeverity;
-use super::shape::CompiledShape;
+use super::shape::ShapeIR;
 use super::target::CompiledTarget;
 use crate::closed_info::ClosedInfo;
 use iri_s::IriS;
@@ -14,12 +14,12 @@ use srdf::SHACLPath;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
-pub struct CompiledPropertyShape {
+pub struct PropertyShapeIR {
     id: RDFNode,
     path: SHACLPath,
-    components: Vec<CompiledComponent>,
+    components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
-    property_shapes: Vec<CompiledShape>,
+    property_shapes: Vec<ShapeIR>,
     closed_info: ClosedInfo,
     // ignored_properties: Vec<S::IRI>,
     deactivated: bool,
@@ -33,19 +33,19 @@ pub struct CompiledPropertyShape {
     // annotations: Vec<(S::IRI, S::Term)>,
 }
 
-impl CompiledPropertyShape {
+impl PropertyShapeIR {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: RDFNode,
         path: SHACLPath,
-        components: Vec<CompiledComponent>,
+        components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
-        property_shapes: Vec<CompiledShape>,
+        property_shapes: Vec<ShapeIR>,
         closed_info: ClosedInfo,
         deactivated: bool,
         severity: Option<CompiledSeverity>,
     ) -> Self {
-        CompiledPropertyShape {
+        PropertyShapeIR {
             id,
             path,
             components,
@@ -87,7 +87,7 @@ impl CompiledPropertyShape {
         }
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent> {
+    pub fn components(&self) -> &Vec<ComponentIR> {
         &self.components
     }
 
@@ -95,12 +95,12 @@ impl CompiledPropertyShape {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
+    pub fn property_shapes(&self) -> &Vec<ShapeIR> {
         &self.property_shapes
     }
 }
 
-impl CompiledPropertyShape {
+impl PropertyShapeIR {
     pub fn compile<S: Rdf>(
         shape: PropertyShape<S>,
         schema: &Schema<S>,
@@ -113,7 +113,7 @@ impl CompiledPropertyShape {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = CompiledComponent::compile(component.to_owned(), schema)? {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema)? {
                 compiled_components.push(component);
             }
         }
@@ -132,7 +132,7 @@ impl CompiledPropertyShape {
 
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)?;
 
-        let compiled_property_shape = CompiledPropertyShape::new(
+        let compiled_property_shape = PropertyShapeIR::new(
             id,
             path,
             compiled_components,

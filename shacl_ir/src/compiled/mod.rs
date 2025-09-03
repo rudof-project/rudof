@@ -1,6 +1,6 @@
 pub mod closed_info;
 pub mod compiled_shacl_error;
-pub mod component;
+pub mod component_ir;
 pub mod node_shape;
 pub mod property_shape;
 pub mod schema;
@@ -11,7 +11,7 @@ pub mod target;
 use compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shape::CompiledShape;
+use shape::ShapeIR;
 use srdf::Object;
 use srdf::RDFNode;
 use srdf::Rdf;
@@ -26,20 +26,17 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, CompiledShaclError> {
     Ok(iri)
 }
 
-fn compile_shape<S: Rdf>(
-    shape: Object,
-    schema: &Schema<S>,
-) -> Result<CompiledShape, CompiledShaclError> {
+fn compile_shape<S: Rdf>(shape: Object, schema: &Schema<S>) -> Result<ShapeIR, CompiledShaclError> {
     let shape = schema
         .get_shape(&shape)
-        .ok_or(CompiledShaclError::ShapeNotFound)?;
-    CompiledShape::compile(shape.to_owned(), schema)
+        .ok_or(CompiledShaclError::ShapeNotFound { shape })?;
+    ShapeIR::compile(shape.to_owned(), schema)
 }
 
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
     schema: &Schema<S>,
-) -> Result<Vec<CompiledShape>, CompiledShaclError> {
+) -> Result<Vec<ShapeIR>, CompiledShaclError> {
     let compiled_shapes = shapes
         .into_iter()
         .map(|shape| compile_shape::<S>(shape, schema))

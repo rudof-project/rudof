@@ -7,9 +7,9 @@ use crate::engine::sparql::SparqlEngine;
 use crate::engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ir::compiled::component::Closed;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::Closed;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -18,12 +18,12 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug> Validator<S> for Closed {
     fn validate(
         &self,
-        _component: &CompiledComponent,
-        _shape: &CompiledShape,
+        _component: &ComponentIR,
+        _shape: &ShapeIR,
         _store: &S,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape>,
+        _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Closed".to_string()))
@@ -33,11 +33,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
     fn validate_native(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
@@ -55,11 +55,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Closed {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent,
-        shape: &CompiledShape,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(

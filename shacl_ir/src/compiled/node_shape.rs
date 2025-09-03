@@ -1,8 +1,8 @@
 use super::compile_shape;
 use super::compiled_shacl_error::CompiledShaclError;
-use super::component::CompiledComponent;
+use super::component_ir::ComponentIR;
 use super::severity::CompiledSeverity;
-use super::shape::CompiledShape;
+use super::shape::ShapeIR;
 use super::target::CompiledTarget;
 use crate::closed_info::ClosedInfo;
 use iri_s::IriS;
@@ -12,11 +12,11 @@ use srdf::{RDFNode, Rdf};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
-pub struct CompiledNodeShape {
+pub struct NodeShapeIR {
     id: RDFNode,
-    components: Vec<CompiledComponent>,
+    components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
-    property_shapes: Vec<CompiledShape>,
+    property_shapes: Vec<ShapeIR>,
     closed_info: ClosedInfo,
     deactivated: bool,
 
@@ -28,17 +28,17 @@ pub struct CompiledNodeShape {
     // source_iri: S::IRI,
 }
 
-impl CompiledNodeShape {
+impl NodeShapeIR {
     pub fn new(
         id: RDFNode,
-        components: Vec<CompiledComponent>,
+        components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
-        property_shapes: Vec<CompiledShape>,
+        property_shapes: Vec<ShapeIR>,
         closed_info: ClosedInfo,
         deactivated: bool,
         severity: Option<CompiledSeverity>,
     ) -> Self {
-        CompiledNodeShape {
+        NodeShapeIR {
             id,
             components,
             targets,
@@ -71,7 +71,7 @@ impl CompiledNodeShape {
             .unwrap_or_else(HashSet::new)
     }
 
-    pub fn components(&self) -> &Vec<CompiledComponent> {
+    pub fn components(&self) -> &Vec<ComponentIR> {
         &self.components
     }
 
@@ -79,7 +79,7 @@ impl CompiledNodeShape {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<CompiledShape> {
+    pub fn property_shapes(&self) -> &Vec<ShapeIR> {
         &self.property_shapes
     }
 
@@ -88,7 +88,7 @@ impl CompiledNodeShape {
     }
 }
 
-impl CompiledNodeShape {
+impl NodeShapeIR {
     /// Compiles an AST NodeShape to an internal representation NodeShape
     /// It embeds some components like deactivated as boolean attributes of the internal representation of the node shape
     pub fn compile<S: Rdf>(
@@ -102,7 +102,7 @@ impl CompiledNodeShape {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = CompiledComponent::compile(component.to_owned(), schema)? {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema)? {
                 compiled_components.push(component);
             }
         }
@@ -121,7 +121,7 @@ impl CompiledNodeShape {
 
         let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, schema)?;
 
-        let compiled_node_shape = CompiledNodeShape::new(
+        let compiled_node_shape = NodeShapeIR::new(
             id,
             compiled_components,
             targets,
@@ -135,7 +135,7 @@ impl CompiledNodeShape {
     }
 }
 
-/*impl Display for CompiledNodeShape {
+/*impl Display for NodeShapeIR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "NodeShape\n Id: {}", self.id)?;
         writeln!(f, " Deactivated: {}", self.deactivated)?;

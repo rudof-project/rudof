@@ -1,7 +1,7 @@
 use iri_s::IriS;
-use shacl_ir::compiled::component::CompiledComponent;
-use shacl_ir::compiled::property_shape::CompiledPropertyShape;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::property_shape::PropertyShapeIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::compiled::target::CompiledTarget;
 use srdf::NeighsRDF;
 use srdf::RDFNode;
@@ -17,10 +17,10 @@ pub trait Engine<S: NeighsRDF> {
     fn evaluate(
         &self,
         store: &S,
-        shape: &CompiledShape,
-        component: &CompiledComponent,
+        shape: &ShapeIR,
+        component: &ComponentIR,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 
@@ -72,7 +72,7 @@ pub trait Engine<S: NeighsRDF> {
     fn path(
         &self,
         store: &S,
-        shape: &CompiledPropertyShape,
+        shape: &PropertyShapeIR,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
         let nodes = get_objects_for_shacl_path(store, focus_node, shape.path())?;

@@ -4,9 +4,9 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::{iri, IriS};
-use shacl_ir::compiled::node_shape::CompiledNodeShape;
-use shacl_ir::compiled::property_shape::CompiledPropertyShape;
-use shacl_ir::compiled::shape::CompiledShape;
+use shacl_ir::compiled::node_shape::NodeShapeIR;
+use shacl_ir::compiled::property_shape::PropertyShapeIR;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::debug;
@@ -18,17 +18,17 @@ pub trait Validate<S: Rdf> {
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
     ) -> Result<Vec<ValidationResult>, ValidateError>;
 }
 
-impl<S: NeighsRDF + Debug> Validate<S> for CompiledShape {
+impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
     fn validate(
         &self,
         store: &S,
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
-        source_shape: Option<&CompiledShape>,
+        source_shape: Option<&ShapeIR>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
         debug!("Shape.validate with shape {}", self.id());
 
@@ -127,7 +127,7 @@ pub trait FocusNodesOps<S: Rdf> {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S>;
 }
 
-impl<S: NeighsRDF> FocusNodesOps<S> for CompiledShape {
+impl<S: NeighsRDF> FocusNodesOps<S> for ShapeIR {
     fn focus_nodes(&self, store: &S, runner: &dyn Engine<S>) -> FocusNodes<S> {
         runner
             .focus_nodes(store, self.targets())
@@ -144,7 +144,7 @@ pub trait ValueNodesOps<S: Rdf> {
     ) -> Result<ValueNodes<S>, ValidateError>;
 }
 
-impl<S: NeighsRDF> ValueNodesOps<S> for CompiledShape {
+impl<S: NeighsRDF> ValueNodesOps<S> for ShapeIR {
     fn value_nodes(
         &self,
         store: &S,
@@ -152,13 +152,13 @@ impl<S: NeighsRDF> ValueNodesOps<S> for CompiledShape {
         runner: &dyn Engine<S>,
     ) -> Result<ValueNodes<S>, ValidateError> {
         match self {
-            CompiledShape::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
-            CompiledShape::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
+            ShapeIR::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
+            ShapeIR::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
         }
     }
 }
 
-impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape {
+impl<S: Rdf> ValueNodesOps<S> for NodeShapeIR {
     fn value_nodes(
         &self,
         _: &S,
@@ -175,7 +175,7 @@ impl<S: Rdf> ValueNodesOps<S> for CompiledNodeShape {
     }
 }
 
-impl<S: NeighsRDF> ValueNodesOps<S> for CompiledPropertyShape {
+impl<S: NeighsRDF> ValueNodesOps<S> for PropertyShapeIR {
     fn value_nodes(
         &self,
         store: &S,
