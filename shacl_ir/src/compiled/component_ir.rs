@@ -153,9 +153,9 @@ impl ComponentIR {
                 }
                 Some(ComponentIR::QualifiedValueShape(QualifiedValueShape::new(
                     shape,
-                    qualified_min_count,
-                    qualified_max_count,
-                    qualified_value_shapes_disjoint,
+                    q_min_count,
+                    q_max_count,
+                    disjoint,
                     compiled_siblings,
                 )))
             }

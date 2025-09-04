@@ -656,9 +656,9 @@ where
 
 fn build_qualified_shape<RDF: FocusRDF>(
     terms: HashSet<RDFNode>,
-    qualified_value_shapes_disjoint: Option<bool>,
-    qualified_min_count: Option<isize>,
-    qualified_max_count: Option<isize>,
+    disjoint: Option<bool>,
+    q_min_count: Option<isize>,
+    q_max_count: Option<isize>,
     siblings: Vec<RDFNode>,
 ) -> Vec<Component>
 where
@@ -668,9 +668,9 @@ where
     for term in terms {
         let shape = Component::QualifiedValueShape {
             shape: term.clone(),
-            qualified_min_count,
-            qualified_max_count,
-            qualified_value_shapes_disjoint,
+            q_min_count,
+            q_max_count,
+            disjoint,
             siblings: siblings.clone(),
         };
         result.push(shape);

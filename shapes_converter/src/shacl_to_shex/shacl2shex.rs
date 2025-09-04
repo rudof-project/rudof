@@ -398,9 +398,9 @@ impl Shacl2ShEx {
             Component::In { values: _ } => todo!(),
             Component::QualifiedValueShape {
                 shape: _,
-                qualified_min_count: _,
-                qualified_max_count: _,
-                qualified_value_shapes_disjoint: _,
+                q_min_count: _,
+                q_max_count: _,
+                disjoint: _,
                 siblings: _,
             } => todo!(),
             Component::Deactivated(_) => todo!(),
