@@ -6,6 +6,7 @@ use crate::shacl_vocab::{
     sh_property_shape, sh_severity, sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
 use srdf::Rdf;
 use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
@@ -68,6 +69,11 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 
     pub fn with_group(mut self, group: Option<RDFNode>) -> Self {
         self.group = group;
+        self
+    }
+
+    pub fn with_severity_option(mut self, severity: Option<Severity>) -> Self {
+        self.severity = severity;
         self
     }
 
@@ -252,6 +258,8 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
+                Severity::Trace => sh_trace(),
+                Severity::Debug => sh_debug(),
                 Severity::Violation => sh_violation(),
                 Severity::Info => sh_info(),
                 Severity::Warning => sh_warning(),
@@ -267,6 +275,9 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 
 impl<RDF: Rdf> Display for PropertyShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(severity) = self.severity() {
+            write!(f, "{} ", severity)?;
+        }
         writeln!(f, "{{")?;
         writeln!(f, "       PropertyShape")?;
         writeln!(f, "       path: {}", self.path)?;

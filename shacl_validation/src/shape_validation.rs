@@ -100,7 +100,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
                         closed_constraint_component(),
-                        Object::iri(self.severity().iri()),
+                        self.severity(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
                     closed_validation_results.push(vr_single);

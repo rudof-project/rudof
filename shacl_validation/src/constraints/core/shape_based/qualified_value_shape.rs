@@ -16,7 +16,9 @@ use srdf::NeighsRDF;
 use srdf::Object;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
+use std::collections::HashSet;
 use std::fmt::Debug;
+use tracing::debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
@@ -29,19 +31,71 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let mut validation_results = Vec::new();
+        // TODO: It works but it returns duplicated validation results
+        // I tried to use a HashSet but it still doesn't remove duplicates...
+        let mut validation_results = HashSet::new();
         let component = Object::iri(component.into());
-        let severity = Object::iri(shape.severity().iri());
 
         for (focus_node, nodes) in value_nodes.iter() {
             let mut valid_counter = 0;
-            // Cound how many nodes conform to the shape
+            // Count how many nodes conform to the shape
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
                 let inner_results =
                     self.shape()
                         .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));
-                let is_valid = !inner_results.is_err() && inner_results.unwrap().is_empty();
+                let mut is_valid = match inner_results {
+                    Err(e) => {
+                        debug!(
+                            "Error validating node {node} with shape {}: {e}",
+                            self.shape().id()
+                        );
+                        false
+                    }
+                    Ok(results) => {
+                        if !results.is_empty() {
+                            debug!(
+                                "Node doesn't conform to shape {}, results: {}",
+                                self.shape().id(),
+                                results
+                                    .iter()
+                                    .map(|r| format!(" {:?}", r))
+                                    .collect::<Vec<String>>()
+                                    .join(", ")
+                            );
+                            false
+                        } else {
+                            debug!(
+                                "Node {node} initially conforms to shape {}",
+                                self.shape().id()
+                            );
+                            true
+                        }
+                    }
+                };
+                if !self.siblings().is_empty() && is_valid {
+                    // If there are siblings, check that none of them validate
+                    debug!("Checking siblings for node {node}: {:?}", self.siblings());
+                    for sibling in self.siblings().iter() {
+                        debug!("Checking {node} with sibling shape: {}", sibling.id());
+                        let sibling_results = self.shape().validate(
+                            store,
+                            &engine,
+                            Some(&focus_nodes),
+                            Some(sibling),
+                        );
+                        let sibling_is_valid =
+                            !sibling_results.is_err() && sibling_results.unwrap().is_empty();
+                        debug!(
+                            "Result of node {node} with sibling shape {}: {sibling_is_valid}",
+                            sibling.id()
+                        );
+                        if sibling_is_valid {
+                            is_valid = false;
+                            break;
+                        }
+                    }
+                }
                 if is_valid {
                     valid_counter += 1
                 }
@@ -55,11 +109,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     let validation_result = ValidationResult::new(
                         shape.id().clone(),
                         component.clone(),
-                        severity.clone(),
+                        shape.severity(),
                     )
                     .with_message(message.as_str())
                     .with_path(maybe_path.clone());
-                    validation_results.push(validation_result);
+                    validation_results.insert(validation_result);
                 }
             }
             if let Some(max_count) = self.qualified_max_count() {
@@ -71,15 +125,15 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     let validation_result = ValidationResult::new(
                         shape.id().clone(),
                         component.clone(),
-                        severity.clone(),
+                        shape.severity(),
                     )
                     .with_message(message.as_str())
                     .with_path(maybe_path.clone());
-                    validation_results.push(validation_result);
+                    validation_results.insert(validation_result);
                 }
             }
         }
-        Ok(validation_results)
+        Ok(validation_results.iter().cloned().collect())
     }
 }
 

@@ -1284,7 +1284,7 @@ where
                     msg: format!("Error obtaining outgoing arcs from {focus}: {e}"),
                 })
             }
-            None => todo!(),
+            None => Err(RDFParseError::NoFocusNode),
         }
     }
 }

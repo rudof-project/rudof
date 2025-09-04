@@ -4,10 +4,11 @@ use shacl_ast::shacl_vocab::{
     sh_focus_node, sh_result_message, sh_result_path, sh_result_severity,
     sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
 };
+use shacl_ir::severity::CompiledSeverity;
 use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
 use std::fmt::Debug;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValidationResult {
     focus_node: RDFNode,           // required
     path: Option<SHACLPath>,       // optional
@@ -16,12 +17,16 @@ pub struct ValidationResult {
     constraint_component: RDFNode, // required
     details: Option<Vec<RDFNode>>, // optional
     message: Option<String>,       // optional
-    severity: RDFNode,             // required (TODO: Replace by Severity?)
+    severity: CompiledSeverity,    // required
 }
 
 impl ValidationResult {
     // Creates a new validation result
-    pub fn new(focus_node: Object, constraint_component: Object, severity: Object) -> Self {
+    pub fn new(
+        focus_node: Object,
+        constraint_component: Object,
+        severity: CompiledSeverity,
+    ) -> Self {
         Self {
             focus_node,
             path: None,
@@ -83,7 +88,7 @@ impl ValidationResult {
         &self.constraint_component
     }
 
-    pub fn severity(&self) -> &Object {
+    pub fn severity(&self) -> &CompiledSeverity {
         &self.severity
     }
 }
@@ -104,7 +109,20 @@ impl ValidationResult {
             validation_result,
             &sh_result_severity().clone().into(),
         )? {
-            Some(severity) => severity,
+            Some(Object::Iri(severity)) => {
+                CompiledSeverity::from_iri(&severity).ok_or_else(|| {
+                    ResultError::WrongIRIForSeverity {
+                        field: "Severity".to_owned(),
+                        value: format!("{severity}"),
+                    }
+                })?
+            }
+            Some(other) => {
+                return Err(ResultError::WrongNodeForSeverity {
+                    field: "Severity".to_owned(),
+                    value: format!("{other}"),
+                });
+            }
             None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
         };
         let constraint_component = match get_object_for(
@@ -167,12 +185,9 @@ impl ValidationResult {
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding source constraint component to validation result: {e}"),
             })?;
+        let severity: RDF::Term = self.severity().to_iri().into();
         rdf_writer
-            .add_triple(
-                report_node.clone(),
-                sh_result_severity().clone(),
-                self.severity.clone(),
-            )
+            .add_triple(report_node.clone(), sh_result_severity().clone(), severity)
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding severity to validation result: {e}"),
             })?;

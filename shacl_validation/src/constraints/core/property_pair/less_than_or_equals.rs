@@ -26,7 +26,6 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
-        let severity = Object::iri(shape.severity().iri());
 
         for (focus_node, nodes) in value_nodes.iter() {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus_node).unwrap();
@@ -54,7 +53,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
                                     let validation_result = ValidationResult::new(
                                         shape.id().clone(),
                                         component.clone(),
-                                        severity.clone(),
+                                        shape.severity(),
                                     )
                                     .with_message(msg.as_str())
                                     .with_path(maybe_path.clone());
@@ -74,7 +73,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
                     let validation_result = ValidationResult::new(
                         shape.id().clone(),
                         component.clone(),
-                        severity.clone(),
+                        shape.severity(),
                     )
                     .with_message(message.as_str())
                     .with_path(maybe_path.clone());

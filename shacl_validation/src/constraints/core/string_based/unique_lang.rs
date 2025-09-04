@@ -60,7 +60,6 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                         nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>()
                     );
                     let component = Object::iri(component.into());
-                    let severity = Object::iri(shape.severity().iri());
                     let message = format!(
                         "Unique lang failed for lang {} with values: {}",
                         key,
@@ -71,7 +70,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                             .join(", ")
                     );
                     let validation_result =
-                        ValidationResult::new(shape.id().clone(), component, severity)
+                        ValidationResult::new(shape.id().clone(), component, shape.severity())
                             .with_message(message.as_str())
                             .with_path(maybe_path.clone());
                     validation_results.push(validation_result);

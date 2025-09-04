@@ -3,6 +3,7 @@ use crate::shacl_vocab::{
     sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
 use srdf::{BuildRDF, RDFNode, Rdf};
 use std::collections::HashSet;
@@ -52,6 +53,11 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
     pub fn set_targets(&mut self, targets: Vec<Target<RDF>>) {
         self.targets = targets;
+    }
+
+    pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
+        self.severity = severity;
+        self
     }
 
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
@@ -148,10 +154,12 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Violation => sh_violation().clone(),
-                Severity::Info => sh_info().clone(),
-                Severity::Warning => sh_warning().clone(),
-                Severity::Generic(iri) => iri.get_iri().unwrap(),
+                Severity::Trace => sh_trace(),
+                Severity::Debug => sh_debug(),
+                Severity::Violation => sh_violation(),
+                Severity::Info => sh_info(),
+                Severity::Warning => sh_warning(),
+                Severity::Generic(iri) => &iri.get_iri().unwrap(),
             };
 
             rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
@@ -163,6 +171,9 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
 impl<RDF: Rdf> Display for NodeShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(severity) = self.severity() {
+            write!(f, "{} ", severity)?;
+        }
         writeln!(f, "{{")?;
         for target in self.targets.iter() {
             writeln!(f, "       {target}")?

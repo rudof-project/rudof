@@ -1,6 +1,7 @@
 use super::shacl_parser_error::ShaclParserError;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use shacl_ast::severity::Severity;
 use shacl_ast::shacl_vocab::{
     sh_and, sh_class, sh_closed, sh_datatype, sh_has_value, sh_in, sh_language_in, sh_max_count,
     sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive,
@@ -21,10 +22,13 @@ use srdf::{
     FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
     Term, Triple,
 };
-use srdf::{property_integer, property_string, property_value_as_list, Literal};
+use srdf::{
+    property_integer, property_iri, property_string, property_value_as_list, Literal, Object,
+};
 use srdf::{rdf_type, rdfs_class, FnOpaque};
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
+use tracing::debug;
 
 /// Result type for the ShaclParser
 type Result<A> = std::result::Result<A, ShaclParserError>;
@@ -83,12 +87,74 @@ where
             .with_shapes(self.shapes.clone()))
     }
 
+    /// Shapes candidates are defined in Appendix A of SHACL spec (Syntax rules)
+    /// The text is:
+    /// A shape is an IRI or blank node s that fulfills at least one of the following conditions in the shapes graph:
+    /// - s is a SHACL instance of sh:NodeShape or sh:PropertyShape.
+    /// - s is subject of a triple that has sh:targetClass, sh:targetNode, sh:targetObjectsOf or sh:targetSubjectsOf as predicate.
+    /// - s is subject of a triple that has a parameter as predicate.
+    /// - s is a value of a shape-expecting, non-list-taking parameter such as sh:node,
+    ///   or a member of a SHACL list that is a value of a shape-expecting and list-taking parameter such as sh:or.
     fn shapes_candidates(&mut self) -> Result<Vec<RDFNode>> {
-        // subjects with type `sh:NodeShape`
+        // instances of `sh:NodeShape`
         let node_shape_instances: HashSet<_> = self
             .rdf_parser
             .rdf
             .triples_matching(Any, Self::rdf_type_iri(), Self::sh_node_shape_iri())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // instances of `sh:PropertyShape`
+        let property_shapes_instances: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_property_shape_iri())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // Instances of `sh:Shape`
+        let shape_instances: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_shape_iri())
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // Subjects of sh:targetClass
+        let subjects_target_class: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, into_iri::<RDF>(sh_target_class()), Any)
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // Subjects of sh:targetSubjectsOf
+        let subjects_target_subjects_of: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, into_iri::<RDF>(sh_target_subjects_of()), Any)
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // Subjects of sh:targetObjectsOf
+        let subjects_target_objects_of: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, into_iri::<RDF>(sh_target_objects_of()), Any)
+            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map(Triple::into_subject)
+            .collect();
+
+        // Subjects of sh:targetNode
+        let subjects_target_node: HashSet<_> = self
+            .rdf_parser
+            .rdf
+            .triples_matching(Any, into_iri::<RDF>(sh_target_node()), Any)
             .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
             .map(Triple::into_subject)
             .collect();
@@ -115,24 +181,6 @@ where
         // elements of `sh:xone` list
         let sh_xone_values = self.get_sh_xone_values()?;
 
-        // Subjects with type `sh:PropertyShape`
-        let property_shapes_instances: HashSet<_> = self
-            .rdf_parser
-            .rdf
-            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_property_shape_iri())
-            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
-            .map(Triple::into_subject)
-            .collect();
-
-        // Subjects with type `sh:Shape`
-        let shape_instances: HashSet<_> = self
-            .rdf_parser
-            .rdf
-            .triples_matching(Any, Self::rdf_type_iri(), Self::sh_shape_iri())
-            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
-            .map(Triple::into_subject)
-            .collect();
-
         // I would prefer a code like: node_shape_instances.union(subjects_property).union(...)
         // But looking to the union API in HashSet, I think it can't be chained
         let mut candidates = HashSet::new();
@@ -146,6 +194,10 @@ where
         candidates.extend(sh_node_values);
         candidates.extend(property_shapes_instances);
         candidates.extend(shape_instances);
+        candidates.extend(subjects_target_class);
+        candidates.extend(subjects_target_subjects_of);
+        candidates.extend(subjects_target_objects_of);
+        candidates.extend(subjects_target_node);
 
         Ok(subjects_as_nodes::<RDF>(candidates)?)
     }
@@ -283,7 +335,7 @@ where
     }
 
     fn sh_node_iri() -> RDF::IRI {
-        sh_node().clone().into()
+        into_iri::<RDF>(sh_node())
     }
 
     fn sh_qualified_value_shape_iri() -> RDF::IRI {
@@ -376,6 +428,7 @@ where
             )
             // The following line is required because the path parser moves the focus node
             .then(move |ps| set_focus(&focus.clone()).with(ok(&ps)))
+            .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
             .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
             .then(|ps| {
                 property_shapes()
@@ -401,12 +454,22 @@ where
     not(property_values_non_empty(sh_path())).with(
         object()
             .then(move |t: RDFNode| ok(&NodeShape::new(t)))
+            .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ns| {
                 property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
             })
             .then(|ns| components().flat_map(move |cs| Ok(ns.clone().with_components(cs)))),
     )
+}
+
+fn severity<RDF: FocusRDF>() -> FnOpaque<RDF, Severity> {
+    opaque!(property_iri(sh_severity()).map(|iri| match iri.as_str() {
+        "http://www.w3.org/ns/shacl#Violation" => Severity::Violation,
+        "http://www.w3.org/ns/shacl#Warning" => Severity::Warning,
+        "http://www.w3.org/ns/shacl#Info" => Severity::Info,
+        _ => Severity::Generic(IriRef::iri(iri)),
+    }))
 }
 
 fn property_shapes<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>> {
@@ -465,9 +528,127 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(
     qualified_value_shape_disjoint_parser()
         .and(qualified_min_count_parser())
         .and(qualified_max_count_parser())
-        .map(move |((maybe_disjoint, maybe_mins), maybe_maxs)| {
-            build_qualified_shape::<RDF>(qvs.clone(), maybe_disjoint, maybe_mins, maybe_maxs)
-        })
+        .and(qualified_value_shape_siblings())
+        .flat_map(
+            move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
+                Ok(build_qualified_shape::<RDF>(
+                    qvs.clone(),
+                    maybe_disjoint,
+                    maybe_mins,
+                    maybe_maxs,
+                    siblings,
+                ))
+            },
+        )
+}
+
+fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF>
+where
+    RDF: FocusRDF,
+{
+    QualifiedValueShapeSiblings {
+        _marker: std::marker::PhantomData,
+        property_qualified_value_shape_path: SHACLPath::sequence(vec![
+            SHACLPath::iri(sh_property().clone()),
+            SHACLPath::iri(sh_qualified_value_shape().clone()),
+        ]),
+    }
+}
+
+/// This parser gets the siblings of a focus node
+/// Siblings are the other qualified value shapes that share the same parent(s)
+/// The defnition in the spec is: https://www.w3.org/TR/shacl12-core/#dfn-sibling-shapes
+/// "Let Q be a shape in shapes graph G that declares a qualified cardinality constraint
+/// (by having values for sh:qualifiedValueShape and at least one of sh:qualifiedMinCount
+/// or sh:qualifiedMaxCount).
+/// Let ps be the set of shapes in G that have Q as a value of sh:property.
+/// If Q has true as a value for sh:qualifiedValueShapesDisjoint then the set of sibling
+/// shapes for Q is defined as the set of all values of the SPARQL property path
+/// sh:property/sh:qualifiedValueShape for any shape in ps minus the value of
+/// sh:qualifiedValueShape of Q itself. The set of sibling shapes is empty otherwise."
+struct QualifiedValueShapeSiblings<RDF: FocusRDF> {
+    _marker: std::marker::PhantomData<RDF>,
+    property_qualified_value_shape_path: SHACLPath,
+}
+
+impl<RDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = Vec<RDFNode>;
+
+    fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
+        match rdf.get_focus() {
+            Some(focus) => {
+                let mut siblings = Vec::new();
+                let maybe_disjoint = rdf.object_for(
+                    focus,
+                    &into_iri::<RDF>(sh_qualified_value_shapes_disjoint()),
+                )?;
+                if let Some(disjoint) = maybe_disjoint {
+                    match disjoint {
+                        Object::Literal(SLiteral::BooleanLiteral(true)) => {
+                            debug!(
+                                "QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true"
+                            );
+                            let qvs = rdf.objects_for(
+                                &focus,
+                                &into_iri::<RDF>(sh_qualified_value_shape()),
+                            )?;
+                            if qvs.is_empty() {
+                                debug!("Focus node {focus} has disjoint=true but no qualifiedValueShape");
+                            } else {
+                                debug!("QVS of focus node {focus}: {qvs:?}");
+                                let ps =
+                                    rdf.subjects_for(&into_iri::<RDF>(sh_property()), &focus)?;
+                                debug!("Property parents of focus node {focus}: {ps:?}");
+                                for property_parent in ps {
+                                    let candidate_siblings = rdf.objects_for_shacl_path(
+                                        &property_parent,
+                                        &self.property_qualified_value_shape_path,
+                                    )?;
+                                    debug!("Candidate siblings: {candidate_siblings:?}");
+                                    for sibling in candidate_siblings {
+                                        if !qvs.contains(&sibling) {
+                                            let sibling_node = RDF::term_as_object(&sibling)?;
+                                            siblings.push(sibling_node);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Object::Literal(SLiteral::BooleanLiteral(false)) => {}
+                        _ => {
+                            debug!("Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)");
+                        }
+                    }
+                }
+                /*if let Some(true) =
+                    rdf.get_object_for(focus, sh_qualified_value_shapes_disjoint())?
+                {
+                    for p in ps {
+                        // TODO: Check that they have qualifiedValueShape also...
+                        let qvs = rdf
+                            .triples_matching(p.clone().into(), sh_property().clone().into(), Any)
+                            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
+                            .map(Triple::into_object)
+                            .flat_map(|t| RDF::term_as_object(&t).ok());
+                        for qv in qvs {
+                            if &qv != focus {
+                                siblings.push(qv);
+                            }
+                        }
+                    }
+                } else {
+                };*/
+
+                Ok(siblings)
+            }
+            None => {
+                return Err(RDFParseError::NoFocusNode);
+            }
+        }
+    }
 }
 
 fn build_qualified_shape<RDF: FocusRDF>(
@@ -475,6 +656,7 @@ fn build_qualified_shape<RDF: FocusRDF>(
     qualified_value_shapes_disjoint: Option<bool>,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
+    siblings: Vec<RDFNode>,
 ) -> Vec<Component>
 where
     RDF: Rdf,
@@ -486,6 +668,7 @@ where
             qualified_min_count,
             qualified_max_count,
             qualified_value_shapes_disjoint,
+            siblings: siblings.clone(),
         };
         result.push(shape);
     }
@@ -1155,4 +1338,8 @@ where
 {
     opaque!(property_values_bool(sh_unique_lang())
         .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect()))
+}
+
+fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {
+    iri.clone().into()
 }

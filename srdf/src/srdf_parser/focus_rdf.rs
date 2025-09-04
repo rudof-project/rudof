@@ -1,4 +1,6 @@
-use crate::{NeighsRDF, RDFParseError};
+use tracing::debug;
+
+use crate::{shacl_path_parse, NeighsRDF, RDFError, RDFNodeParse, RDFParseError, SHACLPath};
 
 /// Represents RDF graphs that contain a focus node
 ///
@@ -30,6 +32,23 @@ pub trait FocusRDF: NeighsRDF {
                     })?;
                 Ok(subject)
             }
+        }
+    }
+
+    fn get_path_for(
+        &mut self,
+        subject: &Self::Term,
+        predicate: &Self::IRI,
+    ) -> Result<Option<SHACLPath>, RDFError> {
+        match self.objects_for(subject, predicate)?.into_iter().next() {
+            Some(term) => match shacl_path_parse(term.clone()).parse_impl(self) {
+                Ok(path) => Ok(Some(path)),
+                Err(e) => {
+                    debug!("Error parsing PATH from report...{e}");
+                    Ok(None)
+                }
+            },
+            None => Ok(None),
         }
     }
 }

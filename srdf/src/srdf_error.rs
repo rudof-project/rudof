@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum RDFError {
     #[error("Conversion error {msg}")]
     ConversionError { msg: String },
@@ -45,6 +45,20 @@ pub enum RDFError {
         subject: String,
         predicate: String,
         object: String,
+        error: String,
+    },
+
+    #[error("Error obtaining subjects for predicate {predicate} and object {object}: {error}")]
+    ErrorSubjectsFor {
+        predicate: String,
+        object: String,
+        error: String,
+    },
+
+    #[error("Error obtaining objects for subject {subject} and predicate {predicate}: {error}")]
+    ErrorObjectsFor {
+        subject: String,
+        predicate: String,
         error: String,
     },
 }

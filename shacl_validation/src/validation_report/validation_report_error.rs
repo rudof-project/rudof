@@ -21,4 +21,18 @@ pub enum ResultError {
 
     #[error("Error parsing the ValidationResult, {}", _0)]
     Srdf(#[from] SRDFError),
+
+    #[error(
+        "Error parsing the ValidationResult, the field '{}' has an invalid IRI value: '{}'",
+        field,
+        value
+    )]
+    WrongIRIForSeverity { field: String, value: String },
+
+    #[error(
+        "Error parsing the ValidationResult, the field '{}' has an invalid IRI value: '{}'",
+        field,
+        value
+    )]
+    WrongNodeForSeverity { field: String, value: String },
 }

@@ -26,14 +26,13 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
-            let severity = Object::iri(shape.severity().iri());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
             if let Ok(condition) = evaluator(item) {
                 if condition {
                     return Some(
-                        ValidationResult::new(focus, component, severity)
+                        ValidationResult::new(focus, component, shape.severity())
                             .with_source(source.cloned())
                             .with_message(message)
                             .with_path(maybe_path.clone())
@@ -62,13 +61,12 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component = Object::iri(component.into());
-            let severity = Object::iri(shape.severity().iri());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
             match evaluator(focus_node, item) {
                 Ok(true) => Some(
-                    ValidationResult::new(focus, component, severity)
+                    ValidationResult::new(focus, component, shape.severity())
                         .with_source(source.cloned())
                         .with_message(message)
                         .with_path(maybe_path.clone())

@@ -143,13 +143,20 @@ impl ComponentIR {
                 qualified_min_count,
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
+                siblings,
             } => {
                 let shape = compile_shape::<S>(shape, schema)?;
+                let mut compiled_siblings = Vec::new();
+                for sibling in siblings.iter() {
+                    let compiled_sibling = compile_shape(sibling.clone(), schema)?;
+                    compiled_siblings.push(compiled_sibling);
+                }
                 Some(ComponentIR::QualifiedValueShape(QualifiedValueShape::new(
                     shape,
                     qualified_min_count,
                     qualified_max_count,
                     qualified_value_shapes_disjoint,
+                    compiled_siblings,
                 )))
             }
             Component::Deactivated(_b) => None,
@@ -475,6 +482,7 @@ pub struct QualifiedValueShape {
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
+    siblings: Vec<ShapeIR>,
 }
 
 impl QualifiedValueShape {
@@ -483,12 +491,14 @@ impl QualifiedValueShape {
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
+        siblings: Vec<ShapeIR>,
     ) -> Self {
         QualifiedValueShape {
             shape: Box::new(shape),
             qualified_min_count,
             qualified_max_count,
             qualified_value_shapes_disjoint,
+            siblings,
         }
     }
 
@@ -502,6 +512,10 @@ impl QualifiedValueShape {
 
     pub fn qualified_max_count(&self) -> Option<isize> {
         self.qualified_max_count
+    }
+
+    pub fn siblings(&self) -> &Vec<ShapeIR> {
+        &self.siblings
     }
 
     pub fn qualified_value_shapes_disjoint(&self) -> Option<bool> {
@@ -1004,11 +1018,23 @@ impl Display for QualifiedValueShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "QualifiedValueShape: shape: {}, qualifiedMinCount: {:?}, qualifiedMaxCount: {:?}, qualifiedValueShapesDisjoint: {:?}",
+            "QualifiedValueShape: shape: {}, qualifiedMinCount: {:?}, qualifiedMaxCount: {:?}, qualifiedValueShapesDisjoint: {:?}{}",
             self.shape().id(),
             self.qualified_min_count(),
             self.qualified_max_count(),
-            self.qualified_value_shapes_disjoint()
+            self.qualified_value_shapes_disjoint(),
+            if self.siblings().is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    ", siblings: [{}]",
+                    self.siblings()
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
         )
     }
 }

@@ -5,6 +5,7 @@ use tracing::debug;
 
 use super::helper_error::SRDFError;
 
+// TODO: Remove the following functions which are implemented in SRDF
 pub(crate) fn get_object_for<S: NeighsRDF>(
     store: &S,
     subject: &S::Term,

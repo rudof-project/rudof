@@ -401,6 +401,7 @@ impl Shacl2ShEx {
                 qualified_min_count: _,
                 qualified_max_count: _,
                 qualified_value_shapes_disjoint: _,
+                siblings: _,
             } => todo!(),
             Component::Deactivated(_) => todo!(),
         }

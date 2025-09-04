@@ -4,6 +4,7 @@ use crate::helpers::srdf::get_objects_for;
 use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
+use shacl_ir::severity::CompiledSeverity;
 use srdf::{BuildRDF, FocusRDF, Object, Rdf, SHACLPath};
 use std::fmt::{Debug, Display};
 
@@ -13,6 +14,10 @@ pub struct ValidationReport {
     nodes_prefixmap: PrefixMap,
     shapes_prefixmap: PrefixMap,
     ok_color: Option<Color>,
+    info_color: Option<Color>,
+    warning_color: Option<Color>,
+    debug_color: Option<Color>,
+    trace_color: Option<Color>,
     fail_color: Option<Color>,
     display_with_colors: bool,
 }
@@ -156,6 +161,10 @@ impl Default for ValidationReport {
             shapes_prefixmap: PrefixMap::new(),
             ok_color: Some(Color::Green),
             fail_color: Some(Color::Red),
+            info_color: Some(Color::Blue),
+            warning_color: Some(Color::Yellow),
+            debug_color: Some(Color::Magenta),
+            trace_color: Some(Color::Cyan),
             display_with_colors: true,
         }
     }
@@ -205,21 +214,31 @@ impl Display for ValidationReport {
                     .without_default_colors()
             };
             for result in self.results.iter() {
-                writeln!(
-                    f,
-                    "{} node: {} {}\n{}{}{}{}",
-                    show_object(result.severity(), &shacl_prefixmap),
+                let severity_str = show_severity(result.severity(), &shacl_prefixmap);
+                if self.display_with_colors {
+                    let color = calculate_color(result.severity(), self);
+                    write!(f, "{}", severity_str.color(color))?;
+                } else {
+                    writeln!(f, "{severity_str}")?;
+                };
+                let msg = format!(
+                    " node: {} {}\n{}{}{}{}",
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
                     result.message().unwrap_or(""),
                     show_path_opt("path", result.path(), &self.shapes_prefixmap),
                     show_object_opt("source shape", result.source(), &self.shapes_prefixmap),
-                    show_object_opt("value", result.value(), &self.nodes_prefixmap),
-                )?;
+                    show_object_opt("value", result.value(), &self.nodes_prefixmap)
+                );
+                writeln!(f, "{msg}")?;
             }
             Ok(())
         }
     }
+}
+
+fn show_severity(severity: &CompiledSeverity, shacl_prefixmap: &PrefixMap) -> String {
+    shacl_prefixmap.qualify(&severity.to_iri())
 }
 
 fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
@@ -252,5 +271,16 @@ fn show_path_opt(msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &Prefix
             format!(" {msg}: {path},")
         }
         Some(path) => format!(" {msg}: _:{path:?},"),
+    }
+}
+
+fn calculate_color(severity: &CompiledSeverity, report: &ValidationReport) -> Color {
+    match severity {
+        CompiledSeverity::Violation => report.fail_color.unwrap_or(Color::Red),
+        CompiledSeverity::Info => report.info_color.unwrap_or(Color::Blue),
+        CompiledSeverity::Warning => report.warning_color.unwrap_or(Color::Yellow),
+        CompiledSeverity::Debug => report.debug_color.unwrap_or(Color::Magenta),
+        CompiledSeverity::Trace => report.trace_color.unwrap_or(Color::Cyan),
+        CompiledSeverity::Generic(_) => Color::White,
     }
 }

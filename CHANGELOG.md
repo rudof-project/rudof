@@ -11,7 +11,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Added
 
 - Added support for SHACL Paths, sh:uniqueLang, flags in sh:pattern, sh:qualifiedValueShape
-
+- Added support for severities and printing validation results with colors
 
 ### Fixed
 - Error in sh:hasValue when the value was a literal

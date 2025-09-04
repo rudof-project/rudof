@@ -26,6 +26,14 @@ impl ShapeIR {
         }
     }
 
+    pub fn show_severity(&self) -> String {
+        if let Some(severity) = self.severity().into() {
+            format!("(severity: {})", severity)
+        } else {
+            "(severity: Violation)".to_string()
+        }
+    }
+
     pub fn id(&self) -> &RDFNode {
         match self {
             ShapeIR::NodeShape(ns) => ns.id(),

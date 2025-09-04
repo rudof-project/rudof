@@ -4,7 +4,10 @@ use std::collections::HashSet;
 use crate::matcher::Any;
 use crate::matcher::Matcher;
 use crate::rdf_type;
+use crate::Object;
+use crate::RDFError;
 use crate::Rdf;
+use crate::SHACLPath;
 use crate::Triple;
 
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
@@ -116,87 +119,6 @@ pub trait NeighsRDF: Rdf {
         Ok((results, remainder))
     }
 
-    /*    fn get_subjects_for(
-        &self,
-        predicate: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<HashSet<Self::Term>, SRDFError> {
-        let values = self
-            .triples_matching(Any, predicate.clone(), object.clone())
-            .map_err(|e| SRDFError::Srdf {
-                error: e.to_string(),
-            })?
-            .map(Triple::into_subject)
-            .map(Into::into)
-            .collect();
-        Ok(values)
-    }
-
-    fn get_path_for(
-        &self,
-        subject: &Self::Term,
-        predicate: &Self::IRI,
-    ) -> Result<Option<SHACLPath>, SRDFError> {
-        match self.get_objects_for(subject, predicate)?
-            .into_iter()
-            .next()
-        {
-            Some(term) => {
-                let obj: Object = Self::term_as_object(&term)?;
-                match obj {
-                    Object::Iri(iri_s) => Ok(Some(SHACLPath::iri(iri_s))),
-                    Object::BlankNode(_) => todo!(),
-                    Object::Literal(literal) => Err(SRDFError::SHACLUnexpectedLiteral {
-                        lit: literal.to_string(),
-                    }),
-                }
-            }
-            None => Ok(None),
-        }
-
-    fn get_object_for(
-            &self,
-            subject: &Self::Term,
-            predicate: &Self::IRI,
-        ) -> Result<Option<RDFNode>, SRDFError> {
-            match self.get_objects_for(subject, predicate)?
-                .into_iter()
-                .next()
-            {
-                Some(term) => {
-                    let obj = Self::term_as_object(&term)?;
-                    Ok(Some(obj))
-                },
-                None => Ok(None),
-            }
-        }
-
-    fn get_objects_for(
-            &self,
-            subject: &Self::Term,
-            predicate: &Self::IRI,
-        ) -> Result<HashSet<Self::Term>, SRDFError> {
-            let subject: Self::Subject = match Self::term_as_subject(subject) {
-                Ok(subject) => subject,
-                Err(_) => {
-                    return Err(SRDFError::SRDFTermAsSubject {
-                        subject: format!("{subject}"),
-                    })
-                }
-            };
-
-            let triples = store
-                .triples_matching(subject, predicate.clone(), Any)
-                .map_err(|e| SRDFError::Srdf {
-                    error: e.to_string(),
-                })?
-                .map(Triple::into_object)
-                .collect();
-
-            Ok(triples)
-        }
-    }      */
-
     fn shacl_instances_of<O>(
         &self,
         cls: O,
@@ -210,5 +132,138 @@ pub trait NeighsRDF: Rdf {
             .map(Triple::into_subject)
             .collect();
         Ok(subjects.into_iter())
+    }
+
+    fn object_for(
+        &self,
+        subject: &Self::Term,
+        predicate: &Self::IRI,
+    ) -> Result<Option<Object>, RDFError> {
+        match self.objects_for(subject, predicate)?.into_iter().next() {
+            Some(term) => {
+                let obj = Self::term_as_object(&term)?;
+                Ok(Some(obj))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn objects_for_shacl_path(
+        &self,
+        subject: &Self::Term,
+        path: &SHACLPath,
+    ) -> Result<HashSet<Self::Term>, RDFError> {
+        match path {
+            SHACLPath::Predicate { pred } => {
+                let pred: Self::IRI = pred.clone().into();
+                self.objects_for(subject, &pred)
+            }
+            SHACLPath::Alternative { paths } => {
+                let mut all_objects = HashSet::new();
+                for path in paths {
+                    let objects = self.objects_for_shacl_path(subject, path)?;
+                    all_objects.extend(objects);
+                }
+                Ok(all_objects)
+            }
+            SHACLPath::Sequence { paths } => match paths.as_slice() {
+                [] => Ok(HashSet::from([subject.clone()])),
+                [first, rest @ ..] => {
+                    let first_objects = self.objects_for_shacl_path(subject, first)?;
+                    let mut all_objects = HashSet::new();
+                    for obj in first_objects {
+                        let intermediate_objects = self.objects_for_shacl_path(
+                            &obj,
+                            &SHACLPath::Sequence {
+                                paths: rest.to_vec(),
+                            },
+                        )?;
+                        all_objects.extend(intermediate_objects);
+                    }
+                    Ok(all_objects)
+                }
+            },
+            SHACLPath::Inverse { path } => {
+                let objects = self.subjects_for(&path.pred().unwrap().clone().into(), subject)?;
+                Ok(objects)
+            }
+            SHACLPath::ZeroOrMore { path } => {
+                let mut all_objects = HashSet::new();
+                all_objects.insert(subject.clone());
+
+                let mut to_process = vec![subject.clone()];
+                while let Some(current) = to_process.pop() {
+                    let next_objects = self.objects_for_shacl_path(&current, path)?;
+                    for obj in next_objects {
+                        if all_objects.insert(obj.clone()) {
+                            to_process.push(obj);
+                        }
+                    }
+                }
+                Ok(all_objects)
+            }
+            SHACLPath::OneOrMore { path } => {
+                let mut all_objects = HashSet::new();
+                let first_objects = self.objects_for_shacl_path(subject, path)?;
+                all_objects.extend(first_objects.clone());
+
+                let mut to_process: Vec<Self::Term> = first_objects.into_iter().collect();
+                while let Some(current) = to_process.pop() {
+                    let next_objects = self.objects_for_shacl_path(&current, path)?;
+                    for obj in next_objects {
+                        if all_objects.insert(obj.clone()) {
+                            to_process.push(obj);
+                        }
+                    }
+                }
+                Ok(all_objects)
+            }
+            SHACLPath::ZeroOrOne { path } => {
+                let mut all_objects = HashSet::new();
+                all_objects.insert(subject.clone());
+                let next_objects = self.objects_for_shacl_path(subject, path)?;
+                all_objects.extend(next_objects);
+                Ok(all_objects)
+            }
+        }
+    }
+
+    fn objects_for(
+        &self,
+        subject: &Self::Term,
+        predicate: &Self::IRI,
+    ) -> Result<HashSet<Self::Term>, RDFError> {
+        let subject: Self::Subject = Self::term_as_subject(subject)?;
+        let subject_str = format!("{subject}");
+        let predicate_str = format!("{predicate}");
+        let triples = self
+            .triples_matching(subject, predicate.clone(), Any)
+            .map_err(|e| RDFError::ErrorObjectsFor {
+                subject: subject_str,
+                predicate: predicate_str,
+                error: e.to_string(),
+            })?
+            .map(Triple::into_object)
+            .collect();
+
+        Ok(triples)
+    }
+
+    fn subjects_for(
+        &self,
+        predicate: &Self::IRI,
+        object: &Self::Term,
+    ) -> Result<HashSet<Self::Term>, RDFError> {
+        let values = self
+            .triples_matching(Any, predicate.clone(), object.clone())
+            .map_err(|e| RDFError::ErrorSubjectsFor {
+                predicate: format!("{predicate}"),
+                object: format!("{object}"),
+                error: e.to_string(),
+            })?
+            .map(Triple::into_subject)
+            .map(Into::into)
+            .collect();
+        Ok(values)
     }
 }

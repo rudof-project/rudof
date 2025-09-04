@@ -134,25 +134,3 @@ impl NodeShapeIR {
         Ok(compiled_node_shape)
     }
 }
-
-/*impl Display for NodeShapeIR {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "NodeShape\n Id: {}", self.id)?;
-        writeln!(f, " Deactivated: {}", self.deactivated)?;
-        writeln!(f, " Severity: {}", self.severity())?;
-        writeln!(f, " Closed: {}", self.closed())?;
-        writeln!(f, " Components:")?;
-        for component in &self.components {
-            writeln!(f, "  - {}", component)?;
-        }
-        writeln!(f, " Targets:")?;
-        for target in &self.targets {
-            writeln!(f, "  - {}", target)?;
-        }
-        writeln!(f, " Property Shapes:")?;
-        for property_shape in &self.property_shapes {
-            writeln!(f, "  - {}", property_shape)?;
-        }
-        Ok(())
-    }
-}*/

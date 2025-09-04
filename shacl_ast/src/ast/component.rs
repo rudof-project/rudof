@@ -71,6 +71,7 @@ pub enum Component {
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
+        siblings: Vec<RDFNode>
     },
     Deactivated(bool),
 }
@@ -216,6 +217,7 @@ impl Component {
                 qualified_min_count,
                 qualified_max_count,
                 qualified_value_shapes_disjoint,
+                ..
             } => {
                 Self::write_term(
                     &shape.clone().into(),
@@ -380,8 +382,17 @@ impl Display for Component {
                 let str = values.iter().map(|v| v.to_string()).join(" ");
                 write!(f, "In [{str}]")
             }
-            Component::QualifiedValueShape { shape, qualified_max_count, qualified_min_count, qualified_value_shapes_disjoint } => 
-                write!(f, "QualifiedValueShape(shape: {shape}, qualified_min_count: {qualified_min_count:?}, qualified_max_count: {qualified_max_count:?}, qualified_value_shapes_disjoint: {qualified_value_shapes_disjoint:?})"),
+            Component::QualifiedValueShape { shape, qualified_max_count, qualified_min_count, qualified_value_shapes_disjoint, siblings } => 
+                write!(f, "QualifiedValueShape(shape: {shape}, qualified_min_count: {qualified_min_count:?}, qualified_max_count: {qualified_max_count:?}, qualified_value_shapes_disjoint: {qualified_value_shapes_disjoint:?}{})",
+                    if siblings.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            ", siblings: [{}]",
+                            siblings.iter().map(|s| s.to_string()).join(", ")
+                        )
+                    }
+            ),
             Component::Deactivated(b) => write!(f, "deactivated({b})"),
         }
     }

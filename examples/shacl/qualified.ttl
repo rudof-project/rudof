@@ -34,5 +34,3 @@ _:1 sh:path :gender ;
 :ko2 :parent :pko21, :pko22 .
 :pko21 :gender :female .
 :pko22 :gender :female .
-
- 

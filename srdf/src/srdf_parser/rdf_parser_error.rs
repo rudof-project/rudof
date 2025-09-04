@@ -4,6 +4,9 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum RDFParseError {
+    #[error(transparent)]
+    RDFError(#[from] crate::RDFError),
+
     #[error("No focus node")]
     NoFocusNode,
 
