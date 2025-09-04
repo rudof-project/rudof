@@ -2,7 +2,7 @@ use either::Either;
 use iri_s::IriS;
 use reqwest::{
     blocking::{Client, ClientBuilder},
-    header::{HeaderValue, ACCEPT},
+    header::{ACCEPT, HeaderValue},
     // Url as ReqwestUrl,
 };
 use std::{

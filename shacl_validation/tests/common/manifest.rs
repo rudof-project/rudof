@@ -5,14 +5,14 @@ use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
-use shacl_validation::store::graph::Graph;
 use shacl_validation::store::Store;
+use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
-use srdf::matcher::Any;
 use srdf::NeighsRDF;
 use srdf::RDFFormat;
 use srdf::Triple;
+use srdf::matcher::Any;
 
 pub struct Manifest {
     base: String,

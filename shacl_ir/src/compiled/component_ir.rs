@@ -7,6 +7,7 @@ use super::convert_iri_ref;
 use super::convert_value;
 use super::shape::ShapeIR;
 use iri_s::IriS;
+use shacl_ast::Schema;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
@@ -15,12 +16,11 @@ use shacl_ast::shacl_vocab::{
     sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
     sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
 };
-use shacl_ast::Schema;
-use srdf::lang::Lang;
 use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SLiteral;
 use srdf::SRegex;
+use srdf::lang::Lang;
 
 #[derive(Debug, Clone)]
 pub enum ComponentIR {
@@ -140,9 +140,9 @@ impl ComponentIR {
             }
             Component::QualifiedValueShape {
                 shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
+                q_min_count,
+                q_max_count,
+                disjoint,
                 siblings,
             } => {
                 let shape = compile_shape::<S>(shape, schema)?;

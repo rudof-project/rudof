@@ -1,4 +1,4 @@
-use crate::{shex_parser_error::ParseError as ShExParseError, Span};
+use crate::{Span, shex_parser_error::ParseError as ShExParseError};
 use nom::error::{ErrorKind, FromExternalError};
 use std::{
     fmt::Debug,

@@ -6,8 +6,8 @@ use super::shape::ShapeIR;
 use super::target::CompiledTarget;
 use crate::closed_info::ClosedInfo;
 use iri_s::IriS;
-use shacl_ast::node_shape::NodeShape;
 use shacl_ast::Schema;
+use shacl_ast::node_shape::NodeShape;
 use srdf::{RDFNode, Rdf};
 use std::collections::HashSet;
 

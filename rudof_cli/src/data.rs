@@ -9,9 +9,9 @@ use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, UmlGenerationMode};
 
 use crate::writer::get_writer;
+use crate::{RDFReaderMode, input_spec::InputSpec};
 use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
-use crate::{input_spec::InputSpec, RDFReaderMode};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use srdf::UmlConverter;
 
 pub fn get_data_rudof(

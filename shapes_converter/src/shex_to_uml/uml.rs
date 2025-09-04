@@ -7,9 +7,9 @@ use super::UmlEntry;
 use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
-use std::collections::hash_map::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::hash_map::*;
 use std::hash::Hash;
 use std::io::Write;
 

@@ -9,7 +9,7 @@ use crate::{component::Component, message_map::MessageMap, severity::Severity, t
 use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
 use srdf::Rdf;
-use srdf::{numeric_literal::NumericLiteral, BuildRDF, RDFNode, SHACLPath};
+use srdf::{BuildRDF, RDFNode, SHACLPath, numeric_literal::NumericLiteral};
 
 #[derive(Debug)]
 pub struct PropertyShape<RDF: Rdf> {

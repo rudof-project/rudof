@@ -1,9 +1,9 @@
 use iri_s::IriS;
 use rbe::Value;
 use serde::Serialize;
+use srdf::Object;
 use srdf::literal::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
-use srdf::Object;
 use std::fmt::Display;
 
 impl Value for Node {}

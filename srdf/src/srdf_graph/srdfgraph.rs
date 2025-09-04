@@ -1,6 +1,6 @@
 use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
-use crate::{BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDF_TYPE_STR};
+use crate::{BuildRDF, FocusRDF, NeighsRDF, RDF_TYPE_STR, RDFFormat, Rdf};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -21,7 +21,7 @@ use oxrdf::{
     Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
 };
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{prefixmap::*, PrefixMapError};
+use prefixmap::{PrefixMapError, prefixmap::*};
 
 #[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
@@ -579,6 +579,7 @@ mod tests {
     use oxrdf::Term as OxTerm;
     use std::collections::HashSet;
 
+    use crate::PResult;
     use crate::iri;
     use crate::matcher::Any;
     use crate::not;
@@ -592,7 +593,6 @@ mod tests {
     use crate::rdf_parser;
     use crate::satisfy;
     use crate::set_focus;
-    use crate::PResult;
     // use crate::Query as _;
     use crate::BuildRDF;
     use crate::RDFFormat;

@@ -21,7 +21,7 @@ pub struct PyRudofConfig {
 impl PyRudofConfig {
     #[new]
     pub fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.allow_threads(|| {
+        py.detach(|| {
             Ok(Self {
                 inner: RudofConfig::default(),
             })
@@ -511,7 +511,7 @@ pub enum PyReaderMode {
 impl PyReaderMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| PyReaderMode::Lax)
+        py.detach(|| PyReaderMode::Lax)
     }
 }
 
@@ -574,7 +574,7 @@ pub struct PyShExFormatter {
 impl PyShExFormatter {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
+        py.detach(|| Self {
             inner: ShExFormatter::default(),
         })
     }
@@ -598,7 +598,7 @@ pub struct PyShapeMapFormatter {
 impl PyShapeMapFormatter {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| Self {
+        py.detach(|| Self {
             inner: ShapeMapFormatter::default(),
         })
     }
@@ -627,7 +627,7 @@ pub enum PyUmlGenerationMode {
 impl PyUmlGenerationMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.allow_threads(|| PyUmlGenerationMode::PyAllNodes {})
+        py.detach(|| PyUmlGenerationMode::PyAllNodes {})
     }
 
     #[staticmethod]

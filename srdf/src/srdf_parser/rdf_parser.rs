@@ -1,8 +1,8 @@
 use super::rdf_parser_error::RDFParseError;
-use super::{rdf_node_parser::*, PResult};
-use crate::matcher::Any;
+use super::{PResult, rdf_node_parser::*};
 use crate::Triple;
-use crate::{rdf_type, FocusRDF, NeighsRDF};
+use crate::matcher::Any;
+use crate::{FocusRDF, NeighsRDF, rdf_type};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;

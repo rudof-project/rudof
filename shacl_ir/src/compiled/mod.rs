@@ -16,8 +16,8 @@ use srdf::Object;
 use srdf::RDFNode;
 use srdf::Rdf;
 
-use shacl_ast::value::Value;
 use shacl_ast::Schema;
+use shacl_ast::value::Value;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, CompiledShaclError> {
     let iri = iri_ref

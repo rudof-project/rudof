@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use serde::Serialize;
 use shex_ast::{
-    ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
     Node, ShapeLabelIdx,
+    ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
 };
 
 use crate::ValidatorErrors;

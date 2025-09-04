@@ -5,7 +5,7 @@ use shapes_converter::{
 };
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::{RdfDataConfig, PLANTUML};
+use srdf::{PLANTUML, RdfDataConfig};
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};

@@ -1,10 +1,10 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::engine::Engine;
 use crate::engine::native::NativeEngine;
 use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
@@ -43,7 +43,9 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                         datatype,
                         error,
                     }) => {
-                        debug!("Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}");
+                        debug!(
+                            "Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}"
+                        );
                         true
                     }
                     Ok(_slit) => literal.datatype() != self.datatype().as_str(),

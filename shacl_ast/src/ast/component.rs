@@ -1,3 +1,4 @@
+use crate::SH_DEACTIVATED_STR;
 use crate::shacl_vocab::{
     SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR, SH_DISJOINT_STR, SH_EQUALS_STR,
     SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR, SH_IN_STR, SH_IRI_STR,
@@ -7,12 +8,11 @@ use crate::shacl_vocab::{
     SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
-use crate::SH_DEACTIVATED_STR;
 use crate::{node_kind::NodeKind, value::Value};
-use iri_s::{iri, IriS};
+use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::SLiteral, BuildRDF, RDFNode};
+use srdf::{BuildRDF, RDFNode, lang::Lang, literal::SLiteral};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -68,10 +68,10 @@ pub enum Component {
     },
     QualifiedValueShape {
         shape: RDFNode,
-        qualified_min_count: Option<isize>,
-        qualified_max_count: Option<isize>,
-        qualified_value_shapes_disjoint: Option<bool>,
-        siblings: Vec<RDFNode>
+        q_min_count: Option<isize>,
+        q_max_count: Option<isize>,
+        disjoint: Option<bool>,
+        siblings: Vec<RDFNode>,
     },
     Deactivated(bool),
 }
@@ -214,9 +214,9 @@ impl Component {
             }
             Self::QualifiedValueShape {
                 shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
+                q_min_count,
+                q_max_count,
+                disjoint,
                 ..
             } => {
                 Self::write_term(
@@ -226,15 +226,15 @@ impl Component {
                     rdf,
                 )?;
 
-                if let Some(value) = qualified_min_count {
+                if let Some(value) = q_min_count {
                     Self::write_integer(*value, SH_QUALIFIED_MIN_COUNT_STR, rdf_node, rdf)?;
                 }
 
-                if let Some(value) = qualified_max_count {
+                if let Some(value) = q_max_count {
                     Self::write_integer(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
                 }
 
-                if let Some(value) = qualified_value_shapes_disjoint {
+                if let Some(value) = disjoint {
                     Self::write_boolean(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
                 }
             }
@@ -382,16 +382,23 @@ impl Display for Component {
                 let str = values.iter().map(|v| v.to_string()).join(" ");
                 write!(f, "In [{str}]")
             }
-            Component::QualifiedValueShape { shape, qualified_max_count, qualified_min_count, qualified_value_shapes_disjoint, siblings } => 
-                write!(f, "QualifiedValueShape(shape: {shape}, qualified_min_count: {qualified_min_count:?}, qualified_max_count: {qualified_max_count:?}, qualified_value_shapes_disjoint: {qualified_value_shapes_disjoint:?}{})",
-                    if siblings.is_empty() {
-                        "".to_string()
-                    } else {
-                        format!(
-                            ", siblings: [{}]",
-                            siblings.iter().map(|s| s.to_string()).join(", ")
-                        )
-                    }
+            Component::QualifiedValueShape {
+                shape,
+                q_max_count,
+                q_min_count,
+                disjoint,
+                siblings,
+            } => write!(
+                f,
+                "QualifiedValueShape(shape: {shape}, qualified_min_count: {q_min_count:?}, qualified_max_count: {q_max_count:?}, qualified_value_shapes_disjoint: {disjoint:?}{})",
+                if siblings.is_empty() {
+                    "".to_string()
+                } else {
+                    format!(
+                        ", siblings: [{}]",
+                        siblings.iter().map(|s| s.to_string()).join(", ")
+                    )
+                }
             ),
             Component::Deactivated(b) => write!(f, "deactivated({b})"),
         }

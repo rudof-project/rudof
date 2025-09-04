@@ -1,5 +1,5 @@
-use crate::matcher::{Any, Matcher};
 use crate::SRDFSparqlError;
+use crate::matcher::{Any, Matcher};
 use crate::{AsyncSRDF, NeighsRDF, QueryRDF, QuerySolution, QuerySolutions, Rdf, VarName};
 use async_trait::async_trait;
 use colored::*;

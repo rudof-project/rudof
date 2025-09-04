@@ -8,7 +8,7 @@ use crate::XsdDateTime;
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
-use rust_decimal::{prelude::ToPrimitive, Decimal};
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::{Deserialize, Serialize, Serializer};
 
 pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {

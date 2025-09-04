@@ -1,5 +1,5 @@
 use const_format::concatcp;
-use iri_s::{iri_once, IriS};
+use iri_s::{IriS, iri_once};
 
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
 pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");

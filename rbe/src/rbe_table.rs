@@ -15,11 +15,11 @@ use crate::RbeError;
 use crate::Ref;
 use crate::Value;
 // use crate::RbeError;
-use crate::rbe::Rbe;
-use crate::rbe1::Rbe as Rbe1;
-use crate::rbe_error;
-use crate::values::Values;
 use crate::Component;
+use crate::rbe::Rbe;
+use crate::rbe_error;
+use crate::rbe1::Rbe as Rbe1;
+use crate::values::Values;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R>

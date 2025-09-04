@@ -4,7 +4,7 @@ use crate::shacl_vocab::{
     sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of,
 };
 use prefixmap::IriRef;
-use srdf::{rdf_type, rdfs_class, BuildRDF, RDFNode, Rdf};
+use srdf::{BuildRDF, RDFNode, Rdf, rdf_type, rdfs_class};
 
 /// Represents target declarations
 #[derive(Debug)]

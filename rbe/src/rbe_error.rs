@@ -1,11 +1,11 @@
-use crate::failures::Failures;
-use crate::rbe1::Rbe;
 use crate::Cardinality;
 use crate::Key;
 use crate::Keys;
 use crate::Ref;
 use crate::Value;
 use crate::Values;
+use crate::failures::Failures;
+use crate::rbe1::Rbe;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

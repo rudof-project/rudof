@@ -11,19 +11,19 @@ use shacl_ast::ShaclFormat;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
+use tracing::Level;
 use tracing::debug;
 use tracing::enabled;
-use tracing::Level;
 
+use crate::CliShaclFormat;
+use crate::InputSpec;
+use crate::RDFReaderMode;
+use crate::ResultShaclValidationFormat;
 use crate::data::get_base;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
 use crate::mime_type::MimeType;
 use crate::writer::get_writer;
-use crate::CliShaclFormat;
-use crate::InputSpec;
-use crate::RDFReaderMode;
-use crate::ResultShaclValidationFormat;
 use anyhow::Result;
 
 #[allow(clippy::too_many_arguments)]

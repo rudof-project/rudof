@@ -3,7 +3,7 @@ use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use iri_s::{iri, IriS};
+use iri_s::{IriS, iri};
 use shacl_ir::compiled::node_shape::NodeShapeIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;

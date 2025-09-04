@@ -1,6 +1,6 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with_focus;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;

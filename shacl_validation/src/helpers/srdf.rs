@@ -1,5 +1,5 @@
 use srdf::RDFNodeParse;
-use srdf::{matcher::Any, shacl_path_parse, FocusRDF, NeighsRDF, RDFNode, SHACLPath, Triple};
+use srdf::{FocusRDF, NeighsRDF, RDFNode, SHACLPath, Triple, matcher::Any, shacl_path_parse};
 use std::collections::HashSet;
 use tracing::debug;
 

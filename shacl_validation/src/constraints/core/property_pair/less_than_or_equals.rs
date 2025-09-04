@@ -1,6 +1,6 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
@@ -38,15 +38,13 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
                         for value2 in nodes.iter() {
                             let node2 = <R as Rdf>::term_as_object(value2).unwrap();
                             let message = match node2.partial_cmp(&node1) {
-                                None => {
-                                    Some(format!("LessThanOrEquals constraint violated: {node1} is not comparable to {node2}"))
-                                }
-                                Some(ord) if ord.is_gt() => {
-                                    Some(format!(
-                                        "LessThanOrEquals constraint violated: {node1} is not less or equals than {node2}"
-                                    ))
-                                }
-                                _ => None
+                                None => Some(format!(
+                                    "LessThanOrEquals constraint violated: {node1} is not comparable to {node2}"
+                                )),
+                                Some(ord) if ord.is_gt() => Some(format!(
+                                    "LessThanOrEquals constraint violated: {node1} is not less or equals than {node2}"
+                                )),
+                                _ => None,
                             };
                             match message {
                                 Some(msg) => {

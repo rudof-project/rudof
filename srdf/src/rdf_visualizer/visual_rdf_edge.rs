@@ -1,6 +1,6 @@
 use crate::iri::Iri;
 use crate::rdf_visualizer::REIFIES;
-use crate::{rdf_visualizer::visual_rdf_graph::EdgeId, Rdf};
+use crate::{Rdf, rdf_visualizer::visual_rdf_graph::EdgeId};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

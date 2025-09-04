@@ -1,8 +1,8 @@
 use std::ops::Not;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;

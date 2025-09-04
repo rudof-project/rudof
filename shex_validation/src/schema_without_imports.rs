@@ -3,7 +3,7 @@ use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
 use shex_ast::{IriOrStr, Schema, SchemaJsonError, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use shex_compact::ShExParser;
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{HashMap, hash_map::Entry};
 use url::Url;
 
 use crate::{ResolveMethod, SchemaWithoutImportsError, ShExFormat};

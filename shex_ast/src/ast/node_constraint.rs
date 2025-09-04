@@ -3,8 +3,8 @@ use std::fmt;
 use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
 use serde::{
-    de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Visitor},
 };
 use srdf::numeric_literal::NumericLiteral;
 

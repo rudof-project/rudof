@@ -13,19 +13,18 @@ use shacl_ast::{
     component::Component, node_kind::NodeKind, node_shape::NodeShape,
     property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
 };
+use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
-    combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of,
-    lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
+    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
+    Term, Triple, combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type,
+    instances_of, lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
     parse_property_values, property_bool, property_iris, property_objects, property_value,
     property_values, property_values_bool, property_values_int, property_values_iri,
     property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
-    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
-    Term, Triple,
 };
 use srdf::{
-    property_integer, property_iri, property_string, property_value_as_list, Literal, Object,
+    Literal, Object, property_integer, property_iri, property_string, property_value_as_list,
 };
-use srdf::{rdf_type, rdfs_class, FnOpaque};
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
@@ -596,7 +595,9 @@ where
                                 &into_iri::<RDF>(sh_qualified_value_shape()),
                             )?;
                             if qvs.is_empty() {
-                                debug!("Focus node {focus} has disjoint=true but no qualifiedValueShape");
+                                debug!(
+                                    "Focus node {focus} has disjoint=true but no qualifiedValueShape"
+                                );
                             } else {
                                 debug!("QVS of focus node {focus}: {qvs:?}");
                                 let ps =
@@ -619,7 +620,9 @@ where
                         }
                         Object::Literal(SLiteral::BooleanLiteral(false)) => {}
                         _ => {
-                            debug!("Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)");
+                            debug!(
+                                "Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)"
+                            );
                         }
                     }
                 }
@@ -794,8 +797,10 @@ fn min_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_int(sh_min_count())
-        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect()))
+    opaque!(
+        property_values_int(sh_min_count())
+            .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
+    )
 }
 
 fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -803,24 +808,30 @@ fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_int(sh_max_count())
-        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect()))
+    opaque!(
+        property_values_int(sh_max_count())
+            .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
+    )
 }
 
 fn min_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_int(sh_min_length())
-        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect()))
+    opaque!(
+        property_values_int(sh_min_length())
+            .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
+    )
 }
 
 fn deactivated<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_bool(sh_deactivated())
-        .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect()))
+    opaque!(
+        property_values_bool(sh_deactivated())
+            .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
+    )
 }
 
 fn closed_component<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -982,8 +993,10 @@ fn max_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_int(sh_max_length())
-        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect()))
+    opaque!(
+        property_values_int(sh_max_length())
+            .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
+    )
 }
 
 fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -1002,8 +1015,10 @@ fn class<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_objects(sh_class())
-        .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect()))
+    opaque!(
+        property_objects(sh_class())
+            .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
+    )
 }
 
 fn node_kind<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -1190,8 +1205,10 @@ fn qualified_value_shape<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_objects(sh_qualified_value_shape())
-        .then(|qvs| { parse_qualified_value_shape::<RDF>(qvs) }))
+    opaque!(
+        property_objects(sh_qualified_value_shape())
+            .then(|qvs| { parse_qualified_value_shape::<RDF>(qvs) })
+    )
 }
 
 fn term_to_node_kind<RDF>(term: &RDF::Term) -> Result<NodeKind>
@@ -1292,11 +1309,11 @@ mod tests {
     use super::ShaclParser;
     use iri_s::IriS;
     use shacl_ast::shape::Shape;
-    use srdf::lang::Lang;
     use srdf::Object;
     use srdf::RDFFormat;
     use srdf::ReaderMode;
     use srdf::SRDFGraph;
+    use srdf::lang::Lang;
 
     #[test]
     fn test_language_in() {
@@ -1336,8 +1353,10 @@ fn unique_lang<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_bool(sh_unique_lang())
-        .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect()))
+    opaque!(
+        property_values_bool(sh_unique_lang())
+            .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
+    )
 }
 
 fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {

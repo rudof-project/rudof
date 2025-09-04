@@ -1,10 +1,10 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::Serialize;
-use shex_ast::{object_value::ObjectValue, Node};
+use shex_ast::{Node, object_value::ObjectValue};
+use srdf::NeighsRDF;
 use srdf::literal::SLiteral;
 use srdf::shacl_path::SHACLPath;
-use srdf::NeighsRDF;
 use thiserror::Error;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes

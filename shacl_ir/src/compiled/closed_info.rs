@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use iri_s::IriS;
 use shacl_ast::{
-    node_shape::NodeShape, property_shape::PropertyShape, shape::Shape, Schema, ShaclError,
+    Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape,
 };
 use srdf::Rdf;
 
@@ -113,7 +113,7 @@ fn defined_properties<R: Rdf>(
             _ => {
                 return Err(ShaclError::ShapeNotFound {
                     shape: property_shape_ref.clone(),
-                })
+                });
             }
         }
     }
@@ -140,7 +140,7 @@ fn defined_properties_property_shape<R: Rdf>(
             _ => {
                 return Err(ShaclError::ShapeNotFound {
                     shape: property_shape_ref.clone(),
-                })
+                });
             }
         }
     }

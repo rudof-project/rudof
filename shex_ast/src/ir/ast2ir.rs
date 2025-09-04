@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::ShapeExprLabel;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
@@ -9,16 +10,15 @@ use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::ShapeExprLabel;
-use crate::{ast, ast::Schema as SchemaJson, SchemaIRError, ShapeLabelIdx};
-use crate::{ir, CResult, Cond, Node, Pred};
+use crate::{CResult, Cond, Node, Pred, ir};
+use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaJson};
 use iri_s::IriS;
 use lazy_static::lazy_static;
 use prefixmap::IriRef;
-use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::literal::SLiteral;
+use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
+use srdf::literal::SLiteral;
 use tracing::debug;
 
 use super::node_constraint::NodeConstraint;

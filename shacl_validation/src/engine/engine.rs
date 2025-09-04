@@ -61,7 +61,7 @@ pub trait Engine<S: NeighsRDF> {
     ) -> Result<FocusNodes<S>, ValidateError>;
 
     fn target_object_of(&self, store: &S, predicate: &IriS)
-        -> Result<FocusNodes<S>, ValidateError>;
+    -> Result<FocusNodes<S>, ValidateError>;
 
     fn implicit_target_class(
         &self,

@@ -4,7 +4,7 @@ use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 
-use crate::{ShExConfig, ValidatorError, MAX_STEPS};
+use crate::{MAX_STEPS, ShExConfig, ValidatorError};
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

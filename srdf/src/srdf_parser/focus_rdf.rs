@@ -1,6 +1,6 @@
 use tracing::debug;
 
-use crate::{shacl_path_parse, NeighsRDF, RDFError, RDFNodeParse, RDFParseError, SHACLPath};
+use crate::{NeighsRDF, RDFError, RDFNodeParse, RDFParseError, SHACLPath, shacl_path_parse};
 
 /// Represents RDF graphs that contain a focus node
 ///

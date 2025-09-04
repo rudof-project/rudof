@@ -3,15 +3,15 @@ use std::{
     marker::PhantomData,
 };
 
-use iri_s::iri;
 use iri_s::IriS;
+use iri_s::iri;
 use std::fmt::Debug;
 use tracing::debug;
 
 use crate::{
+    FocusRDF, NeighsRDF, Object, PResult, RDF_NIL_STR, RDFParseError, Rdf, SHACLPath, Triple,
     matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, sh_alternative_path, sh_inverse_path,
-    sh_one_or_more_path, sh_zero_or_more_path, sh_zero_or_one_path, FocusRDF, NeighsRDF, Object,
-    PResult, RDFParseError, Rdf, SHACLPath, Triple, RDF_NIL_STR,
+    sh_one_or_more_path, sh_zero_or_more_path, sh_zero_or_one_path,
 };
 use crate::{Iri as _, Literal as _};
 

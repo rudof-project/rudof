@@ -1,6 +1,6 @@
 use iri_s::IriSError;
 use shapemap::ValidationStatus;
-use shex_ast::{ast::SchemaJsonError, Schema, SchemaIRError};
+use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_compact::ParseError;
 use shex_validation::ValidatorError;
 use srdf::srdf_graph::SRDFGraphError;

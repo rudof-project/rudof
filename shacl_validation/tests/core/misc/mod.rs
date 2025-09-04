@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::test;
     use crate::TestSuiteError;
+    use crate::test;
     use shacl_validation::shacl_processor::ShaclValidationMode;
     use tracing_test::traced_test;
 

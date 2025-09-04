@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use iri_s::IriS;
-use srdf::{literal::SLiteral, Object};
+use srdf::{Object, literal::SLiteral};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {

@@ -2,7 +2,7 @@ use std::io;
 
 use thiserror::Error;
 
-use crate::{rdf_visualizer::visual_rdf_node::VisualRDFNode, UmlConverterError};
+use crate::{UmlConverterError, rdf_visualizer::visual_rdf_node::VisualRDFNode};
 
 #[derive(Error, Debug)]
 pub enum RdfVisualizerError {

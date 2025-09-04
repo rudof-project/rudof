@@ -1,5 +1,5 @@
-use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::ShapeExprLabel;
+use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde::{Deserialize, Serialize};

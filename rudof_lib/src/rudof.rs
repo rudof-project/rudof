@@ -774,7 +774,7 @@ mod tests {
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
     use shapemap::ShapeMapFormat;
-    use shex_ast::{ir::shape_label::ShapeLabel, Node};
+    use shex_ast::{Node, ir::shape_label::ShapeLabel};
     use shex_validation::ShExFormat;
 
     use crate::RudofConfig;

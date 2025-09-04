@@ -1,5 +1,5 @@
 use crate::dctap_format::DCTapFormat as CliDCTapFormat;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::ValueEnum;
 use std::{
     fmt::{Display, Formatter},
