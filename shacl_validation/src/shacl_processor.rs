@@ -8,9 +8,9 @@ use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
 
-use crate::engine::engine::Engine;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
+use crate::shacl_engine::engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::store::Store;
 use crate::store::graph::Graph;

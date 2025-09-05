@@ -7,7 +7,7 @@ use srdf::SHACLPath;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::engine::Engine;
+use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 

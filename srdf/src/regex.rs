@@ -50,10 +50,11 @@ impl SRegex {
         Ok(SRegex {
             regex,
             source: pattern.into_owned(),
-            flags: flags
-                .is_empty()
-                .then(|| None)
-                .unwrap_or(Some(flags.to_string())),
+            flags: if flags.is_empty() {
+                None
+            } else {
+                Some(flags.to_string())
+            },
         })
     }
 

@@ -1,8 +1,8 @@
 use crate::constraints::ShaclComponent;
 use crate::constraints::SparqlDeref;
-use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
+use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;

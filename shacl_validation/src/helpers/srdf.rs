@@ -1,12 +1,12 @@
-use srdf::RDFNodeParse;
+/*use srdf::RDFNodeParse;
 use srdf::{FocusRDF, NeighsRDF, RDFNode, SHACLPath, Triple, matcher::Any, shacl_path_parse};
 use std::collections::HashSet;
 use tracing::debug;
 
-use super::helper_error::SRDFError;
+use super::helper_error::SRDFError;*/
 
 // TODO: Remove the following functions which are implemented in SRDF
-pub(crate) fn get_object_for<S: NeighsRDF>(
+/*pub(crate) fn get_object_for<S: NeighsRDF>(
     store: &S,
     subject: &S::Term,
     predicate: &S::IRI,
@@ -185,3 +185,4 @@ where
         None => Ok(None),
     }*/
 }
+*/

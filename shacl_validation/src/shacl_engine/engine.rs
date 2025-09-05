@@ -8,7 +8,6 @@ use srdf::RDFNode;
 use srdf::SHACLPath;
 
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::srdf::get_objects_for_shacl_path;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -45,7 +44,7 @@ pub trait Engine<S: NeighsRDF> {
             })
             .collect();
         let ts = targets_iter.into_iter().flatten();
-        Ok(FocusNodes::from_iter(ts.into_iter()))
+        Ok(FocusNodes::from_iter(ts))
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -75,7 +74,13 @@ pub trait Engine<S: NeighsRDF> {
         shape: &PropertyShapeIR,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, ValidateError> {
-        let nodes = get_objects_for_shacl_path(store, focus_node, shape.path())?;
+        let nodes = store
+            .objects_for_shacl_path(focus_node, shape.path())
+            .map_err(|e| ValidateError::ObjectsSHACLPath {
+                focus_node: focus_node.to_string(),
+                shacl_path: shape.path().to_string(),
+                error: e.to_string(),
+            })?;
         Ok(FocusNodes::new(nodes))
     }
 }

@@ -530,7 +530,7 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(
         .and(qualified_value_shape_siblings())
         .flat_map(
             move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
-                Ok(build_qualified_shape::<RDF>(
+                Ok(build_qualified_shape(
                     qvs.clone(),
                     maybe_disjoint,
                     maybe_mins,
@@ -541,10 +541,7 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(
         )
 }
 
-fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF>
-where
-    RDF: FocusRDF,
-{
+fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF> {
     QualifiedValueShapeSiblings {
         _marker: std::marker::PhantomData,
         property_qualified_value_shape_path: SHACLPath::sequence(vec![
@@ -590,10 +587,8 @@ where
                             debug!(
                                 "QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true"
                             );
-                            let qvs = rdf.objects_for(
-                                &focus,
-                                &into_iri::<RDF>(sh_qualified_value_shape()),
-                            )?;
+                            let qvs = rdf
+                                .objects_for(focus, &into_iri::<RDF>(sh_qualified_value_shape()))?;
                             if qvs.is_empty() {
                                 debug!(
                                     "Focus node {focus} has disjoint=true but no qualifiedValueShape"
@@ -601,7 +596,7 @@ where
                             } else {
                                 debug!("QVS of focus node {focus}: {qvs:?}");
                                 let ps =
-                                    rdf.subjects_for(&into_iri::<RDF>(sh_property()), &focus)?;
+                                    rdf.subjects_for(&into_iri::<RDF>(sh_property()), focus)?;
                                 debug!("Property parents of focus node {focus}: {ps:?}");
                                 for property_parent in ps {
                                     let candidate_siblings = rdf.objects_for_shacl_path(
@@ -647,23 +642,18 @@ where
 
                 Ok(siblings)
             }
-            None => {
-                return Err(RDFParseError::NoFocusNode);
-            }
+            None => Err(RDFParseError::NoFocusNode),
         }
     }
 }
 
-fn build_qualified_shape<RDF: FocusRDF>(
+fn build_qualified_shape(
     terms: HashSet<RDFNode>,
     disjoint: Option<bool>,
     q_min_count: Option<isize>,
     q_max_count: Option<isize>,
     siblings: Vec<RDFNode>,
-) -> Vec<Component>
-where
-    RDF: Rdf,
-{
+) -> Vec<Component> {
     let mut result = Vec::new();
     for term in terms {
         let shape = Component::QualifiedValueShape {

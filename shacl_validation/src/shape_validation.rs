@@ -1,5 +1,5 @@
-use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
+use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;

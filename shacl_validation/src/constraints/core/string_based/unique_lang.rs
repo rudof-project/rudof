@@ -2,9 +2,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
-use crate::engine::Engine;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
@@ -40,7 +40,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
         for (_focus_node, focus_nodes) in value_nodes.iter() {
             let mut langs_map: HashMap<String, Vec<S::Term>> = HashMap::new();
             for node in focus_nodes.iter() {
-                if let Ok(lit) = S::term_as_literal(&node) {
+                if let Ok(lit) = S::term_as_literal(node) {
                     // println!("Literal: {:?}", lit);
                     if let Some(lang) = lit.lang() {
                         // println!("Lang: {:?}", lang);

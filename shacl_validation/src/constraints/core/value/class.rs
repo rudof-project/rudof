@@ -3,7 +3,6 @@ use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
-use crate::helpers::srdf::get_objects_for;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -35,12 +34,14 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
             }
             let class_term = &S::object_as_term(self.class_rule());
 
-            let is_class_valid = get_objects_for(store, value_node, &rdf_type().clone().into())
+            let is_class_valid = store
+                .objects_for(value_node, &rdf_type().clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == class_term
-                        || get_objects_for(store, ctype, &rdfs_subclass_of().clone().into())
+                        || store
+                            .objects_for(ctype, &rdfs_subclass_of().clone().into())
                             .unwrap_or_default()
                             .contains(class_term)
                 });

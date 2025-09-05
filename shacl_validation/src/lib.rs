@@ -1,11 +1,11 @@
 #![doc = include_str!("../README.md")]
 
 pub mod constraints;
-pub mod engine;
 pub mod focus_nodes;
 mod helpers;
 pub mod iteration_strategy;
 pub mod shacl_config;
+pub mod shacl_engine;
 /// The SHACL processor implementation, used for validating a data graph against
 /// a shapes graph and obtaining a Validation Report as a result.
 pub mod shacl_processor;

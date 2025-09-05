@@ -1,6 +1,5 @@
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
-use crate::helpers::srdf::get_objects_for;
 use colored::*;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
@@ -75,7 +74,14 @@ impl ValidationReport {
 impl ValidationReport {
     pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
-        for result in get_objects_for(store, &subject, &sh_result().clone().into())? {
+        for result in store
+            .objects_for(&subject, &sh_result().clone().into())
+            .map_err(|e| ReportError::ObjectsFor {
+                subject: subject.to_string(),
+                predicate: sh_result().to_string(),
+                error: e.to_string(),
+            })?
+        {
             results.push(ValidationResult::parse(store, &result)?);
         }
         Ok(ValidationReport::new().with_results(results))

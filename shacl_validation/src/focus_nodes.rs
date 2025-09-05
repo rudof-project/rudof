@@ -13,11 +13,11 @@ impl<S: Rdf> FocusNodes<S> {
         Self { set }
     }
 
-    pub fn from_iter(iter: impl Iterator<Item = S::Term>) -> Self {
+    /*pub fn from_iter(iter: impl Iterator<Item = S::Term>) -> Self {
         Self {
             set: HashSet::from_iter(iter),
         }
-    }
+    }*/
 
     pub fn is_empty(&self) -> bool {
         self.set.is_empty()
@@ -44,6 +44,14 @@ impl<S: Rdf> Default for FocusNodes<S> {
     fn default() -> Self {
         Self {
             set: Default::default(),
+        }
+    }
+}
+
+impl<S: Rdf> FromIterator<S::Term> for FocusNodes<S> {
+    fn from_iter<T: IntoIterator<Item = S::Term>>(iter: T) -> Self {
+        Self {
+            set: HashSet::from_iter(iter),
         }
     }
 }

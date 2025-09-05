@@ -11,9 +11,8 @@ use srdf::rdfs_subclass_of;
 
 use crate::constraints::NativeDeref;
 use crate::constraints::ShaclComponent;
-use crate::engine::engine::Engine;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::srdf::get_subjects_for;
+use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -101,17 +100,31 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         subject: &RDFNode,
     ) -> Result<FocusNodes<S>, ValidateError> {
         // TODO: Replace by shacl_instances_of
-        let subject: S::Term = subject.clone().into();
-        let targets = get_subjects_for(store, &rdf_type().clone().into(), &subject)?;
+        let term: S::Term = subject.clone().into();
+        let targets = store
+            .subjects_for(&rdf_type().clone().into(), &term)
+            .map_err(|e| ValidateError::InstanceOf {
+                term: term.to_string(),
+                error: e.to_string(),
+            })?;
 
-        let subclass_targets =
-            get_subjects_for(store, &rdfs_subclass_of().clone().into(), &subject)?
-                .into_iter()
-                .flat_map(move |subclass| {
-                    get_subjects_for(store, &rdf_type().clone().into(), &subclass)
-                        .into_iter()
-                        .flatten()
-                });
+        let subclass_targets = store
+            .subjects_for(&rdfs_subclass_of().clone().into(), &term)
+            .map_err(|e| ValidateError::SubClassOf {
+                term: term.to_string(),
+                error: e.to_string(),
+            })?
+            .into_iter()
+            .flat_map(move |subclass| {
+                store
+                    .subjects_for(&rdf_type().clone().into(), &subclass)
+                    .map_err(|e| ValidateError::SubClassOf {
+                        term: subclass.to_string(),
+                        error: e.to_string(),
+                    })
+                    .into_iter()
+                    .flatten()
+            });
 
         Ok(FocusNodes::from_iter(
             targets.into_iter().chain(subclass_targets),

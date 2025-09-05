@@ -4,6 +4,12 @@ use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ReportError {
+    #[error("Obtaining objects for subject {subject} with predicate {predicate}: {error}")]
+    ObjectsFor {
+        subject: String,
+        predicate: String,
+        error: String,
+    },
     #[error("Error parsing the ValidationReport, {}", _0)]
     Srdf(#[from] SRDFError),
 
@@ -16,6 +22,18 @@ pub enum ReportError {
 
 #[derive(Error, Debug)]
 pub enum ResultError {
+    #[error("Obtaining path for subject {subject}: {error}")]
+    PathFor {
+        subject: String,
+        error: String,
+        path: String,
+    },
+    #[error("Obtaining objects for subject {subject} with predicate {predicate}: {error}")]
+    ObjectFor {
+        subject: String,
+        predicate: String,
+        error: String,
+    },
     #[error("Error parsing the ValidationResult, the {} field is missing", _0)]
     MissingRequiredField(String),
 

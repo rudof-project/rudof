@@ -46,18 +46,15 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
                                 )),
                                 _ => None,
                             };
-                            match message {
-                                Some(msg) => {
-                                    let validation_result = ValidationResult::new(
-                                        shape.id().clone(),
-                                        component.clone(),
-                                        shape.severity(),
-                                    )
-                                    .with_message(msg.as_str())
-                                    .with_path(maybe_path.clone());
-                                    validation_results.push(validation_result);
-                                }
-                                None => {}
+                            if let Some(msg) = message {
+                                let validation_result = ValidationResult::new(
+                                    shape.id().clone(),
+                                    component.clone(),
+                                    shape.severity(),
+                                )
+                                .with_message(msg.as_str())
+                                .with_path(maybe_path.clone());
+                                validation_results.push(validation_result);
                             }
                         }
                     }

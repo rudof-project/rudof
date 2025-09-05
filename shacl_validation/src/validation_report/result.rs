@@ -1,5 +1,4 @@
 use super::validation_report_error::{ReportError, ResultError};
-use crate::helpers::srdf::*;
 use shacl_ast::shacl_vocab::{
     sh_focus_node, sh_result_message, sh_result_path, sh_result_severity,
     sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
@@ -99,16 +98,23 @@ impl ValidationResult {
         validation_result: &S::Term,
     ) -> Result<Self, ResultError> {
         // Start processing the required fields.
-        let focus_node =
-            match get_object_for(store, validation_result, &sh_focus_node().clone().into())? {
-                Some(focus_node) => focus_node,
-                None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
-            };
-        let severity = match get_object_for(
-            store,
-            validation_result,
-            &sh_result_severity().clone().into(),
-        )? {
+        let focus_node = match store
+            .object_for(validation_result, &sh_focus_node().clone().into())
+            .map_err(|e| ResultError::ObjectFor {
+                subject: validation_result.to_string(),
+                predicate: sh_focus_node().to_string(),
+                error: e.to_string(),
+            })? {
+            Some(focus_node) => focus_node,
+            None => return Err(ResultError::MissingRequiredField("FocusNode".to_owned())),
+        };
+        let severity = match store
+            .object_for(validation_result, &sh_result_severity().clone().into())
+            .map_err(|e| ResultError::ObjectFor {
+                subject: validation_result.to_string(),
+                predicate: sh_result_severity().to_string(),
+                error: e.to_string(),
+            })? {
             Some(Object::Iri(severity)) => {
                 CompiledSeverity::from_iri(&severity).ok_or_else(|| {
                     ResultError::WrongIRIForSeverity {
@@ -125,11 +131,16 @@ impl ValidationResult {
             }
             None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
         };
-        let constraint_component = match get_object_for(
-            store,
-            validation_result,
-            &sh_source_constraint_component().clone().into(),
-        )? {
+        let constraint_component = match store
+            .object_for(
+                validation_result,
+                &sh_source_constraint_component().clone().into(),
+            )
+            .map_err(|e| ResultError::ObjectFor {
+                subject: validation_result.to_string(),
+                predicate: sh_source_constraint_component().to_string(),
+                error: e.to_string(),
+            })? {
             Some(constraint_component) => constraint_component,
             None => {
                 return Err(ResultError::MissingRequiredField(
@@ -140,12 +151,30 @@ impl ValidationResult {
 
         // Process the optional fields
         let sh_result_path_iri: S::IRI = sh_result_path().clone().into();
-        let path = get_path_for(store, validation_result, &sh_result_path_iri)?;
+        let path = store
+            .get_path_for(validation_result, &sh_result_path_iri)
+            .map_err(|e| ResultError::PathFor {
+                subject: validation_result.to_string(),
+                path: sh_result_path_iri.to_string(),
+                error: e.to_string(),
+            })?;
 
         let sh_source_shape_iri: S::IRI = sh_source_shape().clone().into();
-        let source = get_object_for(store, validation_result, &sh_source_shape_iri)?;
+        let source = store
+            .object_for(validation_result, &sh_source_shape_iri)
+            .map_err(|e| ResultError::ObjectFor {
+                subject: validation_result.to_string(),
+                predicate: sh_source_shape_iri.to_string(),
+                error: e.to_string(),
+            })?;
         let sh_value_iri: S::IRI = sh_value().clone().into();
-        let value = get_object_for(store, validation_result, &sh_value_iri)?;
+        let value = store
+            .object_for(validation_result, &sh_value_iri)
+            .map_err(|e| ResultError::ObjectFor {
+                subject: validation_result.to_string(),
+                predicate: sh_value_iri.to_string(),
+                error: e.to_string(),
+            })?;
 
         // 3. Lastly we build the ValidationResult
         Ok(

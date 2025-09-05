@@ -2,10 +2,10 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
-use crate::engine::Engine;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
 use crate::focus_nodes::FocusNodes;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -85,7 +85,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                             Some(sibling),
                         );
                         let sibling_is_valid =
-                            !sibling_results.is_err() && sibling_results.unwrap().is_empty();
+                            sibling_results.is_ok() && sibling_results.unwrap().is_empty();
                         debug!(
                             "Result of node {node} with sibling shape {}: {sibling_is_valid}",
                             sibling.id()
