@@ -1294,6 +1294,20 @@ fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Targe
     })
 }
 
+fn unique_lang<RDF>() -> FnOpaque<RDF, Vec<Component>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(
+        property_values_bool(sh_unique_lang())
+            .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
+    )
+}
+
+fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {
+    iri.clone().into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::ShaclParser;
@@ -1337,18 +1351,4 @@ mod tests {
             _ => panic!("Shape has not a LanguageIn component"),
         }
     }
-}
-
-fn unique_lang<RDF>() -> FnOpaque<RDF, Vec<Component>>
-where
-    RDF: FocusRDF,
-{
-    opaque!(
-        property_values_bool(sh_unique_lang())
-            .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
-    )
-}
-
-fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {
-    iri.clone().into()
 }
