@@ -6,6 +6,14 @@ sphinx:
 
 build:
   os: ubuntu-22.04
+  # The following code could be replaced by "rust: 1.87" 
+  # But it seems the latest version supported by readthedocs is 1.86
+  jobs:
+    pre_build:
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - source ~/.cargo/env
+      - rustup toolchain install 1.87.0
+      - rustup default 1.87.0
   tools:
     python: "3"
     rust: "1.87"
