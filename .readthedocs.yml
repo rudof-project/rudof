@@ -2,7 +2,7 @@ version: 2
 
 sphinx:
   builder: html
-  configuration: docs/conf.py
+  configuration: python/docs/conf.py
 
 build:
   os: ubuntu-22.04

@@ -6,6 +6,7 @@ pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod shapes_graph_source;
+
 pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
