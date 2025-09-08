@@ -16,7 +16,6 @@ build:
       - rustup default 1.87.0
   tools:
     python: "3"
-    rust: "1.87"
   apt_packages:
     - clang
 
