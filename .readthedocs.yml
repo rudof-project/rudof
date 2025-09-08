@@ -11,9 +11,9 @@ build:
   jobs:
     pre_build:
       - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      - . ~/.cargo/env
-      - rustup toolchain install 1.87.0
-      - rustup default 1.87.0
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - ~/.cargo/bin/rustup toolchain install 1.87.0
+      - ~/.cargo/bin/rustup default 1.87.0
   tools:
     python: "3"
   apt_packages:
