@@ -27,6 +27,8 @@ pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStat
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
+pub use sparql_service::ServiceDescription;
+pub use sparql_service::ServiceDescriptionFormat;
 use srdf::QueryRDF;
 pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
 
@@ -51,6 +53,7 @@ pub struct Rudof {
     shapemap: Option<QueryShapeMap>,
     dctap: Option<DCTAP>,
     shex_results: Option<ResultShapeMap>,
+    service_description: Option<ServiceDescription>,
 }
 
 // TODO: We added this declaration so PyRudof can contain Rudof and be Send as required by PyO3
@@ -71,6 +74,7 @@ impl Rudof {
             shapemap: None,
             dctap: None,
             shex_results: None,
+            service_description: None,
         }
     }
 
@@ -97,6 +101,11 @@ impl Rudof {
         self.shacl_schema = None
     }
 
+    /// Resets the current service description
+    pub fn reset_service_description(&mut self) {
+        self.service_description = None
+    }
+
     /// Resets all current values
     pub fn reset_all(&mut self) {
         self.reset_data();
@@ -105,6 +114,7 @@ impl Rudof {
         self.reset_shapemap();
         self.reset_validation_results();
         self.reset_shex();
+        self.reset_service_description();
     }
 
     /// Get the shapes graph schema from the current RDF data
@@ -130,6 +140,11 @@ impl Rudof {
     /// Get the current ShEx Schema
     pub fn get_shex(&self) -> Option<&ShExSchema> {
         self.shex_schema.as_ref()
+    }
+
+    /// Get the current Service Description
+    pub fn get_service_description(&self) -> Option<&ServiceDescription> {
+        self.service_description.as_ref()
     }
 
     /// Get the current ShEx Schema Internal Representation
@@ -521,6 +536,39 @@ impl Rudof {
             })?;
         self.shex_validator = Some(validator);
         Ok(())
+    }
+
+    pub fn read_service_description<R: io::Read>(
+        &mut self,
+        reader: R,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<()> {
+        let service_description =
+            ServiceDescription::from_reader(reader, format, base, reader_mode).map_err(|e| {
+                RudofError::ReadingServiceDescription {
+                    error: format!("{e}"),
+                }
+            })?;
+        self.service_description = Some(service_description);
+        Ok(())
+    }
+
+    pub fn serialize_service_description<W: io::Write>(
+        &self,
+        format: &ServiceDescriptionFormat,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(service_description) = &self.service_description {
+            service_description.serialize(format, writer).map_err(|e| {
+                RudofError::SerializingServiceDescription {
+                    error: format!("{e}"),
+                }
+            })
+        } else {
+            Err(RudofError::NoServiceDescriptionToSerialize)
+        }
     }
 
     /// Validate RDF data using SHACL

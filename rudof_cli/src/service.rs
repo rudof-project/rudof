@@ -5,8 +5,8 @@ use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use crate::{InputSpec, RDFReaderMode, ResultServiceFormat, data_format::DataFormat};
 use anyhow::Result;
-use rudof_lib::RudofConfig;
-use sparql_service::ServiceDescription;
+use rudof_lib::{Rudof, RudofConfig};
+use sparql_service::ServiceDescriptionFormat;
 
 pub fn run_service(
     input: &InputSpec,
@@ -20,14 +20,17 @@ pub fn run_service(
     let reader = input.open_read(Some(data_format.mime_type().as_str()), "Service")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let rdf_format = data_format2rdf_format(data_format);
-    let config = config.service_config();
-    let base = config.base.as_ref().map(|i| i.as_str());
+    // let config = config.service_config();
+    let binding = config.service_config();
+    let base = binding.base.as_ref().map(|i| i.as_str());
+    let mut rudof = Rudof::new(config);
     let reader_mode = (*reader_mode).into();
-    let service_description =
-        ServiceDescription::from_reader(reader, &rdf_format, base, &reader_mode)?;
+
+    rudof.read_service_description(reader, &rdf_format, base, &reader_mode)?;
     match result_format {
         ResultServiceFormat::Internal => {
-            writeln!(writer, "{service_description}")?;
+            rudof
+                .serialize_service_description(&ServiceDescriptionFormat::Internal, &mut writer)?;
         }
     }
     Ok(())

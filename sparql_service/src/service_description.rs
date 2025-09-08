@@ -1,7 +1,12 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 
-use std::{collections::HashSet, fmt::Display, io::BufRead, path::Path};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    io::{self},
+    path::Path,
+};
 
 use iri_s::IriS;
 use itertools::Itertools;
@@ -164,7 +169,7 @@ impl ServiceDescription {
         Ok(service)
     }
 
-    pub fn from_reader<R: BufRead>(
+    pub fn from_reader<R: io::Read>(
         read: R,
         format: &RDFFormat,
         base: Option<&str>,
@@ -196,6 +201,18 @@ impl ServiceDescription {
 
     pub fn add_default_dataset(&mut self, default_dataset: &Dataset) {
         self.default_dataset = default_dataset.clone();
+    }
+
+    pub fn serialize<W: io::Write>(
+        &self,
+        format: &crate::ServiceDescriptionFormat,
+        writer: &mut W,
+    ) -> io::Result<()> {
+        match format {
+            crate::ServiceDescriptionFormat::Internal => {
+                writer.write_all(self.to_string().as_bytes())
+            }
+        }
     }
 }
 

@@ -6,11 +6,17 @@ use pyo3::{
 };
 use rudof_lib::{
     DCTAP, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
-    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ShExFormat, ShExFormatter,
-    ShExSchema, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
-    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
+    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescriptionFormat,
+    ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
+    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
+    ValidationStatus, VarName, iri,
 };
-use std::{ffi::OsStr, fs::File, io::BufReader, path::Path};
+use std::{
+    ffi::OsStr,
+    fs::File,
+    io::{BufReader, BufWriter},
+    path::Path,
+};
 
 #[pyclass(frozen, name = "RudofConfig")]
 pub struct PyRudofConfig {
@@ -284,6 +290,21 @@ impl PyRudof {
         Ok(str)
     }
 
+    /// Converts the current RDF data to a Visual representation in PlantUML and stores it in a file
+    /// That visual representation can be later converted to SVG or PNG pictures using PlantUML processors
+    #[pyo3(signature = (file_name))]
+    pub fn data2plantuml_file(&self, file_name: &str) -> PyResult<()> {
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(file);
+        self.inner
+            .data2plant_uml(&mut writer)
+            .map_err(|e| RudofError::RDF2PlantUmlError {
+                error: format!("Error generating UML for current RDF data: {e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
     /// Adds RDF data read from a Path
     #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_path(
@@ -305,6 +326,45 @@ impl PyRudof {
         let reader = BufReader::new(file);
         self.inner
             .read_data(reader, &format, base, &reader_mode)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Read Service Description from a path
+    #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_service_description(
+        &mut self,
+        path_name: &str,
+        format: &PyRDFFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+        let format = cnv_rdf_format(format);
+        let path = Path::new(path_name);
+        let file = File::open::<&OsStr>(path.as_ref())
+            .map_err(|e| RudofError::ReadingServiceDescriptionPath {
+                path: path_name.to_string(),
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let reader = BufReader::new(file);
+        self.inner
+            .read_service_description(reader, &format, base, &reader_mode)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    pub fn serialize_service_description(
+        &self,
+        format: &PyServiceDescriptionFormat,
+        output: &str,
+    ) -> PyResult<()> {
+        let file = File::create(output)?;
+        let mut writer = BufWriter::new(file);
+        let service_description_format = cnv_service_description_format(format);
+        self.inner
+            .serialize_service_description(&service_description_format, &mut writer)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -409,7 +469,48 @@ impl PyRudof {
         Ok(str)
     }
 
+    /// Converts the current ShEx to a Class-like diagram using PlantUML syntax and stores it in a file
+    #[pyo3(signature = (uml_mode, file_name))]
+    pub fn shex2plantuml_file(
+        &self,
+        uml_mode: &PyUmlGenerationMode,
+        file_name: &str,
+    ) -> PyResult<()> {
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(file);
+        self.inner
+            .shex2plant_uml(&uml_mode.into(), &mut writer)
+            .map_err(|e| RudofError::ShEx2PlantUmlError {
+                error: format!("Error generating UML: {e} in {file_name}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
     /// Serialize the current ShEx schema
+    #[pyo3(signature = (formatter, format = &PyShExFormat::ShExC))]
+    pub fn serialize_current_shex(
+        &self,
+        formatter: &PyShExFormatter,
+        format: &PyShExFormat,
+    ) -> PyResult<String> {
+        let mut v = Vec::new();
+        let format = cnv_shex_format(format);
+        self.inner
+            .serialize_current_shex(&format, &formatter.inner, &mut v)
+            .map_err(|e| RudofError::SerializingShEx {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingShEx {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
+    /// Serialize a ShEx schema
     #[pyo3(signature = (shex, formatter, format = &PyShExFormat::ShExC))]
     pub fn serialize_shex(
         &self,
@@ -534,6 +635,13 @@ pub enum PyRDFFormat {
 pub enum PyDCTapFormat {
     CSV,
     XLSX,
+}
+
+#[allow(clippy::upper_case_acronyms)]
+#[pyclass(eq, eq_int, name = "ServiceDescriptionFormat")]
+#[derive(PartialEq)]
+pub enum PyServiceDescriptionFormat {
+    Internal,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -879,6 +987,12 @@ fn cnv_reader_mode(format: &PyReaderMode) -> ReaderMode {
     match format {
         PyReaderMode::Lax => ReaderMode::Lax,
         PyReaderMode::Strict => ReaderMode::Strict,
+    }
+}
+
+fn cnv_service_description_format(format: &PyServiceDescriptionFormat) -> ServiceDescriptionFormat {
+    match format {
+        PyServiceDescriptionFormat::Internal => ServiceDescriptionFormat::Internal,
     }
 }
 

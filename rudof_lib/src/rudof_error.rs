@@ -211,4 +211,16 @@ pub enum RudofError {
 
     #[error("Error converting DCTAP to ShEx")]
     DCTap2ShEx { error: String },
+
+    #[error("Serializing Service Description: {error}")]
+    SerializingServiceDescription { error: String },
+
+    #[error("Cannot serialize current Service Description because it has not been defined")]
+    NoServiceDescriptionToSerialize,
+
+    #[error("Reading Service Description: {error}")]
+    ReadingServiceDescription { error: String },
+
+    #[error("Reading Service Description from path {path}: {error}")]
+    ReadingServiceDescriptionPath { path: String, error: String },
 }

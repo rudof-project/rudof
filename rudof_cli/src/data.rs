@@ -77,24 +77,6 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
     }
 }
 
-/*
-fn parse_data(
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    reader_mode: &RDFReaderMode,
-    config: &RdfDataConfig,
-) -> Result<SRDFGraph> {
-    let mut graph = SRDFGraph::new();
-    let rdf_format = data_format2rdf_format(data_format);
-    for d in data {
-        let reader = d.open_read(Some(data_format.mime_type().as_str()))?;
-        let base = config.base.as_ref().map(|iri_s| iri_s.as_str());
-        let reader_mode = reader_mode_convert(*reader_mode);
-        graph.merge_from_reader(reader, &rdf_format, base, &reader_mode)?;
-    }
-    Ok(graph)
-}*/
-
 pub fn get_base(input: &InputSpec, config: &RudofConfig) -> Result<Option<String>> {
     let base = match config.rdf_data_base() {
         Some(base) => Some(base.to_string()),

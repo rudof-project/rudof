@@ -7,6 +7,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.90
+### Added
+- Added serialize_current_shex to pyrudof
+- Added read_service_description, serialize_service_description to rudof_lib and pyrudof
+- Added data2plantuml_file to pyrudof
+
+### Fixed
+### Changed
+- from_reader in ServiceDescription now accepts a `io::Read` instead of a `BufRead`.
+- Refactored run_service to be based on rudof lib
+
+### Removed
+
+
 ## 0.1.89
 ### Added
 
