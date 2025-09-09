@@ -50,6 +50,6 @@ parallel_file_count = 4              # Number of parallel files (when enabled)
 
 [parallel]
 worker_threads = 4                    # Use 4 parallel threads
-batch_size = 100                      # Process 100 entities per batch
-parallel_shapes = true                # Process shapes in parallel
-parallel_fields = true                # Generate fields in parallel
+batch_size = 100                      # Process entities in batches of 100
+parallel_shapes = true               # Process shapes in parallel
+parallel_fields = true              # Generate fields in parallel

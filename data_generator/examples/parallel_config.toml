@@ -1,15 +1,14 @@
-# Configuration for testing parallel writing
-# This configuration enables parallel writing to multiple files
+# High-performance parallel configuration for large datasets
 
 [generation]
-entity_count = 100                    # Generate 100 entities for testing
-seed = 12345                         # Use fixed seed for reproducible results
+entity_count = 5000                   # Generate large dataset
+seed = 98765                          # Use different seed
 entity_distribution = "Equal"        # Distribute entities equally across shapes
-cardinality_strategy = "Balanced"    # Use balanced cardinality strategy
+cardinality_strategy = "Random"      # Use random cardinality strategy
 
 [field_generators.default]
-locale = "en"                        # Generate English text
-quality = "Medium"                   # Medium quality data
+locale = "en"                         # Generate English text
+quality = "High"                      # High quality data
 
 # Configure specific data types
 [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
@@ -31,25 +30,33 @@ generator = "date"
 start_year = 1980
 end_year = 2024
 
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#string"]
+generator = "string"
+parameters = {}
+
 # Configure specific properties
 [field_generators.properties."http://example.org/name"]
 generator = "string"
 parameters = {}
 
-[field_generators.properties."http://example.org/legalName"]
+[field_generators.properties."http://schema.org/name"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://schema.org/email"]
 generator = "string"
 parameters = {}
 
 [output]
-path = "parallel_output.ttl"         # Base output file name
+path = "parallel_data.ttl"           # Output file name
 format = "Turtle"                    # Use Turtle format
 compress = false                     # Don't compress output
 write_stats = true                   # Include generation statistics
 parallel_writing = true             # Enable parallel writing
-parallel_file_count = 4             # Write to 4 parallel files
+parallel_file_count = 8             # Use 8 parallel files
 
 [parallel]
-worker_threads = 4                   # Use 4 parallel threads
-batch_size = 25                     # Entity batch size
+worker_threads = 8                   # Use 8 parallel threads for better performance
+batch_size = 250                     # Process entities in larger batches
 parallel_shapes = true              # Process shapes in parallel
 parallel_fields = true              # Generate fields in parallel

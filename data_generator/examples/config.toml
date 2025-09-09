@@ -1,0 +1,92 @@
+# Comprehensive configuration example for RDF data generation
+# This file demonstrates all available configuration options
+
+[generation]
+entity_count = 5000                   # Number of entities to generate
+seed = 98765                          # Random seed for reproducible results
+entity_distribution = "Weighted"     # How to distribute entities across shapes
+cardinality_strategy = "Random"      # How to handle cardinalities
+
+# Weighted distribution for different shape types
+[generation.distribution_weights]
+"http://example.org/Person" = 0.5        # 50% persons
+"http://example.org/Organization" = 0.3  # 30% organizations  
+"http://example.org/Course" = 0.2        # 20% courses
+
+[field_generators.default]
+locale = "en"                         # Generate English text
+quality = "High"                      # High quality data
+
+# Custom integer generation with specific ranges
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
+generator = "integer"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
+min = 1
+max = 10000
+
+# Custom decimal generation
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal"]
+generator = "decimal"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal".parameters]
+min = 0.0
+max = 1000.0
+precision = 2
+
+# Custom date generation
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date"]
+generator = "date"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date".parameters]
+start_year = 1980
+end_year = 2024
+
+# Custom string generation
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#string"]
+generator = "string"
+parameters = {}
+
+# Property-specific generators
+[field_generators.properties."http://example.org/name"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://schema.org/name"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://schema.org/email"]
+generator = "string"
+[field_generators.properties."http://schema.org/email".parameters]
+templates = [
+    "{firstName}.{lastName}@{domain}",
+    "{firstName}{lastName}{number}@{domain}",
+    "info@{domain}",
+    "contact@{domain}"
+]
+
+[field_generators.properties."http://example.org/legalName"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://example.org/address"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://example.org/phone"]
+generator = "string"
+parameters = {}
+
+# Output with compression
+[output]
+path = "large_dataset.ttl.gz"        # Output file path with compression
+format = "Turtle"                     # Use Turtle format
+compress = true                       # Enable compression
+write_stats = true                    # Include generation statistics
+parallel_writing = true              # Enable parallel writing
+parallel_file_count = 8              # Write to 8 parallel files
+
+# High-performance parallel settings
+[parallel]
+worker_threads = 8                    # Use 8 parallel threads
+batch_size = 250                      # Process entities in batches of 250
+parallel_shapes = true               # Process shapes in parallel
+parallel_fields = true              # Generate fields in parallel
