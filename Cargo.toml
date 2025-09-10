@@ -11,6 +11,7 @@ members = [
     "shex_compact",
     "rudof_lib",
     "rudof_cli",
+    "rudof_mcp",
     "shex_testsuite",
     "shex_validation",
     "shapemap",
@@ -68,6 +69,7 @@ rudof_lib = { version = "0.1.86", path = "./rudof_lib" }
 rudof_cli = { version = "0.1.86", path = "./rudof_cli" }
 shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
 pyrudof = { version = "0.1.86", path = "./python" }
+rudof_mcp = { version = "0.0.1", path = "./rudof_mcp" }
 
 # [dependencies]
 # External dependencies
