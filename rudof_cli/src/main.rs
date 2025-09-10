@@ -57,13 +57,18 @@ fn main() -> Result<()> {
 
     tracing::debug!("rudof running...");
 
-    // Expand wildcards and @argfiles:
     let args = clientele::args_os()?;
-
-    // Parse command-line options:
     let cli = Cli::parse_from(args);
 
     match &cli.command {
+        Some(Command::Mcp {
+            host,
+            port,
+            route_name,
+        }) => {
+            // Run the MCP server
+            rudof_mcp::run_mcp(route_name, port, host)
+        }
         Some(Command::Service {
             service,
             service_format,

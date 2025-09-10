@@ -25,6 +25,7 @@ shapes_converter = { workspace = true }
 shacl_validation = { workspace = true }
 sparql_service = { workspace = true }
 rudof_lib = { workspace = true }
+rudof_mcp = { workspace = true }
 
 serde.workspace = true
 serde_json = { workspace = true }
