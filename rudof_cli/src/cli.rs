@@ -70,7 +70,7 @@ pub enum Command {
         #[arg(
             long = "force-overwrite",
             value_name = "BOOL",
-            help = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -155,7 +155,7 @@ pub enum Command {
 
         #[arg(
             long = "force-overwrite",
-            help = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -292,7 +292,11 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
-        #[arg(long = "force-overwrite", default_value_t = false)]
+        #[arg(
+            long = "force-overwrite",
+            default_value_t = false,
+            help = "Force overwrite to output file if it already exists"
+        )]
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
@@ -313,30 +317,48 @@ pub enum Command {
         #[arg(
             short = 's',
             long = "schema",
-            value_name = "Schema file name, URI or -"
+            value_name = "INPUT",
+            help = "Schema file name, URI or - (for stdin)"
         )]
         schema: Option<InputSpec>,
 
-        #[arg(short = 'f', long = "schema-format", value_name = "Schema format")]
+        #[arg(
+            short = 'f',
+            long = "schema-format",
+            value_name = "FORMAT",
+            help = "ShEx Schema format"
+        )]
         schema_format: Option<ShExFormat>,
 
-        #[arg(short = 'm', long = "shapemap", value_name = "ShapeMap")]
+        #[arg(
+            short = 'm',
+            long = "shapemap",
+            value_name = "INPUT",
+            help = "ShapeMap"
+        )]
         shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",
-            value_name = "ShapeMap format",
+            value_name = "FORMAT", 
+            help = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
         )]
         shapemap_format: ShapeMapFormat,
 
-        #[arg(short = 'n', long = "node")]
+        #[arg(
+            short = 'n',
+            long = "node",
+            value_name = "NODE",
+            help = "Node to validate"
+        )]
         node: Option<String>,
 
         #[arg(
             short = 'l',
             long = "shape-label",
-            value_name = "shape label (default = START)",
+            value_name = "LABEL",
+            help = "shape label (default = START)",
             group = "node_shape"
         )]
         shape: Option<String>,
@@ -344,7 +366,8 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "RDF Data format",
+            value_name = "FORMAT", 
+            help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
@@ -352,19 +375,26 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
         reader_mode: RDFReaderMode,
 
-        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        #[arg(
+            short = 'e',
+            long = "endpoint",
+            value_name = "NAME",
+            help = "Endpoint with RDF data (name or URL)"
+        )]
         endpoint: Option<String>,
 
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "Ouput result format",
+            value_name = "FORMAT", 
+            help = "Ouput result format",
             default_value_t = ResultShExValidationFormat::Turtle
         )]
         result_format: ResultShExValidationFormat,
@@ -372,17 +402,23 @@ pub enum Command {
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
-        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
         config: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -396,7 +432,8 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "RDF Data format",
+            value_name = "FORMAT", 
+            help= "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
@@ -404,7 +441,8 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
@@ -413,21 +451,33 @@ pub enum Command {
         #[arg(
             short = 's',
             long = "shapes",
-            value_name = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
+            value_name = "INPUT",
+            help = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
         )]
         shapes: Option<InputSpec>,
 
-        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        #[arg(
+            short = 'f',
+            long = "shapes-format",
+            value_name = "FORMAT",
+            help = "Shapes file format"
+        )]
         shapes_format: Option<CliShaclFormat>,
 
-        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        #[arg(
+            short = 'e',
+            long = "endpoint",
+            value_name = "ENDPOINT",
+            help = "Endpoint with RDF data (URL or name)"
+        )]
         endpoint: Option<String>,
 
         /// Execution mode
         #[arg(
             short = 'm',
             long = "mode",
-            value_name = "Execution mode",
+            value_name = "MODE", 
+            help = "Execution mode",
             default_value_t = ShaclValidationMode::Native,
             value_enum
         )]
@@ -436,7 +486,8 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "Ouput result format",
+            value_name = "FORMAT", 
+            help = "Ouput result format",
             default_value_t = ResultShaclValidationFormat::Compact
         )]
         result_format: ResultShaclValidationFormat,
@@ -444,19 +495,25 @@ pub enum Command {
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
         config: Option<PathBuf>,
     },
 
@@ -465,12 +522,11 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        // #[arg(short = 'd', long = "data", value_name = "RDF data path")]
-        // data: PathBuf,
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "RDF Data format",
+            value_name = "FORMAT", 
+            help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
@@ -478,7 +534,8 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
@@ -487,7 +544,8 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "Ouput result format",
+            value_name = "FORMAT", 
+            help = "Ouput result format",
             default_value_t = ResultDataFormat::Turtle
         )]
         result_format: ResultDataFormat,
@@ -495,17 +553,23 @@ pub enum Command {
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
-        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
         config: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -516,24 +580,36 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        #[arg(short = 'n', long = "node")]
+        #[arg(
+            short = 'n',
+            long = "node",
+            value_name = "Node",
+            help = "Node to show information (can be a URI or prefixed name)"
+        )]
         node: String,
 
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "RDF Data format",
+            value_name = "FORMAT",
+            help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
 
-        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        #[arg(
+            short = 'e',
+            long = "endpoint",
+            value_name = "Endpoint",
+            help = "Endpoint with RDF data (URL or name)"
+        )]
         endpoint: Option<String>,
 
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
@@ -542,30 +618,42 @@ pub enum Command {
         #[arg(
             short = 'm',
             long = "show-node-mode",
-            value_name = "Show Node Mode",
+            value_name = "MODE", 
+            help = "Mode used to show the node information",
             default_value_t = ShowNodeMode::Outgoing
         )]
         show_node_mode: ShowNodeMode,
 
-        #[arg(long = "show hyperlinks")]
+        #[arg(long = "show hyperlinks", help = "Show hyperlinks in the output")]
         show_hyperlinks: bool,
 
-        #[arg(short = 'p', long = "predicates")]
+        #[arg(
+            short = 'p',
+            long = "predicates",
+            value_name = "PREDICATES",
+            help = "List of predicates to show"
+        )]
         predicates: Vec<String>,
 
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
-        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        #[arg(
+            short = 'c',
+            long = "config",
+            value_name = "FILE",
+            help = "Path to config file"
+        )]
         config: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -580,7 +668,8 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "RDF Data format",
+            value_name = "FORMAT", 
+            help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
@@ -588,29 +677,42 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
         reader_mode: RDFReaderMode,
 
-        #[arg(short = 'e', long = "endpoint", value_name = "Endpoint with RDF data")]
+        #[arg(
+            short = 'e',
+            long = "endpoint",
+            value_name = "Endpoint",
+            help = "Endpoint with RDF data (URL or name)"
+        )]
         endpoint: Option<String>,
 
         #[arg(
             short = 's',
             long = "shapes",
-            value_name = "Shapes graph (file, URI or -)"
+            value_name = "INPUT",
+            help = "Shapes graph: File, URI or - for stdin, if not set, it assumes the shapes come from the data"
         )]
         shapes: Option<InputSpec>,
 
-        #[arg(short = 'f', long = "shapes-format", value_name = "Shapes file format")]
+        #[arg(
+            short = 'f',
+            long = "shapes-format",
+            value_name = "FORMAT",
+            help = "Shapes file format"
+        )]
         shapes_format: Option<CliShaclFormat>,
 
         #[arg(
             short = 'r',
             long = "result-shapes-format",
-            value_name = "Result shapes format",
+            value_name = "FORMAT", 
+            help = "Result shapes format",
             default_value_t = CliShaclFormat::Internal
         )]
         result_shapes_format: CliShaclFormat,
@@ -618,32 +720,44 @@ pub enum Command {
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
         config: Option<PathBuf>,
     },
 
     /// Show information and process DCTAP files
     #[command(name = "dctap")]
     DCTap {
-        #[arg(short = 's', long = "source-file", value_name = "DCTap source file")]
+        #[arg(
+            short = 's',
+            long = "source-file",
+            value_name = "FILE",
+            help = "DCTap source file"
+        )]
         file: InputSpec,
 
         #[arg(
             short = 'f',
             long = "format",
-            value_name = "DCTap file format",
+            value_name = "FORMAT", 
+            help = "DCTap file format",
             default_value_t = DCTapFormat::CSV
         )]
         format: DCTapFormat,
@@ -651,25 +765,32 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "Ouput results format",
+            value_name = "FORMAT", 
+            help = "Ouput results format",
             default_value_t = DCTapResultFormat::Internal
         )]
         result_format: DCTapResultFormat,
 
         /// Config file path, if unset it assumes default config
-        #[arg(short = 'c', long = "config-file", value_name = "Config file name")]
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
         config: Option<PathBuf>,
 
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -678,26 +799,42 @@ pub enum Command {
     /// Convert between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
-        #[arg(short = 'c', long = "config", value_name = "Path to config file")]
+        #[arg(
+            short = 'c',
+            long = "config",
+            value_name = "FILE",
+            help = "Path to config file"
+        )]
         config: Option<PathBuf>,
 
-        #[arg(short = 'm', long = "input-mode", value_name = "Input mode")]
+        #[arg(
+            short = 'm',
+            long = "input-mode",
+            value_name = "MODE",
+            help = "Input mode"
+        )]
         input_mode: InputConvertMode,
 
         #[arg(
             long = "force-overwrite",
-            value_name = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
 
-        #[arg(short = 's', long = "source-file", value_name = "Source file name")]
+        #[arg(
+            short = 's',
+            long = "source-file",
+            value_name = "INPUT",
+            help = "Source file name (URI, file or - for stdin)"
+        )]
         file: InputSpec,
 
         #[arg(
             short = 'f',
             long = "format",
-            value_name = "Input file format",
+            value_name = "FORMAT", 
+            help = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
         format: InputConvertFormat,
@@ -705,7 +842,8 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "Result format",
+            value_name = "FORMAT", 
+            help = "Result format",
             default_value_t = OutputConvertFormat::Default
         )]
         result_format: OutputConvertFormat,
@@ -713,33 +851,46 @@ pub enum Command {
         #[arg(
             short = 'o',
             long = "output-file",
-            value_name = "Output file name, default = terminal"
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
 
-        #[arg(short = 't', long = "target-folder", value_name = "Target folder")]
+        #[arg(
+            short = 't',
+            long = "target-folder",
+            value_name = "FOLDER",
+            help = "Target folder"
+        )]
         target_folder: Option<PathBuf>,
 
         #[arg(
             short = 'l',
             long = "shape-label",
-            value_name = "shape label (default = START)"
+            value_name = "LABEL",
+            help = "shape label (default = START)"
         )]
         shape: Option<String>,
 
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "RDF Reader mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
         reader_mode: RDFReaderMode,
 
-        #[arg(short = 'x', long = "export-mode", value_name = "Result mode")]
+        #[arg(
+            short = 'x',
+            long = "export-mode",
+            value_name = "MODE",
+            help = "Result mode for conversion"
+        )]
         output_mode: OutputConvertMode,
 
-        #[arg(long = "show-time")]
+        #[arg(long = "show-time", help = "Show processing time")]
         show_time: Option<bool>,
     },
 
@@ -801,7 +952,7 @@ pub enum Command {
         #[arg(
             long = "force-overwrite",
             value_name = "BOOL",
-            help = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,
@@ -878,7 +1029,7 @@ pub enum Command {
         #[arg(
             long = "force-overwrite",
             value_name = "BOOL",
-            help = "Force overwrite mode",
+            help = "Force overwrite to output file if it already exists",
             default_value_t = false
         )]
         force_overwrite: bool,

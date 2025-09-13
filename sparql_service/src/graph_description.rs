@@ -1,0 +1,109 @@
+use crate::{ClassPartition, PropertyPartition};
+use srdf::{IriOrBlankNode, numeric_literal::NumericLiteral};
+use std::fmt::Display;
+
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+pub struct GraphDescription {
+    id: IriOrBlankNode,
+    triples: Option<NumericLiteral>,
+    classes: Option<NumericLiteral>,
+    properties: Option<NumericLiteral>,
+    entities: Option<NumericLiteral>,
+    documents: Option<NumericLiteral>,
+    property_partition: Vec<PropertyPartition>,
+    class_partition: Vec<ClassPartition>,
+}
+
+impl GraphDescription {
+    pub fn new(id: &IriOrBlankNode) -> Self {
+        GraphDescription {
+            id: id.clone(),
+            triples: None,
+            class_partition: Vec::new(),
+            property_partition: Vec::new(),
+            classes: None,
+            properties: None,
+            entities: None,
+            documents: None,
+        }
+    }
+
+    pub fn with_triples(mut self, triples: Option<NumericLiteral>) -> Self {
+        self.triples = triples;
+        self
+    }
+
+    pub fn with_classes(mut self, classes: Option<NumericLiteral>) -> Self {
+        self.classes = classes;
+        self
+    }
+
+    pub fn with_properties(mut self, properties: Option<NumericLiteral>) -> Self {
+        self.properties = properties;
+        self
+    }
+
+    pub fn with_entities(mut self, entities: Option<NumericLiteral>) -> Self {
+        self.entities = entities;
+        self
+    }
+
+    pub fn with_documents(mut self, documents: Option<NumericLiteral>) -> Self {
+        self.documents = documents;
+        self
+    }
+
+    pub fn with_property_partition(mut self, property_partition: Vec<PropertyPartition>) -> Self {
+        self.property_partition = property_partition;
+        self
+    }
+
+    pub fn with_class_partition(mut self, class_partition: Vec<ClassPartition>) -> Self {
+        self.class_partition = class_partition;
+        self
+    }
+}
+
+impl Display for GraphDescription {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, " Graph {}", self.id)?;
+        if let Some(triples) = &self.triples {
+            writeln!(f, "  triples: {triples}")?;
+        }
+        if let Some(classes) = &self.classes {
+            writeln!(f, "  classes: {classes}")?;
+        }
+        if let Some(properties) = &self.properties {
+            writeln!(f, "  properties: {properties}")?;
+        }
+        if let Some(entities) = &self.entities {
+            writeln!(f, "  entities: {entities}")?;
+        }
+        if let Some(documents) = &self.documents {
+            writeln!(f, "  documents: {documents}")?;
+        }
+        let mut class_partition = self.class_partition.iter().peekable();
+        if class_partition.peek().is_some() {
+            writeln!(
+                f,
+                "  class_partition: {}",
+                class_partition
+                    .map(|c| c.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+        }
+        let mut property_partition = self.property_partition.iter().peekable();
+        if property_partition.peek().is_some() {
+            writeln!(
+                f,
+                "  property_partition: {}",
+                property_partition
+                    .map(|p| p.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+        }
+        Ok(())
+    }
+}

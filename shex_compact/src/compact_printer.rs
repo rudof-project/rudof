@@ -52,6 +52,7 @@ fn pp_numeric_literal<'a, A>(
         NumericLiteral::Integer(n) => doc.text(n.to_string()),
         NumericLiteral::Decimal(decimal) => doc.text(decimal.to_string()),
         NumericLiteral::Double(d) => doc.text(d.to_string()),
+        NumericLiteral::Long(l) => doc.text(l.to_string()),
     }
 }
 

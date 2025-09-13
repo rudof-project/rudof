@@ -13,6 +13,15 @@ pub enum RDFParseError {
     #[error("Expected focus node to be boolean but found: {term}")]
     ExpectedBoolean { term: String },
 
+    #[error("Expected focus node to be a numeric literal but found: {term}")]
+    ExpectedNumber { term: String },
+
+    #[error("Expected focus node to be IRI or BlankNode but found: {term}: {error}")]
+    ExpectedIriOrBlankNode { term: String, error: String },
+
+    #[error("Error converting subject to IRI or BlankNode: {subject}")]
+    SubjectToIriOrBlankNode { subject: String },
+
     #[error("Expected focus node to be IRI or BNode but found: {term}")]
     UnexpectedLiteral { term: String },
 
@@ -77,6 +86,9 @@ pub enum RDFParseError {
     #[error("Expected Literal, but found {term}")]
     ExpectedLiteral { term: String },
 
+    #[error("Expected simple literal, but found {term}")]
+    ExpectedSLiteral { term: String },
+
     #[error("Expected focus to act as subject, found {focus}")]
     ExpectedFocusAsSubject { focus: String },
 
@@ -116,6 +128,13 @@ pub enum RDFParseError {
 
     #[error("Expected IRI for property {property} of node {focus}: {error}")]
     PropertyValueExpectedIRI {
+        focus: String,
+        property: IriS,
+        error: String,
+    },
+
+    #[error("Expected IRI or BlankNode for property {property} of node {focus}: {error}")]
+    PropertyValueExpectedIRIOrBlankNode {
         focus: String,
         property: IriS,
         error: String,

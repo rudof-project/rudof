@@ -56,6 +56,7 @@ pub use xs_facet::*;
 
 const BOOLEAN_STR: &str = "http://www.w3.org/2001/XMLSchema#boolean";
 const INTEGER_STR: &str = "http://www.w3.org/2001/XMLSchema#integer";
+const LONG_STR: &str = "http://www.w3.org/2001/XMLSchema#long";
 const DOUBLE_STR: &str = "http://www.w3.org/2001/XMLSchema#double";
 const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 const DATETIME_STR: &str = "http://www.w3.org/2001/XMLSchema#datetime";

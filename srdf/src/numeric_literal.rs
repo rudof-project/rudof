@@ -11,6 +11,7 @@ use std::hash::Hash;
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteral {
     Integer(isize),
+    Long(isize),
     Decimal(Decimal),
     Double(f64),
 }
@@ -57,6 +58,10 @@ impl NumericLiteral {
         NumericLiteral::Decimal(d)
     }
 
+    pub fn long(d: isize) -> NumericLiteral {
+        NumericLiteral::Long(d)
+    }
+
     pub fn integer_from_i128(d: i128) -> NumericLiteral {
         let d: Decimal = Decimal::from_i128(d).unwrap();
         let n: isize = Decimal::to_isize(&d).unwrap();
@@ -95,6 +100,7 @@ impl NumericLiteral {
             NumericLiteral::Integer(n) => Decimal::from_isize(*n).unwrap(),
             NumericLiteral::Double(d) => Decimal::from_f64(*d).unwrap(),
             NumericLiteral::Decimal(d) => *d,
+            NumericLiteral::Long(l) => Decimal::from_isize(*l).unwrap(),
         }
     }
 
@@ -122,14 +128,18 @@ impl Serialize for NumericLiteral {
     {
         match self {
             NumericLiteral::Integer(n) => {
-                let c: u128 = (*n) as u128;
-                serializer.serialize_u128(c)
+                let c: i128 = (*n) as i128;
+                serializer.serialize_i128(c)
             }
             NumericLiteral::Decimal(d) => {
                 let f: f64 = (*d).try_into().unwrap();
                 serializer.serialize_f64(f)
             }
             NumericLiteral::Double(d) => serializer.serialize_f64(*d),
+            NumericLiteral::Long(n) => {
+                let c: i128 = (*n) as i128;
+                serializer.serialize_i128(c)
+            }
         }
     }
 }
@@ -218,6 +228,7 @@ impl Display for NumericLiteral {
             NumericLiteral::Double(d) => write!(f, "{d}"),
             NumericLiteral::Integer(n) => write!(f, "{n}"),
             NumericLiteral::Decimal(d) => write!(f, "{d}"),
+            NumericLiteral::Long(l) => write!(f, "{l}"),
         }
     }
 }

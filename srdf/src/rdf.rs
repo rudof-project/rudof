@@ -26,6 +26,7 @@ pub trait Rdf: Sized {
         + From<IriS>
         + From<IriOrBlankNode>
         + TryFrom<Self::Term>
+        + TryInto<IriOrBlankNode>
         + TryFrom<Object>
         + Matcher<Self::Subject>;
 
@@ -120,6 +121,11 @@ pub trait Rdf: Sized {
                 term: term.to_string(),
             }
         })
+    }
+
+    fn iri_or_bnode_as_term(ib: &IriOrBlankNode) -> Self::Term {
+        let subject: Self::Subject = ib.clone().into();
+        subject.into()
     }
 
     fn term_as_bnode(term: &Self::Term) -> Result<Self::BNode, RDFError> {

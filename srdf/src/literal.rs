@@ -225,6 +225,9 @@ impl SLiteral {
             SLiteral::NumericLiteral(NumericLiteral::Integer(_)) => IriRef::iri(
                 IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer"),
             ),
+            SLiteral::NumericLiteral(NumericLiteral::Long(_)) => {
+                IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#long"))
+            }
             SLiteral::NumericLiteral(NumericLiteral::Decimal(_)) => IriRef::iri(
                 IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal"),
             ),
@@ -406,6 +409,7 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
             (value, Some(dtype), None, None) => {
                 let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
+                let xsd_long = oxrdf::vocab::xsd::LONG.to_owned();
                 let xsd_decimal = oxrdf::vocab::xsd::DECIMAL.to_owned();
                 let xsd_datetime = oxrdf::vocab::xsd::DATE_TIME.to_owned();
                 let xsd_boolean = oxrdf::vocab::xsd::BOOLEAN.to_owned();
@@ -437,6 +441,19 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                     d if *d == xsd_decimal => match value.parse() {
                         Ok(num_value) => {
                             Ok(SLiteral::NumericLiteral(NumericLiteral::decimal(num_value)))
+                        }
+                        Err(e) => {
+                            let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                            Ok(SLiteral::WrongDatatypeLiteral {
+                                lexical_form: value,
+                                datatype,
+                                error: e.to_string(),
+                            })
+                        }
+                    },
+                    d if *d == xsd_long => match value.parse() {
+                        Ok(num_value) => {
+                            Ok(SLiteral::NumericLiteral(NumericLiteral::long(num_value)))
                         }
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
@@ -511,6 +528,7 @@ impl From<SLiteral> for oxrdf::Literal {
                     None => decimal.to_string().into(),
                 },
                 NumericLiteral::Double(double) => double.into(),
+                NumericLiteral::Long(l) => (l as i64).into(),
             },
             SLiteral::BooleanLiteral(bool) => bool.into(),
             SLiteral::DatetimeLiteral(date_time) => (*date_time.value()).into(),

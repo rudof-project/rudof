@@ -228,6 +228,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                     let i: i128 = int.try_into().unwrap();
                     i.into()
                 }
+                NumericLiteral::Long(_) => todo!(),
             };
             rdf.add_triple(id.clone(), sh_order().clone(), literal)?;
         }

@@ -9,9 +9,10 @@ use std::fmt::Debug;
 use tracing::debug;
 
 use crate::{
-    FocusRDF, NeighsRDF, Object, PResult, RDF_NIL_STR, RDFParseError, Rdf, SHACLPath, Triple,
-    matcher::Any, rdf_first, rdf_parser, rdf_rest, rdf_type, sh_alternative_path, sh_inverse_path,
-    sh_one_or_more_path, sh_zero_or_more_path, sh_zero_or_one_path,
+    FocusRDF, IriOrBlankNode, NeighsRDF, Object, PResult, RDF_NIL_STR, RDFParseError, Rdf,
+    SHACLPath, SLiteral, Triple, matcher::Any, numeric_literal::NumericLiteral, rdf_first,
+    rdf_parser, rdf_rest, rdf_type, sh_alternative_path, sh_inverse_path, sh_one_or_more_path,
+    sh_zero_or_more_path, sh_zero_or_one_path,
 };
 use crate::{Iri as _, Literal as _};
 
@@ -956,6 +957,27 @@ where
     })
 }
 
+/// Return the IRI or BNode values of `property` for the focus node
+///
+/// If some value is not an IRI or Blank Node it fails, if there is no value returns an empty set
+pub fn property_values_iri_or_bnode<RDF>(
+    property: &IriS,
+) -> impl RDFNodeParse<RDF, Output = HashSet<IriOrBlankNode>>
+where
+    RDF: FocusRDF,
+{
+    property_values(property).flat_map(|values| {
+        let nodes: HashSet<_> = values
+            .iter()
+            .flat_map(|t| {
+                let node = term_to_iri_or_blanknode::<RDF>(t)?;
+                Ok::<IriOrBlankNode, RDFParseError>(node)
+            })
+            .collect();
+        Ok(nodes)
+    })
+}
+
 /// Returns the values of `property` for the focus node
 ///
 /// If there is no value, it returns an error
@@ -1321,6 +1343,28 @@ where
     })
 }
 
+/// Returns the IRI or Blank node value of `property` for the focus node
+///
+pub fn property_iri_or_bnode<'a, RDF>(
+    property: &'a IriS,
+) -> impl RDFNodeParse<RDF, Output = IriOrBlankNode> + 'a
+where
+    RDF: FocusRDF + 'a,
+{
+    get_focus().then(move |focus| {
+        property_value(property).flat_map(move |term| {
+            let ib = term_to_iri_or_blanknode::<RDF>(&term).map_err(|e| {
+                RDFParseError::PropertyValueExpectedIRIOrBlankNode {
+                    focus: format!("{focus}"),
+                    property: property.clone(),
+                    error: format!("{e}"),
+                }
+            })?;
+            Ok(ib)
+        })
+    })
+}
+
 /// Returns the integer value of `property` for the focus node
 ///
 pub fn property_integer<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = isize>
@@ -1330,6 +1374,28 @@ where
     property_value(property).flat_map(|term| {
         let i = term_to_int::<RDF>(&term)?;
         Ok(i)
+    })
+}
+
+/// Returns the integer value of `property` for the focus node
+///
+pub fn property_number<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = NumericLiteral>
+where
+    RDF: FocusRDF,
+{
+    debug!("property_number: property={}", property);
+    property_value(property).flat_map(|term| {
+        debug!("property_number: term={}", term);
+        let lit = term_to_number::<RDF>(&term);
+        if lit.is_err() {
+            debug!(
+                "property_number: term is not a number: {}, err: {}",
+                term,
+                lit.as_ref().err().unwrap()
+            );
+        }
+        debug!("Number literal: {:?}", lit);
+        Ok(lit?)
     })
 }
 
@@ -1384,6 +1450,30 @@ where
     Ok(n)
 }
 
+fn term_to_number<R>(term: &R::Term) -> Result<NumericLiteral, RDFParseError>
+where
+    R: Rdf,
+{
+    let literal: R::Literal =
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
+            RDFParseError::ExpectedLiteral {
+                term: format!("{term}"),
+            }
+        })?;
+    debug!("converted to literal: {:?}", literal);
+    let slit: SLiteral = literal
+        .try_into()
+        .map_err(|_e| RDFParseError::ExpectedSLiteral {
+            term: format!("{term}"),
+        })?;
+    match slit {
+        SLiteral::NumericLiteral(n) => Ok(n),
+        _ => Err(RDFParseError::ExpectedNumber {
+            term: format!("{term}"),
+        }),
+    }
+}
+
 fn term_to_bool<R>(term: &R::Term) -> Result<bool, RDFParseError>
 where
     R: Rdf,
@@ -1413,6 +1503,26 @@ where
     })?;
     let iri_string = iri.as_str();
     Ok(iri!(iri_string))
+}
+
+fn term_to_iri_or_blanknode<R>(term: &R::Term) -> Result<IriOrBlankNode, RDFParseError>
+where
+    R: Rdf,
+{
+    let subj: R::Subject =
+        <R::Term as TryInto<R::Subject>>::try_into(term.clone()).map_err(|_| {
+            RDFParseError::ExpectedIriOrBlankNode {
+                term: format!("{term}"),
+                error: "Expected IRI or BlankNode".to_string(),
+            }
+        })?;
+    let iri_or_bnode: IriOrBlankNode =
+        subj.clone()
+            .try_into()
+            .map_err(|_| RDFParseError::SubjectToIriOrBlankNode {
+                subject: format!("{subj}"),
+            })?;
+    Ok(iri_or_bnode)
 }
 
 fn term_to_string<R>(term: &R::Term) -> Result<String, RDFParseError>
@@ -1580,6 +1690,22 @@ where
     }
 }
 
+/// Gets the current focus node expecting it to be an IRI or Blanknode
+pub fn get_focus_iri_or_bnode<RDF>() -> impl RDFNodeParse<RDF, Output = IriOrBlankNode>
+where
+    RDF: FocusRDF,
+{
+    get_focus().flat_map(|term: RDF::Term| {
+        let node = term_to_iri_or_blanknode::<RDF>(&term).map_err(|e| {
+            RDFParseError::ExpectedIriOrBlankNode {
+                term: term.to_string(),
+                error: e.to_string(),
+            }
+        })?;
+        Ok(node)
+    })
+}
+
 /// Creates a parser that returns the focus node
 pub fn get_focus<RDF>() -> GetFocus<RDF>
 where
@@ -1610,6 +1736,15 @@ where
             None => Err(RDFParseError::NoFocusNode),
         }
     }
+}
+
+/// Sets the focus node from an IRI or Blank node and returns ()
+pub fn set_focus_iri_or_bnode<RDF>(node: &IriOrBlankNode) -> SetFocus<RDF>
+where
+    RDF: FocusRDF,
+{
+    let term: RDF::Term = RDF::iri_or_bnode_as_term(&node.clone());
+    set_focus(&term)
 }
 
 /// Creates a parser that sets the focus node and returns `()`

@@ -8,6 +8,16 @@ pub enum RDFError {
     #[error("Converting Object {object} to RDF term")]
     ObjectAsTerm { object: String },
 
+    #[error("Expected IRI or BlankNode, found literal: {literal}")]
+    ExpectedIriOrBlankNodeFoundLiteral { literal: String },
+
+    #[error("Expected IRI or BlankNode, found triple term ({subject},{predicate},{object})")]
+    ExpectedIriOrBlankNodeFoundTriple {
+        subject: String,
+        predicate: String,
+        object: String,
+    },
+
     #[error("Converting term {term} to IRI")]
     TermAsIri { term: String },
 
