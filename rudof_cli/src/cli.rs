@@ -926,7 +926,7 @@ pub enum Command {
             long = "result-format",
             value_name = "FORMAT", 
             help = "Output result service format",
-            default_value_t = ResultServiceFormat::Internal
+            default_value_t = ResultServiceFormat::JSON
         )]
         result_service_format: ResultServiceFormat,
 

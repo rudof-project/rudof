@@ -1,6 +1,13 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
-
+use crate::{
+    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionParser,
+    SparqlResultFormat, SupportedLanguage,
+};
+use iri_s::IriS;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::{
     collections::HashSet,
     fmt::Display,
@@ -8,22 +15,18 @@ use std::{
     path::Path,
 };
 
-use iri_s::IriS;
-use itertools::Itertools;
-use srdf::{RDFFormat, ReaderMode, SRDFGraph};
-
-use crate::{
-    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionParser,
-    SparqlResultFormat, SupportedLanguage,
-};
-
-#[derive(Clone, PartialEq, Eq, Default, Debug)]
+#[derive(Clone, PartialEq, Eq, Default, Debug, Serialize, Deserialize)]
 pub struct ServiceDescription {
+    #[serde(skip_serializing_if = "Option::is_none")]
     endpoint: Option<IriS>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     default_dataset: Option<Dataset>,
+    #[serde(skip_serializing_if = "HashSet::is_empty")]
     supported_language: HashSet<SupportedLanguage>,
+    #[serde(skip_serializing_if = "HashSet::is_empty")]
     feature: HashSet<Feature>,
     result_format: HashSet<SparqlResultFormat>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     available_graphs: Vec<GraphCollection>,
 }
 

@@ -1,9 +1,9 @@
+use iri_s::IriS;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use iri_s::IriS;
-
 /// Features defined in: https://www.w3.org/TR/sparql11-service-description/#sd-Feature
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum Feature {
     DereferencesURIs,
     UnionDefaultGraph,

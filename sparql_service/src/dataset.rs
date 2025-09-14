@@ -1,10 +1,11 @@
 use crate::{GraphDescription, NamedGraphDescription};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use srdf::IriOrBlankNode;
 use std::fmt::Display;
 use std::hash::Hash;
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Dataset {
     id: Option<IriOrBlankNode>,
     default_graph: Option<GraphDescription>,

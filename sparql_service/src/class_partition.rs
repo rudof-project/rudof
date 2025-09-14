@@ -1,12 +1,15 @@
 use crate::PropertyPartition;
 use iri_s::IriS;
+use serde::{Deserialize, Serialize};
 use srdf::IriOrBlankNode;
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Default, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Default, Debug, Hash, Serialize, Deserialize)]
 pub struct ClassPartition {
+    #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<IriOrBlankNode>,
     class: IriS,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     property_partition: Vec<PropertyPartition>,
 }
 
@@ -40,16 +43,16 @@ impl ClassPartition {
 
 impl Display for ClassPartition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let props = self
-            .property_partition
-            .iter()
-            .map(|pp| pp.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        write!(
+        writeln!(
             f,
-            "ClassPartition(class: {}, properties: [{}])",
-            self.class, props
+            "ClassPartition, class: {}\n  property partitions:\n{}\n End class partition {}",
+            self.class,
+            self.property_partition
+                .iter()
+                .map(|pp| pp.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+            self.class
         )
     }
 }

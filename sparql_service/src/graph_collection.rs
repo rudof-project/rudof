@@ -1,10 +1,12 @@
 use crate::GraphDescription;
+use serde::{Deserialize, Serialize};
 use srdf::IriOrBlankNode;
 use std::{collections::HashSet, fmt::Display, hash::Hash};
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct GraphCollection {
     id: IriOrBlankNode,
+    #[serde(skip_serializing_if = "HashSet::is_empty")]
     collection: HashSet<GraphDescription>,
 }
 

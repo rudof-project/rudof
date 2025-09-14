@@ -1,16 +1,24 @@
 use crate::{ClassPartition, PropertyPartition};
+use serde::{Deserialize, Serialize};
 use srdf::{IriOrBlankNode, numeric_literal::NumericLiteral};
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct GraphDescription {
     id: IriOrBlankNode,
+    #[serde(skip_serializing_if = "Option::is_none")]
     triples: Option<NumericLiteral>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classes: Option<NumericLiteral>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     properties: Option<NumericLiteral>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     entities: Option<NumericLiteral>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     documents: Option<NumericLiteral>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     property_partition: Vec<PropertyPartition>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     class_partition: Vec<ClassPartition>,
 }
 

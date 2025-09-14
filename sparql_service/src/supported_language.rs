@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Default, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Default, Debug, Hash, Serialize, Deserialize)]
 pub enum SupportedLanguage {
     SPARQL10Query,
 

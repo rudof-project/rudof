@@ -1,8 +1,8 @@
+use iri_s::IriS;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use iri_s::IriS;
-
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum SparqlResultFormat {
     XML,
     Turtle,

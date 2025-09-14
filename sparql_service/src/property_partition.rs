@@ -1,11 +1,13 @@
 use iri_s::IriS;
+use serde::{Deserialize, Serialize};
 use srdf::{IriOrBlankNode, numeric_literal::NumericLiteral};
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Default, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Default, Debug, Hash, Serialize, Deserialize)]
 pub struct PropertyPartition {
     id: Option<IriOrBlankNode>,
     property: IriS,
+    #[serde(skip_serializing_if = "Option::is_none")]
     triples: Option<NumericLiteral>,
 }
 
@@ -41,8 +43,12 @@ impl Display for PropertyPartition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PropertyPartition(property: {}, triples: {:?})",
-            self.property, self.triples
+            "Property partition:  property: {}{})",
+            self.property,
+            self.triples
+                .as_ref()
+                .map(|n| format!(", triples: {n}"))
+                .unwrap_or_default()
         )
     }
 }

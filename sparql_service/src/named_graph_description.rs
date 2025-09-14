@@ -1,16 +1,19 @@
+use crate::{EntailmentProfile, EntailmentRegime, GraphDescription};
+use iri_s::IriS;
+use serde::{Deserialize, Serialize};
+use srdf::IriOrBlankNode;
 use std::fmt::Display;
 
-use iri_s::IriS;
-use srdf::IriOrBlankNode;
-
-use crate::{EntailmentProfile, EntailmentRegime, GraphDescription};
-
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct NamedGraphDescription {
+    #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<IriOrBlankNode>,
     name: IriS,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     graphs: Vec<GraphDescription>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     supported_entailment_profile: Option<EntailmentProfile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     entailment_regime: Option<EntailmentRegime>,
 }
 
@@ -46,12 +49,12 @@ impl Display for NamedGraphDescription {
         if !self.graphs.is_empty() {
             writeln!(
                 f,
-                " graphs: [{}]",
+                " graphs: {}",
                 self.graphs
                     .iter()
                     .map(|g| g.to_string())
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join("\n")
             )?;
         }
         Ok(())
