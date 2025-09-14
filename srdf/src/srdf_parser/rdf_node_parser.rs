@@ -1404,7 +1404,7 @@ where
             );
         }
         debug!("Number literal: {:?}", lit);
-        Ok(lit?)
+        lit
     })
 }
 
@@ -1714,7 +1714,7 @@ where
             }
         });
         debug!("Focus node as IRI or BlankNode: {:?}", node);
-        Ok(node?)
+        node
     })
 }
 

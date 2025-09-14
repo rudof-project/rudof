@@ -40,11 +40,7 @@ impl Display for NamedGraphDescription {
         writeln!(
             f,
             " NamedGraph {}",
-            &self
-                .id
-                .as_ref()
-                .map(|n| n.to_string())
-                .unwrap_or_else(|| "".to_string())
+            &self.id.as_ref().map(|n| n.to_string()).unwrap_or_default()
         )?;
         writeln!(f, " name: {}", self.name)?;
         if !self.graphs.is_empty() {

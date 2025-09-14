@@ -10,10 +10,9 @@ use crate::{
 };
 use iri_s::IriS;
 use srdf::{
-    FnOpaque, FocusRDF, IriOrBlankNode, Object, PResult, RDFNodeParse, RDFParser, get_focus,
-    get_focus_iri_or_bnode, numeric_literal::NumericLiteral, object, ok, opaque, optional,
-    parse_property_values, property_iri, property_iri_or_bnode, property_number,
-    property_values_iri, set_focus_iri_or_bnode,
+    FocusRDF, IriOrBlankNode, Object, PResult, RDFNodeParse, RDFParser, get_focus_iri_or_bnode,
+    numeric_literal::NumericLiteral, object, ok, optional, parse_property_values, property_iri,
+    property_iri_or_bnode, property_number, property_values_iri, set_focus_iri_or_bnode,
 };
 use std::{collections::HashSet, fmt::Debug};
 use tracing::{debug, trace};
@@ -210,7 +209,7 @@ pub fn available_graphs<RDF>(
 where
     RDF: FocusRDF,
 {
-    set_focus_iri_or_bnode(&node).with(parse_property_values(
+    set_focus_iri_or_bnode(node).with(parse_property_values(
         &SD_AVAILABLE_GRAPHS,
         available_graph(),
     ))
