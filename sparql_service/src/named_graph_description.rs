@@ -9,7 +9,7 @@ use crate::{EntailmentProfile, EntailmentRegime, GraphDescription};
 pub struct NamedGraphDescription {
     id: Option<IriOrBlankNode>,
     name: IriS,
-    graph: Option<GraphDescription>,
+    graphs: Vec<GraphDescription>,
     supported_entailment_profile: Option<EntailmentProfile>,
     entailment_regime: Option<EntailmentRegime>,
 }
@@ -19,14 +19,14 @@ impl NamedGraphDescription {
         NamedGraphDescription {
             id,
             name,
-            graph: None,
+            graphs: Vec::new(),
             supported_entailment_profile: None,
             entailment_regime: None,
         }
     }
 
-    pub fn with_graph(mut self, graph: Option<GraphDescription>) -> Self {
-        self.graph = graph;
+    pub fn with_graphs(mut self, graphs: Vec<GraphDescription>) -> Self {
+        self.graphs = graphs;
         self
     }
 
@@ -47,8 +47,16 @@ impl Display for NamedGraphDescription {
                 .unwrap_or_else(|| "".to_string())
         )?;
         writeln!(f, " name: {}", self.name)?;
-        if let Some(graph) = &self.graph {
-            writeln!(f, " graph: {}", graph)?;
+        if !self.graphs.is_empty() {
+            writeln!(
+                f,
+                " graphs: [{}]",
+                self.graphs
+                    .iter()
+                    .map(|g| g.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
         }
         Ok(())
     }

@@ -6,7 +6,7 @@ use std::{
 use iri_s::IriS;
 use iri_s::iri;
 use std::fmt::Debug;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     FocusRDF, IriOrBlankNode, NeighsRDF, Object, PResult, RDF_NIL_STR, RDFParseError, Rdf,
@@ -393,11 +393,20 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<Self::Output> {
         match self.parser.parse_impl(rdf) {
-            Ok(value) => match (self.function)(value) {
-                Ok(result) => Ok(result),
-                Err(err) => Err(err),
-            },
-            Err(err) => Err(err),
+            Ok(value) => {
+                trace!("FlatMap: got value, applying function");
+                match (self.function)(value) {
+                    Ok(result) => Ok(result),
+                    Err(err) => {
+                        trace!("FlatMap: function failed with error: {err}");
+                        Err(err)
+                    }
+                }
+            }
+            Err(err) => {
+                trace!("FlatMap: first parser failed with error: {err}");
+                Err(err)
+            }
         }
     }
 }
@@ -1383,7 +1392,7 @@ pub fn property_number<RDF>(property: &IriS) -> impl RDFNodeParse<RDF, Output = 
 where
     RDF: FocusRDF,
 {
-    debug!("property_number: property={}", property);
+    // debug!("property_number: property={}", property);
     property_value(property).flat_map(|term| {
         debug!("property_number: term={}", term);
         let lit = term_to_number::<RDF>(&term);
@@ -1695,14 +1704,17 @@ pub fn get_focus_iri_or_bnode<RDF>() -> impl RDFNodeParse<RDF, Output = IriOrBla
 where
     RDF: FocusRDF,
 {
+    trace!("Getting focus node as IRI or BlankNode");
     get_focus().flat_map(|term: RDF::Term| {
         let node = term_to_iri_or_blanknode::<RDF>(&term).map_err(|e| {
+            trace!("Error converting term to IRI or BlankNode: {}", e);
             RDFParseError::ExpectedIriOrBlankNode {
                 term: term.to_string(),
                 error: e.to_string(),
             }
-        })?;
-        Ok(node)
+        });
+        debug!("Focus node as IRI or BlankNode: {:?}", node);
+        Ok(node?)
     })
 }
 
@@ -1732,8 +1744,14 @@ where
 
     fn parse_impl(&mut self, rdf: &mut RDF) -> PResult<RDF::Term> {
         match rdf.get_focus() {
-            Some(focus) => Ok(focus.clone()),
-            None => Err(RDFParseError::NoFocusNode),
+            Some(focus) => {
+                trace!("Focus node: {}", focus);
+                Ok(focus.clone())
+            }
+            None => {
+                trace!("No focus node");
+                Err(RDFParseError::NoFocusNode)
+            }
         }
     }
 }
