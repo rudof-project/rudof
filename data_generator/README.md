@@ -13,7 +13,7 @@ A modern, configurable synthetic RDF data generator that creates realistic data 
 
 ## Quick Start
 
-You can use this commands to test the application
+You can use this commands to test the application, you have to execute them inside the root folder. 
 
 ```bash
 # Generate data using simple configuration file

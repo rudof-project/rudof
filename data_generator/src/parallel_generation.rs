@@ -1,4 +1,3 @@
-use shex_ast::ast::ShapeDecl;
 use crate::config::{GenerationConfig, EntityDistribution, CardinalityStrategy};
 use crate::field_generators::{FieldGenerationManager, GenerationContext};
 use crate::shape_processing::{ShapeInfo};
@@ -63,7 +62,6 @@ impl ParallelGenerator {
             .map(|(shape_id, count)| {
                 let shapes = Arc::clone(&self.shapes);
                 let generated_entities = Arc::clone(&self.generated_entities);
-                let field_manager = &self.field_manager;
                 
                 async move {
                     self.generate_entities_for_shape(&shape_id, count, shapes, generated_entities).await
@@ -338,9 +336,6 @@ impl ParallelGenerator {
         to_entities: &[String],
         dependency: &crate::shape_processing::ShapeDependency,
     ) -> Result<()> {
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-
         for (idx, from_iri) in from_entities.iter().enumerate() {
             if to_entities.is_empty() {
                 continue;
