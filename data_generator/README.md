@@ -13,6 +13,31 @@ A modern, configurable synthetic RDF data generator that creates realistic data 
 
 ## Quick Start
 
+You can use this commands to test the application
+
+```bash
+# Generate data using simple configuration file
+cargo run -p data_generator -- --config data_generator/examples/simple_config.toml --shexfile data_generator/examples/schema.shex
+
+# Generate with inline parameters using example schema
+cargo run -p data_generator -- --shexfile data_generator/examples/schema.shex --output quick_data.ttl --entities 100
+
+# Generate with custom seed for reproducible results
+cargo run -p data_generator -- --shexfile data_generator/examples/schema.shex --entities 50 --seed 12345
+
+# Use automatic parallel configuration for medium datasets
+cargo run -p data_generator -- --config data_generator/examples/auto_parallel.toml --shexfile data_generator/examples/schema.shex
+
+# Use high-performance parallel configuration for large datasets
+cargo run -p data_generator -- --config data_generator/examples/parallel_config.toml --shexfile data_generator/examples/schema.shex
+
+# Show help for all options
+cargo run -p data_generator -- --help
+```
+
+
+## Normal Start
+
 1. **Create a configuration file** (copy from examples below):
 ```bash
 # Copy the simple ready-to-use config
@@ -26,6 +51,8 @@ cp examples/config.toml my_config.toml
 ```bash
 data_generator --config my_config.toml --shexfile schema.shex
 ```
+
+
 
 ## Usage
 
