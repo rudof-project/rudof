@@ -1,0 +1,340 @@
+# Data Generator Basic/Unit Tests Specification
+
+## Parser Component Tests
+
+### ShEx Schema Parser Tests
+- Parse valid ShEx schema syntax
+- Parse ShEx shape declarations
+- Parse ShEx triple expressions
+- Parse ShEx node constraints
+- Parse ShEx cardinalities {n}, {n,m}, {n,}, {,m}
+- Parse ShEx datatypes and facets
+- Parse ShEx shape references
+- Parse ShEx imports and includes
+- Parse ShEx prefixes and base declarations
+- Handle ShEx syntax errors with clear messages
+- Parse nested shape expressions
+- Parse ShEx semantic actions
+- Parse ShEx start declarations
+- Parse ShEx external shape declarations
+
+### SHACL Schema Parser Tests
+- Parse SHACL Turtle syntax
+- Parse sh:PropertyShape declarations
+- Parse sh:NodeShape declarations
+- Parse sh:targetClass and sh:targetNode
+- Parse sh:property nested structures
+- Parse sh:datatype constraints
+- Parse sh:minCount and sh:maxCount
+- Parse sh:minInclusive, sh:maxInclusive constraints
+- Parse sh:minExclusive, sh:maxExclusive constraints
+- Parse sh:minLength, sh:maxLength constraints
+- Parse sh:pattern regex constraints
+- Parse sh:in enumeration lists
+- Parse sh:hasValue fixed values
+- Parse sh:nodeKind constraints
+- Parse sh:node shape references
+- Parse sh:closed and sh:ignoredProperties
+- Parse SHACL property paths
+- Handle SHACL parsing errors gracefully
+
+### Unified Constraint Model Tests
+- Convert ShEx NodeConstraint to UnifiedConstraint
+- Convert SHACL property shape to UnifiedPropertyConstraint
+- Convert ShEx cardinalities to unified cardinalities
+- Convert SHACL cardinalities to unified cardinalities
+- Convert datatypes from both formats
+- Convert shape references from both formats
+- Handle constraint conflicts during conversion
+- Merge constraints from multiple sources
+- Validate unified constraint model consistency
+
+## Field Generator Component Tests
+
+### String Generator Tests
+- Generate random strings of specified length
+- Generate strings with locale-specific characters
+- Generate strings matching regex patterns
+- Generate strings from custom templates
+- Generate strings with quality settings
+- Handle empty string generation
+- Generate very long strings
+- Generate strings with Unicode characters
+- Apply string length constraints
+- Generate strings with language tags
+
+### Number Generator Tests
+- Generate integers within specified ranges
+- Generate floating-point numbers
+- Generate numbers with precision constraints
+- Generate positive/negative numbers
+- Handle integer overflow scenarios
+- Generate very large numbers
+- Generate numbers with specific decimal places
+- Apply minInclusive/maxInclusive constraints
+- Apply minExclusive/maxExclusive constraints
+- Generate numbers from enumeration lists
+
+### DateTime Generator Tests
+- Generate valid xsd:date values
+- Generate valid xsd:dateTime values
+- Generate xsd:time values
+- Generate dates within specified ranges
+- Generate dates with timezone information
+- Handle leap years correctly
+- Generate historical and future dates
+- Apply date range constraints
+- Generate duration values
+- Handle invalid date formats
+
+### IRI Generator Tests
+- Generate valid IRI syntax
+- Generate IRIs with different schemes (http, https, urn)
+- Generate IRIs with query parameters
+- Generate IRIs with fragments
+- Use custom IRI templates
+- Generate IRIs with base resolution
+- Handle IRI encoding requirements
+- Generate short vs long IRIs
+- Apply IRI pattern constraints
+- Generate IRIs from namespaces
+
+### Boolean Generator Tests
+- Generate true/false values
+- Apply boolean distribution settings
+- Handle boolean constraints
+- Generate boolean from enumeration
+- Test boolean string representations
+
+### Custom Datatype Generator Tests
+- Handle unknown datatypes gracefully
+- Generate values for custom XSD types
+- Apply custom datatype constraints
+- Fall back to string generation when needed
+- Register new datatype generators
+- Handle datatype inheritance
+
+## Shape Processing Component Tests
+
+### Shape Analysis Tests
+- Extract shape information from parsed schema
+- Build dependency graphs between shapes
+- Detect circular dependencies
+- Calculate shape complexity metrics
+- Identify required vs optional properties
+- Extract cardinality information
+- Map property datatypes
+- Handle shape inheritance chains
+
+### Dependency Resolution Tests
+- Sort shapes by dependency order
+- Handle forward references
+- Resolve circular dependencies with warnings
+- Optimize generation order
+- Handle missing shape references
+- Build dependency trees
+- Detect strongly connected components
+- Handle complex dependency networks
+
+### Shape Validation Tests
+- Validate shape definitions for completeness
+- Check for missing required properties
+- Validate cardinality constraints
+- Check datatype compatibility
+- Validate shape reference integrity
+- Detect conflicting constraints
+- Validate closed shape definitions
+
+## Configuration Component Tests
+
+### Configuration Loading Tests
+- Load default configuration
+- Parse TOML configuration files
+- Parse JSON configuration files
+- Handle missing configuration fields
+- Apply configuration inheritance
+- Override settings with CLI parameters
+- Validate configuration values
+- Handle invalid configuration formats
+
+### Configuration Validation Tests
+- Validate entity count ranges
+- Validate thread count settings
+- Validate batch size parameters
+- Validate output format selections
+- Validate file path specifications
+- Check datatype generator configurations
+- Validate locale specifications
+- Check quality setting values
+
+### Configuration Merging Tests
+- Merge multiple configuration sources
+- Override default with file settings
+- Override file with CLI parameters
+- Handle configuration conflicts
+- Apply precedence rules correctly
+- Merge datatype-specific settings
+- Merge property-specific settings
+
+## Output Component Tests
+
+### Output Formatting Tests
+- Format data as Turtle syntax
+- Format data as N-Triples
+- Format data as JSON-LD
+- Format data as RDF/XML
+- Handle special characters in output
+- Apply pretty-printing options
+- Handle large output efficiently
+- Validate output syntax
+
+### Output Writing Tests
+- Write to file system
+- Handle file permissions
+- Create output directories
+- Handle disk space issues
+- Write compressed output
+- Handle concurrent writes
+- Append vs overwrite modes
+- Handle network file systems
+
+### Output Validation Tests
+- Validate generated RDF syntax
+- Check triple completeness
+- Verify namespace declarations
+- Validate IRI formats in output
+- Check literal datatype annotations
+- Verify cardinality compliance in output
+
+## Parallel Processing Component Tests
+
+### Thread Management Tests
+- Create thread pools with specified sizes
+- Auto-detect optimal thread counts
+- Handle thread creation failures
+- Manage thread lifecycle
+- Balance work across threads
+- Handle thread synchronization
+- Clean up threads properly
+
+### Batch Processing Tests
+- Split work into appropriate batches
+- Handle remainder batches
+- Balance batch sizes
+- Process batches in parallel
+- Aggregate batch results
+- Handle batch processing errors
+- Optimize batch size dynamically
+
+### Synchronization Tests
+- Ensure thread-safe data generation
+- Handle shared state correctly
+- Avoid race conditions
+- Test concurrent access patterns
+- Validate output consistency
+- Handle parallel write operations
+
+## Error Handling Component Tests
+
+### Error Detection Tests
+- Detect schema parsing errors
+- Identify invalid configurations
+- Catch file system errors
+- Detect constraint violations
+- Identify resource exhaustion
+- Catch generation failures
+
+### Error Reporting Tests
+- Provide clear error messages
+- Include error context information
+- Report error locations in schemas
+- Suggest error corrections
+- Handle error message localization
+- Log errors appropriately
+
+### Error Recovery Tests
+- Recover from parsing errors
+- Continue after generation failures
+- Handle partial results
+- Implement fallback strategies
+- Clean up after errors
+- Maintain system stability
+
+## Memory Management Tests
+
+### Memory Allocation Tests
+- Track memory usage during generation
+- Handle large data structures efficiently
+- Avoid memory leaks
+- Release unused memory promptly
+- Handle memory pressure
+- Test with limited memory
+
+### Memory Optimization Tests
+- Use memory-efficient data structures
+- Implement streaming for large outputs
+- Batch processing to control memory
+- Garbage collection optimization
+- Memory pool usage
+- Cache management
+
+## Utility Component Tests
+
+### IRI Utilities Tests
+- Resolve relative IRIs
+- Validate IRI syntax
+- Handle IRI encoding/decoding
+- Convert between IRI formats
+- Apply base IRI resolution
+- Handle namespace prefixes
+
+### String Utilities Tests
+- Escape special characters
+- Handle Unicode normalization
+- Apply string transformations
+- Validate string formats
+- Handle locale-specific operations
+- Process string templates
+
+### Validation Utilities Tests
+- Validate RDF syntax
+- Check datatype conformance
+- Validate cardinality constraints
+- Check shape compliance
+- Validate output formats
+- Perform consistency checks
+
+## Random Generation Tests
+
+### Seed Management Tests
+- Set deterministic seeds
+- Generate reproducible sequences
+- Handle seed distribution
+- Test randomness quality
+- Reset random state
+- Share seeds across threads
+
+### Distribution Tests
+- Generate uniform distributions
+- Apply weighted distributions
+- Test statistical properties
+- Generate normal distributions
+- Apply custom distributions
+- Validate distribution quality
+
+## Performance Component Tests
+
+### Profiling Tests
+- Measure parsing performance
+- Profile generation speed
+- Monitor memory usage
+- Track thread utilization
+- Measure I/O performance
+- Identify bottlenecks
+
+### Optimization Tests
+- Test caching effectiveness
+- Measure optimization impact
+- Profile algorithm efficiency
+- Test scalability limits
+- Validate performance regressions

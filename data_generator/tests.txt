@@ -1,0 +1,262 @@
+# Data Generator Integration Tests Specification
+
+## Core Functionality Tests
+
+### Schema Loading Tests
+- Load valid ShEx schema file
+- Load valid SHACL schema file
+- Auto-detect ShEx format from .shex extension
+- Auto-detect SHACL format from .ttl/.rdf extension
+- Handle invalid schema file paths
+- Handle malformed ShEx schemas
+- Handle malformed SHACL schemas
+- Load schema from string content (ShEx)
+- Load schema from string content (SHACL)
+- Load multiple schemas in sequence
+- Clear loaded schemas
+
+### Basic Data Generation Tests
+- Generate data from simple ShEx shape with one property
+- Generate data from simple SHACL shape with one property
+- Generate specified number of entities (ShEx)
+- Generate specified number of entities (SHACL)
+- Generate with seed produces deterministic output (ShEx)
+- Generate with seed produces deterministic output (SHACL)
+- Generate different outputs with different seeds
+- Generate zero entities gracefully
+- Generate large number of entities (performance test)
+
+### Data Type Constraint Tests - ShEx
+- Generate xsd:string values
+- Generate xsd:integer values with range constraints
+- Generate xsd:decimal values
+- Generate xsd:boolean values
+- Generate xsd:date values
+- Generate xsd:dateTime values
+- Generate IRI values
+- Generate literal values with language tags
+- Handle custom datatype constraints
+- Handle datatype facets (minInclusive, maxInclusive, etc.)
+
+### Data Type Constraint Tests - SHACL
+- Generate values for sh:datatype xsd:string
+- Generate values for sh:datatype xsd:integer
+- Generate values for sh:minInclusive/sh:maxInclusive
+- Generate values for sh:minExclusive/sh:maxExclusive
+- Generate values for sh:minLength/sh:maxLength
+- Generate values for sh:pattern constraints
+- Generate values for sh:in (enumeration)
+- Generate values for sh:hasValue
+- Generate values for sh:nodeKind IRI
+- Generate values for sh:nodeKind Literal
+
+### Cardinality Tests - ShEx
+- Generate with exact cardinality {1}
+- Generate with optional cardinality {0,1}
+- Generate with range cardinality {2,5}
+- Generate with minimum cardinality {3,}
+- Generate with zero or more {0,}
+- Generate with one or more {1,}
+- Handle nested cardinalities in complex shapes
+
+### Cardinality Tests - SHACL
+- Generate with sh:minCount and sh:maxCount
+- Generate with sh:minCount only
+- Generate with sh:maxCount only
+- Generate with sh:minCount = sh:maxCount (exact)
+- Handle missing cardinality constraints (default 0,unbounded)
+
+### Shape Reference Tests - ShEx
+- Generate data with shape references
+- Handle circular shape references
+- Generate complex nested shapes
+- Handle shape inheritance patterns
+- Resolve shape dependencies correctly
+
+### Shape Reference Tests - SHACL
+- Generate data with sh:node references
+- Generate data with sh:property nested shapes
+- Handle sh:targetClass specifications
+- Handle sh:targetNode specifications
+- Resolve complex shape networks
+
+### Output Format Tests
+- Generate Turtle output
+- Generate N-Triples output
+- Generate JSON-LD output
+- Generate RDF/XML output
+- Validate output syntax for each format
+- Handle special characters in output
+- Generate compressed output
+- Generate pretty-printed output
+
+### Configuration Tests
+- Use default configuration
+- Load configuration from TOML file
+- Load configuration from JSON file
+- Override configuration with CLI parameters
+- Validate invalid configuration parameters
+- Handle missing configuration files
+- Merge multiple configuration sources
+- Apply datatype-specific configurations
+- Apply property-specific configurations
+
+### Error Handling Tests
+- Handle schema parsing errors gracefully
+- Handle invalid output paths
+- Handle permission errors on output files
+- Handle disk space exhaustion
+- Handle memory limitations
+- Provide meaningful error messages
+- Recover from partial generation failures
+
+## Advanced Feature Tests
+
+### Parallel Generation Tests
+- Generate data using multiple threads
+- Verify thread-safe generation
+- Test batch processing
+- Compare parallel vs sequential output consistency
+- Handle thread pool configuration
+- Test parallel shape processing
+- Test parallel field generation
+
+### Dependency Analysis Tests
+- Detect circular dependencies in ShEx
+- Detect circular dependencies in SHACL
+- Generate dependency graphs
+- Optimize generation order
+- Handle complex dependency chains
+- Resolve forward references
+
+### Template and Locale Tests
+- Use custom value templates
+- Generate locale-specific data (en, es, de, fr)
+- Apply quality settings (Low, Medium, High)
+- Use faker-style generators
+- Handle template parameters
+- Generate realistic test data
+
+### Validation Tests
+- Validate generated data against source ShEx schema
+- Validate generated data against source SHACL schema
+- Ensure cardinality constraints are met
+- Ensure datatype constraints are satisfied
+- Verify all required properties are present
+- Check for extraneous properties in closed shapes
+
+## Schema-Specific Feature Tests
+
+### ShEx Advanced Features
+- Handle ShEx expressions (AND, OR, NOT)
+- Process ShEx semantic actions
+- Handle ShEx start shapes
+- Process ShEx imports
+- Handle ShEx external declarations
+- Test with real-world ShEx schemas
+
+### SHACL Advanced Features
+- Process SHACL property paths
+- Handle SPARQL-based constraints
+- Process SHACL-AF (Advanced Features)
+- Handle SHACL closed shapes
+- Process SHACL severity levels
+- Test with real-world SHACL schemas
+
+### Mixed Schema Tests
+- Load both ShEx and SHACL in same generator
+- Generate data using constraints from both formats
+- Handle conflicts between schema types
+- Merge constraints from multiple sources
+- Switch between schema types in same session
+
+## Performance and Scale Tests
+
+### Memory Tests
+- Generate large datasets without memory leaks
+- Handle schemas with many shapes
+- Process deeply nested shape structures
+- Monitor memory usage during generation
+
+### Speed Tests
+- Benchmark generation speed for different entity counts
+- Compare ShEx vs SHACL generation performance
+- Test with complex vs simple schemas
+- Measure startup vs generation time
+- Profile bottlenecks in generation pipeline
+
+### Stress Tests
+- Generate millions of entities
+- Process schemas with thousands of shapes
+- Handle extremely complex cardinality patterns
+- Test with maximum thread counts
+- Handle very large string/numeric values
+
+## Real-World Integration Tests
+
+### Common Schema Patterns
+- Generate data for FOAF schemas
+- Generate data for Dublin Core schemas
+- Generate data for Schema.org patterns
+- Test with Wikidata schema patterns
+- Handle bibliographic metadata schemas
+
+### File System Tests
+- Generate to various file systems
+- Handle long file paths
+- Test with different file permissions
+- Generate to network-mounted drives
+- Handle concurrent file access
+
+### Edge Cases
+- Empty schemas
+- Schemas with only imports
+- Circular imports
+- Invalid IRI patterns
+- Unicode characters in data
+- Very long property names
+- Schemas with comments and annotations
+
+## Compatibility Tests
+
+### Format Compatibility
+- Round-trip generated data through validators
+- Test with multiple RDF parsers
+- Ensure compatibility with SPARQL queries
+- Validate against OWL reasoners
+- Test with graph databases
+
+### Version Compatibility
+- Test with different ShEx specification versions
+- Test with different SHACL specification versions
+- Handle deprecated features gracefully
+- Maintain backward compatibility
+
+## Documentation and Examples Tests
+
+### Example Schema Tests
+- Generate data for all provided example schemas
+- Verify example configurations work
+- Test all documented use cases
+- Validate tutorial examples
+
+### API Tests
+- Test programmatic API usage
+- Verify async/await patterns work correctly
+- Test error propagation through API
+- Validate return types and structures
+
+## Security Tests
+
+### Input Validation
+- Reject malicious schema content
+- Handle oversized input files
+- Prevent path traversal attacks
+- Sanitize output file paths
+- Validate all user inputs
+
+### Resource Limits
+- Enforce generation time limits
+- Limit memory usage per generation
+- Prevent infinite loops in schema processing
+- Handle resource exhaustion gracefully
