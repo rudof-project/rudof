@@ -14,6 +14,7 @@ repository.workspace = true
 
 [dependencies]
 srdf.workspace = true
+rdf_config.workspace = true
 iri_s.workspace = true
 shacl_ast.workspace = true
 shacl_rdf.workspace = true

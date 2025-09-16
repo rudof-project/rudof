@@ -3,9 +3,10 @@ use crate::dctap_format::DCTapFormat;
 use crate::input_spec::InputSpec;
 use crate::{
     CliShaclFormat, DCTapResultFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat,
-    OutputConvertMode, RDFReaderMode, ResultDataFormat, ResultQueryFormat, ResultServiceFormat,
-    ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
-    ShapeMapFormat, ShowNodeMode, ValidationMode,
+    OutputConvertMode, RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat,
+    ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat,
+    ResultShaclValidationFormat, ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode,
+    ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -892,6 +893,60 @@ pub enum Command {
 
         #[arg(long = "show-time", help = "Show processing time")]
         show_time: Option<bool>,
+    },
+
+    /// Show information about SPARQL service
+    RdfConfig {
+        #[arg(
+            short = 's',
+            long = "source-file",
+            value_name = "INPUT",
+            help = "Source file name (URI, file or - for stdin)"
+        )]
+        input: InputSpec,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "FORMAT", 
+            help = "Output result rdf-config format",
+            default_value_t = RdfConfigResultFormat::default()
+        )]
+        result_format: RdfConfigResultFormat,
+
+        #[arg(
+            short = 'f',
+            long = "format",
+            value_name = "FORMAT",
+            help = "rdf-config format",
+            default_value_t = RdfConfigFormat::default()
+        )]
+        format: RdfConfigFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "BOOL",
+            help = "Force overwrite to output file if it already exists",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
+        config: Option<PathBuf>,
     },
 
     /// Show information about SPARQL service

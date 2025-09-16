@@ -9,6 +9,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("RDF Config read error: {error}")]
+    RdfConfigReadError { error: String },
+
     #[error("Compiling SHACL: {error}")]
     ShaclCompilation { error: Box<CompiledShaclError> },
 

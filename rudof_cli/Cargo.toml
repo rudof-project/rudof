@@ -18,6 +18,7 @@ shex_ast = { workspace = true }
 srdf = { workspace = true }
 prefixmap = { workspace = true }
 iri_s = { workspace = true }
+rdf_config = { workspace = true }
 shapemap = { workspace = true }
 shacl_ast = { workspace = true }
 dctap = { workspace = true }

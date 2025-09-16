@@ -16,13 +16,13 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use rudof_cli::cli::{Cli, Command};
-use rudof_cli::data::run_data;
-
 use rudof_cli::CliShaclFormat;
 use rudof_cli::ShExFormat as CliShExFormat;
+use rudof_cli::cli::{Cli, Command};
+use rudof_cli::data::run_data;
 use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
+use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::{
     ValidationMode, run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex,
     run_validate_shacl, run_validate_shex,
@@ -31,7 +31,6 @@ use rudof_lib::RudofConfig;
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
-
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
 
@@ -64,6 +63,24 @@ fn main() -> Result<()> {
     let cli = Cli::parse_from(args);
 
     match &cli.command {
+        Some(Command::RdfConfig {
+            input,
+            format,
+            output,
+            result_format,
+            config,
+            force_overwrite,
+        }) => {
+            let config = get_config(config)?;
+            run_rdf_config(
+                input,
+                format,
+                output,
+                result_format,
+                &config,
+                *force_overwrite,
+            )
+        }
         Some(Command::Service {
             service,
             service_format,

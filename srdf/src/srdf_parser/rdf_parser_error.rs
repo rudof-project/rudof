@@ -86,7 +86,7 @@ pub enum RDFParseError {
     #[error("Expected Literal, but found {term}")]
     ExpectedLiteral { term: String },
 
-    #[error("Expected simple literal, but found {term}")]
+    #[error("Expected simple lliterliteral, but found {term}")]
     ExpectedSLiteral { term: String },
 
     #[error("Expected focus to act as subject, found {focus}")]

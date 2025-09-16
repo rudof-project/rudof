@@ -1,5 +1,6 @@
 use crate::{RudofConfig, RudofError, ShapesGraphSource};
 use iri_s::IriS;
+use rdf_config::RdfConfigModel;
 use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
@@ -54,6 +55,7 @@ pub struct Rudof {
     dctap: Option<DCTAP>,
     shex_results: Option<ResultShapeMap>,
     service_description: Option<ServiceDescription>,
+    rdf_config: Option<RdfConfigModel>,
 }
 
 // TODO: We added this declaration so PyRudof can contain Rudof and be Send as required by PyO3
@@ -75,6 +77,7 @@ impl Rudof {
             dctap: None,
             shex_results: None,
             service_description: None,
+            rdf_config: None,
         }
     }
 
@@ -150,6 +153,10 @@ impl Rudof {
     /// Get the current ShEx Schema Internal Representation
     pub fn get_shex_ir(&self) -> Option<&SchemaIR> {
         self.shex_schema_ir.as_ref()
+    }
+
+    pub fn get_rdf_config(&self) -> Option<&RdfConfigModel> {
+        self.rdf_config.as_ref()
     }
 
     /// Get the current DCTAP
@@ -467,6 +474,17 @@ impl Rudof {
             _ => todo!(),
         }?;
         self.dctap = Some(dctap);
+        Ok(())
+    }
+
+    pub fn read_rdf_config<R: io::Read>(&mut self, reader: R, source_name: String) -> Result<()> {
+        let rdf_config =
+            rdf_config::RdfConfigModel::from_reader(reader, source_name).map_err(|e| {
+                RudofError::RdfConfigReadError {
+                    error: format!("{e}"),
+                }
+            })?;
+        self.rdf_config = Some(rdf_config);
         Ok(())
     }
 
