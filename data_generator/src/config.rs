@@ -23,6 +23,15 @@ pub struct GenerationConfig {
     pub entity_distribution: EntityDistribution,
     /// Cardinality generation strategy
     pub cardinality_strategy: CardinalityStrategy,
+    /// Schema format specification
+    pub schema_format: Option<SchemaFormat>,
+}
+
+/// Schema format for the generator
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum SchemaFormat {
+    ShEx,
+    SHACL,
 }
 
 /// How to distribute entities across different shapes
@@ -140,6 +149,7 @@ impl Default for GeneratorConfig {
                 seed: None,
                 entity_distribution: EntityDistribution::Equal,
                 cardinality_strategy: CardinalityStrategy::Balanced,
+                schema_format: None, // Auto-detect
             },
             field_generators: FieldGeneratorConfig {
                 default: DefaultFieldConfig {

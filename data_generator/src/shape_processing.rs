@@ -1,5 +1,7 @@
 use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
 use crate::{Result, DataGeneratorError};
+use crate::unified_constraints::UnifiedConstraintModel;
+use crate::converters::{ShExToUnified, ShaclToUnified};
 use std::collections::HashMap;
 use std::path::Path;
 use shex_compact::ShExParser;
@@ -35,6 +37,9 @@ pub struct PropertyInfo {
 pub struct ShapeProcessor {
     shapes: HashMap<String, ShapeInfo>,
     dependency_graph: HashMap<String, Vec<String>>,
+    unified_model: Option<UnifiedConstraintModel>,
+    shex_converter: ShExToUnified,
+    shacl_converter: ShaclToUnified,
 }
 
 impl ShapeProcessor {
@@ -42,6 +47,9 @@ impl ShapeProcessor {
         Self {
             shapes: HashMap::new(),
             dependency_graph: HashMap::new(),
+            unified_model: None,
+            shex_converter: ShExToUnified::default(),
+            shacl_converter: ShaclToUnified::default(),
         }
     }
 
@@ -214,6 +222,41 @@ impl ShapeProcessor {
     /// Get a specific shape by ID
     pub fn get_shape(&self, shape_id: &str) -> Option<&ShapeInfo> {
         self.shapes.get(shape_id)
+    }
+
+    /// Load and process a ShEx schema file
+    pub async fn load_shex_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let unified_model = self.shex_converter.convert_file(path).await?;
+        self.unified_model = Some(unified_model);
+        Ok(())
+    }
+
+    /// Load and process a SHACL schema file
+    pub async fn load_shacl_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let unified_model = self.shacl_converter.convert_file(path).await?;
+        self.unified_model = Some(unified_model);
+        Ok(())
+    }
+
+    /// Auto-detect schema format and load
+    pub async fn load_schema_auto<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let path_str = path.as_ref().to_string_lossy();
+        
+        // Simple format detection based on file extension
+        if path_str.ends_with(".shex") {
+            self.load_shex_schema(path).await
+        } else if path_str.ends_with(".ttl") || path_str.ends_with(".rdf") || path_str.ends_with(".nt") {
+            // Assume SHACL for RDF formats
+            self.load_shacl_schema(path).await
+        } else {
+            // Default to ShEx for unknown extensions
+            self.load_shex_schema(path).await
+        }
+    }
+
+    /// Get the unified constraint model
+    pub fn get_unified_model(&self) -> Option<&UnifiedConstraintModel> {
+        self.unified_model.as_ref()
     }
 }
 

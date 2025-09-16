@@ -12,7 +12,7 @@ async fn main() {
 
     // Parse command line arguments
     let matches = Command::new("data_generator")
-        .about("Generate synthetic RDF data from ShEx schemas")
+        .about("Generate synthetic RDF data from ShEx or SHACL schemas")
         .version("0.1.0")
         .arg(
             Arg::new("config")
@@ -23,11 +23,11 @@ async fn main() {
                 .value_parser(clap::value_parser!(PathBuf))
         )
         .arg(
-            Arg::new("shexfile")
-                .long("shexfile")
+            Arg::new("schema")
+                .long("schema")
                 .short('s')
-                .value_name("SHEX_FILE")
-                .help("ShEx schema file")
+                .value_name("SCHEMA_FILE")
+                .help("Schema file (ShEx or SHACL - format auto-detected)")
                 .required(true)
                 .value_parser(clap::value_parser!(PathBuf))
         )
@@ -64,8 +64,8 @@ async fn main() {
         )
         .get_matches();
 
-    // Get required arguments
-    let shex_file = matches.get_one::<PathBuf>("shexfile").unwrap();
+    // Get schema file argument
+    let schema_file = matches.get_one::<PathBuf>("schema").unwrap();
 
     // Load configuration
     let mut config = if let Some(config_file) = matches.get_one::<PathBuf>("config") {
@@ -107,7 +107,7 @@ async fn main() {
     }
 
     info!("Starting data generation...");
-    info!("ShEx file: {}", shex_file.display());
+    info!("Schema file: {}", schema_file.display());
     info!("Output file: {}", config.output.path.display());
     info!("Entity count: {}", config.generation.entity_count);
 
@@ -116,7 +116,8 @@ async fn main() {
     
     match DataGenerator::new(config) {
         Ok(mut generator) => {
-            if let Err(e) = generator.run(shex_file).await {
+            // Use auto-detection to support both ShEx and SHACL schemas
+            if let Err(e) = generator.run_auto(schema_file).await {
                 error!("Data generation failed: {}", e);
                 std::process::exit(1);
             }

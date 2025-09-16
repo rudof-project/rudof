@@ -12,9 +12,10 @@ categories.workspace = true
 authors.workspace = true
 
 [dependencies]
-# Core RDF and ShEx dependencies
+# Core RDF and ShEx/SHACL dependencies
 srdf = { workspace = true }
 shex_ast = { workspace = true }
+shacl_ast = { workspace = true }
 iri_s = { workspace = true }
 prefixmap = { workspace = true }
 shex_compact = { workspace = true }
