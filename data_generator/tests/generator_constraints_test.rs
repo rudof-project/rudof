@@ -4,52 +4,18 @@ use data_generator::{DataGenerator, GeneratorConfig};
 use tempfile::NamedTempFile;
 use std::io::Write;
 
-// NOTE: ShEx cardinality test commented out due to ShEx JSON parsing issues
-// See TODO.md for details on ShEx parsing limitations
-/*
 /// Test that ShEx cardinality constraints are respected in generated data
 #[tokio::test]
 async fn test_shex_cardinality_constraints() {
-    // Create a simple ShEx schema with cardinality constraints
+    // Create a simple ShEx schema with cardinality constraints using ShEx Compact syntax
     let shex_schema = r#"
-    {
-        "type": "Schema",
-        "shapes": [
-            {
-                "type": "ShapeDecl",
-                "id": "http://example.org/PersonShape",
-                "shapeExpr": {
-                    "type": "Shape",
-                    "expression": {
-                        "type": "EachOf",
-                        "expressions": [
-                            {
-                                "type": "TripleConstraint",
-                                "predicate": "http://example.org/name",
-                                "valueExpr": {
-                                    "type": "NodeConstraint",
-                                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
-                                },
-                                "min": 1,
-                                "max": 1
-                            },
-                            {
-                                "type": "TripleConstraint", 
-                                "predicate": "http://example.org/email",
-                                "valueExpr": {
-                                    "type": "NodeConstraint",
-                                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
-                                },
-                                "min": 0,
-                                "max": 3
-                            }
-                        ]
-                    }
-                }
-            }
-        ],
-        "@context": "http://www.w3.org/ns/shex.jsonld"
-    }
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+ex:PersonShape {
+    ex:name xsd:string {1,1} ;
+    ex:email xsd:string {0,3}
+}
     "#;
 
     // Create temporary files
@@ -75,7 +41,6 @@ async fn test_shex_cardinality_constraints() {
     // Verify cardinality constraints
     verify_shex_cardinality(&graph);
 }
-*/
 
 /// Test that SHACL cardinality constraints are respected in generated data  
 #[tokio::test]
@@ -236,10 +201,86 @@ async fn test_value_constraints() {
     verify_value_constraints(&graph);
 }
 
+/// Test that ShEx datatype constraints are respected in generated data
+#[tokio::test]
+async fn test_shex_datatype_constraints() {
+    // Create a ShEx schema with different datatypes
+    let shex_schema = r#"
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+ex:PersonShape {
+    ex:name xsd:string {1,1} ;
+    ex:age xsd:integer {1,1} ;
+    ex:height xsd:decimal {0,1} ;
+    ex:birthDate xsd:date {0,1}
+}
+    "#;
+
+    // Create temporary files
+    let mut schema_file = NamedTempFile::new().unwrap();
+    write!(schema_file, "{}", shex_schema).unwrap();
+    
+    let output_file = NamedTempFile::new().unwrap();
+    
+    // Configure generator
+    let mut config = GeneratorConfig::default();
+    config.generation.entity_count = 5;
+    config.output.path = output_file.path().to_path_buf();
+    
+    // Generate data
+    let mut generator = DataGenerator::new(config).unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
+    generator.generate().await.unwrap();
+    
+    // Parse generated data
+    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
+    
+    // Verify datatype constraints (reuse the same verification function)
+    verify_datatypes(&graph);
+}
+
+/// Test that ShEx value constraints are respected
+#[tokio::test]
+async fn test_shex_value_constraints() {
+    // Create a ShEx schema with basic value constraints  
+    let shex_schema = r#"
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+ex:PersonShape {
+    ex:name xsd:string {1,1} ;
+    ex:age xsd:integer {1,1}
+}
+    "#;
+
+    // Create temporary files
+    let mut schema_file = NamedTempFile::new().unwrap();
+    write!(schema_file, "{}", shex_schema).unwrap();
+    
+    let output_file = NamedTempFile::new().unwrap();
+    
+    // Configure generator
+    let mut config = GeneratorConfig::default();
+    config.generation.entity_count = 5;
+    config.output.path = output_file.path().to_path_buf();
+    
+    // Generate data
+    let mut generator = DataGenerator::new(config).unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
+    generator.generate().await.unwrap();
+    
+    // Parse generated data
+    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
+    
+    // Verify value constraints (reuse the same verification function)
+    verify_value_constraints(&graph);
+}
+
 // Helper functions for verification
 
-// Helper function commented out since ShEx test is disabled
-/*
 fn verify_shex_cardinality(graph: &SRDFGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
     
@@ -257,7 +298,7 @@ fn verify_shex_cardinality(graph: &SRDFGraph) {
             .push(object_str);
     }
     
-    // Verify cardinality constraints
+    // Verify cardinality constraints for ShEx
     for (entity, properties) in entity_properties {
         if let Some(names) = properties.get("http://example.org/name") {
             assert_eq!(names.len(), 1, "Entity {} should have exactly 1 name, found {}", entity, names.len());
@@ -268,7 +309,6 @@ fn verify_shex_cardinality(graph: &SRDFGraph) {
         }
     }
 }
-*/
 
 fn verify_shacl_cardinality(graph: &SRDFGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
