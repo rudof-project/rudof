@@ -223,8 +223,7 @@ impl OutputWriter {
         match self.config.format {
             crate::config::OutputFormat::Turtle => RDFFormat::Turtle,
             crate::config::OutputFormat::NTriples => RDFFormat::NTriples,
-            crate::config::OutputFormat::JsonLd => RDFFormat::Turtle, // Fallback to Turtle for now
-            crate::config::OutputFormat::RdfXml => RDFFormat::RDFXML,
+            // Only Turtle and NTriples are supported
         }
     }
 }

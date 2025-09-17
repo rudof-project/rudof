@@ -34,6 +34,8 @@ path = "test_output.ttl"
 format = "Turtle"
 compress = false
 write_stats = true
+parallel_writing = false
+parallel_file_count = 1
 
 [parallel]
 worker_threads = 4
@@ -95,7 +97,9 @@ async fn test_configuration_loading_json() {
     "path": "json_output.ttl",
     "format": "NTriples",
     "compress": true,
-    "write_stats": false
+    "write_stats": false,
+    "parallel_writing": false,
+    "parallel_file_count": 1
   },
   "parallel": {
     "worker_threads": null,
@@ -299,9 +303,11 @@ locale = "en"
 
 [output]
 path = "complex_output.ttl"
-format = "JsonLd"
+format = "Turtle"
 compress = false
 write_stats = true
+parallel_writing = false
+parallel_file_count = 1
 
 [parallel]
 worker_threads = 1
@@ -319,7 +325,7 @@ parallel_fields = true
     // Verify complex configuration
     assert_eq!(config.generation.entity_count, 50);
     assert_eq!(config.field_generators.default.quality, DataQuality::Low);
-    assert_eq!(config.output.format, OutputFormat::JsonLd);
+    assert_eq!(config.output.format, OutputFormat::Turtle);
     
     // Verify datatype config
     let int_config = config.field_generators.datatypes

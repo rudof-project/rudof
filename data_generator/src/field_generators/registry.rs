@@ -74,6 +74,7 @@ impl FieldGeneratorRegistry {
         self.register_generator(Box::new(DecimalGenerator));
         self.register_generator(Box::new(BooleanGenerator));
         self.register_generator(Box::new(DateGenerator));
+        self.register_generator(Box::new(DateTimeGenerator));
         self.register_generator(Box::new(UriGenerator));
         
         Ok(())

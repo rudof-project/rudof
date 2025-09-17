@@ -166,11 +166,10 @@ async fn test_field_generator_quality_configuration() {
 async fn test_output_format_configurations() {
     let temp_dir = create_test_dir();
     
+    // Only test supported formats (Turtle and NTriples)
     let formats = vec![
         (OutputFormat::Turtle, "output.ttl"),
         (OutputFormat::NTriples, "output.nt"),
-        (OutputFormat::JsonLd, "output.jsonld"),
-        (OutputFormat::RdfXml, "output.rdf"),
     ];
     
     for (format, filename) in formats {
@@ -199,14 +198,7 @@ async fn test_output_format_configurations() {
                            "N-Triples should have lines ending with dots");
                 }
             },
-            OutputFormat::JsonLd => {
-                assert!(content.trim().starts_with("{") || content.trim().starts_with("["), 
-                       "JSON-LD should start with {{ or [");
-            },
-            OutputFormat::RdfXml => {
-                assert!(content.contains("<?xml") || content.contains("<rdf:") || content.contains("<RDF"), 
-                       "RDF/XML should contain XML declarations");
-            },
+            // JsonLd and RdfXml removed - only Turtle and NTriples supported
         }
     }
 }

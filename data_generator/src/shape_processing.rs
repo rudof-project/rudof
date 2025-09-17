@@ -1,6 +1,6 @@
 use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
 use crate::{Result, DataGeneratorError};
-use crate::unified_constraints::UnifiedConstraintModel;
+use crate::unified_constraints::{UnifiedConstraintModel, UnifiedConstraint};
 use crate::converters::{ShExToUnified, ShaclToUnified};
 use std::collections::HashMap;
 use std::path::Path;
@@ -31,6 +31,7 @@ pub struct PropertyInfo {
     pub shape_ref: Option<String>,
     pub min_cardinality: Option<i32>,
     pub max_cardinality: Option<i32>,
+    pub constraints: Vec<UnifiedConstraint>,
 }
 
 /// Processes ShEx schemas and extracts shape information
@@ -157,6 +158,7 @@ impl ShapeProcessor {
                                 shape_ref: Some(ref_to.to_string()),
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
+                                constraints: vec![], // TODO: Extract constraints from ShEx
                             });
                         }
                         ShapeExpr::NodeConstraint(node_constraint) => {
@@ -174,6 +176,7 @@ impl ShapeProcessor {
                                 shape_ref: None,
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
+                                constraints: vec![], // TODO: Extract constraints from node constraint
                             });
                         }
                         _ => {
@@ -184,6 +187,7 @@ impl ShapeProcessor {
                                 shape_ref: None,
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
+                                constraints: vec![], // TODO: Extract constraints from shape expression
                             });
                         }
                     }
@@ -195,6 +199,7 @@ impl ShapeProcessor {
                         shape_ref: None,
                         min_cardinality: min_card,
                         max_cardinality: max_card,
+                        constraints: vec![], // TODO: Extract constraints
                     });
                 }
             }

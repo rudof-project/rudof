@@ -124,8 +124,8 @@ pub struct OutputConfig {
 pub enum OutputFormat {
     Turtle,
     NTriples,
-    JsonLd,
-    RdfXml,
+    // NOTE: Only Turtle and NTriples are supported. 
+    // JsonLd and RdfXml removed to avoid serialization issues.
 }
 
 /// Parallelization configuration

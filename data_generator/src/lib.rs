@@ -186,6 +186,7 @@ impl DataGenerator {
                     shape_ref,
                     min_cardinality: prop.min_cardinality.map(|c| c as i32),
                     max_cardinality: prop.max_cardinality.map(|c| c as i32),
+                    constraints: prop.constraints.clone(),
                 });
             }
             

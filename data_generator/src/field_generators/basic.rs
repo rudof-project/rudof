@@ -160,6 +160,40 @@ impl FieldGenerator for DateGenerator {
     }
 }
 
+/// Basic dateTime generator
+pub struct DateTimeGenerator;
+
+impl FieldGenerator for DateTimeGenerator {
+    fn generate(&self, context: &GenerationContext) -> Result<String> {
+        let mut rng = rand::thread_rng();
+        
+        let start_year = context.parameters.get("start_year")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1950) as i32;
+            
+        let end_year = context.parameters.get("end_year")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2024) as i32;
+        
+        let year = rng.gen_range(start_year..=end_year);
+        let month = rng.gen_range(1..=12);
+        let day = rng.gen_range(1..=28); // Simplified to avoid month-specific validation
+        let hour = rng.gen_range(0..=23);
+        let minute = rng.gen_range(0..=59);
+        let second = rng.gen_range(0..=59);
+        
+        Ok(format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hour, minute, second))
+    }
+
+    fn name(&self) -> &str {
+        "datetime"
+    }
+
+    fn supported_datatypes(&self) -> Vec<String> {
+        vec![XSD_DATETIME.to_string()]
+    }
+}
+
 /// Basic URI generator
 pub struct UriGenerator;
 

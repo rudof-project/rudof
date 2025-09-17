@@ -1,6 +1,7 @@
 use crate::config::{GenerationConfig, EntityDistribution, CardinalityStrategy};
 use crate::field_generators::{FieldGenerationManager, GenerationContext};
-use crate::shape_processing::{ShapeInfo};
+use crate::shape_processing::ShapeInfo;
+use crate::unified_constraints::UnifiedConstraint;
 use crate::{Result, DataGeneratorError};
 use srdf::srdf_graph::SRDFGraph;
 use srdf::SRDFBuilder;
@@ -8,7 +9,7 @@ use oxrdf::{NamedNode, Subject, Term, Triple, Literal};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use rayon::prelude::*;
+use serde_json::{Value, json};
 
 /// Parallel data generator that creates synthetic RDF data
 pub struct ParallelGenerator {
@@ -164,15 +165,12 @@ impl ParallelGenerator {
         for batch_start in (0..count).step_by(batch_size) {
             let batch_end = (batch_start + batch_size).min(count);
 
-            // Generate entities in parallel within the batch
-            let batch_triples: Result<Vec<Vec<Triple>>> = (batch_start..batch_end)
-                .into_par_iter()
-                .map(|entity_index| {
-                    self.generate_single_entity(&shape_info, entity_index)
-                })
-                .collect();
-
-            let batch_triples = batch_triples?;
+            // Generate entities sequentially to handle async
+            let mut batch_triples = Vec::new();
+            for entity_index in batch_start..batch_end {
+                let entity_triples = self.generate_single_entity(&shape_info, entity_index).await?;
+                batch_triples.push(entity_triples);
+            }
             
             // Collect entity IRIs and triples
             for (i, triples) in batch_triples.into_iter().enumerate() {
@@ -192,7 +190,7 @@ impl ParallelGenerator {
     }
 
     /// Generate a single entity
-    fn generate_single_entity(&self, shape_info: &ShapeInfo, entity_index: usize) -> Result<Vec<Triple>> {
+    async fn generate_single_entity(&self, shape_info: &ShapeInfo, entity_index: usize) -> Result<Vec<Triple>> {
         let mut triples = Vec::new();
         let shape_id = &shape_info.declaration.id.to_string();
         let entity_iri = format!("{}-{}", shape_id, entity_index + 1);
@@ -205,27 +203,50 @@ impl ParallelGenerator {
             Term::NamedNode(NamedNode::new_unchecked(shape_id)),
         ));
 
-        // Generate property triples (handling cardinalities for data properties)
+        // Generate property triples
         for property_info in &shape_info.properties {
-            if property_info.shape_ref.is_some() {
-                // Skip object properties for now - they'll be handled in relationship generation
-                continue;
-            }
+            // Handle cardinality for both data and object properties
+            let num_values = self.calculate_property_value_count(
+                property_info.min_cardinality,
+                property_info.max_cardinality,
+                entity_index,
+            );
 
-            if let Some(datatype) = &property_info.datatype {
-                // Handle cardinality for data properties
-                let num_values = self.calculate_property_value_count(
-                    property_info.min_cardinality,
-                    property_info.max_cardinality,
-                    entity_index,
-                );
-
-                for value_idx in 0..num_values {
-                    let context = GenerationContext::new(
+            for value_idx in 0..num_values {
+                if let Some(shape_ref) = &property_info.shape_ref {
+                    // Object property with shape reference - generate nested entity
+                    let nested_entity_iri = format!("{}-{}-{}", shape_ref, entity_index, value_idx);
+                    let nested_entity_node = NamedNode::new_unchecked(&nested_entity_iri);
+                    
+                    // Add triple linking to nested entity
+                    triples.push(Triple::new(
+                        Subject::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        Term::NamedNode(nested_entity_node.clone()),
+                    ));
+                    
+                    // Generate nested entity properties if shape is available
+                    if let Some(nested_shape_info) = self.get_shape_info(shape_ref).await {
+                        let nested_triples = self.generate_nested_entity_properties(
+                            &nested_entity_node, 
+                            &nested_shape_info, 
+                            entity_index,
+                        )?;
+                        triples.extend(nested_triples);
+                    }
+                } else if let Some(datatype) = &property_info.datatype {
+                    // Data property with literal value
+                    let mut context = GenerationContext::new(
                         property_info.property_iri.clone(),
                         datatype.clone(),
                         format!("{}-{}", entity_iri, value_idx),
                     );
+
+                    // Add constraint parameters to context
+                    let constraint_params = self.constraints_to_parameters(&property_info.constraints);
+                    for (key, value) in constraint_params {
+                        context.parameters.insert(key, value);
+                    }
 
                     let literal_value = self.field_manager.generate_field(&context)?;
                     
@@ -284,7 +305,7 @@ impl ParallelGenerator {
     fn create_typed_literal(&self, value: &str, datatype: &str) -> Result<Term> {
         match datatype {
             "http://www.w3.org/2001/XMLSchema#string" => {
-                Ok(Term::Literal(Literal::new_simple_literal(value)))
+                Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
             }
             "http://www.w3.org/2001/XMLSchema#integer" => {
                 Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
@@ -292,7 +313,13 @@ impl ParallelGenerator {
             "http://www.w3.org/2001/XMLSchema#decimal" => {
                 Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
             }
+            "http://www.w3.org/2001/XMLSchema#boolean" => {
+                Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
+            }
             "http://www.w3.org/2001/XMLSchema#date" => {
+                Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
+            }
+            "http://www.w3.org/2001/XMLSchema#dateTime" => {
                 Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked(datatype))))
             }
             "http://www.w3.org/2001/XMLSchema#anyURI" => {
@@ -300,7 +327,7 @@ impl ParallelGenerator {
             }
             _ => {
                 // Default to string literal for unknown types
-                Ok(Term::Literal(Literal::new_simple_literal(value)))
+                Ok(Term::Literal(Literal::new_typed_literal(value, NamedNode::new_unchecked("http://www.w3.org/2001/XMLSchema#string"))))
             }
         }
     }
@@ -413,5 +440,141 @@ impl ParallelGenerator {
                 }
             }
         }
+    }
+
+    /// Get shape info by shape ID
+    async fn get_shape_info(&self, shape_id: &str) -> Option<ShapeInfo> {
+        let shapes = self.shapes.read().await;
+        shapes.get(shape_id).cloned()
+    }
+
+    /// Generate properties for nested entity
+    fn generate_nested_entity_properties(
+        &self,
+        entity_node: &NamedNode,
+        shape_info: &ShapeInfo,
+        parent_entity_index: usize,
+    ) -> Result<Vec<Triple>> {
+        let mut triples = Vec::new();
+        let shape_id = &shape_info.declaration.id.to_string();
+
+        // Add type triple for nested entity
+        triples.push(Triple::new(
+            Subject::NamedNode(entity_node.clone()),
+            NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+            Term::NamedNode(NamedNode::new_unchecked(shape_id)),
+        ));
+
+        // Generate properties for nested entity (only data properties to avoid infinite recursion)
+        for property_info in &shape_info.properties {
+            if property_info.shape_ref.is_some() {
+                // Skip nested object properties to avoid infinite recursion
+                continue;
+            }
+
+            if let Some(datatype) = &property_info.datatype {
+                let num_values = self.calculate_property_value_count(
+                    property_info.min_cardinality,
+                    property_info.max_cardinality,
+                    parent_entity_index,
+                );
+
+                for value_idx in 0..num_values {
+                    let context = GenerationContext::new(
+                        property_info.property_iri.clone(),
+                        datatype.clone(),
+                        format!("{}-nested-{}", entity_node.as_str(), value_idx),
+                    );
+
+                    let literal_value = self.field_manager.generate_field(&context)?;
+                    let literal_term = self.create_typed_literal(&literal_value, datatype)?;
+
+                    triples.push(Triple::new(
+                        Subject::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        literal_term,
+                    ));
+                }
+            }
+        }
+
+        Ok(triples)
+    }
+
+    /// Convert unified constraints to generation context parameters
+    fn constraints_to_parameters(&self, constraints: &[UnifiedConstraint]) -> HashMap<String, Value> {
+        let mut params = HashMap::new();
+        
+        for constraint in constraints {
+            match constraint {
+                UnifiedConstraint::MinInclusive(value) => {
+                    if let crate::unified_constraints::Value::Literal(val, _) = value {
+                        if let Ok(i) = val.parse::<i64>() {
+                            params.insert("min".to_string(), json!(i));
+                        } else if let Ok(f) = val.parse::<f64>() {
+                            params.insert("min".to_string(), json!(f));
+                        }
+                    }
+                }
+                UnifiedConstraint::MaxInclusive(value) => {
+                    if let crate::unified_constraints::Value::Literal(val, _) = value {
+                        if let Ok(i) = val.parse::<i64>() {
+                            params.insert("max".to_string(), json!(i));
+                        } else if let Ok(f) = val.parse::<f64>() {
+                            params.insert("max".to_string(), json!(f));
+                        }
+                    }
+                }
+                UnifiedConstraint::MinExclusive(value) => {
+                    if let crate::unified_constraints::Value::Literal(val, _) = value {
+                        if let Ok(i) = val.parse::<i64>() {
+                            params.insert("min".to_string(), json!(i + 1));
+                        } else if let Ok(f) = val.parse::<f64>() {
+                            params.insert("min".to_string(), json!(f + 0.001));
+                        }
+                    }
+                }
+                UnifiedConstraint::MaxExclusive(value) => {
+                    if let crate::unified_constraints::Value::Literal(val, _) = value {
+                        if let Ok(i) = val.parse::<i64>() {
+                            params.insert("max".to_string(), json!(i - 1));
+                        } else if let Ok(f) = val.parse::<f64>() {
+                            params.insert("max".to_string(), json!(f - 0.001));
+                        }
+                    }
+                }
+                UnifiedConstraint::MinLength(len) => {
+                    params.insert("min_length".to_string(), json!(*len));
+                }
+                UnifiedConstraint::MaxLength(len) => {
+                    params.insert("max_length".to_string(), json!(*len));
+                }
+                UnifiedConstraint::Pattern(pattern) => {
+                    params.insert("pattern".to_string(), json!(pattern));
+                }
+                UnifiedConstraint::In(values) => {
+                    let json_values: Vec<Value> = values.iter().map(|v| match v {
+                        crate::unified_constraints::Value::Literal(val, _) => json!(val),
+                        crate::unified_constraints::Value::IRI(iri) => json!(iri),
+                        _ => json!(null),
+                    }).collect();
+                    params.insert("values".to_string(), json!(json_values));
+                }
+                UnifiedConstraint::HasValue(value) => {
+                    match value {
+                        crate::unified_constraints::Value::Literal(val, _) => {
+                            params.insert("fixed_value".to_string(), json!(val));
+                        }
+                        crate::unified_constraints::Value::IRI(iri) => {
+                            params.insert("fixed_value".to_string(), json!(iri));
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {} // Other constraints not implemented yet
+            }
+        }
+        
+        params
     }
 }
