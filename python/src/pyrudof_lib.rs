@@ -836,6 +836,7 @@ pub enum PyDCTapFormat {
 #[derive(PartialEq)]
 pub enum PyServiceDescriptionFormat {
     Internal,
+    Json,
     Mie,
 }
 
@@ -1073,6 +1074,26 @@ impl PyServiceDescription {
     pub fn as_mie(&self) -> PyResult<PyMie> {
         let str = self.inner.service2mie();
         Ok(PyMie { inner: str })
+    }
+
+    /// Serialize the current Service Description
+    /// The default format is Json
+    #[pyo3(signature = (format = &PyServiceDescriptionFormat::Json))]
+    pub fn serialize(&self, format: &PyServiceDescriptionFormat) -> PyResult<String> {
+        let mut v = Vec::new();
+        let service_description_format = cnv_service_description_format(format);
+        self.inner
+            .serialize(&service_description_format, &mut v)
+            .map_err(|e| RudofError::SerializingServiceDescription {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        let str = String::from_utf8(v)
+            .map_err(|e| RudofError::SerializingServiceDescription {
+                error: format!("{e}"),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
     }
 
     /*     /// Converts the schema to JSON
@@ -1457,6 +1478,7 @@ fn cnv_service_description_format(format: &PyServiceDescriptionFormat) -> Servic
     match format {
         PyServiceDescriptionFormat::Internal => ServiceDescriptionFormat::Internal,
         PyServiceDescriptionFormat::Mie => ServiceDescriptionFormat::Mie,
+        PyServiceDescriptionFormat::Json => ServiceDescriptionFormat::Json,
     }
 }
 

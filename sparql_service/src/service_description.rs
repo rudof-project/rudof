@@ -1,8 +1,8 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use crate::{
-    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionParser,
-    SparqlResultFormat, SupportedLanguage,
+    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionFormat,
+    ServiceDescriptionParser, SparqlResultFormat, SupportedLanguage,
 };
 use iri_s::IriS;
 use itertools::Itertools;
@@ -117,10 +117,8 @@ impl ServiceDescription {
         writer: &mut W,
     ) -> io::Result<()> {
         match format {
-            crate::ServiceDescriptionFormat::Internal => {
-                writer.write_all(self.to_string().as_bytes())
-            }
-            crate::ServiceDescriptionFormat::Mie => {
+            ServiceDescriptionFormat::Internal => writer.write_all(self.to_string().as_bytes()),
+            ServiceDescriptionFormat::Mie => {
                 let mie = self.service2mie();
                 let mie_str = serde_json::to_string(&mie).map_err(|e| {
                     io::Error::new(
@@ -129,6 +127,15 @@ impl ServiceDescription {
                     )
                 })?;
                 writer.write_all(mie_str.as_bytes())
+            }
+            ServiceDescriptionFormat::Json => {
+                let json = serde_json::to_string_pretty(self).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Error converting ServiceDescription to JSON: {e}"),
+                    )
+                })?;
+                writer.write_all(json.as_bytes())
             }
         }
     }
