@@ -1,4 +1,8 @@
-# This module contains the Python bindings of rudof which are called pyrudof
+# Rudof Python bindings
+
+The Python bindings for [rudof](https://rudof-project.github.io/) are called `pyrudof`. They are available at [pypi](https://pypi.org/project/pyrudof/).
+
+For more information, you can access the [readthedocs documentation](https://pyrudof.readthedocs.io/en/latest/).
 
 After compiling and installing this module, a Python library  called `pyrudof` should be available.  
 

@@ -7,9 +7,21 @@ pub struct Mie {
     schema_info: SchemaInfo,
     prefixes: HashMap<String, String>,
     shape_expressions: HashMap<String, ShapeExpression>,
+    // Example of RDF
     sample_rdf_entries: HashMap<String, RdfExample>,
     sparql_query_examples: HashMap<String, SparqlQueryExample>,
+    // SPARQL queries employed for cross references
     cross_references: HashMap<String, CrossReference>,
+    data_statistics: HashMap<String, DataStatistics>,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct DataStatistics {
+    classes: isize,
+    properties: isize,
+    class_partitions: HashMap<String, isize>,
+    property_partitions: HashMap<String, isize>,
+    cross_references: HashMap<String, Option<isize>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -18,18 +30,20 @@ pub struct SchemaInfo {
     description: Option<String>,
     endpoint: Option<String>,
     base_uri: Option<String>,
-    date_analyzed: Option<String>,
-    scope: Option<String>,
+    // date_analyzed: Option<String>,
+    // scope: Option<String>,
+    graphs: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ShapeExpression {
     description: Option<String>,
-    target_class: Option<String>,
-    properties: HashMap<String, ValueDescription>,
+    shape_expr: String,
+    // target_class: Option<String>,
+    // properties: HashMap<String, ValueDescription>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+/*#[derive(Clone, Debug, PartialEq)]
 pub struct ValueDescription {
     _type: Option<String>,
     required: Option<bool>,
@@ -43,7 +57,7 @@ pub struct ValueDescription {
     cardinality: Option<String>,
     subtypes: Vec<String>,
     classification_types: HashMap<String, ClassificationPattern>,
-}
+}*/
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClassificationPattern {
@@ -63,25 +77,25 @@ pub enum Category {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RdfExample {
     description: Option<String>,
-    reviewed: Option<bool>,
-    cross_references: Option<String>,
-    rdf: Option<String>,
+    // reviewed: Option<bool>,
+    // cross_references: Option<String>,
+    rdf: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SparqlQueryExample {
     description: Option<String>,
-    tested: Option<bool>,
-    returns: Option<isize>,
+    // tested: Option<bool>,
+    // returns: Option<isize>,
     sparql: String,
     other_fields: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CrossReference {
-    id: String,
+    // id: String,
     description: Option<String>,
-    url: String,
+    sparql: String,
 }
 
 impl Mie {
@@ -92,6 +106,7 @@ impl Mie {
         sample_rdf_entries: HashMap<String, RdfExample>,
         sparql_query_examples: HashMap<String, SparqlQueryExample>,
         cross_references: HashMap<String, CrossReference>,
+        data_statistics: HashMap<String, DataStatistics>,
     ) -> Self {
         Mie {
             schema_info,
@@ -100,6 +115,7 @@ impl Mie {
             sample_rdf_entries,
             sparql_query_examples,
             cross_references,
+            data_statistics,
         }
     }
 
@@ -164,18 +180,6 @@ impl SchemaInfo {
                 Yaml::String(base_uri.clone()),
             );
         }
-        if let Some(date_analyzed) = &self.date_analyzed {
-            result.insert(
-                Yaml::String("date_analyzed".to_string()),
-                Yaml::String(date_analyzed.clone()),
-            );
-        }
-        if let Some(scope) = &self.scope {
-            result.insert(
-                Yaml::String("scope".to_string()),
-                Yaml::String(scope.clone()),
-            );
-        }
         /*if !self.scope.is_empty() {
             let scope_yaml: Vec<Yaml> =
                 self.scope.iter().map(|s| Yaml::String(s.clone())).collect();
@@ -189,9 +193,7 @@ impl RdfExample {
     pub fn new() -> Self {
         RdfExample {
             description: None,
-            reviewed: None,
-            cross_references: None,
-            rdf: None,
+            rdf: "".to_string(),
         }
     }
 
@@ -202,21 +204,6 @@ impl RdfExample {
                 Yaml::String("description".to_string()),
                 Yaml::String(desc.clone()),
             );
-        }
-        if let Some(reviewed) = &self.reviewed {
-            result.insert(
-                Yaml::String("reviewed".to_string()),
-                Yaml::Boolean(*reviewed),
-            );
-        }
-        if let Some(cross_references) = &self.cross_references {
-            result.insert(
-                Yaml::String("cross_references".to_string()),
-                Yaml::String(cross_references.clone()),
-            );
-        }
-        if let Some(rdf) = &self.rdf {
-            result.insert(Yaml::String("rdf".to_string()), Yaml::String(rdf.clone()));
         }
         Yaml::Hash(result)
     }
@@ -229,12 +216,6 @@ impl ShapeExpression {
             result.insert(
                 Yaml::String("description".to_string()),
                 Yaml::String(desc.clone()),
-            );
-        }
-        if let Some(tc) = &self.target_class {
-            result.insert(
-                Yaml::String("description".to_string()),
-                Yaml::String(tc.clone()),
             );
         }
         Yaml::Hash(result)
@@ -254,32 +235,13 @@ mod tests {
             "rdf".to_string(),
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string(),
         );
-        let mut protein_properties = HashMap::new();
-        protein_properties.insert(
-            "mnemonic".to_string(),
-            ValueDescription {
-                _type: Some("xsd:string".to_string()),
-                required: Some(true),
-                description: Some("Unique protein identifier".to_string()),
-                pattern: None,
-                example: Some("KAPCA_HUMAN".to_string()),
-                note: None,
-                values: vec![],
-                cardinality: None,
-                path: None,
-                cross_reference_pattern: None,
-                subtypes: Vec::new(),
-                classification_types: HashMap::new(),
-            },
-        );
 
         let mut shape_expressions = HashMap::new();
         shape_expressions.insert(
             "Protein".to_string(),
             ShapeExpression {
                 description: Some("A protein entity".to_string()),
-                target_class: Some("ex:Protein".to_string()),
-                properties: protein_properties,
+                shape_expr: "ex:ProteinShape".to_string(),
             },
         );
         let mut sample_rdf_entries = HashMap::new();
@@ -292,14 +254,14 @@ mod tests {
                 description: Some("An example schema for testing".to_string()),
                 endpoint: Some("http://example.org/sparql".to_string()),
                 base_uri: Some("http://example.org/".to_string()),
-                date_analyzed: Some("2024-10-01".to_string()),
-                scope: Some("Protein structure, function taxonomy...".to_string()),
+                graphs: vec!["http://example.org/graph1".to_string()],
             },
             prefixes: prefixes,
             shape_expressions,
             sample_rdf_entries,
             sparql_query_examples,
             cross_references,
+            data_statistics: HashMap::new(),
         };
         let mut str = String::new();
         let mut emitter = YamlEmitter::new(&mut str);

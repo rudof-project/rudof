@@ -1,6 +1,7 @@
 use crate::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
+use crate::token_tws_no_case;
 use crate::{
     IRes, Span, map_error, shex_parser_error::ParseError as ShExParseError, tag_no_case_tws, token,
     token_tws, traced, tws0,
@@ -566,9 +567,9 @@ fn string_facets(i: Span) -> IRes<NodeConstraint> {
 /// `[26] nonLiteralKind ::= "IRI" | "BNODE" | "NONLITERAL"`
 fn non_literal_kind(i: Span) -> IRes<NodeKind> {
     alt((
-        map(token_tws("IRI"), |_| NodeKind::Iri),
-        map(token_tws("BNODE"), |_| NodeKind::BNode),
-        map(token_tws("NONLITERAL"), |_| NodeKind::NonLiteral),
+        map(token_tws_no_case("IRI"), |_| NodeKind::Iri),
+        map(token_tws_no_case("BNODE"), |_| NodeKind::BNode),
+        map(token_tws_no_case("NONLITERAL"), |_| NodeKind::NonLiteral),
     ))(i)
 }
 
@@ -1855,7 +1856,7 @@ fn integer_or_star(i: Span) -> IRes<i32> {
 
 /// `[69] <RDF_TYPE> ::= "a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
-    let (i, _) = tag_no_case("a")(i)?;
+    let (i, _) = tag("a")(i)?;
     let rdf_type: IriRef = IriRef::iri(IriS::new_unchecked(RDF_TYPE_STR));
     Ok((i, rdf_type))
 }

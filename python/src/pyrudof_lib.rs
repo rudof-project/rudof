@@ -118,7 +118,12 @@ impl PyRudof {
         shex_schema.map(|s| PyShExSchema { inner: s.clone() })
     }
 
-    /// Obtains the current ShEx Schema
+    /// Compares two schemas provided as strings
+    /// Parameters: schema1, schema2: Strings containing the schemas to compare
+    /// mode1, mode2: Mode of the schemas, e.g. shex
+    /// format1, format2: Format of the schemas, e.g. shexc, turtle
+    /// label1, label2: Optional labels of the shapes to compare
+    /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
     #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, label1, label2, base1, base2))]
     pub fn compare_schemas_str(
         &mut self,
@@ -761,6 +766,7 @@ pub enum PyUmlGenerationMode {
     PyNeighs { node: String },
 }
 
+/// UML Generation Mode
 #[pymethods]
 impl PyUmlGenerationMode {
     #[new]
@@ -768,11 +774,13 @@ impl PyUmlGenerationMode {
         py.detach(|| PyUmlGenerationMode::PyAllNodes {})
     }
 
+    /// Show all nodes
     #[staticmethod]
     pub fn all() -> Self {
         PyUmlGenerationMode::PyAllNodes {}
     }
 
+    /// Show only the neighbours of a given node
     #[staticmethod]
     pub fn neighs(node: &str) -> Self {
         PyUmlGenerationMode::PyNeighs {
@@ -804,13 +812,24 @@ pub struct PyShExSchema {
     inner: ShExSchema,
 }
 
+/// ShEx Schema representation
 #[pymethods]
 impl PyShExSchema {
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
+
+    /*     /// Converts the schema to JSON
+    pub fn as_json(&self) -> PyResult<String> {
+        let str =  self
+            .inner
+            .as_json()
+            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        Ok(str)
+    } */
 }
 
+/// DCTAP representation
 #[pyclass(name = "DCTAP")]
 pub struct PyDCTAP {
     inner: DCTAP,
@@ -827,6 +846,8 @@ impl PyDCTAP {
     }
 }
 
+/// ShapeMap used for querying and validation
+/// It can be converted to JSON
 #[pyclass(name = "QueryShapeMap")]
 pub struct PyQueryShapeMap {
     inner: QueryShapeMap,
@@ -837,9 +858,19 @@ impl PyQueryShapeMap {
     fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
+
+    /*pub fn as_json(&self) -> PyResult<String> {
+        let str = self
+            .inner
+            .as_json()
+            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        Ok(str)
+    }*/
 }
 
 /// Shapes Comparator result
+/// It contains the differences between two schemas
+/// It can be converted to JSON
 #[pyclass(name = "ShaCo")]
 pub struct PyShaCo {
     inner: ShaCo,
@@ -847,11 +878,11 @@ pub struct PyShaCo {
 
 #[pymethods]
 impl PyShaCo {
-    fn __repr__(&self) -> String {
+    pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
 
-    fn as_json(&self) -> PyResult<String> {
+    pub fn as_json(&self) -> PyResult<String> {
         let str = self
             .inner
             .as_json()
@@ -868,8 +899,26 @@ pub struct PyCompareSchemaFormat {
 
 #[pymethods]
 impl PyCompareSchemaFormat {
-    fn __repr__(&self) -> String {
+    pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
+    }
+
+    pub fn __str__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    #[staticmethod]
+    pub fn shexc() -> Self {
+        Self {
+            inner: CompareSchemaFormat::ShExC,
+        }
+    }
+
+    #[staticmethod]
+    pub fn turtle() -> Self {
+        Self {
+            inner: CompareSchemaFormat::Turtle,
+        }
     }
 }
 
@@ -881,8 +930,19 @@ pub struct PyCompareSchemaMode {
 
 #[pymethods]
 impl PyCompareSchemaMode {
-    fn __repr__(&self) -> String {
+    pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
+    }
+
+    pub fn __str__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    #[staticmethod]
+    pub fn shex() -> Self {
+        Self {
+            inner: CompareSchemaMode::ShEx,
+        }
     }
 }
 

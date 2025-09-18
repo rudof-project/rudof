@@ -3,7 +3,7 @@
 use pyo3::prelude::*;
 mod pyrudof_lib;
 
-use crate::pyrudof_lib::*;
+pub use crate::pyrudof_lib::*;
 
 // Rudof Python bindings
 #[pymodule]
@@ -11,7 +11,7 @@ pub mod pyrudof {
     use super::*;
 
     #[pymodule_export]
-    use super::{
+    pub use super::{
         PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyQuerySolution,
         PyQuerySolutions, PyRDFFormat, PyReaderMode, PyRudof, PyRudofConfig, PyRudofError,
         PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter, PyShaclFormat,

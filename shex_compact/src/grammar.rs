@@ -112,6 +112,14 @@ pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, 
     })
 }
 
+/// A combinator that creates a parser for a specific token,
+/// surrounded by trailing whitespace or comments.
+pub(crate) fn token_tws_no_case<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
+    map_error(delimited(tws0, tag_no_case(token), tws0), || {
+        ShExParseError::ExpectedToken(token.to_string())
+    })
+}
+
 /// A combinator that creates a parser for a case insensitive tag,
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
