@@ -1,0 +1,88 @@
+use crate::mime_type::MimeType;
+use crate::writer::get_writer;
+use crate::{
+    InputCompareFormat, InputSpec, RDFReaderMode, input_compare_mode::InputCompareMode,
+    result_compare_format::ResultCompareFormat,
+};
+use anyhow::{Context, Result, bail};
+use rudof_lib::{Rudof, RudofConfig};
+use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
+use shex_ast::Schema;
+use std::path::PathBuf;
+use tracing::debug;
+
+pub fn run_compare(
+    input1: &InputSpec,
+    format1: &InputCompareFormat,
+    mode1: &InputCompareMode,
+    label1: Option<&str>,
+    input2: &InputSpec,
+    format2: &InputCompareFormat,
+    mode2: &InputCompareMode,
+    label2: Option<&str>,
+    reader_mode: &RDFReaderMode,
+    output: &Option<PathBuf>,
+    result_format: &ResultCompareFormat,
+    config: &RudofConfig,
+    force_overwrite: bool,
+) -> Result<()> {
+    let mut reader1 = input1.open_read(Some(format1.mime_type().as_str()), "Compare1")?;
+    let mut reader2 = input2.open_read(Some(format2.mime_type().as_str()), "Compare2")?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    let mut rudof = Rudof::new(&config);
+    let coshamo1 = get_coshamo(&mut rudof, mode1, format1, label1, &mut reader1)?;
+    let coshamo2 = get_coshamo(&mut rudof, mode2, format2, label2, &mut reader2)?;
+    let shaco = coshamo1.compare(&coshamo2);
+    match result_format {
+        ResultCompareFormat::Internal => {
+            writeln!(writer, "{shaco}")?;
+            Ok(())
+        }
+        ResultCompareFormat::JSON => {
+            let str = serde_json::to_string_pretty(&shaco)
+                .context(format!("Error converting Result to JSON: {shaco}"))?;
+            writeln!(writer, "{str}")?;
+            Ok(())
+        }
+    }
+}
+
+pub fn get_coshamo(
+    rudof: &mut Rudof,
+    mode: &InputCompareMode,
+    format: &InputCompareFormat,
+    label: Option<&str>,
+    reader: &mut dyn std::io::Read,
+) -> Result<CoShaMo> {
+    match mode {
+        InputCompareMode::SHACL => bail!("Not yet implemented comparison between SHACL schemas"),
+        InputCompareMode::ShEx => {
+            let shex = read_shex(rudof, &format, reader, "shex1")?;
+            let mut converter = CoShaMoConverter::new(&ComparatorConfig::new());
+            let coshamo = converter.from_shex(&shex, label)?;
+            Ok(coshamo)
+        }
+        InputCompareMode::DCTAP => bail!("Not yet implemented comparison between DCTAP files"),
+        InputCompareMode::Service => {
+            bail!("Not yet implemented comparison between Service descriptions")
+        }
+    }
+}
+
+pub fn read_shex(
+    rudof: &mut Rudof,
+    format: &InputCompareFormat,
+    reader: &mut dyn std::io::Read,
+    name: &str,
+) -> Result<Schema> {
+    let shex_format1 = format
+        .to_shex_format()
+        .expect(format!("ShEx format1 {format}").as_str());
+    rudof.read_shex(reader, &shex_format1, None)?;
+    if let Some(schema) = rudof.get_shex() {
+        debug!("Schema read: {schema}");
+        Ok(schema.clone())
+    } else {
+        bail!("Error reading ShEx {name} with format {format}")
+    }
+}
