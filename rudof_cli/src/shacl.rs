@@ -2,6 +2,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::bail;
+use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShaclValidationMode;
@@ -16,7 +17,6 @@ use tracing::debug;
 use tracing::enabled;
 
 use crate::CliShaclFormat;
-use crate::InputSpec;
 use crate::RDFReaderMode;
 use crate::ResultShaclValidationFormat;
 use crate::data::get_base;

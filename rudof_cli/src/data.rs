@@ -4,12 +4,12 @@ use std::str::FromStr;
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, UmlGenerationMode};
 
+use crate::RDFReaderMode;
 use crate::writer::get_writer;
-use crate::{RDFReaderMode, input_spec::InputSpec};
 use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
 use anyhow::{Result, bail};
 use srdf::UmlConverter;

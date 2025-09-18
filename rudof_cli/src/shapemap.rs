@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use crate::ColorSupport;
-use crate::InputSpec;
 use crate::ShapeMapFormat as CliShapeMapFormat;
 use crate::writer::get_writer;
 use anyhow::Result;
+use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShapeMapFormatter;

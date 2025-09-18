@@ -2,11 +2,11 @@ use std::{io::Write, path::PathBuf};
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rudof_lib::{RdfData, Rudof, RudofConfig};
+use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
 use srdf::{QuerySolution, VarName};
 
 use crate::{
-    InputSpec, RDFReaderMode, ResultQueryFormat, data::get_data_rudof, data_format::DataFormat,
+    RDFReaderMode, ResultQueryFormat, data::get_data_rudof, data_format::DataFormat,
     writer::get_writer,
 };
 use anyhow::Result;

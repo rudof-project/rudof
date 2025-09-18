@@ -1,6 +1,5 @@
 use crate::data_format::DataFormat;
 use crate::dctap_format::DCTapFormat;
-use crate::input_spec::InputSpec;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
     CliShaclFormat, DCTapResultFormat, InputCompareFormat, InputCompareMode, InputConvertFormat,
@@ -10,6 +9,7 @@ use crate::{
     ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
+use rudof_lib::InputSpec;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use std::path::PathBuf;
 

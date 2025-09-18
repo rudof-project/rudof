@@ -1,6 +1,6 @@
-use crate::{InputSpec, writer::get_writer};
+use crate::writer::get_writer;
 use clap::ValueEnum;
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use std::fmt::Display;
 use std::path::PathBuf;
 

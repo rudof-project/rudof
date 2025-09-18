@@ -6,10 +6,11 @@ use crate::{
 };
 use iri_s::IriS;
 use itertools::Itertools;
+use mie::{Mie, SchemaInfo};
 use serde::{Deserialize, Serialize};
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt::Display,
     io::{self},
     path::Path,
@@ -103,6 +104,13 @@ impl ServiceDescription {
         self
     }
 
+    pub fn service2mie(&self) -> Mie {
+        let mut mie = Mie::default();
+        let endpoint = self.endpoint.as_ref().map(|e| e.as_str());
+        mie.add_endpoint(endpoint);
+        mie
+    }
+
     pub fn serialize<W: io::Write>(
         &self,
         format: &crate::ServiceDescriptionFormat,
@@ -111,6 +119,16 @@ impl ServiceDescription {
         match format {
             crate::ServiceDescriptionFormat::Internal => {
                 writer.write_all(self.to_string().as_bytes())
+            }
+            crate::ServiceDescriptionFormat::Mie => {
+                let mie = self.service2mie();
+                let mie_str = serde_json::to_string(&mie).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Error converting ServiceDescription to MIE: {e}"),
+                    )
+                })?;
+                writer.write_all(mie_str.as_bytes())
             }
         }
     }

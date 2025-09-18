@@ -1,4 +1,4 @@
-use crate::{RudofConfig, RudofError, ShapesGraphSource};
+use crate::{InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec};
 use iri_s::IriS;
 use rdf_config::RdfConfigModel;
 use shacl_rdf::{ShaclParser, ShaclWriter};
@@ -13,6 +13,8 @@ use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph};
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 use std::str::FromStr;
 use std::{io, result};
@@ -21,6 +23,7 @@ use tracing::trace;
 // These are the structs that are publicly re-exported
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
+pub use mie::Mie;
 pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -606,6 +609,45 @@ impl Rudof {
             })?;
         self.service_description = Some(service_description);
         Ok(())
+    }
+
+    pub fn read_service_description_file<P: AsRef<Path>>(
+        &mut self,
+        path: P,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<()> {
+        let file =
+            File::open(path.as_ref()).map_err(|e| RudofError::ReadingServiceDescriptionPath {
+                path: path.as_ref().to_string_lossy().to_string(),
+                error: format!("{e}"),
+            })?;
+        let reader = BufReader::new(file);
+        self.read_service_description(reader, format, base, reader_mode)
+    }
+
+    pub fn read_service_description_url(
+        &mut self,
+        url_str: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<()> {
+        let url_spec = UrlSpec::parse(url_str).map_err(|e| {
+            RudofError::ParsingUrlReadingServiceDescriptionUrl {
+                url: url_str.to_string(),
+                error: format!("{e}"),
+            }
+        })?;
+        let url_spec = InputSpec::Url(url_spec);
+        let reader = url_spec
+            .open_read(Some("text/turtle"), "Reading service description")
+            .map_err(|e| RudofError::ReadingServiceDescriptionUrl {
+                url: url_str.to_string(),
+                error: format!("{e}"),
+            })?;
+        self.read_service_description(reader, format, base, reader_mode)
     }
 
     pub fn serialize_service_description<W: io::Write>(

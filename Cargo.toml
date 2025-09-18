@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "dctap",
     "iri_s",
+    "mie",
     "python",
     "prefixmap",
     "rbe",
@@ -51,12 +52,15 @@ authors = [
 
 [workspace.dependencies]
 dctap = { version = "0.1.86", path = "./dctap" }
+either = { version = "1.13" }
 iri_s = { version = "0.1.82", path = "./iri_s" }
+mie = { version = "0.1.96", path = "./mie" }
 prefixmap = { version = "0.1.82", path = "./prefixmap" }
 pyrudof = { version = "0.1.86", path = "./python" }
 rbe = { version = "0.1.86", path = "./rbe" }
 rbe_testsuite = { version = "0.1.62", path = "./rbe_testsuite" }
 rdf_config = { version = "0.1.0", path = "./rdf_config" }
+reqwest = { version = "0.12" }
 rudof_lib = { version = "0.1.86", path = "./rudof_lib" }
 rudof_cli = { version = "0.1.86", path = "./rudof_cli" }
 shapemap = { version = "0.1.86", path = "./shapemap" }

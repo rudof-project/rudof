@@ -9,11 +9,11 @@ use crate::mime_type::MimeType;
 use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
 use crate::{ColorSupport, base_convert, shapemap_format_convert};
-use crate::{InputSpec, RDFReaderMode, ShExFormat as CliShExFormat};
+use crate::{RDFReaderMode, ShExFormat as CliShExFormat};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use anyhow::Context;
 use anyhow::{Result, bail};
-use rudof_lib::{Rudof, RudofConfig, ShExFormat, ShExFormatter};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormat, ShExFormatter};
 use shapemap::ResultShapeMap;
 use shex_ast::{Schema, ShapeExprLabel};
 

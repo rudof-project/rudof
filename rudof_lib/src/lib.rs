@@ -2,11 +2,13 @@
 //!
 //!
 #![deny(rust_2018_idioms)]
+pub mod input_spec;
 pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod shapes_graph_source;
 
+pub use input_spec::*;
 pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;

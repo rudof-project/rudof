@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.92"
+version = "0.1.97"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -17,6 +17,7 @@ repository.workspace = true
 
 [dependencies]
 iri_s.workspace = true
+mie.workspace = true
 dctap.workspace = true
 srdf.workspace = true
 shacl_ast.workspace = true

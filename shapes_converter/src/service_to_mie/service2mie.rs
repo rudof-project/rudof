@@ -1,4 +1,4 @@
-use rdf_config::Mie;
+use mie::Mie;
 use sparql_service::ServiceDescription;
 
 use crate::service_to_mie::Service2MieConfig;
@@ -18,9 +18,8 @@ impl Service2Mie {
         }
     }
 
-    pub fn convert(&mut self, service: ServiceDescription) {
-        if let Some(endpoint) = service.endpoint() {
-            self.current_mie.add_endpoint(endpoint.as_str());
-        }
+    pub fn convert(&mut self, service: &ServiceDescription) -> Mie {
+        let mie = service.service2mie();
+        mie
     }
 }

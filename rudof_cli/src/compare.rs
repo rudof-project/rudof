@@ -1,11 +1,11 @@
 use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use crate::{
-    InputCompareFormat, InputSpec, RDFReaderMode, input_compare_mode::InputCompareMode,
+    InputCompareFormat, RDFReaderMode, input_compare_mode::InputCompareMode,
     result_compare_format::ResultCompareFormat,
 };
 use anyhow::{Context, Result, bail};
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
 use shex_ast::Schema;
 use std::path::PathBuf;

@@ -9,6 +9,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Parsing URL {url} reading service description: {error}")]
+    ParsingUrlReadingServiceDescriptionUrl { url: String, error: String },
+
+    #[error("Obtaining content from URL {url} reading service description: {error}")]
+    ReadingServiceDescriptionUrl { url: String, error: String },
+
     #[error("{error}")]
     Generic { error: String },
 
