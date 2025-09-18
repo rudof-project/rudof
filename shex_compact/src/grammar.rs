@@ -56,11 +56,11 @@ where
         tracing::trace!(target: "parser", "{fun}({input:?})");
         let result = parser(input);
         match &result {
-            Ok(res) => {
-                tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
+            Ok(_res) => {
+                // tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
             }
-            Err(e) => {
-                tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
+            Err(_e) => {
+                // tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
             }
         }
         result

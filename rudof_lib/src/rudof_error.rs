@@ -9,6 +9,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Common Shapes Model conversion error from ShEx: {error}")]
+    CoShaMoFromShExError { schema: String, error: String },
+
+    #[error("Invalid compare schema format: {format}: {error}")]
+    InvalidCompareSchemaFormat { format: String, error: String },
+
     #[error("RDF Config read error: {error}")]
     RdfConfigReadError { error: String },
 

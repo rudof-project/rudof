@@ -8,10 +8,11 @@ use std::{
 
 use crate::{CliShaclFormat, ShExFormat};
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum InputConvertFormat {
     CSV,
+    #[default]
     ShExC,
     ShExJ,
     Turtle,

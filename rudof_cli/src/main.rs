@@ -23,6 +23,7 @@ use rudof_cli::data::run_data;
 use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
+use rudof_cli::run_compare;
 use rudof_cli::{
     ValidationMode, run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex,
     run_validate_shacl, run_validate_shex,
@@ -63,6 +64,40 @@ fn main() -> Result<()> {
     let cli = Cli::parse_from(args);
 
     match &cli.command {
+        Some(Command::Compare {
+            schema1,
+            format1,
+            input_mode1,
+            shape1,
+            schema2,
+            format2,
+            input_mode2,
+            shape2,
+            result_format,
+            output,
+            target_folder,
+            force_overwrite,
+            config,
+            reader_mode,
+            show_time,
+        }) => {
+            let config = get_config(config)?;
+            run_compare(
+                schema1,
+                format1,
+                input_mode1,
+                shape1.as_deref(),
+                schema2,
+                format2,
+                input_mode2,
+                shape2.as_deref(),
+                reader_mode,
+                output,
+                result_format,
+                &config,
+                *force_overwrite,
+            )
+        }
         Some(Command::RdfConfig {
             input,
             format,

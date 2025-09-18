@@ -4,8 +4,8 @@ use rdf_config::RdfConfigModel;
 use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
-
 use shapemap::{NodeSelector, ShapeSelector};
+use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
@@ -16,6 +16,7 @@ use std::fmt::Debug;
 use std::path::Path;
 use std::str::FromStr;
 use std::{io, result};
+use tracing::trace;
 
 // These are the structs that are publicly re-exported
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
@@ -25,6 +26,7 @@ pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
+pub use shapes_comparator::{CoShaMo, CompareSchemaFormat, CompareSchemaMode, ShaCo};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
@@ -167,6 +169,24 @@ impl Rudof {
     /// Get the current shapemap
     pub fn get_shapemap(&self) -> Option<&QueryShapeMap> {
         self.shapemap.as_ref()
+    }
+
+    pub fn compare_schemas<R: io::Read>(
+        &mut self,
+        reader1: &mut R,
+        reader2: &mut R,
+        mode1: CompareSchemaMode,
+        mode2: CompareSchemaMode,
+        format1: CompareSchemaFormat,
+        format2: CompareSchemaFormat,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        label1: Option<&str>,
+        label2: Option<&str>,
+    ) -> Result<ShaCo> {
+        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, label1)?;
+        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, label2)?;
+        Ok(coshamo1.compare(&coshamo2))
     }
 
     /// Converts the current DCTAP to a ShExSchema
@@ -498,7 +518,36 @@ impl Rudof {
         format: &ShExFormat,
         base: Option<&str>,
     ) -> Result<()> {
-        let schema_json = match format {
+        let schema_json = self.read_shex_only(reader, format, base)?;
+        self.shex_schema = Some(schema_json.clone());
+        trace!("Schema AST read: {schema_json}");
+        let mut schema = SchemaIR::new();
+        schema
+            .from_schema_json(&schema_json)
+            .map_err(|e| RudofError::CompilingSchemaError {
+                error: format!("{e}"),
+            })?;
+        self.shex_schema_ir = Some(schema.clone());
+
+        let validator =
+            ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
+                RudofError::ShExValidatorCreationError {
+                    error: format!("{e}"),
+                    schema: format!("{schema_json}"),
+                }
+            })?;
+        self.shex_validator = Some(validator);
+        Ok(())
+    }
+
+    /// Reads a ShEx schema without storing it in the current shex_schema
+    pub fn read_shex_only<R: io::Read>(
+        &mut self,
+        reader: R,
+        format: &ShExFormat,
+        base: Option<&str>,
+    ) -> Result<ShExSchema> {
+        match format {
             ShExFormat::ShExC => {
                 let base = match base {
                     Some(str) => {
@@ -535,25 +584,7 @@ impl Rudof {
                 let schema = ShExRParser::new(rdf).parse()?;
                 Ok(schema) */
             }
-        }?;
-        self.shex_schema = Some(schema_json.clone());
-        let mut schema = SchemaIR::new();
-        schema
-            .from_schema_json(&schema_json)
-            .map_err(|e| RudofError::CompilingSchemaError {
-                error: format!("{e}"),
-            })?;
-        self.shex_schema_ir = Some(schema.clone());
-
-        let validator =
-            ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
-                RudofError::ShExValidatorCreationError {
-                    error: format!("{e}"),
-                    schema: format!("{schema_json}"),
-                }
-            })?;
-        self.shex_validator = Some(validator);
-        Ok(())
+        }
     }
 
     pub fn read_service_description<R: io::Read>(
@@ -809,6 +840,42 @@ impl Rudof {
                 None => Err(RudofError::NoShExSchemaForResolvingImports),
             },
             Some(resolved_schema) => Ok(resolved_schema.clone()),
+        }
+    }
+
+    pub fn get_coshamo(
+        &mut self,
+        reader: &mut dyn std::io::Read,
+        mode: &CompareSchemaMode,
+        format: &CompareSchemaFormat,
+        base: Option<&str>,
+        label: Option<&str>,
+    ) -> Result<CoShaMo> {
+        let comparator_config = self.config().comparator_config();
+        match mode {
+            CompareSchemaMode::Shacl => Err(RudofError::NotImplemented {
+                msg: "Not yet implemented comparison between SHACL schemas".to_string(),
+            }),
+            CompareSchemaMode::ShEx => {
+                let shex_format = format.to_shex_format().map_err(|e| {
+                    RudofError::InvalidCompareSchemaFormat {
+                        format: format!("{format:?}"),
+                        error: format!("{e}"),
+                    }
+                })?;
+                let shex = self.read_shex_only(reader, &shex_format, base)?;
+                let mut converter = CoShaMoConverter::new(&comparator_config);
+                let coshamo = converter.from_shex(&shex, label).map_err(|e| {
+                    RudofError::CoShaMoFromShExError {
+                        schema: format!("{shex:?}"),
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(coshamo)
+            }
+            CompareSchemaMode::ServiceDescription => Err(RudofError::NotImplemented {
+                msg: "Not yet implemented comparison between Service descriptions".to_string(),
+            }),
         }
     }
 }

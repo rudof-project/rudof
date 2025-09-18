@@ -2,7 +2,7 @@ use hashlink::LinkedHashMap;
 use std::collections::HashMap;
 use yaml_rust2::Yaml;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Mie {
     schema_info: SchemaInfo,
     prefixes: HashMap<String, String>,
@@ -12,7 +12,7 @@ pub struct Mie {
     cross_references: HashMap<String, CrossReference>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct SchemaInfo {
     title: Option<String>,
     description: Option<String>,
@@ -101,6 +101,10 @@ impl Mie {
             sparql_query_examples,
             cross_references,
         }
+    }
+
+    pub fn add_endpoint(&mut self, endpoint: &str) {
+        self.schema_info.endpoint = Some(endpoint.to_string());
     }
 
     pub fn to_yaml(&self) -> Yaml {
@@ -280,8 +284,8 @@ mod tests {
         );
         let mut sample_rdf_entries = HashMap::new();
         sample_rdf_entries.insert("human_kinase_example".to_string(), RdfExample::new());
-        let mut sparql_query_examples = HashMap::new();
-        let mut cross_references = HashMap::new();
+        let sparql_query_examples = HashMap::new();
+        let cross_references = HashMap::new();
         let mie = Mie {
             schema_info: SchemaInfo {
                 title: Some("Example Schema".to_string()),

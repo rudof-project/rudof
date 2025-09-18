@@ -1,5 +1,5 @@
-use crate::ShapeExprLabel;
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
+use crate::{BNode, Shape, ShapeExprLabel};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde::{Deserialize, Serialize};
@@ -229,6 +229,28 @@ impl Schema {
 
     pub fn get_type(&self) -> String {
         self.type_.clone()
+    }
+
+    pub fn find_shape(&self, label: &str) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        let label: ShapeExprLabel = if label == "START" {
+            ShapeExprLabel::Start
+        } else if label.starts_with("_:") {
+            ShapeExprLabel::BNode {
+                value: BNode::new(label[2..].as_ref()),
+            }
+        } else {
+            ShapeExprLabel::IriRef {
+                value: IriRef::try_from(label).map_err(|e| SchemaJsonError::InvalidIriRef {
+                    label: label.to_string(),
+                    error: e.to_string(),
+                })?,
+            }
+        };
+        match label {
+            ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(&value),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
+            ShapeExprLabel::Start => todo!(),
+        }
     }
 
     pub fn find_shape_by_label(

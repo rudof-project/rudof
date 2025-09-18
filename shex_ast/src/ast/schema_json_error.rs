@@ -5,6 +5,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaJsonError {
+    #[error("Error parsing label as IriRef, label: {label}: {error}")]
+    InvalidIriRef {
+        label: String,
+        error: String, // We need to clone errors so we use String instead of IriSError
+    },
     #[error("Reading path {path_name:?} error: {error:?}")]
     ReadingPathError {
         path_name: String,

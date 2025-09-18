@@ -13,7 +13,7 @@ pub enum IriRef {
     Prefixed { prefix: String, local: String },
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 #[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
 pub struct Underef {
     prefix: String,

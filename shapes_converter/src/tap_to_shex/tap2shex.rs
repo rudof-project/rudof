@@ -19,7 +19,7 @@ pub struct Tap2ShEx {
 }
 
 impl Tap2ShEx {
-    pub fn new(config: &Tap2ShExConfig) -> Tap2ShEx {
+    pub fn new(config: &Tap2ShExConfig) -> Self {
         Tap2ShEx {
             config: config.clone(),
         }

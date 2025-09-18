@@ -7,6 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.91
+### Added
+
+This release has been created during the [Biohackathon 2025](https://2025.biohackathon.org/) where we have been adding several features by quick demands of the attendees. It is possible that not all the features have been thoroughly tested, but those features are demanded by users and we plan to improve them in future releases.
+- Initial support for comparing 2 schemas
+- Initial support to read rdf_config files
+
+### Fixed
+### Changed
+### Removed
+
 ## 0.1.90
 ### Added
 - Added serialize_current_shex to pyrudof

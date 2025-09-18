@@ -191,7 +191,7 @@ fn show_extends_table<R: Write>(
     Ok(())
 }
 
-fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
+pub fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
     match shex_format {
         CliShExFormat::ShExC => ShExFormat::ShExC,
         CliShExFormat::ShExJ => ShExFormat::ShExJ,
@@ -288,7 +288,7 @@ fn write_result_shapemap(
         }
         CliShapeMapFormat::Internal => {
             let str = serde_json::to_string_pretty(&result)
-                .context("Error converting Result to JSON: {result}")?;
+                .context(format!("Error converting Result to JSON: {result}"))?;
             writeln!(writer, "{str}")?;
         }
     }

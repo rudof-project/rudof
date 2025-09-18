@@ -5,11 +5,11 @@ use pyo3::{
     Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    DCTAP, DCTAPFormat, PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
-    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescriptionFormat,
-    ShExFormat, ShExFormatter, ShExSchema, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
-    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, iri,
+    CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, PrefixMap, QueryShapeMap,
+    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
+    RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat, ShExFormatter, ShExSchema,
+    ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
+    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
 };
 use std::{
     ffi::OsStr,
@@ -116,6 +116,50 @@ impl PyRudof {
     pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
         shex_schema.map(|s| PyShExSchema { inner: s.clone() })
+    }
+
+    /// Obtains the current ShEx Schema
+    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, label1, label2, base1, base2))]
+    pub fn compare_schemas_str(
+        &self,
+        schema1: &str,
+        schema2: &str,
+        mode1: &PyCompareSchemaMode,
+        mode2: &PyCompareSchemaMode,
+        format1: &PyCompareSchemaFormat,
+        format2: &PyCompareSchemaFormat,
+        label1: Option<&str>,
+        label2: Option<&str>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+    ) -> PyResult<PyShaCo> {
+        let coshamo1 = self.inner.get_coshamo(
+            schema1.to_bytes(),
+            &mode1.inner,
+            &format1.inner,
+            label1,
+            base1,
+        )?;
+        let coshamo2 = self.inner.get_coshamo(
+            schema2.to_bytes(),
+            &mode2.inner,
+            &format2.inner,
+            label2,
+            base2,
+        )?;
+        let shaco = self.inner.compare_schemas(
+            &schema1.inner,
+            &schema2.inner,
+            &mode1.inner,
+            &mode2.inner,
+            &format1.inner,
+            &format2.inner,
+            label1,
+            label2,
+            base1,
+            base2,
+        )?;
+        Ok(shaco)
     }
 
     /// Obtains the current Shapemap
@@ -804,6 +848,36 @@ pub struct PyQueryShapeMap {
 
 #[pymethods]
 impl PyQueryShapeMap {
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+}
+
+/// Shapes Comparator result
+#[pyclass(name = "ShaCo")]
+pub struct PyShaCo {
+    inner: ShaCo,
+}
+
+#[pymethods]
+impl PyShaCo {
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    fn as_json(&self) -> String {
+        self.inner.as_json()
+    }
+}
+
+/// Format of schema to compare, e.g. shexc, turtle, ...
+#[pyclass(name = "CompareSchemaFormat")]
+pub struct PyCompareSchemaFormat {
+    inner: CompareSchemaFormat,
+}
+
+#[pymethods]
+impl PyCompareSchemaFormat {
     fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }

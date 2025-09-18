@@ -1,5 +1,6 @@
 use dctap::TapConfig;
 use serde::{Deserialize, Serialize};
+use shapes_comparator::ComparatorConfig;
 use shapes_converter::{
     ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig,
 };
@@ -28,6 +29,7 @@ pub struct RudofConfig {
     shex2sparql: Option<ShEx2SparqlConfig>,
     service: Option<ServiceConfig>,
     plantuml_path: Option<PathBuf>,
+    comparator: Option<ComparatorConfig>,
 }
 
 impl RudofConfig {
@@ -77,6 +79,13 @@ impl RudofConfig {
         match &self.shex_validator {
             None => ValidatorConfig::default(),
             Some(cfg) => cfg.clone(),
+        }
+    }
+
+    pub fn comparator_config(&self) -> ComparatorConfig {
+        match self.comparator {
+            None => ComparatorConfig::new(),
+            Some(ref cfg) => cfg.clone(),
         }
     }
 

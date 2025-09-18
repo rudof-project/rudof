@@ -1,12 +1,13 @@
 use crate::data_format::DataFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::input_spec::InputSpec;
+use crate::result_compare_format::ResultCompareFormat;
 use crate::{
-    CliShaclFormat, DCTapResultFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat,
-    OutputConvertMode, RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat,
-    ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat,
-    ResultShaclValidationFormat, ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode,
-    ValidationMode,
+    CliShaclFormat, DCTapResultFormat, InputCompareFormat, InputCompareMode, InputConvertFormat,
+    InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode, RdfConfigFormat,
+    RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat, ResultServiceFormat,
+    ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
+    ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -890,6 +891,121 @@ pub enum Command {
             help = "Result mode for conversion"
         )]
         output_mode: OutputConvertMode,
+
+        #[arg(long = "show-time", help = "Show processing time")]
+        show_time: Option<bool>,
+    },
+
+    /// Compare two shapes (which can be in different formats)
+    #[command(name = "compare")]
+    Compare {
+        #[arg(
+            short = 'c',
+            long = "config",
+            value_name = "FILE",
+            help = "Path to config file"
+        )]
+        config: Option<PathBuf>,
+
+        #[arg(long = "mode1", 
+         value_name = "MODE", 
+         help = "Input mode first schema", 
+         default_value_t = InputCompareMode::default())]
+        input_mode1: InputCompareMode,
+
+        #[arg(
+            long = "mode2",
+            value_name = "MODE",
+            help = "Input mode second schema",
+            default_value_t = InputCompareMode::default()
+        )]
+        input_mode2: InputCompareMode,
+
+        #[arg(
+            long = "force-overwrite",
+            help = "Force overwrite to output file if it already exists",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+
+        #[arg(
+            long = "schema1",
+            value_name = "INPUT",
+            help = "Schema 1 (URI, file or - for stdin)"
+        )]
+        schema1: InputSpec,
+
+        #[arg(
+            long = "schema2",
+            value_name = "INPUT",
+            help = "Schema 2 (URI, file or - for stdin)"
+        )]
+        schema2: InputSpec,
+
+        #[arg(
+            long = "format1",
+            value_name = "FORMAT", 
+            help = "File format 1",
+            default_value_t = InputCompareFormat::default()
+        )]
+        format1: InputCompareFormat,
+
+        #[arg(
+            long = "format2",
+            value_name = "FORMAT", 
+            help = "File format 2",
+            default_value_t = InputCompareFormat::default()
+        )]
+        format2: InputCompareFormat,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "FORMAT", 
+            help = "Result format",
+            default_value_t = ResultCompareFormat::default()
+        )]
+        result_format: ResultCompareFormat,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 't',
+            long = "target-folder",
+            value_name = "FOLDER",
+            help = "Target folder"
+        )]
+        target_folder: Option<PathBuf>,
+
+        #[arg(
+            long = "shape1",
+            value_name = "LABEL",
+            help = "shape1 (default = START)"
+        )]
+        shape1: Option<String>,
+
+        #[arg(
+            long = "shape2",
+            value_name = "LABEL",
+            help = "shape2 (default = START)"
+        )]
+        shape2: Option<String>,
+
+        /// RDF Reader mode
+        #[arg(
+            long = "reader-mode",
+            value_name = "MODE", 
+            help = "RDF Reader mode",
+            default_value_t = RDFReaderMode::default(),
+            value_enum
+        )]
+        reader_mode: RDFReaderMode,
 
         #[arg(long = "show-time", help = "Show processing time")]
         show_time: Option<bool>,

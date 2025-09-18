@@ -47,6 +47,10 @@ impl ServiceDescription {
         self
     }
 
+    pub fn endpoint(&self) -> &Option<IriS> {
+        &self.endpoint
+    }
+
     pub fn from_path<P: AsRef<Path>>(
         path: P,
         format: &RDFFormat,

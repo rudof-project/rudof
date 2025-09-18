@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::Underef;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum DerefError {
     #[error(transparent)]
     IriSError(#[from] IriSError),
