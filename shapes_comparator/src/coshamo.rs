@@ -69,8 +69,16 @@ impl CoShaMo {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ValueDescription {
     iri_ref: IriRef,
+
+    #[serde(skip_serializing_if = "is_any")]
     value_constraint: ValueConstraint,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     percentage: Option<Percentage>,
+}
+
+fn is_any(vc: &ValueConstraint) -> bool {
+    matches!(vc, ValueConstraint::Any)
 }
 
 impl ValueDescription {
