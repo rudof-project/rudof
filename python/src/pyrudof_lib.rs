@@ -5,17 +5,19 @@ use pyo3::{
     Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, PrefixMap, QueryShapeMap,
-    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
-    RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat, ShExFormatter, ShExSchema,
-    ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter,
-    ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
+    ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, PrefixMap,
+    QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
+    Rudof, RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
+    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
+    VarName, iri,
 };
 use std::{
     ffi::OsStr,
     fs::File,
     io::{BufReader, BufWriter},
     path::Path,
+    str::FromStr,
 };
 
 #[pyclass(frozen, name = "RudofConfig")]
@@ -129,25 +131,29 @@ impl PyRudof {
         &mut self,
         schema1: &str,
         schema2: &str,
-        mode1: &PyCompareSchemaMode,
-        mode2: &PyCompareSchemaMode,
-        format1: &PyCompareSchemaFormat,
-        format2: &PyCompareSchemaFormat,
+        mode1: &str,
+        mode2: &str,
+        format1: &str,
+        format2: &str,
         label1: Option<&str>,
         label2: Option<&str>,
         base1: Option<&str>,
         base2: Option<&str>,
     ) -> PyResult<PyShaCo> {
+        let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
+        let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
+        let mode1 = CompareSchemaMode::from_str(mode1).map_err(cnv_comparator_err)?;
+        let mode2 = CompareSchemaMode::from_str(mode2).map_err(cnv_comparator_err)?;
         let mut reader1 = schema1.as_bytes();
         let coshamo1 = self
             .inner
-            .get_coshamo(&mut reader1, &mode1.inner, &format1.inner, label1, base1)
+            .get_coshamo(&mut reader1, &mode1, &format1, label1, base1)
             .map_err(|e| PyRudofError::from(e))?;
 
         let mut reader2 = schema2.as_bytes();
         let coshamo2 = self
             .inner
-            .get_coshamo(&mut reader2, &mode2.inner, &format2.inner, label2, base2)
+            .get_coshamo(&mut reader2, &mode2, &format2, label2, base2)
             .map_err(|e| PyRudofError::from(e))?;
         let shaco = coshamo1.compare(&coshamo2);
         Ok(PyShaCo { inner: shaco })
@@ -1117,6 +1123,12 @@ impl From<RudofError> for PyRudofError {
 
 fn cnv_err(e: RudofError) -> PyErr {
     let e: PyRudofError = e.into();
+    let e: PyErr = e.into();
+    e
+}
+
+fn cnv_comparator_err(e: ComparatorError) -> PyErr {
+    let e: PyRudofError = PyRudofError::str(format!("{}", e));
     let e: PyErr = e.into();
     e
 }

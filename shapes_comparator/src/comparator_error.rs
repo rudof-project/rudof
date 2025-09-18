@@ -2,6 +2,12 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
 pub enum ComparatorError {
+    #[error("Unknown schema format: {0}")]
+    UnknownSchemaFormat(String),
+
+    #[error("Unknown schema mode: {0}")]
+    UnknownSchemaMode(String),
+
     #[error("Serializing to JSON: {error}")]
     JsonSerializationError { error: String },
 

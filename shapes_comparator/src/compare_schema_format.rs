@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 use shex_validation::ShExFormat;
 
@@ -12,6 +15,18 @@ pub enum CompareSchemaFormat {
     Turtle,
 }
 
+impl FromStr for CompareSchemaFormat {
+    type Err = ComparatorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "shexc" => Ok(CompareSchemaFormat::ShExC),
+            "shexj" => Ok(CompareSchemaFormat::ShExJ),
+            "turtle" => Ok(CompareSchemaFormat::Turtle),
+            _ => Err(ComparatorError::UnknownSchemaFormat(s.to_string())),
+        }
+    }
+}
 impl CompareSchemaFormat {
     pub fn to_shex_format(&self) -> Result<ShExFormat, ComparatorError> {
         match self {

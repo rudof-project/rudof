@@ -26,7 +26,9 @@ pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
-pub use shapes_comparator::{CoShaMo, CompareSchemaFormat, CompareSchemaMode, ShaCo};
+pub use shapes_comparator::{
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
+};
 pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::{ShExFormat, ValidatorConfig};
