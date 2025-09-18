@@ -181,8 +181,10 @@ impl Rudof {
         mode2: CompareSchemaMode,
         format1: CompareSchemaFormat,
         format2: CompareSchemaFormat,
+
         base1: Option<&str>,
         base2: Option<&str>,
+
         label1: Option<&str>,
         label2: Option<&str>,
     ) -> Result<ShaCo> {

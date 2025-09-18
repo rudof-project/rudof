@@ -22,6 +22,31 @@ followed by:
 pip install .
 ```
 
+If you are using `.env`, you can do the following:
+
+```sh
+python3 -m venv .venv
+```
+
+followed by: 
+
+```sh
+source .venv/bin/activate
+```
+
+or
+
+```sh
+```sh
+source .venv/bin/activate.fish
+```
+
+and once you do that, you can locally install que package as:
+
+```sh
+pip install -e .
+```
+
 ## Running the tests
 
 Go to the tests folder: 

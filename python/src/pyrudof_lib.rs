@@ -5,12 +5,12 @@ use pyo3::{
     Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, PrefixMap,
-    QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
-    Rudof, RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
-    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
-    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
-    VarName, iri,
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
+    PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode,
+    ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat,
+    ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
+    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
+    ValidationStatus, VarName, iri,
 };
 use std::{
     ffi::OsStr,
@@ -120,13 +120,40 @@ impl PyRudof {
         shex_schema.map(|s| PyShExSchema { inner: s.clone() })
     }
 
+    /// Get a Common Shapes Model from a schema
+    /// Parameters:
+    /// schema: String containing the schema
+    /// mode: Mode of the schema, e.g. shex
+    /// format: Format of the schema, e.g. shexc, turtle
+    /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// label: Optional label of the shape to convert or None to use the start shape or the first shape
+    #[pyo3(signature = (schema, mode, format, base, label))]
+    pub fn get_coshamo(
+        &mut self,
+        schema: &str,
+        mode: &str,
+        format: &str,
+        base: Option<&str>,
+        label: Option<&str>,
+    ) -> PyResult<PyCoShaMo> {
+        // Implementation goes here
+        let format = CompareSchemaFormat::from_str(format).map_err(cnv_comparator_err)?;
+        let mode = CompareSchemaMode::from_str(mode).map_err(cnv_comparator_err)?;
+        let mut reader = schema.as_bytes();
+        let coshamo = self
+            .inner
+            .get_coshamo(&mut reader, &mode, &format, base, label)
+            .map_err(|e| PyRudofError::from(e))?;
+        Ok(PyCoShaMo { inner: coshamo })
+    }
+
     /// Compares two schemas provided as strings
     /// Parameters: schema1, schema2: Strings containing the schemas to compare
     /// mode1, mode2: Mode of the schemas, e.g. shex
     /// format1, format2: Format of the schemas, e.g. shexc, turtle
     /// label1, label2: Optional labels of the shapes to compare
     /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
-    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, label1, label2, base1, base2))]
+    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2))]
     pub fn compare_schemas_str(
         &mut self,
         schema1: &str,
@@ -135,10 +162,10 @@ impl PyRudof {
         mode2: &str,
         format1: &str,
         format2: &str,
-        label1: Option<&str>,
-        label2: Option<&str>,
         base1: Option<&str>,
         base2: Option<&str>,
+        label1: Option<&str>,
+        label2: Option<&str>,
     ) -> PyResult<PyShaCo> {
         let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
         let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
@@ -147,13 +174,13 @@ impl PyRudof {
         let mut reader1 = schema1.as_bytes();
         let coshamo1 = self
             .inner
-            .get_coshamo(&mut reader1, &mode1, &format1, label1, base1)
+            .get_coshamo(&mut reader1, &mode1, &format1, base1, label1)
             .map_err(|e| PyRudofError::from(e))?;
 
         let mut reader2 = schema2.as_bytes();
         let coshamo2 = self
             .inner
-            .get_coshamo(&mut reader2, &mode2, &format2, label2, base2)
+            .get_coshamo(&mut reader2, &mode2, &format2, base2, label2)
             .map_err(|e| PyRudofError::from(e))?;
         let shaco = coshamo1.compare(&coshamo2);
         Ok(PyShaCo { inner: shaco })
@@ -897,6 +924,19 @@ impl PyShaCo {
     }
 }
 
+/// Common Shapes Model
+#[pyclass(name = "CoShaMo")]
+pub struct PyCoShaMo {
+    inner: CoShaMo,
+}
+
+#[pymethods]
+impl PyCoShaMo {
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+}
+
 /// Format of schema to compare, e.g. shexc, turtle, ...
 #[pyclass(name = "CompareSchemaFormat")]
 pub struct PyCompareSchemaFormat {
@@ -1117,17 +1157,20 @@ impl From<PyRudofError> for PyErr {
 
 impl From<RudofError> for PyRudofError {
     fn from(error: RudofError) -> Self {
+        println!("From<RudofError>: {error}");
         Self { error }
     }
 }
 
 fn cnv_err(e: RudofError) -> PyErr {
+    println!("RudofError: {e}");
     let e: PyRudofError = e.into();
     let e: PyErr = e.into();
     e
 }
 
 fn cnv_comparator_err(e: ComparatorError) -> PyErr {
+    println!("ComparatorError: {e}");
     let e: PyRudofError = PyRudofError::str(format!("{}", e));
     let e: PyErr = e.into();
     e

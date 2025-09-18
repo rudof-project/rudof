@@ -26,3 +26,6 @@ rudof_lib.workspace = true
 [dependencies.pyo3]
 version = "0.26.0"
 features = ["abi3-py37", "extension-module"]
+
+[package.metadata.maturin]
+include = ["pyrudof.pyi"]

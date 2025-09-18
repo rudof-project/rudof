@@ -2,6 +2,11 @@ use hashlink::LinkedHashMap;
 use std::collections::HashMap;
 use yaml_rust2::Yaml;
 
+/// MIE: Metadata Interoperable Exchange Format
+/// This is a custom format to capture metadata about RDF datasets and their schemas,
+/// including shape expressions, example RDF data, SPARQL queries, and cross references.
+/// It is designed to be extensible and human-readable, facilitating sharing and analysis of RDF schema information.
+/// The main goal is to be used for MCP servers
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Mie {
     schema_info: SchemaInfo,

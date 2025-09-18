@@ -1,18 +1,42 @@
 from pyrudof import Rudof, RudofConfig, ShExFormatter
 
 rudof = Rudof(RudofConfig())
-dctap_str = """shapeId,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
-Person,name,true,false,xsd:string,
-,birthdate,false,false,xsd:date,
-,enrolledIn,false,true,,Course
-Course,name,true,false,xsd:string,
-,student,false,true,,Person
+
+schema1 = """
+ PREFIX : <http://example.org/>
+ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ :Person {
+    :name xsd:string ;
+    :age xsd:integer ;
+    :weight xsd:float ;
+    :worksFor @:Company
+ } 
+ :Company {
+    :name xsd:string ;
+    :employee @:Person
+ }"""
+
+# rudof.read_data_str(schema1)
+
+schema2 = """
+ PREFIX ex: <http://example.org/> 
+ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ ex:Person {
+    ex:name xsd:string ;
+    ex:birthDate xsd:date ;
+    ex:worksFor @ex:Company
+}
+ex:Company {
+   ex:name xsd:string
+}
 """
-rudof.read_dctap_str(dctap_str)
+print("Comparing schemas:");
+result = result = rudof.compare_schemas_str(
+    schema1, schema2, 
+    "shex", "shex", 
+    "shexc", "shexc", 
+    None, None, 
+    "http://example.org/Person", "http://example.org/Person"
+    )
 
-dctap = rudof.get_dctap()
-print(f"DCTAP\n{dctap}")
-
-rudof.dctap2shex()
-result = rudof.serialize_shex(ShExFormatter())
-print(f"DCTAP converted to ShEx\n{result}")
+print(f"Schemas compared: {result.as_json()}")

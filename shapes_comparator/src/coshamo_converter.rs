@@ -85,8 +85,8 @@ impl CoShaMoConverter {
                 })
             }
         } else {
-            // Go for START or first shape?
-            todo!()
+            debug!("No label provided");
+            Err(ComparatorError::NoShapeLabelProvided)
         }
     }
 

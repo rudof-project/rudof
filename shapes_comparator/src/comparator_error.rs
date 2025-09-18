@@ -2,6 +2,8 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
 pub enum ComparatorError {
+    #[error("No shape label provided")]
+    NoShapeLabelProvided,
     #[error("Unknown schema format: {0}")]
     UnknownSchemaFormat(String),
 
