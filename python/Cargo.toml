@@ -15,7 +15,6 @@ homepage = "https://rudof-project.github.io/rudof"
 keywords = ["rdf", "linked-data", "semantic-web", "shex", "shacl"]
 edition = "2024"
 
-
 [lib]
 name = "pyrudof"
 crate-type = ["cdylib"]

@@ -12,11 +12,11 @@ pub mod pyrudof {
 
     #[pymodule_export]
     pub use super::{
-        PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyQuerySolution,
+        PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyMie, PyQuerySolution,
         PyQuerySolutions, PyRDFFormat, PyReaderMode, PyRudof, PyRudofConfig, PyRudofError,
-        PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter, PyShaclFormat,
-        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource,
-        PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
+        PyServiceDescription, PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter,
+        PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter,
+        PyShapesGraphSource, PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
     };
 
     #[pymodule_init]

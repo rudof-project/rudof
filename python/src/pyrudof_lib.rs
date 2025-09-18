@@ -5,10 +5,10 @@ use pyo3::{
     Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, Mie,
     PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode,
-    ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescriptionFormat, ShExFormat,
-    ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
+    ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescription, ServiceDescriptionFormat,
+    ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
     ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
     ValidationStatus, VarName, iri,
 };
@@ -128,6 +128,13 @@ impl PyRudof {
     pub fn get_shex(&self) -> Option<PyShExSchema> {
         let shex_schema = self.inner.get_shex();
         shex_schema.map(|s| PyShExSchema { inner: s.clone() })
+    }
+
+    /// Obtains the current Service Description
+    #[pyo3(signature = ())]
+    pub fn get_service_description(&self) -> Option<PyServiceDescription> {
+        let service_description = self.inner.get_service_description();
+        service_description.map(|s| PyServiceDescription { inner: s.clone() })
     }
 
     /// Get a Common Shapes Model from a schema
@@ -476,7 +483,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the Service Description
     #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_service_description(
+    pub fn read_service_description_file(
         &mut self,
         path_name: &str,
         format: &PyRDFFormat,
@@ -495,6 +502,30 @@ impl PyRudof {
         let reader = BufReader::new(file);
         self.inner
             .read_service_description(reader, &format, base, &reader_mode)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Read Service Description from a URL
+    /// Parameters:
+    /// url: URL of the Service Description
+    /// format: Format of the Service Description, e.g. turtle, jsonld
+    /// base: Optional base IRI to resolve relative IRIs in the Service Description
+    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the Service Description
+    #[pyo3(signature = (url, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_service_description_url(
+        &mut self,
+        url: &str,
+        format: &PyRDFFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+        let format = cnv_rdf_format(format);
+        self.inner
+            .read_service_description_url(url, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -800,12 +831,12 @@ pub enum PyDCTapFormat {
 }
 
 /// Service Description format
-/// Currently, only Internal is supported
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ServiceDescriptionFormat")]
 #[derive(PartialEq)]
 pub enum PyServiceDescriptionFormat {
     Internal,
+    Mie,
 }
 
 /// ShapeMap format
@@ -967,6 +998,34 @@ impl From<UmlGenerationMode> for PyUmlGenerationMode {
     }
 }
 
+/// MIE representation
+#[pyclass(name = "Mie")]
+pub struct PyMie {
+    inner: Mie,
+}
+
+#[pymethods]
+impl PyMie {
+    /// Returns a string representation of the schema
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    /// Converts the MIE spec to JSON
+    pub fn as_json(&self) -> PyResult<String> {
+        let str = self
+            .inner
+            .to_json()
+            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        Ok(str)
+    }
+
+    pub fn as_yaml(&self) -> PyResult<String> {
+        let yaml = self.inner.to_yaml_str();
+        Ok(yaml)
+    }
+}
+
 /// ShEx Schema representation
 /// It can be converted to JSON
 /// It can be serialized to different formats
@@ -985,6 +1044,35 @@ impl PyShExSchema {
     /// Returns a string representation of the schema
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
+    }
+
+    /*     /// Converts the schema to JSON
+    pub fn as_json(&self) -> PyResult<String> {
+        let str =  self
+            .inner
+            .as_json()
+            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        Ok(str)
+    } */
+}
+
+/// Service Description representation
+/// This is based on [SPARQL Service Description](https://www.w3.org/TR/sparql11-service-description/) + [VoID](https://www.w3.org/TR/void/) vocabulary
+#[pyclass(name = "ServiceDescription")]
+pub struct PyServiceDescription {
+    inner: ServiceDescription,
+}
+
+#[pymethods]
+impl PyServiceDescription {
+    /// Returns a string representation of the schema
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    pub fn as_mie(&self) -> PyResult<PyMie> {
+        let str = self.inner.service2mie();
+        Ok(PyMie { inner: str })
     }
 
     /*     /// Converts the schema to JSON
@@ -1368,6 +1456,7 @@ fn cnv_reader_mode(format: &PyReaderMode) -> ReaderMode {
 fn cnv_service_description_format(format: &PyServiceDescriptionFormat) -> ServiceDescriptionFormat {
     match format {
         PyServiceDescriptionFormat::Internal => ServiceDescriptionFormat::Internal,
+        PyServiceDescriptionFormat::Mie => ServiceDescriptionFormat::Mie,
     }
 }
 
