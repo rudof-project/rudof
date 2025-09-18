@@ -505,11 +505,11 @@ impl PyRudof {
     /// output: Path to the file where the Service Description will be stored
     /// Returns: None
     /// Raises: RudofError if there is an error writing the Service Description
-    #[pyo3(signature = (format = &PyServiceDescriptionFormat, output))]
+    #[pyo3(signature = (output, format = &PyServiceDescriptionFormat::Internal))]
     pub fn serialize_service_description(
         &self,
-        format: &PyServiceDescriptionFormat,
         output: &str,
+        format: &PyServiceDescriptionFormat,
     ) -> PyResult<()> {
         let file = File::create(output)?;
         let mut writer = BufWriter::new(file);
