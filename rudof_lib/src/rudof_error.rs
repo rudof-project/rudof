@@ -9,6 +9,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("{error}")]
+    Generic { error: String },
+
     #[error("Common Shapes Model conversion error from ShEx: {error}")]
     CoShaMoFromShExError { schema: String, error: String },
 
