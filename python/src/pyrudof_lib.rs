@@ -20,6 +20,13 @@ use std::{
     str::FromStr,
 };
 
+/// Contains the Rudof configuration parameters
+/// It can be created with default values or read from a file
+/// It can be used to create a `Rudof` instance
+/// It is immutable
+/// It can be used to update the configuration of an existing `Rudof` instance
+/// It can be used to create a new `Rudof` instance with the same configuration
+/// It is thread safe
 #[pyclass(frozen, name = "RudofConfig")]
 pub struct PyRudofConfig {
     inner: RudofConfig,
@@ -50,7 +57,10 @@ impl PyRudofConfig {
 
 /// Main class to handle `rudof` features.
 /// There should  be only one instance of `rudof` per program.
-///
+/// It holds the current RDF data, ShEx schema, SHACL shapes graph, Shapemap and DCTAP
+/// It can be used to read data, schemas, shapemaps and DCTAP from strings or files,
+/// run queries, validate data, convert schemas to Common Shapes Model, compare schemas, etc.
+/// It is thread safe.
 #[pyclass(name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
@@ -208,6 +218,12 @@ impl PyRudof {
     }
 
     /// Run a SPARQL query obtained from a file path on the RDF data
+    /// Parameters:
+    /// path_name: Path to the file containing the SPARQL query
+    /// Returns: QuerySolutions object containing the results of the query
+    /// Raises: RudofError if there is an error reading the file or running the query
+    /// Example:
+    ///   rudof.run_query_path("query.sparql")
     #[pyo3(signature = (path_name))]
     pub fn run_query_path(&mut self, path_name: &str) -> PyResult<PyQuerySolutions> {
         let path = Path::new(path_name);
@@ -223,6 +239,11 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a String
+    /// Parameters:
+    /// input: String containing the DCTAP data
+    /// format: Format of the DCTAP data, e.g. csv, tsv
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (input, format = &PyDCTapFormat::CSV))]
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
@@ -234,6 +255,11 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a path
+    /// Parameters:
+    /// path_name: Path to the file containing the DCTAP data
+    /// format: Format of the DCTAP data, e.g. csv, tsv
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
         let path = Path::new(path_name);
@@ -251,6 +277,13 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a string
+    /// Parameters:
+    /// input: String containing the ShEx schema
+    /// format: Format of the ShEx schema, e.g. shexc, turtle
+    /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the ShEx schema
+    ///
     #[pyo3(signature = (input, format = &PyShExFormat::ShExC, base = None))]
     pub fn read_shex_str(
         &mut self,
@@ -267,6 +300,13 @@ impl PyRudof {
     }
 
     /// Reads a SHACL shapes graph from a string
+    /// Parameters:
+    /// input: String containing the SHACL shapes graph
+    /// format: Format of the SHACL shapes graph, e.g. turtle
+    /// base: Optional base IRI to resolve relative IRIs in the shapes graph
+    /// reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_shacl_str(
         &mut self,
@@ -285,6 +325,12 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a path
+    /// Parameters:
+    /// path_name: Path to the file containing the ShEx schema
+    /// format: Format of the ShEx schema, e.g. shexc, turtle
+    /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the ShEx schema
     #[pyo3(signature = (path_name, format = &PyShExFormat::ShExC, base = None))]
     pub fn read_shex_path(
         &mut self,
@@ -309,6 +355,13 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a path
+    /// Parameters:
+    /// path_name: Path to the file containing the SHACL shapes graph
+    /// format: Format of the SHACL shapes graph, e.g. turtle
+    /// base: Optional base IRI to resolve relative IRIs in the shapes graph
+    /// reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (path_name, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_shacl_path(
         &mut self,
@@ -335,12 +388,16 @@ impl PyRudof {
     }
 
     /// Resets the current ShEx validation results
+    /// Returns: None
+    /// Raises: None
     #[pyo3(signature = ())]
     pub fn reset_validation_results(&mut self) {
         self.inner.reset_validation_results();
     }
 
     /// Converts the current RDF data to a Visual representation in PlantUML, that visual representation can be later converted to SVG or PNG pictures using PlantUML processors
+    /// Returns: String containing the PlantUML representation of the current RDF data
+    /// Raises: RudofError if there is an error generating the UML
     #[pyo3(signature = ())]
     pub fn data2plantuml(&self) -> PyResult<String> {
         let mut v = Vec::new();
@@ -360,6 +417,11 @@ impl PyRudof {
 
     /// Converts the current RDF data to a Visual representation in PlantUML and stores it in a file
     /// That visual representation can be later converted to SVG or PNG pictures using PlantUML processors
+    /// Parameters:
+    /// file_name: Path to the file where the PlantUML representation of the current RDF
+    /// data will be stored
+    /// Returns: None
+    /// Raises: RudofError if there is an error generating the UML or writing the file
     #[pyo3(signature = (file_name))]
     pub fn data2plantuml_file(&self, file_name: &str) -> PyResult<()> {
         let file = File::create(file_name)?;
@@ -374,6 +436,13 @@ impl PyRudof {
     }
 
     /// Adds RDF data read from a Path
+    /// Parameters:
+    /// path_name: Path to the file containing the RDF data
+    /// format: Format of the RDF data, e.g. turtle, jsonld
+    /// base: Optional base IRI to resolve relative IRIs in the RDF data
+    /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the RDF data
     #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_path(
         &mut self,
@@ -399,6 +468,13 @@ impl PyRudof {
     }
 
     /// Read Service Description from a path
+    /// Parameters:
+    /// path_name: Path to the file containing the Service Description
+    /// format: Format of the Service Description, e.g. turtle, jsonld
+    /// base: Optional base IRI to resolve relative IRIs in the Service Description
+    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the Service Description
     #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_service_description(
         &mut self,
@@ -423,6 +499,13 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Serialize the current Service Description to a file
+    /// Parameters:
+    /// format: Format of the Service Description, e.g. turtle, jsonld
+    /// output: Path to the file where the Service Description will be stored
+    /// Returns: None
+    /// Raises: RudofError if there is an error writing the Service Description
+    #[pyo3(signature = (format = &PyServiceDescriptionFormat, output))]
     pub fn serialize_service_description(
         &self,
         format: &PyServiceDescriptionFormat,
@@ -438,6 +521,14 @@ impl PyRudof {
     }
 
     /// Adds RDF data read from a String to the current RDF Data
+    ///
+    /// Parameters:
+    /// input: String containing the RDF data
+    /// format: Format of the RDF data, e.g. turtle, jsonld
+    /// base: Optional base IRI to resolve relative IRIs in the RDF data
+    /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the RDF data
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_data_str(
         &mut self,
@@ -697,6 +788,9 @@ pub enum PyRDFFormat {
     NQuads,
 }
 
+/// DCTAP format
+/// Currently, only CSV and XLSX are supported
+/// The default is CSV
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "DCTapFormat")]
 #[derive(PartialEq)]
@@ -705,6 +799,8 @@ pub enum PyDCTapFormat {
     XLSX,
 }
 
+/// Service Description format
+/// Currently, only Internal is supported
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ServiceDescriptionFormat")]
 #[derive(PartialEq)]
@@ -712,6 +808,9 @@ pub enum PyServiceDescriptionFormat {
     Internal,
 }
 
+/// ShapeMap format
+/// Currently, only Compact and JSON are supported
+/// The default is Compact
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShapeMapFormat")]
 #[derive(PartialEq)]
@@ -720,6 +819,9 @@ pub enum PyShapeMapFormat {
     JSON,
 }
 
+/// ShEx format
+/// Currently, only ShExC, ShExJ and Turtle are supported
+/// The default is ShExC
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShExFormat")]
 #[derive(PartialEq)]
@@ -729,6 +831,10 @@ pub enum PyShExFormat {
     Turtle,
 }
 
+/// SHACL format
+/// Currently, only Turtle, RDFXML, NTriples, TriG, N3 and
+/// NQuads are supported
+/// The default is Turtle
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShaclFormat")]
 #[derive(PartialEq)]
@@ -741,6 +847,15 @@ pub enum PyShaclFormat {
     NQuads,
 }
 
+/// Defines how to format a ShEx schema
+/// It can be configured to print or not terminal colors
+/// The default is to print terminal colors
+/// This is useful when printing to a terminal that supports colors
+/// or when printing to a file that will be viewed in a terminal
+/// that supports colors
+/// The formatter can be configured to not print colors
+/// when printing to a file that will be viewed in a text editor
+/// that does not support colors
 #[pyclass(frozen, name = "ShExFormatter")]
 pub struct PyShExFormatter {
     inner: ShExFormatter,
@@ -765,6 +880,15 @@ impl PyShExFormatter {
 }
 
 /// Defines how to format a ShapeMap
+/// It can be configured to print or not terminal colors
+/// The default is to print terminal colors
+/// This is useful when printing to a terminal that supports colors
+/// or when printing to a file that will be viewed in a terminal
+/// that supports colors
+/// The formatter can be configured to not print colors
+/// when printing to a file that will be viewed in a text editor
+/// that does not support colors
+/// The default is to print terminal colors
 #[pyclass(frozen, name = "ShapeMapFormatter")]
 pub struct PyShapeMapFormatter {
     inner: ShapeMapFormatter,
@@ -788,6 +912,10 @@ impl PyShapeMapFormatter {
     }
 }
 
+/// UML Generation Mode
+/// It can be configured to generate UML for all nodes
+/// or only for the neighbours of a given node
+/// The default is to generate UML for all nodes
 #[pyclass(name = "UmlGenerationMode")]
 pub enum PyUmlGenerationMode {
     /// Generate UML for all nodes
@@ -799,7 +927,6 @@ pub enum PyUmlGenerationMode {
     PyNeighs { node: String },
 }
 
-/// UML Generation Mode
 #[pymethods]
 impl PyUmlGenerationMode {
     #[new]
@@ -840,14 +967,22 @@ impl From<UmlGenerationMode> for PyUmlGenerationMode {
     }
 }
 
+/// ShEx Schema representation
+/// It can be converted to JSON
+/// It can be serialized to different formats
+/// It can be printed with or without terminal colors
+/// The default is to print with terminal colors
+/// The formatter can be configured to not print colors
+/// when printing to a file that will be viewed in a text editor
+/// that does not support colors
 #[pyclass(name = "ShExSchema")]
 pub struct PyShExSchema {
     inner: ShExSchema,
 }
 
-/// ShEx Schema representation
 #[pymethods]
 impl PyShExSchema {
+    /// Returns a string representation of the schema
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
@@ -862,7 +997,7 @@ impl PyShExSchema {
     } */
 }
 
-/// DCTAP representation
+/// [DCTAP](https://www.dublincore.org/specifications/dctap/) representation
 #[pyclass(name = "DCTAP")]
 pub struct PyDCTAP {
     inner: DCTAP,
@@ -870,10 +1005,12 @@ pub struct PyDCTAP {
 
 #[pymethods]
 impl PyDCTAP {
+    /// Returns a string representation of the DCTAP
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
 
+    /// Returns a string representation of the DCTAP
     pub fn __str__(&self) -> String {
         format!("{}", self.inner)
     }
@@ -888,6 +1025,7 @@ pub struct PyQueryShapeMap {
 
 #[pymethods]
 impl PyQueryShapeMap {
+    /// Returns a string representation of the shape map
     fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
@@ -911,10 +1049,12 @@ pub struct PyShaCo {
 
 #[pymethods]
 impl PyShaCo {
+    /// Returns a string representation of the schema comparison result
     pub fn __repr__(&self) -> String {
         format!("{}", self.inner)
     }
 
+    /// Converts the schema comparison result to JSON
     pub fn as_json(&self) -> PyResult<String> {
         let str = self
             .inner
@@ -925,6 +1065,7 @@ impl PyShaCo {
 }
 
 /// Common Shapes Model
+/// This is a structure used to compare shapes
 #[pyclass(name = "CoShaMo")]
 pub struct PyCoShaMo {
     inner: CoShaMo,
@@ -953,6 +1094,7 @@ impl PyCompareSchemaFormat {
         format!("{}", self.inner)
     }
 
+    /// Returns a CompareSchemaFormat for ShExC
     #[staticmethod]
     pub fn shexc() -> Self {
         Self {
@@ -960,6 +1102,7 @@ impl PyCompareSchemaFormat {
         }
     }
 
+    /// Returns a CompareSchemaFormat for Turtle
     #[staticmethod]
     pub fn turtle() -> Self {
         Self {
@@ -984,6 +1127,7 @@ impl PyCompareSchemaMode {
         format!("{}", self.inner)
     }
 
+    /// Returns a CompareSchemaMode for ShEx
     #[staticmethod]
     pub fn shex() -> Self {
         Self {
@@ -992,6 +1136,7 @@ impl PyCompareSchemaMode {
     }
 }
 
+/// Intermediate Representation of a SHACL Schema
 #[pyclass(name = "ShaclSchema")]
 pub struct PyShaclSchema {
     inner: ShaclSchemaIR,
@@ -1004,6 +1149,9 @@ impl PyShaclSchema {
     }
 }
 
+/// SHACL validation mode
+/// It can be native or SPARQL
+/// The default is native
 #[pyclass(eq, eq_int, name = "ShaclValidationMode")]
 #[derive(PartialEq)]
 pub enum PyShaclValidationMode {
@@ -1011,6 +1159,9 @@ pub enum PyShaclValidationMode {
     Sparql,
 }
 
+/// Source of the shapes graph for SHACL validation
+/// It can be the current RDF data or the current SHACL schema
+/// The default is the current SHACL schema
 #[pyclass(eq, eq_int, name = "ShapesGraphSource")]
 #[derive(PartialEq)]
 pub enum PyShapesGraphSource {
@@ -1018,6 +1169,10 @@ pub enum PyShapesGraphSource {
     CurrentSchema,
 }
 
+/// A single solution of a SPARQL query
+/// It can be converted to a String
+/// It can return the list of variables in this solution
+/// It can return the value of a variable name if exists, None if it doesn't
 #[pyclass(name = "QuerySolution")]
 pub struct PyQuerySolution {
     inner: QuerySolution<RdfData>,
@@ -1030,7 +1185,7 @@ impl PyQuerySolution {
         self.inner.show().to_string()
     }
 
-    /// Returns the list of variables in this solutions
+    /// Returns the list of variables in this solution
     pub fn variables(&self) -> Vec<String> {
         let vars: Vec<String> = self.inner.variables().map(|v| v.to_string()).collect();
         vars
@@ -1044,6 +1199,11 @@ impl PyQuerySolution {
     }
 }
 
+/// A set of solutions of a SPARQL query
+/// It can be converted to a String
+/// It can return the number of solutions
+/// It can be iterated to get each solution
+/// It can be converted to a list of solutions
 #[pyclass(name = "QuerySolutions")]
 pub struct PyQuerySolutions {
     inner: QuerySolutions<RdfData>,
@@ -1051,14 +1211,18 @@ pub struct PyQuerySolutions {
 
 #[pymethods]
 impl PyQuerySolutions {
+    /// Converts the solutions to a String
     pub fn show(&self) -> String {
         format!("Solutions: {:?}", self.inner)
     }
 
+    /// Returns the number of solutions
     pub fn count(&self) -> usize {
         self.inner.count()
     }
 
+    /// Returns an iterator over the solutions
+    /// This allows to iterate over the solutions in a for loop
     fn __iter__(slf: PyRef<'_, Self>) -> PyResult<Py<QuerySolutionIter>> {
         let rs: Vec<PyQuerySolution> = slf
             .inner
@@ -1072,6 +1236,7 @@ impl PyQuerySolutions {
     }
 }
 
+/// Iterator over the solutions of a SPARQL query
 #[pyclass]
 struct QuerySolutionIter {
     inner: std::vec::IntoIter<PyQuerySolution>,
@@ -1079,15 +1244,19 @@ struct QuerySolutionIter {
 
 #[pymethods]
 impl QuerySolutionIter {
+    /// Returns the iterator itself
     fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
         slf
     }
 
+    /// Returns the next solution in the iterator
     fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<PyQuerySolution> {
         slf.inner.next()
     }
 }
 
+/// Result of a ShEx validation
+/// It can be converted to a String
 #[pyclass(frozen, name = "ResultShapeMap")]
 pub struct PyResultShapeMap {
     inner: ResultShapeMap,
@@ -1102,6 +1271,9 @@ impl PyResultShapeMap {
     }
 }
 
+/// Result of a SHACL validation
+/// It can be converted to a String
+/// It can return if the data conforms to the shapes
 #[pyclass(frozen, name = "ValidationReport")]
 pub struct PyValidationReport {
     inner: ValidationReport,
@@ -1121,6 +1293,8 @@ impl PyValidationReport {
     }
 }
 
+/// Status of a validation
+/// It can be converted to a String
 #[pyclass(frozen, name = "ValidationStatus")]
 pub struct PyValidationStatus {
     inner: ValidationStatus,
@@ -1135,8 +1309,9 @@ impl PyValidationStatus {
     }
 }
 
+/// RudofError is the error type used in the Rudof library
+/// It can be converted to a Python exception
 #[pyclass(name = "RudofError")]
-/// Wrapper for `RudofError`
 pub struct PyRudofError {
     error: RudofError,
 }
