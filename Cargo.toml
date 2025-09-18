@@ -65,7 +65,7 @@ shacl_rdf = { version = "0.1.82", path = "./shacl_rdf" }
 shacl_ir = { version = "0.1.82", path = "./shacl_ir" }
 shacl_validation = { version = "0.1.86", path = "./shacl_validation" }
 shapes_converter = { version = "0.1.86", path = "./shapes_converter" }
-shapes_comparator = { version = "0.0.1", path = "./shapes_comparator" }
+shapes_comparator = { version = "0.1.92", path = "./shapes_comparator" }
 shex_ast = { version = "0.1.86", path = "./shex_ast" }
 shex_compact = { version = "0.1.82", path = "./shex_compact" }
 shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
