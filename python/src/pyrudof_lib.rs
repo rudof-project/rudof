@@ -545,6 +545,30 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Read Service Description from a String
+    /// Parameters:
+    /// input: String that contains the Service Description
+    /// format: Format of the Service Description, e.g. turtle, jsonld
+    /// base: Optional base IRI to resolve relative IRIs in the Service Description
+    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
+    /// Returns: None
+    /// Raises: RudofError if there is an error reading the Service Description
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_service_description_str(
+        &mut self,
+        input: &str,
+        format: &PyRDFFormat,
+        base: Option<&str>,
+        reader_mode: &PyReaderMode,
+    ) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+        let format = cnv_rdf_format(format);
+        self.inner
+            .read_service_description(input.as_bytes(), &format, base, &reader_mode)
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
     /// Serialize the current Service Description to a file
     /// Parameters:
     /// format: Format of the Service Description, e.g. turtle, jsonld
