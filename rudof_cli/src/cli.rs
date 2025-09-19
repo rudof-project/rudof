@@ -3,10 +3,10 @@ use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
     CliShaclFormat, DCTapResultFormat, InputCompareFormat, InputCompareMode, InputConvertFormat,
-    InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode, RdfConfigFormat,
-    RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat, ResultServiceFormat,
-    ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
-    ShapeMapFormat, ShowNodeMode, ValidationMode,
+    InputConvertMode, OutputConvertFormat, OutputConvertMode, QueryType, RDFReaderMode,
+    RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat,
+    ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
+    ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use rudof_lib::InputSpec;
@@ -1144,6 +1144,14 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(long = "query-type", 
+            value_name = "TYPE", 
+            help = "Query type (SELECT, ASK, CONSTRUCT, DESCRIBE)", 
+            default_value_t = QueryType::Select,
+            value_enum
+        )]
+        query_type: QueryType,
 
         /// RDF Reader mode
         #[arg(

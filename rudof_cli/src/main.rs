@@ -451,6 +451,7 @@ fn main() -> Result<()> {
             reader_mode,
             output,
             result_query_format,
+            query_type,
             config,
             force_overwrite,
         }) => {
@@ -461,6 +462,7 @@ fn main() -> Result<()> {
                 endpoint,
                 reader_mode,
                 query,
+                query_type,
                 result_query_format,
                 output,
                 &config,

@@ -38,6 +38,7 @@ pub use shex_validation::{ShExFormat, ValidatorConfig};
 pub use sparql_service::ServiceDescription;
 pub use sparql_service::ServiceDescriptionFormat;
 use srdf::QueryRDF;
+pub use srdf::QueryResultFormat;
 pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
 
 pub type Result<T> = result::Result<T, RudofError>;
@@ -343,7 +344,41 @@ impl Rudof {
         }
     }
 
-    pub fn run_query_str(&mut self, str: &str) -> Result<QuerySolutions<RdfData>> {
+    pub fn run_query_construct_str(
+        &mut self,
+        str: &str,
+        result_format: &QueryResultFormat,
+    ) -> Result<String> {
+        self.rdf_data
+            .check_store()
+            .map_err(|e| RudofError::StorageError {
+                error: format!("{e}"),
+            })?;
+        let result = self
+            .rdf_data
+            .query_construct(str, result_format)
+            .map_err(|e| RudofError::QueryError {
+                str: str.to_string(),
+                error: format!("{e}"),
+            })?;
+        Ok(result)
+    }
+
+    pub fn run_query_construct<R: io::Read>(
+        &mut self,
+        reader: &mut R,
+        query_format: &QueryResultFormat,
+    ) -> Result<String> {
+        let mut str = String::new();
+        reader
+            .read_to_string(&mut str)
+            .map_err(|e| RudofError::ReadError {
+                error: format!("{e}"),
+            })?;
+        self.run_query_construct_str(str.as_str(), query_format)
+    }
+
+    pub fn run_query_select_str(&mut self, str: &str) -> Result<QuerySolutions<RdfData>> {
         self.rdf_data
             .check_store()
             .map_err(|e| RudofError::StorageError {
@@ -359,14 +394,17 @@ impl Rudof {
         Ok(results)
     }
 
-    pub fn run_query<R: io::Read>(&mut self, reader: &mut R) -> Result<QuerySolutions<RdfData>> {
+    pub fn run_query_select<R: io::Read>(
+        &mut self,
+        reader: &mut R,
+    ) -> Result<QuerySolutions<RdfData>> {
         let mut str = String::new();
         reader
             .read_to_string(&mut str)
             .map_err(|e| RudofError::ReadError {
                 error: format!("{e}"),
             })?;
-        self.run_query_str(str.as_str())
+        self.run_query_select_str(str.as_str())
     }
 
     pub fn serialize_shacl<W: io::Write>(

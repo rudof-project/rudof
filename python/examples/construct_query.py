@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, RDFFormat 
+from pyrudof import Rudof, RudofConfig, RDFFormat, QueryResultFormat 
 
 endpoint = "https://plod.dbcls.jp/repositories/RDFPortal_VoID"
 
@@ -40,6 +40,6 @@ CONSTRUCT WHERE {
 rudof = Rudof(RudofConfig())
 rudof.add_endpoint(endpoint)
 
-result = rudof.query(format = RDFFormat.NTriples)
+result = rudof.run_query_construct_str(sparql_query, QueryResultFormat.Turtle)
 
 print(result)

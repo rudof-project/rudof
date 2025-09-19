@@ -6,11 +6,11 @@ use pyo3::{
 };
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, Mie,
-    PrefixMap, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode,
-    ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescription, ServiceDescriptionFormat,
-    ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode,
-    ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, iri,
+    PrefixMap, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
+    ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescription,
+    ServiceDescriptionFormat, ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat,
+    ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource,
+    UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
 };
 use std::{
     ffi::OsStr,
@@ -220,8 +220,23 @@ impl PyRudof {
     /// Run a SPARQL query obtained from a string on the RDF data
     #[pyo3(signature = (input))]
     pub fn run_query_str(&mut self, input: &str) -> PyResult<PyQuerySolutions> {
-        let results = self.inner.run_query_str(input).map_err(cnv_err)?;
+        let results = self.inner.run_query_select_str(input).map_err(cnv_err)?;
         Ok(PyQuerySolutions { inner: results })
+    }
+
+    /// Run a SPARQL CONSTRUCT query obtained from a string on the RDF data
+    #[pyo3(signature = (input, format = &PyQueryResultFormat::Turtle))]
+    pub fn run_query_construct_str(
+        &mut self,
+        input: &str,
+        format: &PyQueryResultFormat,
+    ) -> PyResult<String> {
+        let format = cnv_query_result_format(format);
+        let str = self
+            .inner
+            .run_query_construct_str(input, &format)
+            .map_err(cnv_err)?;
+        Ok(str)
     }
 
     /// Run a SPARQL query obtained from a file path on the RDF data
@@ -241,7 +256,7 @@ impl PyRudof {
             })
             .map_err(cnv_err)?;
         let mut reader = BufReader::new(file);
-        let results = self.inner.run_query(&mut reader).map_err(cnv_err)?;
+        let results = self.inner.run_query_select(&mut reader).map_err(cnv_err)?;
         Ok(PyQuerySolutions { inner: results })
     }
 
@@ -817,6 +832,20 @@ pub enum PyRDFFormat {
     TriG,
     N3,
     NQuads,
+}
+
+/// Query Result format
+#[allow(clippy::upper_case_acronyms)]
+#[pyclass(eq, eq_int, name = "QueryResultFormat")]
+#[derive(PartialEq)]
+pub enum PyQueryResultFormat {
+    Turtle,
+    NTriples,
+    RDFXML,
+    TriG,
+    N3,
+    NQuads,
+    CSV,
 }
 
 /// DCTAP format
@@ -1530,5 +1559,17 @@ fn cnv_shapes_graph_source(sgs: &PyShapesGraphSource) -> ShapesGraphSource {
     match sgs {
         PyShapesGraphSource::CurrentData => ShapesGraphSource::CurrentData,
         PyShapesGraphSource::CurrentSchema => ShapesGraphSource::CurrentSchema,
+    }
+}
+
+fn cnv_query_result_format(format: &PyQueryResultFormat) -> QueryResultFormat {
+    match format {
+        PyQueryResultFormat::Turtle => QueryResultFormat::Turtle,
+        PyQueryResultFormat::NTriples => QueryResultFormat::NTriples,
+        PyQueryResultFormat::RDFXML => QueryResultFormat::RdfXml,
+        PyQueryResultFormat::CSV => QueryResultFormat::Csv,
+        PyQueryResultFormat::TriG => QueryResultFormat::TriG,
+        PyQueryResultFormat::N3 => QueryResultFormat::N3,
+        PyQueryResultFormat::NQuads => QueryResultFormat::NQuads,
     }
 }

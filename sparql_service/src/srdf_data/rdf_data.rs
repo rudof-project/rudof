@@ -1,7 +1,7 @@
 use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::sparql::{QueryResults, SparqlEvaluator};
+use oxigraph::sparql::{Query, QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
@@ -10,7 +10,6 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::BuildRDF;
 use srdf::FocusRDF;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -24,6 +23,7 @@ use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::matcher::Matcher;
+use srdf::{BuildRDF, QueryResultFormat};
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
@@ -282,6 +282,25 @@ impl Rdf for RdfData {
 }
 
 impl QueryRDF for RdfData {
+    fn query_construct(
+        &self,
+        query_str: &str,
+        format: &QueryResultFormat,
+    ) -> Result<String, RdfDataError>
+    where
+        Self: Sized,
+    {
+        let mut str = String::new();
+        if let Some(_store) = &self.store {
+            tracing::debug!("Querying in-memory store (we ignore it by now");
+        }
+        for endpoint in &self.endpoints {
+            let new_str = endpoint.query_construct(query_str, format)?;
+            str.push_str(&new_str);
+        }
+        Ok(str)
+    }
+
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,

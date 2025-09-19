@@ -17,6 +17,7 @@ pub mod numeric_literal;
 pub mod object;
 pub mod oxrdf_impl;
 pub mod query_rdf;
+pub mod query_result_format;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
@@ -46,10 +47,9 @@ pub use iri::*;
 pub use literal::*;
 pub use object::*;
 pub use oxrdf_impl::*;
+pub use query_result_format::*;
 pub use rdf_format::*;
 pub use regex::*;
-pub use uml_converter::*;
-
 pub use shacl_path::*;
 pub use srdf_builder::*;
 pub use srdf_error::*;
@@ -59,6 +59,7 @@ pub use srdf_sparql::*;
 pub use subject::*;
 pub use term::*;
 pub use triple::*;
+pub use uml_converter::*;
 pub use vocab::*;
 pub use xsd_datetime::*;
 

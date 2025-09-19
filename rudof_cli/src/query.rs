@@ -1,15 +1,13 @@
-use std::{io::Write, path::PathBuf};
-
+use crate::{
+    QueryType, RDFReaderMode, ResultQueryFormat as CliResultQueryFormat, data::get_data_rudof,
+    data_format::DataFormat, writer::get_writer,
+};
+use anyhow::{Result, bail};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
-use srdf::{QuerySolution, VarName};
-
-use crate::{
-    RDFReaderMode, ResultQueryFormat, data::get_data_rudof, data_format::DataFormat,
-    writer::get_writer,
-};
-use anyhow::Result;
+use srdf::{QueryResultFormat, QuerySolution, VarName};
+use std::{io::Write, path::PathBuf};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_query(
@@ -18,7 +16,8 @@ pub fn run_query(
     endpoint: &Option<String>,
     reader_mode: &RDFReaderMode,
     query: &InputSpec,
-    _result_query_format: &ResultQueryFormat,
+    query_type: &QueryType,
+    result_query_format: &CliResultQueryFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     _debug: u8,
@@ -36,15 +35,32 @@ pub fn run_query(
         false,
     )?;
     let mut reader = query.open_read(None, "Query")?;
-    let results = rudof.run_query(&mut reader)?;
-    let mut results_iter = results.iter().peekable();
-    if let Some(first) = results_iter.peek() {
-        show_variables(&mut writer, first.variables())?;
-        for result in results_iter {
-            show_result(&mut writer, result, &rudof.nodes_prefixmap())?
+    match query_type {
+        QueryType::Select => {
+            let results = rudof.run_query_select(&mut reader)?;
+            let mut results_iter = results.iter().peekable();
+            if let Some(first) = results_iter.peek() {
+                show_variables(&mut writer, first.variables())?;
+                for result in results_iter {
+                    show_result(&mut writer, result, &rudof.nodes_prefixmap())?
+                }
+            } else {
+                write!(writer, "No results")?;
+            }
         }
-    } else {
-        write!(writer, "No results")?;
+        QueryType::Construct => {
+            let query_format = cnv_query_format(result_query_format);
+            let str = rudof.run_query_construct(&mut reader, &query_format)?;
+            writeln!(writer, "{str}")?;
+        }
+        QueryType::Ask => {
+            // let bool = rudof.run_query_ask(&mut reader)?;
+            // writeln!(writer, "{bool}")?;
+            bail!("Not yet implemented ASK queries");
+        }
+        QueryType::Describe => {
+            bail!("Not yet implemented DESCRIBE queries");
+        }
     }
     Ok(())
 }
@@ -84,4 +100,18 @@ fn show_result<W: Write>(
     }
     writeln!(writer)?;
     Ok(())
+}
+
+fn cnv_query_format(format: &CliResultQueryFormat) -> QueryResultFormat {
+    match format {
+        CliResultQueryFormat::Internal => QueryResultFormat::Turtle,
+        CliResultQueryFormat::NTriples => QueryResultFormat::NTriples,
+        CliResultQueryFormat::JsonLd => QueryResultFormat::JsonLd,
+        CliResultQueryFormat::RdfXml => QueryResultFormat::RdfXml,
+        CliResultQueryFormat::Csv => QueryResultFormat::Csv,
+        CliResultQueryFormat::TriG => QueryResultFormat::TriG,
+        CliResultQueryFormat::N3 => QueryResultFormat::N3,
+        CliResultQueryFormat::NQuads => QueryResultFormat::NQuads,
+        CliResultQueryFormat::Turtle => QueryResultFormat::Turtle,
+    }
 }
