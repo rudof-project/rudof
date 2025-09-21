@@ -320,7 +320,7 @@ mod tests {
                 base_uri: Some("http://example.org/".to_string()),
                 graphs: vec!["http://example.org/graph1".to_string()],
             },
-            prefixes: prefixes,
+            prefixes,
             shape_expressions,
             sample_rdf_entries,
             sparql_query_examples,
