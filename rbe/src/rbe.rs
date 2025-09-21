@@ -7,10 +7,11 @@ use std::fmt::{Debug, Display};
 //use log::debug;
 use itertools::cloned;
 
+/*
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Pending<A> {
     pending: A,
-}
+}*/
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
