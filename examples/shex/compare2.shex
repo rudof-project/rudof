@@ -1,0 +1,8 @@
+prefix : <http://example.org/>
+
+:Person {
+    :email IRI ;
+    :name xsd:string ;
+    :birthDate xsd:date ?;
+    :knows @:Person * ;
+}

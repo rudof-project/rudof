@@ -1,0 +1,13 @@
+prefix : <http://example.org/>
+
+:Person {
+    :name xsd:string ;
+    :age  xsd: int;
+    :worksFor @:Organization ? ;
+    :knows @:Person *
+}
+
+:Organization {
+    :name xsd:string ;
+    :address xsd:string ? ;
+}
