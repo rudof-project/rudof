@@ -1,13 +1,10 @@
+use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
-use std::collections::HashMap;
-use std::fmt;
-use std::path::{Path, PathBuf};
-
-use crate::context_entry_value::ContextEntryValue;
 use iri_s::IriS;
-use serde::de::{self};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_compact::ShExParser;
@@ -72,6 +69,7 @@ pub struct SchemasEntry {
     ttl: String,
 }
 
+/* Commented as Clippy detected it was never constructed?
 #[derive(Deserialize, Serialize, Debug)]
 struct Action {
     schema: String,
@@ -79,6 +77,7 @@ struct Action {
     data: String,
     focus: Option<Focus>,
 }
+
 
 #[derive(Deserialize, Serialize, Debug)]
 struct ExtensionResult {
@@ -133,7 +132,7 @@ impl<'de> Deserialize<'de> for Focus {
         deserializer.deserialize_any(FocusVisitor {})
     }
 }
-
+*/
 impl ManifestSchemas {
     pub fn run(&self, base: &Path, _debug: u8) -> Result<(), ManifestError> {
         for entry in self.map.values() {

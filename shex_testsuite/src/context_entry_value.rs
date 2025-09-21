@@ -10,10 +10,12 @@ pub(crate) enum ContextEntryValue {
     Plain(String),
 }
 
+/* Commented as clippy detected that it is never constructed
 #[derive(Deserialize, Serialize, Debug)]
 struct Value {
     value: String,
 }
+*/
 
 // I didn't find a way to automatically derive a deserializer for enums which contain
 // both a Map and a String

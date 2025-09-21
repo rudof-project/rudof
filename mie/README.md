@@ -1,8 +1,3 @@
-# RBE - Rust implementation Regular Bag Expressions
+# MIE - Metadata Interoperable Endpoints 
 
-This crate contains an implementation of Regular Bag Expressions in Rust.
-
-## More information
-
-- Paper: Semantics and validation of Shapes schemas for RDF, I. Boneva, Jose E. Labra Gayo, Eric Prud'hommeaux, [https://doi.org/10.1007/978-3-319-68288-4_7](https://doi.org/10.1007/978-3-319-68288-4_7)
-- A previous project in Scala is [here](https://www.weso.es/shex-s/docs/rbe)
+This crate contains an implementation of MIE. MIE is a format that has been developed as part of [DBCLS Biohackathon 2025](https://2025.biohackathon.org/) with the goal to simple descriptions of SPARQL Endpoints for the development of MCP servers.
