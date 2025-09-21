@@ -1,6 +1,5 @@
-use crate::{ComparatorError, Percentage, ValueDescription};
+use crate::{ComparatorError, ValueDescription};
 use iri_s::IriS;
-use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 
@@ -48,6 +47,12 @@ impl ShaCo {
         serde_json::to_string_pretty(self).map_err(|e| ComparatorError::JsonSerializationError {
             error: format!("{e}"),
         })
+    }
+}
+
+impl Default for ShaCo {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

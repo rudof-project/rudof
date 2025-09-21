@@ -6,11 +6,11 @@ use crate::{
 };
 use iri_s::IriS;
 use itertools::Itertools;
-use mie::{Mie, SchemaInfo};
+use mie::Mie;
 use serde::{Deserialize, Serialize};
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt::Display,
     io::{self},
     path::Path,
@@ -121,19 +121,13 @@ impl ServiceDescription {
             ServiceDescriptionFormat::Mie => {
                 let mie = self.service2mie();
                 let mie_str = serde_json::to_string(&mie).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Error converting ServiceDescription to MIE: {e}"),
-                    )
+                    io::Error::other(format!("Error converting ServiceDescription to MIE: {e}"))
                 })?;
                 writer.write_all(mie_str.as_bytes())
             }
             ServiceDescriptionFormat::Json => {
                 let json = serde_json::to_string_pretty(self).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Error converting ServiceDescription to JSON: {e}"),
-                    )
+                    io::Error::other(format!("Error converting ServiceDescription to JSON: {e}"))
                 })?;
                 writer.write_all(json.as_bytes())
             }

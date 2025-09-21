@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]

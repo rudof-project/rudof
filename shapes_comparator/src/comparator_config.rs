@@ -14,3 +14,9 @@ impl ComparatorConfig {
         }
     }
 }
+
+impl Default for ComparatorConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}

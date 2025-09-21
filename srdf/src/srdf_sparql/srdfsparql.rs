@@ -407,7 +407,7 @@ fn make_sparql_query_construct(
     query: &str,
     client: &Client,
     endpoint_iri: &IriS,
-    format: &QueryResultFormat,
+    _format: &QueryResultFormat,
 ) -> Result<String> {
     use reqwest::blocking::Response;
     // use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};

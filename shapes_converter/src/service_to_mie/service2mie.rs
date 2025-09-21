@@ -19,7 +19,6 @@ impl Service2Mie {
     }
 
     pub fn convert(&mut self, service: &ServiceDescription) -> Mie {
-        let mie = service.service2mie();
-        mie
+        service.service2mie()
     }
 }

@@ -11,6 +11,7 @@ use shex_ast::Schema;
 use std::path::PathBuf;
 use tracing::debug;
 
+#[allow(clippy::too_many_arguments)]
 pub fn run_compare(
     input1: &InputSpec,
     format1: &InputCompareFormat,
@@ -20,7 +21,7 @@ pub fn run_compare(
     format2: &InputCompareFormat,
     mode2: &InputCompareMode,
     label2: Option<&str>,
-    reader_mode: &RDFReaderMode,
+    _reader_mode: &RDFReaderMode,
     output: &Option<PathBuf>,
     result_format: &ResultCompareFormat,
     config: &RudofConfig,
@@ -29,7 +30,7 @@ pub fn run_compare(
     let mut reader1 = input1.open_read(Some(format1.mime_type().as_str()), "Compare1")?;
     let mut reader2 = input2.open_read(Some(format2.mime_type().as_str()), "Compare2")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(&config);
+    let mut rudof = Rudof::new(config);
     let coshamo1 = get_coshamo(&mut rudof, mode1, format1, label1, &mut reader1)?;
     let coshamo2 = get_coshamo(&mut rudof, mode2, format2, label2, &mut reader2)?;
     let shaco = coshamo1.compare(&coshamo2);
@@ -57,7 +58,7 @@ pub fn get_coshamo(
     match mode {
         InputCompareMode::SHACL => bail!("Not yet implemented comparison between SHACL schemas"),
         InputCompareMode::ShEx => {
-            let shex = read_shex(rudof, &format, reader, "shex1")?;
+            let shex = read_shex(rudof, format, reader, "shex1")?;
             let mut converter = CoShaMoConverter::new(&ComparatorConfig::new());
             let coshamo = converter.from_shex(&shex, label)?;
             Ok(coshamo)
@@ -77,7 +78,7 @@ pub fn read_shex(
 ) -> Result<Schema> {
     let shex_format1 = format
         .to_shex_format()
-        .expect(format!("ShEx format1 {format}").as_str());
+        .unwrap_or_else(|_| panic!("ShEx format1 {format}"));
     rudof.read_shex(reader, &shex_format1, None)?;
     if let Some(schema) = rudof.get_shex() {
         debug!("Schema read: {schema}");

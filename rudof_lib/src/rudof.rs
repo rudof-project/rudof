@@ -177,6 +177,7 @@ impl Rudof {
         self.shapemap.as_ref()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas<R: io::Read>(
         &mut self,
         reader1: &mut R,

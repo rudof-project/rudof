@@ -6,3 +6,9 @@ impl Service2MieConfig {
         Service2MieConfig {}
     }
 }
+
+impl Default for Service2MieConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}

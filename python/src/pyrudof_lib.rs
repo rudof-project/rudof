@@ -160,7 +160,7 @@ impl PyRudof {
         let coshamo = self
             .inner
             .get_coshamo(&mut reader, &mode, &format, base, label)
-            .map_err(|e| PyRudofError::from(e))?;
+            .map_err(PyRudofError::from)?;
         Ok(PyCoShaMo { inner: coshamo })
     }
 
@@ -171,6 +171,7 @@ impl PyRudof {
     /// label1, label2: Optional labels of the shapes to compare
     /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
     #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2))]
+    #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas_str(
         &mut self,
         schema1: &str,
@@ -192,13 +193,13 @@ impl PyRudof {
         let coshamo1 = self
             .inner
             .get_coshamo(&mut reader1, &mode1, &format1, base1, label1)
-            .map_err(|e| PyRudofError::from(e))?;
+            .map_err(PyRudofError::from)?;
 
         let mut reader2 = schema2.as_bytes();
         let coshamo2 = self
             .inner
             .get_coshamo(&mut reader2, &mode2, &format2, base2, label2)
-            .map_err(|e| PyRudofError::from(e))?;
+            .map_err(PyRudofError::from)?;
         let shaco = coshamo1.compare(&coshamo2);
         Ok(PyShaCo { inner: shaco })
     }

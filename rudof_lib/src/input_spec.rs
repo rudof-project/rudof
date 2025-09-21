@@ -133,24 +133,6 @@ impl InputSpec {
             InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
-
-    pub fn url2reader(url: &Url) -> Result<BufReader<reqwest::blocking::Response>, InputSpecError> {
-        let client =
-            ClientBuilder::new()
-                .build()
-                .map_err(|e| InputSpecError::ClientBuilderError {
-                    error: format!("{e}"),
-                })?;
-        let resp = client
-            .get(url.as_str())
-            .send()
-            .map_err(|e| InputSpecError::UrlDerefError {
-                url: url.clone(),
-                error: format!("{e}"),
-            })?;
-        let reader = BufReader::new(resp);
-        Ok(reader)
-    }
 }
 
 impl FromStr for InputSpec {

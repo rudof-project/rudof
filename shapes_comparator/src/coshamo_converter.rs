@@ -8,14 +8,14 @@ use crate::{CoShaMo, ComparatorConfig, ComparatorError, ValueDescription};
 
 #[derive(Clone, Debug)]
 pub struct CoShaMoConverter {
-    config: ComparatorConfig,
+    _config: ComparatorConfig,
     current_coshamo: CoShaMo,
 }
 
 impl CoShaMoConverter {
     pub fn new(config: &ComparatorConfig) -> Self {
         CoShaMoConverter {
-            config: config.clone(),
+            _config: config.clone(),
             current_coshamo: CoShaMo::new(),
         }
     }
@@ -31,8 +31,8 @@ impl CoShaMoConverter {
 
     fn service2coshamo(
         &mut self,
-        service: &ServiceDescription,
-        label: &Option<String>,
+        _service: &ServiceDescription,
+        _label: &Option<String>,
     ) -> Result<CoShaMo, ComparatorError> {
         Ok(self.current_coshamo.clone())
     }
@@ -50,14 +50,12 @@ impl CoShaMoConverter {
                 ComparatorError::ShapeNotFound {
                     label: label.to_string(),
                     available_shapes: if let Some(shapes) = schema.shapes() {
-                        format!(
-                            "{}",
-                            shapes
-                                .iter()
-                                .map(|s| s.id().to_string())
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        )
+                        shapes
+                            .iter()
+                            .map(|s| s.id().to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                            .to_string()
                     } else {
                         "No Shapes".to_string()
                     },
@@ -70,14 +68,12 @@ impl CoShaMoConverter {
                 Err(ComparatorError::ShapeNotFound {
                     label: label.to_string(),
                     available_shapes: if let Some(shapes) = schema.shapes() {
-                        format!(
-                            "{}",
-                            shapes
-                                .iter()
-                                .map(|s| s.id().to_string())
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        )
+                        shapes
+                            .iter()
+                            .map(|s| s.id().to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                            .to_string()
                     } else {
                         "No Shapes".to_string()
                     },
@@ -101,12 +97,12 @@ impl CoShaMoConverter {
     ) -> Result<(), ComparatorError> {
         match triple_expr {
             TripleExpr::EachOf {
-                id,
+                id: _,
                 expressions,
-                min,
-                max,
-                sem_acts,
-                annotations,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
             } => {
                 for e in expressions {
                     let (iri, tc) = self.triple_expr_as_constraint2coshamo(&e.te, coshamo)?;
@@ -116,41 +112,41 @@ impl CoShaMoConverter {
                 Ok(())
             }
             TripleExpr::OneOf {
-                id,
-                expressions,
-                min,
-                max,
-                sem_acts,
-                annotations,
+                id: _,
+                expressions: _,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
             } => Err(ComparatorError::NotImplemented {
                 feature: "OneOf".to_string(),
             }),
             TripleExpr::TripleConstraint {
-                id,
-                negated,
-                inverse,
+                id: _,
+                negated: _,
+                inverse: _,
                 predicate,
                 value_expr,
-                min,
-                max,
-                sem_acts,
+                min: _,
+                max: _,
+                sem_acts: _,
                 annotations,
             } => {
-                self.triple_constraint2coshamo(&predicate, value_expr, annotations)?;
+                self.triple_constraint2coshamo(predicate, value_expr, annotations)?;
                 let iri_s = self.get_iri(predicate)?;
                 self.current_coshamo
                     .add_constraint(&iri_s, ValueDescription::new(predicate));
                 Ok(())
             }
-            TripleExpr::TripleExprRef(triple_expr_label) => todo!(),
+            TripleExpr::TripleExprRef(_) => todo!(),
         }
     }
 
     fn triple_constraint2coshamo(
         &mut self,
         predicate: &IriRef,
-        value_expr: &Option<Box<ShapeExpr>>,
-        annotations: &Option<Vec<shex_ast::Annotation>>,
+        _value_expr: &Option<Box<ShapeExpr>>,
+        _annotations: &Option<Vec<shex_ast::Annotation>>,
     ) -> Result<(), ComparatorError> {
         let iri_s = self.get_iri(predicate)?;
         self.current_coshamo
@@ -161,7 +157,7 @@ impl CoShaMoConverter {
     fn triple_expr_as_constraint2coshamo(
         &mut self,
         triple_expr: &TripleExpr,
-        coshamo: &mut CoShaMo,
+        _coshamo: &mut CoShaMo,
     ) -> Result<(IriRef, ValueDescription), ComparatorError> {
         match triple_expr {
             TripleExpr::EachOf { .. } => Err(ComparatorError::NotImplemented {
@@ -171,7 +167,7 @@ impl CoShaMoConverter {
                 feature: "OneOf as constraint".to_string(),
             }),
             TripleExpr::TripleConstraint { predicate, .. } => {
-                Ok((predicate.clone(), ValueDescription::new(&predicate)))
+                Ok((predicate.clone(), ValueDescription::new(predicate)))
             }
             TripleExpr::TripleExprRef(_) => Err(ComparatorError::NotImplemented {
                 feature: "TripleExprRef as constraint".to_string(),

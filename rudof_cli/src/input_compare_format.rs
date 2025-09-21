@@ -1,3 +1,4 @@
+use crate::CliShaclFormat;
 use crate::{dctap_format::DCTapFormat as CliDCTapFormat, mime_type::MimeType};
 use anyhow::{Result, bail};
 use clap::ValueEnum;
@@ -6,8 +7,6 @@ use std::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
-
-use crate::{CliShaclFormat, ShExFormat as CliShExFormat};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -24,7 +23,6 @@ impl InputCompareFormat {
             InputCompareFormat::ShExC => Ok(ShExFormat::ShExC),
             InputCompareFormat::ShExJ => Ok(ShExFormat::ShExJ),
             InputCompareFormat::Turtle => Ok(ShExFormat::Turtle),
-            _ => bail!("Converting ShEx, format {self} not supported"),
         }
     }
     pub fn to_shacl_format(&self) -> Result<CliShaclFormat> {
@@ -35,9 +33,7 @@ impl InputCompareFormat {
     }
 
     pub fn to_dctap_format(&self) -> Result<CliDCTapFormat> {
-        match self {
-            _ => bail!("Converting to DCTAP, format {self} not supported"),
-        }
+        bail!("Converting to DCTAP, format {self} not supported")
     }
 }
 

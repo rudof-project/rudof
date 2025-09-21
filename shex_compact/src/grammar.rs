@@ -1,5 +1,4 @@
 use crate::{IRes, Span, shex_parser_error::ParseError as ShExParseError};
-use colored::*;
 use nom::{
     Err,
     branch::alt,

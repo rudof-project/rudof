@@ -1,7 +1,7 @@
 use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::sparql::{Query, QueryResults, SparqlEvaluator};
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
@@ -412,22 +412,6 @@ impl NeighsRDF for RdfData {
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }
-
-    //TODO: implement optimizations for triples_with_subject and similar methods!
-    /*fn triples_with_object<O: srdf::matcher::Matcher<Self::Term>>(
-        &self,
-        object: O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let graph_triples = self
-            .graph
-            .iter()
-            .flat_map(|g| g.triples_with_object(object.clone()));
-        let endpoints_triples = self
-            .endpoints
-            .iter()
-            .flat_map(|e| e.triples_with_object(object.clone()));
-        Ok(graph_triples.chain(endpoints_triples))
-    }*/
 }
 
 impl FocusRDF for RdfData {

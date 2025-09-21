@@ -1,11 +1,8 @@
-use std::{collections::HashMap, fmt::Display};
-
+use crate::{ComparatorError, ShaCo};
 use iri_s::IriS;
-use prefixmap::{IriRef, PrefixMap, iri_ref};
+use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
-use shex_ast::{Schema, ShapeExpr, TripleExpr};
-
-use crate::{ComparatorConfig, ComparatorError, ShaCo};
+use std::{collections::HashMap, fmt::Display};
 
 // Common Shape Model
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -40,9 +37,9 @@ impl CoShaMo {
                     error: e.to_string(),
                 })
         } else {
-            return Err(ComparatorError::NoPrefixMapDerefrencingIriRef {
+            Err(ComparatorError::NoPrefixMapDerefrencingIriRef {
                 iri_ref: iri_ref.to_string(),
-            });
+            })
         }
     }
 
@@ -56,7 +53,7 @@ impl CoShaMo {
             }
         }
         for (property2, descr2) in other.constraints.iter() {
-            if let Some(_) = self.constraints.get(property2) {
+            if self.constraints.contains_key(property2) {
                 // Nothing to do, as it should have already been inserted in equals properties
             } else {
                 shaco.add_diff_property2(property2.clone(), descr2.clone());
