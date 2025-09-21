@@ -20,6 +20,7 @@
 - [shacl-validate](./cli_usage/shacl_validate.md)
 - [validate](./cli_usage/validate.md)
 - [convert](./cli_usage/convert.md)
+- [compare](./cli_usage/compare.md)
 
 # `rudof` as a library
 
