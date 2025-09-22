@@ -46,10 +46,19 @@ pub struct DataStatistics {
 /// Basic information about the schema and endpoint
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct SchemaInfo {
+    /// Title of the schema
     title: Option<String>,
+
+    /// Description of the schema
     description: Option<String>,
+
+    /// SPARQL endpoint URL
     endpoint: Option<String>,
+
+    /// Base URI for the schema
     base_uri: Option<String>,
+
+    /// Named graphs used in the endpoint
     graphs: Vec<String>,
 }
 
@@ -108,6 +117,10 @@ impl Mie {
 
     pub fn add_endpoint(&mut self, endpoint: Option<&str>) {
         self.schema_info.endpoint = endpoint.map(|e| e.to_string());
+    }
+
+    pub fn add_title(&mut self, title: &str) {
+        self.schema_info.title = Some(title.to_string());
     }
 
     pub fn to_yaml(&self) -> Yaml {

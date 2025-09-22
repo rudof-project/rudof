@@ -1,18 +1,19 @@
 use crate::{
-    ClassPartition, Dataset, Feature, GraphCollection, GraphDescription, NamedGraphDescription,
-    PropertyPartition, SD_AVAILABLE_GRAPHS, SD_BASIC_FEDERATED_QUERY_STR, SD_DEFAULT_DATASET,
-    SD_DEFAULT_GRAPH, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR, SD_ENDPOINT, SD_FEATURE,
-    SD_GRAPH, SD_NAME, SD_NAMED_GRAPH, SD_REQUIRES_DATASET_STR, SD_RESULT_FORMAT, SD_SERVICE,
-    SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR, SD_SUPPORTED_LANGUAGE,
-    SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
-    SupportedLanguage, VOID_CLASS, VOID_CLASS_PARTITION, VOID_CLASSES, VOID_PROPERTY,
-    VOID_PROPERTY_PARTITION, VOID_TRIPLES,
+    ClassPartition, DCT_TITLE, Dataset, Feature, GraphCollection, GraphDescription,
+    NamedGraphDescription, PropertyPartition, SD_AVAILABLE_GRAPHS, SD_BASIC_FEDERATED_QUERY_STR,
+    SD_DEFAULT_DATASET, SD_DEFAULT_GRAPH, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR,
+    SD_ENDPOINT, SD_FEATURE, SD_GRAPH, SD_NAME, SD_NAMED_GRAPH, SD_REQUIRES_DATASET_STR,
+    SD_RESULT_FORMAT, SD_SERVICE, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR,
+    SD_SPARQL11_UPDATE_STR, SD_SUPPORTED_LANGUAGE, SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription,
+    ServiceDescriptionError, SparqlResultFormat, SupportedLanguage, VOID_CLASS,
+    VOID_CLASS_PARTITION, VOID_CLASSES, VOID_PROPERTY, VOID_PROPERTY_PARTITION, VOID_TRIPLES,
 };
 use iri_s::IriS;
 use srdf::{
     FocusRDF, IriOrBlankNode, Object, PResult, RDFNodeParse, RDFParser, get_focus_iri_or_bnode,
     numeric_literal::NumericLiteral, object, ok, optional, parse_property_values, property_iri,
-    property_iri_or_bnode, property_number, property_values_iri, set_focus_iri_or_bnode,
+    property_iri_or_bnode, property_number, property_string, property_values_iri,
+    set_focus_iri_or_bnode,
 };
 use std::{collections::HashSet, fmt::Debug};
 use tracing::{debug, trace};
@@ -76,14 +77,28 @@ where
                                             let feature = feature.clone();
                                             available_graphs(&focus).then({
                                                 move |ags| {
-                                                    let mut sd = ServiceDescription::new()
-                                                        .with_endpoint(iri.clone())
-                                                        .with_available_graphs(ags)
-                                                        .with_default_dataset(default_ds.clone());
-                                                    sd.add_supported_languages(sl.clone());
-                                                    sd.add_features(feature.clone());
-                                                    sd.add_result_formats(result_format.clone());
-                                                    ok(&sd)
+                                                    let focus = focus.clone();
+                                                    let iri = iri.clone();
+                                                    let sl = sl.clone();
+                                                    let result_format = result_format.clone();
+                                                    let feature = feature.clone();
+                                                    let ags = ags.clone();
+                                                    let default_ds = default_ds.clone();
+                                                    title(&focus).then(move |title| {
+                                                        let mut sd = ServiceDescription::new()
+                                                            .with_endpoint(iri.clone())
+                                                            .with_available_graphs(ags.clone())
+                                                            .with_default_dataset(
+                                                                default_ds.clone(),
+                                                            );
+                                                        sd.add_title(title.as_deref());
+                                                        sd.add_supported_languages(sl.clone());
+                                                        sd.add_features(feature.clone());
+                                                        sd.add_result_formats(
+                                                            result_format.clone(),
+                                                        );
+                                                        ok(&sd)
+                                                    })
                                                 }
                                             })
                                         }
@@ -100,6 +115,13 @@ where
     fn sd_service() -> RDF::Term {
         SD_SERVICE.clone().into()
     }
+}
+
+pub fn title<RDF>(focus: &IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Option<String>>
+where
+    RDF: FocusRDF + 'static,
+{
+    set_focus_iri_or_bnode(focus).with(optional(property_string(&DCT_TITLE)))
 }
 
 pub fn endpoint<RDF>() -> impl RDFNodeParse<RDF, Output = Option<IriS>>

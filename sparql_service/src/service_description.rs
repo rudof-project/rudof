@@ -16,17 +16,33 @@ use std::{
     path::Path,
 };
 
+/// Describes the service description of a SPARQL endpoint
+/// The description is parsed from RDF according to the
+/// [Service Description](https://www.w3.org/TR/sparql11-service-description/) spec
+/// and the [VoID voacabulary](https://www.w3.org/TR/void/).
 #[derive(Clone, PartialEq, Eq, Default, Debug, Serialize, Deserialize)]
 pub struct ServiceDescription {
+    /// Title of service description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     endpoint: Option<IriS>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     default_dataset: Option<Dataset>,
+
     #[serde(skip_serializing_if = "HashSet::is_empty")]
     supported_language: HashSet<SupportedLanguage>,
+
+    /// Features supported by the endpoint
     #[serde(skip_serializing_if = "HashSet::is_empty")]
     feature: HashSet<Feature>,
+
+    /// Result formats supported by the endpoint
+    #[serde(skip_serializing_if = "HashSet::is_empty")]
     result_format: HashSet<SparqlResultFormat>,
+
     #[serde(skip_serializing_if = "Vec::is_empty")]
     available_graphs: Vec<GraphCollection>,
 }
@@ -34,6 +50,7 @@ pub struct ServiceDescription {
 impl ServiceDescription {
     pub fn new() -> ServiceDescription {
         ServiceDescription {
+            title: None,
             endpoint: None,
             default_dataset: None,
             supported_language: HashSet::new(),
@@ -46,6 +63,14 @@ impl ServiceDescription {
     pub fn with_endpoint(mut self, endpoint: Option<IriS>) -> Self {
         self.endpoint = endpoint;
         self
+    }
+
+    pub fn add_title(&mut self, title: Option<&str>) {
+        self.title = title.map(|t| t.to_string());
+    }
+
+    pub fn title(&self) -> &Option<String> {
+        &self.title
     }
 
     pub fn endpoint(&self) -> &Option<IriS> {
@@ -108,6 +133,15 @@ impl ServiceDescription {
         let mut mie = Mie::default();
         let endpoint = self.endpoint.as_ref().map(|e| e.as_str());
         mie.add_endpoint(endpoint);
+
+        if let Some(title) = &self.title {
+            mie.add_title(title);
+        }
+
+        for _graph in self.available_graphs.iter() {
+            // let graph_name = graph.graph_name().as_ref().map(|g| g.as_str());
+            // mie.add_graph(graphs.service2mie());
+        }
         mie
     }
 

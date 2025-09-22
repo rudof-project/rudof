@@ -2,6 +2,9 @@ use const_format::concatcp;
 use iri_s::IriS;
 use lazy_static::lazy_static;
 
+pub const DCT_STR: &str = "http://purl.org/dc/terms/";
+pub const DCT_TITLE_STR: &str = concatcp!(DCT_STR, "title");
+
 pub const SD_STR: &str = "http://www.w3.org/ns/sparql-service-description#";
 pub const SD_SERVICE_STR: &str = concatcp!(SD_STR, "Service");
 pub const SD_DEFAULT_GRAPH_STR: &str = concatcp!(SD_STR, "defaultGraph");
@@ -41,6 +44,7 @@ pub const VOID_DISJOINT_SUBJECTS_STR: &str = concatcp!(VOID_STR, "disjointSubjec
 pub const VOID_DISJOINT_OBJECTS_STR: &str = concatcp!(VOID_STR, "disjointObjects");
 
 lazy_static! {
+    pub static ref DCT_TITLE: IriS = IriS::new_unchecked(DCT_TITLE_STR);
     pub static ref SD: IriS = IriS::new_unchecked(SD_STR);
     pub static ref SD_SERVICE: IriS = IriS::new_unchecked(SD_SERVICE_STR);
     pub static ref SD_AVAILABLE_GRAPHS: IriS = IriS::new_unchecked(SD_AVAILABLE_GRAPHS_STR);
