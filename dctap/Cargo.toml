@@ -1,6 +1,6 @@
 [package]
 name = "dctap"
-version = "0.1.90"
+version = "0.1.102"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/dctap"

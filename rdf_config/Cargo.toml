@@ -1,6 +1,6 @@
 [package]
 name = "rdf_config"
-version = "0.1.95"
+version = "0.1.102"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
