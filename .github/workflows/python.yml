@@ -69,40 +69,40 @@ jobs:
       - name: Test Built Wheel
         run: cd python/tests && python3 -m unittest discover -vvv
 
-#  windows:
-#    runs-on: Windows-2022
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        python-version: [ 3.12 ]
-#        target: [ x64, x86 ]
+  windows:
+    runs-on: Windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ 3.12 ]
+        target: [ x64, x86 ]
 
-#    steps:
-#      - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-#      - uses: actions/setup-python@v5
-#        with:
-#          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
- #     - name: Build wheels
- #       uses: PyO3/maturin-action@v1
- #       with:
- #         working-directory: python
- #         target: ${{ matrix.target }}
- #         args: --release --out dist --interpreter ${{ matrix.python-version }}
- #         sccache: 'true'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: python
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          sccache: 'true'
 
- #     - name: Upload wheels
- #       uses: actions/upload-artifact@v4
- #       with:
- #         name: wheels-windows-${{ matrix.target }}
- #         path: python/dist
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.target }}
+          path: python/dist
 
-#      - name: Install Built Wheel
-#        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
+      - name: Install Built Wheel
+        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
 
-#      - name: Test Built Wheel
-#        run: cd python/tests && python3 -m unittest discover -vvv
+      - name: Test Built Wheel
+        run: cd python/tests && python3 -m unittest discover -vvv
 
   macos:
     runs-on: ${{ matrix.vm }}
