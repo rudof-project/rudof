@@ -1,9 +1,10 @@
 extern crate anyhow;
 use anyhow::*;
+use iri_s::IriS;
 use prefixmap::IriRef;
 use shapemap::NodeSelector;
 use shex_ast::ObjectValue;
-use srdf::NeighsRDF;
+use srdf::{NeighsRDF, ReaderMode};
 use std::result::Result::Ok;
 
 use std::{io::Write, path::PathBuf};
@@ -12,16 +13,16 @@ use rudof_lib::{InputSpec, Rudof, RudofConfig, ShapeMapParser};
 
 use crate::data_format::DataFormat;
 use crate::{
-    RDFReaderMode, ShowNodeMode, data::get_data_rudof, node_selector::parse_node_selector,
-    writer::get_writer,
+    ShowNodeMode, data::get_data_rudof, node_selector::parse_node_selector, writer::get_writer,
 };
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_node(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     node_str: &str,
     predicates: &Vec<String>,
     show_node_mode: &ShowNodeMode,
@@ -37,6 +38,7 @@ pub fn run_node(
         &mut rudof,
         data,
         data_format,
+        base,
         endpoint,
         reader_mode,
         config,

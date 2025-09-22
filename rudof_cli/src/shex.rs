@@ -3,38 +3,41 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
+use crate::ShExFormat as CliShExFormat;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
 use crate::mime_type::MimeType;
 use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
-use crate::{ColorSupport, base_convert, shapemap_format_convert};
-use crate::{RDFReaderMode, ShExFormat as CliShExFormat};
+use crate::{ColorSupport, shapemap_format_convert};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use anyhow::Context;
 use anyhow::{Result, bail};
+use iri_s::IriS;
 use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormat, ShExFormatter};
 use shapemap::ResultShapeMap;
 use shex_ast::{Schema, ShapeExprLabel};
+use srdf::ReaderMode;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shex(
     input: &InputSpec,
     schema_format: &CliShExFormat,
+    base: &Option<IriS>,
     result_schema_format: &CliShExFormat,
     output: &Option<PathBuf>,
     show_time: bool,
     show_schema: bool,
     compile: bool,
     force_overwrite: bool,
-    _reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     config: &RudofConfig,
 ) -> Result<()> {
     let begin = Instant::now();
     let (writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
 
-    parse_shex_schema_rudof(&mut rudof, input, schema_format, config)?;
+    parse_shex_schema_rudof(&mut rudof, input, schema_format, base, reader_mode, config)?;
     if show_schema {
         show_shex_schema_rudof(&rudof, result_schema_format, writer, color)?;
     }
@@ -162,15 +165,22 @@ pub fn parse_shex_schema_rudof(
     rudof: &mut Rudof,
     input: &InputSpec,
     schema_format: &CliShExFormat,
+    base: &Option<IriS>,
+    reader_mode: &ReaderMode,
     config: &RudofConfig,
 ) -> Result<()> {
     let reader = input
         .open_read(Some(&schema_format.mime_type()), "ShEx schema")
         .context(format!("Get reader from input: {input}"))?;
     let schema_format = shex_format_convert(schema_format);
-    let shex_config = config.shex_config();
-    let base = base_convert(&shex_config.base);
-    rudof.read_shex(reader, &schema_format, base)?;
+    let base = get_base(config, base);
+    rudof.read_shex(
+        reader,
+        &schema_format,
+        base.as_deref(),
+        reader_mode,
+        Some(&input.source_name()),
+    )?;
     if config.shex_config().check_well_formed() {
         let shex_ir = rudof.get_shex_ir().unwrap();
         if shex_ir.has_neg_cycle() {
@@ -179,6 +189,18 @@ pub fn parse_shex_schema_rudof(
         }
     }
     Ok(())
+}
+
+fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Option<String> {
+    if let Some(base) = base {
+        Some(base.to_string())
+    } else {
+        config
+            .shex_config()
+            .base
+            .as_ref()
+            .map(|iri| iri.to_string())
+    }
 }
 
 fn show_extends_table<R: Write>(
@@ -204,10 +226,12 @@ pub fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
 pub fn run_validate_shex(
     schema: &Option<InputSpec>,
     schema_format: &Option<CliShExFormat>,
+    base_schema: &Option<IriS>,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base_data: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
     shapemap: &Option<InputSpec>,
@@ -228,13 +252,20 @@ pub fn run_validate_shex(
             CliShExFormat::ShExJ => ShExFormat::ShExJ,
             _ => bail!("ShExJ validation not yet implemented"),
         };
-        let base_iri = config.shex_config().base;
-        let schema_base = base_iri.as_ref().map(|iri| iri.as_str());
-        rudof.read_shex(schema_reader, &schema_format, schema_base)?;
+        let base_iri = get_base(config, base_schema);
+        let schema_base = base_iri.as_deref();
+        rudof.read_shex(
+            schema_reader,
+            &schema_format,
+            schema_base,
+            reader_mode,
+            Some(&schema.source_name()),
+        )?;
         get_data_rudof(
             &mut rudof,
             data,
             data_format,
+            base_data,
             endpoint,
             reader_mode,
             config,

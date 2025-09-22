@@ -1,8 +1,9 @@
 prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
     :name xsd:string ;
-    :age  xsd: int;
+    :age  xsd:integer;
     :worksFor @:Organization ? ;
     :knows @:Person *
 }

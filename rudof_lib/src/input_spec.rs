@@ -40,6 +40,15 @@ impl InputSpec {
         InputSpec::Path(PathBuf::from(path.as_ref()))
     }
 
+    pub fn source_name(&self) -> String {
+        match self {
+            InputSpec::Path(path_buf) => path_buf.display().to_string(),
+            InputSpec::Stdin => "stdin".to_string(),
+            InputSpec::Url(url_spec) => url_spec.to_string(),
+            InputSpec::Str(_) => "string".to_string(),
+        }
+    }
+
     pub fn as_iri(&self) -> Result<IriS, InputSpecError> {
         match self {
             InputSpec::Path(path) => {

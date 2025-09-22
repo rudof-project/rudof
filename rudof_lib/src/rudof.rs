@@ -182,19 +182,42 @@ impl Rudof {
         &mut self,
         reader1: &mut R,
         reader2: &mut R,
+
         mode1: CompareSchemaMode,
         mode2: CompareSchemaMode,
+
         format1: CompareSchemaFormat,
         format2: CompareSchemaFormat,
 
         base1: Option<&str>,
         base2: Option<&str>,
 
+        reader_mode: &ReaderMode,
+
         label1: Option<&str>,
         label2: Option<&str>,
+
+        source_name1: Option<&str>,
+        source_name2: Option<&str>,
     ) -> Result<ShaCo> {
-        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, label1)?;
-        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, label2)?;
+        let coshamo1 = self.get_coshamo(
+            reader1,
+            &mode1,
+            &format1,
+            base1,
+            reader_mode,
+            label1,
+            source_name1,
+        )?;
+        let coshamo2 = self.get_coshamo(
+            reader2,
+            &mode2,
+            &format2,
+            base2,
+            reader_mode,
+            label2,
+            source_name2,
+        )?;
         Ok(coshamo1.compare(&coshamo2))
     }
 
@@ -563,8 +586,10 @@ impl Rudof {
         reader: R,
         format: &ShExFormat,
         base: Option<&str>,
+        reader_mode: &ReaderMode,
+        source_name: Option<&str>,
     ) -> Result<()> {
-        let schema_json = self.read_shex_only(reader, format, base)?;
+        let schema_json = self.read_shex_only(reader, format, base, reader_mode, source_name)?;
         self.shex_schema = Some(schema_json.clone());
         trace!("Schema AST read: {schema_json}");
         let mut schema = SchemaIR::new();
@@ -592,6 +617,8 @@ impl Rudof {
         reader: R,
         format: &ShExFormat,
         base: Option<&str>,
+        _reader_mode: &ReaderMode,
+        source_name: Option<&str>,
     ) -> Result<ShExSchema> {
         match format {
             ShExFormat::ShExC => {
@@ -608,6 +635,7 @@ impl Rudof {
                 let schema_json = ShExParser::from_reader(reader, base).map_err(|e| {
                     RudofError::ShExCParserError {
                         error: format!("{e}"),
+                        source_name: source_name.unwrap_or("source without name").to_string(),
                     }
                 })?;
                 Ok(schema_json)
@@ -616,6 +644,7 @@ impl Rudof {
                 let schema_json =
                     ShExSchema::from_reader(reader).map_err(|e| RudofError::ShExJParserError {
                         error: format!("{e}"),
+                        source_name: source_name.unwrap_or("source without name").to_string(),
                     })?;
                 Ok(schema_json)
             }
@@ -928,13 +957,16 @@ impl Rudof {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn get_coshamo(
         &mut self,
         reader: &mut dyn std::io::Read,
         mode: &CompareSchemaMode,
         format: &CompareSchemaFormat,
         base: Option<&str>,
+        reader_mode: &ReaderMode,
         label: Option<&str>,
+        source_name: Option<&str>,
     ) -> Result<CoShaMo> {
         let comparator_config = self.config().comparator_config();
         match mode {
@@ -948,7 +980,8 @@ impl Rudof {
                         error: format!("{e}"),
                     }
                 })?;
-                let shex = self.read_shex_only(reader, &shex_format, base)?;
+                let shex =
+                    self.read_shex_only(reader, &shex_format, base, reader_mode, source_name)?;
                 let mut converter = CoShaMoConverter::new(&comparator_config);
                 let coshamo = converter.from_shex(&shex, label).map_err(|e| {
                     RudofError::CoShaMoFromShExError {
@@ -1023,7 +1056,13 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
+            .read_shex(
+                shex.as_bytes(),
+                &ShExFormat::ShExC,
+                None,
+                &srdf::ReaderMode::Strict,
+                Some("test"),
+            )
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
@@ -1050,7 +1089,13 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
+            .read_shex(
+                shex.as_bytes(),
+                &ShExFormat::ShExC,
+                None,
+                &srdf::ReaderMode::Strict,
+                None,
+            )
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
@@ -1077,7 +1122,13 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None)
+            .read_shex(
+                shex.as_bytes(),
+                &ShExFormat::ShExC,
+                None,
+                &srdf::ReaderMode::Strict,
+                None,
+            )
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())

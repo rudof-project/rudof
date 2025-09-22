@@ -48,11 +48,11 @@ pub enum RudofError {
     #[error("Error parsing IRI from {str}: {error}")]
     BaseIriError { str: String, error: String },
 
-    #[error("ShEx compact parser error: {error}")]
-    ShExCParserError { error: String },
+    #[error("ShEx compact parser error from {source_name}: {error}")]
+    ShExCParserError { error: String, source_name: String },
 
-    #[error("ShEx JSON parser error: {error}")]
-    ShExJParserError { error: String },
+    #[error("ShEx JSON parser error from {source_name}: {error}")]
+    ShExJParserError { error: String, source_name: String },
 
     #[error("Compiling schema error: {error}")]
     CompilingSchemaError { error: String },

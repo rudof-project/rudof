@@ -7,6 +7,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.102
+### Added
+- Comparison between schemas
+- Added documentation about comparison between schemas
+
+### Fixed
+- Cleaned and Clippied the code that we did in a hurry during Biohackathon 
+
+### Changed
+- The behavour of `base` which was assumed to be None by default and now can be passed as a command line option.
+
+### Removed
+
+
 ## 0.1.93
 ### Added
 ### Fixed

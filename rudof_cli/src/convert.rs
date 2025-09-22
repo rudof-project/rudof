@@ -1,15 +1,16 @@
 use crate::run_shacl_convert;
 use crate::{
     CliShaclFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode,
-    RDFReaderMode, add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat,
-    parse_dctap, parse_shex_schema_rudof, run_shex, show_shex_schema, writer::get_writer,
+    add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
+    parse_shex_schema_rudof, run_shex, show_shex_schema, writer::get_writer,
 };
 use anyhow::{Result, anyhow, bail};
+use iri_s::IriS;
 use prefixmap::IriRef;
 use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
-use srdf::ImageFormat;
 use srdf::UmlConverter;
+use srdf::{ImageFormat, ReaderMode};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -20,6 +21,7 @@ use tracing::debug;
 pub fn run_convert(
     input: &InputSpec,
     format: &InputConvertFormat,
+    base: &Option<IriS>,
     input_mode: &InputConvertMode,
     maybe_shape_str: &Option<String>,
     result_format: &OutputConvertFormat,
@@ -28,7 +30,7 @@ pub fn run_convert(
     target_folder: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     show_time: bool,
 ) -> Result<()> {
     match (input_mode, output_mode) {
@@ -39,6 +41,7 @@ pub fn run_convert(
             run_shex(
                 input,
                 &shex_format,
+                base,
                 &output_format,
                 output,
                 show_time,
@@ -55,6 +58,7 @@ pub fn run_convert(
             run_shacl_convert(
                 input,
                 &shacl_format,
+                base,
                 output,
                 &output_format,
                 force_overwrite,
@@ -81,6 +85,7 @@ pub fn run_convert(
             run_shex2sparql(
                 input,
                 format,
+                base,
                 maybe_shape,
                 output,
                 result_format,
@@ -92,6 +97,7 @@ pub fn run_convert(
         (InputConvertMode::ShEx, OutputConvertMode::UML) => run_shex2uml(
             input,
             format,
+            base,
             output,
             result_format,
             maybe_shape_str,
@@ -102,6 +108,7 @@ pub fn run_convert(
         (InputConvertMode::SHACL, OutputConvertMode::ShEx) => run_shacl2shex(
             input,
             format,
+            base,
             output,
             result_format,
             config,
@@ -112,7 +119,9 @@ pub fn run_convert(
             None => Err(anyhow!(
                 "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
             )),
-            Some(output_path) => run_shex2html(input, format, output_path, config, reader_mode),
+            Some(output_path) => {
+                run_shex2html(input, format, base, output_path, config, reader_mode)
+            }
         },
         (InputConvertMode::DCTAP, OutputConvertMode::UML) => run_tap2uml(
             input,
@@ -135,22 +144,23 @@ pub fn run_convert(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_shacl2shex(
     input: &InputSpec,
     format: &InputConvertFormat,
+    base: &Option<IriS>,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     config: &RudofConfig,
     force_overwrite: bool,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
 ) -> Result<()> {
     let schema_format = match format {
         InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
     let mut rudof = Rudof::new(config);
-    let reader_mode = (*reader_mode).into();
-    add_shacl_schema_rudof(&mut rudof, input, &schema_format, &reader_mode, config)?;
+    add_shacl_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     let shacl_schema = rudof.get_shacl().unwrap();
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
 
@@ -171,16 +181,17 @@ fn run_shacl2shex(
 fn run_shex2uml(
     input: &InputSpec,
     format: &InputConvertFormat,
+    base: &Option<IriS>,
     output: &Option<PathBuf>,
     result_format: &OutputConvertFormat,
     maybe_shape: &Option<String>,
     config: &RudofConfig,
     force_overwrite: bool,
-    _reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config);
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
+    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
@@ -236,16 +247,17 @@ fn generate_uml_output<P: AsRef<Path>>(
 fn run_shex2html<P: AsRef<Path>>(
     input: &InputSpec,
     format: &InputConvertFormat,
+    base: &Option<IriS>,
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
     config: &RudofConfig,
-    _reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
 ) -> Result<()> {
     debug!("Starting shex2html");
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config);
 
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
+    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     if let Some(schema) = rudof.get_shex() {
         let shex2html_config = config.shex2html_config();
         let config = shex2html_config
@@ -305,16 +317,17 @@ fn run_tap2html<P: AsRef<Path>>(
 fn run_shex2sparql(
     input: &InputSpec,
     format: &InputConvertFormat,
+    base: &Option<IriS>,
     shape: Option<IriRef>,
     output: &Option<PathBuf>,
     _result_format: &OutputConvertFormat,
     config: &RudofConfig,
     force_overwrite: bool,
-    _reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config);
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, config)?;
+    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;

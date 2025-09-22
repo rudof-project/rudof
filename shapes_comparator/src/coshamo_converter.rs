@@ -4,7 +4,7 @@ use shex_ast::{Schema, ShapeExpr, TripleExpr};
 use sparql_service::ServiceDescription;
 use tracing::{debug, trace};
 
-use crate::{CoShaMo, ComparatorConfig, ComparatorError, ValueDescription};
+use crate::{CoShaMo, ComparatorConfig, ComparatorError, ValueConstraint, ValueDescription};
 
 #[derive(Clone, Debug)]
 pub struct CoShaMoConverter {
@@ -145,12 +145,15 @@ impl CoShaMoConverter {
     fn triple_constraint2coshamo(
         &mut self,
         predicate: &IriRef,
-        _value_expr: &Option<Box<ShapeExpr>>,
+        value_expr: &Option<Box<ShapeExpr>>,
         _annotations: &Option<Vec<shex_ast::Annotation>>,
     ) -> Result<(), ComparatorError> {
         let iri_s = self.get_iri(predicate)?;
-        self.current_coshamo
-            .add_constraint(&iri_s, ValueDescription::new(predicate));
+        let value_constraint = self.value_expr2value_constraint(value_expr)?;
+        self.current_coshamo.add_constraint(
+            &iri_s,
+            ValueDescription::new(predicate).with_value_constraint(value_constraint),
+        );
         Ok(())
     }
 
@@ -166,12 +169,63 @@ impl CoShaMoConverter {
             TripleExpr::OneOf { .. } => Err(ComparatorError::NotImplemented {
                 feature: "OneOf as constraint".to_string(),
             }),
-            TripleExpr::TripleConstraint { predicate, .. } => {
-                Ok((predicate.clone(), ValueDescription::new(predicate)))
+            TripleExpr::TripleConstraint {
+                predicate,
+                value_expr,
+                ..
+            } => {
+                let node_constraint = self.value_expr2value_constraint(value_expr)?;
+                Ok((
+                    predicate.clone(),
+                    ValueDescription::new(predicate).with_value_constraint(node_constraint),
+                ))
             }
             TripleExpr::TripleExprRef(_) => Err(ComparatorError::NotImplemented {
                 feature: "TripleExprRef as constraint".to_string(),
             }),
+        }
+    }
+
+    fn value_expr2value_constraint(
+        &mut self,
+        value_expr: &Option<Box<ShapeExpr>>,
+    ) -> Result<ValueConstraint, ComparatorError> {
+        if let Some(value_expr) = value_expr {
+            match value_expr.as_ref() {
+                ShapeExpr::NodeConstraint(ref nc) => {
+                    if let Some(datatype) = &nc.datatype() {
+                        let iri_s = self.get_iri(datatype)?;
+                        Ok(ValueConstraint::datatype(iri_s))
+                    } else if let Some(nk) = &nc.node_kind() {
+                        Ok(ValueConstraint::nodekind(&nk.to_string()))
+                    } else {
+                        Err(ComparatorError::NotImplemented {
+                            feature: format!("Complex node constraint as ValueExpr: {nc:?}"),
+                        })
+                    }
+                }
+                ShapeExpr::Shape(s) => Err(ComparatorError::NotImplemented {
+                    feature: format!("Shape as ValueExpr, shape: {:?}", s),
+                }),
+                ShapeExpr::ShapeOr { .. } => Err(ComparatorError::NotImplemented {
+                    feature: "ShapeOr as ValueExpr".to_string(),
+                }),
+                ShapeExpr::ShapeAnd { .. } => Err(ComparatorError::NotImplemented {
+                    feature: "ShapeAnd as ValueExpr".to_string(),
+                }),
+                ShapeExpr::ShapeNot { .. } => Err(ComparatorError::NotImplemented {
+                    feature: "ShapeNot as ValueExpr".to_string(),
+                }),
+                ShapeExpr::External => Err(ComparatorError::NotImplemented {
+                    feature: "External as ValueExpr".to_string(),
+                }),
+                ShapeExpr::Ref(r) => {
+                    let r: String = r.into();
+                    ValueConstraint::reference(&r)
+                }
+            }
+        } else {
+            Ok(ValueConstraint::Any)
         }
     }
 

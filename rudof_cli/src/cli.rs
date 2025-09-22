@@ -9,6 +9,7 @@ use crate::{
     ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
+use iri_s::IriS;
 use rudof_lib::InputSpec;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use std::path::PathBuf;
@@ -132,6 +133,9 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
+        #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
+        base: Option<IriS>,
+
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
@@ -215,6 +219,12 @@ pub enum Command {
             default_value_t = ShapeMapFormat::Compact,
         )]
         shapemap_format: ShapeMapFormat,
+
+        #[arg(long = "base-data", value_name = "IRI", help = "Base IRI for data")]
+        base_data: Option<IriS>,
+
+        #[arg(long = "base-schema", value_name = "IRI", help = "Base IRI for Schema")]
+        base_schema: Option<IriS>,
 
         #[arg(
             short = 'n',
@@ -374,6 +384,20 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
+        #[arg(
+            long = "base-schema",
+            value_name = "IRI",
+            help = "Base Schema (used to resolve relative IRIs in Schema)"
+        )]
+        base_schema: Option<IriS>,
+
+        #[arg(
+            long = "base-data",
+            value_name = "IRI",
+            help = "Base RDF Data IRI (used to resolve relative IRIs in RDF data)"
+        )]
+        base_data: Option<IriS>,
+
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
@@ -440,6 +464,13 @@ pub enum Command {
         )]
         data_format: DataFormat,
 
+        #[arg(
+            long = "base-data",
+            value_name = "IRI",
+            help = "Base IRI (used to resolve relative IRIs in RDF data)"
+        )]
+        base_data: Option<IriS>,
+
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
@@ -465,6 +496,13 @@ pub enum Command {
             help = "Shapes file format"
         )]
         shapes_format: Option<CliShaclFormat>,
+
+        #[arg(
+            long = "base-shapes",
+            value_name = "IRI",
+            help = "Base IRI (used to resolve relative IRIs in Shapes)"
+        )]
+        base_shapes: Option<IriS>,
 
         #[arg(
             short = 'e',
@@ -532,6 +570,9 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
+        base: Option<IriS>,
 
         /// RDF Reader mode
         #[arg(
@@ -606,6 +647,9 @@ pub enum Command {
             help = "Endpoint with RDF data (URL or name)"
         )]
         endpoint: Option<String>,
+
+        #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
+        base: Option<IriS>,
 
         /// RDF Reader mode
         #[arg(
@@ -709,6 +753,20 @@ pub enum Command {
             help = "Shapes file format"
         )]
         shapes_format: Option<CliShaclFormat>,
+
+        #[arg(
+            long = "base-data",
+            value_name = "IRI",
+            help = "Base RDF Data (used to resolve relative IRIs in RDF data)"
+        )]
+        base_data: Option<IriS>,
+
+        #[arg(
+            long = "base-shapes",
+            value_name = "IRI",
+            help = "Base RDF Data (used to resolve relative IRIs in Shapes)"
+        )]
+        base_shapes: Option<IriS>,
 
         #[arg(
             short = 'r',
@@ -842,6 +900,14 @@ pub enum Command {
         format: InputConvertFormat,
 
         #[arg(
+            short = 'b',
+            long = "base",
+            value_name = "IRI",
+            help = "Base IRI (used to resolve relative IRIs)"
+        )]
+        base: Option<IriS>,
+
+        #[arg(
             short = 'r',
             long = "result-format",
             value_name = "FORMAT", 
@@ -957,6 +1023,12 @@ pub enum Command {
             default_value_t = InputCompareFormat::default()
         )]
         format2: InputCompareFormat,
+
+        #[arg(long = "base1", value_name = "IRI", help = "Base IRI for 1st Schema")]
+        base1: Option<IriS>,
+
+        #[arg(long = "base2", value_name = "IRI", help = "Base IRI for 2nd Schema")]
+        base2: Option<IriS>,
 
         #[arg(
             short = 'r',
@@ -1144,6 +1216,14 @@ pub enum Command {
             default_value_t = DataFormat::Turtle
         )]
         data_format: DataFormat,
+
+        #[arg(
+            short = 'b',
+            long = "base",
+            value_name = "IRI",
+            help = "Base IRI (used to resolve relative IRIs in RDF data)"
+        )]
+        base: Option<IriS>,
 
         #[arg(long = "query-type", 
             value_name = "TYPE", 

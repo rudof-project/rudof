@@ -1,4 +1,5 @@
 prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
     :email IRI ;
@@ -6,3 +7,4 @@ prefix : <http://example.org/>
     :birthDate xsd:date ?;
     :knows @:Person * ;
 }
+

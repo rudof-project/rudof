@@ -143,14 +143,16 @@ impl PyRudof {
     /// mode: Mode of the schema, e.g. shex
     /// format: Format of the schema, e.g. shexc, turtle
     /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
     /// label: Optional label of the shape to convert or None to use the start shape or the first shape
-    #[pyo3(signature = (schema, mode, format, base, label))]
-    pub fn get_coshamo(
+    #[pyo3(signature = (schema, mode, format, base, reader_mode, label))]
+    pub fn get_coshamo_str(
         &mut self,
         schema: &str,
         mode: &str,
         format: &str,
         base: Option<&str>,
+        reader_mode: &PyReaderMode,
         label: Option<&str>,
     ) -> PyResult<PyCoShaMo> {
         // Implementation goes here
@@ -159,7 +161,15 @@ impl PyRudof {
         let mut reader = schema.as_bytes();
         let coshamo = self
             .inner
-            .get_coshamo(&mut reader, &mode, &format, base, label)
+            .get_coshamo(
+                &mut reader,
+                &mode,
+                &format,
+                base,
+                &reader_mode.into(),
+                label,
+                Some("string"),
+            )
             .map_err(PyRudofError::from)?;
         Ok(PyCoShaMo { inner: coshamo })
     }
@@ -170,7 +180,8 @@ impl PyRudof {
     /// format1, format2: Format of the schemas, e.g. shexc, turtle
     /// label1, label2: Optional labels of the shapes to compare
     /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
-    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2))]
+    /// reader_mode: Reader mode to use when reading the schemas, e.g. lax, strict
+    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2, reader_mode))]
     #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas_str(
         &mut self,
@@ -184,6 +195,7 @@ impl PyRudof {
         base2: Option<&str>,
         label1: Option<&str>,
         label2: Option<&str>,
+        reader_mode: &PyReaderMode,
     ) -> PyResult<PyShaCo> {
         let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
         let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
@@ -192,13 +204,29 @@ impl PyRudof {
         let mut reader1 = schema1.as_bytes();
         let coshamo1 = self
             .inner
-            .get_coshamo(&mut reader1, &mode1, &format1, base1, label1)
+            .get_coshamo(
+                &mut reader1,
+                &mode1,
+                &format1,
+                base1,
+                &reader_mode.into(),
+                label1,
+                Some("string"),
+            )
             .map_err(PyRudofError::from)?;
 
         let mut reader2 = schema2.as_bytes();
         let coshamo2 = self
             .inner
-            .get_coshamo(&mut reader2, &mode2, &format2, base2, label2)
+            .get_coshamo(
+                &mut reader2,
+                &mode2,
+                &format2,
+                base2,
+                &reader_mode.into(),
+                label2,
+                Some("string"),
+            )
             .map_err(PyRudofError::from)?;
         let shaco = coshamo1.compare(&coshamo2);
         Ok(PyShaCo { inner: shaco })
@@ -304,20 +332,28 @@ impl PyRudof {
     /// input: String containing the ShEx schema
     /// format: Format of the ShEx schema, e.g. shexc, turtle
     /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
     /// Returns: None
     /// Raises: RudofError if there is an error reading the ShEx schema
     ///
-    #[pyo3(signature = (input, format = &PyShExFormat::ShExC, base = None))]
+    #[pyo3(signature = (input, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_shex_str(
         &mut self,
         input: &str,
         format: &PyShExFormat,
         base: Option<&str>,
+        reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let format = cnv_shex_format(format);
         self.inner.reset_shex();
         self.inner
-            .read_shex(input.as_bytes(), &format, base)
+            .read_shex(
+                input.as_bytes(),
+                &format,
+                base,
+                &reader_mode.into(),
+                Some("string"),
+            )
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -352,14 +388,16 @@ impl PyRudof {
     /// path_name: Path to the file containing the ShEx schema
     /// format: Format of the ShEx schema, e.g. shexc, turtle
     /// base: Optional base IRI to resolve relative IRIs in the schema
+    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
     /// Returns: None
     /// Raises: RudofError if there is an error reading the ShEx schema
-    #[pyo3(signature = (path_name, format = &PyShExFormat::ShExC, base = None))]
+    #[pyo3(signature = (path_name, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax))]
     pub fn read_shex_path(
         &mut self,
         path_name: &str,
         format: &PyShExFormat,
         base: Option<&str>,
+        reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let path = Path::new(path_name);
         let file = File::open::<&OsStr>(path.as_ref())
@@ -372,7 +410,7 @@ impl PyRudof {
         self.inner.reset_shex();
         let format = cnv_shex_format(format);
         self.inner
-            .read_shex(reader, &format, base)
+            .read_shex(reader, &format, base, &reader_mode.into(), Some("string"))
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -843,6 +881,15 @@ impl PyReaderMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
         py.detach(|| PyReaderMode::Lax)
+    }
+}
+
+impl From<&PyReaderMode> for ReaderMode {
+    fn from(mode: &PyReaderMode) -> Self {
+        match mode {
+            PyReaderMode::Lax => ReaderMode::Lax,
+            PyReaderMode::Strict => ReaderMode::Strict,
+        }
     }
 }
 

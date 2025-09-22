@@ -49,7 +49,6 @@ pub use input_compare_format::*;
 pub use input_compare_mode::*;
 pub use input_convert_format::*;
 pub use input_convert_mode::*;
-use iri_s::IriS;
 pub use output_convert_format::*;
 pub use output_convert_mode::*;
 pub use query_type::*;
@@ -69,9 +68,3 @@ pub use shex::*;
 pub use shex_format::*;
 pub use show_mode::*;
 pub use validation_mode::*;
-
-fn base_convert(base: &Option<IriS>) -> Option<&str> {
-    base.as_ref().map(|iri| iri.as_str())
-}
-
-// pub const PLANTUML: &str = "PLANTUML";

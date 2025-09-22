@@ -1,20 +1,21 @@
 use crate::{
-    QueryType, RDFReaderMode, ResultQueryFormat as CliResultQueryFormat, data::get_data_rudof,
+    QueryType, ResultQueryFormat as CliResultQueryFormat, data::get_data_rudof,
     data_format::DataFormat, writer::get_writer,
 };
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
-use srdf::{QueryResultFormat, QuerySolution, VarName};
+use srdf::{QueryResultFormat, QuerySolution, ReaderMode, VarName};
 use std::{io::Write, path::PathBuf};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_query(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     query: &InputSpec,
     query_type: &QueryType,
     result_query_format: &CliResultQueryFormat,
@@ -29,6 +30,7 @@ pub fn run_query(
         &mut rudof,
         data,
         data_format,
+        base,
         endpoint,
         reader_mode,
         config,

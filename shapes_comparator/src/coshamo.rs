@@ -109,9 +109,25 @@ impl Display for ValueDescription {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum ValueConstraint {
     Datatype(IriS),
+    NodeKind(String),
     Other,
+    Ref(String),
     #[default]
     Any,
+}
+
+impl ValueConstraint {
+    pub fn datatype(iri: IriS) -> Self {
+        ValueConstraint::Datatype(iri)
+    }
+
+    pub fn nodekind(str: &str) -> Self {
+        ValueConstraint::NodeKind(str.to_string())
+    }
+
+    pub fn reference(r: &str) -> Result<Self, ComparatorError> {
+        Ok(ValueConstraint::Ref(r.to_string()))
+    }
 }
 
 impl Display for ValueConstraint {
@@ -120,6 +136,8 @@ impl Display for ValueConstraint {
             ValueConstraint::Datatype(iri_s) => write!(f, "{}", iri_s),
             ValueConstraint::Other => write!(f, "other"),
             ValueConstraint::Any => write!(f, "_"),
+            ValueConstraint::Ref(r) => write!(f, "@{}", r),
+            ValueConstraint::NodeKind(nk) => write!(f, "nodekind({})", nk),
         }
     }
 }
