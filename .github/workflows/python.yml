@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [ 3.12 ]
-        target: [ x64, x86 ]
+        target: [ x64 ]
 
     steps:
       - uses: actions/checkout@v4
