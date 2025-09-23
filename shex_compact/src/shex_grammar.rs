@@ -47,61 +47,6 @@ pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExState
     )
 }
 
-/*
-fn empty(i: Span) -> IRes<ShExStatement> {
-    let (i, _) = tws0(i)?;
-    Ok((i, ShExStatement::Empty))
-}
-*/
-
-/*pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
-    traced("shex_statement", move |i| {
-        let (i, (ds, _, maybe_sts)) = tuple((directives, tws0, opt(rest_shex_statements)))(i)?;
-        let mut result = Vec::new();
-        result.extend(ds);
-        match maybe_sts {
-            None => {}
-            Some(sts) => {
-                result.extend(sts);
-            }
-        }
-        Ok((i, result))
-    })
-}
-
-/// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
-fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, (s, _, ss, _)) = tuple((
-        alt((not_start_action, start_actions)),
-        tws0,
-        statements,
-        tws0,
-    ))(i)?;
-    let mut rs = vec![s];
-    rs.extend(ss);
-    Ok((i, rs))
-}
-
-fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, vs) = many1(
-        //tuple((
-            directive
-        //    ,
-        //    tws0
-        //))
-    )(i)?;
-    // let mut rs = Vec::new();
-    /*for v in vs {
-        let (d, _) = v;
-        rs.push(d);
-    }*/
-    Ok((i, vs))
-}
-
-fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
-    many0(statement)(i)
-} */
-
 /// `[2] directive ::= baseDecl | prefixDecl | importDecl`
 fn directive(i: Span) -> IRes<ShExStatement> {
     alt((base_decl(), prefix_decl(), import_decl()))(i)

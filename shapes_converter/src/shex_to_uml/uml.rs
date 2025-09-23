@@ -228,6 +228,9 @@ fn component2plantuml<W: Write>(
             }
             writeln!(writer, "}}")?;
         }
+        UmlComponent::Or { exprs: _ } => todo!(),
+        UmlComponent::Not { expr: _ } => todo!(),
+        UmlComponent::And { exprs: _ } => todo!(),
     }
     Ok(())
 }

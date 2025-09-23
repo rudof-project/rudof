@@ -421,7 +421,7 @@ pub enum Command {
             long = "result-format",
             value_name = "FORMAT", 
             help = "Ouput result format",
-            default_value_t = ResultShExValidationFormat::Turtle
+            default_value_t = ResultShExValidationFormat::Compact
         )]
         result_format: ResultShExValidationFormat,
 

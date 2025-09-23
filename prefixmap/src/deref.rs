@@ -9,8 +9,12 @@ pub enum DerefError {
     #[error(transparent)]
     IriSError(#[from] IriSError),
 
-    #[error(transparent)]
-    PrefixMapError(#[from] PrefixMapError),
+    #[error("Error obtaining IRI for '{alias}:{local}': {error}")]
+    DerefPrefixMapError {
+        alias: String,
+        local: String,
+        error: PrefixMapError,
+    },
 
     #[error("No prefix map to dereference prefixed name {prefix}{local}")]
     NoPrefixMapPrefixedName { prefix: String, local: String },

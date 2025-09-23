@@ -62,7 +62,13 @@ impl Deref for IriRef {
                     local: local.clone(),
                 }),
                 Some(prefixmap) => {
-                    let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+                    let iri = prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
+                        DerefError::DerefPrefixMapError {
+                            alias: prefix.to_string(),
+                            local: local.to_string(),
+                            error: e,
+                        }
+                    })?;
                     Ok(IriRef::Iri(iri))
                 }
             },

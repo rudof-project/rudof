@@ -148,12 +148,6 @@ impl<'a> Iterator for StatementIterator<'a> {
                 self.done = true;
             }
         }
-
-        /*if r.is_none() && !self.src.is_empty() {
-            r = Some(Err(ParseError::Custom {
-                msg: format!("trailing bytes {}", self.src),
-            }));
-        }*/
         r
     }
 }

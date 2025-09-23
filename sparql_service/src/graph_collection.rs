@@ -23,6 +23,10 @@ impl GraphCollection {
         self.collection = HashSet::from_iter(graphs);
         self
     }
+
+    pub fn named_graph_descriptions(&self) -> impl Iterator<Item = &NamedGraphDescription> {
+        self.collection.iter()
+    }
 }
 
 impl Hash for GraphCollection {

@@ -7,10 +7,11 @@ use crate::{
 use iri_s::IriS;
 use itertools::Itertools;
 use mie::Mie;
+use prefixmap::PrefixMap;
 use serde::{Deserialize, Serialize};
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt::Display,
     io::{self},
     path::Path,
@@ -45,6 +46,9 @@ pub struct ServiceDescription {
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
     available_graphs: Vec<GraphCollection>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prefixmap: Option<PrefixMap>,
 }
 
 impl ServiceDescription {
@@ -57,11 +61,17 @@ impl ServiceDescription {
             feature: HashSet::new(),
             result_format: HashSet::new(),
             available_graphs: Vec::new(),
+            prefixmap: None,
         }
     }
 
     pub fn with_endpoint(mut self, endpoint: Option<IriS>) -> Self {
         self.endpoint = endpoint;
+        self
+    }
+
+    pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
+        self.prefixmap = prefixmap;
         self
     }
 
@@ -138,9 +148,17 @@ impl ServiceDescription {
             mie.add_title(title);
         }
 
-        for _graph in self.available_graphs.iter() {
-            // let graph_name = graph.graph_name().as_ref().map(|g| g.as_str());
-            // mie.add_graph(graphs.service2mie());
+        let mut graph_names = Vec::new();
+        for graph_collection in self.available_graphs.iter() {
+            for named_graph_descr in graph_collection.named_graph_descriptions() {
+                let name = named_graph_descr.name();
+                graph_names.push(name.clone());
+            }
+            mie.add_graphs(graph_names.clone().into_iter());
+        }
+
+        if let Some(prefixmap) = &self.prefixmap {
+            mie.add_prefixes(cnv_prefixmap(prefixmap))
         }
         mie
     }
@@ -154,7 +172,7 @@ impl ServiceDescription {
             ServiceDescriptionFormat::Internal => writer.write_all(self.to_string().as_bytes()),
             ServiceDescriptionFormat::Mie => {
                 let mie = self.service2mie();
-                let mie_str = serde_json::to_string(&mie).map_err(|e| {
+                let mie_str = serde_json::to_string_pretty(&mie).map_err(|e| {
                     io::Error::other(format!("Error converting ServiceDescription to MIE: {e}"))
                 })?;
                 writer.write_all(mie_str.as_bytes())
@@ -167,6 +185,14 @@ impl ServiceDescription {
             }
         }
     }
+}
+
+fn cnv_prefixmap(pm: &PrefixMap) -> HashMap<String, IriS> {
+    let mut result = HashMap::new();
+    for (alias, prefix) in pm.iter() {
+        result.insert(alias.clone(), prefix.clone());
+    }
+    result
 }
 
 impl Display for ServiceDescription {

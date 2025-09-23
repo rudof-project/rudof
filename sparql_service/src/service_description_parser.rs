@@ -42,7 +42,7 @@ where
         let term = service_node.into();
         self.rdf_parser.rdf.set_focus(&term);
         let service = Self::service_description().parse_impl(&mut self.rdf_parser.rdf)?;
-        Ok(service)
+        Ok(service.with_prefixmap(self.rdf_parser.prefixmap()))
     }
 
     pub fn service_description() -> impl RDFNodeParse<RDF, Output = ServiceDescription>

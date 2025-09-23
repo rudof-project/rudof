@@ -36,6 +36,10 @@ impl NamedGraphDescription {
     pub fn id(&self) -> &Option<IriOrBlankNode> {
         &self.id
     }
+
+    pub fn name(&self) -> &IriS {
+        &self.name
+    }
 }
 
 impl Display for NamedGraphDescription {

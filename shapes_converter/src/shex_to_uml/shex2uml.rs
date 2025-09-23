@@ -89,8 +89,19 @@ impl ShEx2Uml {
     ) -> Result<UmlComponent, ShEx2UmlError> {
         match shape_expr {
             ShapeExpr::Shape(shape) => self.shape2component(name, shape, current_node_id),
-            _ => Err(ShEx2UmlError::NotImplemented {
-                msg: "Complex shape expressions are not implemented yet".to_string(),
+            ShapeExpr::ShapeOr { shape_exprs } => {
+                let cs: Vec<_> = shape_exprs
+                    .iter()
+                    .map(|se| {
+                        let c = self.shape_expr2component(name, &se.se, current_node_id)?;
+                        Ok::<UmlComponent, ShEx2UmlError>(c)
+                    })
+                    .flatten()
+                    .collect();
+                Ok(UmlComponent::or(cs.into_iter()))
+            }
+            other => Err(ShEx2UmlError::NotImplemented {
+                msg: format!("Complex shape expressions are not implemented yet\nShape: {other:?}"),
             }),
         }
     }

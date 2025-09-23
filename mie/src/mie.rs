@@ -1,4 +1,5 @@
 use hashlink::LinkedHashMap;
+use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -15,7 +16,7 @@ pub struct Mie {
     schema_info: SchemaInfo,
 
     /// Prefixes defined in the endpoint
-    prefixes: HashMap<String, String>,
+    prefixes: HashMap<String, IriS>,
 
     /// Shape expressions defined in the schema
     shape_expressions: HashMap<String, ShapeExpression>,
@@ -30,16 +31,28 @@ pub struct Mie {
     cross_references: HashMap<String, CrossReference>,
 
     /// Statistics about the data
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     data_statistics: HashMap<String, DataStatistics>,
 }
 
 /// Statistics about the data
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct DataStatistics {
-    classes: isize,
-    properties: isize,
+    /// Number of classes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    classes: Option<isize>,
+
+    /// Number of properties
+    #[serde(skip_serializing_if = "Option::is_none")]
+    properties: Option<isize>,
+
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     class_partitions: HashMap<String, isize>,
+
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     property_partitions: HashMap<String, isize>,
+
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     cross_references: HashMap<String, Option<isize>>,
 }
 
@@ -47,33 +60,48 @@ pub struct DataStatistics {
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct SchemaInfo {
     /// Title of the schema
+    #[serde(skip_serializing_if = "Option::is_none")]
     title: Option<String>,
 
     /// Description of the schema
+    #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
 
     /// SPARQL endpoint URL
+    #[serde(skip_serializing_if = "Option::is_none")]
     endpoint: Option<String>,
 
     /// Base URI for the schema
+    #[serde(skip_serializing_if = "Option::is_none")]
     base_uri: Option<String>,
 
     /// Named graphs used in the endpoint
-    graphs: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    graphs: Vec<IriS>,
 }
 
 /// Shape expressions defined in the schema
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct ShapeExpression {
+    /// Description of the Shape Expression
+    #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
+
+    /// Shape expressions content
+    #[serde(skip_serializing_if = "String::is_empty")]
     shape_expr: String,
 }
 
 /// RDF examples
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct RdfExample {
+    #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
+
+    #[serde(skip_serializing_if = "String::is_empty")]
     rdf: String,
+
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     other_fields: HashMap<String, String>,
 }
 
@@ -97,7 +125,7 @@ pub struct CrossReference {
 impl Mie {
     pub fn new(
         schema_info: SchemaInfo,
-        prefixes: HashMap<String, String>,
+        prefixes: HashMap<String, IriS>,
         shape_expressions: HashMap<String, ShapeExpression>,
         sample_rdf_entries: HashMap<String, RdfExample>,
         sparql_query_examples: HashMap<String, SparqlQueryExample>,
@@ -123,6 +151,14 @@ impl Mie {
         self.schema_info.title = Some(title.to_string());
     }
 
+    pub fn add_graphs<I: Iterator<Item = IriS>>(&mut self, iter: I) {
+        self.schema_info.graphs = iter.collect()
+    }
+
+    pub fn add_prefixes(&mut self, prefixes: HashMap<String, IriS>) {
+        self.prefixes = prefixes;
+    }
+
     pub fn to_yaml(&self) -> Yaml {
         let mut result = LinkedHashMap::new();
         result.insert(
@@ -132,7 +168,10 @@ impl Mie {
         if !self.prefixes.is_empty() {
             let mut prefixes_yaml = LinkedHashMap::new();
             for (k, v) in &self.prefixes {
-                prefixes_yaml.insert(Yaml::String(k.clone()), Yaml::String(v.clone()));
+                prefixes_yaml.insert(
+                    Yaml::String(k.clone()),
+                    Yaml::String(v.as_str().to_string()),
+                );
             }
             result.insert(
                 Yaml::String("prefixes".to_string()),
@@ -301,16 +340,17 @@ impl Display for Mie {
 
 #[cfg(test)]
 mod tests {
+    use iri_s::iri;
     use yaml_rust2::YamlEmitter;
 
     use super::*;
     #[test]
     fn test_mie_creation() {
         let mut prefixes = HashMap::new();
-        prefixes.insert("ex".to_string(), "http://example.org/".to_string());
+        prefixes.insert("ex".to_string(), iri!("http://example.org/"));
         prefixes.insert(
             "rdf".to_string(),
-            "http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string(),
+            iri!("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
         );
 
         let mut shape_expressions = HashMap::new();
@@ -331,7 +371,7 @@ mod tests {
                 description: Some("An example schema for testing".to_string()),
                 endpoint: Some("http://example.org/sparql".to_string()),
                 base_uri: Some("http://example.org/".to_string()),
-                graphs: vec!["http://example.org/graph1".to_string()],
+                graphs: vec![iri!("http://example.org/graph1")],
             },
             prefixes,
             shape_expressions,
