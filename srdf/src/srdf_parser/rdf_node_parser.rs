@@ -1394,16 +1394,14 @@ where
 {
     // debug!("property_number: property={}", property);
     property_value(property).flat_map(|term| {
-        debug!("property_number: term={}", term);
         let lit = term_to_number::<RDF>(&term);
         if lit.is_err() {
-            debug!(
+            trace!(
                 "property_number: term is not a number: {}, err: {}",
                 term,
                 lit.as_ref().err().unwrap()
             );
         }
-        debug!("Number literal: {:?}", lit);
         lit
     })
 }
@@ -1469,7 +1467,7 @@ where
                 term: format!("{term}"),
             }
         })?;
-    debug!("converted to literal: {:?}", literal);
+    trace!("converted to literal: {:?}", literal);
     let slit: SLiteral = literal
         .try_into()
         .map_err(|_e| RDFParseError::ExpectedSLiteral {
@@ -1704,7 +1702,6 @@ pub fn get_focus_iri_or_bnode<RDF>() -> impl RDFNodeParse<RDF, Output = IriOrBla
 where
     RDF: FocusRDF,
 {
-    trace!("Getting focus node as IRI or BlankNode");
     get_focus().flat_map(|term: RDF::Term| {
         let node = term_to_iri_or_blanknode::<RDF>(&term).map_err(|e| {
             trace!("Error converting term to IRI or BlankNode: {}", e);
@@ -1713,7 +1710,6 @@ where
                 error: e.to_string(),
             }
         });
-        debug!("Focus node as IRI or BlankNode: {:?}", node);
         node
     })
 }

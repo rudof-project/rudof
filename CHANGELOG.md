@@ -7,10 +7,24 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.103
+### Added
+
+### Fixed
+- GraphCollection in service description contains a collection of named graphs (before was a collection of graph descriptions)
+- The parser now parses also the available graphs
+
+### Changed
+
+
+### Removed
+
 ## 0.1.102
 ### Added
 - Comparison between schemas
 - Added documentation about comparison between schemas
+- Published Windows amd-64 Python wheel 
+- Added parsed title in SPARQL service description from property dcterms:title
 
 ### Fixed
 - Cleaned and Clippied the code that we did in a hurry during Biohackathon 

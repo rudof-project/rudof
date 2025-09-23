@@ -2,7 +2,7 @@ use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
 pub enum EntailmentProfile {
     #[default]
     DL,

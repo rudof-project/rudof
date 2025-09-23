@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use srdf::IriOrBlankNode;
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
 pub struct NamedGraphDescription {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<IriOrBlankNode>,

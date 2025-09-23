@@ -10,13 +10,13 @@ use crate::{
 };
 use iri_s::IriS;
 use srdf::{
-    FocusRDF, IriOrBlankNode, Object, PResult, RDFNodeParse, RDFParser, get_focus_iri_or_bnode,
-    numeric_literal::NumericLiteral, object, ok, optional, parse_property_values, property_iri,
+    FocusRDF, IriOrBlankNode, PResult, RDFNodeParse, RDFParser, get_focus_iri_or_bnode,
+    numeric_literal::NumericLiteral, ok, optional, parse_property_values, property_iri,
     property_iri_or_bnode, property_number, property_string, property_values_iri,
     set_focus_iri_or_bnode,
 };
 use std::{collections::HashSet, fmt::Debug};
-use tracing::{debug, trace};
+use tracing::trace;
 
 type Result<A> = std::result::Result<A, ServiceDescriptionError>;
 
@@ -229,7 +229,7 @@ pub fn available_graphs<RDF>(
     node: &IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<GraphCollection>>
 where
-    RDF: FocusRDF,
+    RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node).with(parse_property_values(
         &SD_AVAILABLE_GRAPHS,
@@ -239,14 +239,13 @@ where
 
 pub fn available_graph<RDF>() -> impl RDFNodeParse<RDF, Output = GraphCollection>
 where
-    RDF: FocusRDF,
+    RDF: FocusRDF + 'static,
 {
-    object().then(
-        |node| match <Object as TryInto<IriOrBlankNode>>::try_into(node) {
-            Ok(ib) => ok(&GraphCollection::new(&ib)),
-            Err(_) => todo!(),
-        },
-    )
+    get_focus_iri_or_bnode().then(|focus| {
+        parse_property_values(&SD_NAMED_GRAPH, named_graph()).map(move |named_graphs| {
+            GraphCollection::new(&focus.clone()).with_collection(named_graphs.into_iter())
+        })
+    })
 }
 
 pub fn default_dataset<RDF>(node: &IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Dataset>
@@ -304,7 +303,7 @@ where
                         .with_classes(classes)
                         .with_class_partition(class_partition)
                         .with_property_partition(property_partition);
-                    debug!("parsed graph_description: {d}");
+                    trace!("parsed graph_description: {d}");
                     d
                 },
             ),
@@ -340,7 +339,7 @@ where
             .and(name())
             .and(parse_property_values(&SD_GRAPH, graph()))
             .map(|((focus, name), graphs)| {
-                debug!(
+                trace!(
                     "named_graph_description: focus={focus}, name={name}, graphs={}",
                     graphs.len()
                 );
@@ -412,9 +411,9 @@ pub fn class_partition<RDF>() -> impl RDFNodeParse<RDF, Output = ClassPartition>
 where
     RDF: FocusRDF + 'static,
 {
-    debug!("parsing class_partition");
+    trace!("parsing class_partition");
     get_focus_iri_or_bnode().then(move |focus| {
-        debug!("parsing class_partition with focus={focus}");
+        trace!("parsing class_partition with focus={focus}");
         ok(&focus)
             .and(property_iri(&VOID_CLASS))
             .and(parse_property_values(&VOID_PROPERTY, property_partition()))
