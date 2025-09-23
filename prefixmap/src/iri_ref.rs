@@ -66,7 +66,7 @@ impl Deref for IriRef {
                         DerefError::DerefPrefixMapError {
                             alias: prefix.to_string(),
                             local: local.to_string(),
-                            error: e,
+                            error: Box::new(e),
                         }
                     })?;
                     Ok(IriRef::Iri(iri))

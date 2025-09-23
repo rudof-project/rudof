@@ -92,11 +92,10 @@ impl ShEx2Uml {
             ShapeExpr::ShapeOr { shape_exprs } => {
                 let cs: Vec<_> = shape_exprs
                     .iter()
-                    .map(|se| {
+                    .flat_map(|se| {
                         let c = self.shape_expr2component(name, &se.se, current_node_id)?;
                         Ok::<UmlComponent, ShEx2UmlError>(c)
                     })
-                    .flatten()
                     .collect();
                 Ok(UmlComponent::or(cs.into_iter()))
             }

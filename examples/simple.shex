@@ -1,7 +1,7 @@
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
-:Person { pp:name       xsd:string  ;
+:Person { :name       xsd:string  ;
           :birthdate  xsd:date  ? ;
           :enrolledIn @:Course *
 }

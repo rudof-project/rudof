@@ -13,7 +13,7 @@ pub enum DerefError {
     DerefPrefixMapError {
         alias: String,
         local: String,
-        error: PrefixMapError,
+        error: Box<PrefixMapError>,
     },
 
     #[error("No prefix map to dereference prefixed name {prefix}{local}")]

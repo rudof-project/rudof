@@ -1,6 +1,6 @@
 [package]
 name = "mie"
-version = "0.1.102"
+version = "0.1.104"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true

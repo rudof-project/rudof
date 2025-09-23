@@ -7,6 +7,18 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.104
+### Added
+- Added more information to MIE files
+
+### Fixed
+- Tried to improve the error message when parsing ShEx files that have an undeclared alias according to issue #331
+
+### Changed
+
+### Removed
+
+
 ## 0.1.103
 ### Added
 
