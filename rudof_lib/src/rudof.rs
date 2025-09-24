@@ -403,11 +403,13 @@ impl Rudof {
     }
 
     pub fn run_query_select_str(&mut self, str: &str) -> Result<QuerySolutions<RdfData>> {
+        trace!("Running SELECT query: {str}");
         self.rdf_data
             .check_store()
             .map_err(|e| RudofError::StorageError {
                 error: format!("{e}"),
             })?;
+        trace!("After checking RDF store");
         let results = self
             .rdf_data
             .query_select(str)

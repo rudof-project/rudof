@@ -1338,6 +1338,11 @@ impl PyQuerySolutions {
         format!("Solutions: {:?}", self.inner)
     }
 
+    /// Converts the solutions to a JSON string
+    pub fn as_json(&self) -> String {
+        self.inner.as_json()
+    }
+
     /// Returns the number of solutions
     pub fn count(&self) -> usize {
         self.inner.count()

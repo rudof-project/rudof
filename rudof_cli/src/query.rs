@@ -8,6 +8,7 @@ use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
 use srdf::{QueryResultFormat, QuerySolution, ReaderMode, VarName};
 use std::{io::Write, path::PathBuf};
+use tracing::trace;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_query(
@@ -36,9 +37,12 @@ pub fn run_query(
         config,
         false,
     )?;
+    rudof.serialize_data(&srdf::RDFFormat::Turtle, &mut writer)?;
+    println!("Data serialized...starting query");
     let mut reader = query.open_read(None, "Query")?;
     match query_type {
         QueryType::Select => {
+            trace!("Running SELECT query");
             let results = rudof.run_query_select(&mut reader)?;
             let mut results_iter = results.iter().peekable();
             if let Some(first) = results_iter.peek() {

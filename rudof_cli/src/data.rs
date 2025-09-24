@@ -35,14 +35,8 @@ pub fn get_data_rudof(
         }
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
-            /*let reader_mode = match &reader_mode {
-                RDFReaderMode::Lax => srdf::ReaderMode::Lax,
-                RDFReaderMode::Strict => srdf::ReaderMode::Strict,
-            };*/
             for d in data {
                 let data_reader = d.open_read(Some(&data_format.mime_type()), "RDF data")?;
-
-                // TODO!: Check base from command line...
                 let base = get_base(d, config, base)?;
                 rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
             }

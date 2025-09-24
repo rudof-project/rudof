@@ -10,6 +10,8 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as OxQuerySolution;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
 
@@ -27,6 +29,18 @@ pub struct SRDFSparql {
     client_construct_turtle: Client,
     client_construct_rdfxml: Client,
     client_construct_jsonld: Client,
+}
+
+impl Serialize for SRDFSparql {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("SRDFSparql", 2)?;
+        state.serialize_field("endpoint_iri", &self.endpoint_iri)?;
+        state.serialize_field("prefixmap", &self.prefixmap)?;
+        state.end()
+    }
 }
 
 impl SRDFSparql {

@@ -32,6 +32,7 @@ shapes_converter.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 shex_compact.workspace = true
+spargebra.workspace = true
 sparql_service.workspace = true
 srdf.workspace = true
 serde.workspace = true

@@ -192,9 +192,7 @@ impl ValidationEntry {
 
         let mut compiler = AST2IR::new();
         let mut compiled_schema = SchemaIR::new();
-        compiler
-            .compile(&schema, &mut compiled_schema)
-            .map_err(Box::new)?;
+        compiler.compile(&schema, &mut compiled_schema)?;
         let schema = compiled_schema.clone();
         let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())?;
 

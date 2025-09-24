@@ -382,20 +382,20 @@ impl AST2IR {
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            ast::TripleExpr::TripleExprRef(r) => Err(SchemaIRError::Todo {
+            ast::TripleExpr::TripleExprRef(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
-            }),
+            })),
         }
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
         match predicate {
             IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
-            IriRef::Prefixed { prefix, local } => Err(SchemaIRError::Internal {
+            IriRef::Prefixed { prefix, local } => Err(Box::new(SchemaIRError::Internal {
                 msg: format!(
                     "Cannot convert prefixed {prefix}:{local} to predicate without context"
                 ),
-            }),
+            })),
         }
     }
 
@@ -423,7 +423,7 @@ impl AST2IR {
 
     fn cnv_min(&self, min: &Option<i32>) -> CResult<Min> {
         match min {
-            Some(min) if *min < 0 => Err(SchemaIRError::MinLessZero { min: *min }),
+            Some(min) if *min < 0 => Err(Box::new(SchemaIRError::MinLessZero { min: *min })),
             Some(min) => Ok(Min::from(*min)),
             None => Ok(Min::from(1)),
         }
@@ -432,7 +432,7 @@ impl AST2IR {
     fn cnv_max(&self, max: &Option<i32>) -> CResult<Max> {
         match *max {
             Some(-1) => Ok(Max::Unbounded),
-            Some(max) if max < -1 => Err(SchemaIRError::MaxIncorrect { max }),
+            Some(max) if max < -1 => Err(Box::new(SchemaIRError::MaxIncorrect { max })),
             Some(max) => Ok(Max::from(max)),
             None => Ok(Max::from(1)),
         }
@@ -750,10 +750,12 @@ fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-        IriRef::Prefixed { prefix, local } => Err(SchemaIRError::IriRef2ShapeLabelError {
-            prefix: prefix.clone(),
-            local: local.clone(),
-        }),
+        IriRef::Prefixed { prefix, local } => {
+            Err(Box::new(SchemaIRError::IriRef2ShapeLabelError {
+                prefix: prefix.clone(),
+                local: local.clone(),
+            }))
+        }
     }
 }
 
@@ -996,39 +998,43 @@ fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
                 if re.is_match(lexical_form) {
                     Ok(())
                 } else {
-                    Err(SchemaIRError::PatternError {
+                    Err(Box::new(SchemaIRError::PatternError {
                         regex: regex.to_string(),
                         flags: flags.unwrap_or("").to_string(),
                         lexical_form: lexical_form.clone(),
-                    })
+                    }))
                 }
             } else {
-                Err(SchemaIRError::InvalidRegex {
+                Err(Box::new(SchemaIRError::InvalidRegex {
                     regex: regex.to_string(),
-                })
+                }))
             }
         }
-        _ => Err(SchemaIRError::PatternNodeNotLiteral {
+        _ => Err(Box::new(SchemaIRError::PatternNodeNotLiteral {
             node: node.to_string(),
             regex: regex.to_string(),
             flags: flags.map(|f| f.to_string()),
-        }),
+        })),
     }
 }
 
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
         (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::Iri, _) => Err(SchemaIRError::NodeKindIri { node: node.clone() }),
+        (ast::NodeKind::Iri, _) => Err(Box::new(SchemaIRError::NodeKindIri { node: node.clone() })),
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::BNode, _) => Err(SchemaIRError::NodeKindBNode { node: node.clone() }),
+        (ast::NodeKind::BNode, _) => Err(Box::new(SchemaIRError::NodeKindBNode {
+            node: node.clone(),
+        })),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (ast::NodeKind::Literal, _) => Err(SchemaIRError::NodeKindLiteral { node: node.clone() }),
+        (ast::NodeKind::Literal, _) => Err(Box::new(SchemaIRError::NodeKindLiteral {
+            node: node.clone(),
+        })),
         (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::NonLiteral, _) => {
-            Err(SchemaIRError::NodeKindNonLiteral { node: node.clone() })
-        }
+        (ast::NodeKind::NonLiteral, _) => Err(Box::new(SchemaIRError::NodeKindNonLiteral {
+            node: node.clone(),
+        })),
     }
 }
 
@@ -1051,11 +1057,11 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
             if dt == datatype {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatch {
+                Err(Box::new(SchemaIRError::DatatypeDontMatch {
                     expected: dt.clone(),
                     found: datatype.clone(),
                     lexical_form: lexical_form.clone(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::StringLiteral {
@@ -1068,10 +1074,10 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 Ok(())
             } else {
                 debug!("datatype cond fails: {}!={}", dt, *XSD_STRING);
-                Err(SchemaIRError::DatatypeDontMatchString {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchString {
                     expected: dt.clone(),
                     lexical_form: lexical_form.clone(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::StringLiteral {
@@ -1081,89 +1087,89 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
             if *dt == *RDF_LANG_STRING {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatchLangString {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchLangString {
                     lexical_form: lexical_form.clone(),
                     lang: Box::new(lang.clone()),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Integer(_))) => {
             if *dt == *XSD_INTEGER {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatchInteger {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchInteger {
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Long(_))) => {
             if *dt == *XSD_LONG {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatchLong {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchLong {
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Double(_))) => {
             if *dt == *XSD_DOUBLE {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatchDouble {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchDouble {
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Decimal(_))) => {
             if *dt == *XSD_DECIMAL {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatchDecimal {
+                Err(Box::new(SchemaIRError::DatatypeDontMatchDecimal {
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::BooleanLiteral(_)) => {
             if *dt == *XSD_BOOLEAN {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatch {
+                Err(Box::new(SchemaIRError::DatatypeDontMatch {
                     found: dt.clone(),
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::DatetimeLiteral(_)) => {
             if *dt == *XSD_DATETIME {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatch {
+                Err(Box::new(SchemaIRError::DatatypeDontMatch {
                     found: dt.clone(),
                     expected: dt.clone(),
                     lexical_form: node.to_string(),
-                })
+                }))
             }
         }
         Object::Literal(SLiteral::WrongDatatypeLiteral {
             lexical_form,
             datatype,
             error,
-        }) => Err(SchemaIRError::WrongDatatypeLiteralMatch {
+        }) => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
             datatype: dt.clone(),
             error: error.clone(),
             expected: datatype.clone(),
             lexical_form: lexical_form.to_string(),
-        }),
+        })),
         Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
-            Err(SchemaIRError::DatatypeNoLiteral {
+            Err(Box::new(SchemaIRError::DatatypeNoLiteral {
                 expected: Box::new(dt.clone()),
                 node: Box::new(node.clone()),
-            })
+            }))
         }
     }
 }
@@ -1174,11 +1180,11 @@ fn check_node_length(node: &Node, len: usize) -> CResult<()> {
     if node_length == len {
         Ok(())
     } else {
-        Err(SchemaIRError::LengthError {
+        Err(Box::new(SchemaIRError::LengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
-        })
+        }))
     }
 }
 
@@ -1188,11 +1194,11 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
     if node_length >= len {
         Ok(())
     } else {
-        Err(SchemaIRError::MinLengthError {
+        Err(Box::new(SchemaIRError::MinLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
-        })
+        }))
     }
 }
 
@@ -1202,11 +1208,11 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
     if node_length <= len {
         Ok(())
     } else {
-        Err(SchemaIRError::MaxLengthError {
+        Err(Box::new(SchemaIRError::MaxLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
-        })
+        }))
     }
 }
 
@@ -1236,9 +1242,9 @@ fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
 }*/
 
 fn todo<A>(str: &str) -> CResult<A> {
-    Err(SchemaIRError::Todo {
+    Err(Box::new(SchemaIRError::Todo {
         msg: str.to_string(),
-    })
+    }))
 }
 
 fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, SchemaIRError> {

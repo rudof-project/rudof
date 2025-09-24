@@ -7,6 +7,7 @@ pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod shapes_graph_source;
+pub mod sparql_query;
 
 pub use input_spec::*;
 pub use oxrdf;
@@ -16,4 +17,5 @@ pub use rudof_error::*;
 pub use shacl_ir;
 pub use shacl_validation;
 pub use shapes_graph_source::*;
+pub use sparql_query::*;
 pub use srdf;

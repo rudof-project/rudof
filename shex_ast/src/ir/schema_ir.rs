@@ -12,7 +12,7 @@ use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 
-type Result<A> = std::result::Result<A, SchemaIRError>;
+type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
 #[derive(Debug, Default, Clone)]
 pub struct SchemaIR {
@@ -88,7 +88,7 @@ impl SchemaIR {
         }?;
         match self.shape_labels_map.get(&shape_label) {
             Some(idx) => Ok(*idx),
-            None => Err(SchemaIRError::LabelNotFound { shape_label }),
+            None => Err(Box::new(SchemaIRError::LabelNotFound { shape_label })),
         }
     }
 
@@ -185,9 +185,9 @@ impl SchemaIR {
     pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {
         match self.shape_labels_map.get(shape_label) {
             Some(shape_label_idx) => Ok(*shape_label_idx),
-            None => Err(SchemaIRError::ShapeLabelNotFound {
+            None => Err(Box::new(SchemaIRError::ShapeLabelNotFound {
                 shape_label: shape_label.clone(),
-            }),
+            })),
         }
     }
 

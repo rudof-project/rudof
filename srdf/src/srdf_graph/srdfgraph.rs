@@ -7,6 +7,8 @@ use iri_s::IriS;
 use oxjsonld::JsonLdParser;
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, Write};
@@ -30,6 +32,19 @@ pub struct SRDFGraph {
     pm: PrefixMap,
     base: Option<IriS>,
     bnode_counter: usize,
+}
+
+impl Serialize for SRDFGraph {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("SRDFGraph", 4)?;
+        state.serialize_field("triples_count", &self.graph.len())?;
+        state.serialize_field("prefixmap", &self.pm)?;
+        state.serialize_field("base", &self.base)?;
+        state.end()
+    }
 }
 
 impl SRDFGraph {
