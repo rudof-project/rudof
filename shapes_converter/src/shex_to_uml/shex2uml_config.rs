@@ -17,6 +17,7 @@ pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
     pub annotation_label: Vec<IriS>,
     pub replace_iri_by_label: Option<bool>,
+    pub shadowing: Option<bool>,
     pub shex: Option<ShExConfig>,
 }
 
@@ -26,6 +27,7 @@ impl ShEx2UmlConfig {
             annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
+            shadowing: Some(true),
             plantuml_path: None,
         }
     }
