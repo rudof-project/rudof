@@ -37,7 +37,6 @@ source .venv/bin/activate
 or
 
 ```sh
-```sh
 source .venv/bin/activate.fish
 ```
 

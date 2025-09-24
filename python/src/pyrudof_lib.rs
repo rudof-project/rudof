@@ -5,12 +5,13 @@ use pyo3::{
     Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
 };
 use rudof_lib::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, Mie,
-    PrefixMap, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
-    ReaderMode, ResultShapeMap, Rudof, RudofConfig, RudofError, ServiceDescription,
-    ServiceDescriptionFormat, ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat,
-    ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource,
-    UmlGenerationMode, ValidationReport, ValidationStatus, VarName, iri,
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
+    InputSpec, InputSpecError, InputSpecReader, Mie, PrefixMap, QueryResultFormat, QueryShapeMap,
+    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
+    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
+    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, UrlSpec, ValidationReport,
+    ValidationStatus, VarName, iri,
 };
 use std::{
     ffi::OsStr,
@@ -20,40 +21,7 @@ use std::{
     str::FromStr,
 };
 
-/// Contains the Rudof configuration parameters
-/// It can be created with default values or read from a file
-/// It can be used to create a `Rudof` instance
-/// It is immutable
-/// It can be used to update the configuration of an existing `Rudof` instance
-/// It can be used to create a new `Rudof` instance with the same configuration
-/// It is thread safe
-#[pyclass(frozen, name = "RudofConfig")]
-pub struct PyRudofConfig {
-    inner: RudofConfig,
-}
-
-#[pymethods]
-impl PyRudofConfig {
-    #[new]
-    pub fn __init__(py: Python<'_>) -> PyResult<Self> {
-        py.detach(|| {
-            Ok(Self {
-                inner: RudofConfig::default(),
-            })
-        })
-    }
-
-    /// Read an `RudofConfig` from a file path
-    #[staticmethod]
-    #[pyo3(signature = (path))]
-    pub fn from_path(path: &str) -> PyResult<Self> {
-        let path = Path::new(path);
-        let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
-        Ok(PyRudofConfig {
-            inner: rudof_config,
-        })
-    }
-}
+use crate::PyRudofConfig;
 
 /// Main class to handle `rudof` features.
 /// There should  be only one instance of `rudof` per program.
@@ -181,7 +149,7 @@ impl PyRudof {
     /// label1, label2: Optional labels of the shapes to compare
     /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
     /// reader_mode: Reader mode to use when reading the schemas, e.g. lax, strict
-    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2, reader_mode))]
+    #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1, base2, label1, label2, reader_mode = &PyReaderMode::Lax))]
     #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas_str(
         &mut self,
@@ -246,7 +214,7 @@ impl PyRudof {
         shacl_schema.map(|s| PyShaclSchema { inner: s.clone() })
     }
 
-    /// Run a SPARQL query obtained from a string on the RDF data
+    /// Run a SPARQL SELECT query obtained from a string on the RDF data
     #[pyo3(signature = (input))]
     pub fn run_query_str(&mut self, input: &str) -> PyResult<PyQuerySolutions> {
         let results = self.inner.run_query_select_str(input).map_err(cnv_err)?;
@@ -277,14 +245,7 @@ impl PyRudof {
     ///   rudof.run_query_path("query.sparql")
     #[pyo3(signature = (path_name))]
     pub fn run_query_path(&mut self, path_name: &str) -> PyResult<PyQuerySolutions> {
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingDCTAPPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let mut reader = BufReader::new(file);
+        let mut reader = get_path_reader(path_name, "SPARQL query")?;
         let results = self.inner.run_query_select(&mut reader).map_err(cnv_err)?;
         Ok(PyQuerySolutions { inner: results })
     }
@@ -313,14 +274,7 @@ impl PyRudof {
     /// Raises: RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingDCTAPPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let reader = BufReader::new(file);
+        let reader = get_path_reader(path_name, "DCTAP data")?;
         self.inner.reset_dctap();
         let format = cnv_dctap_format(format);
         self.inner.read_dctap(reader, &format).map_err(cnv_err)?;
@@ -383,64 +337,51 @@ impl PyRudof {
         Ok(())
     }
 
-    /// Reads a ShEx schema from a path
+    /// Obtains a ShEx schema
     /// Parameters:
-    /// path_name: Path to the file containing the ShEx schema
+    /// input: Can be a file path or an URL
     /// format: Format of the ShEx schema, e.g. shexc, turtle
     /// base: Optional base IRI to resolve relative IRIs in the schema
     /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
     /// Returns: None
     /// Raises: RudofError if there is an error reading the ShEx schema
-    #[pyo3(signature = (path_name, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_shex_path(
+    ///
+    #[pyo3(signature = (input, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_shex(
         &mut self,
-        path_name: &str,
+        input: &str,
         format: &PyShExFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingShExPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let reader = BufReader::new(file);
-        self.inner.reset_shex();
         let format = cnv_shex_format(format);
+        self.inner.reset_shex();
+        let reader = get_reader(input, Some(format.mime_type()), "ShEx schema")?;
         self.inner
             .read_shex(reader, &format, base, &reader_mode.into(), Some("string"))
             .map_err(cnv_err)?;
         Ok(())
     }
 
-    /// Reads a ShEx schema from a path
+    /// Reads a SHACL shapes graph
     /// Parameters:
-    /// path_name: Path to the file containing the SHACL shapes graph
+    /// input: URL of file path
     /// format: Format of the SHACL shapes graph, e.g. turtle
     /// base: Optional base IRI to resolve relative IRIs in the shapes graph
     /// reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
     /// Returns: None
     /// Raises: RudofError if there is an error reading the SHACL shapes graph
-    #[pyo3(signature = (path_name, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_shacl_path(
+    #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_shacl(
         &mut self,
-        path_name: &str,
+        input: &str,
         format: &PyShaclFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingShExPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let reader = BufReader::new(file);
-        self.inner.reset_shex();
         let format = cnv_shacl_format(format);
+        let reader = get_url_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
+        self.inner.reset_shacl();
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner
             .read_shacl(reader, &format, base, &reader_mode)
@@ -496,90 +437,52 @@ impl PyRudof {
         Ok(())
     }
 
-    /// Adds RDF data read from a Path
+    /// Reads RDF data (and merges it with existing data)
     /// Parameters:
-    /// path_name: Path to the file containing the RDF data
+    /// input: Path or URL containing the RDF data
     /// format: Format of the RDF data, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the RDF data
     /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
     /// Returns: None
     /// Raises: RudofError if there is an error reading the RDF data
-    #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_data_path(
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_data(
         &mut self,
-        path_name: &str,
+        input: &str,
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingDCTAPPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let reader = BufReader::new(file);
+        let reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
         self.inner
             .read_data(reader, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
 
-    /// Read Service Description from a path
+    /// Read Service Description
     /// Parameters:
-    /// path_name: Path to the file containing the Service Description
+    /// input: Path or URL
     /// format: Format of the Service Description, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the Service Description
     /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
     /// Returns: None
     /// Raises: RudofError if there is an error reading the Service Description
-    #[pyo3(signature = (path_name, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_service_description_file(
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
+    pub fn read_service_description(
         &mut self,
-        path_name: &str,
+        input: &str,
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let path = Path::new(path_name);
-        let file = File::open::<&OsStr>(path.as_ref())
-            .map_err(|e| RudofError::ReadingServiceDescriptionPath {
-                path: path_name.to_string(),
-                error: format!("{e}"),
-            })
-            .map_err(cnv_err)?;
-        let reader = BufReader::new(file);
+        let reader = get_reader(input, Some(format.mime_type()), "Service Description")?;
         self.inner
             .read_service_description(reader, &format, base, &reader_mode)
-            .map_err(cnv_err)?;
-        Ok(())
-    }
-
-    /// Read Service Description from a URL
-    /// Parameters:
-    /// url: URL of the Service Description
-    /// format: Format of the Service Description, e.g. turtle, jsonld
-    /// base: Optional base IRI to resolve relative IRIs in the Service Description
-    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the Service Description
-    #[pyo3(signature = (url, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax))]
-    pub fn read_service_description_url(
-        &mut self,
-        url: &str,
-        format: &PyRDFFormat,
-        base: Option<&str>,
-        reader_mode: &PyReaderMode,
-    ) -> PyResult<()> {
-        let reader_mode = cnv_reader_mode(reader_mode);
-        let format = cnv_rdf_format(format);
-        self.inner
-            .read_service_description_url(url, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -680,6 +583,15 @@ impl PyRudof {
         self.inner
             .read_shapemap(input.as_bytes(), &format)
             .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Reads the current Shapemap from a file path
+    #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact))]
+    pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
+        let format = cnv_shapemap_format(format);
+        let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
+        self.inner.read_shapemap(reader, &format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -1644,4 +1556,56 @@ fn cnv_query_result_format(format: &PyQueryResultFormat) -> QueryResultFormat {
         PyQueryResultFormat::N3 => QueryResultFormat::N3,
         PyQueryResultFormat::NQuads => QueryResultFormat::NQuads,
     }
+}
+
+fn get_path_reader(path_name: &str, context: &str) -> PyResult<BufReader<File>> {
+    let path = Path::new(path_name);
+    let file = File::open::<&OsStr>(path.as_ref())
+        .map_err(|e| RudofError::ReadingPathContext {
+            path: path_name.to_string(),
+            context: context.to_string(),
+            error: format!("{e}"),
+        })
+        .map_err(cnv_err)?;
+    let reader = BufReader::new(file);
+    Ok(reader)
+}
+
+fn get_url_reader(url: &str, accept: Option<&str>, context: &str) -> PyResult<InputSpecReader> {
+    let url_spec = UrlSpec::parse(url)
+        .map_err(|e| RudofError::ParsingUrlContext {
+            url: url.to_string(),
+            context: context.to_string(),
+            error: e.to_string(),
+        })
+        .map_err(cnv_err)?;
+    let input_spec = InputSpec::Url(url_spec);
+    let reader = input_spec
+        .open_read(accept, context)
+        .map_err(|e| RudofError::ReadingUrlContext {
+            url: url.to_string(),
+            context: context.to_string(),
+            error: e.to_string(),
+        })
+        .map_err(cnv_err)?;
+    Ok(reader)
+}
+
+fn get_reader(input: &str, accept: Option<&str>, context: &str) -> PyResult<InputSpecReader> {
+    let input_spec: InputSpec = FromStr::from_str(input)
+        .map_err(|e: InputSpecError| RudofError::ParsingInputSpecContext {
+            input: input.to_string(),
+            context: context.to_string(),
+            error: e.to_string(),
+        })
+        .map_err(cnv_err)?;
+    let reader = input_spec
+        .open_read(accept, context)
+        .map_err(|e| RudofError::ReadingInputSpecContext {
+            input: input.to_string(),
+            context: context.to_string(),
+            error: e.to_string(),
+        })
+        .map_err(cnv_err)?;
+    Ok(reader)
 }

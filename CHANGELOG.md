@@ -7,6 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.105
+### Added
+### Fixed
+### Changed
+- Updated dependency on oxigraph to 0.5.0 solving issue #335
+
+### Removed
+
 ## 0.1.104
 ### Added
 - Added more information to MIE files

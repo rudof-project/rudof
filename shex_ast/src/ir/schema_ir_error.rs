@@ -69,7 +69,7 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
-    #[error("Datatype expected {expected} but found no literal {node}")]
+    #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
     DatatypeNoLiteral {
         expected: Box<IriRef>,
         node: Box<Node>,
@@ -77,6 +77,30 @@ pub enum SchemaIRError {
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
     DatatypeDontMatchString {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found Integer literal {lexical_form}")]
+    DatatypeDontMatchInteger {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found decimal literal {lexical_form}")]
+    DatatypeDontMatchDecimal {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found long literal {lexical_form}")]
+    DatatypeDontMatchLong {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found double literal {lexical_form}")]
+    DatatypeDontMatchDouble {
         expected: IriRef,
         lexical_form: String,
     },

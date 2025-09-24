@@ -16,6 +16,20 @@ pub enum RDFFormat {
     JsonLd,
 }
 
+impl RDFFormat {
+    pub fn mime_type(&self) -> &'static str {
+        match self {
+            RDFFormat::Turtle => "text/turtle",
+            RDFFormat::NTriples => "application/n-triples",
+            RDFFormat::RDFXML => "application/rdf+xml",
+            RDFFormat::TriG => "application/trig",
+            RDFFormat::N3 => "text/n3",
+            RDFFormat::NQuads => "application/n-quads",
+            RDFFormat::JsonLd => "application/ld+json",
+        }
+    }
+}
+
 impl FromStr for RDFFormat {
     type Err = RDFParseError;
 

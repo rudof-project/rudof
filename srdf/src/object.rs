@@ -5,6 +5,7 @@ use crate::literal::SLiteral;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
 use iri_s::IriS;
+use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
@@ -64,6 +65,13 @@ impl Object {
 
     pub fn boolean(b: bool) -> Object {
         Object::Literal(SLiteral::boolean(b))
+    }
+
+    pub fn datatype(&self) -> Option<IriRef> {
+        match self {
+            Object::Literal(lit) => Some(lit.datatype()),
+            _ => None,
+        }
     }
 }
 

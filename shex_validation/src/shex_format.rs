@@ -8,3 +8,14 @@ pub enum ShExFormat {
     ShExJ,
     Turtle,
 }
+
+impl ShExFormat {
+    /// Returns the MIME type for the ShEx format
+    pub fn mime_type(&self) -> &str {
+        match self {
+            ShExFormat::ShExC => "text/shex",
+            ShExFormat::ShExJ => "application/shex+json",
+            ShExFormat::Turtle => "text/turtle",
+        }
+    }
+}

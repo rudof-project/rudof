@@ -33,3 +33,13 @@ pub enum ShapeMapFormat {
     Compact,
     JSON,
 }
+
+impl ShapeMapFormat {
+    /// Returns the MIME type associated with the format
+    pub fn mime_type(&self) -> &str {
+        match self {
+            ShapeMapFormat::Compact => "text/plain",
+            ShapeMapFormat::JSON => "application/json",
+        }
+    }
+}

@@ -1,4 +1,5 @@
 use iri_s::IriS;
+use prefixmap::IriRef;
 use rbe::Value;
 use serde::Serialize;
 use srdf::Object;
@@ -39,6 +40,10 @@ impl Node {
         Node {
             node: Object::literal(lit),
         }
+    }
+
+    pub fn datatype(&self) -> Option<IriRef> {
+        self.node.datatype()
     }
 }
 

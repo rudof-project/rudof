@@ -169,6 +169,41 @@ pub enum RudofError {
     #[error("Reading ShEx Schema from path: {path}: {error}")]
     ReadingShExPath { path: String, error: String },
 
+    #[error("Reading {context} from {url}: {error}")]
+    ReadingUrlContext {
+        url: String,
+        error: String,
+        context: String,
+    },
+
+    #[error("Obtaining {context} from input {input}: {error}")]
+    ParsingInputSpecContext {
+        input: String,
+        error: String,
+        context: String,
+    },
+
+    #[error("Reading {context} from input {input}: {error}")]
+    ReadingInputSpecContext {
+        input: String,
+        error: String,
+        context: String,
+    },
+
+    #[error("Reading {context}. Parsing {url}: {error}")]
+    ParsingUrlContext {
+        url: String,
+        error: String,
+        context: String,
+    },
+
+    #[error("Reading {context} from path: {path}: {error}")]
+    ReadingPathContext {
+        path: String,
+        error: String,
+        context: String,
+    },
+
     #[error("Error formatting schema {schema}: {error}")]
     ErrorFormattingSchema { schema: String, error: String },
 
