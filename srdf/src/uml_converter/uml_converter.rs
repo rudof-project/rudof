@@ -6,7 +6,7 @@ use std::{
 };
 
 use tempfile::TempDir;
-use tracing::{Level, debug};
+use tracing::{Level, debug, trace};
 
 use crate::UmlConverterError;
 
@@ -30,10 +30,14 @@ pub trait UmlConverter {
                 error: e.to_string(),
             });
         }
+        trace!(
+            "Using PlantUML jar file: {}",
+            plantuml_path.as_ref().display()
+        );
         let tempdir = TempDir::new().map_err(|e| UmlConverterError::TempFileError {
             error: e.to_string(),
         })?;
-
+        trace!("Created temporary directory: {}", tempdir.path().display());
         let tempdir_path = tempdir.path();
         let tempfile_path = tempdir_path.join("temp.uml");
         let tempfile_name = tempfile_path.display().to_string();
