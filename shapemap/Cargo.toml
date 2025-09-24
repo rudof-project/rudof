@@ -1,6 +1,6 @@
 [package]
 name = "shapemap"
-version = "0.1.90"
+version = "0.1.106"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapemap"
