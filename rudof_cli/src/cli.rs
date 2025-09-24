@@ -316,7 +316,7 @@ pub enum Command {
             short = 'c',
             long = "config-file",
             value_name = "FILE",
-            help = "Config file name"
+            help = "Config file name (in TOML format)"
         )]
         config: Option<PathBuf>,
     },
