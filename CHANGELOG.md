@@ -7,6 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.106
+### Added
+- Added the possibility to read different elements from file paths or URLs. We removed the suffix `_path` for all the methods that read from those inputs. We keep only the `_str` suffix for methods that read from a string. For example, `read_data(input, ...)` allows the input to be a URL, a file path or stdin (which can be useful in linux pipes), while `read_data_str(input, ...)` requires the input to be a string.
+- Added `read_shapemap(input,...)` which was required by issue #329.
+
+### Fixed
+### Changed
+
+
+### Removed
+
 ## 0.1.105
 ### Added
 ### Fixed

@@ -69,6 +69,16 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
+    #[error(
+        "Datatype expected {expected} but found a wrong datatype with lexical form {lexical_form} and declared datatype {datatype}: {error}"
+    )]
+    WrongDatatypeLiteralMatch {
+        lexical_form: String,
+        datatype: IriRef,
+        error: String,
+        expected: IriRef,
+    },
+
     #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
     DatatypeNoLiteral {
         expected: Box<IriRef>,

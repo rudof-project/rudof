@@ -38,6 +38,12 @@ lazy_static! {
     static ref XSD_DECIMAL: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/2001/XMLSchema#decimal"
     ));
+    static ref XSD_DATETIME: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/2001/XMLSchema#dateTime"
+    ));
+    static ref XSD_BOOLEAN: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/2001/XMLSchema#boolean"
+    ));
     static ref XSD_DOUBLE: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/2001/XMLSchema#double"
     ));
@@ -1121,10 +1127,44 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
                 })
             }
         }
-        _ => Err(SchemaIRError::DatatypeNoLiteral {
-            expected: Box::new(dt.clone()),
-            node: Box::new(node.clone()),
+        Object::Literal(SLiteral::BooleanLiteral(_)) => {
+            if *dt == *XSD_BOOLEAN {
+                Ok(())
+            } else {
+                Err(SchemaIRError::DatatypeDontMatch {
+                    found: dt.clone(),
+                    expected: dt.clone(),
+                    lexical_form: node.to_string(),
+                })
+            }
+        }
+        Object::Literal(SLiteral::DatetimeLiteral(_)) => {
+            if *dt == *XSD_DATETIME {
+                Ok(())
+            } else {
+                Err(SchemaIRError::DatatypeDontMatch {
+                    found: dt.clone(),
+                    expected: dt.clone(),
+                    lexical_form: node.to_string(),
+                })
+            }
+        }
+        Object::Literal(SLiteral::WrongDatatypeLiteral {
+            lexical_form,
+            datatype,
+            error,
+        }) => Err(SchemaIRError::WrongDatatypeLiteralMatch {
+            datatype: dt.clone(),
+            error: error.clone(),
+            expected: datatype.clone(),
+            lexical_form: lexical_form.to_string(),
         }),
+        Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
+            Err(SchemaIRError::DatatypeNoLiteral {
+                expected: Box::new(dt.clone()),
+                node: Box::new(node.clone()),
+            })
+        }
     }
 }
 
