@@ -192,7 +192,7 @@ impl<S: Rdf + serde::Serialize> QuerySolutions<S> {
 impl<S: Rdf> Display for QuerySolutions<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for solution in &self.solutions {
-            write!(f, "{}\n", solution.show())?;
+            writeln!(f, "{}", solution.show())?;
         }
         Ok(())
     }

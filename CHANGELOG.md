@@ -7,12 +7,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## 0.1.106
+## 0.1.108
+### Fixed
+- We found a problem with SPARQL queries that were returning no results
+- Repaired problem with xsd:dateTime
+
+
+
+## 0.1.107
 ### Added
 - Added the possibility to read different elements from file paths or URLs. We removed the suffix `_path` for all the methods that read from those inputs. We keep only the `_str` suffix for methods that read from a string. For example, `read_data(input, ...)` allows the input to be a URL, a file path or stdin (which can be useful in linux pipes), while `read_data_str(input, ...)` requires the input to be a string.
 - Added `read_shapemap(input,...)` which was required by issue #329.
 
 ### Fixed
+- We found a issue when validating datatype literals because we were not handling 
 ### Changed
 
 

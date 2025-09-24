@@ -1247,11 +1247,11 @@ fn todo<A>(str: &str) -> CResult<A> {
     }))
 }
 
-fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, SchemaIRError> {
+fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, Box<SchemaIRError>> {
     match iri {
         IriRef::Iri(iri) => Ok(iri.clone()),
-        _ => Err(SchemaIRError::Internal {
+        _ => Err(Box::new(SchemaIRError::Internal {
             msg: format!("Cannot convert {iri} to Iri"),
-        }),
+        })),
     }
 }
