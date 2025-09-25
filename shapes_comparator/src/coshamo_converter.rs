@@ -8,14 +8,14 @@ use crate::{CoShaMo, ComparatorConfig, ComparatorError, ValueConstraint, ValueDe
 
 #[derive(Clone, Debug)]
 pub struct CoShaMoConverter {
-    _config: ComparatorConfig,
+    config: ComparatorConfig,
     current_coshamo: CoShaMo,
 }
 
 impl CoShaMoConverter {
     pub fn new(config: &ComparatorConfig) -> Self {
         CoShaMoConverter {
-            _config: config.clone(),
+            config: config.clone(),
             current_coshamo: CoShaMo::new(),
         }
     }
@@ -190,6 +190,9 @@ impl CoShaMoConverter {
         &mut self,
         value_expr: &Option<Box<ShapeExpr>>,
     ) -> Result<ValueConstraint, ComparatorError> {
+        if self.config.ignore_value_constraints() {
+            return Ok(ValueConstraint::Any);
+        }
         if let Some(value_expr) = value_expr {
             match value_expr.as_ref() {
                 ShapeExpr::NodeConstraint(ref nc) => {
