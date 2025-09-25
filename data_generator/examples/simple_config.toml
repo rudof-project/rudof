@@ -45,6 +45,59 @@ parameters = {}
 generator = "string"
 parameters = {}
 
+# Pattern-based field generation - NEW FEATURE!
+# Patterns from ShEx/SHACL schemas are now supported via the pattern generator
+# Use the "pattern" generator for regex-based string generation
+
+# Phone number with pattern
+[field_generators.properties."http://example.org/phone"]
+generator = "pattern"
+[field_generators.properties."http://example.org/phone".parameters]
+pattern = "\\d{3}-\\d{3}-\\d{4}"  # Generates: 123-456-7890
+
+# Email with pattern
+[field_generators.properties."http://example.org/email"]
+generator = "pattern"
+[field_generators.properties."http://example.org/email".parameters]
+pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# ID number with pattern
+[field_generators.properties."http://example.org/studentId"]
+generator = "pattern"
+[field_generators.properties."http://example.org/studentId".parameters]
+pattern = "[A-Z]{2,3}\\d{4,6}"  # Generates: AB1234 or XYZ123456
+
+# US phone number with country code
+[field_generators.properties."http://example.org/usPhone"]
+generator = "pattern"
+[field_generators.properties."http://example.org/usPhone".parameters]
+pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"  # Generates: +1-555-123-4567
+
+# Date pattern
+[field_generators.properties."http://example.org/dateString"]
+generator = "pattern"
+[field_generators.properties."http://example.org/dateString".parameters]
+pattern = "\\d{4}-\\d{2}-\\d{2}"  # Generates: 2023-12-25
+
+# URL pattern
+[field_generators.properties."http://example.org/website"]
+generator = "pattern"
+[field_generators.properties."http://example.org/website".parameters]
+pattern = "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# IP address pattern
+[field_generators.properties."http://example.org/ipAddress"]
+generator = "pattern"
+[field_generators.properties."http://example.org/ipAddress".parameters]
+pattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+
+# Note: The pattern generator also provides heuristic-based generation
+# when no pattern is specified but the property name suggests a type:
+# - Properties containing "phone" or "tel" → phone number format
+# - Properties containing "email" → email format
+# - Properties containing "url" or "website" → URL format
+# - Properties containing "id" → ID format
+
 [output]
 path = "generated_data.ttl"           # Output file name
 format = "Turtle"                     # Use Turtle format

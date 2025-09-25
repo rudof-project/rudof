@@ -98,6 +98,29 @@ end_year = 2024
 # PROPERTY-SPECIFIC GENERATORS - Custom generators for specific properties
 # ============================================================================
 
+# ============================================================================
+# PATTERN GENERATOR - NEW! Generate strings matching regex patterns
+# ============================================================================
+# The pattern generator can create strings that match regex patterns.
+# It supports both explicit patterns via configuration and automatic
+# pattern extraction from ShEx/SHACL schemas.
+#
+# Supported pattern types:
+# - Phone numbers: \\d{3}-\\d{3}-\\d{4}, \\+1-\\d{3}-\\d{3}-\\d{4}
+# - Email addresses: [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}
+# - ID numbers: [A-Z]{2,3}\\d{4,6}
+# - Dates: \\d{4}-\\d{2}-\\d{2}
+# - IP addresses: \\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}
+# - URLs: https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}
+# - Simple character classes: [a-zA-Z], [0-9], [a-zA-Z0-9]
+# - Basic quantifiers: \\d{3}, [A-Z]{2,4}
+#
+# Heuristic fallbacks (when no pattern specified):
+# - Properties with "phone"/"tel" → phone number format
+# - Properties with "email" → email format  
+# - Properties with "url"/"website" → URL format
+# - Properties with "id"/"identifier" → ID format
+
 # Name property with default string generator
 [field_generators.properties."http://example.org/name"]
 generator = "string"
@@ -126,21 +149,59 @@ parameters = {}
 # min = 18
 # max = 80
 
-# Phone number property
+# Phone number property with pattern generator
 # [field_generators.properties."http://example.org/phone"]
-# generator = "string"
+# generator = "pattern"
 # [field_generators.properties."http://example.org/phone".parameters]
-# pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"
+# pattern = "\\d{3}-\\d{3}-\\d{4}"          # Generates: 123-456-7890
 
-# URL property
+# US phone number with country code
+# [field_generators.properties."http://example.org/usPhone"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/usPhone".parameters]
+# pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"     # Generates: +1-555-123-4567
+
+# Email with pattern validation
+# [field_generators.properties."http://example.org/email"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/email".parameters]
+# pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# Student ID with pattern
+# [field_generators.properties."http://example.org/studentId"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/studentId".parameters]
+# pattern = "[A-Z]{2,3}\\d{4,6}"            # Generates: AB1234, XYZ123456
+
+# URL property with pattern generator
 # [field_generators.properties."http://example.org/website"]
-# generator = "string"
+# generator = "pattern"
 # [field_generators.properties."http://example.org/website".parameters]
-# templates = [
-#     "https://www.{domain}.com",
-#     "https://{subdomain}.{domain}.org",
-#     "http://www.{domain}.net"
-# ]
+# pattern = "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# IP address pattern
+# [field_generators.properties."http://example.org/ipAddress"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/ipAddress".parameters]
+# pattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+
+# Date string pattern
+# [field_generators.properties."http://example.org/dateString"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/dateString".parameters]
+# pattern = "\\d{4}-\\d{2}-\\d{2}"          # Generates: 2023-12-25
+
+# Social Security Number pattern
+# [field_generators.properties."http://example.org/ssn"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/ssn".parameters]
+# pattern = "\\d{3}-\\d{2}-\\d{4}"          # Generates: 123-45-6789
+
+# License plate pattern
+# [field_generators.properties."http://example.org/licensePlate"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/licensePlate".parameters]
+# pattern = "[A-Z]{3}\\d{3}"                # Generates: ABC123
 
 # ============================================================================
 # OUTPUT SETTINGS - Control output format and location
@@ -247,6 +308,147 @@ parallel_fields = true              # Generate field values in parallel
 # parallel_file_count = 0
 
 # ============================================================================
+# PATTERN GENERATOR EXAMPLES - Complete guide to pattern-based generation
+# ============================================================================
+
+# Example 5: Pattern-based field generation showcase
+# [generation]
+# entity_count = 500
+# seed = 98765                         # Fixed seed for consistent pattern testing
+# cardinality_strategy = "Balanced"
+
+# Comprehensive pattern examples for different data types:
+
+# Phone numbers (US format)
+# [field_generators.properties."http://example.org/phone"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/phone".parameters]
+# pattern = "\\d{3}-\\d{3}-\\d{4}"          # Output: 555-123-4567
+
+# International phone (US with country code)
+# [field_generators.properties."http://example.org/intlPhone"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/intlPhone".parameters]
+# pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"     # Output: +1-555-123-4567
+
+# Email addresses (RFC compliant)
+# [field_generators.properties."http://example.org/email"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/email".parameters]
+# pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"  # Output: user123@example.com
+
+# Student/Employee IDs
+# [field_generators.properties."http://example.org/studentId"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/studentId".parameters]
+# pattern = "[A-Z]{2,3}\\d{4,6}"            # Output: AB1234, XYZ123456
+
+# Social Security Numbers
+# [field_generators.properties."http://example.org/ssn"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/ssn".parameters]
+# pattern = "\\d{3}-\\d{2}-\\d{4}"          # Output: 123-45-6789
+
+# Credit Card Numbers (simplified)
+# [field_generators.properties."http://example.org/creditCard"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/creditCard".parameters]
+# pattern = "\\d{4}-\\d{4}-\\d{4}-\\d{4}"   # Output: 1234-5678-9012-3456
+
+# License Plates
+# [field_generators.properties."http://example.org/licensePlate"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/licensePlate".parameters]
+# pattern = "[A-Z]{3}\\d{3}"                # Output: ABC123
+
+# ZIP Codes (US format with optional +4)
+# [field_generators.properties."http://example.org/zipCode"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/zipCode".parameters]
+# pattern = "\\d{5}(-\\d{4})?"              # Output: 12345 or 12345-6789
+
+# IP Addresses (IPv4)
+# [field_generators.properties."http://example.org/ipAddress"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/ipAddress".parameters]
+# pattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"  # Output: 192.168.1.100
+
+# URLs (HTTP/HTTPS)
+# [field_generators.properties."http://example.org/website"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/website".parameters]
+# pattern = "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"      # Output: https://example.com
+
+# Date strings (ISO format)
+# [field_generators.properties."http://example.org/dateString"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/dateString".parameters]
+# pattern = "\\d{4}-\\d{2}-\\d{2}"          # Output: 2023-12-25
+
+# Time strings (24-hour format)
+# [field_generators.properties."http://example.org/timeString"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/timeString".parameters]
+# pattern = "\\d{2}:\\d{2}:\\d{2}"          # Output: 14:30:45
+
+# MAC Addresses
+# [field_generators.properties."http://example.org/macAddress"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/macAddress".parameters]
+# pattern = "[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}"
+
+# ISBN Numbers (simplified)
+# [field_generators.properties."http://example.org/isbn"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/isbn".parameters]
+# pattern = "\\d{3}-\\d{10}"                # Output: 978-1234567890
+
+# Product Codes
+# [field_generators.properties."http://example.org/productCode"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/productCode".parameters]
+# pattern = "[A-Z]{2}-\\d{4}-[A-Z]{2}"      # Output: AB-1234-XY
+
+# Heuristic pattern generation (property name-based):
+# These properties will use intelligent defaults based on their names
+# [field_generators.properties."http://example.org/phoneNumber"]
+# generator = "pattern"                      # Auto-detects phone format
+# parameters = {}
+
+# [field_generators.properties."http://example.org/emailAddress"] 
+# generator = "pattern"                      # Auto-detects email format
+# parameters = {}
+
+# [field_generators.properties."http://example.org/websiteUrl"]
+# generator = "pattern"                      # Auto-detects URL format
+# parameters = {}
+
+# [field_generators.properties."http://example.org/userId"]
+# generator = "pattern"                      # Auto-detects ID format
+# parameters = {}
+
+# ============================================================================
+# PATTERN GENERATOR NOTES
+# ============================================================================
+#
+# 1. SCHEMA INTEGRATION: Patterns from ShEx (/regex/) and SHACL (sh:pattern) 
+#    are automatically extracted and used - no configuration needed!
+#
+# 2. SUPPORTED PATTERNS:
+#    - \\d (digits), \\w (word chars), \\s (spaces)
+#    - [a-zA-Z0-9] (character classes)
+#    - {n}, {n,m} (quantifiers)
+#    - Common patterns: phone, email, IP, URL, date, ID formats
+#
+# 3. ESCAPING: Use double backslashes in TOML: "\\d{3}" not "\d{3}"
+#
+# 4. FALLBACKS: If pattern matching fails, generates reasonable defaults
+#    based on property names (phone, email, url, id patterns)
+#
+# 5. TESTING: Use small entity counts to verify pattern output before
+#    generating large datasets
+
+# ============================================================================
 # USAGE NOTES
 # ============================================================================
 # 
@@ -258,6 +460,8 @@ parallel_fields = true              # Generate field values in parallel
 # 6. Use compression for large output files to save disk space
 # 7. Monitor memory usage and adjust batch_size if needed
 # 8. Test with your actual schemas before running large generations
+# 9. NEW: Use pattern generator for regex-compliant string generation
+# 10. NEW: Test patterns with small datasets before scaling up
 # 
 # Command line usage:
 # cargo run -p data_generator -- --config this_config.toml --schema your_schema.shex
@@ -265,3 +469,10 @@ parallel_fields = true              # Generate field values in parallel
 # 
 # Override config values from command line:
 # cargo run -p data_generator -- --config this_config.toml --schema schema.shex --entities 5000 --output override.ttl
+#
+# Pattern generator testing examples:
+# cargo run -p data_generator -- --config pattern_test_config.toml --schema pattern_schema.shex
+# cargo run -p data_generator -- --config comprehensive_config.toml --schema examples/simple.shex --entities 50
+#
+# Quick pattern testing (small dataset):
+# cargo run -p data_generator -- --config this_config.toml --schema your_schema.shex --entities 10 --seed 12345

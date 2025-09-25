@@ -68,6 +68,7 @@ impl FieldGeneratorRegistry {
     /// Register all default generators
     pub fn register_default_generators(&mut self) -> Result<()> {
         use crate::field_generators::basic::*;
+        use crate::field_generators::pattern::PatternGenerator;
         
         self.register_generator(Box::new(StringGenerator));
         self.register_generator(Box::new(IntegerGenerator));
@@ -76,6 +77,7 @@ impl FieldGeneratorRegistry {
         self.register_generator(Box::new(DateGenerator));
         self.register_generator(Box::new(DateTimeGenerator));
         self.register_generator(Box::new(UriGenerator));
+        self.register_generator(Box::new(PatternGenerator));
         
         Ok(())
     }

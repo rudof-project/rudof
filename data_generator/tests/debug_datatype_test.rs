@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use srdf::{RDFFormat, ReaderMode, SRDFGraph, Query, Literal};
+use srdf::{RDFFormat, ReaderMode, SRDFGraph, Query};
 use data_generator::{DataGenerator, GeneratorConfig};
 use data_generator::config::OutputFormat;
 use tempfile::NamedTempFile;
@@ -64,8 +64,7 @@ async fn debug_shex_datatype_generation() {
     
     for triple in graph.triples().unwrap() {
         all_triples.push(format!("{} {} {}", triple.subject, triple.predicate, triple.object));
-        
-        match &triple.object {
+         match &triple.object {
             oxrdf::Term::Literal(lit) => {
                 let datatype = lit.datatype().to_string();
                 *datatype_counts.entry(datatype).or_insert(0) += 1;
@@ -77,7 +76,10 @@ async fn debug_shex_datatype_generation() {
             oxrdf::Term::BlankNode(blank) => {
                 println!("Found blank node: {}", blank);
             }
-            _ => {}
+            #[allow(unreachable_patterns)]
+            _ => {
+                println!("Found other term type: {:?}", triple.object);
+            }
         }
     }
     
@@ -176,7 +178,10 @@ async fn debug_shacl_datatype_generation() {
             oxrdf::Term::BlankNode(blank) => {
                 println!("Found blank node: {}", blank);
             }
-            _ => {}
+            #[allow(unreachable_patterns)]
+            _ => {
+                println!("Found other term type: {:?}", triple.object);
+            }
         }
     }
     

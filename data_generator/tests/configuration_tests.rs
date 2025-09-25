@@ -1,5 +1,4 @@
 use data_generator::config::{GeneratorConfig, EntityDistribution, CardinalityStrategy, OutputFormat, DataQuality, DatatypeConfig, PropertyConfig};
-use data_generator::{DataGenerator, Result};
 use tempfile::TempDir;
 use std::path::PathBuf;
 use std::collections::HashMap;

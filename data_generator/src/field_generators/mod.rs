@@ -2,6 +2,7 @@ pub mod traits;
 pub mod basic;
 pub mod specialized;
 pub mod registry;
+pub mod pattern;
 
 pub use traits::{FieldGenerator, FieldGeneratorFactory};
 pub use registry::FieldGeneratorRegistry;
