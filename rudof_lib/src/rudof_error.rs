@@ -9,6 +9,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("SPARQL syntax error reading {source_name}: {error}")]
+    SparqlSyntaxError { error: String, source_name: String },
+
     #[error("Parsing URL {url} reading service description: {error}")]
     ParsingUrlReadingServiceDescriptionUrl { url: String, error: String },
 
@@ -182,6 +185,15 @@ pub enum RudofError {
         error: String,
         context: String,
     },
+
+    #[error("No SPARQL query has been defined")]
+    NoCurrentSPARQLQuery,
+
+    #[error("The current SPARQL query is not a SELECT query, it is:\n{query}")]
+    NotSelectQuery { query: String },
+
+    #[error("The current SPARQL query is not a SELECT or CONSTRUCT query, it is:\n{query}")]
+    NotConstructQuery { query: String },
 
     #[error("Reading {context} from input {input}: {error}")]
     ReadingInputSpecContext {

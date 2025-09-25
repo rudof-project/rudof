@@ -11,7 +11,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_compact::ShExParser;
 use shex_validation::{ResolveMethod, SchemaWithoutImports};
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
-use srdf::{FocusRDF, SRDFGraph};
+use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
@@ -62,6 +62,7 @@ pub struct Rudof {
     shapemap: Option<QueryShapeMap>,
     dctap: Option<DCTAP>,
     shex_results: Option<ResultShapeMap>,
+    sparql_query: Option<SparqlQuery>,
     service_description: Option<ServiceDescription>,
     rdf_config: Option<RdfConfigModel>,
 }
@@ -84,6 +85,7 @@ impl Rudof {
             shapemap: None,
             dctap: None,
             shex_results: None,
+            sparql_query: None,
             service_description: None,
             rdf_config: None,
         }
@@ -107,9 +109,24 @@ impl Rudof {
         self.dctap = None
     }
 
+    /// Resets the current query from a String
+    pub fn read_query_str(&mut self, str: &str) -> Result<()> {
+        let query = SparqlQuery::new(str).map_err(|e| RudofError::SparqlSyntaxError {
+            error: format!("{e}"),
+            source_name: "string".to_string(),
+        })?;
+        self.sparql_query = Some(query);
+        Ok(())
+    }
+
     /// Resets the current SHACL shapes graph
     pub fn reset_shacl(&mut self) {
         self.shacl_schema = None
+    }
+
+    /// Resets the current SPARQL query
+    pub fn reset_query(&mut self) {
+        self.sparql_query = None
     }
 
     /// Resets the current service description
@@ -125,6 +142,7 @@ impl Rudof {
         self.reset_shapemap();
         self.reset_validation_results();
         self.reset_shex();
+        self.reset_query();
         self.reset_service_description();
     }
 
@@ -141,6 +159,11 @@ impl Rudof {
     /// Get the current SHACL
     pub fn get_shacl(&self) -> Option<&ShaclSchema<RdfData>> {
         self.shacl_schema.as_ref()
+    }
+
+    /// Get the current SPARQL Query
+    pub fn get_query(&self) -> Option<&SparqlQuery> {
+        self.sparql_query.as_ref()
     }
 
     /// Get the current SHACL Schema Internal Representation
@@ -577,6 +600,58 @@ impl Rudof {
             })?;
         self.rdf_config = Some(rdf_config);
         Ok(())
+    }
+
+    /// Reads a `SparqlQuery` and replaces the current one
+    pub fn read_query<R: io::Read>(&mut self, reader: R, source_name: Option<&str>) -> Result<()> {
+        use std::io::Read;
+        let mut str = String::new();
+        let mut buf_reader = BufReader::new(reader);
+        buf_reader
+            .read_to_string(&mut str)
+            .map_err(|e| RudofError::ReadError {
+                error: format!("{e}"),
+            })?;
+        let query = SparqlQuery::new(&str).map_err(|e| RudofError::SparqlSyntaxError {
+            error: format!("{e}"),
+            source_name: source_name.unwrap_or("source without name").to_string(),
+        })?;
+        self.sparql_query = Some(query);
+        Ok(())
+    }
+
+    // Runs the current SPARQL query if it is a SELECT query
+    // Returns the result as QuerySolutions
+    // If the current query is not a SELECT query, returns an error
+    pub fn run_current_query_select(&mut self) -> Result<QuerySolutions<RdfData>> {
+        if let Some(sparql_query) = &self.sparql_query {
+            if sparql_query.is_select() {
+                self.run_query_select_str(&sparql_query.to_string())
+            } else {
+                Err(RudofError::NotSelectQuery {
+                    query: sparql_query.to_string(),
+                })
+            }
+        } else {
+            Err(RudofError::NoCurrentSPARQLQuery)
+        }
+    }
+
+    /// Runs the current SPARQL query if it is a CONSTRUCT query
+    /// Returns the result serialized according to `format`
+    /// If the current query is not a CONSTRUCT query, returns an error
+    pub fn run_current_query_construct(&mut self, format: &QueryResultFormat) -> Result<String> {
+        if let Some(sparql_query) = &self.sparql_query {
+            if sparql_query.is_construct() {
+                self.run_query_construct_str(&sparql_query.to_string(), format)
+            } else {
+                Err(RudofError::NotConstructQuery {
+                    query: sparql_query.to_string(),
+                })
+            }
+        } else {
+            Err(RudofError::NoCurrentSPARQLQuery)
+        }
     }
 
     /// Reads a `ShExSchema` and replaces the current one

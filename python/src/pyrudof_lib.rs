@@ -236,6 +236,45 @@ impl PyRudof {
         Ok(str)
     }
 
+    /// Run the current query on the current RDF data if it is a CONSTRUCT query
+    #[pyo3(signature = (format = &PyQueryResultFormat::Turtle))]
+    pub fn run_current_query_construct(
+        &mut self,
+        format: &PyQueryResultFormat,
+    ) -> PyResult<String> {
+        let format = cnv_query_result_format(format);
+        let str = self
+            .inner
+            .run_current_query_construct(&format)
+            .map_err(cnv_err)?;
+        Ok(str)
+    }
+
+    /// Run the current query on the current RDF data if it is a SELECT query
+    #[pyo3(signature = ())]
+    pub fn run_current_query_select(&mut self) -> PyResult<PyQuerySolutions> {
+        let results = self.inner.run_current_query_select().map_err(cnv_err)?;
+        Ok(PyQuerySolutions { inner: results })
+    }
+
+    /// Reads a SPARQL query from a String and stores it as the current query
+    pub fn read_query_str(&mut self, input: &str) -> PyResult<()> {
+        self.inner.read_query_str(input).map_err(cnv_err)
+    }
+
+    /// Reads a SPARQL query from a file path or URL and stores it as the current query
+    pub fn read_query(&mut self, input: &str) -> PyResult<()> {
+        let mut reader = get_reader(input, Some("application/sparql-query"), "SPARQL query")?;
+        self.inner
+            .read_query(&mut reader, Some(input))
+            .map_err(cnv_err)
+    }
+
+    /// Resets the current SPARQL query
+    pub fn reset_query(&mut self) {
+        self.inner.reset_query()
+    }
+
     /// Run a SPARQL query obtained from a file path on the RDF data
     /// Parameters:
     /// path_name: Path to the file containing the SPARQL query
