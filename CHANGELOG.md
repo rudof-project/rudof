@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.113
+### Added
+- More support for SPARQL queries in rudof and pyrudof
+- We had several issues and published several minor releases 
+
 ## 0.1.108
 ### Fixed
 - We found a problem with SPARQL queries that were returning no results

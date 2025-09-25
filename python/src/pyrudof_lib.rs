@@ -375,8 +375,9 @@ impl PyRudof {
         let format = cnv_shacl_format(format);
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner.reset_shacl();
+        let reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
         self.inner
-            .read_shacl(input.as_bytes(), &format, base, &reader_mode)
+            .read_shacl(reader, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
