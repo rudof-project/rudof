@@ -1,0 +1,267 @@
+# Comprehensive Data Generator Configuration
+# All available options from the README documentation
+# Uncomment and modify the sections you want to use
+
+# ============================================================================
+# GENERATION SETTINGS - Core data generation parameters
+# ============================================================================
+[generation]
+entity_count = 1000                    # Number of entities to generate
+# seed = 42                           # Random seed for reproducible results (optional)
+entity_distribution = "Equal"         # How to distribute entities across shapes
+cardinality_strategy = "Balanced"     # How to handle property cardinalities
+
+# Alternative entity distribution options:
+# entity_distribution = "Weighted"    # Use weights to control distribution
+# entity_distribution = "Custom"      # Specify exact counts per shape
+
+# Alternative cardinality strategies:
+# cardinality_strategy = "Minimum"    # Use minimum cardinality values (fewer triples)
+# cardinality_strategy = "Maximum"    # Use maximum cardinality values (more triples)
+# cardinality_strategy = "Random"     # Random values within cardinality range
+# cardinality_strategy = "Balanced"   # Deterministic but varied distribution
+
+# Schema format specification (optional - auto-detected by file extension)
+# schema_format = "ShEx"              # Force ShEx format
+# schema_format = "SHACL"             # Force SHACL format
+
+# ============================================================================
+# WEIGHTED DISTRIBUTION - When using entity_distribution = "Weighted"
+# ============================================================================
+# [generation.distribution_weights]
+# "http://example.org/Person" = 0.5        # 50% persons
+# "http://example.org/Organization" = 0.3  # 30% organizations  
+# "http://example.org/Course" = 0.2        # 20% courses
+
+# ============================================================================
+# CUSTOM DISTRIBUTION - When using entity_distribution = "Custom"
+# ============================================================================
+# [generation.custom_counts]
+# "http://example.org/Person" = 1000       # Exact entity count for Person
+# "http://example.org/Organization" = 200  # Exact entity count for Organization
+# "http://example.org/Course" = 800        # Exact entity count for Course
+
+# ============================================================================
+# FIELD GENERATORS - Control how field values are generated
+# ============================================================================
+[field_generators.default]
+locale = "en"                         # Language/locale for generated text (en, es, fr)
+quality = "Medium"                    # Data quality level (Low, Medium, High)
+
+# ============================================================================
+# DATATYPE-SPECIFIC GENERATORS - Custom generators for XSD datatypes
+# ============================================================================
+
+# Integer generation with custom ranges
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
+generator = "integer"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
+min = 1
+max = 10000
+
+# Decimal generation with precision control
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal"]
+generator = "decimal"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal".parameters]
+min = 0.0
+max = 1000.0
+precision = 2
+
+# Date generation with year range
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date"]
+generator = "date"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date".parameters]
+start_year = 1980
+end_year = 2024
+
+# String generation (default behavior)
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#string"]
+# generator = "string"
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#string".parameters]
+# # Add string-specific parameters here
+
+# Boolean generation
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#boolean"]
+# generator = "boolean"
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#boolean".parameters]
+# # Add boolean-specific parameters here
+
+# DateTime generation
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#dateTime"]
+# generator = "datetime"
+# [field_generators.datatypes."http://www.w3.org/2001/XMLSchema#dateTime".parameters]
+# start_year = 2000
+# end_year = 2024
+# include_time = true
+
+# ============================================================================
+# PROPERTY-SPECIFIC GENERATORS - Custom generators for specific properties
+# ============================================================================
+
+# Name property with default string generator
+[field_generators.properties."http://example.org/name"]
+generator = "string"
+parameters = {}
+
+# Legal name property
+[field_generators.properties."http://example.org/legalName"]
+generator = "string"
+parameters = {}
+
+# Email property with custom templates
+# [field_generators.properties."http://example.org/email"]
+# generator = "string"
+# [field_generators.properties."http://example.org/email".parameters]
+# templates = [
+#     "{firstName}.{lastName}@{domain}",
+#     "{firstName}{lastName}{number}@{domain}",
+#     "info@{domain}",
+#     "contact@{domain}"
+# ]
+
+# Age property with specific integer range
+# [field_generators.properties."http://example.org/age"]
+# generator = "integer"
+# [field_generators.properties."http://example.org/age".parameters]
+# min = 18
+# max = 80
+
+# Phone number property
+# [field_generators.properties."http://example.org/phone"]
+# generator = "string"
+# [field_generators.properties."http://example.org/phone".parameters]
+# pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"
+
+# URL property
+# [field_generators.properties."http://example.org/website"]
+# generator = "string"
+# [field_generators.properties."http://example.org/website".parameters]
+# templates = [
+#     "https://www.{domain}.com",
+#     "https://{subdomain}.{domain}.org",
+#     "http://www.{domain}.net"
+# ]
+
+# ============================================================================
+# OUTPUT SETTINGS - Control output format and location
+# ============================================================================
+[output]
+path = "generated_data.ttl"           # Output file path
+format = "Turtle"                     # Output format
+compress = false                      # Whether to compress output file
+write_stats = true                    # Include generation statistics
+parallel_writing = false             # Enable writing to multiple parallel files
+parallel_file_count = 4              # Number of parallel files (0 = auto-detect)
+
+# Alternative output formats:
+# format = "NTriples"                 # N-Triples format (.nt)
+# format = "JSONLD"                   # JSON-LD format (.jsonld)
+# format = "RdfXml"                   # RDF/XML format (.rdf)
+
+# Compression options:
+# compress = true                     # Enable gzip compression (.gz extension)
+
+# Parallel writing options:
+# parallel_writing = true             # Enable parallel I/O for better performance
+# parallel_file_count = 0             # Auto-detect optimal file count
+# parallel_file_count = 8             # Manual setting for 8 parallel files
+# parallel_file_count = 16            # For very large datasets
+
+# ============================================================================
+# PARALLEL PROCESSING - Performance optimization settings
+# ============================================================================
+[parallel]
+worker_threads = 4                    # Number of parallel worker threads
+batch_size = 100                      # Entity batch size for processing
+parallel_shapes = true               # Process different shapes in parallel
+parallel_fields = true              # Generate field values in parallel
+
+# Performance tuning options:
+# worker_threads = 8                  # More threads for larger datasets
+# worker_threads = 1                  # Single-threaded for debugging
+# batch_size = 50                     # Smaller batches for memory-constrained systems
+# batch_size = 250                    # Larger batches for high-performance systems
+# parallel_shapes = false             # Disable shape parallelism
+# parallel_fields = false             # Disable field parallelism
+
+# ============================================================================
+# ADVANCED EXAMPLES - Uncomment sections below for specific use cases
+# ============================================================================
+
+# Example 1: High-performance configuration for large datasets
+# [generation]
+# entity_count = 10000
+# cardinality_strategy = "Maximum"
+# 
+# [parallel]
+# worker_threads = 8
+# batch_size = 250
+# 
+# [output]
+# parallel_writing = true
+# parallel_file_count = 0              # Auto-detect optimal count
+
+# Example 2: Memory-optimized configuration
+# [parallel]
+# worker_threads = 2
+# batch_size = 50
+# parallel_shapes = false
+# 
+# [output]
+# compress = true                      # Compress output to save space
+
+# Example 3: Development/debugging configuration
+# [generation]
+# entity_count = 10
+# seed = 12345                         # Fixed seed for reproducible results
+# 
+# [parallel]
+# worker_threads = 1                   # Single-threaded for easier debugging
+# 
+# [field_generators.default]
+# quality = "Low"                      # Faster generation with simpler data
+
+# Example 4: Production configuration with custom field generators
+# [generation]
+# entity_count = 50000
+# entity_distribution = "Weighted"
+# cardinality_strategy = "Random"
+# 
+# [generation.distribution_weights]
+# "http://example.org/Person" = 0.6
+# "http://example.org/Organization" = 0.4
+# 
+# [field_generators.default]
+# quality = "High"                     # High-quality realistic data
+# 
+# [field_generators.properties."http://example.org/salary"]
+# generator = "integer"
+# [field_generators.properties."http://example.org/salary".parameters]
+# min = 30000
+# max = 200000
+# 
+# [output]
+# format = "JSONLD"
+# compress = true
+# parallel_writing = true
+# parallel_file_count = 0
+
+# ============================================================================
+# USAGE NOTES
+# ============================================================================
+# 
+# 1. Start with basic settings and gradually add customizations
+# 2. Use small entity_count values (10-100) while testing configurations
+# 3. Set a fixed seed value for reproducible results during development
+# 4. Increase worker_threads for large datasets to improve performance
+# 5. Enable parallel_writing for datasets > 1000 entities
+# 6. Use compression for large output files to save disk space
+# 7. Monitor memory usage and adjust batch_size if needed
+# 8. Test with your actual schemas before running large generations
+# 
+# Command line usage:
+# cargo run -p data_generator -- --config this_config.toml --schema your_schema.shex
+# cargo run -p data_generator -- --config this_config.toml --schema your_schema.ttl
+# 
+# Override config values from command line:
+# cargo run -p data_generator -- --config this_config.toml --schema schema.shex --entities 5000 --output override.ttl

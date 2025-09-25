@@ -5,7 +5,12 @@
 entity_count = 1000                    # Generate 1000 entities total
 seed = 42                             # Use fixed seed for reproducible results
 entity_distribution = "Equal"         # Distribute entities equally across shapes
-cardinality_strategy = "Balanced"     # Use balanced cardinality strategy
+cardinality_strategy = "Maximum"      # Use maximum cardinality to generate more triples per entity
+# Note: To increase triples without more entities:
+# 1. Use "Maximum" cardinality strategy (generates max possible property values)
+# 2. Design schemas with higher cardinalities (e.g., :knows @:User {1,10})
+# 3. Add more optional properties with * or + cardinalities
+# 4. Use weighted distribution to favor shapes with more properties
 
 [field_generators.default]
 locale = "en"                         # Generate English text
