@@ -860,6 +860,7 @@ pub enum PyRDFFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
 }
 
 /// Query Result format
@@ -1552,6 +1553,7 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
         PyRDFFormat::TriG => RDFFormat::TriG,
         PyRDFFormat::N3 => RDFFormat::N3,
         PyRDFFormat::NQuads => RDFFormat::NQuads,
+        PyRDFFormat::JsonLd => RDFFormat::JsonLd,
     }
 }
 
