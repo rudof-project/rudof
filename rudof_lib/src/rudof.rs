@@ -51,6 +51,7 @@ pub use srdf::UmlGenerationMode;
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
 pub struct Rudof {
+    version: String,
     config: RudofConfig,
     rdf_data: RdfData,
     shacl_schema: Option<ShaclSchema<RdfData>>,
@@ -72,8 +73,10 @@ pub struct Rudof {
 unsafe impl Send for Rudof {}
 
 impl Rudof {
+    /// Create a new instance of Rudof with the given configuration
     pub fn new(config: &RudofConfig) -> Rudof {
         Rudof {
+            version: env!("CARGO_PKG_VERSION").to_string(),
             config: config.clone(),
             shex_schema: None,
             shex_schema_ir: None,
@@ -91,10 +94,17 @@ impl Rudof {
         }
     }
 
+    /// Get the current configuration
     pub fn config(&self) -> &RudofConfig {
         &self.config
     }
 
+    /// Get the current version of Rudof
+    pub fn get_version(&self) -> &str {
+        &self.version
+    }
+
+    /// Update the current configuration
     pub fn update_config(&mut self, config: &RudofConfig) {
         self.config = config.clone();
     }

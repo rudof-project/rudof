@@ -257,6 +257,11 @@ impl PyRudof {
         Ok(PyQuerySolutions { inner: results })
     }
 
+    /// Get the current version of Rudof
+    pub fn get_version(&self) -> PyResult<String> {
+        Ok(self.inner.get_version().to_string())
+    }
+
     /// Reads a SPARQL query from a String and stores it as the current query
     pub fn read_query_str(&mut self, input: &str) -> PyResult<()> {
         self.inner.read_query_str(input).map_err(cnv_err)
