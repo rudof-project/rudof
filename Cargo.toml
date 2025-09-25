@@ -51,30 +51,29 @@ authors = [
 ]
 
 [workspace.dependencies]
-dctap = { version = "0.1.86", path = "./dctap" }
-iri_s = { version = "0.1.82", path = "./iri_s" }
-mie = { version = "0.1.96", path = "./mie" }
-prefixmap = { version = "0.1.82", path = "./prefixmap" }
-pyrudof = { version = "0.1.86", path = "./python" }
-rbe = { version = "0.1.86", path = "./rbe" }
-rbe_testsuite = { version = "0.1.62", path = "./rbe_testsuite" }
-rdf_config = { version = "0.1.0", path = "./rdf_config" }
-reqwest = { version = "0.12" }
-rudof_lib = { version = "0.1.106", path = "./rudof_lib" }
-rudof_cli = { version = "0.1.86", path = "./rudof_cli" }
-shapemap = { version = "0.1.86", path = "./shapemap" }
-shacl_ast = { version = "0.1.82", path = "./shacl_ast" }
-shacl_rdf = { version = "0.1.82", path = "./shacl_rdf" }
-shacl_ir = { version = "0.1.82", path = "./shacl_ir" }
-shacl_validation = { version = "0.1.86", path = "./shacl_validation" }
-shapes_converter = { version = "0.1.86", path = "./shapes_converter" }
-shapes_comparator = { version = "0.1.10", path = "./shapes_comparator" }
-shex_ast = { version = "0.1.86", path = "./shex_ast" }
-shex_compact = { version = "0.1.82", path = "./shex_compact" }
-shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
-shex_validation = { version = "0.1.86", path = "./shex_validation" }
-sparql_service = { version = "0.1.84", path = "./sparql_service" }
-srdf = { version = "0.1.86", path = "./srdf" }
+dctap = { version = "0.1.111", path = "./dctap" }
+iri_s = { version = "0.1.90", path = "./iri_s" }
+mie = { version = "0.1.104", path = "./mie" }
+prefixmap = { version = "0.1.104", path = "./prefixmap" }
+pyrudof = { version = "0.1.110", path = "./python" }
+rbe = { version = "0.1.111", path = "./rbe" }
+rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
+rdf_config = { version = "0.1.102", path = "./rdf_config" }
+rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
+shacl_ast = { version = "0.1.106", path = "./shacl_ast" }
+shacl_ir = { version = "0.1.90", path = "./shacl_ir" }
+shacl_rdf = { version = "0.1.90", path = "./shacl_rdf" }
+shacl_validation = { version = "0.1.90", path = "./shacl_validation" }
+shapemap = { version = "0.1.106", path = "./shapemap" }
+shapes_comparator = { version = "0.1.111", path = "./shapes_comparator" }
+shapes_converter = { version = "0.1.111", path = "./shapes_converter" }
+shex_ast = { version = "0.1.111", path = "./shex_ast" }
+shex_compact = { version = "0.1.111", path = "./shex_compact" }
+shex_testsuite = { version = "0.1.108", path = "./shex_testsuite" }
+shex_validation = { version = "0.1.111", path = "./shex_validation" }
+sparql_service = { version = "0.1.111", path = "./sparql_service" }
+srdf = { version = "0.1.111", path = "./srdf" }
 
 # [dependencies]
 # External dependencies
@@ -94,6 +93,7 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
 oxjsonld = { version = "0.2.0", features = ["rdf-12"] }
+reqwest = { version = "0.12" }
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
