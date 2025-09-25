@@ -10,8 +10,8 @@ use rudof_lib::{
     QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
     RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
-    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, UrlSpec, ValidationReport,
-    ValidationStatus, VarName, iri,
+    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
+    VarName, iri,
 };
 use std::{
     ffi::OsStr,
@@ -294,6 +294,27 @@ impl PyRudof {
         Ok(PyQuerySolutions { inner: results })
     }
 
+    /// Run a SPARQL query obtained from a file path on the RDF data
+    /// Parameters:
+    /// query: Path to the file containing the SPARQL query
+    /// endpoint: URL of the SPARQL endpoint
+    /// Returns: QuerySolutions object containing the results of the query
+    /// Raises: RudofError if there is an error reading the file or running the query
+    /// Example:
+    ///   rudof.run_query_path("query.sparql")
+    #[pyo3(signature = (query, endpoint))]
+    pub fn run_query_endpoint_str(
+        &mut self,
+        query: &str,
+        endpoint: &str,
+    ) -> PyResult<PyQuerySolutions> {
+        let results = self
+            .inner
+            .run_query_endpoint(query, endpoint)
+            .map_err(cnv_err)?;
+        Ok(PyQuerySolutions { inner: results })
+    }
+
     /// Reads DCTAP from a String
     /// Parameters:
     /// input: String containing the DCTAP data
@@ -375,9 +396,8 @@ impl PyRudof {
         let format = cnv_shacl_format(format);
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner.reset_shacl();
-        let reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
         self.inner
-            .read_shacl(reader, &format, base, &reader_mode)
+            .read_shacl(input.as_bytes(), &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -425,7 +445,7 @@ impl PyRudof {
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let format = cnv_shacl_format(format);
-        let reader = get_url_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
+        let reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
         self.inner.reset_shacl();
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner
@@ -1623,7 +1643,7 @@ fn get_path_reader(path_name: &str, context: &str) -> PyResult<BufReader<File>> 
     Ok(reader)
 }
 
-fn get_url_reader(url: &str, accept: Option<&str>, context: &str) -> PyResult<InputSpecReader> {
+/*fn get_url_reader(url: &str, accept: Option<&str>, context: &str) -> PyResult<InputSpecReader> {
     let url_spec = UrlSpec::parse(url)
         .map_err(|e| RudofError::ParsingUrlContext {
             url: url.to_string(),
@@ -1641,7 +1661,7 @@ fn get_url_reader(url: &str, accept: Option<&str>, context: &str) -> PyResult<In
         })
         .map_err(cnv_err)?;
     Ok(reader)
-}
+}*/
 
 fn get_reader(input: &str, accept: Option<&str>, context: &str) -> PyResult<InputSpecReader> {
     let input_spec: InputSpec = FromStr::from_str(input)

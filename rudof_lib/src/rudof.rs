@@ -552,6 +552,38 @@ impl Rudof {
         Ok(())
     }
 
+    /// Run a SPARQL query against a remote endpoint
+    /// - `query` is the SPARQL query to be executed
+    /// - `endpoint` is the URL of the SPARQL endpoint
+    /// Returns the results as QuerySolutions
+    pub fn run_query_endpoint(
+        &mut self,
+        query: &str,
+        endpoint: &str,
+    ) -> Result<QuerySolutions<RdfData>> {
+        let iri_endpoint =
+            IriS::from_str(endpoint).map_err(|e| RudofError::InvalidEndpointIri {
+                endpoint: endpoint.to_string(),
+                error: format!("{e}"),
+            })?;
+        let sparql_endpoint = SRDFSparql::new(&iri_endpoint, &PrefixMap::new()).map_err(|e| {
+            RudofError::InvalidEndpoint {
+                endpoint: endpoint.to_string(),
+                error: format!("{e}"),
+            }
+        })?;
+        let rdf_data = RdfData::from_endpoint(sparql_endpoint);
+        let solutions =
+            rdf_data
+                .query_select(query)
+                .map_err(|e| RudofError::QueryEndpointError {
+                    endpoint: endpoint.to_string(),
+                    query: query.to_string(),
+                    error: format!("{e}"),
+                })?;
+        Ok(solutions)
+    }
+
     /// Reads a `DCTAP` and replaces the current one
     /// - `format` indicates the DCTAP format
     pub fn read_dctap<R: std::io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {

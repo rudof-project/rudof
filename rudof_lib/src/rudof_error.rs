@@ -12,6 +12,19 @@ pub enum RudofError {
     #[error("SPARQL syntax error reading {source_name}: {error}")]
     SparqlSyntaxError { error: String, source_name: String },
 
+    #[error("Invalid endpoint IRI {endpoint}: {error}")]
+    InvalidEndpointIri { endpoint: String, error: String },
+
+    #[error("Invalid endpoint {endpoint}: {error}")]
+    InvalidEndpoint { endpoint: String, error: String },
+
+    #[error("Error running query against endpoint {endpoint}.\nQuery:\n{query}\nError: {error}")]
+    QueryEndpointError {
+        endpoint: String,
+        error: String,
+        query: String,
+    },
+
     #[error("Parsing URL {url} reading service description: {error}")]
     ParsingUrlReadingServiceDescriptionUrl { url: String, error: String },
 
