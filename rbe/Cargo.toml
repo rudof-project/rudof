@@ -11,7 +11,7 @@ repository.workspace = true
 
 [dependencies]
 thiserror.workspace = true
-hashbag = { version = "0.1.11"}
+hashbag = { version = "0.1.12"}
 serde.workspace = true
 serde_json.workspace = true
 toml = "0.8"

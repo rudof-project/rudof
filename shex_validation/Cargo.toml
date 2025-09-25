@@ -28,4 +28,4 @@ itertools.workspace = true
 indexmap = { version = "2" }
 either = "1"
 toml = "0.8"
-url = "2.2.2"
+url = "2.5.7"

@@ -28,11 +28,11 @@ shacl_validation.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
 toml = "0.8"
-chrono = "0.4.38"
+chrono = "0.4.42"
 rdf_config.workspace = true
 spargebra.workspace = true
 thiserror = "2.0"
 tracing = { workspace = true }
-minijinja = { version = "2.0.3", features = ["loader"] }
+minijinja = { version = "2.12.0", features = ["loader"] }
 tempfile.workspace = true
 sparql_service.workspace = true

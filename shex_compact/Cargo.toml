@@ -17,17 +17,17 @@ prefixmap = { workspace = true }
 shapemap = { workspace = true }
 nom = "7"
 nom_locate = "4"
-regex = "1.10.3"
+regex = "1.11.2"
 thiserror.workspace = true
 tracing = { workspace = true }
 colored.workspace = true
-rust_decimal = "1.32"
-pretty = "0.12.3"
-lazy-regex = "3.1"
+rust_decimal = "1.38"
+pretty = "0.12.4"
+lazy-regex = "3.4"
 
 [dev-dependencies]
 criterion = "0.5"
-pprof = { version = "0.14.0", features = ["criterion", "flamegraph"] }
+pprof = { version = "0.14.1", features = ["criterion", "flamegraph"] }
 
 [[bench]]
 name = "shex_parse"
