@@ -555,7 +555,7 @@ impl Rudof {
     /// Run a SPARQL query against a remote endpoint
     /// - `query` is the SPARQL query to be executed
     /// - `endpoint` is the URL of the SPARQL endpoint
-    /// Returns the results as QuerySolutions
+    ///   Returns the results as QuerySolutions
     pub fn run_query_endpoint(
         &mut self,
         query: &str,

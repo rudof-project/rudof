@@ -7,6 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.115
+### Added
+- `run_query_endpoint` in pyrudof and rudof
+
+### Fixed
+- `read_shacl` in pyrudof which was trying to read from string instead of from a file
+
 ## 0.1.113
 ### Added
 - More support for SPARQL queries in rudof and pyrudof

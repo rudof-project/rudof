@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, ShExFormatter
+from pyrudof import Rudof, RudofConfig, ShExFormatter, 
 
 rudof = Rudof(RudofConfig())
 
@@ -36,7 +36,8 @@ result = result = rudof.compare_schemas_str(
     "shex", "shex", 
     "shexc", "shexc", 
     None, None, 
-    "http://example.org/Person", "http://example.org/Person"
+    "http://example.org/Person", "http://example.org/Person",
+
     )
 
 print(f"Schemas compared: {result.as_json()}")
