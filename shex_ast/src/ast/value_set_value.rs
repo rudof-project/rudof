@@ -1,3 +1,6 @@
+use super::{
+    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
+};
 use crate::LangOrWildcard;
 use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriSError;
@@ -8,15 +11,10 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
 };
-
+use srdf::SLiteral;
 use srdf::lang::Lang;
-use srdf::literal::SLiteral;
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
-
-use super::{
-    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
-};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ValueSetValue {

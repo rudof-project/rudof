@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 use tracing::debug;
+use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
@@ -451,19 +452,20 @@ impl Engine {
         tracing::debug!("Checking node {node} with shape {shape}");
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
-            debug!("Closed shape with remainder preds: {remainder:?}");
+            trace!("Closed shape with remainder preds: {remainder:?}");
             fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(remainder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
             })
         } else {
-            tracing::debug!(
-                "Neighs of {node}: {}",
+            trace!(
+                "Neighs of {node}: [{}]",
                 values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
             );
             let result_iter = shape.rbe_table().matches(values)?;
             let mut errors = Vec::new();
             for result in result_iter {
+                trace!("Result: {:?}", result);
                 match result {
                     Ok(pending_values) => {
                         let mut failed_pending = Vec::new();

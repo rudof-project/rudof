@@ -13,13 +13,13 @@ use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
 use srdf::Object;
 use srdf::RDFFormat;
-use srdf::literal::SLiteral;
+use srdf::SLiteral;
 use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::str::FromStr;
-use tracing::debug;
+use tracing::{debug, trace};
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -245,8 +245,12 @@ fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, M
 fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
     match focus {
         Focus::Single(str) => {
-            let iri = IriS::from_str(str.as_str())?;
-            Ok(iri.into())
+            trace!("Parsing focus node: {str}");
+            let node = str.parse().map_err(|e| ManifestError::ParsingFocusNode {
+                value: str.to_string(),
+                error: Box::new(e),
+            })?;
+            Ok(node)
         }
         Focus::Typed(str, str_type) => {
             let datatype = IriS::from_str(str_type.as_str())?;

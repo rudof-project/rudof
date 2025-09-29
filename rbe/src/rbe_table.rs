@@ -6,8 +6,10 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
+use tracing::trace;
 
 use crate::Bag;
+use crate::EmptyIter;
 use crate::Key;
 use crate::MatchCond;
 use crate::Pending;
@@ -18,7 +20,6 @@ use crate::Value;
 use crate::Component;
 use crate::rbe::Rbe;
 use crate::rbe_error;
-use crate::rbe1::Rbe as Rbe1;
 use crate::values::Values;
 
 #[derive(Default, PartialEq, Eq, Clone)]
@@ -55,6 +56,14 @@ where
         RbeTable::default()
     }
 
+    pub fn get_condition(&self, c: &Component) -> Option<&MatchCond<K, V, R>> {
+        self.component_cond.get(c)
+    }
+
+    pub fn get_key(&self, c: &Component) -> Option<&K> {
+        self.component_key.get(c)
+    }
+
     pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
         let c = Component::from(self.component_counter);
         let key = k.clone();
@@ -82,6 +91,14 @@ where
         &self,
         values: Vec<(K, V)>,
     ) -> Result<MatchTableIter<K, V, R>, RbeError<K, V, R>> {
+        trace!(
+            "Checking if RbeTable {} matches [{}]",
+            &self,
+            values
+                .iter()
+                .map(|(k, v)| format!("({} {})", k, v))
+                .join(", ")
+        );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -103,11 +120,23 @@ where
                 "No candidates for rbe: {:?}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
             );
-            Ok(MatchTableIter::Empty(EmptyIter {
-                is_first: true,
-                rbe: cnv_rbe(&self.rbe, self),
-                values: Values::from(&values),
-            }))
+            if self.rbe.nullable() {
+                trace!("Rbe is nullable and no candidates...should be sucessful");
+                let result = Ok(MatchTableIter::Empty(EmptyIter::new(
+                    &self.rbe,
+                    self,
+                    &Values::from(&values),
+                )));
+                result
+            } else {
+                let result = Ok(MatchTableIter::Empty(EmptyIter::new(
+                    &self.rbe,
+                    self,
+                    &Values::from(&values),
+                )));
+                trace!("Result of matches: {:?}", result);
+                result
+            }
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
             let _: Vec<_> = candidates
@@ -300,86 +329,6 @@ where
             }
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct EmptyIter<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    is_first: bool,
-    rbe: Rbe1<K, V, R>,
-    values: Values<K, V>,
-}
-
-impl<K, V, R> Iterator for EmptyIter<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.is_first {
-            self.is_first = false;
-            Some(Err(RbeError::EmptyCandidates {
-                rbe: Box::new(self.rbe.clone()),
-                values: self.values.clone(),
-            }))
-        } else {
-            None
-        }
-    }
-}
-
-fn cnv_rbe<K, V, R>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R>) -> Rbe1<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    match rbe {
-        Rbe::Empty => Rbe1::Empty,
-        Rbe::And { values } => {
-            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
-            Rbe1::And { exprs: values1 }
-        }
-        Rbe::Or { values } => {
-            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
-            Rbe1::Or { exprs: values1 }
-        }
-        Rbe::Symbol { value, card } => {
-            let key = cnv_key(value, table);
-            let cond = cnv_cond(value, table);
-            Rbe1::Symbol {
-                key,
-                cond,
-                card: (*card).clone(),
-            }
-        }
-        _ => todo!(),
-    }
-}
-
-fn cnv_cond<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> MatchCond<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    table.component_cond.get(c).unwrap().clone()
-}
-
-fn cnv_key<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> K
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    table.component_key.get(c).unwrap().clone()
 }
 
 impl<K, V, R> Display for RbeTable<K, V, R>

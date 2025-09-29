@@ -12,7 +12,7 @@ use crate::{node_kind::NodeKind, value::Value};
 use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{BuildRDF, RDFNode, lang::Lang, literal::SLiteral};
+use srdf::{BuildRDF, RDFNode, SLiteral, lang::Lang};
 use std::collections::HashSet;
 use std::fmt::Display;
 

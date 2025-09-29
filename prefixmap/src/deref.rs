@@ -2,7 +2,7 @@ use crate::{PrefixMap, PrefixMapError};
 use iri_s::{IriS, IriSError};
 use thiserror::Error;
 
-use crate::Underef;
+use crate::IriRefError;
 
 #[derive(Debug, Error, Clone)]
 pub enum DerefError {
@@ -20,7 +20,7 @@ pub enum DerefError {
     NoPrefixMapPrefixedName { prefix: String, local: String },
 
     #[error(transparent)]
-    UnderefError(#[from] Underef),
+    UnderefError(#[from] IriRefError),
 }
 
 pub trait Deref {

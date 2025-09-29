@@ -912,7 +912,7 @@ where
 /// If some value is not a literal it fails, if there is no value returns an empty set
 pub fn property_values_literal<RDF>(
     property: &IriS,
-) -> impl RDFNodeParse<RDF, Output = Vec<RDF::Literal>>
+) -> impl RDFNodeParse<RDF, Output = Vec<SLiteral>>
 where
     RDF: FocusRDF,
 {
@@ -920,8 +920,18 @@ where
         let lits: Vec<_> = values
             .iter()
             .flat_map(|t| {
-                let lit: <RDF as Rdf>::Literal = term_to_literal::<RDF>(t)?;
-                Ok::<RDF::Literal, RDFParseError>(lit)
+                let rdf_lit: RDF::Literal = term_to_literal::<RDF>(t)?;
+                let slit: SLiteral =
+                    rdf_lit
+                        .clone()
+                        .try_into()
+                        .map_err(|_e| RDFParseError::SRDFError {
+                            err: format!(
+                                "Error converting literal {} to SLiteral",
+                                rdf_lit.clone()
+                            ),
+                        })?;
+                Ok::<SLiteral, RDFParseError>(slit)
             })
             .collect();
         Ok(lits)

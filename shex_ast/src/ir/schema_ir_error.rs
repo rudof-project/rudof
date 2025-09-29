@@ -103,6 +103,12 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
+    #[error("Datatype expected {expected} but found float literal {lexical_form}")]
+    DatatypeDontMatchFloat {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
     #[error("Datatype expected {expected} but found long literal {lexical_form}")]
     DatatypeDontMatchLong {
         expected: IriRef,

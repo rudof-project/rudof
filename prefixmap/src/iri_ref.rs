@@ -15,16 +15,16 @@ pub enum IriRef {
 
 #[derive(Debug, Error, Clone)]
 #[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
-pub struct Underef {
+pub struct IriRefError {
     prefix: String,
     local: String,
 }
 
 impl IriRef {
-    pub fn get_iri(&self) -> Result<IriS, Underef> {
+    pub fn get_iri(&self) -> Result<IriS, IriRefError> {
         match self {
             IriRef::Iri(iri) => Ok(iri.clone()),
-            IriRef::Prefixed { prefix, local } => Err(Underef {
+            IriRef::Prefixed { prefix, local } => Err(IriRefError {
                 prefix: prefix.clone(),
                 local: local.clone(),
             }),

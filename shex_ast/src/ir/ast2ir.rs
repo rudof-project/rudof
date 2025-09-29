@@ -18,8 +18,7 @@ use prefixmap::IriRef;
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
-use srdf::literal::SLiteral;
-use srdf::numeric_literal::NumericLiteral;
+use srdf::SLiteral;
 use tracing::debug;
 
 use super::node_constraint::NodeConstraint;
@@ -46,6 +45,9 @@ lazy_static! {
     ));
     static ref XSD_DOUBLE: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/2001/XMLSchema#double"
+    ));
+    static ref XSD_FLOAT: IriRef = IriRef::Iri(IriS::new_unchecked(
+        "http://www.w3.org/2001/XMLSchema#float"
     ));
     static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
@@ -1048,128 +1050,48 @@ fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<
 */
 
 fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
-    debug!("check_node_datatype: {node:?} datatype: {dt}");
-    match node.as_object() {
-        Object::Literal(SLiteral::DatatypeLiteral {
-            ref datatype,
-            lexical_form,
-        }) => {
-            if dt == datatype {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    expected: dt.clone(),
-                    found: datatype.clone(),
-                    lexical_form: lexical_form.clone(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::StringLiteral {
-            lexical_form,
-            lang: None,
-        }) => {
-            debug!("StringLiteral...{}", *dt);
-            if *dt == *XSD_STRING {
-                debug!("datatype cond passes");
-                Ok(())
-            } else {
-                debug!("datatype cond fails: {}!={}", dt, *XSD_STRING);
-                Err(Box::new(SchemaIRError::DatatypeDontMatchString {
-                    expected: dt.clone(),
-                    lexical_form: lexical_form.clone(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::StringLiteral {
-            lexical_form,
-            lang: Some(lang),
-        }) => {
-            if *dt == *RDF_LANG_STRING {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatchLangString {
-                    lexical_form: lexical_form.clone(),
-                    lang: Box::new(lang.clone()),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Integer(_))) => {
-            if *dt == *XSD_INTEGER {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatchInteger {
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Long(_))) => {
-            if *dt == *XSD_LONG {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatchLong {
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Double(_))) => {
-            if *dt == *XSD_DOUBLE {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatchDouble {
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::NumericLiteral(NumericLiteral::Decimal(_))) => {
-            if *dt == *XSD_DECIMAL {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatchDecimal {
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::BooleanLiteral(_)) => {
-            if *dt == *XSD_BOOLEAN {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    found: dt.clone(),
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::DatetimeLiteral(_)) => {
-            if *dt == *XSD_DATETIME {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    found: dt.clone(),
-                    expected: dt.clone(),
-                    lexical_form: node.to_string(),
-                }))
-            }
-        }
-        Object::Literal(SLiteral::WrongDatatypeLiteral {
-            lexical_form,
-            datatype,
-            error,
-        }) => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
-            datatype: dt.clone(),
-            error: error.clone(),
-            expected: datatype.clone(),
-            lexical_form: lexical_form.to_string(),
-        })),
+    let object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_datatype: as_checked_object error: {e}"),
+        })
+    })?;
+    debug!("check_node_datatype: {object:?} datatype: {dt}");
+    match object {
+        Object::Literal(sliteral) => check_literal_datatype(&sliteral, dt, node),
         Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
             Err(Box::new(SchemaIRError::DatatypeNoLiteral {
                 expected: Box::new(dt.clone()),
                 node: Box::new(node.clone()),
             }))
+        }
+    }
+}
+
+// Check that the literal has the expected datatype
+// It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
+fn check_literal_datatype(sliteral: &SLiteral, dt: &IriRef, node: &Node) -> CResult<()> {
+    match sliteral {
+        SLiteral::WrongDatatypeLiteral {
+            lexical_form,
+            datatype,
+            error,
+        } => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
+            datatype: dt.clone(),
+            error: error.clone(),
+            expected: datatype.clone(),
+            lexical_form: lexical_form.to_string(),
+        })),
+        _ => {
+            let node_dt = sliteral.datatype();
+            if &node_dt == dt {
+                Ok(())
+            } else {
+                Err(Box::new(SchemaIRError::DatatypeDontMatch {
+                    expected: dt.clone(),
+                    found: node_dt,
+                    lexical_form: node.to_string(),
+                }))
+            }
         }
     }
 }

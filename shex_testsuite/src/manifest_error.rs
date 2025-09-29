@@ -3,12 +3,15 @@ use shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_compact::ParseError;
 use shex_validation::ValidatorError;
-use srdf::srdf_graph::SRDFGraphError;
+use srdf::{RDFError, srdf_graph::SRDFGraphError};
 use std::{ffi::OsString, io};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Parsing focus node: {value}. Error: {error:?}")]
+    ParsingFocusNode { value: String, error: Box<RDFError> },
+
     #[error("Obtaining absolute path for {base:?}: {error:?}")]
     AbsolutePathError { base: OsString, error: io::Error },
 

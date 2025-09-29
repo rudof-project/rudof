@@ -184,7 +184,7 @@ where
         current
     }
 
-    fn nullable(&self) -> NullableResult {
+    pub fn nullable(&self) -> NullableResult {
         match &self {
             Rbe::Fail { .. } => false,
             Rbe::Empty => true,

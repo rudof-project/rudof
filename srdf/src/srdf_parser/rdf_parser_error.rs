@@ -1,4 +1,4 @@
-use crate::literal::SLiteral;
+use crate::SLiteral;
 use iri_s::IriS;
 use thiserror::Error;
 
@@ -33,6 +33,9 @@ pub enum RDFParseError {
 
     #[error("Expected focus node to be integer but found: {term}")]
     ExpectedInteger { term: String },
+
+    #[error("Error converting literal to SLiteral: {literal}")]
+    LiteralToSLiteralFailed { literal: String },
 
     #[error("Expected focus node to be string but found: {term}")]
     ExpectedString { term: String },

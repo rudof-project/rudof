@@ -1,4 +1,4 @@
-use srdf::literal::SLiteral;
+use srdf::SLiteral;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

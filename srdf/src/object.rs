@@ -1,7 +1,9 @@
 use std::fmt::{Debug, Display};
+use std::str::FromStr;
 
+use crate::IriOrBlankNode;
 use crate::RDFError;
-use crate::literal::SLiteral;
+use crate::SLiteral;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
 use iri_s::IriS;
@@ -198,73 +200,17 @@ impl PartialOrd for Object {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum IriOrBlankNode {
-    BlankNode(String),
-    Iri(IriS),
-}
+impl FromStr for Object {
+    type Err = RDFError;
 
-impl IriOrBlankNode {
-    pub fn length(&self) -> usize {
-        match self {
-            IriOrBlankNode::BlankNode(label) => label.len(),
-            IriOrBlankNode::Iri(iri) => iri.as_str().len(),
-        }
-    }
-
-    pub fn iri(iri: &IriS) -> IriOrBlankNode {
-        IriOrBlankNode::Iri(iri.clone())
-    }
-}
-
-impl Display for IriOrBlankNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IriOrBlankNode::BlankNode(b) => write!(f, "{b}"),
-            IriOrBlankNode::Iri(iri_s) => write!(f, "{iri_s}"),
-        }
-    }
-}
-
-impl From<IriOrBlankNode> for oxrdf::NamedOrBlankNode {
-    fn from(value: IriOrBlankNode) -> Self {
-        match value {
-            IriOrBlankNode::Iri(iri) => oxrdf::NamedNode::new_unchecked(iri.as_str()).into(),
-            IriOrBlankNode::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
-        }
-    }
-}
-
-impl TryFrom<Object> for IriOrBlankNode {
-    type Error = RDFError;
-
-    fn try_from(value: Object) -> Result<Self, Self::Error> {
-        match value {
-            Object::Iri(iri) => Ok(IriOrBlankNode::Iri(iri)),
-            Object::BlankNode(b) => Ok(IriOrBlankNode::BlankNode(b)),
-            Object::Literal(l) => Err(RDFError::ExpectedIriOrBlankNodeFoundLiteral {
-                literal: l.to_string(),
-            }),
-            Object::Triple {
-                subject,
-                predicate,
-                object,
-            } => Err(RDFError::ExpectedIriOrBlankNodeFoundTriple {
-                subject: subject.to_string(),
-                predicate: predicate.to_string(),
-                object: object.to_string(),
-            }),
-        }
-    }
-}
-
-impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
-    fn from(value: oxrdf::NamedOrBlankNode) -> Self {
-        match value {
-            oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
-            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
-                IriOrBlankNode::BlankNode(bnode.into_string())
-            }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(iri) = IriS::from_str(s) {
+            Ok(Object::Iri(iri))
+        } else if s.starts_with("_:") {
+            Ok(Object::BlankNode(s[2..].to_string()))
+        } else {
+            // TODO: I think we should try to parse as literal first
+            Ok(Object::Literal(SLiteral::str(s)))
         }
     }
 }

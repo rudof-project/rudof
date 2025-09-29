@@ -9,7 +9,7 @@ use shex_ast::{
     Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
     value_set_value::ValueSetValue,
 };
-use srdf::{lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
+use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
 
 use crate::pp_object_value;
@@ -701,6 +701,17 @@ where
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
             NumericLiteral::Double(d) => self.pp_double(d),
             NumericLiteral::Long(l) => self.pp_isize(l),
+            NumericLiteral::Float(f) => self.pp_float(f),
+            NumericLiteral::Byte(b) => self.pp_byte(b),
+            NumericLiteral::Short(s) => self.pp_short(s),
+            NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),
+            NumericLiteral::UnsignedLong(u) => self.pp_unsigned_long(u),
+            NumericLiteral::UnsignedInt(u) => self.pp_unsigned_int(u),
+            NumericLiteral::UnsignedShort(u) => self.pp_unsigned_short(u),
+            NumericLiteral::UnsignedByte(n) => self.pp_unsigned_byte(n),
+            NumericLiteral::PositiveInteger(n) => self.pp_positive_integer(n),
+            NumericLiteral::NegativeInteger(n) => self.pp_negative_integer(n),
+            NumericLiteral::NonPositiveInteger(n) => self.pp_non_positive_integer(n),
         }
     }
 
@@ -717,6 +728,50 @@ where
     }
 
     fn pp_double(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_float(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_byte(&self, value: &i8) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_short(&self, value: &i16) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_non_negative_integer(&self, value: &u128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_long(&self, value: &u64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_int(&self, value: &u32) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_short(&self, value: &u16) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_byte(&self, value: &u8) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_positive_integer(&self, value: &u128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_negative_integer(&self, value: &i128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_non_positive_integer(&self, value: &i128) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())
     }
 

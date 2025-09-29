@@ -7,13 +7,17 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
+use srdf::SLiteral;
 use srdf::lang::Lang;
-use srdf::literal::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
 
-use crate::ast::{DATETIME_STR, LONG_STR};
+use crate::ast::{
+    BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
+    NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
+    UNSIGNED_LONG_STR, UNSIGNED_SHORT_STR,
+};
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
@@ -166,6 +170,17 @@ fn get_type_str(n: &NumericLiteral) -> &str {
         NumericLiteral::Double(_) => DOUBLE_STR,
         NumericLiteral::Decimal(_) => DECIMAL_STR,
         NumericLiteral::Long(_) => LONG_STR,
+        NumericLiteral::Float(_) => FLOAT_STR,
+        NumericLiteral::Byte(_) => BYTE_STR,
+        NumericLiteral::Short(_) => SHORT_STR,
+        NumericLiteral::NonNegativeInteger(_) => NON_NEGATIVE_INTEGER_STR,
+        NumericLiteral::UnsignedLong(_) => UNSIGNED_LONG_STR,
+        NumericLiteral::UnsignedInt(_) => UNSIGNED_INT_STR,
+        NumericLiteral::UnsignedShort(_) => UNSIGNED_SHORT_STR,
+        NumericLiteral::UnsignedByte(_) => UNSIGNED_BYTE_STR,
+        NumericLiteral::PositiveInteger(_) => POSITIVE_INTEGER_STR,
+        NumericLiteral::NegativeInteger(_) => NEGATIVE_INTEGER_STR,
+        NumericLiteral::NonPositiveInteger(_) => NON_POSITIVE_INTEGER_STR,
     }
 }
 

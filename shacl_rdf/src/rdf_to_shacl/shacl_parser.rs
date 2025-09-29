@@ -15,15 +15,13 @@ use shacl_ast::{
 };
 use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
-    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
-    Term, Triple, combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type,
-    instances_of, lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
-    parse_property_values, property_bool, property_iris, property_objects, property_value,
-    property_values, property_values_bool, property_values_int, property_values_iri,
-    property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
-};
-use srdf::{
-    Literal, Object, property_integer, property_iri, property_string, property_value_as_list,
+    FocusRDF, Iri as _, Object, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf,
+    SHACLPath, SLiteral, Term, Triple, combine_parsers, combine_parsers_vec, combine_vec,
+    get_focus, has_type, instances_of, lang::Lang, matcher::Any, not, object, ok, opaque, optional,
+    parse_property_values, property_bool, property_integer, property_iri, property_iris,
+    property_objects, property_string, property_value, property_value_as_list, property_values,
+    property_values_bool, property_values_int, property_values_iri, property_values_literal,
+    property_values_non_empty, property_values_string, rdf_list, term,
 };
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
@@ -869,10 +867,7 @@ where
 {
     opaque!(property_values_literal(sh_min_inclusive()).map(|ns| {
         ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MinInclusive(lit)
-            })
+            .map(|lit| Component::MinInclusive(lit.clone()))
             .collect()
     }))
 }
@@ -884,10 +879,7 @@ where
 {
     opaque!(property_values_literal(sh_min_exclusive()).map(|ns| {
         ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MinExclusive(lit)
-            })
+            .map(|lit| Component::MinExclusive(lit.clone()))
             .collect()
     }))
 }
@@ -899,10 +891,7 @@ where
 {
     opaque!(property_values_literal(sh_max_inclusive()).map(|ns| {
         ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MaxInclusive(lit)
-            })
+            .map(|lit| Component::MaxInclusive(lit.clone()))
             .collect()
     }))
 }
@@ -914,10 +903,7 @@ where
 {
     opaque!(property_values_literal(sh_max_exclusive()).map(|ns| {
         ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MaxExclusive(lit)
-            })
+            .map(|lit| Component::MaxExclusive(lit.clone()))
             .collect()
     }))
 }
@@ -1122,7 +1108,14 @@ where
         Ok(Value::Iri(IriRef::Iri(iri_s)))
     } else if let Ok(literal) = RDF::term_as_literal(term) {
         let literal: RDF::Literal = literal;
-        Ok(Value::Literal(literal.as_literal()))
+        let slit: SLiteral =
+            literal
+                .clone()
+                .try_into()
+                .map_err(|_e| RDFParseError::LiteralToSLiteralFailed {
+                    literal: literal.to_string(),
+                })?;
+        Ok(Value::Literal(slit))
     } else {
         println!("Unexpected code in term_to_value: {term}: {msg}");
         todo!()

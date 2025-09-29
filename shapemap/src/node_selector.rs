@@ -3,7 +3,7 @@ use prefixmap::IriRef;
 use serde::Serialize;
 use shex_ast::{Node, object_value::ObjectValue};
 use srdf::NeighsRDF;
-use srdf::literal::SLiteral;
+use srdf::SLiteral;
 use srdf::shacl_path::SHACLPath;
 use thiserror::Error;
 

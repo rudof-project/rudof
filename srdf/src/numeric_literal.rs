@@ -10,13 +10,52 @@ use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteral {
+    Byte(i8),
+    Short(i16),
+    NonNegativeInteger(u128),
+    UnsignedLong(u64),
+    UnsignedInt(u32),
+    UnsignedShort(u16),
+    UnsignedByte(u8),
+    PositiveInteger(u128),
+    NegativeInteger(i128),
+    NonPositiveInteger(i128),
     Integer(isize),
     Long(isize),
     Decimal(Decimal),
     Double(f64),
+    Float(f64),
 }
 
 impl NumericLiteral {
+    pub fn datatype(&self) -> &str {
+        match self {
+            NumericLiteral::Integer(_) => "http://www.w3.org/2001/XMLSchema#integer",
+            NumericLiteral::Decimal(_) => "http://www.w3.org/2001/XMLSchema#decimal",
+            NumericLiteral::Double(_) => "http://www.w3.org/2001/XMLSchema#double",
+            NumericLiteral::Long(_) => "http://www.w3.org/2001/XMLSchema#long",
+            NumericLiteral::Float(_) => "http://www.w3.org/2001/XMLSchema#float",
+            NumericLiteral::Byte(_) => "http://www.w3.org/2001/XMLSchema#byte",
+            NumericLiteral::Short(_) => "http://www.w3.org/2001/XMLSchema#short",
+            NumericLiteral::NonNegativeInteger(_) => {
+                "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+            }
+            NumericLiteral::UnsignedLong(_) => "http://www.w3.org/2001/XMLSchema#unsignedLong",
+            NumericLiteral::UnsignedInt(_) => "http://www.w3.org/2001/XMLSchema#unsignedInt",
+            NumericLiteral::UnsignedShort(_) => "http://www.w3.org/2001/XMLSchema#unsignedShort",
+            NumericLiteral::UnsignedByte(_) => "http://www.w3.org/2001/XMLSchema#unsignedByte",
+            NumericLiteral::PositiveInteger(_) => {
+                "http://www.w3.org/2001/XMLSchema#positiveInteger"
+            }
+            NumericLiteral::NegativeInteger(_) => {
+                "http://www.w3.org/2001/XMLSchema#negativeInteger"
+            }
+            NumericLiteral::NonPositiveInteger(_) => {
+                "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
+            }
+        }
+    }
+
     /// Creates a numeric literal from a decimal
     pub fn decimal(d: Decimal) -> NumericLiteral {
         NumericLiteral::Decimal(d)
@@ -26,6 +65,10 @@ impl NumericLiteral {
         let s = format!("{whole}.{fraction}");
         let d = Decimal::from_str_exact(s.as_str()).unwrap();
         NumericLiteral::Decimal(d)
+    }
+
+    pub fn byte(d: i8) -> NumericLiteral {
+        NumericLiteral::Byte(d)
     }
 
     pub fn decimal_from_f64(d: f64) -> NumericLiteral {
@@ -60,6 +103,10 @@ impl NumericLiteral {
 
     pub fn long(d: isize) -> NumericLiteral {
         NumericLiteral::Long(d)
+    }
+
+    pub fn float(d: f64) -> NumericLiteral {
+        NumericLiteral::Float(d)
     }
 
     pub fn integer_from_i128(d: i128) -> NumericLiteral {
@@ -101,6 +148,17 @@ impl NumericLiteral {
             NumericLiteral::Double(d) => Decimal::from_f64(*d).unwrap(),
             NumericLiteral::Decimal(d) => *d,
             NumericLiteral::Long(l) => Decimal::from_isize(*l).unwrap(),
+            NumericLiteral::Float(f) => Decimal::from_f64(*f).unwrap(),
+            NumericLiteral::Byte(b) => Decimal::from_i8(*b).unwrap(),
+            NumericLiteral::Short(s) => Decimal::from_i16(*s).unwrap(),
+            NumericLiteral::NonNegativeInteger(n) => Decimal::from_u128(*n).unwrap(),
+            NumericLiteral::UnsignedLong(n) => Decimal::from_u64(*n).unwrap(),
+            NumericLiteral::UnsignedInt(n) => Decimal::from_u32(*n).unwrap(),
+            NumericLiteral::UnsignedShort(n) => Decimal::from_u16(*n).unwrap(),
+            NumericLiteral::UnsignedByte(n) => Decimal::from_u8(*n).unwrap(),
+            NumericLiteral::PositiveInteger(n) => Decimal::from_u128(*n).unwrap(),
+            NumericLiteral::NegativeInteger(n) => Decimal::from_i128(*n).unwrap(),
+            NumericLiteral::NonPositiveInteger(n) => Decimal::from_i128(*n).unwrap(),
         }
     }
 
@@ -140,6 +198,17 @@ impl Serialize for NumericLiteral {
                 let c: i128 = (*n) as i128;
                 serializer.serialize_i128(c)
             }
+            NumericLiteral::Float(f) => serializer.serialize_f64(*f),
+            NumericLiteral::Byte(b) => serializer.serialize_i8(*b),
+            NumericLiteral::Short(s) => serializer.serialize_i16(*s),
+            NumericLiteral::NonNegativeInteger(n) => serializer.serialize_u128(*n),
+            NumericLiteral::UnsignedLong(n) => serializer.serialize_u64(*n),
+            NumericLiteral::UnsignedInt(n) => serializer.serialize_u32(*n),
+            NumericLiteral::UnsignedShort(n) => serializer.serialize_u16(*n),
+            NumericLiteral::UnsignedByte(n) => serializer.serialize_u8(*n),
+            NumericLiteral::PositiveInteger(n) => serializer.serialize_u128(*n),
+            NumericLiteral::NegativeInteger(n) => serializer.serialize_i128(*n),
+            NumericLiteral::NonPositiveInteger(n) => serializer.serialize_i128(*n),
         }
     }
 }
@@ -229,6 +298,17 @@ impl Display for NumericLiteral {
             NumericLiteral::Integer(n) => write!(f, "{n}"),
             NumericLiteral::Decimal(d) => write!(f, "{d}"),
             NumericLiteral::Long(l) => write!(f, "{l}"),
+            NumericLiteral::Float(n) => write!(f, "{n}"),
+            NumericLiteral::Byte(b) => write!(f, "{b}"),
+            NumericLiteral::Short(s) => write!(f, "{s}"),
+            NumericLiteral::NonNegativeInteger(n) => write!(f, "{n}"),
+            NumericLiteral::UnsignedLong(n) => write!(f, "{n}"),
+            NumericLiteral::UnsignedInt(n) => write!(f, "{n}"),
+            NumericLiteral::UnsignedShort(n) => write!(f, "{n}"),
+            NumericLiteral::UnsignedByte(n) => write!(f, "{n}"),
+            NumericLiteral::PositiveInteger(n) => write!(f, "{n}"),
+            NumericLiteral::NegativeInteger(n) => write!(f, "{n}"),
+            NumericLiteral::NonPositiveInteger(n) => write!(f, "{n}"),
         }
     }
 }
@@ -236,6 +316,64 @@ impl Display for NumericLiteral {
 impl PartialOrd for NumericLiteral {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.as_decimal().partial_cmp(&other.as_decimal()).unwrap())
+    }
+}
+
+impl From<NumericLiteral> for oxrdf::Literal {
+    fn from(n: NumericLiteral) -> Self {
+        match n {
+            NumericLiteral::Integer(i) => (i as i64).into(),
+            NumericLiteral::Decimal(d) => match d.to_f64() {
+                Some(decimal) => oxrdf::Literal::from(decimal),
+                None => oxrdf::Literal::new_typed_literal(
+                    d.to_string().as_str(),
+                    oxrdf::vocab::xsd::DECIMAL,
+                ),
+            },
+            NumericLiteral::Double(d) => oxrdf::Literal::from(d),
+            NumericLiteral::Long(l) => (l as i64).into(),
+            NumericLiteral::Float(f) => oxrdf::Literal::from(f),
+            NumericLiteral::Byte(b) => (b as i64).into(),
+            NumericLiteral::Short(s) => oxrdf::Literal::from(s),
+            NumericLiteral::NonNegativeInteger(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(
+                    s.as_str(),
+                    oxrdf::vocab::xsd::NON_NEGATIVE_INTEGER,
+                )
+            }
+            NumericLiteral::UnsignedLong(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_LONG)
+            }
+            NumericLiteral::UnsignedInt(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_INT)
+            }
+            NumericLiteral::UnsignedShort(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_SHORT)
+            }
+            NumericLiteral::UnsignedByte(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_BYTE)
+            }
+            NumericLiteral::PositiveInteger(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::POSITIVE_INTEGER)
+            }
+            NumericLiteral::NegativeInteger(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::NEGATIVE_INTEGER)
+            }
+            NumericLiteral::NonPositiveInteger(n) => {
+                let s = n.to_string();
+                oxrdf::Literal::new_typed_literal(
+                    s.as_str(),
+                    oxrdf::vocab::xsd::NON_POSITIVE_INTEGER,
+                )
+            }
+        }
     }
 }
 

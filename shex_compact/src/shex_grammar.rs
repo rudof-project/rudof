@@ -34,7 +34,7 @@ use thiserror::Error;
 use lazy_regex::{Lazy, regex};
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
-use srdf::{RDF_TYPE_STR, lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
+use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {

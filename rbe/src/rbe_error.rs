@@ -92,7 +92,7 @@ where
     #[error("{msg}")]
     MsgError { msg: String },
 
-    #[error("Empty candidates for: \nRegular expression: {rbe}\nValues:{values}")]
+    #[error("Empty candidates for regular expression: {rbe} and values: {values}")]
     EmptyCandidates {
         rbe: Box<Rbe<K, V, R>>,
         values: Values<K, V>,
