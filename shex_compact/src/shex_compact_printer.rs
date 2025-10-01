@@ -11,6 +11,7 @@ use shex_ast::{
 };
 use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
+use tracing::trace;
 
 use crate::pp_object_value;
 
@@ -284,6 +285,7 @@ where
             ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
             ShapeExpr::External => self.pp_external(),
             ShapeExpr::ShapeAnd { shape_exprs } => {
+                trace!("Displaying ShapeExpr::ShapeAnd");
                 let mut docs = Vec::new();
                 for sew in shape_exprs {
                     docs.push(self.pp_shape_expr(&sew.se))

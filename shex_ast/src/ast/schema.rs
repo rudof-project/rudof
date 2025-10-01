@@ -200,9 +200,12 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn parse_schema_name(schema_name: &String, base: &Path) -> Result<Schema, SchemaJsonError> {
+    pub fn parse_schema_name(
+        schema_name: &String,
+        folder: &Path,
+    ) -> Result<Schema, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
-        let mut attempt = PathBuf::from(base);
+        let mut attempt = PathBuf::from(folder);
         attempt.push(json_path);
         Self::parse_schema_buf(&attempt)
     }
@@ -341,6 +344,45 @@ mod tests {
             ],
             "@context": "http://www.w3.org/ns/shex.jsonld"
           }
+        "#;
+
+        let schema: Schema = serde_json::from_str(str).unwrap();
+        let serialized = serde_json::to_string_pretty(&schema).unwrap();
+        let schema_after_serialization = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(schema, schema_after_serialization);
+    }
+
+    #[test]
+    fn test_deser_nplus1() {
+        let str = r#"
+        {
+  "@context": "http://www.w3.org/ns/shex.jsonld",
+  "type": "Schema",
+  "shapes": [
+    {
+      "type": "ShapeDecl",
+      "id": "http://a.example.org/S",
+      "shapeExpr": {
+      "type": "Shape",
+      "expression": {
+        "type": "EachOf",
+        "expressions": [
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://a.example/a",
+            "min": 0,
+            "max": -1
+          },
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://a.example/a"
+          }
+        ]
+      }
+    }
+    }
+  ]
+}
         "#;
 
         let schema: Schema = serde_json::from_str(str).unwrap();

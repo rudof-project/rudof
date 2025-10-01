@@ -1,11 +1,13 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use crate::manifest_map::ManifestMap;
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
+use shapemap::ValidationStatus;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
@@ -16,7 +18,7 @@ use srdf::RDFFormat;
 use srdf::SLiteral;
 use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::path::Path;
 use std::str::FromStr;
 use tracing::{debug, trace};
@@ -88,6 +90,7 @@ struct Action {
     schema: String,
     shape: Option<String>,
     data: String,
+    map: Option<String>,
     focus: Option<Focus>,
 }
 
@@ -145,6 +148,15 @@ impl<'de> Deserialize<'de> for Focus {
     }
 }
 
+impl Display for Focus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Focus::Single(str) => write!(f, "{}", str),
+            Focus::Typed(str, str_type) => write!(f, "{}^^{}", str, str_type),
+        }
+    }
+}
+
 fn change_extension(name: String, old_extension: String, new_extension: String) -> String {
     if name.ends_with(&old_extension) {
         let (first, _) = name.split_at(name.len() - old_extension.len());
@@ -156,14 +168,15 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
 
 fn parse_schema(
     schema: &String,
-    base: &Path,
+    folder: &Path,
+    _base: Option<&str>,
     entry_name: &String,
 ) -> Result<SchemaJson, ManifestError> {
     let new_schema_name =
         change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
 
     debug!("schema: {}, new_schema_name: {}", schema, new_schema_name);
-    SchemaJson::parse_schema_name(&new_schema_name, base).map_err(|e| {
+    SchemaJson::parse_schema_name(&new_schema_name, folder).map_err(|e| {
         ManifestError::SchemaJsonError {
             error: Box::new(e),
             entry_name: entry_name.to_string(),
@@ -172,39 +185,82 @@ fn parse_schema(
 }
 
 impl ValidationEntry {
-    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+    pub fn run(&self, folder: &Path) -> Result<(), ManifestError> {
+        let base = Some("base:://");
         let graph = SRDFGraph::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
+            folder,
             base,
             &srdf::ReaderMode::Strict,
         )?;
-        debug!("Data obtained from: {}", self.action.data);
+        trace!("Data obtained from: {}", self.action.data);
 
-        let schema = parse_schema(&self.action.schema, base, &self.name)?;
-        debug!("Schema obtained from: {}", self.action.schema);
+        let schema = parse_schema(&self.action.schema, folder, base, &self.name)?;
+        trace!("Schema obtained from: {}", self.action.schema);
 
-        let node = parse_maybe_focus(&self.action.focus, &self.name)?;
-        debug!("Node: {}", node);
+        trace!("Entry action: {:?}", self.action);
 
-        let shape = parse_maybe_shape(&self.action.shape)?;
-        debug!("Shape: {}", shape);
-
+        trace!("Compiling schema...");
         let mut compiler = AST2IR::new();
         let mut compiled_schema = SchemaIR::new();
         compiler.compile(&schema, &mut compiled_schema)?;
         let schema = compiled_schema.clone();
         let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())?;
+        let expected_type = parse_type(&self.type_)?;
+        trace!("Schema compiled...expected type: {:?}", expected_type);
 
-        let result = validator.validate_node_shape(&node, &shape, &graph, &schema, &None, &None)?;
-        let type_ = parse_type(&self.type_)?;
-        let status = result.get_info(&node, &shape).unwrap();
-        match (type_, status.is_conformant()) {
+        let mut failed_status: Vec<ValidationStatus> = Vec::new();
+        let mut passed_status: Vec<ValidationStatus> = Vec::new();
+        if let Some(map) = &self.action.map {
+            let map_path = folder.join(map);
+            let str =
+                std::fs::read_to_string(&map_path).map_err(|e| ManifestError::ReadingShapeMap {
+                    error: e.to_string(),
+                    entry: self.name.clone(),
+                    map: map_path.clone(),
+                })?;
+            let manifest_map = serde_json::from_str::<ManifestMap>(&str).map_err(|e| {
+                ManifestError::ParsingManifestMap {
+                    error: e.to_string(),
+                    entry: self.name.clone(),
+                }
+            })?;
+            for entry in manifest_map.entries() {
+                let node = parse_node(entry.node(), base)?;
+                let shape = parse_shape(entry.shape())?;
+                let result =
+                    validator.validate_node_shape(&node, &shape, &graph, &schema, &None, &None)?;
+
+                let partial_status = result.get_info(&node, &shape).unwrap();
+                if partial_status.is_conformant() {
+                    passed_status.push(partial_status);
+                } else {
+                    failed_status.push(partial_status);
+                }
+            }
+        }
+        if let Some(focus) = &self.action.focus {
+            let node = parse_focus(focus, base)?;
+            let shape = parse_maybe_shape(&self.action.shape)?;
+            trace!("Focus node: {}, shape: {}", node, shape);
+
+            let result =
+                validator.validate_node_shape(&node, &shape, &graph, &schema, &None, &None)?;
+            let validation_status = result.get_info(&node, &shape).unwrap();
+            if validation_status.is_conformant() {
+                passed_status.push(validation_status);
+            } else {
+                failed_status.push(validation_status);
+            }
+        }
+        match (expected_type, failed_status.is_empty()) {
             (Validation, true) => Ok(()),
             (Validation, _) => {
                 debug!("Expected OK but failed {}", &self.name);
                 Err(ManifestError::ExpectedOkButObtained {
-                    value: Box::new(status),
+                    failed_status,
+                    passed_status,
                     entry: Box::new(self.name.clone()),
                 })
             }
@@ -212,7 +268,8 @@ impl ValidationEntry {
             (Failure, _) => {
                 debug!("Expected Failure but passed {}", &self.name);
                 Err(ManifestError::ExpectedFailureButObtained {
-                    value: Box::new(status.clone()),
+                    failed_status,
+                    passed_status,
                     entry: self.name.clone(),
                 })
             }
@@ -230,26 +287,29 @@ fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError
     }
 }
 
-fn parse_maybe_focus(maybe_focus: &Option<Focus>, entry: &str) -> Result<Node, ManifestError> {
+/*
+fn parse_maybe_focus(
+    maybe_focus: &Option<Focus>,
+    entry: &str,
+    base: Option<&str>,
+) -> Result<Node, ManifestError> {
     match maybe_focus {
         None => Err(ManifestError::NoFocusNode {
             entry: entry.to_string(),
         }),
         Some(focus) => {
-            let node = parse_focus(focus)?;
+            let node = parse_focus(focus, base)?;
             Ok(node)
         }
     }
 }
+*/
 
-fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
+fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, ManifestError> {
     match focus {
         Focus::Single(str) => {
             trace!("Parsing focus node: {str}");
-            let node = str.parse().map_err(|e| ManifestError::ParsingFocusNode {
-                value: str.to_string(),
-                error: Box::new(e),
-            })?;
+            let node = parse_node(str, base)?;
             Ok(node)
         }
         Focus::Typed(str, str_type) => {
@@ -257,6 +317,13 @@ fn parse_focus(focus: &Focus) -> Result<Node, ManifestError> {
             Ok(Object::Literal(SLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
         }
     }
+}
+
+fn parse_node(str: &str, base: Option<&str>) -> Result<Node, ManifestError> {
+    Node::parse(str, base).map_err(|e| ManifestError::ParsingFocusNode {
+        value: str.to_string(),
+        error: Box::new(e),
+    })
 }
 
 fn parse_shape(str: &str) -> Result<ShapeLabel, ManifestError> {
@@ -274,6 +341,7 @@ fn parse_type(str: &str) -> Result<ValidationType, ManifestError> {
     }
 }
 
+#[derive(Debug, PartialEq)]
 enum ValidationType {
     Validation,
     Failure,

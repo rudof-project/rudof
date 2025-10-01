@@ -3,6 +3,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 use std::result;
 
+use crate::Object;
 use crate::RDFError;
 use crate::XsdDateTime;
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
@@ -525,7 +526,7 @@ impl From<SLiteral> for oxrdf::Literal {
                     lexical_form,
                     lang.to_string(),
                 ),
-                None => lexical_form.into(),
+                None => lexical_form.clone().into(),
             },
             SLiteral::DatatypeLiteral {
                 lexical_form,
@@ -535,7 +536,7 @@ impl From<SLiteral> for oxrdf::Literal {
                     lexical_form,
                     datatype.as_named_node().to_owned(),
                 ),
-                Err(_) => lexical_form.into(),
+                Err(_) => lexical_form.clone().into(),
             },
             SLiteral::NumericLiteral(number) => From::<NumericLiteral>::from(number),
             SLiteral::BooleanLiteral(bool) => bool.into(),
@@ -552,5 +553,17 @@ impl From<SLiteral> for oxrdf::Literal {
                 Err(_) => lexical_form.into(),
             },
         }
+    }
+}
+
+impl From<&SLiteral> for oxrdf::Literal {
+    fn from(value: &SLiteral) -> Self {
+        oxrdf::Literal::from(value.clone())
+    }
+}
+
+impl From<&SLiteral> for Object {
+    fn from(value: &SLiteral) -> Self {
+        Object::Literal(value.clone())
     }
 }

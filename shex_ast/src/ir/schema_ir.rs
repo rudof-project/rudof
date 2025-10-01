@@ -7,6 +7,7 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use tracing::trace;
 
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
@@ -38,6 +39,10 @@ impl SchemaIR {
 
     pub fn prefixmap(&self) -> PrefixMap {
         self.prefixmap.clone()
+    }
+
+    pub fn shapes_counter(&self) -> usize {
+        self.shape_label_counter
     }
 
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
@@ -149,7 +154,7 @@ impl SchemaIR {
                     visited.insert(*idx);
                     self.references_visited(idx, visited)
                 }
-                _ => shape_expr.references(),
+                _ => shape_expr.references(&self),
             }
         } else {
             HashMap::new()
@@ -212,13 +217,15 @@ impl SchemaIR {
     /// A well formed schema should not have any cyclic reference that involve a negation
     pub fn has_neg_cycle(&self) -> bool {
         let dep_graph = self.dependency_graph();
+        trace!("Dependency graph: {dep_graph:?}");
         dep_graph.has_neg_cycle()
     }
 
     pub(crate) fn dependency_graph(&self) -> DependencyGraph {
         let mut dep_graph = DependencyGraph::new();
+        let mut visited = Vec::new();
         for (idx, (_label, se)) in self.shapes.iter() {
-            se.add_edges(*idx, &mut dep_graph, PosNeg::pos());
+            se.add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
         }
         dep_graph
     }
@@ -254,10 +261,10 @@ impl Display for SchemaIR {
         writeln!(dest, "Indexes to Shape Expressions:")?;
         for (idx, (maybe_label, se)) in self.shapes.iter() {
             let label_str = match maybe_label {
-                None => "No label =".to_string(),
+                None => "<No label> = ".to_string(),
                 Some(label) => format!("{} = ", self.show_label(label)),
             };
-            writeln!(dest, "{idx} -> {label_str}|{se}")?;
+            writeln!(dest, "{idx} -> @{label_str} {se}")?;
         }
         writeln!(dest, "---end of schema IR")?;
         Ok(())

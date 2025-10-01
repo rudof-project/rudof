@@ -13,6 +13,7 @@ use srdf::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
 
+use crate::Node;
 use crate::ast::{
     BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
     NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
@@ -21,10 +22,14 @@ use crate::ast::{
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
+/// An object value can be either an IRI reference or a literal
+/// It is used in various places in ShEx, for example in ValueSetValue, or as focus node in ShapeMap
+/// It is similar to srdf::Object but does not include blank nodes
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
     IriRef(IriRef),
     Literal(SLiteral),
+    // TODO: consider adding Triples
 }
 
 impl ObjectValue {
@@ -387,5 +392,24 @@ impl<'de> Deserialize<'de> for ObjectValue {
 
         const FIELDS: &[&str] = &["value", "type", "languageTag"];
         deserializer.deserialize_any(ObjectValueVisitor)
+    }
+}
+
+impl From<&ObjectValue> for srdf::Object {
+    fn from(value: &ObjectValue) -> Self {
+        match value {
+            ObjectValue::IriRef(iri_ref) => {
+                let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
+                srdf::Object::from(iri)
+            }
+            ObjectValue::Literal(literal) => literal.into(),
+        }
+    }
+}
+
+impl From<&ObjectValue> for Node {
+    fn from(value: &ObjectValue) -> Self {
+        let obj: srdf::Object = value.into();
+        Node::from(obj)
     }
 }

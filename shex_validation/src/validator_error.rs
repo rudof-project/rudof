@@ -14,6 +14,12 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
+    NodeShapeError {
+        node: String,
+        shape: String,
+        error: String,
+    },
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
 
@@ -66,7 +72,7 @@ pub enum ValidatorError {
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
-        shape_expr: Box<ShapeExpr>,
+        shape_expr: ShapeLabelIdx,
         node: Box<Node>,
         errors: ValidatorErrors,
     },
@@ -75,7 +81,7 @@ pub enum ValidatorError {
     ShapeOrError {
         shape_expr: Box<ShapeExpr>,
         node: Box<Node>,
-        errors: Vec<(ShapeExpr, ValidatorErrors)>,
+        errors: Vec<(ShapeLabelIdx, ValidatorErrors)>,
     },
 
     #[error(

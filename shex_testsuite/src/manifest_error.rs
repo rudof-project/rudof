@@ -9,6 +9,16 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Reading Manifest Map from {map:?} for entry {entry:?}. Error: {error}")]
+    ReadingShapeMap {
+        entry: String,
+        map: std::path::PathBuf,
+        error: String,
+    },
+
+    #[error("Reading manifest map for entry {entry:?}. Error: {error}")]
+    ParsingManifestMap { entry: String, error: String },
+
     #[error("Parsing focus node: {value}. Error: {error:?}")]
     ParsingFocusNode { value: String, error: Box<RDFError> },
 
@@ -60,15 +70,22 @@ pub enum ManifestError {
     #[error("Parsing validation type: Unknown value: {value}")]
     ParsingValidationType { value: String },
 
-    #[error("Expected faiure but obtained {value} for {entry}")]
+    #[error(
+        "Expected Failure for entry {entry} but obtained passed status [{}]\nFailure status: [{}]",
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedFailureButObtained {
-        value: Box<ValidationStatus>,
+        failed_status: Vec<ValidationStatus>,
+        passed_status: Vec<ValidationStatus>,
         entry: String,
     },
 
-    #[error("Expected OK but obtained {value} for {entry}")]
+    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]", 
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "), 
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedOkButObtained {
-        value: Box<ValidationStatus>,
+        failed_status: Vec<ValidationStatus>,
+        passed_status: Vec<ValidationStatus>,
         entry: Box<String>,
     },
 
@@ -114,4 +131,7 @@ pub enum ManifestError {
         schema_serialized: Box<String>,
         error: serde_json::Error,
     },
+
+    #[error("Error converting ShapeExprLabel to ShapeLabel for entry {entry}. Error: {error}")]
+    IriRefError { error: String, entry: String },
 }

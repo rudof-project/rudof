@@ -7,9 +7,9 @@ use srdf::RDFError;
 use srdf::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
 use std::fmt::Display;
-use std::str::FromStr;
 use tracing::trace;
 
+use crate::ObjectValue;
 use crate::SchemaJsonError;
 
 impl Value for Node {}
@@ -70,6 +70,11 @@ impl Node {
 
     pub fn datatype(&self) -> Option<IriRef> {
         self.node.datatype()
+    }
+
+    pub fn parse(str: &str, base: Option<&str>) -> Result<Node, RDFError> {
+        let obj = Object::parse(str, base)?;
+        Ok(Node { node: obj })
     }
 }
 
@@ -172,11 +177,32 @@ fn check_literal_datatype(
     }
 }
 
-impl FromStr for Node {
+/*impl FromStr for Node {
     type Err = RDFError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let obj = Object::from_str(s)?;
         Ok(Node { node: obj })
+    }
+}*/
+
+impl TryFrom<&Node> for ObjectValue {
+    type Error = crate::SchemaJsonError;
+
+    fn try_from(node: &Node) -> Result<Self, Self::Error> {
+        match &node.node {
+            srdf::Object::Iri(iri) => Ok(ObjectValue::IriRef(IriRef::iri(iri.clone()))),
+            srdf::Object::Literal(lit) => Ok(ObjectValue::Literal(lit.clone())),
+            srdf::Object::BlankNode(bnode_id) => {
+                Err(crate::SchemaJsonError::InvalidNodeInObjectValue {
+                    node: node.to_string(),
+                    error: format!("Blank node _:{}", bnode_id),
+                })
+            }
+            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidNodeInObjectValue {
+                node: node.to_string(),
+                error: "RDF triples are not supported in ObjectValue".to_string(),
+            }),
+        }
     }
 }

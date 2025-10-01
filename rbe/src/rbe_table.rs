@@ -117,7 +117,7 @@ where
 
         if candidates.is_empty() || pairs_found == 0 {
             debug!(
-                "No candidates for rbe: {:?}, candidates: {:?}, pairs_found: {pairs_found}",
+                "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
             );
             if self.rbe.nullable() {
@@ -281,48 +281,47 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
-        // debug!("state in IterCartesianProduct {:?}", self.state);
         match next_state {
             None => {
                 if self.is_first {
-                    debug!("Should be internal error? No more candidates");
-                    debug!("RBE: {}", self.rbe);
+                    trace!("Should be internal error? No more candidates");
+                    trace!("RBE: {}", self.rbe);
                     None
                 } else {
-                    debug!("No more candidates");
+                    trace!("No more candidates");
                     None
                 }
             }
             Some(vs) => {
                 for (k, v, c, cond) in &vs {
-                    debug!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
+                    trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
                 }
                 let mut pending: Pending<V, R> = Pending::new();
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            debug!(
+                            trace!(
                                 "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
                             );
                             pending.merge(new_pending);
-                            debug!("Pending merged: {pending}");
+                            trace!("Pending merged: {pending}");
                         }
                         Err(err) => {
-                            debug!("Failed condition: {cond} with value: {v}");
+                            trace!("Failed condition: {cond} with value: {v}");
                             return Some(Err(err));
                         }
                     }
                 }
-                debug!("Pending after checking conditions: {pending}");
+                trace!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
-                        debug!("Rbe {} matches bag {}", self.rbe, bag);
+                        trace!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     }
                     Err(err) => {
-                        debug!("### Skipped error: {err}!!!!\n");
+                        trace!("### Skipped error: {err}!!!!\n");
                         self.next()
                     }
                 }
@@ -338,20 +337,23 @@ where
     R: Ref + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "RBE: {}", self.rbe)?;
-        writeln!(f, "Keys:")?;
-        for (k, c) in self.key_components.iter() {
-            write!(f, " {k} -> [")?;
-            for c in c.iter() {
-                write!(f, " {c}")?;
-            }
-            writeln!(f, " ]")?;
-        }
-        writeln!(f, "Components:")?;
-        for (c, cond) in self.component_cond.iter() {
-            let k = self.component_key.get(c).unwrap();
-            writeln!(f, " {c} -> {k} {cond}")?;
-        }
+        write!(f, "RBE [{}]", self.rbe)?;
+        write!(
+            f,
+            ", Keys: [{}]",
+            self.key_components
+                .iter()
+                .map(|(k, c)| format!("{k} -> {{{}}}", c.iter().map(|c| c.to_string()).join(" ")))
+                .join(", ")
+        )?;
+        write!(
+            f,
+            ", conds: [{}]",
+            self.component_cond
+                .iter()
+                .map(|(c, cond)| format!("{c} -> {cond}"))
+                .join(", ")
+        )?;
         Ok(())
     }
 }

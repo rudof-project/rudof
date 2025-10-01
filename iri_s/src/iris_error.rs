@@ -21,7 +21,7 @@ pub enum IriSError {
     IriResolveError {
         err: Box<String>,
         base: Box<IriS>,
-        other: Box<IriS>,
+        other: String,
     },
 
     #[error("Error joining IRI `{current}` with `{str}`: {err}")]

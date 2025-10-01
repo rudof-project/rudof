@@ -1,10 +1,12 @@
 use iri_s::{IriS, IriSError};
+use prefixmap::IriRefError;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
-use crate::BNode;
+use crate::{BNode, ShapeExprLabel};
 
+/// Shape labels can be IRIs, Blank nodes or the special `Start` label
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum ShapeLabel {
     Iri(IriS),
@@ -69,4 +71,24 @@ impl Serialize for ShapeLabel {
             ShapeLabel::Start => serializer.serialize_str("Start"),
         }
     }
+}
+
+impl TryFrom<ShapeExprLabel> for ShapeLabel {
+    fn try_from(label: ShapeExprLabel) -> Result<Self, Self::Error> {
+        match label {
+            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(value.get_iri()?)),
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value)),
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
+        }
+    }
+
+    type Error = IriRefError;
+}
+
+impl TryFrom<&ShapeExprLabel> for ShapeLabel {
+    fn try_from(label: &ShapeExprLabel) -> Result<Self, Self::Error> {
+        ShapeLabel::try_from(label.clone())
+    }
+
+    type Error = IriRefError;
 }

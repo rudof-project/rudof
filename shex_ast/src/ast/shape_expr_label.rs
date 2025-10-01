@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use prefixmap::{Deref, DerefError, IriRef};
 use thiserror::Error;
 
+use crate::ir::shape_label::ShapeLabel;
+
 use super::bnode::BNode;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone)]
@@ -125,6 +127,20 @@ impl FromStr for ShapeExprLabel {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         TryFrom::try_from(s)
+    }
+}
+
+impl From<&ShapeLabel> for ShapeExprLabel {
+    fn from(label: &ShapeLabel) -> Self {
+        match label {
+            ShapeLabel::Iri(iri) => ShapeExprLabel::IriRef {
+                value: IriRef::iri(iri.clone()),
+            },
+            ShapeLabel::BNode(bnode) => ShapeExprLabel::BNode {
+                value: bnode.clone(),
+            },
+            ShapeLabel::Start => ShapeExprLabel::Start,
+        }
     }
 }
 

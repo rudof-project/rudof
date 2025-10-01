@@ -20,6 +20,10 @@ impl ValueSet {
     pub fn check_value(&self, object: &Object) -> bool {
         self.values.iter().any(|vsv| vsv.match_value(object))
     }
+
+    pub fn values(&self) -> &Vec<ValueSetValue> {
+        &self.values
+    }
 }
 
 impl Display for ValueSet {

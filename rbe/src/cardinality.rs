@@ -59,6 +59,7 @@ impl Cardinality {
 impl fmt::Display for Cardinality {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match (&self.min, &self.max) {
+            (Min { value: 1 }, Max::IntMax(1)) => write!(dest, ""),
             (Min { value: 0 }, Max::IntMax(1)) => write!(dest, "?"),
             (Min { value: 0 }, Max::Unbounded) => write!(dest, "*"),
             (Min { value: 1 }, Max::Unbounded) => write!(dest, "+"),

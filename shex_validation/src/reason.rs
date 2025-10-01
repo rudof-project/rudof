@@ -28,7 +28,7 @@ pub enum Reason {
     },
     ShapeOrPassed {
         node: Node,
-        shape_expr: ShapeExpr,
+        shape_expr: ShapeLabelIdx,
         reasons: Reasons,
     },
     ShapeNotPassed {

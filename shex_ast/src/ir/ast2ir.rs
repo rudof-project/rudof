@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::ShapeExprLabel;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
@@ -19,7 +17,7 @@ use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
 use srdf::SLiteral;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use super::node_constraint::NodeConstraint;
 
@@ -70,10 +68,16 @@ impl AST2IR {
         schema_json: &SchemaJson,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
-        // debug!("Compiling schema_json: {compiled_schema:?}");
+        trace!("Compiling schema to IR");
         compiled_schema.set_prefixmap(schema_json.prefixmap());
+        trace!("Collecting shape labels...");
         self.collect_shape_labels(schema_json, compiled_schema)?;
+        trace!("Collecting shape expressions...");
         self.collect_shape_exprs(schema_json, compiled_schema)?;
+        trace!(
+            "Schema compilation completed with {} shapes",
+            compiled_schema.shapes_counter()
+        );
         Ok(())
     }
 
@@ -139,7 +143,8 @@ impl AST2IR {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<ShapeExpr> {
-        self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)
+        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)?;
+        Ok(se)
     }
 
     fn ref2idx(
@@ -164,52 +169,41 @@ impl AST2IR {
                 Ok::<ShapeExpr, SchemaIRError>(se)
             }
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
+                tracing::debug!("Compiling ShapeOr with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                    cnv.push(se);
+                    let internal_idx = compiled_schema.new_index();
+                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                    compiled_schema.replace_shape(&internal_idx, se.clone());
+                    cnv.push(internal_idx);
                 }
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal OR".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal OR with some se".to_string(),
-                };
-
-                Ok(ShapeExpr::ShapeOr {
-                    exprs: cnv,
-                    display,
-                })
+                let result = ShapeExpr::ShapeOr { exprs: cnv };
+                compiled_schema.replace_shape(&idx, result.clone());
+                tracing::debug!("ShapeOr result: {result:?}");
+                Ok(result)
             }
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
-                // tracing::debug!("Compiling ShapeAnd with {ses:?}");
+                tracing::debug!("Compiling ShapeAnd with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                    cnv.push(se);
+                    let internal_idx = compiled_schema.new_index();
+                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                    compiled_schema.replace_shape(&internal_idx, se.clone());
+                    cnv.push(internal_idx);
                 }
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal AND".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal AND with some se".to_string(),
-                };
-                let result = ShapeExpr::ShapeAnd {
-                    exprs: cnv,
-                    display,
-                };
-                // tracing::debug!("ShapeAnd result: {result:?}");
+                let result = ShapeExpr::ShapeAnd { exprs: cnv };
+                compiled_schema.replace_shape(&idx, result.clone());
+                tracing::debug!("ShapeAnd result: {result:?}");
                 Ok(result)
             }
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
-                let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal NOT".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal NOT with some shape expr".to_string(),
-                };
-                Ok(ShapeExpr::ShapeNot {
-                    expr: Box::new(se),
-                    display,
-                })
+                trace!("Compiling ShapeNot with {sew:?} and index {idx}");
+                let internal_idx = compiled_schema.new_index();
+                let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                compiled_schema.replace_shape(&internal_idx, se.clone());
+                let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
+                compiled_schema.replace_shape(&idx, not_se.clone());
+                Ok(not_se)
             }
             ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra)?;
@@ -223,18 +217,12 @@ impl AST2IR {
                     }
                 };
                 let preds = Self::get_preds_shape(shape);
-                let references = self.get_references_shape(shape, compiled_schema);
+                // let references = self.get_references_shape(shape, compiled_schema);
                 let extends = shape
                     .extends()
                     .iter()
                     .map(|s| self.ref2idx(s, compiled_schema))
                     .collect::<CResult<Vec<_>>>()?;
-
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal with shape expr:".to_string(),
-                };
 
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
@@ -244,31 +232,25 @@ impl AST2IR {
                     Self::cnv_annotations(&shape.annotations),
                     preds,
                     extends,
-                    references,
-                    display,
+                    // references,
                 );
                 Ok(ShapeExpr::Shape(Box::new(shape)))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
-                let cond = Self::cnv_node_constraint(
+                let (cond, display) = Self::cnv_node_constraint(
                     self,
                     &nc.node_kind(),
                     &nc.datatype(),
                     &nc.xs_facet(),
                     &nc.values(),
                 )?;
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal NodeConstraint".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal NodeConstraint with some shape expr".to_string(),
-                };
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
         //compiled_schema.replace_shape(idx, result.clone());
-        // println!("Replacing {idx} with {result}");
+        trace!("Result of compilation: {result}");
         Ok(result)
     }
 
@@ -278,7 +260,7 @@ impl AST2IR {
         dt: &Option<IriRef>,
         xs_facet: &Option<Vec<ast::XsFacet>>,
         values: &Option<Vec<ast::ValueSetValue>>,
-    ) -> CResult<Cond> {
+    ) -> CResult<(Cond, String)> {
         let maybe_value_set = match values {
             Some(vs) => {
                 let value_set = create_value_set(vs)?;
@@ -380,8 +362,9 @@ impl AST2IR {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
+                let (cond, _display) = self.value_expr2match_cond(value_expr, compiled_schema)?;
                 let c = current_table.add_component(iri, &cond);
+                trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
             }
             ast::TripleExpr::TripleExprRef(r) => Err(Box::new(SchemaIRError::Todo {
@@ -444,7 +427,7 @@ impl AST2IR {
         &self,
         ve: &Option<Box<ast::ShapeExpr>>,
         compiled_schema: &mut SchemaIR,
-    ) -> CResult<Cond> {
+    ) -> CResult<(Cond, String)> {
         if let Some(se) = ve.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
@@ -456,41 +439,71 @@ impl AST2IR {
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
-                    Ok(mk_cond_ref(idx))
+                    Ok((mk_cond_ref(idx), format!("ShapeRef {}", sref)))
                 }
                 ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
-                ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
-                ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
+                ast::ShapeExpr::ShapeAnd { .. } => {
+                    let idx_se = compiled_schema.new_index();
+                    trace!(
+                        "value_expr2matchcond: Compiling ShapeAnd with {se:?}, idx_shape_expr {idx_se}"
+                    );
+                    let se = self.compile_shape_expr(&se, &idx_se, compiled_schema)?;
+                    compiled_schema.replace_shape(&idx_se, se.clone());
+                    let display = format!("AND {}", idx_se);
+                    let and_se = ShapeExpr::ShapeAnd {
+                        exprs: vec![idx_se],
+                    };
+                    let idx_and = compiled_schema.new_index();
+                    compiled_schema.replace_shape(&idx_and, and_se);
+                    trace!("Returning AND cond with idx {idx_and}");
+                    Ok((mk_cond_ref(idx_and), display))
+                }
+                ast::ShapeExpr::ShapeOr { shape_exprs } => {
+                    let mut ors = Vec::new();
+                    for se in shape_exprs {
+                        let idx_se = compiled_schema.new_index();
+                        let se = self.compile_shape_expr(&se.se, &idx_se, compiled_schema)?;
+                        compiled_schema.replace_shape(&idx_se, se.clone());
+                        ors.push(idx_se);
+                    }
+                    let or_se = ShapeExpr::ShapeOr { exprs: ors.clone() };
+                    let display = format!(
+                        "OR {}",
+                        ors.iter()
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    let idx_or = compiled_schema.new_index();
+                    compiled_schema.replace_shape(&idx_or, or_se);
+                    Ok((mk_cond_ref(idx_or), display))
+                }
                 ast::ShapeExpr::ShapeNot { shape_expr } => {
-                    let new_idx = compiled_schema.new_index();
-                    let se = self.compile_shape_expr(&shape_expr.se, &new_idx, compiled_schema)?;
-                    let display = match compiled_schema.find_shape_idx(&new_idx) {
-                        None => "internal NOT".to_string(),
-                        Some((Some(label), _)) => compiled_schema.show_label(label),
-                        Some((None, _)) => "internal NOT with some shape expr".to_string(),
-                    };
+                    let idx_shape_expr = compiled_schema.new_index();
+                    trace!(
+                        "value_expr2matchcond: Compiling ShapeNot with {shape_expr:?}, idx_shape_expr {idx_shape_expr}"
+                    );
+                    let se =
+                        self.compile_shape_expr(&shape_expr.se, &idx_shape_expr, compiled_schema)?;
+                    compiled_schema.replace_shape(&idx_shape_expr, se.clone());
+                    let display = format!("NOT {}", idx_shape_expr);
                     let not_se = ShapeExpr::ShapeNot {
-                        expr: Box::new(se),
-                        display,
+                        expr: idx_shape_expr,
                     };
-                    compiled_schema.replace_shape(&new_idx, not_se);
-                    Ok(mk_cond_ref(new_idx))
+                    let idx_not = compiled_schema.new_index();
+                    compiled_schema.replace_shape(&idx_not, not_se);
+                    trace!("Returning NOT cond with idx {idx_not}");
+                    Ok((mk_cond_ref(idx_not), display))
                 }
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
-            Ok(MatchCond::single(SingleCond::new().with_name(".")))
+            Ok((
+                MatchCond::single(SingleCond::new().with_name(".")),
+                ".".to_string(),
+            ))
         }
     }
-
-    /* #[allow(dead_code)]
-    fn shape_expr2match_cond(
-        &self,
-        _se: schema_json::ShapeExpr,
-        _compiled_schema: &mut SchemaIR,
-    ) -> CResult<Cond> {
-        todo("shape_expr2match_cond")
-    }*/
 
     fn get_preds_shape(shape: &ast::Shape) -> Vec<Pred> {
         match shape.triple_expr() {
@@ -517,7 +530,7 @@ impl AST2IR {
         }
     }
 
-    fn get_references_shape(
+    /*     fn get_references_shape(
         &self,
         shape: &ast::Shape,
         schema: &SchemaIR,
@@ -559,8 +572,8 @@ impl AST2IR {
             } => {
                 let pred = iri_ref2iri_s(predicate);
                 match value_expr {
-                    Some(ve) => match ve.as_ref() {
-                        ast::ShapeExpr::Ref(sref) => {
+                    Some(ve) => self.get_value_expr_references(pred, ve, schema),
+                    /*ast::ShapeExpr::Ref(sref) => {
                             let label =
                                 self.shape_expr_label_to_shape_label(sref)
                                     .unwrap_or_else(|_| {
@@ -574,13 +587,58 @@ impl AST2IR {
                             map
                         }
                         _ => HashMap::new(),
-                    },
+                    }*/
                     None => HashMap::new(),
                 }
             }
             ast::TripleExpr::TripleExprRef(_) => todo!(),
         }
     }
+
+    fn get_value_expr_references(
+        &self,
+        pred: IriS,
+        ve: &ast::ShapeExpr,
+        schema: &SchemaIR,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        match ve {
+            ast::ShapeExpr::Ref(sref) => {
+                let label = self
+                    .shape_expr_label_to_shape_label(sref)
+                    .unwrap_or_else(|_| panic!("Convert shape label to IR label {sref}"));
+                let idx = schema
+                    .get_shape_label_idx(&label)
+                    .unwrap_or_else(|_| panic!("Failed to get shape label index for {label}"));
+                let mut map = HashMap::new();
+                map.insert(Pred::new(pred), vec![idx]);
+                map
+            }
+            ast::ShapeExpr::Shape { .. } => HashMap::new(),
+            ast::ShapeExpr::ShapeAnd { shape_exprs } => {
+                shape_exprs.iter().fold(HashMap::new(), |mut acc, se| {
+                    let refs = self.get_value_expr_references(pred.clone(), &se.se, schema);
+                    for (p, idxs) in refs {
+                        acc.entry(p).or_default().extend(idxs);
+                    }
+                    acc
+                })
+            }
+            ast::ShapeExpr::ShapeOr { shape_exprs } => {
+                shape_exprs.iter().fold(HashMap::new(), |mut acc, se| {
+                    let refs = self.get_value_expr_references(pred.clone(), &se.se, schema);
+                    for (p, idxs) in refs {
+                        acc.entry(p).or_default().extend(idxs);
+                    }
+                    acc
+                })
+            }
+            ast::ShapeExpr::ShapeNot { shape_expr } => {
+                self.get_value_expr_references(pred, &shape_expr.se, schema)
+            }
+            ast::ShapeExpr::NodeConstraint(_) => HashMap::new(),
+            ast::ShapeExpr::External => HashMap::new(),
+        }
+    } */
 }
 
 fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
@@ -597,8 +655,8 @@ fn node_constraint2match_cond(
     datatype: &Option<IriRef>,
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
-) -> CResult<Cond> {
-    let c1: Option<Cond> = node_kind.as_ref().map(node_kind2match_cond);
+) -> CResult<(Cond, String)> {
+    let c1: Option<(Cond, String)> = node_kind.as_ref().map(node_kind2match_cond);
     let c2 = datatype.as_ref().map(datatype2match_cond).transpose()?;
     let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
     let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
@@ -606,21 +664,24 @@ fn node_constraint2match_cond(
     Ok(options2match_cond(os))
 }
 
-fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
-    mk_cond_nodekind(nodekind.clone())
+fn node_kind2match_cond(nodekind: &ast::NodeKind) -> (Cond, String) {
+    (
+        mk_cond_nodekind(nodekind.clone()),
+        format!("nodekind({nodekind})"),
+    )
 }
 
-fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
+fn datatype2match_cond(datatype: &IriRef) -> CResult<(Cond, String)> {
     //let iri = cnv_iri_ref(datatype)?;
-    Ok(mk_cond_datatype(datatype))
+    Ok((mk_cond_datatype(datatype), format!("datatype({datatype})")))
 }
 
-fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
+fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> (Cond, String) {
     let mut conds = Vec::new();
     for xs_facet in xs_facets {
         conds.push(xs_facet2match_cond(xs_facet))
     }
-    MatchCond::And(conds)
+    (MatchCond::And(conds), format!("xs_facets({xs_facets:?})"))
 }
 
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
@@ -650,16 +711,32 @@ fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     }
 }
 
-fn valueset2match_cond(vs: ValueSet) -> Cond {
-    mk_cond_value_set(vs)
+fn valueset2match_cond(vs: ValueSet) -> (Cond, String) {
+    (
+        mk_cond_value_set(vs.clone()),
+        format!(
+            "valueset({})",
+            vs.values()
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    )
 }
 
-fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
-    let vec: Vec<Cond> = os.into_iter().flatten().collect();
+fn options2match_cond<T: IntoIterator<Item = Option<(Cond, String)>>>(os: T) -> (Cond, String) {
+    let vec: Vec<(Cond, String)> = os.into_iter().flatten().collect();
     match &vec[..] {
-        [] => MatchCond::empty(),
-        [c] => c.clone(),
-        _ => MatchCond::And(vec),
+        [] => (MatchCond::empty(), ".".to_string()),
+        [(c, s)] => (c.clone(), s.clone()),
+        _ => (
+            MatchCond::And(vec.iter().map(|(c, _)| c.clone()).collect()),
+            vec.iter()
+                .map(|(_, s)| s.clone())
+                .collect::<Vec<_>>()
+                .join(" AND "),
+        ),
     }
 }
 

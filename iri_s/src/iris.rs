@@ -10,6 +10,7 @@ use serde::de;
 use serde::de::Visitor;
 use std::fmt;
 use std::str::FromStr;
+use tracing::trace;
 use url::Url;
 
 use crate::IriSError;
@@ -94,7 +95,28 @@ impl IriS {
             .map_err(|e| IriSError::IriResolveError {
                 err: Box::new(e.to_string()),
                 base: Box::new(self.clone()),
-                other: Box::new(other.clone()),
+                other: other_str.to_string(),
+            })?;
+        let iri = NamedNode::new(resolved.as_str()).map_err(|e| IriSError::IriParseError {
+            str: resolved.as_str().to_string(),
+            err: e.to_string(),
+        })?;
+        Ok(IriS { iri })
+    }
+
+    /// Resolve `other` with this IRI
+    pub fn resolve_str(&self, other: &str) -> Result<Self, IriSError> {
+        let str = self.iri.as_str();
+        let base = Iri::parse(str).map_err(|e| IriSError::IriParseError {
+            str: str.to_string(),
+            err: e.to_string(),
+        })?;
+        let resolved = base
+            .resolve(other)
+            .map_err(|e| IriSError::IriResolveError {
+                err: Box::new(e.to_string()),
+                base: Box::new(self.clone()),
+                other: other.to_string(),
             })?;
         let iri = NamedNode::new(resolved.as_str()).map_err(|e| IriSError::IriParseError {
             str: resolved.as_str().to_string(),
@@ -187,6 +209,16 @@ impl IriS {
     /*    pub fn is_absolute(&self) -> bool {
         self.0.is_absolute()
     } */
+
+    pub fn from_str_base(str: &str, base: Option<&str>) -> Result<IriS, IriSError> {
+        match base {
+            Some(base_str) => {
+                let base_iri = IriS::from_str(base_str)?;
+                base_iri.resolve_str(str)
+            }
+            None => IriS::from_str(str),
+        }
+    }
 }
 
 impl fmt::Display for IriS {
@@ -214,9 +246,12 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri = NamedNode::new(s).map_err(|e| IriSError::IriParseError {
-            str: s.to_string(),
-            err: e.to_string(),
+        let iri = NamedNode::new(s).map_err(|e| {
+            trace!("Error parsing IRI from str: {s}, error: {e}");
+            IriSError::IriParseError {
+                str: s.to_string(),
+                err: e.to_string(),
+            }
         })?;
         Ok(IriS { iri })
     }
@@ -310,6 +345,13 @@ mod tests {
     fn comparing_iris() {
         let iri1 = IriS::from_named_node(&NamedNode::new_unchecked("http://example.org/name"));
         let iri2 = IriS::from_named_node(&NamedNode::new_unchecked("http://example.org/name"));
+        assert_eq!(iri1, iri2);
+    }
+
+    #[test]
+    fn from_str_base() {
+        let iri1 = IriS::from_str_base("name", Some("http://example.org/")).unwrap();
+        let iri2 = IriS::from_str_base("http://example.org/name", None).unwrap();
         assert_eq!(iri1, iri2);
     }
 }

@@ -712,13 +712,16 @@ impl Rudof {
         self.shex_schema = Some(schema_json.clone());
         trace!("Schema AST read: {schema_json}");
         let mut schema = SchemaIR::new();
+        trace!("Compiling schema");
         schema
             .from_schema_json(&schema_json)
             .map_err(|e| RudofError::CompilingSchemaError {
                 error: format!("{e}"),
             })?;
+        trace!("Schema compiled and storing it in schema_ir: {schema:?}");
+        trace!("Displaying schema_ir: {}", schema);
         self.shex_schema_ir = Some(schema.clone());
-
+        trace!("Schema_ir cloned, preparing validator...");
         let validator =
             ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
                 RudofError::ShExValidatorCreationError {
@@ -726,6 +729,7 @@ impl Rudof {
                     schema: format!("{schema_json}"),
                 }
             })?;
+        trace!("Validator created");
         self.shex_validator = Some(validator);
         Ok(())
     }

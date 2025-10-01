@@ -284,12 +284,12 @@ impl SRDFGraph {
     pub fn parse_data(
         data: &String,
         format: &RDFFormat,
-        base: &Path,
+        folder: &Path,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        let mut attempt = PathBuf::from(base);
+        let mut attempt = PathBuf::from(folder);
         attempt.push(data);
-        let base = Some("base:://");
         let data_path = &attempt;
         let graph = Self::from_path(data_path, format, base, reader_mode)?;
         Ok(graph)

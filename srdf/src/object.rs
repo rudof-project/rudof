@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Display};
-use std::str::FromStr;
 
 use crate::IriOrBlankNode;
 use crate::RDFError;
@@ -9,6 +8,7 @@ use crate::triple::Triple;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
+use tracing::trace;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
 ///
@@ -73,6 +73,22 @@ impl Object {
         match self {
             Object::Literal(lit) => Some(lit.datatype()),
             _ => None,
+        }
+    }
+
+    pub fn parse(str: &str, base: Option<&str>) -> Result<Object, RDFError> {
+        if str.starts_with("_:") {
+            let bnode_id = &str[2..];
+            trace!("Parsing blank node id: {bnode_id} from str: {str}");
+            Ok(Object::bnode(bnode_id.to_string()))
+        } else if str.starts_with('"') {
+            todo!()
+        } else {
+            let iri = IriS::from_str_base(str, base).map_err(|e| RDFError::ParsingIri {
+                iri: str.to_string(),
+                error: e.to_string(),
+            })?;
+            Ok(Object::iri(iri))
         }
     }
 }
@@ -167,7 +183,7 @@ impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Iri(iri) => write!(f, "{iri}"),
-            Object::BlankNode(bnode) => write!(f, "_{bnode}"),
+            Object::BlankNode(bnode) => write!(f, "_:{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
             Object::Triple { .. } => todo!(),
         }
@@ -196,21 +212,6 @@ impl PartialOrd for Object {
             (Object::BlankNode(a), Object::BlankNode(b)) => a.partial_cmp(b),
             (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
             _ => None,
-        }
-    }
-}
-
-impl FromStr for Object {
-    type Err = RDFError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(iri) = IriS::from_str(s) {
-            Ok(Object::Iri(iri))
-        } else if s.starts_with("_:") {
-            Ok(Object::BlankNode(s[2..].to_string()))
-        } else {
-            // TODO: I think we should try to parse as literal first
-            Ok(Object::Literal(SLiteral::str(s)))
         }
     }
 }

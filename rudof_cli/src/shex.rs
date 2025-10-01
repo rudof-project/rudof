@@ -18,6 +18,7 @@ use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormat, ShExFormatter};
 use shapemap::ResultShapeMap;
 use shex_ast::{Schema, ShapeExprLabel};
 use srdf::ReaderMode;
+use tracing::trace;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shex(
@@ -71,8 +72,10 @@ pub fn run_shex(
         }
     }
     if compile && config.show_ir() {
+        trace!("Compiling schema to IR...");
         writeln!(io::stdout(), "\nIR:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
+            trace!("Schema compiled to IR");
             writeln!(io::stdout(), "ShEx IR:")?;
             writeln!(io::stdout(), "{shex_ir}")?;
         } else {
