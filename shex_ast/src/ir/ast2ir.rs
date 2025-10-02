@@ -1,3 +1,4 @@
+use super::node_constraint::NodeConstraint;
 use crate::ShapeExprLabel;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
@@ -19,39 +20,6 @@ use srdf::Object;
 use srdf::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
 use tracing::{debug, trace};
-
-use super::node_constraint::NodeConstraint;
-
-/*lazy_static! {
-    static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#string"
-    ));
-    static ref XSD_INTEGER: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#integer"
-    ));
-    static ref XSD_LONG: IriRef =
-        IriRef::Iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#long"));
-    static ref XSD_INT: IriRef =
-        IriRef::Iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#int"));
-    static ref XSD_DECIMAL: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#decimal"
-    ));
-    static ref XSD_DATETIME: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#dateTime"
-    ));
-    static ref XSD_BOOLEAN: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#boolean"
-    ));
-    static ref XSD_DOUBLE: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#double"
-    ));
-    static ref XSD_FLOAT: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#float"
-    ));
-    static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
-    ));
-}*/
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
@@ -88,16 +56,24 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         match &schema_json.shapes() {
-            None => Ok(()),
+            None => {}
             Some(sds) => {
                 for sd in sds {
                     let label = self.shape_expr_label_to_shape_label(&sd.id)?;
                     compiled_schema.add_shape(label, ShapeExpr::Empty);
                     self.shape_decls_counter += 1;
                 }
-                Ok(())
             }
         }
+        if let Some(shape_expr_start) = &schema_json.start() {
+            let start_label = ShapeLabel::Start;
+            let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty);
+            let start_compiled =
+                self.compile_shape_expr(&shape_expr_start, &idx, compiled_schema)?;
+            compiled_schema.replace_shape(&idx, start_compiled);
+            self.shape_decls_counter += 1;
+        }
+        Ok(())
     }
 
     pub fn collect_shape_exprs(

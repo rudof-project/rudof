@@ -45,11 +45,12 @@ impl SchemaIR {
         self.shape_label_counter
     }
 
-    pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) {
+    pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_labels_map.insert(shape_label.clone(), idx);
         self.shapes.insert(idx, (Some(shape_label.clone()), se));
         self.shape_label_counter += 1;
+        idx
     }
 
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
