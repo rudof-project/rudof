@@ -6,8 +6,10 @@ use rust_decimal::{
     prelude::{FromPrimitive, ToPrimitive},
 };
 use serde::{
-    Deserialize, Serialize, Serializer,
-    de::{self, Visitor},
+    Deserialize,
+    Serialize,
+    Serializer,
+    // de::{self, Visitor},
 };
 use std::hash::Hash;
 use tracing::trace;
@@ -223,6 +225,59 @@ impl NumericLiteral {
             (v1, v2) => v1.as_decimal() <= v2.as_decimal(),
         }
     }
+
+    pub fn total_digits(&self) -> Option<usize> {
+        match self {
+            NumericLiteral::Integer(d) => Some(d.to_string().len()),
+            NumericLiteral::Long(d) => Some(d.to_string().len()),
+            NumericLiteral::NonNegativeInteger(d) => Some(d.to_string().len()),
+            NumericLiteral::UnsignedLong(d) => Some(d.to_string().len()),
+            NumericLiteral::UnsignedInt(d) => Some(d.to_string().len()),
+            NumericLiteral::UnsignedShort(d) => Some(d.to_string().len()),
+            NumericLiteral::UnsignedByte(d) => Some(d.to_string().len()),
+            NumericLiteral::PositiveInteger(d) => Some(d.to_string().len()),
+            NumericLiteral::NegativeInteger(d) => Some(d.to_string().len()),
+            NumericLiteral::NonPositiveInteger(d) => Some(d.to_string().len()),
+            NumericLiteral::Byte(d) => Some(d.to_string().len()),
+            NumericLiteral::Short(d) => Some(d.to_string().len()),
+            NumericLiteral::Decimal(d) => {
+                // Normalize removes trailing zeros
+                let normalized = d.normalize();
+                let s = normalized.to_string();
+                let s = s.replace("-", "").replace(".", "");
+                Some(s.len())
+            }
+            NumericLiteral::Double(_d) => None,
+            NumericLiteral::Float(_f) => None,
+        }
+    }
+
+    pub fn fraction_digits(&self) -> Option<usize> {
+        match self {
+            NumericLiteral::Integer(_) => Some(0),
+            NumericLiteral::Long(_) => Some(0),
+            NumericLiteral::NonNegativeInteger(_) => Some(0),
+            NumericLiteral::UnsignedLong(_) => Some(0),
+            NumericLiteral::UnsignedInt(_) => Some(0),
+            NumericLiteral::UnsignedShort(_) => Some(0),
+            NumericLiteral::UnsignedByte(_) => Some(0),
+            NumericLiteral::PositiveInteger(_) => Some(0),
+            NumericLiteral::NegativeInteger(_) => Some(0),
+            NumericLiteral::NonPositiveInteger(_) => Some(0),
+            NumericLiteral::Byte(_) => Some(0),
+            NumericLiteral::Short(_) => Some(0),
+            NumericLiteral::Decimal(d) => {
+                let s = d.to_string();
+                if let Some(pos) = s.find('.') {
+                    Some(s.len() - pos - 1)
+                } else {
+                    Some(0)
+                }
+            }
+            NumericLiteral::Double(_d) => None,
+            NumericLiteral::Float(_f) => None,
+        }
+    }
 }
 
 impl Eq for NumericLiteral {}
@@ -278,7 +333,7 @@ impl<'de> Deserialize<'de> for NumericLiteral {
     }
 } */
 
-struct NumericLiteralVisitor;
+/*struct NumericLiteralVisitor;
 
 impl Visitor<'_> for NumericLiteralVisitor {
     type Value = NumericLiteral;
@@ -350,7 +405,7 @@ impl Visitor<'_> for NumericLiteralVisitor {
     {
         Ok(NumericLiteral::decimal_from_f32(v))
     }*/
-}
+}*/
 
 impl TryFrom<&str> for NumericLiteral {
     type Error = String;

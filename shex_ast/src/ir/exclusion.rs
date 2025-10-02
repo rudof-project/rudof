@@ -1,7 +1,9 @@
+use std::fmt::Display;
 use std::str::FromStr;
 use std::{fmt, result};
 
-use serde::de::{MapAccess, Visitor};
+use iri_s::IriS;
+// use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer, de};
 use srdf::lang::Lang;
@@ -31,10 +33,19 @@ impl Serialize for LiteralExclusion {
     }
 }
 
+impl Display for LiteralExclusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LiteralExclusion::Literal(lit) => write!(f, "{lit}"),
+            LiteralExclusion::LiteralStem(stem) => write!(f, "{stem}~"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum IriExclusion {
-    Iri(IriRef),
-    IriStem(IriRef),
+    Iri(IriS),
+    IriStem(IriS),
 }
 
 impl Serialize for IriExclusion {
@@ -50,6 +61,15 @@ impl Serialize for IriExclusion {
                 map.serialize_entry("stem", stem)?;
                 map.end()
             }
+        }
+    }
+}
+
+impl Display for IriExclusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IriExclusion::Iri(iri) => write!(f, "{iri}"),
+            IriExclusion::IriStem(stem) => write!(f, "{stem}~"),
         }
     }
 }
@@ -73,6 +93,15 @@ impl Serialize for LanguageExclusion {
                 map.serialize_entry("stem", stem)?;
                 map.end()
             }
+        }
+    }
+}
+
+impl Display for LanguageExclusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LanguageExclusion::Language(lang) => write!(f, "@{lang}"),
+            LanguageExclusion::LanguageStem(stem) => write!(f, "{stem}~"),
         }
     }
 }
@@ -137,11 +166,14 @@ impl Exclusion {
         excs: Vec<Exclusion>,
     ) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
         let mut lang_excs = Vec::new();
-        for e in excs {
-            match e {
+        for exc in excs {
+            let exc_clone = exc.clone();
+            match exc {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    lang_excs.push(LanguageExclusion::Language(Lang::new_unchecked(s)))
+                    let lang = Lang::new(s.as_str())
+                        .map_err(|_e| SomeNoIriExclusion { exc: exc_clone })?;
+                    lang_excs.push(LanguageExclusion::Language(lang))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
@@ -176,7 +208,7 @@ impl Serialize for Exclusion {
         }
     }
 }
-
+/*
 impl<'de> Deserialize<'de> for Exclusion {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -300,6 +332,17 @@ impl<'de> Deserialize<'de> for Exclusion {
         }
 
         deserializer.deserialize_any(ExclusionVisitor)
+    }
+}*/
+
+impl Display for Exclusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Exclusion::LiteralExclusion(le) => write!(f, "{le}"),
+            Exclusion::LanguageExclusion(le) => write!(f, "{le}"),
+            Exclusion::IriExclusion(ie) => write!(f, "{ie}"),
+            Exclusion::Untyped(s) => write!(f, "{s}"),
+        }
     }
 }
 

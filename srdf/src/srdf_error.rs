@@ -2,6 +2,13 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RDFError {
+    #[error("Error with language tag '{language}' in literal '{literal}': {error}")]
+    LanguageTagError {
+        literal: String,
+        language: String,
+        error: String,
+    },
+
     #[error("Error obtaining IRI from IriRef: {iri_ref}")]
     IriRefError { iri_ref: String },
 

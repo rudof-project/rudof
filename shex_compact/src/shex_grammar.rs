@@ -7,6 +7,7 @@ use crate::{
     token_tws, traced, tws0,
 };
 use iri_s::IriS;
+use lazy_regex::{Lazy, regex};
 use nom::{
     Err, InputTake,
     branch::alt,
@@ -18,6 +19,8 @@ use nom::{
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
 };
+use nom_locate::LocatedSpan;
+use prefixmap::IriRef;
 use regex::Regex;
 use shex_ast::IriOrStr;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
@@ -28,14 +31,9 @@ use shex_ast::{
     StringFacet, TripleExpr, TripleExprLabel, XsFacet, object_value::ObjectValue,
     value_set_value::ValueSetValue,
 };
+use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
-use tracing::{debug, trace};
-
-use lazy_regex::{Lazy, regex};
-use nom_locate::LocatedSpan;
-use prefixmap::IriRef;
-use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
@@ -1268,20 +1266,22 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
         "language_range2",
         map_error(
             move |i| {
-                let (i, (_, _, exclusions)) =
+                let (_i, (_, _, exclusions)) =
                     tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
-                let v = if exclusions.is_empty() {
-                    ValueSetValue::LanguageStem {
+                let _v = if exclusions.is_empty() {
+                    /*ValueSetValue::LanguageStem {
                         // TODO: why is this empty?
                         stem: Lang::new_unchecked(""),
-                    }
+                    }*/
+                    panic!("Empty exclusions in language range")
                 } else {
-                    ValueSetValue::LanguageStemRange {
+                    /*ValueSetValue::LanguageStemRange {
                         stem: LangOrWildcard::Lang(Lang::new_unchecked("")),
                         exclusions: Some(exclusions),
-                    }
+                    }*/
+                    panic!("Internal error: Exclusions is not empty...but language tag is empty?")
                 };
-                Ok((i, v))
+                // Ok((i, v))
             },
             || ShExParseError::LanguageRange,
         ),
@@ -1630,7 +1630,13 @@ fn lang_tag(i: Span) -> IRes<Lang> {
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),
     )(i)?;
-    Ok((i, Lang::new_unchecked(*lang_str.fragment())))
+    let lang = Lang::new(*lang_str.fragment()).map_err(|_| {
+        let e = ShExParseError::InvalidLangTag {
+            lang: lang_str.fragment().to_string(),
+        };
+        Err::Error(e.at(lang_str))
+    })?;
+    Ok((i, lang))
 }
 
 /// `[61] predicate ::= iri | RDF_TYPE`

@@ -141,7 +141,10 @@ impl Exclusion {
             match e {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    lang_excs.push(LanguageExclusion::Language(Lang::new_unchecked(s)))
+                    let lang = Lang::new(&s).map_err(|_e| SomeNoIriExclusion {
+                        exc: Exclusion::Untyped(s.clone()),
+                    })?;
+                    lang_excs.push(LanguageExclusion::Language(lang))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
@@ -279,9 +282,14 @@ impl<'de> Deserialize<'de> for Exclusion {
                         Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
                             LanguageExclusion::LanguageStem(lang),
                         )),
-                        Some(StemValue::Literal(l)) => Ok(Exclusion::LanguageExclusion(
-                            LanguageExclusion::LanguageStem(Lang::new_unchecked(l)),
-                        )),
+                        Some(StemValue::Literal(l)) => {
+                            let lang = Lang::new(&l).map_err(|e| {
+                                de::Error::custom(format!("Invalid language tag {l} in stem: {e}"))
+                            })?;
+                            Ok(Exclusion::LanguageExclusion(
+                                LanguageExclusion::LanguageStem(lang),
+                            ))
+                        }
                         Some(_) => Err(de::Error::custom(format!(
                             "Stem {stem:?} must be a language"
                         ))),

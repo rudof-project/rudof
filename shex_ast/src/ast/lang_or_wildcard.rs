@@ -2,20 +2,28 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use srdf::lang::Lang;
 use std::{result, str::FromStr};
-use void::Void;
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LangOrWildcard {
     Lang(Lang),
     Wildcard,
 }
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum LangOrWildcardParseError {
+    #[error("Invalid language tag")]
+    InvalidLang { tag: String, error: String },
+}
 
 impl FromStr for LangOrWildcard {
-    type Err = Void;
+    type Err = LangOrWildcardParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO: here we should check if the string is a valid language tag
-        Ok(LangOrWildcard::Lang(Lang::new_unchecked(s)))
+        let lang = Lang::new(s).map_err(|e| LangOrWildcardParseError::InvalidLang {
+            tag: s.to_string(),
+            error: e.to_string(),
+        })?;
+        Ok(LangOrWildcard::Lang(lang))
     }
 }
 

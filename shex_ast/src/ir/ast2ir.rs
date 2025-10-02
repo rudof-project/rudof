@@ -613,8 +613,8 @@ fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
         ast::NumericFacet::MinExclusive(min) => mk_cond_min_exclusive(min.clone()),
         ast::NumericFacet::MaxInclusive(max) => mk_cond_max_inclusive(max.clone()),
         ast::NumericFacet::MaxExclusive(max) => mk_cond_max_exclusive(max.clone()),
-        ast::NumericFacet::TotalDigits(_) => todo!(),
-        ast::NumericFacet::FractionDigits(_) => todo!(),
+        ast::NumericFacet::TotalDigits(td) => mk_cond_total_digits(td.clone()),
+        ast::NumericFacet::FractionDigits(fd) => mk_cond_fraction_digits(fd.clone()),
     }
 }
 
@@ -704,6 +704,38 @@ fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MinExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_total_digits(total: usize) -> Cond {
+    let total_str = total.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("totalDigits({total_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_total_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_fraction_digits(total: usize) -> Cond {
+    let total_str = total.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("fractionDigits({total_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_fraction_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
                     }),
                 },
             ),
@@ -855,15 +887,32 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             let exclusions = cnv_literal_exclusions(exclusions)?;
             Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
-        ast::ValueSetValue::IriStemRange {
-            stem: _,
-            exclusions: _,
-        } => todo!(),
-        ast::ValueSetValue::LanguageStem { stem: _ } => todo!(),
-        ast::ValueSetValue::LanguageStemRange {
-            stem: _,
-            exclusions: _,
-        } => todo!(),
+        ast::ValueSetValue::IriStemRange { stem, exclusions } => {
+            let stem = cnv_iriref_or_wildcard(stem)?;
+            let exclusions = cnv_iri_exclusions(exclusions)?;
+            Ok(ValueSetValue::IriStemRange { stem, exclusions })
+        }
+        ast::ValueSetValue::LanguageStem { stem } => {
+            Ok(ValueSetValue::LanguageStem { stem: stem.clone() })
+        }
+        ast::ValueSetValue::LanguageStemRange { stem, exclusions } => {
+            let stem = cnv_lang_or_wildcard(stem)?;
+            let exclusions = cnv_lang_exclusions(exclusions)?;
+            Ok(ValueSetValue::LanguageStemRange { stem, exclusions })
+        }
+    }
+}
+
+fn cnv_lang_or_wildcard(
+    stem: &ast::LangOrWildcard,
+) -> CResult<crate::ir::value_set_value::LangOrWildcard> {
+    match stem {
+        ast::LangOrWildcard::Lang(s) => {
+            Ok(crate::ir::value_set_value::LangOrWildcard::Lang(s.clone()))
+        }
+        ast::LangOrWildcard::Wildcard => Ok(crate::ir::value_set_value::LangOrWildcard::Wildcard {
+            type_: "".to_string(),
+        }),
     }
 }
 
@@ -876,6 +925,22 @@ fn cnv_string_or_wildcard(
         ),
         ast::StringOrWildcard::Wildcard => {
             Ok(crate::ir::value_set_value::StringOrWildcard::Wildcard {
+                type_: "".to_string(),
+            })
+        }
+    }
+}
+
+fn cnv_iriref_or_wildcard(
+    stem: &ast::IriRefOrWildcard,
+) -> CResult<crate::ir::value_set_value::IriOrWildcard> {
+    match stem {
+        ast::IriRefOrWildcard::IriRef(iri) => {
+            let cnv_iri = cnv_iri_ref(iri)?;
+            Ok(crate::ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
+        }
+        ast::IriRefOrWildcard::Wildcard => {
+            Ok(crate::ir::value_set_value::IriOrWildcard::Wildcard {
                 type_: "".to_string(),
             })
         }
@@ -907,6 +972,38 @@ fn cnv_literal_exclusions(
             let mut rs = Vec::new();
             for ex in exs {
                 let cnv_ex = cnv_literal_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}
+
+fn cnv_iri_exclusions(
+    exclusions: &Option<Vec<ast::IriExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::IriExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_iri_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}
+
+fn cnv_lang_exclusions(
+    exclusions: &Option<Vec<ast::LanguageExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::LanguageExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_language_exclusion(ex)?;
                 rs.push(cnv_ex);
             }
             Ok(Some(rs))
@@ -950,6 +1047,32 @@ fn cnv_literal_exclusion(
         )),
         ast::LiteralExclusion::LiteralStem(s) => Ok(
             crate::ir::exclusion::LiteralExclusion::LiteralStem(s.to_string()),
+        ),
+    }
+}
+
+fn cnv_iri_exclusion(le: &ast::IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
+    match le {
+        ast::IriExclusion::Iri(s) => {
+            let iri_s = iri_ref2iri_s(s);
+            Ok(crate::ir::exclusion::IriExclusion::Iri(iri_s))
+        }
+        ast::IriExclusion::IriStem(s) => {
+            let iri_s = iri_ref2iri_s(s);
+            Ok(crate::ir::exclusion::IriExclusion::IriStem(iri_s))
+        }
+    }
+}
+
+fn cnv_language_exclusion(
+    le: &ast::LanguageExclusion,
+) -> CResult<crate::ir::exclusion::LanguageExclusion> {
+    match le {
+        ast::LanguageExclusion::Language(s) => {
+            Ok(crate::ir::exclusion::LanguageExclusion::Language(s.clone()))
+        }
+        ast::LanguageExclusion::LanguageStem(s) => Ok(
+            crate::ir::exclusion::LanguageExclusion::LanguageStem(s.clone()),
         ),
     }
 }
@@ -1117,6 +1240,80 @@ fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
     } else {
         Err(Box::new(SchemaIRError::MinExclusiveError {
             expected: min.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
+    trace!("check_node_total_digits: {node:?} total: {total}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_total_digits: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_total_digits: as_numeric error"),
+        })
+    })?;
+    if let Some(num_digits) = node_num.total_digits() {
+        trace!("check_node_total_digits: node total digits: {num_digits}");
+        if num_digits <= total {
+            trace!("check_node_total_digits: OK {num_digits} <= {total} node [{node_num}]");
+            Ok(())
+        } else {
+            trace!("check_node_total_digits: Failed {num_digits} > {total} node [{node_num}]");
+            Err(Box::new(SchemaIRError::TotalDigitsError {
+                expected: total.clone(),
+                found: node_num,
+                node: node.to_string(),
+            }))
+        }
+    } else {
+        trace!("check_node_total_digits: node has no total digits");
+        Err(Box::new(SchemaIRError::TotalDigitsError {
+            expected: total.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
+    trace!("check_node_fraction_digits: {node:?} total: {fd}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_fraction_digits: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_fraction_digits: as_numeric error"),
+        })
+    })?;
+    if let Some(num_fd) = node_num.fraction_digits() {
+        trace!("check_node_fraction_digits: node fraction digits: {num_fd}");
+        if num_fd <= fd {
+            trace!(
+                "check_node_fraction_digits: OK {fd:?} > Fraction digits of {node_num:?} = {num_fd}",
+            );
+            Ok(())
+        } else {
+            trace!(
+                "check_node_fraction_digits: Failed {fd} <= fraction digits of {node_num} {num_fd}",
+            );
+            Err(Box::new(SchemaIRError::FractionDigitsError {
+                expected: fd.clone(),
+                found: node_num,
+                node: node.to_string(),
+            }))
+        }
+    } else {
+        trace!("check_node_fraction_digits: node has no fraction digits");
+        Err(Box::new(SchemaIRError::FractionDigitsError {
+            expected: fd.clone(),
             found: node_num,
             node: node.to_string(),
         }))

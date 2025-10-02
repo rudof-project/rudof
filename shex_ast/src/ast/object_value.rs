@@ -355,20 +355,34 @@ impl<'de> Deserialize<'de> for ObjectValue {
                     },
                     Some(ObjectValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
-                            Some(lang) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
-                                lexical_form: v,
-                                lang: Some(Lang::new_unchecked(&lang)),
-                            })),
+                            Some(lang) => {
+                                let lang = Lang::new(&lang).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Invalid language tag {lang} in object value: {e}"
+                                    ))
+                                })?;
+                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                    lexical_form: v,
+                                    lang: Some(lang),
+                                }))
+                            }
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
                     None => match value {
                         Some(lexical_form) => match language {
-                            Some(language) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
-                                lexical_form,
-                                lang: Some(Lang::new_unchecked(&language)),
-                            })),
+                            Some(language) => {
+                                let language = Lang::new(&language).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Invalid language tag {language} in object value: {e}"
+                                    ))
+                                })?;
+                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                    lexical_form,
+                                    lang: Some(language),
+                                }))
+                            }
                             None => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
                                 lexical_form,
                                 lang: None,

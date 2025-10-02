@@ -10,6 +10,9 @@ use crate::{LocatedParseError, Span};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
+    #[error("Invalid language tag: {lang}")]
+    InvalidLangTag { lang: String },
+
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 

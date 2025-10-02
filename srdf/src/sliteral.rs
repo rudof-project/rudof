@@ -590,10 +590,19 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
     type Error = RDFError;
 
     fn try_from(value: oxrdf::Literal) -> Result<Self, Self::Error> {
+        let value_str = value.to_string();
         match value.destruct() {
             (s, None, None, None) => Ok(SLiteral::str(&s)),
             (s, None, Some(language), None) => {
-                Ok(SLiteral::lang_str(&s, Lang::new_unchecked(&language)))
+                let lang_str = language.to_string();
+                match Lang::new(language) {
+                    Err(e) => Err(RDFError::LanguageTagError {
+                        literal: value_str,
+                        language: lang_str,
+                        error: e.to_string(),
+                    }),
+                    Ok(lang) => Ok(SLiteral::lang_str(&s, lang)),
+                }
             }
             (value, Some(dtype), None, None) => {
                 let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();

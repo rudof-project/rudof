@@ -155,6 +155,20 @@ pub enum SchemaIRError {
         node: String,
     },
 
+    #[error("TotalDigits of {node} = {found} doesn't match {expected}")]
+    TotalDigitsError {
+        expected: usize,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("FractionDigits of {node} = {found} doesn't match {expected}")]
+    FractionDigitsError {
+        expected: usize,
+        found: NumericLiteral,
+        node: String,
+    },
+
     #[error("NumericValue of {node} = {found} doesn't match minExclusive of {expected}")]
     MinExclusiveError {
         expected: NumericLiteral,
