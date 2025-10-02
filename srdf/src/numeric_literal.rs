@@ -5,11 +5,17 @@ use rust_decimal::{
     Decimal,
     prelude::{FromPrimitive, ToPrimitive},
 };
-use serde::{Deserialize, Serialize, Serializer, de::Visitor};
+use serde::{
+    Deserialize, Serialize, Serializer,
+    de::{self, Visitor},
+};
 use std::hash::Hash;
+use tracing::trace;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[serde(untagged)]
 pub enum NumericLiteral {
+    Integer(isize),
     Byte(i8),
     Short(i16),
     NonNegativeInteger(u128),
@@ -20,7 +26,6 @@ pub enum NumericLiteral {
     PositiveInteger(u128),
     NegativeInteger(i128),
     NonPositiveInteger(i128),
-    Integer(isize),
     Long(isize),
     Decimal(Decimal),
     Double(f64),
@@ -59,6 +64,42 @@ impl NumericLiteral {
     /// Creates a numeric literal from a decimal
     pub fn decimal(d: Decimal) -> NumericLiteral {
         NumericLiteral::Decimal(d)
+    }
+
+    pub fn non_positive_integer(n: isize) -> NumericLiteral {
+        let d: i128 = n as i128;
+        NumericLiteral::NonPositiveInteger(d)
+    }
+
+    pub fn non_negative_integer(n: usize) -> NumericLiteral {
+        let d: u128 = n as u128;
+        NumericLiteral::NonNegativeInteger(d)
+    }
+
+    pub fn positive_integer(n: usize) -> NumericLiteral {
+        let d: u128 = n as u128;
+        NumericLiteral::PositiveInteger(d)
+    }
+
+    pub fn negative_integer(n: isize) -> NumericLiteral {
+        let d: i128 = n as i128;
+        NumericLiteral::NegativeInteger(d)
+    }
+
+    pub fn unsigned_byte(n: u8) -> NumericLiteral {
+        NumericLiteral::UnsignedByte(n)
+    }
+
+    pub fn unsigned_short(n: u16) -> NumericLiteral {
+        NumericLiteral::UnsignedShort(n)
+    }
+
+    pub fn unsigned_int(n: u32) -> NumericLiteral {
+        NumericLiteral::UnsignedInt(n)
+    }
+
+    pub fn unsigned_long(n: u64) -> NumericLiteral {
+        NumericLiteral::UnsignedLong(n)
     }
 
     pub fn decimal_from_parts(whole: i64, fraction: u32) -> NumericLiteral {
@@ -110,9 +151,11 @@ impl NumericLiteral {
     }
 
     pub fn integer_from_i128(d: i128) -> NumericLiteral {
-        let d: Decimal = Decimal::from_i128(d).unwrap();
-        let n: isize = Decimal::to_isize(&d).unwrap();
-        NumericLiteral::Integer(n)
+        NumericLiteral::Integer(d as isize)
+    }
+
+    pub fn integer_from_i64(d: i64) -> NumericLiteral {
+        NumericLiteral::Integer(d as isize)
     }
 
     pub fn decimal_from_u64(d: u64) -> NumericLiteral {
@@ -163,9 +206,21 @@ impl NumericLiteral {
     }
 
     pub fn less_than(&self, other: &NumericLiteral) -> bool {
+        trace!("less_than: Comparing {self:?} < {other:?}");
         match (self, other) {
-            (NumericLiteral::Integer(n1), NumericLiteral::Integer(n2)) => n1 < n2,
+            (NumericLiteral::Integer(n1), NumericLiteral::Integer(n2)) => {
+                let result = n1 < n2;
+                trace!("less_than: {n1} < {n2} = {result}");
+                result
+            }
             (v1, v2) => v1.as_decimal() < v2.as_decimal(),
+        }
+    }
+
+    pub fn less_than_or_eq(&self, other: &NumericLiteral) -> bool {
+        match (self, other) {
+            (NumericLiteral::Integer(n1), NumericLiteral::Integer(n2)) => n1 <= n2,
+            (v1, v2) => v1.as_decimal() <= v2.as_decimal(),
         }
     }
 }
@@ -213,71 +268,102 @@ impl Serialize for NumericLiteral {
     }
 }
 
+/*
 impl<'de> Deserialize<'de> for NumericLiteral {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        struct NumericLiteralVisitor;
+        deserializer.deserialize_str(NumericLiteralVisitor)
+    }
+} */
 
-        impl Visitor<'_> for NumericLiteralVisitor {
-            type Value = NumericLiteral;
+struct NumericLiteralVisitor;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("NumericLiteral")
-            }
+impl Visitor<'_> for NumericLiteralVisitor {
+    type Value = NumericLiteral;
 
-            fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_i32(v))
-            }
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("NumericLiteral")
+    }
 
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_i64(v))
-            }
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        NumericLiteral::try_from(v)
+            .map_err(|e| E::custom(format!("Error parsing NumericLiteral: {e}")))
+    }
 
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_u64(v))
-            }
+    /*fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_i32(v))
+    }
 
-            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_u32(v))
-            }
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::integer_from_i64(v))
+    }
 
-            fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_u128(v))
-            }
+    fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::integer_from_i128(v))
+    }
 
-            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_f64(v))
-            }
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_u64(v))
+    }
 
-            fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(NumericLiteral::decimal_from_f32(v))
-            }
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_u32(v))
+    }
+
+    fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_u128(v))
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_f64(v))
+    }
+
+    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(NumericLiteral::decimal_from_f32(v))
+    }*/
+}
+
+impl TryFrom<&str> for NumericLiteral {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if let Some(i) = value.parse::<isize>().ok() {
+            return Ok(NumericLiteral::Integer(i));
+        } else if let Some(f) = value.parse::<f64>().ok() {
+            return Ok(NumericLiteral::Double(f));
+        } else if let Some(d) = Decimal::from_str_exact(value).ok() {
+            return Ok(NumericLiteral::Decimal(d));
         }
-
-        deserializer.deserialize_any(NumericLiteralVisitor)
+        Err(format!("Cannot parse '{}' as NumericLiteral", value))
     }
 }
 

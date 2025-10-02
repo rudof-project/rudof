@@ -22,7 +22,6 @@ const_format = "0.2"
 colored.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
-lazy_static.workspace = true
 mie.workspace = true
 prefixmap.workspace = true
 oxsdatatypes = { workspace = true }

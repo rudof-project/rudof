@@ -27,7 +27,8 @@ impl Lang {
 
 impl PartialEq for Lang {
     fn eq(&self, other: &Self) -> bool {
-        if self.lang.primary_language() == other.lang.primary_language() {
+        self.lang == other.lang
+        /*if self.lang.primary_language() == other.lang.primary_language() {
             let l1 = self.lang.extended_language();
             let l2 = other.lang.extended_language();
             match (l1, l2) {
@@ -36,7 +37,7 @@ impl PartialEq for Lang {
             }
         } else {
             false
-        }
+        }*/
     }
 }
 
@@ -56,4 +57,23 @@ impl std::fmt::Display for Lang {
 pub enum LangParseError {
     #[error("Invalid language tag: {0}")]
     InvalidLangTag(#[from] oxilangtag::LanguageTagParseError),
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lang::Lang;
+
+    #[test]
+    fn test_lang_equality() {
+        let en = Lang::new("en").unwrap();
+        let en_us = Lang::new("en-US").unwrap();
+        let fr = Lang::new("fr").unwrap();
+        let en1 = Lang::new("en").unwrap();
+        let en_fr = Lang::new("en-fr").unwrap();
+
+        assert_ne!(en, en_us);
+        assert_ne!(en, fr);
+        assert_eq!(en, en1);
+        assert_ne!(en, en_fr);
+    }
 }

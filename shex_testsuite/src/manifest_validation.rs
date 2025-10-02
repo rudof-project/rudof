@@ -208,7 +208,8 @@ impl ValidationEntry {
         let schema = compiled_schema.clone();
         let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())?;
         let expected_type = parse_type(&self.type_)?;
-        trace!("Schema compiled...expected type: {:?}", expected_type);
+        debug!("Schema compiled...expected type: {:?}", expected_type);
+        trace!("Schema: {}", schema);
 
         let mut failed_status: Vec<ValidationStatus> = Vec::new();
         let mut passed_status: Vec<ValidationStatus> = Vec::new();

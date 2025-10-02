@@ -11,6 +11,7 @@ use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
+use tracing::trace;
 
 /// Concrete representation of RDF literals
 /// This representation internally uses integers, doubles, booleans, etc. to represent values
@@ -43,8 +44,93 @@ pub enum SLiteral {
 }
 
 impl SLiteral {
+    /// Returns a literal after checking that the lexical form matches the declared datatype
+    /// This can be useful to validate datatypes that are wrong like `"hello"^^xsd:integer`
+    pub fn as_checked_literal(&self) -> Result<SLiteral, RDFError> {
+        match self {
+            SLiteral::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => check_literal_datatype(lexical_form, datatype),
+            _ => Ok(self.clone()),
+        }
+    }
+
+    pub fn match_literal(&self, literal_expected: &SLiteral) -> bool {
+        let result = match self {
+            SLiteral::StringLiteral { lexical_form, lang } => match literal_expected {
+                SLiteral::StringLiteral {
+                    lexical_form: expected_lexical_form,
+                    lang: expected_lang,
+                } => {
+                    trace!(
+                        "Comparing string literals: {lexical_form} ({lang:?}) with expected {expected_lexical_form} ({expected_lang:?})"
+                    );
+                    lexical_form == expected_lexical_form && lang == expected_lang
+                }
+                _ => false,
+            },
+            SLiteral::DatatypeLiteral {
+                lexical_form,
+                datatype,
+            } => match literal_expected {
+                SLiteral::DatatypeLiteral {
+                    lexical_form: expected_lexical_form,
+                    datatype: expected_datatype,
+                } => lexical_form == expected_lexical_form && datatype == expected_datatype,
+                _ => false,
+            },
+            SLiteral::NumericLiteral(numeric_literal) => match literal_expected {
+                SLiteral::NumericLiteral(expected_numeric_literal) => {
+                    numeric_literal == expected_numeric_literal
+                }
+                _ => false,
+            },
+            SLiteral::DatetimeLiteral(xsd_date_time) => match literal_expected {
+                SLiteral::DatetimeLiteral(expected_xsd_date_time) => {
+                    xsd_date_time == expected_xsd_date_time
+                }
+                _ => false,
+            },
+            SLiteral::BooleanLiteral(b) => match literal_expected {
+                SLiteral::BooleanLiteral(expected_bool) => b == expected_bool,
+                _ => false,
+            },
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form,
+                datatype,
+                error: _,
+            } => match literal_expected {
+                SLiteral::WrongDatatypeLiteral {
+                    lexical_form: expected_lexical_form,
+                    datatype: expected_datatype,
+                    error: _,
+                } => lexical_form == expected_lexical_form && datatype == expected_datatype,
+                _ => false,
+            },
+        };
+        trace!("match_literal: self: {self}, expected: {literal_expected}: {result}");
+        result
+    }
+
     pub fn integer(n: isize) -> SLiteral {
         SLiteral::NumericLiteral(NumericLiteral::integer(n))
+    }
+
+    pub fn non_negative_integer(n: usize) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::non_negative_integer(n))
+    }
+
+    pub fn non_positive_integer(n: isize) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::non_positive_integer(n))
+    }
+
+    pub fn positive_integer(n: usize) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::positive_integer(n))
+    }
+
+    pub fn negative_integer(n: isize) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::negative_integer(n))
     }
 
     pub fn double(d: f64) -> SLiteral {
@@ -57,6 +143,22 @@ impl SLiteral {
 
     pub fn long(n: isize) -> SLiteral {
         SLiteral::NumericLiteral(NumericLiteral::long(n))
+    }
+
+    pub fn unsigned_byte(n: u8) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::unsigned_byte(n))
+    }
+
+    pub fn unsigned_short(n: u16) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::unsigned_short(n))
+    }
+
+    pub fn unsigned_int(n: u32) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::unsigned_int(n))
+    }
+
+    pub fn unsigned_long(n: u64) -> SLiteral {
+        SLiteral::NumericLiteral(NumericLiteral::unsigned_long(n))
     }
 
     pub fn byte(n: i8) -> SLiteral {
@@ -101,6 +203,94 @@ impl SLiteral {
         match str::parse::<isize>(str) {
             Ok(value) => Ok(value),
             Err(_) => Err(format!("Cannot convert {str} to integer")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a negative integer
+    /// This parsing follows the rules of XSD negative integer datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a negative integer
+    pub fn parse_negative_integer(str: &str) -> Result<isize, String> {
+        match str::parse::<isize>(str) {
+            Ok(value) if value < 0 => Ok(value),
+            Ok(_) => Err(format!("Cannot convert {str} to negative integer")),
+            Err(_) => Err(format!("Cannot convert {str} to negative integer")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a non-positive integer
+    /// This parsing follows the rules of XSD non-positive integer datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a non-positive integer
+    pub fn parse_non_positive_integer(str: &str) -> Result<isize, String> {
+        match str::parse::<isize>(str) {
+            Ok(value) if value <= 0 => Ok(value),
+            Ok(_) => Err(format!("Cannot convert {str} to non-positive integer")),
+            Err(_) => Err(format!("Cannot convert {str} to non-positive integer")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a positive integer
+    /// This parsing follows the rules of XSD positive integer datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a positive integer
+    pub fn parse_positive_integer(str: &str) -> Result<usize, String> {
+        match str::parse::<usize>(str) {
+            Ok(value) if value > 0 => Ok(value),
+            Ok(_) => Err(format!("Cannot convert {str} to positive integer")),
+            Err(_) => Err(format!("Cannot convert {str} to positive integer")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a non-negative integer
+    /// This parsing follows the rules of XSD non-negative integer datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a non-negative integer
+    pub fn parse_non_negative_integer(str: &str) -> Result<usize, String> {
+        str::parse::<usize>(str)
+            .map_err(|e| format!("Cannot convert {str} to non-negative integer: {e}"))
+    }
+
+    /// Parses a string that should represent a lexical form of a unsigned byte
+    /// This parsing follows the rules of XSD unsignedByte datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a unsigned byte
+    pub fn parse_unsigned_byte(str: &str) -> Result<u8, String> {
+        match str::parse::<u8>(str) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(format!("Cannot convert {str} to unsigned byte")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a unsigned short
+    /// This parsing follows the rules of XSD unsignedShort datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a unsigned short
+    pub fn parse_unsigned_short(str: &str) -> Result<u16, String> {
+        match str::parse::<u16>(str) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(format!("Cannot convert {str} to unsigned short")),
+        }
+    }
+    /// Parses a string that should represent a lexical form of a unsigned integer
+    /// This parsing follows the rules of XSD unsignedInt datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a unsigned integer
+    pub fn parse_unsigned_int(str: &str) -> Result<u32, String> {
+        match str::parse::<u32>(str) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(format!("Cannot convert {str} to unsigned int")),
+        }
+    }
+
+    /// Parses a string that should represent a lexical form of a unsigned long
+    /// This parsing follows the rules of XSD unsignedLong datatype
+    /// Valid values are any valid integer string
+    /// Returns an error if the string cannot be parsed as a unsigned long
+    pub fn parse_unsigned_long(str: &str) -> Result<u64, String> {
+        match str::parse::<u64>(str) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(format!("Cannot convert {str} to unsigned long")),
         }
     }
 
@@ -565,5 +755,165 @@ impl From<&SLiteral> for oxrdf::Literal {
 impl From<&SLiteral> for Object {
     fn from(value: &SLiteral) -> Self {
         Object::Literal(value.clone())
+    }
+}
+
+fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLiteral, RDFError> {
+    trace!("check_literal_datatype: {lexical_form}^^{datatype}");
+    let iri = datatype.get_iri().map_err(|_e| RDFError::IriRefError {
+        iri_ref: datatype.to_string(),
+    })?;
+    match iri.as_str() {
+        "http://www.w3.org/2001/XMLSchema#integer" => match SLiteral::parse_integer(lexical_form) {
+            Ok(n) => Ok(SLiteral::integer(n)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#long" => match SLiteral::parse_long(lexical_form) {
+            Ok(n) => Ok(SLiteral::long(n)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#double" => match SLiteral::parse_double(lexical_form) {
+            Ok(d) => Ok(SLiteral::double(d)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#boolean" => match SLiteral::parse_bool(lexical_form) {
+            Ok(b) => Ok(SLiteral::boolean(b)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#float" => match SLiteral::parse_float(lexical_form) {
+            Ok(d) => Ok(SLiteral::float(d)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#decimal" => match SLiteral::parse_decimal(lexical_form) {
+            Ok(d) => Ok(SLiteral::decimal(d)),
+            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#negativeInteger" => {
+            match SLiteral::parse_negative_integer(lexical_form) {
+                Ok(d) => Ok(SLiteral::negative_integer(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#positiveInteger" => {
+            match SLiteral::parse_positive_integer(lexical_form) {
+                Ok(d) => Ok(SLiteral::positive_integer(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#nonNegativeInteger" => {
+            match SLiteral::parse_non_negative_integer(lexical_form) {
+                Ok(d) => Ok(SLiteral::non_negative_integer(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#nonPositiveInteger" => {
+            match SLiteral::parse_non_positive_integer(lexical_form) {
+                Ok(d) => Ok(SLiteral::non_positive_integer(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#unsignedInt" => {
+            match SLiteral::parse_unsigned_int(lexical_form) {
+                Ok(d) => Ok(SLiteral::unsigned_int(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#unsignedLong" => {
+            match SLiteral::parse_unsigned_long(lexical_form) {
+                Ok(d) => Ok(SLiteral::unsigned_long(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#unsignedByte" => {
+            match SLiteral::parse_unsigned_byte(lexical_form) {
+                Ok(d) => Ok(SLiteral::unsigned_byte(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+        "http://www.w3.org/2001/XMLSchema#unsignedShort" => {
+            match SLiteral::parse_unsigned_short(lexical_form) {
+                Ok(d) => Ok(SLiteral::unsigned_short(d)),
+                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                    lexical_form: lexical_form.to_string(),
+                    datatype: datatype.clone(),
+                    error: err.to_string(),
+                }),
+            }
+        }
+
+        _ => {
+            // For other datatypes, we do not check the lexical form
+            // We assume it is correct
+            // This includes rdf:langString
+            trace!("Not checking datatype {iri}");
+            Ok(SLiteral::DatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+            })
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unsigned_long() {
+        let str = "-1";
+        let result = SLiteral::parse_unsigned_long(str);
+        assert!(result.is_err());
     }
 }

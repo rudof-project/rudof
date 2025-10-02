@@ -155,6 +155,27 @@ pub enum SchemaIRError {
         node: String,
     },
 
+    #[error("NumericValue of {node} = {found} doesn't match minExclusive of {expected}")]
+    MinExclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match maxExclusive of {expected}")]
+    MaxExclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match maxInclusive of {expected}")]
+    MaxInclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
     #[error("Node {node} is not a numeric literal")]
     NonNumeric { node: String },
 

@@ -3,7 +3,7 @@ use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     sem_act::SemAct,
 };
-use crate::{Node, Pred, ShapeLabelIdx, ir::schema};
+use crate::{Node, Pred, ShapeLabelIdx};
 use itertools::Itertools;
 use rbe::RbeTable;
 use std::{collections::HashMap, fmt::Display};

@@ -1,18 +1,10 @@
-use tracing::trace;
-
 use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     node_constraint::NodeConstraint,
     shape::Shape,
 };
-use crate::{
-    Pred, ShapeLabelIdx,
-    ir::{schema::Schema, schema_ir::SchemaIR},
-};
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-};
+use crate::{Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ShapeExpr {
@@ -146,24 +138,24 @@ impl Display for ShapeExpr {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => write!(
                 f,
-                "{}",
+                "OR({})",
                 exprs
                     .iter()
                     .map(|e| format!("{e}"))
                     .collect::<Vec<_>>()
-                    .join(" OR ")
+                    .join(", ")
             ),
             ShapeExpr::ShapeAnd { exprs, .. } => write!(
                 f,
-                "{}",
+                "AND({})",
                 exprs
                     .iter()
                     .map(|e| format!("{e}"))
                     .collect::<Vec<_>>()
-                    .join(" AND ")
+                    .join(", ")
             ),
             ShapeExpr::ShapeNot { expr, .. } => write!(f, "NOT {expr}"),
-            ShapeExpr::NodeConstraint(nc) => write!(f, "Node constraint: {nc}"),
+            ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),
             ShapeExpr::Shape(shape) => write!(f, "{shape}"),
             ShapeExpr::External {} => write!(f, "External"),
             ShapeExpr::Ref { idx } => write!(f, "@{idx}"),

@@ -10,18 +10,19 @@ use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::{CResult, Cond, Node, Pred, ir};
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaJson};
+use core::panic;
 use iri_s::IriS;
-use lazy_static::lazy_static;
 use prefixmap::IriRef;
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
 use srdf::SLiteral;
+use srdf::numeric_literal::NumericLiteral;
 use tracing::{debug, trace};
 
 use super::node_constraint::NodeConstraint;
 
-lazy_static! {
+/*lazy_static! {
     static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/2001/XMLSchema#string"
     ));
@@ -50,7 +51,7 @@ lazy_static! {
     static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
         "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
     ));
-}
+}*/
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
@@ -441,21 +442,37 @@ impl AST2IR {
                     let idx = self.ref2idx(sref, compiled_schema)?;
                     Ok((mk_cond_ref(idx), format!("ShapeRef {}", sref)))
                 }
-                ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
-                ast::ShapeExpr::ShapeAnd { .. } => {
-                    let idx_se = compiled_schema.new_index();
-                    trace!(
-                        "value_expr2matchcond: Compiling ShapeAnd with {se:?}, idx_shape_expr {idx_se}"
-                    );
-                    let se = self.compile_shape_expr(&se, &idx_se, compiled_schema)?;
-                    compiled_schema.replace_shape(&idx_se, se.clone());
-                    let display = format!("AND {}", idx_se);
+                ast::ShapeExpr::Shape { .. } => {
+                    // TODO: avoid recompiling the same shape expression?
+                    // I think this code should be reviewed....
+                    let idx = compiled_schema.new_index();
+                    let se = self.compile_shape_expr(se, &idx, compiled_schema)?;
+                    compiled_schema.replace_shape(&idx, se.clone());
+                    trace!("Returning SHAPE cond with idx {idx}");
+                    Ok((mk_cond_ref(idx), format!("Shape {}", idx)))
+                }
+                ast::ShapeExpr::ShapeAnd { shape_exprs } => {
+                    let mut ands = Vec::new();
+                    for shape_expr in shape_exprs {
+                        let idx_se = compiled_schema.new_index();
+                        let se =
+                            self.compile_shape_expr(&shape_expr.se, &idx_se, compiled_schema)?;
+                        compiled_schema.replace_shape(&idx_se, se.clone());
+                        ands.push(idx_se);
+                    }
                     let and_se = ShapeExpr::ShapeAnd {
-                        exprs: vec![idx_se],
+                        exprs: ands.clone(),
                     };
                     let idx_and = compiled_schema.new_index();
                     compiled_schema.replace_shape(&idx_and, and_se);
                     trace!("Returning AND cond with idx {idx_and}");
+                    let display = format!(
+                        "AND({})",
+                        ands.iter()
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
                     Ok((mk_cond_ref(idx_and), display))
                 }
                 ast::ShapeExpr::ShapeOr { shape_exprs } => {
@@ -468,7 +485,7 @@ impl AST2IR {
                     }
                     let or_se = ShapeExpr::ShapeOr { exprs: ors.clone() };
                     let display = format!(
-                        "OR {}",
+                        "OR({})",
                         ors.iter()
                             .map(|i| i.to_string())
                             .collect::<Vec<_>>()
@@ -529,116 +546,6 @@ impl AST2IR {
             ast::TripleExpr::TripleExprRef(_) => todo!(),
         }
     }
-
-    /*     fn get_references_shape(
-        &self,
-        shape: &ast::Shape,
-        schema: &SchemaIR,
-    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        match shape.triple_expr() {
-            None => HashMap::new(),
-            Some(te) => self.get_references_triple_expr(&te, schema),
-        }
-    }
-
-    fn get_references_triple_expr(
-        &self,
-        te: &ast::TripleExpr,
-        schema: &SchemaIR,
-    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        match te {
-            ast::TripleExpr::EachOf { expressions, .. } => {
-                expressions.iter().fold(HashMap::new(), |mut acc, te| {
-                    let refs = self.get_references_triple_expr(&te.te, schema);
-                    for (pred, idxs) in refs {
-                        acc.entry(pred).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::TripleExpr::OneOf { expressions, .. } => {
-                expressions.iter().fold(HashMap::new(), |mut acc, te| {
-                    let refs = self.get_references_triple_expr(&te.te, schema);
-                    for (pred, idxs) in refs {
-                        acc.entry(pred).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::TripleExpr::TripleConstraint {
-                predicate,
-                value_expr,
-                ..
-            } => {
-                let pred = iri_ref2iri_s(predicate);
-                match value_expr {
-                    Some(ve) => self.get_value_expr_references(pred, ve, schema),
-                    /*ast::ShapeExpr::Ref(sref) => {
-                            let label =
-                                self.shape_expr_label_to_shape_label(sref)
-                                    .unwrap_or_else(|_| {
-                                        panic!("Convert shape label to IR label {sref}")
-                                    });
-                            let idx = schema.get_shape_label_idx(&label).unwrap_or_else(|_| {
-                                panic!("Failed to get shape label index for {label}")
-                            });
-                            let mut map = HashMap::new();
-                            map.insert(Pred::new(pred), vec![idx]);
-                            map
-                        }
-                        _ => HashMap::new(),
-                    }*/
-                    None => HashMap::new(),
-                }
-            }
-            ast::TripleExpr::TripleExprRef(_) => todo!(),
-        }
-    }
-
-    fn get_value_expr_references(
-        &self,
-        pred: IriS,
-        ve: &ast::ShapeExpr,
-        schema: &SchemaIR,
-    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        match ve {
-            ast::ShapeExpr::Ref(sref) => {
-                let label = self
-                    .shape_expr_label_to_shape_label(sref)
-                    .unwrap_or_else(|_| panic!("Convert shape label to IR label {sref}"));
-                let idx = schema
-                    .get_shape_label_idx(&label)
-                    .unwrap_or_else(|_| panic!("Failed to get shape label index for {label}"));
-                let mut map = HashMap::new();
-                map.insert(Pred::new(pred), vec![idx]);
-                map
-            }
-            ast::ShapeExpr::Shape { .. } => HashMap::new(),
-            ast::ShapeExpr::ShapeAnd { shape_exprs } => {
-                shape_exprs.iter().fold(HashMap::new(), |mut acc, se| {
-                    let refs = self.get_value_expr_references(pred.clone(), &se.se, schema);
-                    for (p, idxs) in refs {
-                        acc.entry(p).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::ShapeExpr::ShapeOr { shape_exprs } => {
-                shape_exprs.iter().fold(HashMap::new(), |mut acc, se| {
-                    let refs = self.get_value_expr_references(pred.clone(), &se.se, schema);
-                    for (p, idxs) in refs {
-                        acc.entry(p).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::ShapeExpr::ShapeNot { shape_expr } => {
-                self.get_value_expr_references(pred, &shape_expr.se, schema)
-            }
-            ast::ShapeExpr::NodeConstraint(_) => HashMap::new(),
-            ast::ShapeExpr::External => HashMap::new(),
-        }
-    } */
 }
 
 fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
@@ -702,10 +609,10 @@ fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
 
 fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     match nf {
-        ast::NumericFacet::MinInclusive(_min) => todo!(),
-        ast::NumericFacet::MinExclusive(_) => todo!(),
-        ast::NumericFacet::MaxInclusive(_) => todo!(),
-        ast::NumericFacet::MaxExclusive(_) => todo!(),
+        ast::NumericFacet::MinInclusive(min) => mk_cond_min_inclusive(min.clone()),
+        ast::NumericFacet::MinExclusive(min) => mk_cond_min_exclusive(min.clone()),
+        ast::NumericFacet::MaxInclusive(max) => mk_cond_max_inclusive(max.clone()),
+        ast::NumericFacet::MaxExclusive(max) => mk_cond_max_exclusive(max.clone()),
         ast::NumericFacet::TotalDigits(_) => todo!(),
         ast::NumericFacet::FractionDigits(_) => todo!(),
     }
@@ -768,6 +675,70 @@ fn mk_cond_length(len: usize) -> Cond {
                     msg: format!("Length error: {err}"),
                 }),
             }),
+    )
+}
+
+fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
+    let min_str = min.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("minInclusive({min_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_min_inclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinInclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
+    let min_str = min.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("minExclusive({min_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_min_exclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
+    let max_str = max.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("maxExclusive({max_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_max_exclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
+    let max_str = max.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("maxInclusive({max_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_max_inclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxInclusive: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
@@ -983,72 +954,6 @@ fn cnv_literal_exclusion(
     }
 }
 
-/*
-fn cnv_node_kind(_nk: &ast::NodeKind) -> CResult<NodeKind> {
-    todo!()
-}
-
-fn cnv_xs_facet(_xsf: &ast::XsFacet) -> CResult<XsFacet> {
-    todo!()
-}
-
-fn cnv_vec<A, B, F>(vs: Vec<A>, func: F) -> CResult<Vec<B>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    let mut rs = Vec::new();
-    for v in vs {
-        let b = func(&v)?;
-        rs.push(b);
-    }
-    Ok(rs)
-}
-
-fn cnv_opt_vec<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Vec<B>>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    match maybe_vs {
-        None => Ok(None),
-        Some(vs) => {
-            let mut rs = Vec::new();
-            for v in vs {
-                match func(v) {
-                    Err(err) => return Err(err),
-                    Ok(result) => {
-                        rs.push(result);
-                    }
-                }
-            }
-            Ok(Some(rs))
-        }
-    }
-}
-
-fn cnv_opt<A, B, F>(maybe_vs: &Option<A>, func: F) -> CResult<Option<B>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    match maybe_vs {
-        None => Ok(None),
-        Some(vs) => match func(vs) {
-            Err(err) => Err(err),
-            Ok(v) => Ok(Some(v)),
-        },
-    }
-}
-
-fn cnv_string_or_wildcard(_sw: &ast::StringOrWildcard) -> CResult<StringOrWildcard> {
-    todo!()
-}
-
-fn cnv_string_or_literalstem(
-    _sl: &ast::StringOrLiteralStemWrapper,
-) -> CResult<StringOrLiteralStem> {
-    todo!()
-}
-*/
-
 fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
     match ov {
         ast::ObjectValue::IriRef(ir) => {
@@ -1058,17 +963,6 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
         ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
     }
 }
-
-/*fn cnv_lang(lang: &String) -> CResult<Lang> {
-    Ok(Lang::new(lang.as_str()))
-}*/
-
-/*fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<ast::NodeKind>) -> CResult<()> {
-    match nodekind {
-        None => Ok(()),
-        Some(nk) => check_node_node_kind(node, &nk),
-    }
-}*/
 
 fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
     match node.as_object() {
@@ -1117,22 +1011,13 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     }
 }
 
-/*
-fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<()> {
-    match datatype {
-        None => Ok(()),
-        Some(dt) => check_node_datatype(node, dt),
-    }
-}
-*/
-
 fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
     let object = node.as_checked_object().map_err(|e| {
         Box::new(SchemaIRError::Internal {
             msg: format!("check_node_datatype: as_checked_object error: {e}"),
         })
     })?;
-    debug!("check_node_datatype: {object:?} datatype: {dt}");
+    trace!("check_node_datatype: {object:?} datatype: {dt}");
     match object {
         Object::Literal(sliteral) => check_literal_datatype(&sliteral, dt, node),
         Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
@@ -1147,7 +1032,12 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
 // Check that the literal has the expected datatype
 // It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
 fn check_literal_datatype(sliteral: &SLiteral, dt: &IriRef, node: &Node) -> CResult<()> {
-    match sliteral {
+    let checked_literal = sliteral.as_checked_literal().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_literal_datatype: as_checked_literal error: {e}"),
+        })
+    })?;
+    match checked_literal {
         SLiteral::WrongDatatypeLiteral {
             lexical_form,
             datatype,
@@ -1159,7 +1049,7 @@ fn check_literal_datatype(sliteral: &SLiteral, dt: &IriRef, node: &Node) -> CRes
             lexical_form: lexical_form.to_string(),
         })),
         _ => {
-            let node_dt = sliteral.datatype();
+            let node_dt = checked_literal.datatype();
             if &node_dt == dt {
                 Ok(())
             } else {
@@ -1183,6 +1073,100 @@ fn check_node_length(node: &Node, len: usize) -> CResult<()> {
             expected: len,
             found: node_length,
             node: format!("{node}"),
+        }))
+    }
+}
+
+fn check_node_min_inclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
+    trace!("check_node_min_inclusive: {node:?} min_inclusive: {min}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_inclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_inclusive: as_numeric error"),
+        })
+    })?;
+    if !node_num.less_than(&min) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MinInclusiveError {
+            expected: min.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
+    trace!("check_node_min_exclusive: {node:?} min_exclusive: {min}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_exclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_exclusive: as_numeric error"),
+        })
+    })?;
+    if !node_num.less_than_or_eq(&min) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MinExclusiveError {
+            expected: min.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
+    trace!("check_node_max_exclusive: {node:?} max_exclusive: {max:?}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_max_exclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_exclusive: as_numeric error"),
+        })
+    })?;
+    if node_num.less_than(&max) {
+        trace!("check_node_max_exclusive: OK {node_num:?} < {max:?}");
+        Ok(())
+    } else {
+        trace!("check_node_max_exclusive: Failed {node_num} not less than {max}");
+        Err(Box::new(SchemaIRError::MinExclusiveError {
+            expected: max.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
+    trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_max_inclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_max_inclusive: as_numeric error"),
+        })
+    })?;
+    if node_num.less_than_or_eq(&max) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MaxInclusiveError {
+            expected: max.clone(),
+            found: node_num,
+            node: node.to_string(),
         }))
     }
 }
@@ -1215,35 +1199,11 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
     }
 }
 
-/*
-fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
-    debug!("check_node_min_inclusive: {node:?} min: {min}");
-    if let Some(node_number) = node.numeric_value() {
-        if node_number.less_than(min) {
-            Ok(())
-        } else {
-            Err(SchemaIRError::MinInclusiveError {
-                expected: min.clone(),
-                found: node_number,
-                node: format!("{node}"),
-            })
-        }
-    } else {
-        Err(SchemaIRError::NonNumeric {
-            node: format!("{node}"),
-        })
-    }
-}
-*/
-
-/*fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
-    Ok(()) // todo!()
-}*/
-
 fn todo<A>(str: &str) -> CResult<A> {
-    Err(Box::new(SchemaIRError::Todo {
+    panic!("TODO: {str}");
+    /*Err(Box::new(SchemaIRError::Todo {
         msg: str.to_string(),
-    }))
+    }))*/
 }
 
 fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, Box<SchemaIRError>> {

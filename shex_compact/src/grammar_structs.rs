@@ -112,11 +112,13 @@ impl Default for Cardinality {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) enum NumericLength {
     TotalDigits,
     FractionDigits,
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) enum NumericRange {
     MinInclusive,
     MinExclusive,
@@ -124,6 +126,7 @@ pub(crate) enum NumericRange {
     MaxExclusive,
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) struct SenseFlags {
     pub(crate) inverse: Option<bool>,
     pub(crate) negated: Option<bool>,

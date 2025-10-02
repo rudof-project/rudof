@@ -2,6 +2,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RDFError {
+    #[error("Error obtaining IRI from IriRef: {iri_ref}")]
+    IriRefError { iri_ref: String },
+
     #[error("RDF error parsing iri {iri}: {error}")]
     ParsingIri { iri: String, error: String },
 

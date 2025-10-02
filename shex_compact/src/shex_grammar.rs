@@ -30,6 +30,7 @@ use shex_ast::{
 };
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
+use tracing::{debug, trace};
 
 use lazy_regex::{Lazy, regex};
 use nom_locate::LocatedSpan;
@@ -1416,21 +1417,21 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
     map_error(
         move |i| {
             alt((
+                integer_literal(),
                 map(double, NumericLiteral::decimal_from_f64),
                 decimal,
-                raw_integer_literal(),
             ))(i)
         },
         || ShExParseError::NumericLiteral,
     )
 }
 
-fn raw_integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
+/*fn raw_integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(
         move |i| map(integer(), NumericLiteral::decimal_from_i128)(i),
         || ShExParseError::IntegerLiteral,
     )
-}
+}*/
 
 fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(

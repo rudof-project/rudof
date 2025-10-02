@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use iri_s::{IriS, IriSError};
-use prefixmap::IriRef;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
@@ -11,8 +10,8 @@ pub enum SchemaJsonError {
         node: String, // We need to clone so we use String instead of Object
         error: String,
     },
-    #[error("Error obtaining IriRef from IriS: {}", iri_ref)]
-    IriRefError { iri_ref: IriRef },
+    #[error("Error checking literal: {error}")]
+    LiteralError { error: String },
 
     #[error("Error parsing label as IriRef, label: {label}: {error}")]
     InvalidIriRef {

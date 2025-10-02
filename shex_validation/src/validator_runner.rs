@@ -15,7 +15,6 @@ use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use shex_ast::ir::shape_label::ShapeLabel;
 use srdf::BlankNode;
 use srdf::Iri as _;
 use srdf::{NeighsRDF, Object};
@@ -245,7 +244,6 @@ impl Engine {
         schema: &SchemaIR,
         rdf: &impl NeighsRDF,
     ) -> Result<HashSet<(Node, ShapeLabelIdx)>> {
-        trace!("Computing dependencies of {node}@{idx}");
         if let Some((_label, se)) = schema.find_shape_idx(idx) {
             let mut dep = HashSet::new();
 
@@ -257,7 +255,7 @@ impl Engine {
             // Search all pairs (node1, idx1) in the shape expr referenced by idx such that there is a triple constraint (pred, ref)
             // and the neighbours of node are (pred, node1)
             let references = se.references(schema);
-            trace!("References in shape expr: {:?}", references);
+            // trace!("References in shape expr: {:?}", references);
             let preds = references.keys().cloned().collect::<Vec<_>>();
             let (neighs, _remainder) = self.neighs(node, preds, rdf)?;
             for (pred, neigh_node) in neighs {
@@ -269,7 +267,10 @@ impl Engine {
                     debug!("No references found for predicate {pred}");
                 }
             }
-            trace!("Dependencies of {node}@{idx} are: {:?}", dep);
+            trace!(
+                "Dependencies of {node}@{idx} are: [{}]",
+                dep.iter().map(|(n, i)| format!("{n}@{i}")).join(", ")
+            );
             Ok(dep)
         } else {
             Err(ValidatorError::ShapeExprNotFound { idx: *idx })
@@ -286,7 +287,10 @@ impl Engine {
     ) -> Result<ValidationResult> {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        trace!("Proving {node}@{label} with hyp: {:?}", hyp);
+        debug!(
+            "Proving {node}@{label} with hyp: [{}]",
+            hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+        );
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> = hyp
             .iter()
@@ -308,6 +312,16 @@ impl Engine {
         let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing)?;
         hyp.pop();
+        debug!(
+            "{} {node}@{label} with result: {}, hyp: [{}]",
+            if result.is_right() {
+                "Proved"
+            } else {
+                "Failed to prove"
+            },
+            show_result(&result),
+            hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+        );
         Ok(result)
     }
 
@@ -319,15 +333,13 @@ impl Engine {
         rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        trace!("Checking node {node} with shape idx {idx}");
-        if let Some((maybe_label, se)) = schema.find_shape_idx(idx) {
-            tracing::debug!("Checking {node}@{}", show_label(maybe_label));
+        trace!(
+            "Checking {node}@{idx}, typing: [{}]",
+            typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+        );
+        if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
             let result = self.check_node_shape_expr(node, se, schema, rdf, typing)?;
-            tracing::debug!(
-                "Result of {node}@{} is: {}",
-                show_label(maybe_label),
-                show_result(&result),
-            );
+            tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
             Ok(result)
         } else {
             Err(ValidatorError::ShapeExprNotFound { idx: *idx })
@@ -344,27 +356,28 @@ impl Engine {
     ) -> Result<ValidationResult> {
         match se {
             ShapeExpr::ShapeAnd { exprs, .. } => {
-                tracing::debug!("Checking node {node} with shape expr AND");
+                tracing::debug!(
+                    "Checking node {node} with AND, typing: [{}]",
+                    typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                );
                 let mut reasons_collection = Vec::new();
                 for e in exprs {
-                    if let Some((_, se)) = schema.find_shape_idx(e) {
-                        let result = self.check_node_shape_expr(node, se, schema, rdf, typing)?;
-                        match result {
-                            Either::Left(errors) => {
-                                return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
-                                    shape_expr: *e,
-                                    node: Box::new(node.clone()),
-                                    errors: ValidatorErrors::new(errors),
-                                }]));
-                            }
-                            Either::Right(reasons) => {
-                                reasons_collection.push(reasons);
-                            }
+                    match self.check_node_ref(node, e, typing)? {
+                        Either::Left(errors) => {
+                            trace!(
+                                "AND failed at component {e} for node {node}\nErrors: {}\nTyping: {}",
+                                errors.iter().map(|err| format!("{err}")).join(", "),
+                                typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                            );
+                            return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
+                                shape_expr: *e,
+                                node: Box::new(node.clone()),
+                                errors: ValidatorErrors::new(errors),
+                            }]));
                         }
-                    } else {
-                        tracing::debug!(
-                            "Checking node {node} with shape expr AND component (no label)"
-                        );
+                        Either::Right(reasons) => {
+                            reasons_collection.push(reasons);
+                        }
                     }
                 }
                 Ok(Either::Right(vec![Reason::ShapeAndPassed {
@@ -376,19 +389,21 @@ impl Engine {
             ShapeExpr::ShapeOr { exprs, .. } => {
                 let mut errors_collection = Vec::new();
                 for e in exprs {
-                    if let Some((_, se)) = schema.find_shape_idx(e) {
-                        let result = self.check_node_shape_expr(node, se, schema, rdf, typing)?;
-                        match result {
-                            Either::Left(errors) => {
-                                errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
-                            }
-                            Either::Right(reasons) => {
-                                return Ok(Either::Right(vec![Reason::ShapeOrPassed {
-                                    shape_expr: e.clone(),
-                                    node: node.clone(),
-                                    reasons: Reasons::new(reasons),
-                                }]));
-                            }
+                    match self.check_node_ref(node, e, typing)? {
+                        Either::Left(errors) => {
+                            trace!(
+                                "OR branch {e} failed for node {node}\nErrors: {}\nTyping: {}",
+                                errors.iter().map(|err| format!("{err}")).join(", "),
+                                typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                            );
+                            errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
+                        }
+                        Either::Right(reasons) => {
+                            return Ok(Either::Right(vec![Reason::ShapeOrPassed {
+                                shape_expr: *e,
+                                node: node.clone(),
+                                reasons: Reasons::new(reasons),
+                            }]));
                         }
                     }
                 }
@@ -400,33 +415,20 @@ impl Engine {
                 }]))
             }
             ShapeExpr::ShapeNot { expr, .. } => {
-                if let Some((_label, shape_expr)) = schema.find_shape_idx(expr) {
-                    tracing::debug!(
-                        "Checking node {node} with shape expr NOT {}, typing: {:?}",
-                        show_label(_label),
-                        typing
-                    );
-                    let result =
-                        self.check_node_shape_expr(node, shape_expr, schema, rdf, typing)?;
-                    match result {
-                        Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
-                            node: node.clone(),
-                            shape_expr: se.clone(),
-                            errors_evidences: ValidatorErrors::new(errors),
-                        }])),
-                        Either::Right(reasons) => {
-                            Ok(Either::Left(vec![ValidatorError::ShapeNotError {
-                                node: Box::new(node.clone()),
-                                shape_expr: Box::new(se.clone()),
-                                reasons: Reasons::new(reasons),
-                            }]))
-                        }
+                let result = self.check_node_ref(node, expr, typing)?;
+                match result {
+                    Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
+                        node: node.clone(),
+                        shape_expr: se.clone(),
+                        errors_evidences: ValidatorErrors::new(errors),
+                    }])),
+                    Either::Right(reasons) => {
+                        Ok(Either::Left(vec![ValidatorError::ShapeNotError {
+                            node: Box::new(node.clone()),
+                            shape_expr: Box::new(se.clone()),
+                            reasons: Reasons::new(reasons),
+                        }]))
                     }
-                } else {
-                    tracing::debug!("Checking node {node} with shape expr NOT (no label)");
-                    Ok(Either::Left(vec![ValidatorError::ShapeExprNotFound {
-                        idx: *expr,
-                    }]))
                 }
             }
             ShapeExpr::NodeConstraint(nc) => {
@@ -446,21 +448,31 @@ impl Engine {
                 debug!("External shape expression encountered for node {node} with shape {se}");
                 pass(Reason::ExternalPassed { node: node.clone() })
             }
-            ShapeExpr::Ref { idx } => {
-                if typing.contains(&(node.clone(), *idx)) {
-                    // If the node is already in the typing, we can return true
-                    pass(Reason::ShapeRefPassed {
-                        node: node.clone(),
-                        idx: *idx,
-                    })
-                } else {
-                    fail(ValidatorError::ShapeRefFailed {
-                        node: Box::new(node.clone()),
-                        idx: *idx,
-                    })
-                }
-            }
+            ShapeExpr::Ref { idx } => self.check_node_ref(node, idx, typing),
             ShapeExpr::Empty => pass(Reason::EmptyPassed { node: node.clone() }),
+        }
+    }
+
+    fn check_node_ref(
+        &self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult> {
+        tracing::debug!("Checking node {node} with shape ref {idx}");
+        {
+            // If the node is already in the typing, we can return true
+            if typing.contains(&(node.clone(), *idx)) {
+                pass(Reason::ShapeRefPassed {
+                    node: node.clone(),
+                    idx: *idx,
+                })
+            } else {
+                fail(ValidatorError::ShapeRefFailed {
+                    node: Box::new(node.clone()),
+                    idx: *idx,
+                })
+            }
         }
     }
 
@@ -812,12 +824,5 @@ fn show_result(result: &Either<Vec<ValidatorError>, Vec<Reason>>) -> String {
             "True with reasons: {}",
             reasons.iter().map(|r| r.to_string()).join(", ")
         ),
-    }
-}
-
-fn show_label(maybe_label: &Option<ShapeLabel>) -> String {
-    match maybe_label {
-        Some(label) => format!("{label}"),
-        None => "No label".to_string(),
     }
 }
