@@ -957,7 +957,7 @@ fn cnv_literal_exclusions(
 }
 
 fn cnv_iri_exclusions(
-    exclusions: &Option<Vec<ast::IriExclusion>>,
+    exclusions: &Option<Vec<ast::iri_exclusion::IriExclusion>>,
 ) -> CResult<Option<Vec<ir::exclusion::IriExclusion>>> {
     match exclusions {
         None => Ok(None),
@@ -973,7 +973,7 @@ fn cnv_iri_exclusions(
 }
 
 fn cnv_lang_exclusions(
-    exclusions: &Option<Vec<ast::LanguageExclusion>>,
+    exclusions: &Option<Vec<ast::language_exclusion::LanguageExclusion>>,
 ) -> CResult<Option<Vec<ir::exclusion::LanguageExclusion>>> {
     match exclusions {
         None => Ok(None),
@@ -1016,13 +1016,13 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
 }*/
 
 fn cnv_literal_exclusion(
-    le: &ast::LiteralExclusion,
+    le: &ast::literal_exclusion::LiteralExclusion,
 ) -> CResult<crate::ir::exclusion::LiteralExclusion> {
     match le {
-        ast::LiteralExclusion::Literal(s) => Ok(crate::ir::exclusion::LiteralExclusion::Literal(
-            s.to_string(),
-        )),
-        ast::LiteralExclusion::LiteralStem(s) => Ok(
+        ast::literal_exclusion::LiteralExclusion::Literal(s) => Ok(
+            crate::ir::exclusion::LiteralExclusion::Literal(s.to_string()),
+        ),
+        ast::literal_exclusion::LiteralExclusion::LiteralStem(s) => Ok(
             crate::ir::exclusion::LiteralExclusion::LiteralStem(s.to_string()),
         ),
     }
@@ -1030,11 +1030,11 @@ fn cnv_literal_exclusion(
 
 fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
     match le {
-        ast::IriExclusion::Iri(s) => {
+        ast::iri_exclusion::IriExclusion::Iri(s) => {
             let iri_s = iri_ref2iri_s(s);
             Ok(crate::ir::exclusion::IriExclusion::Iri(iri_s))
         }
-        ast::IriExclusion::IriStem(s) => {
+        ast::iri_exclusion::IriExclusion::IriStem(s) => {
             let iri_s = iri_ref2iri_s(s);
             Ok(crate::ir::exclusion::IriExclusion::IriStem(iri_s))
         }
@@ -1042,13 +1042,13 @@ fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<crate::ir::exclusion::IriExcl
 }
 
 fn cnv_language_exclusion(
-    le: &ast::LanguageExclusion,
+    le: &ast::language_exclusion::LanguageExclusion,
 ) -> CResult<crate::ir::exclusion::LanguageExclusion> {
     match le {
-        ast::LanguageExclusion::Language(s) => {
+        ast::language_exclusion::LanguageExclusion::Language(s) => {
             Ok(crate::ir::exclusion::LanguageExclusion::Language(s.clone()))
         }
-        ast::LanguageExclusion::LanguageStem(s) => Ok(
+        ast::language_exclusion::LanguageExclusion::LanguageStem(s) => Ok(
             crate::ir::exclusion::LanguageExclusion::LanguageStem(s.clone()),
         ),
     }

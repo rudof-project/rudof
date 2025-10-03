@@ -94,7 +94,7 @@ impl ShapeIR {
     pub fn compile<RDF: Rdf>(
         shape: Shape<RDF>,
         schema: &Schema<RDF>,
-    ) -> Result<Self, CompiledShaclError> {
+    ) -> Result<Self, Box<CompiledShaclError>> {
         let shape = match shape {
             Shape::NodeShape(node_shape) => {
                 let node_shape = NodeShapeIR::compile(node_shape, schema)?;

@@ -1,4 +1,5 @@
 use shacl_ir::compiled::schema::SchemaIR;
+use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::rdf_to_shacl::ShaclParser;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
@@ -25,7 +26,9 @@ impl ShaclDataManager {
         let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {
-                let schema_compiled = schema.try_into()?;
+                let schema_compiled = schema
+                    .try_into()
+                    .map_err(|e: Box<CompiledShaclError>| ValidateError::CompiledShacl(*e))?;
                 Ok(schema_compiled)
             }
             Err(error) => Err(ValidateError::ShaclParser(error)),

@@ -56,7 +56,7 @@ impl ComponentIR {
     pub fn compile<S: Rdf>(
         component: Component,
         schema: &Schema<S>,
-    ) -> Result<Option<Self>, CompiledShaclError> {
+    ) -> Result<Option<Self>, Box<CompiledShaclError>> {
         let component = match component {
             Component::Class(object) => {
                 let class_rule = object;

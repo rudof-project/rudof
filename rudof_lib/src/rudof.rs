@@ -161,7 +161,7 @@ impl Rudof {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;
         self.shacl_schema = Some(schema.clone());
         let shacl_ir = ShaclSchemaIR::compile(&schema)
-            .map_err(|e| RudofError::ShaclCompilation { error: Box::new(e) })?;
+            .map_err(|e| RudofError::ShaclCompilation { error: e })?;
         self.shacl_schema_ir = Some(shacl_ir);
         Ok(())
     }

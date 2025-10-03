@@ -26,10 +26,10 @@ use shex_ast::IriOrStr;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
 use shex_ast::{
-    Annotation, BNode, IriExclusion, LangOrWildcard, LanguageExclusion, LiteralExclusion,
-    NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr, ShapeExprLabel,
-    StringFacet, TripleExpr, TripleExprLabel, XsFacet, object_value::ObjectValue,
-    value_set_value::ValueSetValue,
+    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct,
+    Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
+    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion,
+    literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue,
 };
 use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};

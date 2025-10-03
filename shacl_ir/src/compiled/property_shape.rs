@@ -104,7 +104,7 @@ impl PropertyShapeIR {
     pub fn compile<S: Rdf>(
         shape: PropertyShape<S>,
         schema: &Schema<S>,
-    ) -> Result<Self, CompiledShaclError> {
+    ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
         let path = shape.path().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
@@ -130,7 +130,8 @@ impl PropertyShapeIR {
             property_shapes.push(shape);
         }
 
-        let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)?;
+        let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
+            .map_err(|e| Box::new(CompiledShaclError::ShaclError(e)))?;
 
         let compiled_property_shape = PropertyShapeIR::new(
             id,

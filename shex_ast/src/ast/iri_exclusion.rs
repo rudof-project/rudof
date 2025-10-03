@@ -1,4 +1,3 @@
-use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};

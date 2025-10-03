@@ -134,7 +134,7 @@ impl<'de> Deserialize<'de> for Focus {
 }
 */
 impl ManifestSchemas {
-    pub fn run(&self, base: &Path, _debug: u8) -> Result<(), ManifestError> {
+    pub fn run(&self, base: &Path, _debug: u8) -> Result<(), Box<ManifestError>> {
         for entry in self.map.values() {
             entry.run(base)?
         }
@@ -143,24 +143,24 @@ impl ManifestSchemas {
 }
 
 impl SchemasEntry {
-    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+    pub fn run(&self, base: &Path) -> Result<(), Box<ManifestError>> {
         debug!(
             "Running entry: {} with json: {}, shex: {}, base: {:?}",
             self.id, self.json, self.shex, base
         );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
-            ManifestError::SchemaJsonError {
+            Box::new(ManifestError::SchemaJsonError {
                 error: Box::new(e),
                 entry_name: self.name.to_string(),
-            }
+            })
         })?;
         debug!("Passed schema parsing from JSON");
 
         let schema_serialized = serde_json::to_string_pretty(&schema_parsed).map_err(|e| {
-            ManifestError::SchemaSerializationError {
+            Box::new(ManifestError::SchemaSerializationError {
                 schema_parsed: Box::new(schema_parsed.clone()),
                 error: e,
-            }
+            })
         })?;
         debug!("Passed schema serialization to a String");
 
