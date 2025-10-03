@@ -19,10 +19,10 @@ use srdf::Rdf;
 use shacl_ast::Schema;
 use shacl_ast::value::Value;
 
-fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, CompiledShaclError> {
+fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
     let iri = iri_ref
         .get_iri()
-        .map_err(|_| CompiledShaclError::IriRefConversion)?;
+        .map_err(|_| Box::new(CompiledShaclError::IriRefConversion))?;
     Ok(iri)
 }
 
@@ -44,7 +44,7 @@ fn compile_shapes<S: Rdf>(
     Ok(compiled_shapes)
 }
 
-fn convert_value(value: Value) -> Result<RDFNode, CompiledShaclError> {
+fn convert_value(value: Value) -> Result<RDFNode, Box<CompiledShaclError>> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri = convert_iri_ref(iri_ref)?;

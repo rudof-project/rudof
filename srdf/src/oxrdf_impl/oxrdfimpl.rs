@@ -6,6 +6,7 @@ use crate::Subject;
 use crate::Term;
 use crate::TermKind;
 use crate::Triple;
+use crate::lang::Lang;
 use crate::matcher::Matcher;
 use oxrdf::BlankNode as OxBlankNode;
 use oxrdf::Literal as OxLiteral;
@@ -81,8 +82,8 @@ impl Literal for OxLiteral {
         self.value()
     }
 
-    fn lang(&self) -> Option<&str> {
-        self.language()
+    fn lang(&self) -> Option<Lang> {
+        self.language().and_then(|lang| Lang::new(lang).ok())
     }
 
     fn datatype(&self) -> &str {

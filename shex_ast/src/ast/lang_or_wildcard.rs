@@ -9,6 +9,16 @@ pub enum LangOrWildcard {
     Lang(Lang),
     Wildcard,
 }
+
+impl LangOrWildcard {
+    pub fn lang(lang: Lang) -> LangOrWildcard {
+        LangOrWildcard::Lang(lang)
+    }
+
+    pub fn wildcard() -> LangOrWildcard {
+        LangOrWildcard::Wildcard
+    }
+}
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum LangOrWildcardParseError {
     #[error("Invalid language tag")]

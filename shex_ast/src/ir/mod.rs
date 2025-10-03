@@ -1,7 +1,7 @@
 pub mod annotation;
 pub mod ast2ir;
 pub mod dependency_graph;
-pub mod exclusion;
+pub mod iri_exclusion_ir;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod object_value;

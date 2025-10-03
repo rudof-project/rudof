@@ -1,15 +1,4 @@
-use crate::iri_exclusion::IriExclusion;
-use crate::language_exclusion::LanguageExclusion;
-use crate::literal_exclusion::LiteralExclusion;
-use prefixmap::IriRef;
-use serde::de::{MapAccess, Visitor};
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer, de};
-use srdf::lang::Lang;
-use std::str::FromStr;
-use std::{fmt, result};
-
-#[derive(Debug, PartialEq, Clone)]
+/*#[derive(Debug, PartialEq, Clone)]
 pub enum Exclusion {
     LiteralExclusion(LiteralExclusion),
     LanguageExclusion(LanguageExclusion),
@@ -69,13 +58,13 @@ impl Exclusion {
         excs: Vec<Exclusion>,
     ) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
         let mut lang_excs = Vec::new();
-        for e in excs {
-            match e {
+        for exc in excs {
+            let exc_clone = exc.clone();
+            match exc {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    let lang = Lang::new(&s).map_err(|_e| SomeNoIriExclusion {
-                        exc: Exclusion::Untyped(s.clone()),
-                    })?;
+                    let lang = Lang::new(s.as_str())
+                        .map_err(|_e| SomeNoIriExclusion { exc: exc_clone })?;
                     lang_excs.push(LanguageExclusion::Language(lang))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other }),
@@ -111,7 +100,7 @@ impl Serialize for Exclusion {
         }
     }
 }
-
+/*
 impl<'de> Deserialize<'de> for Exclusion {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -214,22 +203,17 @@ impl<'de> Deserialize<'de> for Exclusion {
                         Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
                             LanguageExclusion::LanguageStem(lang),
                         )),
-                        Some(StemValue::Literal(l)) => {
-                            let lang = Lang::new(&l).map_err(|e| {
-                                de::Error::custom(format!("Invalid language tag {l} in stem: {e}"))
-                            })?;
-                            Ok(Exclusion::LanguageExclusion(
-                                LanguageExclusion::LanguageStem(lang),
-                            ))
-                        }
+                        Some(StemValue::Literal(l)) => Ok(Exclusion::LanguageExclusion(
+                            LanguageExclusion::LanguageStem(Lang::new_unchecked(l)),
+                        )),
                         Some(_) => Err(de::Error::custom(format!(
                             "Stem {stem:?} must be a language"
                         ))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::IriStem) => match stem {
-                        Some(StemValue::Iri(iri_ref)) => {
-                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri_ref)))
+                        Some(StemValue::Iri(iri)) => {
+                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri)))
                         }
                         Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be an IRI"))),
                         None => Err(de::Error::missing_field("stem")),
@@ -241,6 +225,17 @@ impl<'de> Deserialize<'de> for Exclusion {
 
         deserializer.deserialize_any(ExclusionVisitor)
     }
+}*/
+
+impl Display for Exclusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Exclusion::LiteralExclusion(le) => write!(f, "{le}"),
+            Exclusion::LanguageExclusion(le) => write!(f, "{le}"),
+            Exclusion::IriExclusion(ie) => write!(f, "{ie}"),
+            Exclusion::Untyped(s) => write!(f, "{s}"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -251,6 +246,7 @@ enum ExclusionType {
     LanguageStem,
 }
 
+/*
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(untagged)]
 enum StemValue {
@@ -263,10 +259,10 @@ enum StemValue {
 #[allow(dead_code)]
 struct ExclusionTypeError {
     value: String,
-}
+}*/
 
 impl ExclusionType {
-    fn parse(s: &str) -> Result<ExclusionType, ExclusionTypeError> {
+    /*fn parse(s: &str) -> Result<ExclusionType, ExclusionTypeError> {
         match s {
             "IriStem" => Ok(ExclusionType::IriStem),
             "LanguageStem" => Ok(ExclusionType::LanguageStem),
@@ -275,5 +271,6 @@ impl ExclusionType {
                 value: s.to_string(),
             }),
         }
-    }
+    }*/
 }
+*/

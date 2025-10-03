@@ -1,16 +1,16 @@
 use crate::{
-    ClassPartition, DCT_TITLE, Dataset, Feature, GraphCollection, GraphDescription,
-    NamedGraphDescription, PropertyPartition, SD_AVAILABLE_GRAPHS, SD_BASIC_FEDERATED_QUERY_STR,
-    SD_DEFAULT_DATASET, SD_DEFAULT_GRAPH, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR,
-    SD_ENDPOINT, SD_FEATURE, SD_GRAPH, SD_NAME, SD_NAMED_GRAPH, SD_REQUIRES_DATASET_STR,
-    SD_RESULT_FORMAT, SD_SERVICE, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR,
-    SD_SPARQL11_UPDATE_STR, SD_SUPPORTED_LANGUAGE, SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription,
-    ServiceDescriptionError, SparqlResultFormat, SupportedLanguage, VOID_CLASS,
-    VOID_CLASS_PARTITION, VOID_CLASSES, VOID_PROPERTY, VOID_PROPERTY_PARTITION, VOID_TRIPLES,
+    ClassPartition, Dataset, Feature, GraphCollection, GraphDescription, NamedGraphDescription,
+    PropertyPartition, SD_BASIC_FEDERATED_QUERY_STR, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR,
+    SD_REQUIRES_DATASET_STR, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR,
+    SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
+    SupportedLanguage, dct_title, sd_available_graphs, sd_default_dataset, sd_default_graph,
+    sd_endpoint, sd_feature, sd_graph, sd_name, sd_named_graph, sd_result_format, sd_service,
+    sd_supported_language, void_class, void_class_partition, void_classes, void_property,
+    void_property_partition, void_triples,
 };
 use iri_s::IriS;
 use srdf::{
-    FocusRDF, IriOrBlankNode, PResult, RDFNodeParse, RDFParser, get_focus_iri_or_bnode,
+    FocusRDF, IriOrBlankNode, PResult, RDFNodeParse, RDFParser, Rdf, get_focus_iri_or_bnode,
     numeric_literal::NumericLiteral, ok, optional, parse_property_values, property_iri,
     property_iri_or_bnode, property_number, property_string, property_values_iri,
     set_focus_iri_or_bnode,
@@ -38,7 +38,8 @@ where
     }
 
     pub fn parse(&mut self) -> Result<ServiceDescription> {
-        let service_node = self.rdf_parser.instance_of(&Self::sd_service())?;
+        let sd_service: RDF::Term = <RDF as Rdf>::Term::from(sd_service().clone());
+        let service_node = self.rdf_parser.instance_of(&sd_service)?;
         let term = service_node.into();
         self.rdf_parser.rdf.set_focus(&term);
         let service = Self::service_description().parse_impl(&mut self.rdf_parser.rdf)?;
@@ -111,31 +112,27 @@ where
             })
         })
     }
-
-    fn sd_service() -> RDF::Term {
-        SD_SERVICE.clone().into()
-    }
 }
 
 pub fn title<RDF>(focus: &IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Option<String>>
 where
     RDF: FocusRDF + 'static,
 {
-    set_focus_iri_or_bnode(focus).with(optional(property_string(&DCT_TITLE)))
+    set_focus_iri_or_bnode(focus).with(optional(property_string(&dct_title())))
 }
 
 pub fn endpoint<RDF>() -> impl RDFNodeParse<RDF, Output = Option<IriS>>
 where
     RDF: FocusRDF + 'static,
 {
-    optional(property_iri(&SD_ENDPOINT))
+    optional(property_iri(&sd_endpoint()))
 }
 
 pub fn feature<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Feature>>
 where
     RDF: FocusRDF,
 {
-    property_values_iri(&SD_FEATURE).flat_map(|ref iris| {
+    property_values_iri(&sd_feature()).flat_map(|ref iris| {
         let features = get_features(iris)?;
         Ok(features)
     })
@@ -145,7 +142,7 @@ pub fn result_format<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<SparqlRes
 where
     RDF: FocusRDF,
 {
-    property_values_iri(&SD_RESULT_FORMAT).flat_map(|ref iris| {
+    property_values_iri(&sd_result_format()).flat_map(|ref iris| {
         let result_format = get_result_formats(iris)?;
         Ok(result_format)
     })
@@ -155,7 +152,7 @@ pub fn supported_language<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Supp
 where
     RDF: FocusRDF,
 {
-    property_values_iri(&SD_SUPPORTED_LANGUAGE).flat_map(|ref iris| {
+    property_values_iri(&sd_supported_language()).flat_map(|ref iris| {
         let langs = get_supported_languages(iris)?;
         Ok(langs)
     })
@@ -232,7 +229,7 @@ where
     RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node).with(parse_property_values(
-        &SD_AVAILABLE_GRAPHS,
+        &sd_available_graphs(),
         available_graph(),
     ))
 }
@@ -242,7 +239,7 @@ where
     RDF: FocusRDF + 'static,
 {
     get_focus_iri_or_bnode().then(|focus| {
-        parse_property_values(&SD_NAMED_GRAPH, named_graph()).map(move |named_graphs| {
+        parse_property_values(&sd_named_graph(), named_graph()).map(move |named_graphs| {
             GraphCollection::new(&focus.clone()).with_collection(named_graphs.into_iter())
         })
     })
@@ -253,7 +250,7 @@ where
     RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node)
-        .with(property_iri_or_bnode(&SD_DEFAULT_DATASET).then(|node_ds| dataset(node_ds)))
+        .with(property_iri_or_bnode(&sd_default_dataset()).then(|node_ds| dataset(node_ds)))
 }
 
 pub fn dataset<RDF>(node_ds: IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Dataset>
@@ -280,7 +277,7 @@ where
 {
     trace!("parsing default_graph with focus={focus}");
     set_focus_iri_or_bnode(focus)
-        .with(property_iri_or_bnode(&SD_DEFAULT_GRAPH).then(|node| graph_description(&node)))
+        .with(property_iri_or_bnode(&sd_default_graph()).then(|node| graph_description(&node)))
 }
 
 pub fn graph_description<RDF>(
@@ -292,10 +289,10 @@ where
     trace!("parsing graph_description: focus={node}");
     set_focus_iri_or_bnode(node).with(
         get_focus_iri_or_bnode()
-            .and(void_triples(node))
-            .and(void_classes(node))
-            .and(void_class_partition(node))
-            .and(void_property_partition(node))
+            .and(parse_void_triples(node))
+            .and(parse_void_classes(node))
+            .and(parse_void_class_partition(node))
+            .and(parse_void_property_partition(node))
             .map(
                 |((((focus, triples), classes), class_partition), property_partition)| {
                     let d = GraphDescription::new(&focus)
@@ -317,7 +314,7 @@ where
     RDF: FocusRDF + 'static,
 {
     trace!("parsing named_graphs with focus={focus}");
-    set_focus_iri_or_bnode(focus).with(parse_property_values(&SD_NAMED_GRAPH, named_graph()))
+    set_focus_iri_or_bnode(focus).with(parse_property_values(&sd_named_graph(), named_graph()))
 }
 
 pub fn named_graph<RDF>() -> impl RDFNodeParse<RDF, Output = NamedGraphDescription>
@@ -337,7 +334,7 @@ where
     set_focus_iri_or_bnode(focus).with(
         get_focus_iri_or_bnode()
             .and(name())
-            .and(parse_property_values(&SD_GRAPH, graph()))
+            .and(parse_property_values(&sd_graph(), graph()))
             .map(|((focus, name), graphs)| {
                 trace!(
                     "named_graph_description: focus={focus}, name={name}, graphs={}",
@@ -352,7 +349,7 @@ fn name<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where
     RDF: FocusRDF + 'static,
 {
-    property_iri(&SD_NAME)
+    property_iri(&sd_name())
 }
 
 fn graph<RDF>() -> impl RDFNodeParse<RDF, Output = GraphDescription>
@@ -365,44 +362,44 @@ where
     })
 }
 
-pub fn void_triples<RDF>(
+pub fn parse_void_triples<RDF>(
     node: &IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF,
 {
-    set_focus_iri_or_bnode(node).with(optional(property_number(&VOID_TRIPLES)))
+    set_focus_iri_or_bnode(node).with(optional(property_number(&void_triples())))
 }
 
-pub fn void_classes<RDF>(
+pub fn parse_void_classes<RDF>(
     node: &IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF,
 {
-    set_focus_iri_or_bnode(node).with(optional(property_number(&VOID_CLASSES)))
+    set_focus_iri_or_bnode(node).with(optional(property_number(&void_classes())))
 }
 
-pub fn void_class_partition<RDF>(
+pub fn parse_void_class_partition<RDF>(
     node: &IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<ClassPartition>>
 where
     RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node).with(parse_property_values(
-        &VOID_CLASS_PARTITION,
+        &void_class_partition(),
         class_partition(),
     ))
 }
 
-pub fn void_property_partition<RDF>(
+pub fn parse_void_property_partition<RDF>(
     node: &IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<PropertyPartition>>
 where
     RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node).with(parse_property_values(
-        &VOID_PROPERTY_PARTITION,
+        &void_property_partition(),
         property_partition(),
     ))
 }
@@ -415,8 +412,11 @@ where
     get_focus_iri_or_bnode().then(move |focus| {
         trace!("parsing class_partition with focus={focus}");
         ok(&focus)
-            .and(property_iri(&VOID_CLASS))
-            .and(parse_property_values(&VOID_PROPERTY, property_partition()))
+            .and(property_iri(&void_class()))
+            .and(parse_property_values(
+                &void_property(),
+                property_partition(),
+            ))
             .map(|((focus, class), property_partition)| {
                 ClassPartition::new(&class)
                     .with_id(&focus)
@@ -430,8 +430,8 @@ where
     RDF: FocusRDF + 'static,
 {
     get_focus_iri_or_bnode()
-        .and(property_iri(&VOID_PROPERTY).map(|p| p.clone()))
-        .and(optional(property_number(&VOID_TRIPLES)))
+        .and(property_iri(&void_property()).map(|p| p.clone()))
+        .and(optional(property_number(&void_triples())))
         .map(|((focus, property), triples)| {
             PropertyPartition::new(&property)
                 .with_id(&focus)

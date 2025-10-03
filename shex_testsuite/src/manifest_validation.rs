@@ -242,6 +242,7 @@ impl ValidationEntry {
             }
         }
         if let Some(focus) = &self.action.focus {
+            trace!("Focus: {}", focus);
             let node = parse_focus(focus, base)?;
             let shape = parse_maybe_shape(&self.action.shape)?;
             trace!("Focus node: {}, shape: {}", node, shape);
@@ -278,7 +279,7 @@ impl ValidationEntry {
     }
 }
 
-fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, ManifestError> {
+fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, Box<ManifestError>> {
     match &shape {
         None => Ok(ShapeLabel::Start),
         Some(str) => {
@@ -311,6 +312,7 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, ManifestError>
         Focus::Single(str) => {
             trace!("Parsing focus node: {str}");
             let node = parse_node(str, base)?;
+            trace!("Parsed focus node: {node}");
             Ok(node)
         }
         Focus::Typed(str, str_type) => {
@@ -327,8 +329,19 @@ fn parse_node(str: &str, base: Option<&str>) -> Result<Node, ManifestError> {
     })
 }
 
-fn parse_shape(str: &str) -> Result<ShapeLabel, ManifestError> {
-    let shape_label = ShapeLabel::from_iri_str(str)?;
+fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
+    let node = Node::parse(str, None).map_err(|e| {
+        Box::new(ManifestError::ParsingShapeLabel {
+            value: str.to_string(),
+            error: e.to_string(),
+        })
+    })?;
+    let shape_label = ShapeLabel::from_object(node.as_object()).map_err(|e| {
+        ManifestError::ParsingShapeLabel {
+            value: str.to_string(),
+            error: e.to_string(),
+        }
+    })?;
     Ok(shape_label)
 }
 

@@ -16,6 +16,9 @@ pub enum ManifestError {
         error: String,
     },
 
+    #[error("Parsing ShapeLabel: {value}. Error: {error:?}")]
+    ParsingShapeLabel { value: String, error: String },
+
     #[error("Reading manifest map for entry {entry:?}. Error: {error}")]
     ParsingManifestMap { entry: String, error: String },
 

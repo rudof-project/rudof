@@ -1,9 +1,12 @@
 pub mod annotation;
 pub mod bnode;
 pub mod exclusion;
+pub mod iri_exclusion;
 pub mod iri_or_str;
 pub mod iri_ref_or_wildcard;
 pub mod lang_or_wildcard;
+pub mod language_exclusion;
+pub mod literal_exclusion;
 pub mod node_constraint;
 pub mod node_kind;
 pub mod object_value;
@@ -25,8 +28,11 @@ pub mod triple_expr_label;
 pub mod value_set_value;
 pub mod xs_facet;
 
+use crate::ast::iri_exclusion::*;
+use crate::ast::language_exclusion::*;
+use crate::ast::literal_exclusion::*;
 use crate::ast::serde_string_or_struct::*;
-pub use crate::exclusion::*;
+use crate::exclusion::*;
 pub use annotation::*;
 pub use bnode::*;
 pub use iri_or_str::*;

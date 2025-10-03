@@ -1,5 +1,4 @@
 use super::node_constraint::NodeConstraint;
-use crate::ShapeExprLabel;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
@@ -11,6 +10,7 @@ use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::{CResult, Cond, Node, Pred, ir};
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaJson};
+use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use iri_s::IriS;
 use prefixmap::IriRef;
@@ -869,7 +869,8 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             Ok(ValueSetValue::IriStemRange { stem, exclusions })
         }
         ast::ValueSetValue::LanguageStem { stem } => {
-            Ok(ValueSetValue::LanguageStem { stem: stem.clone() })
+            let stem = cnv_lang_or_wildcard(stem)?;
+            Ok(ValueSetValue::LanguageStem { stem })
         }
         ast::ValueSetValue::LanguageStemRange { stem, exclusions } => {
             let stem = cnv_lang_or_wildcard(stem)?;
@@ -887,7 +888,7 @@ fn cnv_lang_or_wildcard(
             Ok(crate::ir::value_set_value::LangOrWildcard::Lang(s.clone()))
         }
         ast::LangOrWildcard::Wildcard => Ok(crate::ir::value_set_value::LangOrWildcard::Wildcard {
-            type_: "".to_string(),
+            type_: "Lang wildcard".to_string(),
         }),
     }
 }
@@ -940,7 +941,7 @@ fn cnv_iriref_or_wildcard(
 }*/
 
 fn cnv_literal_exclusions(
-    exclusions: &Option<Vec<ast::LiteralExclusion>>,
+    exclusions: &Option<Vec<ast::literal_exclusion::LiteralExclusion>>,
 ) -> CResult<Option<Vec<ir::exclusion::LiteralExclusion>>> {
     match exclusions {
         None => Ok(None),
@@ -1027,7 +1028,7 @@ fn cnv_literal_exclusion(
     }
 }
 
-fn cnv_iri_exclusion(le: &ast::IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
+fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
     match le {
         ast::IriExclusion::Iri(s) => {
             let iri_s = iri_ref2iri_s(s);

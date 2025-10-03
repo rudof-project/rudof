@@ -1,5 +1,6 @@
 use crate::SLiteral;
 use crate::XsdDateTime;
+use crate::lang::Lang;
 use rust_decimal::Decimal;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -9,7 +10,7 @@ use std::hash::Hash;
 pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lexical_form(&self) -> &str;
 
-    fn lang(&self) -> Option<&str>;
+    fn lang(&self) -> Option<Lang>;
 
     fn datatype(&self) -> &str;
 

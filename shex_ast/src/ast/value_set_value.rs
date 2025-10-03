@@ -2,7 +2,10 @@ use super::{
     ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
 };
 use crate::LangOrWildcard;
-use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion};
+use crate::exclusion::Exclusion;
+use crate::iri_exclusion::IriExclusion;
+use crate::language_exclusion::LanguageExclusion;
+use crate::literal_exclusion::LiteralExclusion;
 use iri_s::IriSError;
 use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
@@ -11,8 +14,8 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
 };
+use srdf::SLiteral;
 use srdf::lang::Lang;
-use srdf::{SLiteral, lang};
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 
@@ -36,7 +39,7 @@ pub enum ValueSetValue {
         language_tag: Lang,
     },
     LanguageStem {
-        stem: Lang,
+        stem: LangOrWildcard,
     },
     LanguageStemRange {
         stem: LangOrWildcard,
@@ -73,7 +76,9 @@ impl ValueSetValue {
     }
 
     pub fn language_stem(lang: Lang) -> ValueSetValue {
-        ValueSetValue::LanguageStem { stem: lang }
+        ValueSetValue::LanguageStem {
+            stem: LangOrWildcard::lang(lang),
+        }
     }
 
     pub fn literal_stem(stem: String) -> ValueSetValue {
@@ -343,6 +348,9 @@ impl Stem {
     fn as_lang_or_wildcard(&self) -> Result<LangOrWildcard, StemError> {
         match self {
             Stem::Str(s) => {
+                if s.is_empty() {
+                    return Ok(LangOrWildcard::Wildcard);
+                }
                 let lang =
                     Lang::new(s.as_str()).map_err(|_e| StemError::NoLang { str: s.clone() })?;
                 Ok(LangOrWildcard::Lang(lang))
@@ -555,7 +563,6 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                 return Err(de::Error::duplicate_field("type"));
                             }
                             let value: String = map.next_value()?;
-
                             let parsed_type_ =
                                 ValueSetValueType::parse(value.as_str()).map_err(|e| {
                                     de::Error::custom(format!(
@@ -671,12 +678,19 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     "LanguageStem: stem is not a language: {e:?}"
                                 ))
                             })?;
+                            if stem.is_empty() {
+                                return Ok(ValueSetValue::LanguageStem {
+                                    stem: LangOrWildcard::wildcard(),
+                                });
+                            }
                             let lang = Lang::new(&stem).map_err(|e| {
                                 de::Error::custom(format!(
                                     "LanguageStem: stem is not a valid language tag: {e:?}"
                                 ))
                             })?;
-                            Ok(ValueSetValue::LanguageStem { stem: lang })
+                            Ok(ValueSetValue::LanguageStem {
+                                stem: LangOrWildcard::Lang(lang),
+                            })
                         }
                         None => Err(de::Error::missing_field("stem")),
                     },

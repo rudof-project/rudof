@@ -1338,8 +1338,8 @@ mod tests {
         match shape.components().first().unwrap() {
             crate::rdf_to_shacl::shacl_parser::Component::LanguageIn { langs } => {
                 assert_eq!(langs.len(), 2);
-                assert_eq!(langs[0], Lang::new_unchecked("en"));
-                assert_eq!(langs[1], Lang::new_unchecked("fr"));
+                assert_eq!(langs[0], Lang::new("en").unwrap());
+                assert_eq!(langs[1], Lang::new("fr").unwrap());
             }
             _ => panic!("Shape has not a LanguageIn component"),
         }

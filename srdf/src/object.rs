@@ -82,6 +82,7 @@ impl Object {
             trace!("Parsing blank node id: {bnode_id} from str: {str}");
             Ok(Object::bnode(bnode_id.to_string()))
         } else if str.starts_with('"') {
+            trace!("Pending parsing literal from str: {str}");
             todo!()
         } else {
             let iri = IriS::from_str_base(str, base).map_err(|e| RDFError::ParsingIri {

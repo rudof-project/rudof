@@ -5,6 +5,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaJsonError {
+    #[error("ShapeLabel {value} is not valid: {error}")]
+    InvalidShapeLabel {
+        value: String,
+        error: String, // We need to clone errors so we use String instead of IriSError
+    },
     #[error("Node {node} is not a valid RDF Node in an ObjectValue: {error}")]
     InvalidNodeInObjectValue {
         node: String, // We need to clone so we use String instead of Object

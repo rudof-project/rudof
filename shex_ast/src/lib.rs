@@ -13,7 +13,6 @@ pub mod shexr;
 pub use ast::*;
 pub use ir::schema_ir_error::*;
 pub use ir::shape_label_idx::*;
-
 pub use node::*;
 pub use pred::*;
 use rbe::MatchCond;

@@ -1266,22 +1266,20 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
         "language_range2",
         map_error(
             move |i| {
-                let (_i, (_, _, exclusions)) =
+                let (i, (_, _, exclusions)) =
                     tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
-                let _v = if exclusions.is_empty() {
-                    /*ValueSetValue::LanguageStem {
-                        // TODO: why is this empty?
-                        stem: Lang::new_unchecked(""),
-                    }*/
-                    panic!("Empty exclusions in language range")
+                let v = if exclusions.is_empty() {
+                    ValueSetValue::LanguageStemRange {
+                        stem: LangOrWildcard::wildcard(),
+                        exclusions: None,
+                    }
                 } else {
-                    /*ValueSetValue::LanguageStemRange {
-                        stem: LangOrWildcard::Lang(Lang::new_unchecked("")),
+                    ValueSetValue::LanguageStemRange {
+                        stem: LangOrWildcard::wildcard(),
                         exclusions: Some(exclusions),
-                    }*/
-                    panic!("Internal error: Exclusions is not empty...but language tag is empty?")
+                    }
                 };
-                // Ok((i, v))
+                Ok((i, v))
             },
             || ShExParseError::LanguageRange,
         ),

@@ -24,7 +24,7 @@ pub enum ValueSetValue {
         language_tag: Lang,
     },
     LanguageStem {
-        stem: Lang,
+        stem: LangOrWildcard,
     },
     LanguageStemRange {
         stem: LangOrWildcard,
@@ -59,6 +59,15 @@ pub enum LangOrWildcard {
 
     // TODO: Document the need for the type_ field
     Wildcard { type_: String },
+}
+
+impl Display for LangOrWildcard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LangOrWildcard::Lang(lang) => write!(f, "{lang}"),
+            LangOrWildcard::Wildcard { .. } => write!(f, ""),
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -169,7 +178,12 @@ impl ValueSetValue {
             ValueSetValue::LanguageStem { stem } => match object {
                 Object::Literal(sliteral) => match sliteral {
                     srdf::SLiteral::StringLiteral { lang, .. } => match lang {
-                        Some(lang) => lang.as_str().starts_with(stem.as_str()),
+                        Some(lang) => match stem {
+                            LangOrWildcard::Lang(stem_lang) => {
+                                lang.as_str().starts_with(stem_lang.as_str())
+                            }
+                            LangOrWildcard::Wildcard { .. } => true,
+                        },
                         None => false,
                     },
                     _ => false,
