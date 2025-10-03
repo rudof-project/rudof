@@ -120,7 +120,7 @@ impl NodeShapeIR {
         }
 
         let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, schema)
-            .map_err(|e| Box::new(CompiledShaclError::ShaclError(e)))?;
+            .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
         let compiled_node_shape = NodeShapeIR::new(
             id,

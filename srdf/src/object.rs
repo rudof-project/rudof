@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use crate::IriOrBlankNode;
 use crate::RDFError;
 use crate::SLiteral;
+use crate::lang::Lang;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
 use iri_s::IriS;
@@ -77,8 +78,7 @@ impl Object {
     }
 
     pub fn parse(str: &str, base: Option<&str>) -> Result<Object, RDFError> {
-        if str.starts_with("_:") {
-            let bnode_id = &str[2..];
+        if let Some(bnode_id) = str.strip_prefix("_:") {
             trace!("Parsing blank node id: {bnode_id} from str: {str}");
             Ok(Object::bnode(bnode_id.to_string()))
         } else if str.starts_with('"') {
@@ -90,6 +90,15 @@ impl Object {
                 error: e.to_string(),
             })?;
             Ok(Object::iri(iri))
+        }
+    }
+
+    pub fn lang(&self) -> Option<&Lang> {
+        match self {
+            Object::Literal(SLiteral::StringLiteral {
+                lang: Some(lang), ..
+            }) => Some(lang),
+            _ => None,
         }
     }
 }

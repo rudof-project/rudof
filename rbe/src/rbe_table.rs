@@ -122,12 +122,12 @@ where
             );
             if self.rbe.nullable() {
                 trace!("Rbe is nullable and no candidates...should be sucessful");
-                let result = Ok(MatchTableIter::Empty(EmptyIter::new(
+                
+                Ok(MatchTableIter::Empty(EmptyIter::new(
                     &self.rbe,
                     self,
                     &Values::from(&values),
-                )));
-                result
+                )))
             } else {
                 let result = Ok(MatchTableIter::Empty(EmptyIter::new(
                     &self.rbe,

@@ -20,9 +20,12 @@ use shacl_ast::Schema;
 use shacl_ast::value::Value;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
-    let iri = iri_ref
-        .get_iri()
-        .map_err(|_| Box::new(CompiledShaclError::IriRefConversion))?;
+    let iri = iri_ref.get_iri().map_err(|err| {
+        Box::new(CompiledShaclError::IriRefConversion {
+            iri_ref: iri_ref.to_string(),
+            err: err.to_string(),
+        })
+    })?;
     Ok(iri)
 }
 

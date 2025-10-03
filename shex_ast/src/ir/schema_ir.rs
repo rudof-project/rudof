@@ -155,7 +155,7 @@ impl SchemaIR {
                     visited.insert(*idx);
                     self.references_visited(idx, visited)
                 }
-                _ => shape_expr.references(&self),
+                _ => shape_expr.references(self),
             }
         } else {
             HashMap::new()

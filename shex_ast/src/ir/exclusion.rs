@@ -1,14 +1,10 @@
-use std::fmt::Display;
-use std::str::FromStr;
-use std::{fmt, result};
-
 use iri_s::IriS;
-// use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer, de};
+use serde::{Deserialize, Serialize, Serializer};
 use srdf::lang::Lang;
-
-use prefixmap::IriRef;
+use std::fmt::Display;
+use std::result;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum LiteralExclusion {
@@ -345,7 +341,7 @@ impl Display for Exclusion {
         }
     }
 }
-
+/*
 #[derive(Debug, PartialEq)]
 #[allow(clippy::enum_variant_names)]
 enum ExclusionType {
@@ -360,7 +356,7 @@ enum StemValue {
     Iri(IriRef),
     Literal(String),
     Language(Lang),
-}
+} */
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -368,8 +364,8 @@ struct ExclusionTypeError {
     value: String,
 }
 
-impl ExclusionType {
-    fn parse(s: &str) -> Result<ExclusionType, ExclusionTypeError> {
+/*impl ExclusionType {
+     fn parse(s: &str) -> Result<ExclusionType, ExclusionTypeError> {
         match s {
             "IriStem" => Ok(ExclusionType::IriStem),
             "LanguageStem" => Ok(ExclusionType::LanguageStem),
@@ -379,4 +375,4 @@ impl ExclusionType {
             }),
         }
     }
-}
+}*/

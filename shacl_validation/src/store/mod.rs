@@ -26,9 +26,11 @@ impl ShaclDataManager {
         let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {
-                let schema_compiled = schema
-                    .try_into()
-                    .map_err(|e: Box<CompiledShaclError>| ValidateError::CompiledShacl(*e))?;
+                let schema_compiled = schema.try_into().map_err(|e: Box<CompiledShaclError>| {
+                    ValidateError::CompiledShacl {
+                        error: Box::new(*e),
+                    }
+                })?;
                 Ok(schema_compiled)
             }
             Err(error) => Err(ValidateError::ShaclParser(error)),

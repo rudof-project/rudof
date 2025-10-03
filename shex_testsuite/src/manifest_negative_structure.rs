@@ -70,8 +70,11 @@ struct NegativeStructureEntry {
 }
 
 impl NegativeStructureEntry {
-    pub fn run(&self, _base: &Path) -> Result<(), ManifestError> {
-        debug!("Running entry: {}...not implemented", self.id);
+    pub fn run(&self, _base: &Path) -> Result<(), Box<ManifestError>> {
+        debug!(
+            "Running negative structure entry: {}...not implemented",
+            self.id
+        );
         Ok(())
     }
 }
@@ -89,11 +92,11 @@ impl Manifest for ManifestNegativeStructure {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(ManifestError::NotFoundEntry {
+            None => Err(Box::new(ManifestError::NotFoundEntry {
                 name: name.to_string(),
-            }),
+            })),
             Some(entry) => entry.run(base),
         }
     }

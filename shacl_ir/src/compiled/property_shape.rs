@@ -131,7 +131,7 @@ impl PropertyShapeIR {
         }
 
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
-            .map_err(|e| Box::new(CompiledShaclError::ShaclError(e)))?;
+            .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
         let compiled_property_shape = PropertyShapeIR::new(
             id,

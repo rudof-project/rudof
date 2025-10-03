@@ -79,10 +79,10 @@ impl ShapeExpr {
     }
 
     /// Adds PosNeg edges to the dependency graph.
-    pub(crate) fn add_edges<'a, 'b>(
+    pub(crate) fn add_edges<'a>(
         &'a self,
         source: ShapeLabelIdx,
-        graph: &'b mut DependencyGraph,
+        graph: &mut DependencyGraph,
         pos_neg: PosNeg,
         schema: &'a SchemaIR,
         visited: &mut Vec<&'a ShapeExpr>,
@@ -115,7 +115,6 @@ impl ShapeExpr {
             ShapeExpr::ShapeNot { expr, .. } => {
                 if let Some((_, expr)) = schema.find_shape_idx(expr) {
                     if visited.contains(&expr) {
-                        return;
                     } else {
                         visited.push(expr);
                         expr.add_edges(source, graph, pos_neg.change(), schema, visited);

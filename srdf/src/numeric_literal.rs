@@ -411,11 +411,11 @@ impl TryFrom<&str> for NumericLiteral {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if let Some(i) = value.parse::<isize>().ok() {
+        if let Ok(i) = value.parse::<isize>() {
             return Ok(NumericLiteral::Integer(i));
-        } else if let Some(f) = value.parse::<f64>().ok() {
+        } else if let Ok(f) = value.parse::<f64>() {
             return Ok(NumericLiteral::Double(f));
-        } else if let Some(d) = Decimal::from_str_exact(value).ok() {
+        } else if let Ok(d) = Decimal::from_str_exact(value) {
             return Ok(NumericLiteral::Decimal(d));
         }
         Err(format!("Cannot parse '{}' as NumericLiteral", value))

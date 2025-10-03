@@ -69,7 +69,7 @@ impl AST2IR {
             let start_label = ShapeLabel::Start;
             let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty);
             let start_compiled =
-                self.compile_shape_expr(&shape_expr_start, &idx, compiled_schema)?;
+                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema)?;
             compiled_schema.replace_shape(&idx, start_compiled);
             self.shape_decls_counter += 1;
         }
@@ -155,7 +155,7 @@ impl AST2IR {
                     cnv.push(internal_idx);
                 }
                 let result = ShapeExpr::ShapeOr { exprs: cnv };
-                compiled_schema.replace_shape(&idx, result.clone());
+                compiled_schema.replace_shape(idx, result.clone());
                 tracing::debug!("ShapeOr result: {result:?}");
                 Ok(result)
             }
@@ -169,7 +169,7 @@ impl AST2IR {
                     cnv.push(internal_idx);
                 }
                 let result = ShapeExpr::ShapeAnd { exprs: cnv };
-                compiled_schema.replace_shape(&idx, result.clone());
+                compiled_schema.replace_shape(idx, result.clone());
                 tracing::debug!("ShapeAnd result: {result:?}");
                 Ok(result)
             }
@@ -179,7 +179,7 @@ impl AST2IR {
                 let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
                 compiled_schema.replace_shape(&internal_idx, se.clone());
                 let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
-                compiled_schema.replace_shape(&idx, not_se.clone());
+                compiled_schema.replace_shape(idx, not_se.clone());
                 Ok(not_se)
             }
             ast::ShapeExpr::Shape(shape) => {
@@ -589,8 +589,8 @@ fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
         ast::NumericFacet::MinExclusive(min) => mk_cond_min_exclusive(min.clone()),
         ast::NumericFacet::MaxInclusive(max) => mk_cond_max_inclusive(max.clone()),
         ast::NumericFacet::MaxExclusive(max) => mk_cond_max_exclusive(max.clone()),
-        ast::NumericFacet::TotalDigits(td) => mk_cond_total_digits(td.clone()),
-        ast::NumericFacet::FractionDigits(fd) => mk_cond_fraction_digits(fd.clone()),
+        ast::NumericFacet::TotalDigits(td) => mk_cond_total_digits(*td),
+        ast::NumericFacet::FractionDigits(fd) => mk_cond_fraction_digits(*fd),
     }
 }
 
@@ -1186,7 +1186,7 @@ fn check_node_min_inclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_min_inclusive: as_numeric error"),
+            msg: "check_node_min_inclusive: as_numeric error".to_string(),
         })
     })?;
     if !node_num.less_than(&min) {
@@ -1209,7 +1209,7 @@ fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_min_exclusive: as_numeric error"),
+            msg: "check_node_min_exclusive: as_numeric error".to_string(),
         })
     })?;
     if !node_num.less_than_or_eq(&min) {
@@ -1232,7 +1232,7 @@ fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_total_digits: as_numeric error"),
+            msg: "check_node_total_digits: as_numeric error".to_string(),
         })
     })?;
     if let Some(num_digits) = node_num.total_digits() {
@@ -1243,7 +1243,7 @@ fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
         } else {
             trace!("check_node_total_digits: Failed {num_digits} > {total} node [{node_num}]");
             Err(Box::new(SchemaIRError::TotalDigitsError {
-                expected: total.clone(),
+                expected: total,
                 found: node_num,
                 node: node.to_string(),
             }))
@@ -1251,7 +1251,7 @@ fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
     } else {
         trace!("check_node_total_digits: node has no total digits");
         Err(Box::new(SchemaIRError::TotalDigitsError {
-            expected: total.clone(),
+            expected: total,
             found: node_num,
             node: node.to_string(),
         }))
@@ -1267,7 +1267,7 @@ fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_fraction_digits: as_numeric error"),
+            msg: "check_node_fraction_digits: as_numeric error".to_string(),
         })
     })?;
     if let Some(num_fd) = node_num.fraction_digits() {
@@ -1282,7 +1282,7 @@ fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
                 "check_node_fraction_digits: Failed {fd} <= fraction digits of {node_num} {num_fd}",
             );
             Err(Box::new(SchemaIRError::FractionDigitsError {
-                expected: fd.clone(),
+                expected: fd,
                 found: node_num,
                 node: node.to_string(),
             }))
@@ -1290,7 +1290,7 @@ fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
     } else {
         trace!("check_node_fraction_digits: node has no fraction digits");
         Err(Box::new(SchemaIRError::FractionDigitsError {
-            expected: fd.clone(),
+            expected: fd,
             found: node_num,
             node: node.to_string(),
         }))
@@ -1306,7 +1306,7 @@ fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_min_exclusive: as_numeric error"),
+            msg: "check_node_min_exclusive: as_numeric error".to_string(),
         })
     })?;
     if node_num.less_than(&max) {
@@ -1331,7 +1331,7 @@ fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_max_inclusive: as_numeric error"),
+            msg: "check_node_max_inclusive: as_numeric error".to_string(),
         })
     })?;
     if node_num.less_than_or_eq(&max) {

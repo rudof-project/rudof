@@ -1,6 +1,7 @@
 use super::object_value::ObjectValue;
 use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriS;
+use srdf::SLiteral;
 use srdf::{Object, lang::Lang};
 use std::fmt::Display;
 
@@ -97,22 +98,20 @@ impl ValueSetValue {
                 if let Some(exclusions) = exclusions {
                     for ex in exclusions {
                         match ex {
-                            IriExclusion::Iri(iri) => match object {
-                                Object::Iri(iri_s) => {
+                            IriExclusion::Iri(iri) => {
+                                if let Object::Iri(iri_s) = object {
                                     if iri_s.as_str() == iri.as_str() {
                                         return false;
                                     }
                                 }
-                                _ => {}
-                            },
-                            IriExclusion::IriStem(stem) => match object {
-                                Object::Iri(iri_s) => {
+                            }
+                            IriExclusion::IriStem(stem) => {
+                                if let Object::Iri(iri_s) = object {
                                     if iri_s.as_str().starts_with(stem.as_str()) {
                                         return false;
                                     }
                                 }
-                                _ => {}
-                            },
+                            }
                         }
                     }
                 }
@@ -142,40 +141,39 @@ impl ValueSetValue {
                 if let Some(exclusions) = exclusions {
                     for ex in exclusions {
                         match ex {
-                            LiteralExclusion::Literal(s) => match object {
-                                Object::Literal(lit) => {
+                            LiteralExclusion::Literal(s) => {
+                                if let Object::Literal(lit) = object {
                                     let str = lit.lexical_form();
                                     if str == *s {
                                         return false;
                                     }
                                 }
-                                _ => {}
-                            },
-                            LiteralExclusion::LiteralStem(stem) => match object {
-                                Object::Literal(lit) => {
+                            }
+                            LiteralExclusion::LiteralStem(stem) => {
+                                if let Object::Literal(lit) = object {
                                     let str = lit.lexical_form();
                                     if str.starts_with(stem) {
                                         return false;
                                     }
                                 }
-                                _ => {}
-                            },
+                            }
                         }
                     }
                 }
                 true
             }
-            ValueSetValue::Language { language_tag } => match object {
-                Object::Literal(sliteral) => match sliteral {
-                    srdf::SLiteral::StringLiteral { lang, .. } => match lang {
-                        Some(lang) => language_tag == lang,
-                        None => false,
-                    },
-                    _ => false,
-                },
-                _ => false,
-            },
-            ValueSetValue::LanguageStem { stem } => match object {
+            ValueSetValue::Language { language_tag } => object
+                .lang()
+                .map(|lang| language_tag == lang)
+                .unwrap_or(false),
+            ValueSetValue::LanguageStem { stem } => object
+                .lang()
+                .map(|lang| match stem {
+                    LangOrWildcard::Lang(s) => lang.as_str().starts_with(s.as_str()),
+                    LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
+                })
+                .unwrap_or(false),
+            /* match object {
                 Object::Literal(sliteral) => match sliteral {
                     srdf::SLiteral::StringLiteral { lang, .. } => match lang {
                         Some(lang) => match stem {
@@ -189,16 +187,13 @@ impl ValueSetValue {
                     _ => false,
                 },
                 _ => false,
-            },
+            } */
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
-                        Object::Literal(sliteral) => match sliteral {
-                            srdf::SLiteral::StringLiteral { lang: Some(l), .. } => {
-                                l.as_str().starts_with(lang.as_str())
-                            }
-                            _ => false,
-                        },
+                        Object::Literal(SLiteral::StringLiteral { lang: Some(l), .. }) => {
+                            l.as_str().starts_with(lang.as_str())
+                        }
                         _ => false,
                     },
                     LangOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
@@ -209,28 +204,28 @@ impl ValueSetValue {
                 if let Some(exclusions) = exclusions {
                     for ex in exclusions {
                         match ex {
-                            LanguageExclusion::Language(lang) => match object {
-                                Object::Literal(sliteral) => match sliteral {
-                                    srdf::SLiteral::StringLiteral { lang: Some(l), .. } => {
-                                        if l == lang {
-                                            return false;
-                                        }
+                            LanguageExclusion::Language(lang) => {
+                                if let Object::Literal(srdf::SLiteral::StringLiteral {
+                                    lang: Some(l),
+                                    ..
+                                }) = object
+                                {
+                                    if l == lang {
+                                        return false;
                                     }
-                                    _ => {}
-                                },
-                                _ => {}
-                            },
-                            LanguageExclusion::LanguageStem(stem) => match object {
-                                Object::Literal(sliteral) => match sliteral {
-                                    srdf::SLiteral::StringLiteral { lang: Some(l), .. } => {
-                                        if l.as_str().starts_with(stem.as_str()) {
-                                            return false;
-                                        }
+                                }
+                            }
+                            LanguageExclusion::LanguageStem(stem) => {
+                                if let Object::Literal(SLiteral::StringLiteral {
+                                    lang: Some(l),
+                                    ..
+                                }) = object
+                                {
+                                    if l.as_str().starts_with(stem.as_str()) {
+                                        return false;
                                     }
-                                    _ => {}
-                                },
-                                _ => {}
-                            },
+                                }
+                            }
                         }
                     }
                 }

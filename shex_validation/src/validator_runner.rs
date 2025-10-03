@@ -396,7 +396,7 @@ impl Engine {
                                 errors.iter().map(|err| format!("{err}")).join(", "),
                                 typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
                             );
-                            errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
+                            errors_collection.push((*e, ValidatorErrors::new(errors)));
                         }
                         Either::Right(reasons) => {
                             return Ok(Either::Right(vec![Reason::ShapeOrPassed {

@@ -4,11 +4,17 @@ use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_compact::ParseError;
 use shex_validation::ValidatorError;
 use srdf::{RDFError, srdf_graph::SRDFGraphError};
-use std::{ffi::OsString, io};
+use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Error parsing ShExC for entry {entry_name} from file {shex_path}. Error: {error:?}")]
+    ShExCParsingError {
+        error: Box<ParseError>,
+        entry_name: Box<String>,
+        shex_path: Box<PathBuf>,
+    },
     #[error("Reading Manifest Map from {map:?} for entry {entry:?}. Error: {error}")]
     ReadingShapeMap {
         entry: String,
