@@ -1065,29 +1065,29 @@ fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
 }
 
 fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
-    match node.as_object() {
-        Object::Literal(SLiteral::StringLiteral { lexical_form, .. }) => {
-            if let Ok(re) = regex::Regex::new(regex) {
-                if re.is_match(lexical_form) {
-                    Ok(())
-                } else {
-                    Err(Box::new(SchemaIRError::PatternError {
-                        regex: regex.to_string(),
-                        flags: flags.unwrap_or("").to_string(),
-                        lexical_form: lexical_form.clone(),
-                    }))
-                }
-            } else {
-                Err(Box::new(SchemaIRError::InvalidRegex {
-                    regex: regex.to_string(),
-                }))
-            }
-        }
+    let lexical_form = match node.as_object() {
+        Object::Literal(lit) => Ok(lit.lexical_form()),
+        Object::BlankNode(b) => Ok(b.clone()),
         _ => Err(Box::new(SchemaIRError::PatternNodeNotLiteral {
             node: node.to_string(),
             regex: regex.to_string(),
             flags: flags.map(|f| f.to_string()),
         })),
+    }?;
+    if let Ok(re) = regex::Regex::new(regex) {
+        if re.is_match(&lexical_form) {
+            Ok(())
+        } else {
+            Err(Box::new(SchemaIRError::PatternError {
+                regex: regex.to_string(),
+                flags: flags.unwrap_or("").to_string(),
+                lexical_form: lexical_form.clone(),
+            }))
+        }
+    } else {
+        Err(Box::new(SchemaIRError::InvalidRegex {
+            regex: regex.to_string(),
+        }))
     }
 }
 

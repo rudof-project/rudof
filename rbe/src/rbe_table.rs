@@ -122,7 +122,7 @@ where
             );
             if self.rbe.nullable() {
                 trace!("Rbe is nullable and no candidates...should be sucessful");
-                
+
                 Ok(MatchTableIter::Empty(EmptyIter::new(
                     &self.rbe,
                     self,

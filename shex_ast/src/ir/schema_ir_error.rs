@@ -10,7 +10,7 @@ use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
-    #[error("Pattern  /{regex}/{} not found in {node}", flags.as_deref().unwrap_or(""))]
+    #[error("Pattern  /{regex}/{} trying to match node {node}", flags.as_deref().unwrap_or(""))]
     PatternNodeNotLiteral {
         node: String,
         regex: String,

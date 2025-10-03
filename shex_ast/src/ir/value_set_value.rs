@@ -173,21 +173,6 @@ impl ValueSetValue {
                     LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
                 })
                 .unwrap_or(false),
-            /* match object {
-                Object::Literal(sliteral) => match sliteral {
-                    srdf::SLiteral::StringLiteral { lang, .. } => match lang {
-                        Some(lang) => match stem {
-                            LangOrWildcard::Lang(stem_lang) => {
-                                lang.as_str().starts_with(stem_lang.as_str())
-                            }
-                            LangOrWildcard::Wildcard { .. } => true,
-                        },
-                        None => false,
-                    },
-                    _ => false,
-                },
-                _ => false,
-            } */
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
