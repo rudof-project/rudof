@@ -30,6 +30,17 @@ impl IriS {
         IriS { iri }
     }
 
+    pub fn from_path(path: &std::path::Path) -> Result<IriS, IriSError> {
+        let url = Url::from_file_path(path).map_err(|_| IriSError::ConvertingPathToIri {
+            path: path.to_path_buf().to_string_lossy().to_string(),
+        })?;
+        let iri = NamedNode::new(url.as_str()).map_err(|e| IriSError::IriParseError {
+            str: url.as_str().to_string(),
+            err: e.to_string(),
+        })?;
+        Ok(IriS { iri })
+    }
+
     pub fn as_str(&self) -> &str {
         self.iri.as_str()
     }

@@ -7,6 +7,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.116
+### Added
+- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges
+- Added support for Start in validation
+- ShEx testsuite status: Passed: 1053, Failed: 91, Skipped: 22, Not implemented: 0
+
+### Fixed
+- Several errors in ShEx validation
+
 ## 0.1.115
 ### Added
 - `run_query_endpoint` in pyrudof and rudof

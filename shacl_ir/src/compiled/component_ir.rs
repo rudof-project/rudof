@@ -599,7 +599,7 @@ impl Pattern {
             CompiledShaclError::InvalidRegex {
                 pattern: pattern.clone(),
                 flags: flags.clone(),
-                error: e,
+                error: Box::new(e),
             }
         })?;
         Ok(Pattern {

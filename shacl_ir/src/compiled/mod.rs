@@ -35,7 +35,9 @@ fn compile_shape<S: Rdf>(
 ) -> Result<ShapeIR, Box<CompiledShaclError>> {
     let shape = schema
         .get_shape(&shape)
-        .ok_or(CompiledShaclError::ShapeNotFound { shape })?;
+        .ok_or(CompiledShaclError::ShapeNotFound {
+            shape: Box::new(shape),
+        })?;
     ShapeIR::compile(shape.to_owned(), schema)
 }
 

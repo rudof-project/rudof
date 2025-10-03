@@ -62,7 +62,7 @@ impl SchemaIR {
     }
 
     pub fn from_schema_json(&mut self, schema_json: &SchemaJson) -> Result<()> {
-        let mut schema_json_compiler = AST2IR::new();
+        let mut schema_json_compiler = AST2IR::new(schema_json.source_iri());
         schema_json_compiler.compile(schema_json, self)?;
         Ok(())
     }

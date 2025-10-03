@@ -25,11 +25,15 @@ use tracing::{debug, trace};
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
+    _source: IriS,
 }
 
 impl AST2IR {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(source: IriS) -> Self {
+        Self {
+            _source: source,
+            ..Default::default()
+        }
     }
 
     pub fn compile(

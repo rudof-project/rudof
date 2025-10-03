@@ -9,16 +9,16 @@ pub enum CompiledShaclError {
     IriRefConversion { iri_ref: String, err: String },
 
     #[error("Shape not found {shape} ")]
-    ShapeNotFound { shape: RDFNode },
+    ShapeNotFound { shape: Box<RDFNode> },
 
     #[error("Could not convert to Literal: {node}")]
-    LiteralConversion { node: RDFNode },
+    LiteralConversion { node: Box<RDFNode> },
 
     #[error("RDF error: {err}")]
-    RdfGraphError { err: srdf::SRDFGraphError },
+    RdfGraphError { err: Box<srdf::SRDFGraphError> },
 
     #[error("Error parsing SHACL: {err}")]
-    ShaclParserError { err: ShaclParserError },
+    ShaclParserError { err: Box<ShaclParserError> },
 
     #[error("ShaclError: {source}")]
     ShaclError { source: ShaclError },
@@ -27,6 +27,6 @@ pub enum CompiledShaclError {
     InvalidRegex {
         pattern: String,
         flags: Option<String>,
-        error: srdf::regex::SRegexError,
+        error: Box<srdf::regex::SRegexError>,
     },
 }

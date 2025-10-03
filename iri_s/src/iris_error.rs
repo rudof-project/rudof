@@ -7,6 +7,9 @@ use crate::IriS;
 
 #[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
+    #[error("Error converting path {path} to IRI")]
+    ConvertingPathToIri { path: String },
+
     #[error("Error parsing {str} as IRI: {err}")]
     IriParseError { str: String, err: String },
 

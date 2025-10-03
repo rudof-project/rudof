@@ -203,7 +203,7 @@ impl ValidationEntry {
         trace!("Entry action: {:?}", self.action);
 
         trace!("Compiling schema...");
-        let mut compiler = AST2IR::new();
+        let mut compiler = AST2IR::new(IriS::from_path(folder).unwrap());
         let mut compiled_schema = SchemaIR::new();
         compiler
             .compile(&schema, &mut compiled_schema)
