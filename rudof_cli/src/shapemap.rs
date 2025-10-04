@@ -8,7 +8,7 @@ use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShapeMapFormatter;
-use shapemap::ShapeMapFormat;
+use shex_ast::shapemap::ShapeMapFormat;
 
 pub fn run_shapemap(
     input: &InputSpec,

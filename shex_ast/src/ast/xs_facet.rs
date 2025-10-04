@@ -4,7 +4,8 @@ use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use srdf::numeric_literal::NumericLiteral;
-use void::Void;
+use thiserror::Error;
+// use void::Void;
 
 use crate::ast::serde_string_or_struct::*;
 
@@ -129,7 +130,7 @@ impl Pattern {
 }
 
 impl FromStr for Pattern {
-    type Err = Void;
+    type Err = PatternError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Pattern {
@@ -137,6 +138,12 @@ impl FromStr for Pattern {
             flags: None,
         })
     }
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Error)]
+pub enum PatternError {
+    #[error("Invalid pattern")]
+    InvalidPattern,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

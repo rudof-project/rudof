@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
-use shex_compact::ShExParser;
+use shex_ast::compact::ShExParser;
 use tracing::debug;
 use url::Url;
 

@@ -7,9 +7,9 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shapemap::ValidationStatus;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
+use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
@@ -203,10 +203,14 @@ impl ValidationEntry {
         trace!("Entry action: {:?}", self.action);
 
         trace!("Compiling schema...");
-        let mut compiler = AST2IR::new(IriS::from_path(folder).unwrap());
+        let mut compiler = AST2IR::new();
         let mut compiled_schema = SchemaIR::new();
         compiler
-            .compile(&schema, &mut compiled_schema)
+            .compile(
+                &schema,
+                &IriS::from_path(folder).unwrap(),
+                &mut compiled_schema,
+            )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
         let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())

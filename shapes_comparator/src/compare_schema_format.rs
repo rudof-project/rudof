@@ -1,11 +1,9 @@
+use crate::ComparatorError;
+use shex_ast::ShExFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
-
-use shex_validation::ShExFormat;
-
-use crate::ComparatorError;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub enum CompareSchemaFormat {

@@ -7,13 +7,13 @@ use crate::validator_runner::Engine;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use serde_json::Value;
-use shapemap::ResultShapeMap;
-use shapemap::ValidationStatus;
-use shapemap::query_shape_map::QueryShapeMap;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::shapemap::ValidationStatus;
+use shex_ast::shapemap::query_shape_map::QueryShapeMap;
 // use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::object_value::ObjectValue;
@@ -253,8 +253,8 @@ impl Validator {
     } */
 
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
-        let (label, _se) = self.schema.find_shape_idx(idx).unwrap();
-        match label {
+        let info = self.schema.find_shape_idx(idx).unwrap();
+        match info.label() {
             Some(label) => Ok(label),
             None => Err(ValidatorError::NotFoundShapeLabelWithIndex { idx: *idx }),
         }

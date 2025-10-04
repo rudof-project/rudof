@@ -7,14 +7,27 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.117
+### Added
+- Support for imports in ShEx
+
+### Changed
+- We moved the contents of ShEx Compact crate to ShEX AST because when we resolve imports, we need to parse the imported ShEx schema so there it is necessary to know which formats we are importing
+
+### Removed
+- crates `shex_compact` and `shapemap` will no longer be published as independent crates and will instead be part of `shex_ast`. 
+
+
 ## 0.1.116
 ### Added
-- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges
+- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges for IRIs, literals and languages 
 - Added support for Start in validation
 - ShEx testsuite status: Passed: 1053, Failed: 91, Skipped: 22, Not implemented: 0
 
 ### Fixed
 - Several errors in ShEx validation
+- Issue #338 about empty shapes
+- Issue #309 about IRI ranges
 
 ## 0.1.115
 ### Added

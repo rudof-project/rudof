@@ -9,6 +9,14 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error obtaining current directory: {error}")]
+    CurrentDirError { error: String },
+
+    #[error("Error converting current dir {current_dir} to URL")]
+    ConvertingCurrentFolderUrl { current_dir: String },
+
+    #[error("Parsing IRI from {source_name}: {error}")]
+    SourceNameIriError { source_name: String, error: String },
     #[error("SPARQL syntax error reading {source_name}: {error}")]
     SparqlSyntaxError { error: String, source_name: String },
 

@@ -7,7 +7,6 @@ extern crate prefixmap;
 extern crate regex;
 extern crate serde_json;
 extern crate shacl_ast;
-extern crate shapemap;
 extern crate shapes_converter;
 extern crate srdf;
 extern crate supports_color;

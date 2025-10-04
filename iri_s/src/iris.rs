@@ -31,9 +31,19 @@ impl IriS {
     }
 
     pub fn from_path(path: &std::path::Path) -> Result<IriS, IriSError> {
-        let url = Url::from_file_path(path).map_err(|_| IriSError::ConvertingPathToIri {
-            path: path.to_path_buf().to_string_lossy().to_string(),
-        })?;
+        let absolute_path = if path.is_absolute() {
+            Ok(path.to_path_buf())
+        } else {
+            std::fs::canonicalize(path).map_err(|e| IriSError::ConvertingPathToIri {
+                path: path.to_string_lossy().to_string(),
+                error: e.to_string(),
+            })
+        }?;
+        let url =
+            Url::from_file_path(&absolute_path).map_err(|_| IriSError::ConvertingPathToIri {
+                path: absolute_path.to_string_lossy().to_string(),
+                error: "Cannot convert path to file URL".to_string(),
+            })?;
         let iri = NamedNode::new(url.as_str()).map_err(|e| IriSError::IriParseError {
             str: url.as_str().to_string(),
             err: e.to_string(),
@@ -217,10 +227,6 @@ impl IriS {
         });
     }
 
-    /*    pub fn is_absolute(&self) -> bool {
-        self.0.is_absolute()
-    } */
-
     pub fn from_str_base(str: &str, base: Option<&str>) -> Result<IriS, IriSError> {
         match base {
             Some(base_str) => {
@@ -363,6 +369,21 @@ mod tests {
     fn from_str_base() {
         let iri1 = IriS::from_str_base("name", Some("http://example.org/")).unwrap();
         let iri2 = IriS::from_str_base("http://example.org/name", None).unwrap();
+        assert_eq!(iri1, iri2);
+    }
+
+    #[test]
+    fn from_str_base_file() {
+        let iri1 = IriS::from_str_base(
+            "examples/shex/base.shex",
+            Some("file:///home/labra/src/rust/rudof/"),
+        )
+        .unwrap();
+        let iri2 = IriS::from_str_base(
+            "file:///home/labra/src/rust/rudof/examples/shex/base.shex",
+            None,
+        )
+        .unwrap();
         assert_eq!(iri1, iri2);
     }
 }

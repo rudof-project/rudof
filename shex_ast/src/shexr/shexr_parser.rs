@@ -5,6 +5,7 @@ use crate::{
     ShapeExprLabel, ValueSetValue,
 };
 use iri_s::IriS;
+use iri_s::iri;
 use prefixmap::IriRef;
 use srdf::FocusRDF;
 use srdf::RDFParseError;
@@ -45,10 +46,10 @@ where
     }
 
     fn schema() -> impl RDFNodeParse<RDF, Output = Schema> {
-        property_value(&sx_shapes()).then(|ref node| {
+        property_value(&sx_shapes()).then(move |ref node| {
             set_focus(node)
                 .and(parse_rdf_list::<RDF, _>(Self::shape_decl()))
-                .map(|(_, vs)| Schema::new().with_shapes(Some(vs)))
+                .map(|(_, vs)| Schema::new(&iri!("http://default/")).with_shapes(Some(vs)))
         })
     }
 

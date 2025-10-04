@@ -4,12 +4,13 @@ use rdf_config::RdfConfigModel;
 use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
-use shapemap::{NodeSelector, ShapeSelector};
 use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
+use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
-use shex_compact::ShExParser;
-use shex_validation::{ResolveMethod, SchemaWithoutImports};
+use shex_ast::shapemap::{NodeSelector, ShapeSelector};
+use shex_ast::{ResolveMethod, ShExFormat};
+use shex_validation::SchemaWithoutImports;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
@@ -17,8 +18,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::str::FromStr;
-use std::{io, result};
+use std::{env, io, result};
 use tracing::trace;
+use url::Url;
 
 // These are the structs that are publicly re-exported
 pub use dctap::{DCTAPFormat, DCTap as DCTAP};
@@ -28,13 +30,15 @@ pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
-pub use shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shapes_comparator::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
 };
-pub use shex_compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
+pub use shex_ast::compact::{
+    ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
+};
+pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_validation::Validator as ShExValidator;
-pub use shex_validation::{ShExFormat, ValidatorConfig};
+pub use shex_validation::ValidatorConfig;
 pub use sparql_service::ServiceDescription;
 pub use sparql_service::ServiceDescriptionFormat;
 use srdf::QueryRDF;
@@ -755,12 +759,38 @@ impl Rudof {
                     }
                     None => Ok(None),
                 }?;
-                let schema_json = ShExParser::from_reader(reader, base).map_err(|e| {
-                    RudofError::ShExCParserError {
-                        error: format!("{e}"),
-                        source_name: source_name.unwrap_or("source without name").to_string(),
+
+                let source_iri = match source_name {
+                    Some(name) => {
+                        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
+                            error: format!("{e}"),
+                        })?;
+                        trace!("Current directory: {}", cwd.display());
+                        // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+                        // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+                        let url = Url::from_directory_path(&cwd).map_err(|_| {
+                            RudofError::ConvertingCurrentFolderUrl {
+                                current_dir: cwd.to_string_lossy().to_string(),
+                            }
+                        })?;
+                        trace!("Current directory as URL: {}", url);
+                        let iri = IriS::from_str_base(name, Some(url.as_str())).map_err(|e| {
+                            RudofError::SourceNameIriError {
+                                source_name: name.to_string(),
+                                error: e.to_string(),
+                            }
+                        })?;
+                        Ok(iri)
                     }
-                })?;
+                    None => Ok(iri!("http://default/")),
+                }?;
+                let schema_json =
+                    ShExParser::from_reader(reader, base, &source_iri).map_err(|e| {
+                        RudofError::ShExCParserError {
+                            error: format!("{e}"),
+                            source_name: source_name.unwrap_or("source without name").to_string(),
+                        }
+                    })?;
                 Ok(schema_json)
             }
             ShExFormat::ShExJ => {
@@ -1147,9 +1177,9 @@ mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
-    use shapemap::ShapeMapFormat;
+    use shex_ast::ShExFormat;
+    use shex_ast::shapemap::ShapeMapFormat;
     use shex_ast::{Node, ir::shape_label::ShapeLabel};
-    use shex_validation::ShExFormat;
 
     use crate::RudofConfig;
 

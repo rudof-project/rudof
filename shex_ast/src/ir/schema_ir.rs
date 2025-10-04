@@ -1,4 +1,9 @@
+use super::dependency_graph::{DependencyGraph, PosNeg};
+use super::shape_expr::ShapeExpr;
+use super::shape_label::ShapeLabel;
 use crate::Pred;
+use crate::ir::shape_expr_info::ShapeExprInfo;
+use crate::ir::source_idx::SourceIdx;
 use crate::{
     CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
     ir::ast2ir::AST2IR,
@@ -9,17 +14,16 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use tracing::trace;
 
-use super::dependency_graph::{DependencyGraph, PosNeg};
-use super::shape_expr::ShapeExpr;
-use super::shape_label::ShapeLabel;
-
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
 #[derive(Debug, Default, Clone)]
 pub struct SchemaIR {
     shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
-    shapes: HashMap<ShapeLabelIdx, (Option<ShapeLabel>, ShapeExpr)>,
+    shapes: HashMap<ShapeLabelIdx, ShapeExprInfo>,
     shape_label_counter: usize,
+    sources_map: HashMap<IriS, SourceIdx>,
+    sources: HashMap<SourceIdx, IriS>,
+    sources_counter: usize,
     prefixmap: PrefixMap,
 }
 
@@ -28,6 +32,9 @@ impl SchemaIR {
         SchemaIR {
             shape_labels_map: HashMap::new(),
             shape_label_counter: 0,
+            sources_map: HashMap::new(),
+            sources: HashMap::new(),
+            sources_counter: 0,
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
         }
@@ -45,25 +52,34 @@ impl SchemaIR {
         self.shape_label_counter
     }
 
-    pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr) -> ShapeLabelIdx {
+    pub fn add_shape(
+        &mut self,
+        shape_label: ShapeLabel,
+        se: ShapeExpr,
+        source_iri: &IriS,
+    ) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_labels_map.insert(shape_label.clone(), idx);
-        self.shapes.insert(idx, (Some(shape_label.clone()), se));
+        let source_idx = self.new_source_idx(source_iri);
+        self.shapes.insert(
+            idx,
+            ShapeExprInfo::new(Some(shape_label.clone()), se, source_idx),
+        );
         self.shape_label_counter += 1;
         idx
     }
 
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
         if let Some(idx) = self.find_shape_label_idx(shape_label) {
-            self.shapes.get(idx).map(|(_label, se)| se)
+            self.shapes.get(idx).map(|info| info.expr())
         } else {
             None
         }
     }
 
     pub fn from_schema_json(&mut self, schema_json: &SchemaJson) -> Result<()> {
-        let mut schema_json_compiler = AST2IR::new(schema_json.source_iri());
-        schema_json_compiler.compile(schema_json, self)?;
+        let mut schema_json_compiler = AST2IR::new();
+        schema_json_compiler.compile(schema_json, &schema_json.source_iri(), self)?;
         Ok(())
     }
 
@@ -100,36 +116,48 @@ impl SchemaIR {
 
     pub fn find_label(&self, label: &ShapeLabel) -> Option<(&ShapeLabelIdx, &ShapeExpr)> {
         self.find_shape_label_idx(label)
-            .and_then(|idx| self.shapes.get(idx).map(|(_label, se)| (idx, se)))
+            .and_then(|idx| self.shapes.get(idx).map(|info| (idx, info.expr())))
     }
 
     pub fn find_shape_label_idx(&self, label: &ShapeLabel) -> Option<&ShapeLabelIdx> {
         self.shape_labels_map.get(label)
     }
 
-    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&(Option<ShapeLabel>, ShapeExpr)> {
+    pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&ShapeExprInfo> {
         self.shapes.get(idx)
     }
 
     pub fn shape_label_from_idx(&self, idx: &ShapeLabelIdx) -> Option<&ShapeLabel> {
-        self.shapes
-            .get(idx)
-            .and_then(|(label, _se)| label.as_ref())
-            .or(None)
+        self.shapes.get(idx).and_then(|info| info.label()).or(None)
     }
 
-    pub fn new_index(&mut self) -> ShapeLabelIdx {
+    pub fn new_index(&mut self, source_iri: &IriS) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.shape_label_counter += 1;
-        self.shapes.insert(idx, (None, ShapeExpr::Empty));
+        let source_idx = self.new_source_idx(source_iri);
+        self.shapes
+            .insert(idx, ShapeExprInfo::new(None, ShapeExpr::Empty, source_idx));
         idx
+    }
+
+    fn new_source_idx(&mut self, source_iri: &IriS) -> SourceIdx {
+        let source_idx = self
+            .sources_map
+            .entry(source_iri.clone())
+            .or_insert_with(|| {
+                let idx = SourceIdx::new(self.sources_counter);
+                self.sources.insert(idx, source_iri.clone());
+                self.sources_counter += 1;
+                idx
+            });
+        *source_idx
     }
 
     pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
         self.shape_labels_map.keys().collect()
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(Option<ShapeLabel>, ShapeExpr)> {
+    pub fn shapes(&self) -> impl Iterator<Item = &ShapeExprInfo> {
         self.shapes.values()
     }
 
@@ -145,8 +173,8 @@ impl SchemaIR {
         idx: &ShapeLabelIdx,
         mut visited: HashSet<ShapeLabelIdx>,
     ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        if let Some((_label, shape_expr)) = self.find_shape_idx(idx) {
-            match shape_expr {
+        if let Some(info) = self.find_shape_idx(idx) {
+            match info.expr() {
                 ShapeExpr::Ref { idx } => {
                     if visited.contains(idx) {
                         // If we have already visited this index, we return an empty map to avoid infinite recursion
@@ -155,7 +183,7 @@ impl SchemaIR {
                     visited.insert(*idx);
                     self.references_visited(idx, visited)
                 }
-                _ => shape_expr.references(self),
+                _ => info.expr().references(self),
             }
         } else {
             HashMap::new()
@@ -198,7 +226,7 @@ impl SchemaIR {
     }
 
     pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
-        self.shapes.entry(*idx).and_modify(|(_label, s)| *s = se);
+        self.shapes.entry(*idx).and_modify(|info| info.set_expr(se));
     }
 
     pub fn show_label(&self, label: &ShapeLabel) -> String {
@@ -225,8 +253,9 @@ impl SchemaIR {
     pub(crate) fn dependency_graph(&self) -> DependencyGraph {
         let mut dep_graph = DependencyGraph::new();
         let mut visited = Vec::new();
-        for (idx, (_label, se)) in self.shapes.iter() {
-            se.add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
+        for (idx, info) in self.shapes.iter() {
+            info.expr()
+                .add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
         }
         dep_graph
     }
@@ -253,6 +282,19 @@ impl SchemaIR {
 
 impl Display for SchemaIR {
     fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        if self.sources_counter > 1 {
+            writeln!(dest, "Sources:")?;
+            for (idx, iri) in self.sources.iter() {
+                writeln!(dest, "{idx} -> {iri}")?;
+            }
+        } else if self.sources_counter == 1 {
+            write!(dest, "Source: ")?;
+            if let Some((idx, iri)) = self.sources.iter().next() {
+                writeln!(dest, "{idx} -> {iri}")?;
+            }
+        } else {
+            writeln!(dest, "No sources")?;
+        }
         writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
         writeln!(dest, "Labels to indexes:")?;
         for (label, idx) in self.shape_labels_map.iter() {
@@ -260,12 +302,21 @@ impl Display for SchemaIR {
             writeln!(dest, "{label} -> {idx}")?;
         }
         writeln!(dest, "Indexes to Shape Expressions:")?;
-        for (idx, (maybe_label, se)) in self.shapes.iter() {
-            let label_str = match maybe_label {
+        for (idx, info) in self.shapes.iter() {
+            let label_str = match info.label() {
                 None => "".to_string(),
                 Some(label) => format!("{} = ", self.show_label(label)),
             };
-            writeln!(dest, "{idx} -> {label_str}{se}")?;
+            writeln!(
+                dest,
+                "{idx}{} -> {label_str}{}",
+                if self.sources_counter > 1 {
+                    format!(" (source: {})", info.source_idx())
+                } else {
+                    "".to_string()
+                },
+                info.expr()
+            )?;
         }
         writeln!(dest, "---end of schema IR")?;
         Ok(())
@@ -437,47 +488,4 @@ mod tests {
         .collect();
         assert_eq!(references, expected);
     }
-
-    /*#[test]
-    fn validation_convert() {
-        let str = r#"{
-            "@context": "http://www.w3.org/ns/shex.jsonld",
-            "type": "Schema",
-            "shapes": [
-                {
-                    "type": "ShapeDecl",
-                    "id": "http://a.example/S1",
-                    "shapeExpr": {
-                        "type": "Shape",
-                        "expression": {
-                            "type": "TripleConstraint",
-                            "predicate": "http://a.example/p1"
-                        }
-                    }
-                }
-            ]
-        }"#;
-        let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut compiled_schema = SchemaIR::new();
-        compiled_schema.from_schema_json(schema_json).unwrap();
-        let s1 = ShapeLabel::Iri(IriS::new("http://a.example/S1").unwrap());
-        let p1 = IriS::new("http://a.example/p1").unwrap();
-        let se1 = ShapeExpr::Shape {
-            closed: false,
-            extra: Vec::new(),
-            expression: Some(TripleExpr::TripleConstraint {
-                id: None,
-                inverse: false,
-                predicate: p1,
-                value_expr: None,
-                min: Min::from(1),
-                max: Max::from(1),
-                sem_acts: Vec::new(),
-                annotations: Vec::new(),
-            }),
-            sem_acts: Vec::new(),
-            annotations: Vec::new(),
-        };
-        assert_eq!(compiled_schema.find_label(&s1), Some(&se1));
-    }*/
 }

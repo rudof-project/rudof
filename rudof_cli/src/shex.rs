@@ -14,9 +14,9 @@ use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormat, ShExFormatter};
-use shapemap::ResultShapeMap;
-use shex_ast::{Schema, ShapeExprLabel};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormatter};
+use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::{Schema, ShExFormat, ShapeExprLabel};
 use srdf::ReaderMode;
 use tracing::trace;
 

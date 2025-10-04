@@ -4,6 +4,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaWithoutImportsError {
+    #[error("Error resolving {prefix}:{local} in current prefixmap: {error}")]
+    ResolvingPrefixedIri {
+        prefix: String,
+        local: String,
+        error: String,
+    },
     #[error(
         "Obtaining schema from IRI {iri}. Tried to parse this list of formats: {formats} but they failed"
     )]

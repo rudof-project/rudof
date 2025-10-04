@@ -244,7 +244,8 @@ impl Engine {
         schema: &SchemaIR,
         rdf: &impl NeighsRDF,
     ) -> Result<HashSet<(Node, ShapeLabelIdx)>> {
-        if let Some((_label, se)) = schema.find_shape_idx(idx) {
+        if let Some(info) = schema.find_shape_idx(idx) {
+            let se = info.expr();
             let mut dep = HashSet::new();
 
             // Search all direct references of the shape expression
@@ -337,7 +338,8 @@ impl Engine {
             "Checking {node}@{idx}, typing: [{}]",
             typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
-        if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
+        if let Some(info) = schema.find_shape_idx(idx) {
+            let se = info.expr();
             let result = self.check_node_shape_expr(node, se, schema, rdf, typing)?;
             tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
             Ok(result)

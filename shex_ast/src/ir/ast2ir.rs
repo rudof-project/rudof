@@ -9,7 +9,7 @@ use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::{CResult, Cond, Node, Pred, ir};
-use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaJson};
+use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use iri_s::IriS;
@@ -25,28 +25,30 @@ use tracing::{debug, trace};
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
-    _source: IriS,
 }
 
 impl AST2IR {
-    pub fn new(source: IriS) -> Self {
+    pub fn new() -> Self {
         Self {
-            _source: source,
             ..Default::default()
         }
     }
 
     pub fn compile(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
+        source_iri: &IriS,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         trace!("Compiling schema to IR");
-        compiled_schema.set_prefixmap(schema_json.prefixmap());
+        compiled_schema.set_prefixmap(schema_ast.prefixmap());
         trace!("Collecting shape labels...");
-        self.collect_shape_labels(schema_json, compiled_schema)?;
+        self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
         trace!("Collecting shape expressions...");
-        self.collect_shape_exprs(schema_json, compiled_schema)?;
+        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
+        for import in schema_ast.imports() {
+            self.compile_import(&import, compiled_schema)?;
+        }
         trace!(
             "Schema compilation completed with {} shapes",
             compiled_schema.shapes_counter()
@@ -54,26 +56,34 @@ impl AST2IR {
         Ok(())
     }
 
+    pub fn compile_import(&self, import: &IriRef, _compiled_schema: &mut SchemaIR) -> CResult<()> {
+        let iri = cnv_iri_ref(import)?;
+        debug!("Importing schema from {iri}");
+        // TODO
+        Ok(())
+    }
+
     pub fn collect_shape_labels(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<()> {
-        match &schema_json.shapes() {
+        match &schema_ast.shapes() {
             None => {}
             Some(sds) => {
                 for sd in sds {
                     let label = self.shape_expr_label_to_shape_label(&sd.id)?;
-                    compiled_schema.add_shape(label, ShapeExpr::Empty);
+                    compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
                     self.shape_decls_counter += 1;
                 }
             }
         }
-        if let Some(shape_expr_start) = &schema_json.start() {
+        if let Some(shape_expr_start) = &schema_ast.start() {
             let start_label = ShapeLabel::Start;
-            let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty);
+            let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty, source_iri);
             let start_compiled =
-                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema)?;
+                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri)?;
             compiled_schema.replace_shape(&idx, start_compiled);
             self.shape_decls_counter += 1;
         }
@@ -82,15 +92,16 @@ impl AST2IR {
 
     pub fn collect_shape_exprs(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<()> {
-        match &schema_json.shapes() {
+        match &schema_ast.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
                     let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
-                    let se = self.compile_shape_decl(sd, &idx, compiled_schema)?;
+                    let se = self.compile_shape_decl(sd, &idx, compiled_schema, source_iri)?;
                     compiled_schema.replace_shape(&idx, se)
                 }
                 Ok(())
@@ -123,8 +134,9 @@ impl AST2IR {
         sd: &ast::ShapeDecl,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<ShapeExpr> {
-        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)?;
+        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri)?;
         Ok(se)
     }
 
@@ -142,6 +154,7 @@ impl AST2IR {
         se: &ast::ShapeExpr,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<ShapeExpr> {
         let result: ShapeExpr = match se {
             ast::ShapeExpr::Ref(se_ref) => {
@@ -153,8 +166,13 @@ impl AST2IR {
                 tracing::debug!("Compiling ShapeOr with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let internal_idx = compiled_schema.new_index();
-                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                    let internal_idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(
+                        &sew.se,
+                        &internal_idx,
+                        compiled_schema,
+                        source_iri,
+                    )?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
                 }
@@ -167,8 +185,13 @@ impl AST2IR {
                 tracing::debug!("Compiling ShapeAnd with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let internal_idx = compiled_schema.new_index();
-                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                    let internal_idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(
+                        &sew.se,
+                        &internal_idx,
+                        compiled_schema,
+                        source_iri,
+                    )?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
                 }
@@ -179,8 +202,9 @@ impl AST2IR {
             }
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 trace!("Compiling ShapeNot with {sew:?} and index {idx}");
-                let internal_idx = compiled_schema.new_index();
-                let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema)?;
+                let internal_idx = compiled_schema.new_index(source_iri);
+                let se =
+                    self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
                 compiled_schema.replace_shape(&internal_idx, se.clone());
                 let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
                 compiled_schema.replace_shape(idx, not_se.clone());
@@ -192,7 +216,8 @@ impl AST2IR {
                     None => RbeTable::new(),
                     Some(tew) => {
                         let mut table = RbeTable::new();
-                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table)?;
+                        let rbe =
+                            self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri)?;
                         table.with_rbe(rbe);
                         table
                     }
@@ -295,6 +320,7 @@ impl AST2IR {
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
+        source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
@@ -307,7 +333,8 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    let c =
+                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -323,7 +350,8 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    let c =
+                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -343,7 +371,8 @@ impl AST2IR {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                let (cond, _display) = self.value_expr2match_cond(value_expr, compiled_schema)?;
+                let (cond, _display) =
+                    self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
                 trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
@@ -408,6 +437,7 @@ impl AST2IR {
         &self,
         ve: &Option<Box<ast::ShapeExpr>>,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
         if let Some(se) = ve.as_deref() {
             match se {
@@ -425,8 +455,8 @@ impl AST2IR {
                 ast::ShapeExpr::Shape { .. } => {
                     // TODO: avoid recompiling the same shape expression?
                     // I think this code should be reviewed....
-                    let idx = compiled_schema.new_index();
-                    let se = self.compile_shape_expr(se, &idx, compiled_schema)?;
+                    let idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
                     compiled_schema.replace_shape(&idx, se.clone());
                     trace!("Returning SHAPE cond with idx {idx}");
                     Ok((mk_cond_ref(idx), format!("Shape {}", idx)))
@@ -434,16 +464,20 @@ impl AST2IR {
                 ast::ShapeExpr::ShapeAnd { shape_exprs } => {
                     let mut ands = Vec::new();
                     for shape_expr in shape_exprs {
-                        let idx_se = compiled_schema.new_index();
-                        let se =
-                            self.compile_shape_expr(&shape_expr.se, &idx_se, compiled_schema)?;
+                        let idx_se = compiled_schema.new_index(source_iri);
+                        let se = self.compile_shape_expr(
+                            &shape_expr.se,
+                            &idx_se,
+                            compiled_schema,
+                            source_iri,
+                        )?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ands.push(idx_se);
                     }
                     let and_se = ShapeExpr::ShapeAnd {
                         exprs: ands.clone(),
                     };
-                    let idx_and = compiled_schema.new_index();
+                    let idx_and = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_and, and_se);
                     trace!("Returning AND cond with idx {idx_and}");
                     let display = format!(
@@ -458,8 +492,9 @@ impl AST2IR {
                 ast::ShapeExpr::ShapeOr { shape_exprs } => {
                     let mut ors = Vec::new();
                     for se in shape_exprs {
-                        let idx_se = compiled_schema.new_index();
-                        let se = self.compile_shape_expr(&se.se, &idx_se, compiled_schema)?;
+                        let idx_se = compiled_schema.new_index(source_iri);
+                        let se =
+                            self.compile_shape_expr(&se.se, &idx_se, compiled_schema, source_iri)?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ors.push(idx_se);
                     }
@@ -471,23 +506,27 @@ impl AST2IR {
                             .collect::<Vec<_>>()
                             .join(", ")
                     );
-                    let idx_or = compiled_schema.new_index();
+                    let idx_or = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_or, or_se);
                     Ok((mk_cond_ref(idx_or), display))
                 }
                 ast::ShapeExpr::ShapeNot { shape_expr } => {
-                    let idx_shape_expr = compiled_schema.new_index();
+                    let idx_shape_expr = compiled_schema.new_index(source_iri);
                     trace!(
                         "value_expr2matchcond: Compiling ShapeNot with {shape_expr:?}, idx_shape_expr {idx_shape_expr}"
                     );
-                    let se =
-                        self.compile_shape_expr(&shape_expr.se, &idx_shape_expr, compiled_schema)?;
+                    let se = self.compile_shape_expr(
+                        &shape_expr.se,
+                        &idx_shape_expr,
+                        compiled_schema,
+                        source_iri,
+                    )?;
                     compiled_schema.replace_shape(&idx_shape_expr, se.clone());
                     let display = format!("NOT {}", idx_shape_expr);
                     let not_se = ShapeExpr::ShapeNot {
                         expr: idx_shape_expr,
                     };
-                    let idx_not = compiled_schema.new_index();
+                    let idx_not = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_not, not_se);
                     trace!("Returning NOT cond with idx {idx_not}");
                     Ok((mk_cond_ref(idx_not), display))

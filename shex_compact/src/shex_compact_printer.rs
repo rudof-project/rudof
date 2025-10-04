@@ -5,8 +5,8 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    Annotation, BNode, IriOrStr, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern,
-    Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+    Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
+    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
     value_set_value::ValueSetValue,
 };
 use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
@@ -220,7 +220,7 @@ where
             .append(self.opt_pp(self.schema.shapes(), self.pp_shape_decls()))
     }
 
-    fn pp_imports(&self, imports: Vec<IriOrStr>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_imports(&self, imports: Vec<IriRef>) -> DocBuilder<'a, Arena<'a, A>, A> {
         if imports.is_empty() {
             self.doc.nil()
         } else {
@@ -229,7 +229,7 @@ where
                 docs.push(
                     self.keyword("import")
                         .append(self.space())
-                        .append(self.pp_iri_or_str(import)),
+                        .append(self.pp_iri_ref(&import)),
                 )
             }
             self.doc
@@ -238,12 +238,12 @@ where
         }
     }
 
-    fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
+    /*fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
         match iri_or_str {
             IriOrStr::IriS(iri) => self.pp_iri(&iri),
             IriOrStr::String(str) => self.pp_str(format!("<{}>", str.as_str()).as_str()),
         }
-    }
+    }*/
 
     fn pp_shape_decls(
         &self,
@@ -884,9 +884,9 @@ where
         self.doc.text(self.prefixmap.qualify(iri))
     }
 
-    fn pp_str(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
+    /*fn pp_str(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(str.to_string())
-    }
+    }*/
 
     fn opt_pp<V>(
         &self,
@@ -959,10 +959,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use iri_s::IriS;
-    use prefixmap::PrefixMap;
-
     use super::*;
+    use iri_s::IriS;
+    use iri_s::iri;
+    use prefixmap::PrefixMap;
 
     #[test]
     fn empty_schema() {
@@ -971,7 +971,7 @@ mod tests {
             .unwrap();
         pm.insert("schema", &IriS::new_unchecked("https://schema.org/"))
             .unwrap();
-        let schema = Schema::new().with_prefixmap(Some(pm));
+        let schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(pm));
         let s = ShExFormatter::default()
             .without_colors()
             .format_schema(&schema);

@@ -2,8 +2,8 @@ extern crate anyhow;
 use anyhow::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shapemap::NodeSelector;
 use shex_ast::ObjectValue;
+use shex_ast::shapemap::NodeSelector;
 use srdf::{NeighsRDF, ReaderMode};
 use std::result::Result::Ok;
 

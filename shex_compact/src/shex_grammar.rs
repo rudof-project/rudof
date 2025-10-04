@@ -22,7 +22,7 @@ use nom::{
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-use shex_ast::IriOrStr;
+// use shex_ast::IriOrStr;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
 use shex_ast::{
@@ -92,15 +92,15 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
 }
 
 /// `[4½] importDecl ::= "IMPORT" IRIREF`
+/// I think we could allow also prefixed names in import declarations...
 fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "import_decl",
         map_error(
             move |i| {
-                let (i, (_, _, iri_or_str)) =
-                    tuple((tag_no_case("IMPORT"), tws0, cut(iri_ref_or_str)))(i)?;
-                tracing::debug!("grammar: Import {iri_or_str:?}");
-                Ok((i, ShExStatement::ImportDecl { iri: iri_or_str }))
+                let (i, (_, _, iri)) = tuple((tag_no_case("IMPORT"), tws0, cut(iri)))(i)?;
+                tracing::debug!("grammar: Import {iri:?}");
+                Ok((i, ShExStatement::ImportDecl { iri }))
             },
             || ShExParseError::ExpectedImportDecl,
         ),
@@ -2145,6 +2145,7 @@ fn iri_ref(i: Span) -> IRes<IriS> {
     Ok((i, IriS::new_unchecked(str.as_str())))
 }
 
+/*
 /// `[18t] <IRIREF> ::= "<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
 /// iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*
 fn iri_ref_or_str(i: Span) -> IRes<IriOrStr> {
@@ -2155,7 +2156,7 @@ fn iri_ref_or_str(i: Span) -> IRes<IriOrStr> {
         char('>'),
     )(i)?;
     Ok((i, IriOrStr::new(str.as_str())))
-}
+}*/
 
 /// `iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*`
 fn iri_chars(i: Span) -> IRes<String> {

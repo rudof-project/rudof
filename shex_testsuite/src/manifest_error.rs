@@ -1,7 +1,7 @@
 use iri_s::IriSError;
-use shapemap::ValidationStatus;
+use shex_ast::compact::ParseError;
+use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
-use shex_compact::ParseError;
 use shex_validation::ValidatorError;
 use srdf::{RDFError, srdf_graph::SRDFGraphError};
 use std::{ffi::OsString, io, path::PathBuf};

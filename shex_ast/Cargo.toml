@@ -10,19 +10,24 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-srdf.workspace = true
+const_format.workspace = true
+colored.workspace = true
+lazy-regex.workspace = true
+pretty.workspace = true
 iri_s.workspace = true
-rbe.workspace = true
-prefixmap.workspace = true
-serde.workspace = true
 itertools.workspace = true
-void = "1"
-thiserror = "2.0"
-rust_decimal = "1.38"
-serde_json.workspace = true
-const_format = "0.2"
-tracing.workspace = true
-petgraph = "0.8"
+nom.workspace = true
+nom_locate.workspace = true
+petgraph.workspace = true
+prefixmap.workspace = true
+rbe.workspace = true
 regex.workspace = true
+rust_decimal.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+srdf.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]

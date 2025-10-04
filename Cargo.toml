@@ -53,8 +53,13 @@ authors = [
 [workspace.dependencies]
 dctap = { version = "0.1.111", path = "./dctap" }
 iri_s = { version = "0.1.90", path = "./iri_s" }
+lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
+nom = "7"
+nom_locate = "4"
+petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
+pretty = { version = "0.12" }
 pyrudof = { version = "0.1.110", path = "./python" }
 rbe = { version = "0.1.111", path = "./rbe" }
 rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }

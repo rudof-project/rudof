@@ -1,11 +1,10 @@
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use shex_ast::ShExFormat;
 use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 use thiserror::Error;
-
-use crate::ShExFormat;
 
 /// ShEx configuration on main
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]

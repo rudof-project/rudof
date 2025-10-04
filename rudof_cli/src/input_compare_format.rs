@@ -2,7 +2,7 @@ use crate::CliShaclFormat;
 use crate::{dctap_format::DCTapFormat as CliDCTapFormat, mime_type::MimeType};
 use anyhow::{Result, bail};
 use clap::ValueEnum;
-use rudof_lib::ShExFormat;
+use shex_ast::ShExFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,

@@ -18,6 +18,12 @@ pub enum ShapeExpr {
     Empty,
 }
 
+impl Default for ShapeExpr {
+    fn default() -> Self {
+        ShapeExpr::Empty
+    }
+}
+
 impl ShapeExpr {
     pub fn mk_ref(idx: ShapeLabelIdx) -> ShapeExpr {
         ShapeExpr::Ref { idx }
@@ -42,7 +48,7 @@ impl ShapeExpr {
                 exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                     let refs = schema
                         .find_shape_idx(expr)
-                        .map(|(_, expr)| expr.references(schema))
+                        .map(|info| info.expr().references(schema))
                         .unwrap_or_default();
                     for (p, v) in refs {
                         acc.entry(p).or_insert_with(Vec::new).extend(v);
@@ -54,7 +60,7 @@ impl ShapeExpr {
                 exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                     let refs = schema
                         .find_shape_idx(expr)
-                        .map(|(_, expr)| expr.references(schema))
+                        .map(|info| info.expr().references(schema))
                         .unwrap_or_default();
                     for (p, v) in refs {
                         acc.entry(p).or_insert_with(Vec::new).extend(v);
@@ -64,7 +70,7 @@ impl ShapeExpr {
             }
             ShapeExpr::ShapeNot { expr, .. } => schema
                 .find_shape_idx(expr)
-                .map(|(_, expr)| expr.references(schema))
+                .map(|info| info.expr().references(schema))
                 .unwrap_or_default(),
             ShapeExpr::NodeConstraint(_nc) => HashMap::new(),
             ShapeExpr::Shape(s) => s.references().clone(),
@@ -90,7 +96,8 @@ impl ShapeExpr {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => {
                 for expr in exprs {
-                    if let Some((_, expr)) = schema.find_shape_idx(expr) {
+                    if let Some(info) = schema.find_shape_idx(expr) {
+                        let expr = info.expr();
                         if visited.contains(&expr) {
                             continue;
                         } else {
@@ -102,7 +109,8 @@ impl ShapeExpr {
             }
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 for expr in exprs {
-                    if let Some((_, expr)) = schema.find_shape_idx(expr) {
+                    if let Some(info) = schema.find_shape_idx(expr) {
+                        let expr = info.expr();
                         if visited.contains(&expr) {
                             continue;
                         } else {
@@ -113,7 +121,8 @@ impl ShapeExpr {
                 }
             }
             ShapeExpr::ShapeNot { expr, .. } => {
-                if let Some((_, expr)) = schema.find_shape_idx(expr) {
+                if let Some(info) = schema.find_shape_idx(expr) {
+                    let expr = info.expr();
                     if visited.contains(&expr) {
                     } else {
                         visited.push(expr);
