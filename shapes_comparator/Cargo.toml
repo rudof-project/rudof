@@ -1,6 +1,6 @@
 [package]
 name = "shapes_comparator"
-version = "0.1.111"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
