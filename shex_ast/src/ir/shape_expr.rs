@@ -6,22 +6,26 @@ use super::{
 use crate::{Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use std::{collections::HashMap, fmt::Display};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum ShapeExpr {
-    ShapeOr { exprs: Vec<ShapeLabelIdx> },
-    ShapeAnd { exprs: Vec<ShapeLabelIdx> },
-    ShapeNot { expr: ShapeLabelIdx },
+    ShapeOr {
+        exprs: Vec<ShapeLabelIdx>,
+    },
+    ShapeAnd {
+        exprs: Vec<ShapeLabelIdx>,
+    },
+    ShapeNot {
+        expr: ShapeLabelIdx,
+    },
     NodeConstraint(NodeConstraint),
     Shape(Box<Shape>),
     External {},
-    Ref { idx: ShapeLabelIdx },
-    Empty,
-}
+    Ref {
+        idx: ShapeLabelIdx,
+    },
 
-impl Default for ShapeExpr {
-    fn default() -> Self {
-        ShapeExpr::Empty
-    }
+    #[default]
+    Empty,
 }
 
 impl ShapeExpr {

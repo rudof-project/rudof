@@ -7,6 +7,7 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
+use shex_ast::ResolveMethod;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ValidationStatus;
@@ -203,12 +204,13 @@ impl ValidationEntry {
         trace!("Entry action: {:?}", self.action);
 
         trace!("Compiling schema...");
-        let mut compiler = AST2IR::new();
+        let mut compiler = AST2IR::new(&ResolveMethod::default());
         let mut compiled_schema = SchemaIR::new();
         compiler
             .compile(
                 &schema,
                 &IriS::from_path(folder).unwrap(),
+                &None,
                 &mut compiled_schema,
             )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;

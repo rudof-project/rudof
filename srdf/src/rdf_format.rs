@@ -1,10 +1,12 @@
+use iri_s::MimeType;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::RDFParseError;
 
 /// Posible RDF formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
 pub enum RDFFormat {
     #[default]
     Turtle,
@@ -16,8 +18,10 @@ pub enum RDFFormat {
     JsonLd,
 }
 
-impl RDFFormat {
-    pub fn mime_type(&self) -> &'static str {
+impl RDFFormat {}
+
+impl MimeType for RDFFormat {
+    fn mime_type(&self) -> &'static str {
         match self {
             RDFFormat::Turtle => "text/turtle",
             RDFFormat::NTriples => "application/n-triples",

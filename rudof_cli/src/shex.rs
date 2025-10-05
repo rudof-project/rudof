@@ -1,12 +1,6 @@
-use std::collections::HashMap;
-use std::io::{self, Write};
-use std::path::PathBuf;
-use std::time::Instant;
-
 use crate::ShExFormat as CliShExFormat;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
-use crate::mime_type::MimeType;
 use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
 use crate::{ColorSupport, shapemap_format_convert};
@@ -14,11 +8,17 @@ use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormatter};
+use iri_s::mime_type::MimeType;
+use rudof_lib::{InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter};
 use shex_ast::shapemap::ResultShapeMap;
-use shex_ast::{Schema, ShExFormat, ShapeExprLabel};
-use srdf::ReaderMode;
+use shex_ast::{Schema, ShExFormat};
+use srdf::{RDFFormat, ReaderMode};
+use std::env;
+use std::io::{self, Write};
+use std::path::PathBuf;
+use std::time::Instant;
 use tracing::trace;
+use url::Url;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shex(
@@ -46,54 +46,51 @@ pub fn run_shex(
         let elapsed = begin.elapsed();
         let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
-    let schema_resolved = rudof.shex_schema_without_imports()?;
-    if config.show_extends() {
-        show_extends_table(&mut io::stderr(), schema_resolved.count_extends())?;
-    }
-
-    if config.show_imports() {
-        writeln!(
-            io::stderr(),
-            "Local shapes: {}/Total shapes {}",
-            schema_resolved.local_shapes_count(),
-            schema_resolved.total_shapes_count()
-        )?;
-    }
-    if config.show_shapes() {
-        for (shape_label, (_shape_expr, iri)) in schema_resolved.shapes() {
-            let label = match shape_label {
-                ShapeExprLabel::IriRef { value } => {
-                    schema_resolved.resolve_iriref(value).as_str().to_string()
-                }
-                ShapeExprLabel::BNode { value } => format!("{value}"),
-                ShapeExprLabel::Start => "Start".to_string(),
-            };
-            writeln!(io::stderr(), "{label} from {iri}")?
-        }
-    }
     if compile && config.show_ir() {
-        trace!("Compiling schema to IR...");
-        writeln!(io::stdout(), "\nIR:")?;
         if let Some(shex_ir) = rudof.get_shex_ir() {
             trace!("Schema compiled to IR");
-            writeln!(io::stdout(), "ShEx IR:")?;
+            writeln!(io::stdout(), "ShEx Internal Representation:")?;
             writeln!(io::stdout(), "{shex_ir}")?;
-        } else {
-            bail!("Internal error: No ShEx schema read")
-        }
-    }
-    if compile && config.show_dependencies() {
-        writeln!(io::stdout(), "\nDependencies:")?;
-        if let Some(shex_ir) = rudof.get_shex_ir() {
-            for (source, posneg, target) in shex_ir.dependencies() {
-                writeln!(io::stdout(), "{source}-{posneg}->{target}")?;
+
+            if config.show_extends() {
+                // show_extends_table(&mut io::stderr(), shex_ir.count_extends())?;
+            }
+
+            if config.show_imports() {
+                writeln!(
+                    io::stderr(),
+                    "Local shapes: {}/Total shapes {}",
+                    shex_ir.local_shapes_count(),
+                    shex_ir.total_shapes_count()
+                )?;
+            }
+            if config.show_shapes() {
+                for (label, source, _expr) in shex_ir.shapes() {
+                    writeln!(
+                        io::stdout(),
+                        "{label}{}",
+                        if shex_ir.imported_schemas().len() > 1 {
+                            format!(" from {}", source)
+                        } else {
+                            String::new()
+                        }
+                    )?;
+                }
+            }
+            if config.show_dependencies() {
+                writeln!(io::stdout(), "\nDependencies:")?;
+                for (source, posneg, target) in shex_ir.dependencies() {
+                    writeln!(io::stdout(), "{source}-{posneg}->{target}")?;
+                }
+                writeln!(io::stdout(), "---end dependencies\n")?;
             }
         } else {
-            bail!("Internal error: No ShEx schema read")
+            bail!("Internal error: Schema was not compiled to IR")
         }
-        writeln!(io::stdout(), "---end dependencies\n")?;
+        Ok(())
+    } else {
+        bail!("Couldn't obtain ShEx")
     }
-    Ok(())
 }
 
 // TODO: Replace by show_schema_rudof
@@ -173,14 +170,14 @@ pub fn parse_shex_schema_rudof(
     config: &RudofConfig,
 ) -> Result<()> {
     let reader = input
-        .open_read(Some(&schema_format.mime_type()), "ShEx schema")
+        .open_read(Some(schema_format.mime_type()), "ShEx schema")
         .context(format!("Get reader from input: {input}"))?;
     let schema_format = shex_format_convert(schema_format);
-    let base = get_base(config, base);
+    let base = get_base(config, base)?;
     rudof.read_shex(
         reader,
         &schema_format,
-        base.as_deref(),
+        Some(base.as_str()),
         reader_mode,
         Some(&input.source_name()),
     )?;
@@ -194,19 +191,27 @@ pub fn parse_shex_schema_rudof(
     Ok(())
 }
 
-fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Option<String> {
+fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofError> {
     if let Some(base) = base {
-        Some(base.to_string())
+        Ok(base.clone())
+    } else if let Some(base) = config.shex_config().base.as_ref() {
+        Ok(base.clone())
     } else {
-        config
-            .shex_config()
-            .base
-            .as_ref()
-            .map(|iri| iri.to_string())
+        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
+            error: format!("{e}"),
+        })?;
+        // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+        // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+        let url =
+            Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
+                current_dir: cwd.to_string_lossy().to_string(),
+            })?;
+        let iri = IriS::from_url(&url);
+        Ok(iri)
     }
 }
 
-fn show_extends_table<R: Write>(
+/*fn show_extends_table<R: Write>(
     writer: &mut R,
     extends_count: HashMap<usize, usize>,
 ) -> Result<()> {
@@ -214,13 +219,13 @@ fn show_extends_table<R: Write>(
         writeln!(writer, "Shapes with {key} extends = {value}")?;
     }
     Ok(())
-}
+}*/
 
 pub fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
     match shex_format {
         CliShExFormat::ShExC => ShExFormat::ShExC,
         CliShExFormat::ShExJ => ShExFormat::ShExJ,
-        CliShExFormat::Turtle => ShExFormat::Turtle,
+        CliShExFormat::Turtle => ShExFormat::RDFFormat(RDFFormat::Turtle),
         _ => ShExFormat::ShExC,
     }
 }
@@ -249,18 +254,19 @@ pub fn run_validate_shex(
         let mut rudof = Rudof::new(config);
         let (writer, _color) = get_writer(output, force_overwrite)?;
         let schema_format = schema_format.unwrap_or_default();
-        let schema_reader = schema.open_read(Some(&schema_format.mime_type()), "ShEx Schema")?;
+        let schema_reader = schema.open_read(Some(schema_format.mime_type()), "ShEx Schema")?;
         let schema_format = match schema_format {
             CliShExFormat::ShExC => ShExFormat::ShExC,
             CliShExFormat::ShExJ => ShExFormat::ShExJ,
+            CliShExFormat::JSON => ShExFormat::ShExJ,
+            CliShExFormat::JSONLD => ShExFormat::ShExJ,
             _ => bail!("ShExJ validation not yet implemented"),
         };
-        let base_iri = get_base(config, base_schema);
-        let schema_base = base_iri.as_deref();
+        let base_iri = get_base(config, base_schema)?;
         rudof.read_shex(
             schema_reader,
             &schema_format,
-            schema_base,
+            Some(base_iri.as_str()),
             reader_mode,
             Some(&schema.source_name()),
         )?;

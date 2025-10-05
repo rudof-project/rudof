@@ -1,4 +1,3 @@
-use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use crate::{
     InputCompareFormat, input_compare_mode::InputCompareMode,
@@ -6,6 +5,7 @@ use crate::{
 };
 use anyhow::{Context, Result, bail};
 use iri_s::IriS;
+use iri_s::mime_type::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
 use shex_ast::Schema;
@@ -31,8 +31,8 @@ pub fn run_compare(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let mut reader1 = input1.open_read(Some(format1.mime_type().as_str()), "Compare1")?;
-    let mut reader2 = input2.open_read(Some(format2.mime_type().as_str()), "Compare2")?;
+    let mut reader1 = input1.open_read(Some(format1.mime_type()), "Compare1")?;
+    let mut reader2 = input2.open_read(Some(format2.mime_type()), "Compare2")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     let coshamo1 = get_coshamo(

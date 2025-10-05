@@ -116,7 +116,7 @@ impl Default for ShExConfig {
             check_well_formed: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),
-            base: Some(IriS::new_unchecked("base://")),
+            base: None,
         }
     }
 }

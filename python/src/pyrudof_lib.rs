@@ -6,9 +6,9 @@ use pyo3::{
 };
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
-    InputSpec, InputSpecError, InputSpecReader, Mie, PrefixMap, QueryResultFormat, QueryShapeMap,
-    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
-    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, PrefixMap, QueryResultFormat,
+    QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
+    Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
     VarName, iri,
@@ -1589,7 +1589,7 @@ fn cnv_shex_format(format: &PyShExFormat) -> ShExFormat {
     match format {
         PyShExFormat::ShExC => ShExFormat::ShExC,
         PyShExFormat::ShExJ => ShExFormat::ShExJ,
-        PyShExFormat::Turtle => ShExFormat::Turtle,
+        PyShExFormat::Turtle => ShExFormat::RDFFormat(RDFFormat::Turtle),
     }
 }
 

@@ -15,11 +15,9 @@ members = [
     "shacl_rdf",
     "shacl_ir",
     "shacl_validation",
-    "shapemap",
     "shapes_comparator",
     "shapes_converter",
     "shex_ast",
-    "shex_compact",
     "shex_testsuite",
     "shex_validation",
     "sparql_service",
@@ -81,10 +79,10 @@ sparql_service = { version = "0.1.111", path = "./sparql_service" }
 srdf = { version = "0.1.111", path = "./srdf" }
 
 # [dependencies]
-# External dependencies
 anyhow = "1.0"
 async-trait = "0.1.89"
 clap = { version = "4.2.1", features = ["derive"] }
+clientele = "0.2"
 colored = "3"
 const_format = "0.2"
 either = { version = "1.13" }

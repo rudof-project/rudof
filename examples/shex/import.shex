@@ -1,7 +1,7 @@
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
-import <base.shex>
+import <examples/shex/base.shex>
 
 :Company {
     :name xsd:string ;

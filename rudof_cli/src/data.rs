@@ -9,8 +9,9 @@ use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
 
 use crate::writer::get_writer;
-use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
+use crate::{data_format::DataFormat, result_data_format::ResultDataFormat};
 use anyhow::{Result, bail};
+use iri_s::mime_type::MimeType;
 use srdf::UmlConverter;
 
 #[allow(clippy::too_many_arguments)]
@@ -36,7 +37,7 @@ pub fn get_data_rudof(
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
             for d in data {
-                let data_reader = d.open_read(Some(&data_format.mime_type()), "RDF data")?;
+                let data_reader = d.open_read(Some(data_format.mime_type()), "RDF data")?;
                 let base = get_base(d, config, base)?;
                 rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
             }

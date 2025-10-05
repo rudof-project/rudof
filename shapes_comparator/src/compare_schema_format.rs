@@ -1,5 +1,6 @@
 use crate::ComparatorError;
 use shex_ast::ShExFormat;
+use srdf::RDFFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -30,7 +31,7 @@ impl CompareSchemaFormat {
         match self {
             CompareSchemaFormat::ShExC => Ok(ShExFormat::ShExC),
             CompareSchemaFormat::ShExJ => Ok(ShExFormat::ShExJ),
-            CompareSchemaFormat::Turtle => Ok(ShExFormat::Turtle),
+            CompareSchemaFormat::Turtle => Ok(ShExFormat::RDFFormat(RDFFormat::Turtle)),
         }
     }
 }

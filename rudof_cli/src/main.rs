@@ -529,12 +529,14 @@ fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
         CliShExFormat::Simple => Err(anyhow!(
             "Validation using SHACL mode doesn't support {f} format"
         )),
-        CliShExFormat::ShExJ => bail!("Validation using SHACL mode doesn't support ShExC format"),
         CliShExFormat::Turtle => Ok(CliShaclFormat::Turtle),
         CliShExFormat::NTriples => Ok(CliShaclFormat::NTriples),
         CliShExFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
         CliShExFormat::TriG => Ok(CliShaclFormat::TriG),
         CliShExFormat::N3 => Ok(CliShaclFormat::N3),
         CliShExFormat::NQuads => Ok(CliShaclFormat::NQuads),
+        CliShExFormat::ShExJ => bail!("Validation using SHACL mode doesn't support ShExC format"),
+        CliShExFormat::JSON => Ok(CliShaclFormat::JsonLd),
+        CliShExFormat::JSONLD => Ok(CliShaclFormat::JsonLd),
     }
 }

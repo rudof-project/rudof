@@ -25,6 +25,11 @@ impl IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
+    pub fn from_url(url: &Url) -> IriS {
+        let iri = NamedNode::new_unchecked(url.as_str());
+        IriS { iri }
+    }
+
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
         IriS { iri }

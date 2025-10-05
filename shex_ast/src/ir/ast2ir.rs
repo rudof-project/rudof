@@ -8,7 +8,7 @@ use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::{CResult, Cond, Node, Pred, ir};
+use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
@@ -25,12 +25,14 @@ use tracing::{debug, trace};
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
+    resolve_method: ResolveMethod,
 }
 
 impl AST2IR {
-    pub fn new() -> Self {
+    pub fn new(resolve_method: &ResolveMethod) -> Self {
         Self {
-            ..Default::default()
+            resolve_method: resolve_method.clone(),
+            shape_decls_counter: 0,
         }
     }
 
@@ -38,22 +40,65 @@ impl AST2IR {
         &mut self,
         schema_ast: &SchemaAST,
         source_iri: &IriS,
+        base: &Option<IriS>,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
+        let mut visited = Vec::new();
+        let (local_shapes, _total_shapes) =
+            self.compile_visited(schema_ast, source_iri, compiled_schema, &mut visited, base)?;
+        compiled_schema.set_local_shapes_counter(local_shapes);
+        compiled_schema.set_imported_schemas(visited);
+        Ok(())
+    }
+
+    // Returns the number of local shapes compiled
+    fn compile_visited(
+        &mut self,
+        schema_ast: &SchemaAST,
+        source_iri: &IriS,
+        compiled_schema: &mut SchemaIR,
+        visited_sources: &mut Vec<IriS>,
+        base: &Option<IriS>,
+    ) -> CResult<(usize, usize)> {
+        let mut total_imported = 0;
+        for import in schema_ast.imports() {
+            let import_iri = cnv_iri_ref(&import)?;
+            if !visited_sources.contains(&import_iri) {
+                visited_sources.push(import_iri.clone());
+                let imported_schema = self.resolve(&import_iri, base)?;
+                let (_local, total) = self.compile_visited(
+                    &imported_schema,
+                    &import_iri,
+                    compiled_schema,
+                    visited_sources,
+                    base,
+                )?;
+                compiled_schema.increment_total_shapes(total);
+                total_imported += total;
+            }
+        }
         trace!("Compiling schema to IR");
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
         trace!("Collecting shape labels...");
-        self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
+        let local = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
         trace!("Collecting shape expressions...");
         self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
-        for import in schema_ast.imports() {
-            self.compile_import(&import, compiled_schema)?;
-        }
         trace!(
             "Schema compilation completed with {} shapes",
             compiled_schema.shapes_counter()
         );
-        Ok(())
+        Ok((local, total_imported + local))
+    }
+
+    fn resolve(&self, iri: &IriS, base: &Option<IriS>) -> CResult<SchemaAST> {
+        let new_schema = match &self.resolve_method {
+            ResolveMethod::RotatingFormats(formats) => {
+                find_schema_rotating_formats(iri, formats.clone(), base)
+            }
+            ResolveMethod::ByGuessingExtension => todo!(),
+            ResolveMethod::ByContentNegotiation => todo!(),
+        }?;
+        Ok(new_schema)
     }
 
     pub fn compile_import(&self, import: &IriRef, _compiled_schema: &mut SchemaIR) -> CResult<()> {
@@ -68,7 +113,8 @@ impl AST2IR {
         schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
-    ) -> CResult<()> {
+    ) -> CResult<usize> {
+        let mut shape_labels_counter = 0;
         match &schema_ast.shapes() {
             None => {}
             Some(sds) => {
@@ -76,6 +122,7 @@ impl AST2IR {
                     let label = self.shape_expr_label_to_shape_label(&sd.id)?;
                     compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
                     self.shape_decls_counter += 1;
+                    shape_labels_counter += 1;
                 }
             }
         }
@@ -86,8 +133,9 @@ impl AST2IR {
                 self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri)?;
             compiled_schema.replace_shape(&idx, start_compiled);
             self.shape_decls_counter += 1;
+            shape_labels_counter += 1;
         }
-        Ok(())
+        Ok(shape_labels_counter)
     }
 
     pub fn collect_shape_exprs(
@@ -1429,5 +1477,61 @@ fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, Box<SchemaIRError>> {
         _ => Err(Box::new(SchemaIRError::Internal {
             msg: format!("Cannot convert {iri} to Iri"),
         })),
+    }
+}
+
+pub fn find_schema_rotating_formats(
+    iri: &IriS,
+    formats: Vec<ShExFormat>,
+    base: &Option<IriS>,
+) -> Result<SchemaAST, Box<SchemaIRError>> {
+    let mut errors = Vec::new();
+    for format in &formats {
+        match get_schema_from_iri(iri, format, base) {
+            Err(e) => {
+                errors.push((format.clone(), e));
+            }
+            Ok(schema) => return Ok(schema),
+        }
+    }
+    Err(Box::new(SchemaIRError::SchemaFromIriRotatingFormats {
+        iri: iri.clone(),
+        errors: Box::new(errors),
+    }))
+}
+
+pub fn get_schema_from_iri(
+    iri: &IriS,
+    format: &ShExFormat,
+    base: &Option<IriS>,
+) -> Result<SchemaAST, Box<SchemaIRError>> {
+    match format {
+        ShExFormat::ShExC => {
+            let content = iri.dereference(base).map_err(|e| {
+                Box::new(SchemaIRError::DereferencingIri {
+                    iri: iri.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            let schema = ShExParser::parse(content.as_str(), None, iri).map_err(|e| {
+                Box::new(SchemaIRError::ShExCError {
+                    iri: iri.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            Ok(schema)
+        }
+        ShExFormat::ShExJ => {
+            let schema = SchemaAST::from_iri(iri).map_err(|e| {
+                Box::new(SchemaIRError::ShExJError {
+                    iri: iri.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            Ok(schema)
+        }
+        ShExFormat::RDFFormat(_) => {
+            todo!()
+        }
     }
 }

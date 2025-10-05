@@ -1,11 +1,11 @@
-use iri_s::IriSError;
+use iri_s::{IriS, IriSError};
 use prefixmap::{IriRef, PrefixMapError};
 use srdf::lang::Lang;
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
-use crate::{Node, ast};
+use crate::{Node, ShExFormat, ast};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
@@ -37,10 +37,10 @@ pub enum SchemaIRError {
     IriParseError { str: String, err: IriSError },
 
     #[error("SchemaJson Error")]
-    SchemaJsonError(#[from] ast::SchemaJsonError),
+    SchemaJsonError { source: Box<ast::SchemaJsonError> },
 
     #[error("Duplicated triple expression label in schema: {label:?}")]
-    DuplicatedTripleExprLabel { label: TripleExprLabel },
+    DuplicatedTripleExprLabel { label: Box<TripleExprLabel> },
 
     #[error("Converting min value {min} must be positive")]
     MinLessZero { min: i32 },
@@ -214,4 +214,19 @@ pub enum SchemaIRError {
 
     #[error("Internal: {msg}")]
     Internal { msg: String },
+
+    #[error("Dereferencing import IRI {iri}: {error}")]
+    DereferencingIri { iri: IriS, error: String },
+
+    #[error("Parsing ShExC format from iri: {iri}: {error}")]
+    ShExCError { error: String, iri: IriS },
+
+    #[error("Parsing ShExJ format from iri: {iri}: {error}")]
+    ShExJError { error: String, iri: IriS },
+
+    #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<Vec<_>>().join(""))]
+    SchemaFromIriRotatingFormats {
+        iri: IriS,
+        errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
+    },
 }

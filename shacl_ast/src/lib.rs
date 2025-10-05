@@ -21,6 +21,7 @@ pub enum ShaclFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
 }
 
 impl ShaclFormat {
@@ -34,6 +35,7 @@ impl ShaclFormat {
             ShaclFormat::TriG => "application/trig",
             ShaclFormat::N3 => "text/n3",
             ShaclFormat::NQuads => "application/n-quads",
+            ShaclFormat::JsonLd => "application/ld+json",
         }
     }
 }

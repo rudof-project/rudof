@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use crate::data::data_format2rdf_format;
-use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use crate::{RDFReaderMode, ResultServiceFormat, data_format::DataFormat};
 use anyhow::Result;
+use iri_s::mime_type::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use sparql_service::ServiceDescriptionFormat;
 
@@ -17,7 +17,7 @@ pub fn run_service(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let reader = input.open_read(Some(data_format.mime_type().as_str()), "Service")?;
+    let reader = input.open_read(Some(data_format.mime_type()), "Service")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let rdf_format = data_format2rdf_format(data_format);
     let service_config = config.service_config();

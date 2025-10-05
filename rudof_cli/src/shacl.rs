@@ -22,9 +22,9 @@ use crate::ResultShaclValidationFormat;
 use crate::data::get_base;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
-use crate::mime_type::MimeType;
 use crate::writer::get_writer;
 use anyhow::Result;
+use iri_s::mime_type::MimeType;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shacl(
@@ -93,8 +93,7 @@ pub fn run_shacl_convert(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
     let mime_type = input_format.mime_type();
-    let mime_type_str = mime_type.as_str();
-    let reader = input.open_read(Some(mime_type_str), "SHACL shapes")?;
+    let reader = input.open_read(Some(mime_type), "SHACL shapes")?;
     let input_format = shacl_format_convert(*input_format)?;
     let base = get_base(input, config, base)?;
     rudof.read_shacl(reader, &input_format, base.as_deref(), reader_mode)?;
@@ -112,8 +111,7 @@ pub fn add_shacl_schema_rudof(
     config: &RudofConfig,
 ) -> Result<()> {
     let mime_type = shapes_format.mime_type();
-    let mime_type_str = mime_type.as_str();
-    let reader = schema.open_read(Some(mime_type_str), "SHACL shapes")?;
+    let reader = schema.open_read(Some(mime_type), "SHACL shapes")?;
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
     rudof.read_shacl(reader, &shapes_format, base.as_deref(), reader_mode)?;
@@ -129,6 +127,7 @@ fn shacl_format_convert(shacl_format: CliShaclFormat) -> Result<ShaclFormat> {
         CliShaclFormat::N3 => Ok(ShaclFormat::N3),
         CliShaclFormat::NQuads => Ok(ShaclFormat::NQuads),
         CliShaclFormat::Internal => Ok(ShaclFormat::Internal),
+        CliShaclFormat::JsonLd => Ok(ShaclFormat::JsonLd),
     }
 }
 

@@ -1,13 +1,13 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
-use crate::Pred;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
 use crate::{
     CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
     ir::ast2ir::AST2IR,
 };
+use crate::{Pred, ResolveMethod};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use std::collections::{HashMap, HashSet};
@@ -25,6 +25,9 @@ pub struct SchemaIR {
     sources: HashMap<SourceIdx, IriS>,
     sources_counter: usize,
     prefixmap: PrefixMap,
+    local_shapes_counter: usize,
+    total_shapes_counter: usize,
+    imported_schemas: Vec<IriS>,
 }
 
 impl SchemaIR {
@@ -37,6 +40,9 @@ impl SchemaIR {
             sources_counter: 0,
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
+            total_shapes_counter: 0,
+            local_shapes_counter: 0,
+            imported_schemas: Vec::new(),
         }
     }
 
@@ -48,8 +54,28 @@ impl SchemaIR {
         self.prefixmap.clone()
     }
 
+    pub fn set_local_shapes_counter(&mut self, counter: usize) {
+        self.local_shapes_counter = counter;
+    }
+
+    pub fn set_imported_schemas(&mut self, imported_schemas: Vec<IriS>) {
+        self.imported_schemas = imported_schemas
+    }
+
+    pub fn increment_total_shapes(&mut self, new_counter: usize) {
+        self.total_shapes_counter += new_counter
+    }
+
     pub fn shapes_counter(&self) -> usize {
         self.shape_label_counter
+    }
+
+    pub fn get_source(&self, source_idx: &SourceIdx) -> Option<&IriS> {
+        self.sources.get(source_idx)
+    }
+
+    pub fn total_shapes_count(&self) -> usize {
+        self.total_shapes_counter
     }
 
     pub fn add_shape(
@@ -77,9 +103,22 @@ impl SchemaIR {
         }
     }
 
-    pub fn from_schema_json(&mut self, schema_json: &SchemaJson) -> Result<()> {
-        let mut schema_json_compiler = AST2IR::new();
-        schema_json_compiler.compile(schema_json, &schema_json.source_iri(), self)?;
+    pub fn local_shapes_count(&self) -> usize {
+        self.local_shapes_counter
+    }
+
+    pub fn imported_schemas(&self) -> &Vec<IriS> {
+        &self.imported_schemas
+    }
+
+    pub fn from_schema_json(
+        &mut self,
+        schema_json: &SchemaJson,
+        resolve_method: &ResolveMethod,
+        base: &Option<IriS>,
+    ) -> Result<()> {
+        let mut compiler = AST2IR::new(resolve_method);
+        compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
         Ok(())
     }
 
@@ -157,8 +196,13 @@ impl SchemaIR {
         self.shape_labels_map.keys().collect()
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &ShapeExprInfo> {
-        self.shapes.values()
+    pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &IriS, &ShapeExpr)> {
+        self.shapes.iter().filter_map(|(_, info)| {
+            info.label().map(|label| {
+                let source = self.get_source(info.source_idx()).unwrap();
+                (label, source, info.expr())
+            })
+        })
     }
 
     // Returns a map of predicates to shape label indices that reference the given index
@@ -275,7 +319,6 @@ impl SchemaIR {
                 }
             }
         }
-        println!("Dependencies: {deps:?}");
         deps
     }
 }
@@ -330,7 +373,9 @@ mod tests {
     use iri_s::iri;
 
     use super::SchemaIR;
-    use crate::{Pred, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel};
+    use crate::{
+        Pred, ResolveMethod, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel,
+    };
 
     #[test]
     fn test_find_component() {
@@ -353,7 +398,8 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema_json).unwrap();
+        ir.from_schema_json(&schema_json, &ResolveMethod::default(), &None)
+            .unwrap();
         println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
@@ -405,7 +451,8 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema).unwrap();
+        ir.from_schema_json(&schema, &ResolveMethod::default(), &None)
+            .unwrap();
         println!("Schema IR: {ir}");
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
@@ -471,7 +518,8 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema).unwrap();
+        ir.from_schema_json(&schema, &ResolveMethod::default(), &None)
+            .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         println!("Schema IR: {ir}");

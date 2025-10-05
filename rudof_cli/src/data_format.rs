@@ -1,8 +1,7 @@
 use clap::ValueEnum;
+use iri_s::mime_type::MimeType;
 use srdf::RDFFormat;
 use std::fmt::{Display, Formatter};
-
-use crate::mime_type::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
@@ -45,15 +44,15 @@ impl Display for DataFormat {
 }
 
 impl MimeType for DataFormat {
-    fn mime_type(&self) -> String {
+    fn mime_type(&self) -> &'static str {
         match self {
-            DataFormat::Turtle => "text/turtle".to_string(),
-            DataFormat::NTriples => "application/n-triples".to_string(),
-            DataFormat::RDFXML => "application/rdf+xml".to_string(),
-            DataFormat::TriG => "application/trig".to_string(),
-            DataFormat::N3 => "text/n3".to_string(),
-            DataFormat::NQuads => "application/n-quads".to_string(),
-            DataFormat::JsonLd => "application/ld+json".to_string(),
+            DataFormat::Turtle => "text/turtle",
+            DataFormat::NTriples => "application/n-triples",
+            DataFormat::RDFXML => "application/rdf+xml",
+            DataFormat::TriG => "application/trig",
+            DataFormat::N3 => "text/n3",
+            DataFormat::NQuads => "application/n-quads",
+            DataFormat::JsonLd => "application/ld+json",
         }
     }
 }

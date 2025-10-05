@@ -10,7 +10,7 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat};
-use shex_validation::SchemaWithoutImports;
+// use shex_validation::SchemaWithoutImports;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
@@ -62,7 +62,6 @@ pub struct Rudof {
     shacl_schema_ir: Option<ShaclSchemaIR>,
     shex_schema: Option<ShExSchema>,
     shex_schema_ir: Option<SchemaIR>,
-    resolved_shex_schema: Option<SchemaWithoutImports>,
     shex_validator: Option<ShExValidator>,
     shapemap: Option<QueryShapeMap>,
     dctap: Option<DCTAP>,
@@ -86,7 +85,6 @@ impl Rudof {
             shex_schema_ir: None,
             shacl_schema: None,
             shacl_schema_ir: None,
-            resolved_shex_schema: None,
             shex_validator: None,
             rdf_data: RdfData::new(),
             shapemap: None,
@@ -385,8 +383,8 @@ impl Rudof {
                 })?;
                 Ok(())
             }
-            ShExFormat::Turtle => Err(RudofError::NotImplemented {
-                msg: format!("ShEx to ShExR for {shex:?}"),
+            ShExFormat::RDFFormat(_) => Err(RudofError::NotImplemented {
+                msg: format!("ShEx from RDF format ShExR for {shex:?}"),
             }),
         }
     }
@@ -540,6 +538,7 @@ impl Rudof {
             ShaclFormat::TriG => Ok(RDFFormat::TriG),
             ShaclFormat::N3 => Ok(RDFFormat::N3),
             ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
+            ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
         }?;
 
         let rdf_graph =
@@ -712,13 +711,21 @@ impl Rudof {
         reader_mode: &ReaderMode,
         source_name: Option<&str>,
     ) -> Result<()> {
-        let schema_json = self.read_shex_only(reader, format, base, reader_mode, source_name)?;
-        self.shex_schema = Some(schema_json.clone());
-        trace!("Schema AST read: {schema_json}");
+        let schema_ast = self.read_shex_only(reader, format, base, reader_mode, source_name)?;
+        self.shex_schema = Some(schema_ast.clone());
+        trace!("Schema AST read: {schema_ast}");
         let mut schema = SchemaIR::new();
         trace!("Compiling schema");
+        let base_iri = if let Some(base) = base {
+            Some(IriS::from_str(base).map_err(|e| RudofError::BaseIriError {
+                str: base.to_string(),
+                error: format!("{e}"),
+            })?)
+        } else {
+            None
+        };
         schema
-            .from_schema_json(&schema_json)
+            .from_schema_json(&schema_ast, &ResolveMethod::default(), &base_iri)
             .map_err(|e| RudofError::CompilingSchemaError {
                 error: format!("{e}"),
             })?;
@@ -730,7 +737,7 @@ impl Rudof {
             ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
                 RudofError::ShExValidatorCreationError {
                     error: format!("{e}"),
-                    schema: format!("{schema_json}"),
+                    schema: format!("{schema_ast}"),
                 }
             })?;
         trace!("Validator created");
@@ -801,7 +808,7 @@ impl Rudof {
                     })?;
                 Ok(schema_json)
             }
-            ShExFormat::Turtle => {
+            ShExFormat::RDFFormat(_) => {
                 todo!()
                 /*let rdf = parse_data(
                     &vec![input.clone()],
@@ -1086,7 +1093,7 @@ impl Rudof {
         &self.rdf_data
     }
 
-    /// Obtains the current `shex_schema` after resolving import declarations
+    /*/// Obtains the current `shex_schema` after resolving import declarations
     ///
     /// If the import declarations in the current schema have not been resolved, it resolves them
     pub fn shex_schema_without_imports(&mut self) -> Result<SchemaWithoutImports> {
@@ -1108,7 +1115,7 @@ impl Rudof {
             },
             Some(resolved_schema) => Ok(resolved_schema.clone()),
         }
-    }
+    }*/
 
     #[allow(clippy::too_many_arguments)]
     pub fn get_coshamo(
@@ -1169,6 +1176,7 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
         ShaclFormat::TriG => Ok(RDFFormat::TriG),
         ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
         ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),
+        ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
     }
 }
 

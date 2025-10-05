@@ -9,7 +9,10 @@ pub mod node_selector;
 pub mod query_shape_map;
 pub mod result_shape_map;
 pub mod shape_selector;
+
+#[allow(clippy::module_inception)]
 pub mod shapemap;
+
 pub mod shapemap_config;
 pub mod shapemap_error;
 pub mod shapemap_state;

@@ -130,7 +130,7 @@ pub enum RudofError {
     #[error("Validating shex requires to initialize a shapemap or a node/shape pair")]
     NoShapeMap { schema: String },
 
-    #[error("Rsolving imports in ShEx schema: {error}")]
+    #[error("Resolving imports in ShEx schema: {error}")]
     ResolvingImportsShExSchema { error: String },
 
     #[error("Attempt to resolve import declarations without defining ShEx schema")]

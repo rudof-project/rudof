@@ -254,7 +254,7 @@ pub fn get_schema_from_iri(
                 })?;
             Ok(schema)
         }
-        ShExFormat::Turtle => {
+        ShExFormat::RDFFormat(_) => {
             todo!()
         }
     }
