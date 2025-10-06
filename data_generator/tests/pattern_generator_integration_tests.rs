@@ -61,9 +61,9 @@ async fn test_pattern_with_enumeration() {
         assert_eq!(result.len(), 3, "Should be 3 digits: {}", result);
         assert!(result.chars().all(|c| c.is_ascii_digit()), "Should be all digits: {}", result);
         
-        // Should be a valid number
+        // Should be a valid number (pattern \d{3} allows 000-999, including leading zeros)
         let num: u32 = result.parse().unwrap();
-        assert!(num >= 100 && num <= 999, "Should be 3-digit number: {}", num);
+        assert!(num <= 999, "Should be a 3-digit pattern (000-999): {}", num);
     }
     
     // Should generate variety from enumeration
