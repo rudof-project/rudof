@@ -48,6 +48,7 @@ impl AST2IR {
             self.compile_visited(schema_ast, source_iri, compiled_schema, &mut visited, base)?;
         compiled_schema.set_local_shapes_counter(local_shapes);
         compiled_schema.set_imported_schemas(visited);
+        compiled_schema.increment_total_shapes(local_shapes);
         Ok(())
     }
 
@@ -84,7 +85,7 @@ impl AST2IR {
         trace!("Collecting shape expressions...");
         self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
         trace!(
-            "Schema compilation completed with {} shapes",
+            "Schema compilation completed with {} shapes. {local}/{total_imported}",
             compiled_schema.shapes_counter()
         );
         Ok((local, total_imported + local))

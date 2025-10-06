@@ -7,6 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.1.118
+### Added
+- Support to visualize a single shape in a ShEx schema with the option `--label` in CLI
+
+### Changed
+### Removed
+
+
 ## 0.1.117
 ### Added
 - Support for imports in ShEx

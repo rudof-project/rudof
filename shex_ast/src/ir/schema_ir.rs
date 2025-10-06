@@ -10,6 +10,7 @@ use crate::{
 use crate::{Pred, ResolveMethod};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use tracing::trace;
@@ -109,6 +110,29 @@ impl SchemaIR {
 
     pub fn imported_schemas(&self) -> &Vec<IriS> {
         &self.imported_schemas
+    }
+
+    pub fn count_extends(&self) -> HashMap<usize, usize> {
+        let mut result = HashMap::new();
+        for (_, _, shape_expr) in self.shapes() {
+            let extends_counter = match shape_expr {
+                ShapeExpr::Shape(shape) => Some(shape.extends().len()),
+                _ => None,
+            };
+
+            if let Some(ec) = extends_counter {
+                match result.entry(ec) {
+                    Entry::Occupied(mut v) => {
+                        let r = v.get_mut();
+                        *r += 1;
+                    }
+                    Entry::Vacant(vac) => {
+                        vac.insert(1);
+                    }
+                }
+            }
+        }
+        result
     }
 
     pub fn from_schema_json(

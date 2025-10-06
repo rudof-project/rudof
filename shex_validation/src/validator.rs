@@ -3,7 +3,6 @@ use crate::ValidatorConfig;
 use crate::atom;
 use crate::validator_error::*;
 use crate::validator_runner::Engine;
-// use either::Either;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use serde_json::Value;

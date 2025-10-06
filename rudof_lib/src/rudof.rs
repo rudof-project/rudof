@@ -8,6 +8,7 @@ use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat};
 // use shex_validation::SchemaWithoutImports;
@@ -389,6 +390,35 @@ impl Rudof {
         }
     }
 
+    /// Serialize a specific shape in the current ShEx Schema
+    pub fn serialize_shape_current_shex<W: io::Write>(
+        &self,
+        shape_selector: &ShapeSelector,
+        _format: &ShExFormat,
+        _formatter: &ShExFormatter,
+        writer: &mut W,
+    ) -> Result<()> {
+        if let Some(shex) = &self.shex_schema_ir {
+            for shape_expr_label in shape_selector.iter_shape() {
+                let shape_label =
+                    ShapeLabel::from_shape_expr_label(shape_expr_label, &shex.prefixmap())
+                        .map_err(|e| RudofError::InvalidShapeLabel {
+                            label: shape_expr_label.to_string(),
+                            error: format!("{e}"),
+                        })?;
+                if let Some((_idx, shape_expr)) = shex.find_label(&shape_label) {
+                    writeln!(writer, "# Shape {shape_label}")?;
+                    write!(writer, "  {shape_expr}")?
+                } else {
+                    write!(writer, "Shape {shape_label} not found in schema")?;
+                }
+            }
+            Ok(())
+        } else {
+            Err(RudofError::NoShExSchemaToSerialize)
+        }
+    }
+
     /// Serialize the current ShEx Schema
     pub fn serialize_current_shex<W: io::Write>(
         &self,
@@ -619,7 +649,7 @@ impl Rudof {
                         error: format!("{e}"),
                     }
                 })?;
-                Ok(dctap)
+                Ok::<DCTAP, RudofError>(dctap)
             } /*DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
             let path_buf = path.as_ref().to_path_buf();
             let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config())
@@ -762,7 +792,7 @@ impl Rudof {
                             str: str.to_string(),
                             error: format!("{e}"),
                         })?;
-                        Ok(Some(iri))
+                        Ok::<Option<IriS>, RudofError>(Some(iri))
                     }
                     None => Ok(None),
                 }?;
@@ -787,7 +817,7 @@ impl Rudof {
                                 error: e.to_string(),
                             }
                         })?;
-                        Ok(iri)
+                        Ok::<IriS, RudofError>(iri)
                     }
                     None => Ok(iri!("http://default/")),
                 }?;
@@ -936,7 +966,10 @@ impl Rudof {
                         schema: Box::new(ast_schema.clone()),
                     }
                 })?;
-                Ok((compiled_schema, ast_schema.clone()))
+                Ok::<(shacl_ir::schema::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
+                    compiled_schema,
+                    ast_schema.clone(),
+                ))
             }
             // If self.shacl_schema is None or shapes_graph_source is CurrentData
             // We extract the SHACL schema from the current RDF data
@@ -1062,7 +1095,7 @@ impl Rudof {
                     str: s.to_string(),
                     error: format!("{e}"),
                 })?;
-                Ok(shapemap)
+                Ok::<QueryShapeMap, RudofError>(shapemap)
             }
             ShapeMapFormat::JSON => todo!(),
         }?;

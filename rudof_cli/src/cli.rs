@@ -109,6 +109,14 @@ pub enum Command {
         result_schema_format: ShExFormat,
 
         #[arg(
+            short = 'l',
+            long = "shape-label",
+            value_name = "LABEL",
+            help = "shape label"
+        )]
+        shape: Option<String>,
+
+        #[arg(
             short = 't',
             value_name = "BOOL",
             help = "SHow processing time",

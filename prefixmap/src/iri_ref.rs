@@ -1,9 +1,8 @@
-use std::{fmt::Display, str::FromStr};
-
 use crate::PrefixMap;
-use crate::{Deref, DerefError};
+use crate::{Deref, DerefError, PrefixMapError};
 use iri_s::{IriS, IriSError};
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
@@ -21,6 +20,8 @@ pub struct IriRefError {
 }
 
 impl IriRef {
+    /// Tries to get the IRI, returns an error if it is a prefixed name
+    /// Usually you want to use get_iri_prefixmap instead
     pub fn get_iri(&self) -> Result<IriS, IriRefError> {
         match self {
             IriRef::Iri(iri) => Ok(iri.clone()),
@@ -30,6 +31,16 @@ impl IriRef {
             }),
         }
     }
+
+    /// Gets the IRI, resolving prefixed names using the provided PrefixMap
+    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<IriS, PrefixMapError> {
+        match self {
+            IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::Prefixed { prefix, local } => prefixmap.resolve_prefix_local(prefix, local),
+        }
+    }
+
+    /// Creates a prefixed name IriRef from the given prefix and local part
     pub fn prefixed(prefix: &str, local: &str) -> IriRef {
         IriRef::Prefixed {
             prefix: prefix.to_string(),
@@ -37,6 +48,7 @@ impl IriRef {
         }
     }
 
+    /// Creates an IriRef from an IriS
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
     }

@@ -3,16 +3,18 @@ use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     sem_act::SemAct,
 };
-use crate::{Node, Pred, ShapeLabelIdx};
+use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use itertools::Itertools;
-use rbe::RbeTable;
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    fmt::Display,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {
     closed: bool,
     extra: Vec<Pred>,
-    rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
+    expr: Expr,
     sem_acts: Vec<SemAct>,
     annotations: Vec<Annotation>,
     preds: Vec<Pred>,
@@ -25,7 +27,7 @@ impl Shape {
     pub fn new(
         closed: bool,
         extra: Vec<Pred>,
-        rbe_table: RbeTable<Pred, Node, ShapeLabelIdx>,
+        expr: Expr,
         sem_acts: Vec<SemAct>,
         annotations: Vec<Annotation>,
         preds: Vec<Pred>,
@@ -35,13 +37,16 @@ impl Shape {
         Shape {
             closed,
             extra,
-            rbe_table,
+            expr,
             sem_acts,
             annotations,
             preds,
             extends,
-            // references,
         }
+    }
+
+    pub fn extends(&self) -> &Vec<ShapeLabelIdx> {
+        &self.extends
     }
 
     pub fn preds(&self) -> Vec<Pred> {
@@ -52,12 +57,37 @@ impl Shape {
         self.get_value_expr_references()
     }
 
-    pub fn rbe_table(&self) -> &RbeTable<Pred, Node, ShapeLabelIdx> {
-        &self.rbe_table
+    /// Regular Bag expression that corresponds to the triple expression of the shape
+    /// Replace by expr which easier to remember?
+    pub fn triple_expr(&self) -> &Expr {
+        &self.expr
     }
 
     pub fn is_closed(&self) -> bool {
         self.closed
+    }
+
+    /// Obtain the RBE tables that are affected by the current shape
+    /// If there are no extends, it will only contain a value pointing None to the rbe_table
+    /// It there are extends, each value of the HashMap will be a pair from the label of the extended shape to its rbe table
+    pub fn get_triple_exprs(&self, schema: &SchemaIR) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+        let main_triple_expr = self.expr.clone();
+        let mut result = HashMap::new();
+        result.insert(None, vec![main_triple_expr]);
+        for e in &self.extends {
+            match result.entry(Some(*e)) {
+                Entry::Vacant(v) => {
+                    let info = schema.find_shape_idx(e).unwrap();
+                    let exprs = info.expr().get_triple_exprs(schema);
+                    v.insert(exprs);
+                }
+                Entry::Occupied(_o) => {
+                    // Ignore and don't insert anything here for diamond shapes...
+                    // o.into_mut().extend(exprs);
+                }
+            }
+        }
+        result
     }
 
     pub fn show_short(&self) -> String {
@@ -71,7 +101,7 @@ impl Shape {
     }
 
     pub fn add_edges(&self, source: ShapeLabelIdx, graph: &mut DependencyGraph, pos_neg: PosNeg) {
-        for (_component, _pred, cond) in self.rbe_table.components() {
+        for (_component, _pred, cond) in self.expr.components() {
             match cond {
                 rbe::MatchCond::Single(_single_cond) => {}
                 rbe::MatchCond::And(_match_conds) => {}
@@ -82,7 +112,7 @@ impl Shape {
 
     fn get_value_expr_references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         let mut result: HashMap<Pred, Vec<ShapeLabelIdx>> = HashMap::new();
-        for (_component, pred, cond) in self.rbe_table.components() {
+        for (_component, pred, cond) in self.expr.components() {
             match cond {
                 rbe::MatchCond::Single(_single_cond) => {}
                 rbe::MatchCond::And(_match_conds) => {}
@@ -118,7 +148,7 @@ impl Display for Shape {
         };
         write!(f, "Shape {extends}{closed}{extra} ")?;
         write!(f, "Preds: {preds}")?;
-        write!(f, ", Rbe: {}", self.rbe_table)?;
+        write!(f, ", TripleExpr: {}", self.expr)?;
         write!(
             f,
             ", References: [{}]",
